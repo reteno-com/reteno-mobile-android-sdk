@@ -1,4 +1,4 @@
-package com.reteno.utils
+package com.reteno.util
 
 import android.content.Context
 import com.google.android.gms.common.ConnectionResult

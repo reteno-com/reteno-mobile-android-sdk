@@ -1,6 +1,7 @@
-package com.reteno.utils
+package com.reteno.util
 
 import android.util.Log
+import io.sentry.Hint
 import io.sentry.Hub
 import io.sentry.Sentry
 
@@ -10,6 +11,16 @@ internal object Logger {
         "https://b50d9bee97814c769500ea0d9eb7aaf4@o4503903413665792.ingest.sentry.io/4503903414779904"
 
     @JvmStatic
+    internal fun captureEvent(msg: String) {
+        val mainHub = Sentry.getCurrentHub().clone()
+        val retenoHub = Hub(mainHub.options.apply {
+            dsn = SENTRY_DSN
+        })
+
+        retenoHub.captureMessage(msg)
+    }
+
+    @JvmStatic
     internal fun captureException(e: Throwable) {
         val mainHub = Sentry.getCurrentHub().clone()
         val retenoHub = Hub(mainHub.options.apply {
@@ -17,6 +28,18 @@ internal object Logger {
         })
 
         retenoHub.captureException(e)
+    }
+
+    @JvmStatic
+    internal fun captureException(message: String, e: Throwable) {
+        val mainHub = Sentry.getCurrentHub().clone()
+        val retenoHub = Hub(mainHub.options.apply {
+            dsn = SENTRY_DSN
+        })
+
+        val hint = Hint()
+        hint.set(message, null)
+        retenoHub.captureException(e, hint)
     }
 
     @JvmStatic
@@ -44,9 +67,15 @@ internal object Logger {
     }
 
     @JvmStatic
-    internal fun e(methodName: String, vararg arguments: Any?) {
-        val message = buildMessage(methodName, arguments)
+    internal fun e(message: String) {
         Log.e(TAG, message)
+        captureEvent(message)
+    }
+
+    @JvmStatic
+    internal fun e(message: String, tr: Throwable) {
+        Log.e(TAG, message, tr)
+        captureException(message, tr)
     }
 
 

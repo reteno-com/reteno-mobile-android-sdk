@@ -26,6 +26,6 @@
     public static *** i(...);
 }
 
--assumenosideeffects class com.reteno.utils.Logger {
+-assumenosideeffects class com.reteno.util.Logger {
     public static *** d(...);
 }
