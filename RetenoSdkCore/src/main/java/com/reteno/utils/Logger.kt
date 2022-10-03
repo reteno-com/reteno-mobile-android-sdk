@@ -1,41 +1,53 @@
 package com.reteno.utils
 
-import timber.log.Timber
+import android.util.Log
+import io.sentry.Hub
+import io.sentry.Sentry
 
-object Logger {
+internal object Logger {
+    private const val TAG = "RetenoLogger"
+    private const val SENTRY_DSN =
+        "https://b50d9bee97814c769500ea0d9eb7aaf4@o4503903413665792.ingest.sentry.io/4503903414779904"
 
     @JvmStatic
-    fun v(methodName: String, vararg arguments: Any?) {
-        val message = buildMessage(methodName, arguments)
-        Timber.v(message)
+    internal fun captureException(e: Throwable) {
+        val mainHub = Sentry.getCurrentHub().clone()
+        val retenoHub = Hub(mainHub.options.apply {
+            dsn = SENTRY_DSN
+        })
+
+        retenoHub.captureException(e)
     }
 
     @JvmStatic
-    fun d(methodName: String, vararg arguments: Any?) {
+    internal fun v(methodName: String, vararg arguments: Any?) {
         val message = buildMessage(methodName, arguments)
-        Timber.d(message)
+        Log.v(TAG, message)
     }
 
     @JvmStatic
-    fun i(methodName: String, vararg arguments: Any?) {
+    internal fun d(methodName: String, vararg arguments: Any?) {
         val message = buildMessage(methodName, arguments)
-        Timber.i(message)
+        Log.d(TAG, message)
     }
 
     @JvmStatic
-    fun w(methodName: String, vararg arguments: Any?) {
+    internal fun i(methodName: String, vararg arguments: Any?) {
         val message = buildMessage(methodName, arguments)
-        Timber.w(message)
+        Log.i(TAG, message)
     }
 
     @JvmStatic
-    fun e(methodName: String, vararg arguments: Any?) {
+    internal fun w(methodName: String, vararg arguments: Any?) {
         val message = buildMessage(methodName, arguments)
-        Timber.e(message)
+        Log.w(TAG, message)
     }
 
-
-
+    @JvmStatic
+    internal fun e(methodName: String, vararg arguments: Any?) {
+        val message = buildMessage(methodName, arguments)
+        Log.e(TAG, message)
+    }
 
 
     private fun buildMessage(methodName: String, arguments: Array<out Any?>): String {
