@@ -57,11 +57,11 @@ android {
 dependencies {
     implementation "io.sentry:sentry-android:6.4.2"
 
+    implementation 'com.google.android.gms:play-services-base:18.1.0'
     implementation "com.google.android.gms:play-services-appset:16.0.2"
 
-
     implementation "androidx.core:core-ktx:1.9.0"
-    implementation 'com.google.android.gms:play-services-base:18.1.0'
+    implementation 'androidx.security:security-crypto-ktx:1.1.0-alpha03'
 
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.3'

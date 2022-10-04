@@ -1,5 +1,6 @@
 package com.reteno
 
+import android.app.Activity
 import android.app.Application
 
 /**

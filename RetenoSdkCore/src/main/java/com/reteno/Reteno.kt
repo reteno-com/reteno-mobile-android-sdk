@@ -8,6 +8,7 @@ import com.google.android.gms.appset.AppSet
 import com.reteno.config.DeviceIdMode
 import com.reteno.config.RestConfig
 import com.reteno.util.Logger
+import com.reteno.util.SharedPrefsManager
 import java.util.*
 
 
@@ -28,10 +29,13 @@ object Reteno {
         set(value) {
             if (value == null) {
                 Logger.i("setContext - Null context provided.")
+            } else {
+                SharedPrefsManager.init(value)
             }
 
             field = value
         }
+
 
 
     @Synchronized
