@@ -1,13 +1,23 @@
 plugins {
     id 'com.android.library'
     id 'org.jetbrains.kotlin.android'
+    id 'com.vanniktech.maven.publish'
 }
-apply from: file("versions.gradle")
+apply from: file("$project.rootDir/config.gradle")
+
+def appPropsFile = file("$project.rootDir/local.properties")
+Properties appProps = new Properties()
+appProps.load(new FileInputStream(appPropsFile))
+
+def sdkKeyPropsFile = file("$project.rootDir/RetenoSdkCore/keys.properties")
+Properties sdkKeys = new Properties()
+sdkKeys.load(new FileInputStream(sdkKeyPropsFile))
+
 
 android {
     def globalConfig = rootProject.ext
 
-    namespace 'com.reteno'
+    namespace 'com.reteno.core'
     compileSdk globalConfig.androidCompileSdkVersion
 
     defaultConfig {
@@ -16,15 +26,21 @@ android {
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles "consumer-rules.pro"
+
+        buildConfigField "String", "API_ACCESS_KEY", appProps['reteno.access-key']
     }
 
     buildTypes {
         debug {
+            buildConfigField "String", "SENTRY_DSN", sdkKeys['reteno.sentry.dsn.debug']
+
             minifyEnabled false
             versionNameSuffix "-debug"
         }
 
         release {
+            buildConfigField "String", "SENTRY_DSN", sdkKeys['reteno.sentry.dsn.release']
+
             minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }

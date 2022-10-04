@@ -1,14 +1,14 @@
 package com.reteno.util
 
 import android.util.Log
+import com.reteno.core.BuildConfig
 import io.sentry.Hint
 import io.sentry.Hub
 import io.sentry.Sentry
 
 internal object Logger {
     private const val TAG = "RetenoLogger"
-    private const val SENTRY_DSN =
-        "https://b50d9bee97814c769500ea0d9eb7aaf4@o4503903413665792.ingest.sentry.io/4503903414779904"
+    private const val SENTRY_DSN = BuildConfig.SENTRY_DSN
 
     @JvmStatic
     internal fun captureEvent(msg: String) {
