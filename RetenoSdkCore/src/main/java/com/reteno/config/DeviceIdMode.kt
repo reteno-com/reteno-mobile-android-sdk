@@ -3,12 +3,6 @@ package com.reteno.config
 enum class DeviceIdMode {
 
     /**
-     * Uses the CUSTOM_ID set by SDK client
-     */
-    CUSTOM_ID,
-
-
-    /**
      * Uses the APP_SET_ID from GMS
      * (doesn't require the device to have Google Play Services installed)
      *

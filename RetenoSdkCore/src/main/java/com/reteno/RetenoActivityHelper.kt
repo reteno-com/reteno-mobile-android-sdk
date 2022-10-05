@@ -4,16 +4,138 @@ import android.annotation.TargetApi
 import android.app.Activity
 import android.app.Application
 import android.app.Application.ActivityLifecycleCallbacks
-import android.content.Context
 import android.os.Bundle
 import com.reteno.util.BuildUtil
 import com.reteno.util.Logger
 import java.util.*
 
-class RetenoActivityHelper(private val activity: Activity) {
+class RetenoActivityHelper {
 
-    init {
-        Reteno.applicationContext = activity.applicationContext
+    private var retenoLifecycleCallbacks: RetenoLifecycleCallbacks = object : RetenoLifecycleCallbacks {
+        override fun pause() {}
+        override fun resume() {}
+    }
+
+    /**
+     * Retrieves if the activity is paused.
+     */
+    /**
+     * Whether any of the activities are paused.
+     */
+    var isActivityPaused = false
+
+    /**
+     * Whether lifecycle callbacks were registered. This is only supported on Android OS &gt;= 4.0.
+     */
+    private var registeredCallbacks = false
+
+    // keeps current activity while app is in foreground
+    private var currentActivity: Activity? = null
+
+    // keeps the last activity while app is in background, onDestroy will clear it
+    private var lastForegroundActivity: Activity? = null
+
+    private val pendingActions: Queue<Runnable> = LinkedList()
+
+    /**
+     * Enables lifecycle callbacks for Android devices with Android OS &gt;= 4.0
+     */
+
+    fun enableLifecycleCallbacks(callbacks: RetenoLifecycleCallbacks, app: Application) {
+        Logger.d(TAG, "enableLifecycleCallbacks(): ", "app = [", app, "]")
+        retenoLifecycleCallbacks = callbacks
+        if (BuildUtil.shouldDisableTrampolines(app)) {
+            app.registerActivityLifecycleCallbacks(NoTrampolinesLifecycleCallbacks())
+        } else {
+            app.registerActivityLifecycleCallbacks(RetenoActivityLifecycleCallbacks())
+        }
+        registeredCallbacks = true
+    }
+
+
+    private fun onResume(activity: Activity) {
+        Logger.d(TAG, "onResume(): ", "activity = [", activity, "]")
+        isActivityPaused = false
+        currentActivity = activity
+        retenoLifecycleCallbacks.resume()
+    }
+
+
+    private fun onPause(activity: Activity) {
+        Logger.d(TAG, "onPause(): ", "activity = [", activity, "]")
+        isActivityPaused = true
+    }
+
+    private fun onStop(activity: Activity) {
+        Logger.d(TAG, "onStop(): ", "activity = [", activity, "]")
+        // onStop is called when the activity gets hidden, and is called after onPause.
+        //
+        // However, if we're switching to another activity, that activity will call onResume,
+        // so we shouldn't pause if that's the case.
+        //
+        // Thus, we can call pause from here, only if all activities are paused.
+        if (isActivityPaused) {
+            retenoLifecycleCallbacks.pause()
+        }
+        if (currentActivity != null && currentActivity == activity) {
+            lastForegroundActivity = currentActivity
+            // Don't leak activities.
+            currentActivity = null
+        }
+    }
+
+    private fun onDestroy(activity: Activity) {
+        Logger.d(TAG, "onDestroy(): ", "activity = [", activity, "]")
+        if (isActivityPaused && lastForegroundActivity != null && lastForegroundActivity == activity) {
+            // prevent activity leak
+            lastForegroundActivity = null
+            // no activity is presented and last activity is being destroyed
+            // dismiss inapp dialogs to prevent leak
+            // TODO: Not yet implemented
+        }
+    }
+
+    /**
+     * Enqueues a callback to invoke when an activity reaches in the foreground.
+     */
+    internal fun queueActionUponActive(action: Runnable) {
+        try {
+            if (canPresentMessages()) {
+                action.run()
+            } else {
+                synchronized(pendingActions) {
+                    pendingActions.add(action)
+                }
+            }
+        } catch (t: Throwable) {
+            Logger.captureException(t)
+        }
+    }
+
+    /**
+     * Checks whether activity is in foreground.
+     */
+    internal fun canPresentMessages(): Boolean {
+        return (currentActivity != null && !currentActivity!!.isFinishing
+                && !isActivityPaused)
+    }
+
+    /**
+     * Runs any pending actions that have been queued.
+     */
+    private fun runPendingActions() {
+        if (isActivityPaused || currentActivity == null) {
+            // Trying to run pending actions, but no activity is resumed. Skip.
+            return
+        }
+        var runningActions: Queue<Runnable>
+        synchronized(pendingActions) {
+            runningActions = LinkedList(pendingActions)
+            pendingActions.clear()
+        }
+        for (action in runningActions) {
+            action.run()
+        }
     }
 
     /**
@@ -23,9 +145,9 @@ class RetenoActivityHelper(private val activity: Activity) {
      * 'Push Opened' and 'Open' events.
      */
     @TargetApi(31)
-    internal class NoTrampolinesLifecycleCallbacks : RetenoLifecycleCallbacks() {
+    inner class NoTrampolinesLifecycleCallbacks : RetenoActivityLifecycleCallbacks() {
         override fun onActivityResumed(activity: Activity) {
-            Logger.d("onActivityResumed(): ", "activity = [", activity, "]")
+            Logger.d(TAG, "onActivityResumed(): ", "activity = [", activity, "]")
             super.onActivityResumed(activity)
             // TODO: Not implemented yet
 //            if (activity.intent != null) {
@@ -44,12 +166,12 @@ class RetenoActivityHelper(private val activity: Activity) {
                     .invoke(null, message)
             } catch (t: Throwable) {
                 Logger.captureException(t)
-                Logger.e("Push Notification action not run. Did you forget reteno-push module?", t)
+                Logger.e(TAG, "Push Notification action not run. Did you forget reteno-push module?", t)
             }
         }
     }
 
-    internal open class RetenoLifecycleCallbacks : ActivityLifecycleCallbacks {
+    open inner class RetenoActivityLifecycleCallbacks : ActivityLifecycleCallbacks {
         override fun onActivityStopped(activity: Activity) {
             try {
                 onStop(activity)
@@ -74,7 +196,9 @@ class RetenoActivityHelper(private val activity: Activity) {
             }
         }
 
-        override fun onActivityStarted(activity: Activity) {}
+        override fun onActivityStarted(activity: Activity) {
+
+        }
 
         override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {}
 
@@ -89,181 +213,7 @@ class RetenoActivityHelper(private val activity: Activity) {
         override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {}
     }
 
-    /**
-     * Call this when your activity gets paused.
-     */
-    fun onPause() {
-        Logger.d("onPause(): ", "activity = [", activity, "]")
-        try {
-            if (!registeredCallbacks) {
-                onPause(activity)
-            }
-        } catch (t: Throwable) {
-            Logger.captureException(t)
-        }
-    }
-
-    /**
-     * Call this when your activity gets resumed.
-     */
-    fun onResume() {
-        Logger.d("onResume(): ", "activity = [", activity, "]")
-        try {
-            if (!registeredCallbacks) {
-                onResume(activity)
-            }
-        } catch (t: Throwable) {
-            Logger.captureException(t)
-        }
-    }
-
-    /**
-     * Call this when your activity gets stopped.
-     */
-    fun onStop() {
-        Logger.d("onStop(): ", "activity = [", activity, "]")
-        try {
-            if (!registeredCallbacks) {
-                onStop(activity)
-            }
-        } catch (t: Throwable) {
-            Logger.captureException(t)
-        }
-    }
-
     companion object {
-        /**
-         * Retrieves if the activity is paused.
-         */
-        /**
-         * Whether any of the activities are paused.
-         */
-        var isActivityPaused = false
-
-        /**
-         * Whether lifecycle callbacks were registered. This is only supported on Android OS &gt;= 4.0.
-         */
-        private var registeredCallbacks = false
-
-        // keeps current activity while app is in foreground
-        private var currentActivity: Activity? = null
-
-        // keeps the last activity while app is in background, onDestroy will clear it
-        private var lastForegroundActivity: Activity? = null
-        private val pendingActions: Queue<Runnable> = LinkedList()
-
-        /**
-         * Set activity and run pending actions
-         */
-        fun setCurrentActivity(context: Context?) {
-            Logger.d("setCurrentActivity(): ", "context = [", context, "]")
-            if (context is Activity) {
-                currentActivity = context
-            }
-        }
-
-        /**
-         * Retrieves the currently active activity.
-         */
-        fun getCurrentActivity(): Activity? {
-            return currentActivity
-        }
-
-        /**
-         * Enables lifecycle callbacks for Android devices with Android OS &gt;= 4.0
-         */
-        fun enableLifecycleCallbacks(app: Application) {
-            Logger.d("enableLifecycleCallbacks(): ", "app = [", app, "]")
-            Reteno.applicationContext = app.applicationContext
-            if (BuildUtil.shouldDisableTrampolines(app)) {
-                app.registerActivityLifecycleCallbacks(NoTrampolinesLifecycleCallbacks())
-            } else {
-                app.registerActivityLifecycleCallbacks(RetenoLifecycleCallbacks())
-            }
-            registeredCallbacks = true
-        }
-
-        private fun onPause(activity: Activity) {
-            Logger.d("onPause(): ", "activity = [", activity, "]")
-            isActivityPaused = true
-        }
-
-        private fun onResume(activity: Activity) {
-            Logger.d("onResume(): ", "activity = [" , activity , "]")
-            isActivityPaused = false
-            currentActivity = activity
-        }
-
-        private fun onStop(activity: Activity) {
-            Logger.d("onStop(): ", "activity = [" , activity , "]")
-            // onStop is called when the activity gets hidden, and is called after onPause.
-            //
-            // However, if we're switching to another activity, that activity will call onResume,
-            // so we shouldn't pause if that's the case.
-            //
-            // Thus, we can call pause from here, only if all activities are paused.
-            if (isActivityPaused) {
-                Reteno.pause()
-            }
-            if (currentActivity != null && currentActivity == activity) {
-                lastForegroundActivity = currentActivity
-                // Don't leak activities.
-                currentActivity = null
-            }
-        }
-
-        private fun onDestroy(activity: Activity) {
-            Logger.d("onDestroy(): ", "activity = [" , activity , "]")
-            if (isActivityPaused && lastForegroundActivity != null && lastForegroundActivity == activity) {
-                // prevent activity leak
-                lastForegroundActivity = null
-                // no activity is presented and last activity is being destroyed
-                // dismiss inapp dialogs to prevent leak
-                // TODO: Not yet implemented
-            }
-        }
-
-        /**
-         * Enqueues a callback to invoke when an activity reaches in the foreground.
-         */
-        internal fun queueActionUponActive(action: Runnable) {
-            try {
-                if (canPresentMessages()) {
-                    action.run()
-                } else {
-                    synchronized(pendingActions) {
-                        pendingActions.add(action)
-                    }
-                }
-            } catch (t: Throwable) {
-                Logger.captureException(t)
-            }
-        }
-
-        /**
-         * Checks whether activity is in foreground.
-         */
-        internal fun canPresentMessages(): Boolean {
-            return (currentActivity != null && !currentActivity!!.isFinishing
-                    && !isActivityPaused)
-        }
-
-        /**
-         * Runs any pending actions that have been queued.
-         */
-        private fun runPendingActions() {
-            if (isActivityPaused || currentActivity == null) {
-                // Trying to run pending actions, but no activity is resumed. Skip.
-                return
-            }
-            var runningActions: Queue<Runnable>
-            synchronized(pendingActions) {
-                runningActions = LinkedList(pendingActions)
-                pendingActions.clear()
-            }
-            for (action in runningActions) {
-                action.run()
-            }
-        }
+        val TAG: String = RetenoActivityHelper::class.java.simpleName
     }
 }

@@ -1,5 +1,5 @@
 package com.reteno.config
 
 internal object RestConfig {
-    internal var deviceId: String? = null
+    internal val deviceId: DeviceId = DeviceId()
 }

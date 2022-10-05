@@ -7,8 +7,9 @@ import io.sentry.Hub
 import io.sentry.Sentry
 
 internal object Logger {
-    private const val TAG = "RetenoLogger"
     private const val SENTRY_DSN = BuildConfig.SENTRY_DSN
+    private const val HINT_KEY_TAG = "tag"
+    private const val HINT_TAG_MESSAGE = "message"
 
     @JvmStatic
     internal fun captureEvent(msg: String) {
@@ -31,51 +32,52 @@ internal object Logger {
     }
 
     @JvmStatic
-    internal fun captureException(message: String, e: Throwable) {
+    internal fun captureException(tag: String, message: String, e: Throwable) {
         val mainHub = Sentry.getCurrentHub().clone()
         val retenoHub = Hub(mainHub.options.apply {
             dsn = SENTRY_DSN
         })
 
         val hint = Hint()
-        hint.set(message, null)
+        hint.set(HINT_KEY_TAG, tag)
+        hint.set(HINT_TAG_MESSAGE, message)
         retenoHub.captureException(e, hint)
     }
 
     @JvmStatic
-    internal fun v(methodName: String, vararg arguments: Any?) {
+    internal fun v(tag: String, methodName: String, vararg arguments: Any?) {
         val message = buildMessage(methodName, arguments)
-        Log.v(TAG, message)
+        Log.v(tag, message)
     }
 
     @JvmStatic
-    internal fun d(methodName: String, vararg arguments: Any?) {
+    internal fun d(tag: String, methodName: String, vararg arguments: Any?) {
         val message = buildMessage(methodName, arguments)
-        Log.d(TAG, message)
+        Log.d(tag, message)
     }
 
     @JvmStatic
-    internal fun i(methodName: String, vararg arguments: Any?) {
+    internal fun i(tag: String, methodName: String, vararg arguments: Any?) {
         val message = buildMessage(methodName, arguments)
-        Log.i(TAG, message)
+        Log.i(tag, message)
     }
 
     @JvmStatic
-    internal fun w(methodName: String, vararg arguments: Any?) {
+    internal fun w(tag: String, methodName: String, vararg arguments: Any?) {
         val message = buildMessage(methodName, arguments)
-        Log.w(TAG, message)
+        Log.w(tag, message)
     }
 
     @JvmStatic
-    internal fun e(message: String) {
-        Log.e(TAG, message)
+    internal fun e(tag: String, message: String) {
+        Log.e(tag, message)
         captureEvent(message)
     }
 
     @JvmStatic
-    internal fun e(message: String, tr: Throwable) {
-        Log.e(TAG, message, tr)
-        captureException(message, tr)
+    internal fun e(tag: String, message: String, tr: Throwable) {
+        Log.e(tag, message, tr)
+        captureException(tag, message, tr)
     }
 
 
