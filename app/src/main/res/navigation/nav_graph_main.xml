@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/app_navigation_main"
+    app:startDestination="@id/fragmentStart">
+
+    <fragment
+        android:id="@+id/fragmentStart"
+        android:name="com.reteno.FragmentStart"
+        android:label="fragmentStart"
+        tools:layout="@layout/fragment_start">
+
+        <action
+            android:id="@+id/start_to_deviceId"
+            app:destination="@id/fragmentDeviceId" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/fragmentDeviceId"
+        android:name="com.reteno.FragmentDeviceId"
+        android:label="fragmentDeviceId"
+        tools:layout="@layout/fragment_device_id">
+    </fragment>
+</navigation>

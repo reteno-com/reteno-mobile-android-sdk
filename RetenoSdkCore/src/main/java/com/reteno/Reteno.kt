@@ -41,7 +41,7 @@ class Reteno(application: Application) : RetenoLifecycleCallbacks {
         }
     }
 
-    fun setExternalDeviceId(@NonNull externalDeviceId: String = "") {
+    fun setExternalDeviceId(@NonNull externalDeviceId: String) {
         Logger.d(TAG, "setExternalDeviceId(): ", "externalDeviceId = [" , externalDeviceId , "]")
         try {
             // TODO: Move this to background thread later

@@ -33,6 +33,7 @@ class DeviceId {
                 } catch (ex: java.lang.Exception) {
                     Logger.d(TAG, "initDeviceId(): ", "deviceIdMode = [", deviceIdMode, "]", " EXCEPTION = [", ex.message, "]")
                     init(context, DeviceIdMode.RANDOM_UUID)
+                    return
                 }
             }
             DeviceIdMode.RANDOM_UUID -> {
@@ -44,13 +45,9 @@ class DeviceId {
         mode = deviceIdMode
     }
 
-    fun setExternalDeviceId(externalDeviceId: String = "") {
-        if (TextUtils.isEmpty(externalDeviceId)) {
-            Logger.d(TAG, "initDeviceId(): ", "deviceIdMode = [EXTERNAL_ID] externalDeviceId is empty. Nothing to do")
-        } else {
-            Logger.d(TAG, "initDeviceId(): ", "deviceIdMode = [EXTERNAL_ID]", " deviceId = [", externalDeviceId, "]")
-            externalId = externalDeviceId
-        }
+    fun setExternalDeviceId(externalDeviceId: String) {
+        Logger.d(TAG, "initDeviceId(): ", "deviceIdMode = [EXTERNAL_ID]", " deviceId = [", externalDeviceId, "]")
+        externalId = externalDeviceId
     }
 
     companion object {
