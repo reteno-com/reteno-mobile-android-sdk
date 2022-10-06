@@ -1,4 +1,4 @@
-package com.reteno.sample;
+package com.reteno.sample.fragments;
 
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -13,6 +13,7 @@ import androidx.annotation.Nullable;
 import com.reteno.config.DeviceId;
 import com.reteno.config.DeviceIdMode;
 import com.reteno.config.RestConfig;
+import com.reteno.sample.BaseFragment;
 import com.reteno.sample.databinding.FragmentDeviceIdBinding;
 import com.reteno.sample.util.SharedPreferencesManager;
 

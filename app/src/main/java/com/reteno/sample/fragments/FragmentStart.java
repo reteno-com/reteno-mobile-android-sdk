@@ -1,4 +1,4 @@
-package com.reteno.sample;
+package com.reteno.sample.fragments;
 
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -10,6 +10,7 @@ import androidx.annotation.Nullable;
 import androidx.navigation.NavDirections;
 import androidx.navigation.fragment.NavHostFragment;
 
+import com.reteno.sample.BaseFragment;
 import com.reteno.sample.databinding.FragmentStartBinding;
 import com.reteno.sample.testscreens.ScreenAdapter;
 import com.reteno.sample.testscreens.ScreenItem;
@@ -55,6 +56,7 @@ public class FragmentStart extends BaseFragment {
         List<ScreenItem> screens = new ArrayList<>();
 
         screens.add(new ScreenItem("Device Id", FragmentStartDirections.startToDeviceId()));
+        screens.add(new ScreenItem("Sentry", FragmentStartDirections.startToSentry()));
 
         return screens;
     }

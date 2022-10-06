@@ -15,9 +15,13 @@ class Reteno(application: Application) : RetenoLifecycleCallbacks {
     internal val activityHelper: RetenoActivityHelper = RetenoActivityHelper()
 
     init {
-        activityHelper.enableLifecycleCallbacks(this, application)
-        SharedPrefsManager.init(application.applicationContext)
-        RestConfig.deviceId.init(application.applicationContext)
+        try {
+            activityHelper.enableLifecycleCallbacks(this, application)
+            SharedPrefsManager.init(application.applicationContext)
+            RestConfig.deviceId.init(application.applicationContext)
+        } catch (t: Throwable) {
+            Logger.e(TAG, "init(): ", t)
+        }
     }
 
 
@@ -32,7 +36,7 @@ class Reteno(application: Application) : RetenoLifecycleCallbacks {
     }
 
     fun changeDeviceIdMode(deviceIdMode: DeviceIdMode) {
-        Logger.d(TAG, "changeDeviceIdMode(): ", "deviceIdMode = [" , deviceIdMode , "]")
+        Logger.d(TAG, "changeDeviceIdMode(): ", "deviceIdMode = [", deviceIdMode, "]")
         try {
             // TODO: Move this to background thread later
             RestConfig.deviceId.init(applicationContext, deviceIdMode)
@@ -42,12 +46,24 @@ class Reteno(application: Application) : RetenoLifecycleCallbacks {
     }
 
     fun setExternalDeviceId(@NonNull externalDeviceId: String) {
-        Logger.d(TAG, "setExternalDeviceId(): ", "externalDeviceId = [" , externalDeviceId , "]")
+        Logger.d(TAG, "setExternalDeviceId(): ", "externalDeviceId = [", externalDeviceId, "]")
         try {
             // TODO: Move this to background thread later
             RestConfig.deviceId.setExternalDeviceId(externalDeviceId)
         } catch (ex: Throwable) {
             Logger.captureException(ex)
+        }
+    }
+
+    /**
+     * For testing purposes
+     * DON'T EVER CALL THIS METHOD!
+     */
+    private fun testCrash() {
+        try {
+            throw NullPointerException("This is a test crash in SDK")
+        } catch (t: Throwable) {
+            Logger.e(TAG, "testCrash(): ", t)
         }
     }
 
