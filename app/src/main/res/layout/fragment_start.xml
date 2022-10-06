@@ -1,13 +1,10 @@
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.recyclerview.widget.RecyclerView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/recycler"
+    app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="com.reteno.FragmentStart">
-
-    <Button
-        android:id="@+id/btnDeviceId"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="DeviceId test fragment" />
-
-</FrameLayout>
+    android:padding="4dp"
+    tools:context="com.reteno.FragmentStart"
+    tools:listitem="@layout/recycler_item" />
