@@ -2,7 +2,6 @@ package com.reteno.config
 
 import android.content.Context
 import android.provider.Settings
-import android.text.TextUtils
 import com.google.android.gms.appset.AppSet
 import com.reteno.util.Logger
 import com.reteno.util.SharedPrefsManager

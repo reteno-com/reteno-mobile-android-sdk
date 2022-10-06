@@ -1,4 +1,4 @@
-package com.reteno;
+package com.reteno.sample;
 
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -6,7 +6,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -15,7 +14,7 @@ import com.reteno.config.DeviceId;
 import com.reteno.config.DeviceIdMode;
 import com.reteno.config.RestConfig;
 import com.reteno.sample.databinding.FragmentDeviceIdBinding;
-import com.reteno.util.SharedPreferencesManager;
+import com.reteno.sample.util.SharedPreferencesManager;
 
 public class FragmentDeviceId extends BaseFragment {
 

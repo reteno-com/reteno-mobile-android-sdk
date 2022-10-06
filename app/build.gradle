@@ -2,6 +2,7 @@ plugins {
     id 'com.android.application'
     id 'org.jetbrains.kotlin.android'
     id 'androidx.navigation.safeargs'
+    id 'com.google.gms.google-services'
 }
 apply from: file("$project.rootDir/config.gradle")
 
@@ -45,7 +46,13 @@ android {
 }
 
 dependencies {
-    implementation project(':RetenoSdkCore')
+//    implementation project(':RetenoSdkCore')
+    implementation project(':RetenoSdkFcm')
+
+    implementation platform('com.google.firebase:firebase-bom:30.4.1')
+
+    implementation "com.google.firebase:firebase-messaging:23.0.8"
+    implementation "com.google.firebase:firebase-messaging-ktx:23.0.8"
 
     implementation "androidx.navigation:navigation-fragment-ktx:2.5.2"
     implementation "androidx.navigation:navigation-ui-ktx:2.5.2"

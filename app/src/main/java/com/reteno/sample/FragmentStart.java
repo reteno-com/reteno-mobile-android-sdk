@@ -1,4 +1,4 @@
-package com.reteno;
+package com.reteno.sample;
 
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -10,10 +10,9 @@ import androidx.annotation.Nullable;
 import androidx.navigation.NavDirections;
 import androidx.navigation.fragment.NavHostFragment;
 
-import com.reteno.sample.R;
 import com.reteno.sample.databinding.FragmentStartBinding;
-import com.reteno.testscreens.ScreenAdapter;
-import com.reteno.testscreens.ScreenItem;
+import com.reteno.sample.testscreens.ScreenAdapter;
+import com.reteno.sample.testscreens.ScreenItem;
 
 import java.util.ArrayList;
 import java.util.List;

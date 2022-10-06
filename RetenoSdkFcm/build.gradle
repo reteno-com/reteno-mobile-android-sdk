@@ -1,0 +1,48 @@
+plugins {
+    id 'com.android.library'
+    id 'org.jetbrains.kotlin.android'
+}
+apply from: file("$project.rootDir/config.gradle")
+
+android {
+    def globalConfig = rootProject.ext
+
+    namespace 'com.reteno.fcm'
+    compileSdk globalConfig.androidCompileSdkVersion
+
+    defaultConfig {
+        minSdk globalConfig.androidMinSdkVersion
+        targetSdk globalConfig.androidTargetSdkVersion
+
+        consumerProguardFiles "consumer-rules.pro"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    kotlinOptions {
+        jvmTarget = '1.8'
+    }
+}
+
+dependencies {
+    api project(':RetenoSdkCore')
+
+    implementation 'androidx.core:core-ktx:1.9.0'
+
+    // Provided dependencies and will not be shown in pom file
+    compileOnly('com.google.firebase:firebase-messaging:23.0.8') {
+        exclude module: 'support-v4'
+    }
+    // Provided dependencies and will not be shown in pom file
+    compileOnly('com.google.firebase:firebase-messaging-ktx:23.0.8') {
+        exclude module: 'support-v4'
+    }
+}

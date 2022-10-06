@@ -1,4 +1,4 @@
-package com.reteno.testscreens;
+package com.reteno.sample.testscreens;
 
 import android.view.LayoutInflater;
 import android.view.ViewGroup;

@@ -1,4 +1,4 @@
-package com.reteno.util;
+package com.reteno.sample.util;
 
 import android.content.Context;
 import android.content.SharedPreferences;

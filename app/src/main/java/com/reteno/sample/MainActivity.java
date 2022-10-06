@@ -1,4 +1,4 @@
-package com.reteno;
+package com.reteno.sample;
 
 import android.os.Bundle;
 

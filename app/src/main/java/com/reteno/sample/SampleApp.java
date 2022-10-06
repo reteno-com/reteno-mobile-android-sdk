@@ -1,10 +1,11 @@
-package com.reteno;
+package com.reteno.sample;
 
 
 import android.app.Application;
 
+import com.reteno.Reteno;
 import com.reteno.config.DeviceIdMode;
-import com.reteno.util.SharedPreferencesManager;
+import com.reteno.sample.util.SharedPreferencesManager;
 
 public class SampleApp extends Application {
 
