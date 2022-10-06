@@ -1,23 +1,47 @@
 plugins {
     id 'com.android.library'
     id 'org.jetbrains.kotlin.android'
+    id 'com.vanniktech.maven.publish'
 }
+apply from: file("$project.rootDir/config.gradle")
+
+def appPropsFile = file("$project.rootDir/local.properties")
+Properties appProps = new Properties()
+appProps.load(new FileInputStream(appPropsFile))
+
+def sdkKeyPropsFile = file("$project.rootDir/RetenoSdkCore/keys.properties")
+Properties sdkKeys = new Properties()
+sdkKeys.load(new FileInputStream(sdkKeyPropsFile))
+
 
 android {
-    namespace 'com.reteno'
-    compileSdk 32
+    def globalConfig = rootProject.ext
+
+    namespace 'com.reteno.core'
+    compileSdk globalConfig.androidCompileSdkVersion
 
     defaultConfig {
-        minSdk 26
-        targetSdk 32
+        minSdk globalConfig.androidMinSdkVersion
+        targetSdk globalConfig.androidTargetSdkVersion
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles "consumer-rules.pro"
+
+        buildConfigField "String", "API_ACCESS_KEY", appProps['reteno.access-key']
     }
 
     buildTypes {
-        release {
+        debug {
+            buildConfigField "String", "SENTRY_DSN", sdkKeys['reteno.sentry.dsn.debug']
+
             minifyEnabled false
+            versionNameSuffix "-debug"
+        }
+
+        release {
+            buildConfigField "String", "SENTRY_DSN", sdkKeys['reteno.sentry.dsn.release']
+
+            minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
@@ -26,15 +50,19 @@ android {
         targetCompatibility JavaVersion.VERSION_1_8
     }
     kotlinOptions {
-        jvmTarget = '1.8'
+        jvmTarget = JavaVersion.VERSION_1_8.toString()
     }
 }
 
 dependencies {
+    implementation "io.sentry:sentry-android:6.4.2"
 
-    implementation 'androidx.core:core-ktx:1.7.0'
-    implementation 'androidx.appcompat:appcompat:1.5.1'
-    implementation 'com.google.android.material:material:1.6.1'
+    implementation 'com.google.android.gms:play-services-base:18.1.0'
+    implementation "com.google.android.gms:play-services-appset:16.0.2"
+
+    implementation "androidx.core:core-ktx:1.9.0"
+    implementation 'androidx.security:security-crypto-ktx:1.1.0-alpha03'
+
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.3'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'

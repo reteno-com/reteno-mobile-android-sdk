@@ -1,8 +1,10 @@
 package com.reteno;
 
+import android.os.Bundle;
+
 import androidx.appcompat.app.AppCompatActivity;
 
-import android.os.Bundle;
+import com.reteno.sample.R;
 
 public class MainActivity extends AppCompatActivity {
 
