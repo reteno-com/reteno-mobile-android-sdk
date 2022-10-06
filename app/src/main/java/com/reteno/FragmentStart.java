@@ -10,7 +10,13 @@ import androidx.annotation.Nullable;
 import androidx.navigation.NavDirections;
 import androidx.navigation.fragment.NavHostFragment;
 
+import com.reteno.sample.R;
 import com.reteno.sample.databinding.FragmentStartBinding;
+import com.reteno.testscreens.ScreenAdapter;
+import com.reteno.testscreens.ScreenItem;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class FragmentStart extends BaseFragment {
 
@@ -31,9 +37,26 @@ public class FragmentStart extends BaseFragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        binding.btnDeviceId.setOnClickListener(v -> {
-            NavDirections direction = FragmentStartDirections.startToDeviceId();
-            NavHostFragment.findNavController(this).navigate(direction);
+        ScreenAdapter adapter = new ScreenAdapter(getScreenList(), new ScreenAdapter.ScreenItemClick() {
+            @Override
+            public void NavigateById(int fragmentId) {
+                NavHostFragment.findNavController(FragmentStart.this).navigate(fragmentId);
+            }
+
+            @Override
+            public void navigateByDirections(NavDirections navDirections) {
+                NavHostFragment.findNavController(FragmentStart.this).navigate(navDirections);
+            }
         });
+
+        binding.recycler.setAdapter(adapter);
+    }
+
+    private List<ScreenItem> getScreenList() {
+        List<ScreenItem> screens = new ArrayList<>();
+
+        screens.add(new ScreenItem("Device Id", FragmentStartDirections.startToDeviceId()));
+
+        return screens;
     }
 }
