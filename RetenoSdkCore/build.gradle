@@ -28,6 +28,7 @@ android {
         consumerProguardFiles "consumer-rules.pro"
 
         buildConfigField "String", "API_ACCESS_KEY", appProps['reteno.access-key']
+        buildConfigField "double", "SDK_VERSION", "$retenoSdkVersion"
     }
 
     buildTypes {
@@ -62,6 +63,8 @@ dependencies {
 
     implementation "androidx.core:core-ktx:1.9.0"
     implementation 'androidx.security:security-crypto-ktx:1.1.0-alpha03'
+
+    implementation 'com.google.code.gson:gson:2.9.1'
 
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.3'
