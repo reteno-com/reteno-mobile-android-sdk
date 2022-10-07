@@ -38,6 +38,14 @@ android {
             versionNameSuffix "-debug"
         }
 
+        qa {
+            buildConfigField "String", "SENTRY_DSN", sdkKeys['reteno.sentry.dsn.debug']
+
+            debuggable true
+            minifyEnabled false
+            versionNameSuffix "-debug"
+        }
+
         release {
             buildConfigField "String", "SENTRY_DSN", sdkKeys['reteno.sentry.dsn.release']
 
