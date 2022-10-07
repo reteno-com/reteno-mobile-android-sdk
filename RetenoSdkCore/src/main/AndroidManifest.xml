@@ -2,6 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.reteno.core">
 
+    <uses-permission android:name="android.permission.INTERNET"/>
+
     <application>
         <!-- TODO If using Sentry In client application the !!!tools:node="replace"!!! should be added for meta-data android:name="io.sentry.dsn"-->
         <!-- TODO <meta-data tools:node="replace" android:name="io.sentry.dsn" android:value="https://207223369c3f4a7ba8ac1db87f1897b9@o4503903413665792.ingest.sentry.io/4503903438503936"/> -->
