@@ -35,10 +35,10 @@ deployToFirebase:
     - export BUILD_NUMBER=$(<build-number)
     - echo $BUILD_NUMBER
     - touch last-build-hash
-    - ./gradlew assembleRelease appDistributionUploadRelease --artifactType="APK"
+    - ./gradlew assembleQa appDistributionUploadQa --artifactType="APK"
   artifacts:
     paths:
-      - ./app/build/outputs/bundle/prodRelease/app-release.apk
+      - ./app/build/outputs/bundle/aa/app-qa.apk
     when: on_success
     expire_in: 2 week
   when: manual

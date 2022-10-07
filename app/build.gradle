@@ -6,6 +6,7 @@ plugins {
     id 'com.google.gms.google-services'
 }
 apply from: file("$project.rootDir/config.gradle")
+apply from: "$project.rootDir/keystore/keystore_config.gradle"
 
 android {
     def globalConfig = rootProject.ext
@@ -51,6 +52,21 @@ android {
 
             firebaseAppDistribution {
                 appId="1:987851207632:android:862ec0f79ede137abc7fd5"
+                serviceCredentialsFile = file(config.firebaseFile)
+                artifactType="APK"
+                groups="yalantis"
+            }
+        }
+
+        qa {
+            signingConfig signingConfigs.debug
+            minifyEnabled true
+            debuggable true
+            versionNameSuffix "-debug"
+
+            firebaseAppDistribution {
+                appId="1:987851207632:android:862ec0f79ede137abc7fd5"
+                serviceCredentialsFile = file(config.firebaseFile)
                 artifactType="APK"
                 groups="yalantis"
             }
@@ -66,6 +82,7 @@ android {
                 appId="1:987851207632:android:862ec0f79ede137abc7fd5"
                 artifactType="APK"
                 groups="yalantis, client"
+                serviceCredentialsFile = file(config.firebaseFile)
             }
         }
     }
