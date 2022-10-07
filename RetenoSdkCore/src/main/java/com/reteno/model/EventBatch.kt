@@ -3,7 +3,7 @@ package com.reteno.model
 import com.google.gson.annotations.SerializedName
 import java.time.LocalDateTime
 
-data class Event(
+data class EventBatch(
     @SerializedName("eventTypeKey")
     val eventTypeKey: String,
     @SerializedName("occurred")

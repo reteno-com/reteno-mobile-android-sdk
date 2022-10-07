@@ -1,15 +1,15 @@
 package com.reteno.domain.controller
 
-import com.reteno.data.remote.ds.EventsDataSource
+import com.reteno.data.remote.ds.EventsRepository
 import com.reteno.domain.ResponseCallback
-import com.reteno.model.Event
+import com.reteno.model.EventBatch
 import com.reteno.model.Events
 import com.reteno.util.Logger
 import java.time.LocalDateTime
 import java.time.ZoneOffset
 
 class EventController(
-    private val eventsDataSource: EventsDataSource
+    private val eventsRepository: EventsRepository
 ) {
 
     /**
@@ -17,7 +17,7 @@ class EventController(
      */
     fun pushEvents() {
         val events = getFaceEvents() /* DB.getEvents() */
-        eventsDataSource.sendOutcomeEvent(events, object : ResponseCallback {
+        eventsRepository.sendOutcomeEvent(events, object : ResponseCallback {
 
             override fun onSuccess(response: String) {
                 val lastSentEventTime = events.events.last().occurred.toEpochSecond(ZoneOffset.UTC) // TODO temporary solution
@@ -57,7 +57,7 @@ class EventController(
             "deviceId",
             "1",
             events = listOf(
-                Event(
+                EventBatch(
                     "Notify open",
                     LocalDateTime.now(),
                     params = mapOf(

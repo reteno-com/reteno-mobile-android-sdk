@@ -6,9 +6,9 @@ import com.reteno.data.remote.mapper.toJson
 import com.reteno.domain.ResponseCallback
 import com.reteno.model.Events
 
-class EventsDataSourceImpl(
+class EventsRepositoryImpl(
     private val apiClient: ApiClient
-) : EventsDataSource {
+) : EventsRepository {
 
     override fun sendOutcomeEvent(events: Events, responseHandler: ResponseCallback) {
         apiClient.post(ApiContract.MobileApi.Events, events.toJson(), responseHandler)

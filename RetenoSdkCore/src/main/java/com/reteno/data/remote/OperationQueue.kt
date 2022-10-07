@@ -20,20 +20,14 @@ class OperationQueue {
 
     private val handlerThread: HandlerThread =
         HandlerThread(OPERATION_QUEUE_NAME, OPERATION_QUEUE_PRIORITY)
-
     private val handler: Handler
-
     private val uiHandler: Handler
-
     private val executor: Executor
 
     init {
         handlerThread.start()
-
         handler = Handler(handlerThread.looper)
-
         uiHandler = Handler(Looper.getMainLooper())
-
         executor = Executors.newCachedThreadPool()
     }
 
