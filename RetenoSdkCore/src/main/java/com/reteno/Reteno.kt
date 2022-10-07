@@ -5,10 +5,7 @@ import android.content.Context
 import androidx.annotation.NonNull
 import com.reteno.config.DeviceIdMode
 import com.reteno.config.RestConfig
-import com.reteno.data.remote.api.ApiClient
-import com.reteno.data.remote.api.ApiClientImpl
-import com.reteno.data.remote.ds.EventsRepository
-import com.reteno.data.remote.ds.EventsRepositoryImpl
+import com.reteno.di.ServiceLocator
 import com.reteno.domain.controller.EventController
 import com.reteno.util.Logger
 import com.reteno.util.SharedPrefsManager
@@ -16,12 +13,13 @@ import com.reteno.util.SharedPrefsManager
 
 class Reteno(application: Application) : RetenoLifecycleCallbacks {
 
-    internal val applicationContext: Context = application.applicationContext
-    internal val activityHelper: RetenoActivityHelper = RetenoActivityHelper()
+    private val applicationContext: Context = application.applicationContext
 
-    private val apiClient: ApiClient = ApiClientImpl()
-    private val eventsRepository: EventsRepository = EventsRepositoryImpl(apiClient)
-    private val eventController: EventController = EventController(eventsRepository)
+    private val serviceLocator: ServiceLocator = ServiceLocator(applicationContext)
+
+    private val activityHelper: RetenoActivityHelper = serviceLocator.retenoActivityHelperProvider.get()
+    private val eventsController: EventController = serviceLocator.eventsControllerProvider.get()
+
 
     init {
         try {
