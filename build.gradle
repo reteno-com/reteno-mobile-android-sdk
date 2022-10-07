@@ -6,6 +6,9 @@ buildscript {
     dependencies {
         classpath 'com.vanniktech:gradle-maven-publish-plugin:0.22.0'
         classpath "androidx.navigation:navigation-safe-args-gradle-plugin:2.5.2"
+        classpath 'com.google.firebase:firebase-appdistribution-gradle:3.0.3'
+        classpath 'com.android.tools.build:gradle:3.4.0'
+        classpath 'com.google.gms:google-services:4.3.14'
 
         // For Firebase Cloud Messaging.
         classpath 'com.google.gms:google-services:4.3.14'
