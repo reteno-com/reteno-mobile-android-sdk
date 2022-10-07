@@ -37,7 +37,8 @@ internal object SharedPrefsManager {
         } else {
             currentDeviceId
         }
-        Logger.d(TAG, "getDeviceId(): ", "deviceId = [", deviceId, "]")
+        /*@formatter:off*/ Logger.i(TAG, "getDeviceId(): ", "deviceId = [", deviceId, "]")
+        /*@formatter:on*/
         return deviceId
     }
 

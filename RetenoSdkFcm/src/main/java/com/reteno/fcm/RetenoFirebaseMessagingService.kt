@@ -8,17 +8,20 @@ open class RetenoFirebaseMessagingService : FirebaseMessagingService() {
 
     override fun onCreate() {
         super.onCreate()
-        Logger.d(TAG, "onCreate(): ", "")
+        /*@formatter:off*/ Logger.i(TAG, "onCreate(): ", "")
+        /*@formatter:on*/
     }
 
     override fun onNewToken(token: String) {
         super.onNewToken(token)
-        Logger.d(TAG, "onNewToken(): ", "token = [" , token , "]")
+        /*@formatter:off*/ Logger.i(TAG, "onNewToken(): ", "token = [" , token , "]")
+        /*@formatter:on*/
     }
 
     override fun onMessageReceived(message: RemoteMessage) {
         super.onMessageReceived(message)
-        Logger.d(TAG, "onMessageReceived(): ", "message = [" , message , "]")
+        /*@formatter:off*/ Logger.i(TAG, "onMessageReceived(): ", "message = [" , message , "]")
+        /*@formatter:on*/
     }
 
     companion object {

@@ -17,27 +17,32 @@ class DeviceId {
             DeviceIdMode.APP_SET_ID -> {
                 val client = AppSet.getClient(context)
                 client.appSetIdInfo.addOnSuccessListener {
-                    Logger.d(TAG, "initDeviceId(): ", "deviceIdMode = [", deviceIdMode, "]", " deviceId = [", it.id, "]")
+                    /*@formatter:off*/ Logger.i(TAG, "initDeviceId(): ", "deviceIdMode = [", deviceIdMode, "]", " deviceId = [", it.id, "]")
+                    /*@formatter:on*/
                     id = it.id
                 }.addOnFailureListener {
-                    Logger.d(TAG, "initDeviceId(): ", "deviceIdMode = [", deviceIdMode, "]", " failed trying ANDROID_ID")
+                    /*@formatter:off*/ Logger.i(TAG, "initDeviceId(): ", "deviceIdMode = [", deviceIdMode, "]", " failed trying ANDROID_ID")
+                    /*@formatter:on*/
                     init(context, DeviceIdMode.ANDROID_ID)
                 }
             }
             DeviceIdMode.ANDROID_ID -> {
                 try {
                     val deviceId = Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
-                    Logger.d(TAG, "initDeviceId(): ", "deviceIdMode = [", deviceIdMode, "]", " deviceId = [", deviceId, "]")
+                    /*@formatter:off*/ Logger.i(TAG, "initDeviceId(): ", "deviceIdMode = [", deviceIdMode, "]", " deviceId = [", deviceId, "]")
+                    /*@formatter:on*/
                     id = deviceId
                 } catch (ex: java.lang.Exception) {
-                    Logger.d(TAG, "initDeviceId(): ", "deviceIdMode = [", deviceIdMode, "]", " EXCEPTION = [", ex.message, "]")
+                    /*@formatter:off*/ Logger.i(TAG, "initDeviceId(): ", "deviceIdMode = [", deviceIdMode, "]", " EXCEPTION = [", ex.message, "]")
+                    /*@formatter:on*/
                     init(context, DeviceIdMode.RANDOM_UUID)
                     return
                 }
             }
             DeviceIdMode.RANDOM_UUID -> {
                 id = SharedPrefsManager.getDeviceIdUuid()
-                Logger.d(TAG, "initDeviceId(): ", "deviceIdMode = [", deviceIdMode, "]", " deviceId = [", id, "]")
+                /*@formatter:off*/ Logger.i(TAG, "initDeviceId(): ", "deviceIdMode = [", deviceIdMode, "]", " deviceId = [", id, "]")
+                /*@formatter:on*/
             }
         }
 
@@ -45,8 +50,9 @@ class DeviceId {
     }
 
     fun setExternalDeviceId(externalDeviceId: String) {
-        Logger.d(TAG, "initDeviceId(): ", "deviceIdMode = [EXTERNAL_ID]", " deviceId = [", externalDeviceId, "]")
-        externalId = externalDeviceId
+        /*@formatter:off*/ Logger.i(TAG, "initDeviceId(): ", "deviceIdMode = [EXTERNAL_ID]", " deviceId = [", externalDeviceId, "]")
+        /*@formatter:on*/
+        externalId = externalDeviceId.ifBlank { null }
     }
 
     companion object {

@@ -18,6 +18,10 @@
         <action
             android:id="@+id/start_to_sentry"
             app:destination="@id/fragmentSentry" />
+
+        <action
+            android:id="@+id/start_to_activity_second"
+            app:destination="@id/activitySecond" />
     </fragment>
 
     <fragment
@@ -31,4 +35,11 @@
         android:name="com.reteno.sample.fragments.FragmentSentry"
         android:label="fragmentSentry"
         tools:layout="@layout/fragment_sentry"/>
+
+    <activity
+        android:id="@+id/activitySecond"
+        android:name="com.reteno.sample.SecondActivity"
+        android:label="secondActivity"
+        tools:layout="@layout/activity_second"/>
+
 </navigation>

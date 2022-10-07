@@ -57,6 +57,7 @@ public class FragmentStart extends BaseFragment {
 
         screens.add(new ScreenItem("Device Id", FragmentStartDirections.startToDeviceId()));
         screens.add(new ScreenItem("Sentry", FragmentStartDirections.startToSentry()));
+        screens.add(new ScreenItem("Second Activity", FragmentStartDirections.startToActivitySecond()));
 
         return screens;
     }

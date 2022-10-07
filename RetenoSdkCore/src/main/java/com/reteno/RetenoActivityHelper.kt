@@ -5,16 +5,21 @@ import android.app.Activity
 import android.app.Application
 import android.app.Application.ActivityLifecycleCallbacks
 import android.os.Bundle
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentActivity
+import androidx.fragment.app.FragmentManager
+import androidx.fragment.app.FragmentManager.FragmentLifecycleCallbacks
 import com.reteno.util.BuildUtil
 import com.reteno.util.Logger
 import java.util.*
 
 class RetenoActivityHelper {
 
-    private var retenoLifecycleCallbacks: RetenoLifecycleCallbacks = object : RetenoLifecycleCallbacks {
-        override fun pause() {}
-        override fun resume() {}
-    }
+    private var retenoLifecycleCallbacks: RetenoLifecycleCallbacks =
+        object : RetenoLifecycleCallbacks {
+            override fun pause() {}
+            override fun resume() {}
+        }
 
     /**
      * Retrieves if the activity is paused.
@@ -37,12 +42,24 @@ class RetenoActivityHelper {
 
     private val pendingActions: Queue<Runnable> = LinkedList()
 
+    private val fragmentLifecycleCallbacks = object : FragmentLifecycleCallbacks() {
+        override fun onFragmentResumed(fragmentManager: FragmentManager, fragment: Fragment) {
+            super.onFragmentResumed(fragmentManager, fragment)
+            /*@formatter:off*/ Logger.i(TAG, "onFragmentResumed(): ", "fragment = [" , fragment , "], fragmentManager = [" , fragmentManager , "]") /*@formatter:on*/
+        }
+
+        override fun onFragmentPaused(fragmentManager: FragmentManager, fragment: Fragment) {
+            super.onFragmentPaused(fragmentManager, fragment)
+            /*@formatter:off*/ Logger.i(TAG, "onFragmentPaused(): ", "fragment = [" , fragment , "], fragmentManager = [" , fragmentManager , "]") /*@formatter:on*/
+        }
+    }
+
     /**
      * Enables lifecycle callbacks for Android devices with Android OS &gt;= 4.0
      */
 
     fun enableLifecycleCallbacks(callbacks: RetenoLifecycleCallbacks, app: Application) {
-        Logger.d(TAG, "enableLifecycleCallbacks(): ", "app = [", app, "]")
+        /*@formatter:off*/ Logger.i(TAG, "enableLifecycleCallbacks(): ", "callbacks = [" , callbacks , "], app = [" , app , "]") /*@formatter:on*/
         retenoLifecycleCallbacks = callbacks
         if (BuildUtil.shouldDisableTrampolines(app)) {
             app.registerActivityLifecycleCallbacks(NoTrampolinesLifecycleCallbacks())
@@ -53,8 +70,15 @@ class RetenoActivityHelper {
     }
 
 
+    private fun onStart(activity: Activity) {
+        (activity as? FragmentActivity)?.supportFragmentManager?.registerFragmentLifecycleCallbacks(
+            fragmentLifecycleCallbacks,
+            true
+        )
+    }
+
     private fun onResume(activity: Activity) {
-        Logger.d(TAG, "onResume(): ", "activity = [", activity, "]")
+        /*@formatter:off*/ Logger.i(TAG, "onResume(): ", "activity = [" , activity , "]") /*@formatter:on*/
         isActivityPaused = false
         currentActivity = activity
         retenoLifecycleCallbacks.resume()
@@ -62,12 +86,12 @@ class RetenoActivityHelper {
 
 
     private fun onPause(activity: Activity) {
-        Logger.d(TAG, "onPause(): ", "activity = [", activity, "]")
+        /*@formatter:off*/ Logger.i(TAG, "onPause(): ", "activity = [" , activity , "]") /*@formatter:on*/
         isActivityPaused = true
     }
 
     private fun onStop(activity: Activity) {
-        Logger.d(TAG, "onStop(): ", "activity = [", activity, "]")
+        /*@formatter:off*/ Logger.i(TAG, "onStop(): ", "activity = [" , activity , "]") /*@formatter:on*/
         // onStop is called when the activity gets hidden, and is called after onPause.
         //
         // However, if we're switching to another activity, that activity will call onResume,
@@ -82,10 +106,14 @@ class RetenoActivityHelper {
             // Don't leak activities.
             currentActivity = null
         }
+
+        (activity as? FragmentActivity)?.supportFragmentManager?.unregisterFragmentLifecycleCallbacks(
+            fragmentLifecycleCallbacks
+        )
     }
 
     private fun onDestroy(activity: Activity) {
-        Logger.d(TAG, "onDestroy(): ", "activity = [", activity, "]")
+        /*@formatter:off*/ Logger.i(TAG, "onDestroy(): ", "activity = [" , activity , "]") /*@formatter:on*/
         if (isActivityPaused && lastForegroundActivity != null && lastForegroundActivity == activity) {
             // prevent activity leak
             lastForegroundActivity = null
@@ -147,7 +175,7 @@ class RetenoActivityHelper {
     @TargetApi(31)
     inner class NoTrampolinesLifecycleCallbacks : RetenoActivityLifecycleCallbacks() {
         override fun onActivityResumed(activity: Activity) {
-            Logger.d(TAG, "onActivityResumed(): ", "activity = [", activity, "]")
+            /*@formatter:off*/ Logger.i(TAG, "onActivityResumed(): ", "activity = [" , activity , "]") /*@formatter:on*/
             super.onActivityResumed(activity)
             // TODO: Not implemented yet
 //            if (activity.intent != null) {
@@ -166,7 +194,11 @@ class RetenoActivityHelper {
                     .invoke(null, message)
             } catch (t: Throwable) {
                 Logger.captureException(t)
-                Logger.e(TAG, "Push Notification action not run. Did you forget reteno-push module?", t)
+                Logger.e(
+                    TAG,
+                    "Push Notification action not run. Did you forget reteno-push module?",
+                    t
+                )
             }
         }
     }
@@ -197,7 +229,11 @@ class RetenoActivityHelper {
         }
 
         override fun onActivityStarted(activity: Activity) {
-
+            try {
+                onStart(activity)
+            } catch (t: Throwable) {
+                Logger.captureException(t)
+            }
         }
 
         override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {}
