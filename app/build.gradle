@@ -18,7 +18,7 @@ android {
         minSdk globalConfig.androidMinSdkVersion
         targetSdk globalConfig.androidTargetSdkVersion
 
-        versionCode globalConfig.versionCode
+        versionCode System.getenv("BUILD_NUMBER") as Integer ?: globalConfig.versionCode
         versionName globalConfig.versionName
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
