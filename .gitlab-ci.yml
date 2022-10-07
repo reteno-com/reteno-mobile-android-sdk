@@ -1,5 +1,10 @@
 image: jangrewe/gitlab-ci-android
 
+cache:
+  - key: "build-number"
+    paths:
+      - build-number
+
 # Make Project
 assembleDebug:
   interruptible: true
@@ -20,6 +25,16 @@ debugTests:
 deployToFirebase:
   stage: deploy
   script:
+    - touch build-number
+    - VERSION_RUNNER=$ANDROID_BUILD_NUMBER
+    - test -s build-number && VERSION_RUNNER=$(<build-number)
+    - >
+      test $VERSION_RUNNER -lt $VERSION_PROJECT
+      && echo $((++VERSION_PROJECT))> build-number
+      || echo $((++VERSION_RUNNER))> build-number
+    - export BUILD_NUMBER=$(<build-number)
+    - echo $BUILD_NUMBER
+    - touch last-build-hash
     - ./gradlew assembleRelease appDistributionUploadRelease --artifactType="APK"
   artifacts:
     paths:
