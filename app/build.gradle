@@ -2,6 +2,8 @@ plugins {
     id 'com.android.application'
     id 'org.jetbrains.kotlin.android'
     id 'androidx.navigation.safeargs'
+    id 'com.google.firebase.appdistribution'
+    id 'com.google.gms.google-services'
 }
 apply from: file("$project.rootDir/config.gradle")
 
@@ -22,16 +24,49 @@ android {
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    Properties props = new Properties()
+    def propFile = new File('signing.properties')
+    props.load(new FileInputStream(propFile))
+
+    signingConfigs {
+        release {
+            storeFile file(props['STORE_FILE'])
+            storePassword props['KEYSTORE_PASSWORD']
+            keyAlias props['KEY_ALIAS_NAME']
+            keyPassword props['KEY_ALIAS_PASSWORD']
+        }
+        debug {
+            storeFile file(props['STORE_FILE'])
+            storePassword props['KEYSTORE_PASSWORD']
+            keyAlias props['KEY_ALIAS_NAME']
+            keyPassword props['KEY_ALIAS_PASSWORD']
+        }
+    }
+
     buildTypes {
         debug {
+            signingConfig signingConfigs.debug
             minifyEnabled false
             versionNameSuffix "-debug"
+
+            firebaseAppDistribution {
+                appId="1:987851207632:android:862ec0f79ede137abc7fd5"
+                artifactType="APK"
+                groups="yalantis"
+            }
         }
 
         release {
+            signingConfig signingConfigs.release
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+
+            firebaseAppDistribution {
+                appId="1:987851207632:android:862ec0f79ede137abc7fd5"
+                artifactType="APK"
+                groups="yalantis, client"
+            }
         }
     }
     compileOptions {

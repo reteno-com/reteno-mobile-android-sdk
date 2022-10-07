@@ -1,0 +1,29 @@
+image: jangrewe/gitlab-ci-android
+
+# Make Project
+assembleDebug:
+  interruptible: true
+  stage: build
+  script:
+    - ./gradlew assembleDebug
+  artifacts:
+    paths:
+      - app/build/outputs/
+
+# Run all tests, if any fails, interrupt the pipeline(fail it)
+debugTests:
+  interruptible: true
+  stage: test
+  script:
+    - ./gradlew -Pci --console=plain testDebug
+
+deployToFirebase:
+  stage: deploy
+  script:
+    - ./gradlew assembleRelease appDistributionUploadRelease --artifactType="APK"
+  artifacts:
+    paths:
+      - ./app/build/outputs/bundle/prodRelease/app-release.apk
+    when: on_success
+    expire_in: 2 week
+  when: manual
