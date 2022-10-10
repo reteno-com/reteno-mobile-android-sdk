@@ -19,7 +19,7 @@ sealed interface ApiContract {
     sealed class MobileApi : ApiContract {
 
         companion object {
-            private const val BASE_URL = "https://mobile-api.reteno.com/api/"
+            private const val BASE_URL = "https://mobile-api.reteno.com/api/v1/"
         }
 
         object Device : MobileApi() {
