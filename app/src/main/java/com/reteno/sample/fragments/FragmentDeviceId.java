@@ -17,6 +17,7 @@ import com.reteno.config.RestConfig;
 import com.reteno.sample.BaseFragment;
 import com.reteno.sample.databinding.FragmentDeviceIdBinding;
 import com.reteno.sample.util.SharedPreferencesManager;
+import com.reteno.util.SharedPrefsManager;
 
 import java.lang.reflect.Field;
 
@@ -24,6 +25,7 @@ public class FragmentDeviceId extends BaseFragment {
 
     private FragmentDeviceIdBinding binding;
     private DeviceId deviceId;
+    private SharedPrefsManager sharedPrefsManager;
 
     public FragmentDeviceId() {
         // Required empty public constructor
@@ -40,6 +42,7 @@ public class FragmentDeviceId extends BaseFragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         readDeviceId();
+        readSharedPrefsManager();
 
         setupSpinner(view);
         initExternalDeviceId(view);
@@ -60,6 +63,20 @@ public class FragmentDeviceId extends BaseFragment {
         } catch (IllegalAccessException e) {
             e.printStackTrace();
         }
+    }
+
+    private void readSharedPrefsManager() {
+        try {
+            Field field = Reteno.class.getDeclaredField("sharedPrefsManager");
+            field.setAccessible(true);
+            sharedPrefsManager = (SharedPrefsManager) field.get(getReteno());
+            field.setAccessible(false);
+        } catch (NoSuchFieldException e) {
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        }
+
     }
 
     private void setupSpinner(@NonNull View view) {
@@ -109,5 +126,6 @@ public class FragmentDeviceId extends BaseFragment {
         binding.tvCurrentDeviceId.setText(deviceId.getId());
         binding.spModesSelection.setSelection(deviceId.getMode().ordinal());
         binding.tvExternalId.setText(deviceId.getExternalId());
+        binding.etFcmToken.setText(sharedPrefsManager.getFcmToken());
     }
 }

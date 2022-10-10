@@ -21,6 +21,8 @@ class Reteno(application: Application) : RetenoLifecycleCallbacks {
         serviceLocator.retenoActivityHelperProvider.get()
     private val eventsController: EventController = serviceLocator.eventsControllerProvider.get()
 
+    private val sharedPrefsManager = serviceLocator.sharedPrefsManagerProvider.get()
+
     init {
         try {
             activityHelper.enableLifecycleCallbacks(this, application)
