@@ -8,7 +8,6 @@ import com.reteno.config.RestConfig
 import com.reteno.di.ServiceLocator
 import com.reteno.domain.controller.EventController
 import com.reteno.util.Logger
-import com.reteno.util.SharedPrefsManager
 
 
 class Reteno(application: Application) : RetenoLifecycleCallbacks {
@@ -17,25 +16,17 @@ class Reteno(application: Application) : RetenoLifecycleCallbacks {
 
     private val serviceLocator: ServiceLocator = ServiceLocator(applicationContext)
 
-    private val activityHelper: RetenoActivityHelper = serviceLocator.retenoActivityHelperProvider.get()
+    private val restConfig: RestConfig = serviceLocator.restConfigProvider.get()
+    private val activityHelper: RetenoActivityHelper =
+        serviceLocator.retenoActivityHelperProvider.get()
     private val eventsController: EventController = serviceLocator.eventsControllerProvider.get()
-
 
     init {
         try {
             activityHelper.enableLifecycleCallbacks(this, application)
-            SharedPrefsManager.init(application.applicationContext)
-            RestConfig.deviceId.init(application.applicationContext)
         } catch (t: Throwable) {
             Logger.e(TAG, "init(): ", t)
         }
-    }
-
-
-    override fun pause() {
-        /*@formatter:off*/ Logger.i(TAG, "pause(): ")
-        /*@formatter:on*/
-        // TODO: Application is not in foreground
     }
 
     override fun resume() {
@@ -44,12 +35,18 @@ class Reteno(application: Application) : RetenoLifecycleCallbacks {
         // TODO: Application is in foreground
     }
 
+    override fun pause() {
+        /*@formatter:off*/ Logger.i(TAG, "pause(): ")
+        /*@formatter:on*/
+        // TODO: Application is not in foreground
+    }
+
     fun changeDeviceIdMode(deviceIdMode: DeviceIdMode) {
         /*@formatter:off*/ Logger.i(TAG, "changeDeviceIdMode(): ", "deviceIdMode = [" , deviceIdMode , "]")
         /*@formatter:on*/
         try {
             // TODO: Move this to background thread later
-            RestConfig.deviceId.init(applicationContext, deviceIdMode)
+            restConfig.deviceId.changeDeviceIdMode(deviceIdMode)
         } catch (ex: Throwable) {
             Logger.captureException(ex)
         }
@@ -60,7 +57,7 @@ class Reteno(application: Application) : RetenoLifecycleCallbacks {
         /*@formatter:on*/
         try {
             // TODO: Move this to background thread later
-            RestConfig.deviceId.setExternalDeviceId(externalDeviceId)
+            restConfig.deviceId.setExternalDeviceId(externalDeviceId)
         } catch (ex: Throwable) {
             Logger.captureException(ex)
         }

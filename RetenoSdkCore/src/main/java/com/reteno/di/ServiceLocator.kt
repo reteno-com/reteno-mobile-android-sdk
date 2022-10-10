@@ -1,20 +1,30 @@
 package com.reteno.di
 
 import android.content.Context
-import com.reteno.di.provider.ApiClientProvider
-import com.reteno.di.provider.EventsControllerProvider
-import com.reteno.di.provider.EventsRepositoryProvider
-import com.reteno.di.provider.RetenoActivityHelperProvider
+import com.reteno.di.provider.*
 
-internal class ServiceLocator(applicationContext: Context) {
+class ServiceLocator(applicationContext: Context) {
 
-    internal val retenoActivityHelperProvider: RetenoActivityHelperProvider = RetenoActivityHelperProvider()
+    val sharedPrefsManagerProvider: SharedPrefsManagerProvider =
+        SharedPrefsManagerProvider(applicationContext)
 
-    internal val apiClientProvider: ApiClientProvider = ApiClientProvider()
-    internal val eventsRepositoryProvider: EventsRepositoryProvider =
+    val deviceIdProvider: DeviceIdProvider =
+        DeviceIdProvider(applicationContext, sharedPrefsManagerProvider)
+    val restConfigProvider: RestConfigProvider = RestConfigProvider(deviceIdProvider)
+
+    val retenoActivityHelperProvider: RetenoActivityHelperProvider =
+        RetenoActivityHelperProvider()
+
+    val apiClientProvider: ApiClientProvider = ApiClientProvider()
+    val eventsRepositoryProvider: EventsRepositoryProvider =
         EventsRepositoryProvider(apiClientProvider)
-    internal val eventsControllerProvider: EventsControllerProvider =
+    val eventsControllerProvider: EventsControllerProvider =
         EventsControllerProvider(eventsRepositoryProvider)
+
+    val contactRepositoryProvider: ContactRepositoryProvider =
+        ContactRepositoryProvider(apiClientProvider)
+    val contactControllerProvider: ContactControllerProvider =
+        ContactControllerProvider(contactRepositoryProvider)
 
     init {
 

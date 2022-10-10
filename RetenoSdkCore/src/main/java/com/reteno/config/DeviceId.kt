@@ -6,13 +6,20 @@ import com.google.android.gms.appset.AppSet
 import com.reteno.util.Logger
 import com.reteno.util.SharedPrefsManager
 
-class DeviceId {
+class DeviceId(private val context: Context, private val sharedPrefsManager: SharedPrefsManager) {
 
-    internal var id: String? = null
-    internal var mode: DeviceIdMode = DeviceIdMode.APP_SET_ID
-    internal var externalId: String? = null
+    var id: String = sharedPrefsManager.getDeviceIdUuid()
+        private set
+    var mode: DeviceIdMode = DeviceIdMode.APP_SET_ID
+        private set
+    var externalId: String? = null
+        private set
 
-    internal fun init(context: Context, deviceIdMode: DeviceIdMode = DeviceIdMode.APP_SET_ID) {
+    init {
+        changeDeviceIdMode()
+    }
+
+    internal fun changeDeviceIdMode(deviceIdMode: DeviceIdMode = DeviceIdMode.APP_SET_ID) {
         when (deviceIdMode) {
             DeviceIdMode.APP_SET_ID -> {
                 val client = AppSet.getClient(context)
@@ -23,7 +30,7 @@ class DeviceId {
                 }.addOnFailureListener {
                     /*@formatter:off*/ Logger.i(TAG, "initDeviceId(): ", "deviceIdMode = [", deviceIdMode, "]", " failed trying ANDROID_ID")
                     /*@formatter:on*/
-                    init(context, DeviceIdMode.ANDROID_ID)
+                    changeDeviceIdMode(DeviceIdMode.ANDROID_ID)
                 }
             }
             DeviceIdMode.ANDROID_ID -> {
@@ -35,12 +42,12 @@ class DeviceId {
                 } catch (ex: java.lang.Exception) {
                     /*@formatter:off*/ Logger.i(TAG, "initDeviceId(): ", "deviceIdMode = [", deviceIdMode, "]", " EXCEPTION = [", ex.message, "]")
                     /*@formatter:on*/
-                    init(context, DeviceIdMode.RANDOM_UUID)
+                    changeDeviceIdMode(DeviceIdMode.RANDOM_UUID)
                     return
                 }
             }
             DeviceIdMode.RANDOM_UUID -> {
-                id = SharedPrefsManager.getDeviceIdUuid()
+                id = sharedPrefsManager.getDeviceIdUuid()
                 /*@formatter:off*/ Logger.i(TAG, "initDeviceId(): ", "deviceIdMode = [", deviceIdMode, "]", " deviceId = [", id, "]")
                 /*@formatter:on*/
             }

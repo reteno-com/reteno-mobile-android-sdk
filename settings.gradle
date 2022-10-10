@@ -16,3 +16,4 @@ rootProject.name = "RetenoSampleApp"
 include ':app'
 include ':RetenoSdkCore'
 include ':RetenoSdkFcm'
+include ':RetenoSdkPush'

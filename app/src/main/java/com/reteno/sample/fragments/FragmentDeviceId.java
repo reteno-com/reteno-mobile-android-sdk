@@ -10,6 +10,7 @@ import android.widget.ArrayAdapter;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.reteno.Reteno;
 import com.reteno.config.DeviceId;
 import com.reteno.config.DeviceIdMode;
 import com.reteno.config.RestConfig;
@@ -17,9 +18,12 @@ import com.reteno.sample.BaseFragment;
 import com.reteno.sample.databinding.FragmentDeviceIdBinding;
 import com.reteno.sample.util.SharedPreferencesManager;
 
+import java.lang.reflect.Field;
+
 public class FragmentDeviceId extends BaseFragment {
 
     private FragmentDeviceIdBinding binding;
+    private DeviceId deviceId;
 
     public FragmentDeviceId() {
         // Required empty public constructor
@@ -35,11 +39,27 @@ public class FragmentDeviceId extends BaseFragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+        readDeviceId();
+
         setupSpinner(view);
         initExternalDeviceId(view);
         initListeners(view);
 
         refreshUi();
+    }
+
+    private void readDeviceId() {
+        try {
+            Field field = Reteno.class.getDeclaredField("restConfig");
+            field.setAccessible(true);
+            RestConfig restConfig = (RestConfig) field.get(getReteno());
+            deviceId = restConfig.getDeviceId();
+            field.setAccessible(false);
+        } catch (NoSuchFieldException e) {
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        }
     }
 
     private void setupSpinner(@NonNull View view) {
@@ -85,10 +105,9 @@ public class FragmentDeviceId extends BaseFragment {
     }
 
     private void refreshUi() {
-        DeviceId deviceId = RestConfig.INSTANCE.getDeviceId$RetenoSdkCore_debug();
-        binding.tvCurrentDeviceIdMode.setText(deviceId.getMode$RetenoSdkCore_debug().toString());
-        binding.tvCurrentDeviceId.setText(deviceId.getId$RetenoSdkCore_debug());
-        binding.spModesSelection.setSelection(deviceId.getMode$RetenoSdkCore_debug().ordinal());
-        binding.tvExternalId.setText(deviceId.getExternalId$RetenoSdkCore_debug());
+        binding.tvCurrentDeviceIdMode.setText(deviceId.getMode().toString());
+        binding.tvCurrentDeviceId.setText(deviceId.getId());
+        binding.spModesSelection.setSelection(deviceId.getMode().ordinal());
+        binding.tvExternalId.setText(deviceId.getExternalId());
     }
 }

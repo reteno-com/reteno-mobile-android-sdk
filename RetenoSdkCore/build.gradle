@@ -27,7 +27,7 @@ android {
         consumerProguardFiles "consumer-rules.pro"
 
         buildConfigField "String", "API_ACCESS_KEY", appProps['reteno.access-key']
-        buildConfigField "double", "SDK_VERSION", "$retenoSdkVersion"
+        buildConfigField "String", "SDK_VERSION", "\"${project.VERSION_NAME}\""
     }
 
     buildTypes {
