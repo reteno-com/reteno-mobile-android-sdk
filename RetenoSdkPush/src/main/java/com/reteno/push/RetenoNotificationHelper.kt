@@ -3,16 +3,19 @@ package com.reteno.push
 import android.app.Application
 import android.app.NotificationChannel
 import android.app.NotificationManager
-import android.app.PendingIntent
 import android.content.Context
+import android.graphics.Bitmap
 import android.os.Bundle
+import android.text.TextUtils
 import androidx.core.app.NotificationCompat
 import com.reteno.push.Constants.KEY_ES_CONTENT
 import com.reteno.push.Constants.KEY_ES_INTERACTION_ID
+import com.reteno.push.Constants.KEY_ES_NOTIFICATION_IMAGE
 import com.reteno.push.Constants.KEY_ES_TITLE
+import com.reteno.push.internal.getApplicationMetaData
+import com.reteno.util.BitmapUtil
 import com.reteno.util.Logger
 import com.reteno.util.getAppName
-import com.reteno.util.getApplicationMetaData
 
 internal object RetenoNotificationHelper {
 
@@ -27,20 +30,28 @@ internal object RetenoNotificationHelper {
 
     internal fun getNotificationBuilderCompat(
         application: Application,
-        bundle: Bundle,
-        contentIntent: PendingIntent? = null,
+        bundle: Bundle
     ): NotificationCompat.Builder {
         val icon = getNotificationIcon(application)
         val title = getNotificationTitle(application, bundle)
         val text = getNotificationText(bundle)
+        val bigPicture = getNotificationBigPictureBitmap(application.applicationContext, bundle)
 
         val builder = NotificationCompat.Builder(application.applicationContext, CHANNEL_DEFAULT_ID)
             .setSmallIcon(icon)
             .setContentTitle(title)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setAutoCancel(true)
-
         text?.let(builder::setContentText)
+
+        bigPicture?.let {
+            builder.setStyle(
+                NotificationCompat.BigPictureStyle()
+                    .bigPicture(it)
+                    .setBigContentTitle(title)
+                    .setSummaryText(text)
+            )
+        }
 
         return builder
     }
@@ -110,5 +121,27 @@ internal object RetenoNotificationHelper {
         /*@formatter:off*/ Logger.i(TAG, "getNotificationText(): ", "bundle = [" , bundle , "] notificationText = [", notificationText, "]")
         /*@formatter:on*/
         return notificationText
+    }
+
+    /**
+     * Gets bitmap for BigPicture style push notification.
+     *
+     * @param context Current application context.
+     * @param bundle Bundle with notification data.
+     * @return Scaled bitmap for push notification with big image or null.
+     */
+    private fun getNotificationBigPictureBitmap(context: Context, bundle: Bundle): Bitmap? {
+        val imageUrl = bundle.getString(KEY_ES_NOTIFICATION_IMAGE) ?: return null
+
+        var bigPicture: Bitmap? = null
+        // BigPictureStyle support requires API 16 and higher.
+        if (!TextUtils.isEmpty(imageUrl)) {
+            bigPicture = BitmapUtil.getScaledBitmap(context, imageUrl)
+            if (bigPicture == null) {
+                /*@formatter:off*/ Logger.i(TAG, "getNotificationBigPictureBitmap(): ", "Failed to download image for push notification;", " context = [" , context , "], imageUrl = [" , imageUrl , "]")
+                /*@formatter:on*/
+            }
+        }
+        return bigPicture
     }
 }

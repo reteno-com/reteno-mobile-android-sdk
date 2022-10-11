@@ -1,9 +1,10 @@
 package com.reteno.util
 
+import android.app.PendingIntent
 import android.content.Context
 import android.os.Build
 
-internal object BuildUtil {
+object BuildUtil {
     private var targetSdk = -1
 
     /**
@@ -30,4 +31,12 @@ internal object BuildUtil {
         }
         return targetSdk
     }
+
+    /**
+     * Adds immutable property to the intent flags. Mandatory when targeting API 31.
+     *
+     * @param flags The default flags.
+     * @return Flags with additional immutable property set.
+     */
+    fun createIntentFlags(flags: Int): Int = flags or PendingIntent.FLAG_IMMUTABLE
 }
