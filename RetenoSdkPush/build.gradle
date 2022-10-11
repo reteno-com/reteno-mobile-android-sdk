@@ -15,6 +15,7 @@ android {
         targetSdk globalConfig.androidTargetSdkVersion
 
         consumerProguardFiles "consumer-rules.pro"
+        resValue "string", "notification_icon", "com.reteno.notification_icon"
     }
 
     buildTypes {

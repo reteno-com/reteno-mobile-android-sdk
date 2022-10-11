@@ -10,7 +10,7 @@ import android.widget.ArrayAdapter;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import com.reteno.Reteno;
+import com.reteno.RetenoImpl;
 import com.reteno.config.DeviceId;
 import com.reteno.config.DeviceIdMode;
 import com.reteno.config.RestConfig;
@@ -53,7 +53,7 @@ public class FragmentDeviceId extends BaseFragment {
 
     private void readDeviceId() {
         try {
-            Field field = Reteno.class.getDeclaredField("restConfig");
+            Field field = RetenoImpl.class.getDeclaredField("restConfig");
             field.setAccessible(true);
             RestConfig restConfig = (RestConfig) field.get(getReteno());
             deviceId = restConfig.getDeviceId();
@@ -67,7 +67,7 @@ public class FragmentDeviceId extends BaseFragment {
 
     private void readSharedPrefsManager() {
         try {
-            Field field = Reteno.class.getDeclaredField("sharedPrefsManager");
+            Field field = RetenoImpl.class.getDeclaredField("sharedPrefsManager");
             field.setAccessible(true);
             sharedPrefsManager = (SharedPrefsManager) field.get(getReteno());
             field.setAccessible(false);
