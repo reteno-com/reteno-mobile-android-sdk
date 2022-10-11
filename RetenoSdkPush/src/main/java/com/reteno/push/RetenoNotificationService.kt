@@ -16,7 +16,7 @@ import com.reteno.util.Logger
 import com.reteno.util.SharedPrefsManager
 
 
-class RetenoPushService(private val application: Application) {
+class RetenoNotificationService(private val application: Application) {
 
     private val serviceLocator: ServiceLocator =
         ((application as RetenoApplication).getRetenoInstance() as RetenoImpl).serviceLocator
@@ -44,32 +44,24 @@ class RetenoPushService(private val application: Application) {
         }
     }
 
-    fun onPushReceived(data: Bundle) {
+    fun showNotification(data: Bundle) {
         /*@formatter:off*/ Logger.i(TAG, "onPushReceived(): ", "data = [" , data.toString() , "]")
         /*@formatter:on*/
         // TODO: SEND MESSAGE_DELIVERED event to backend to track it
 
-        val context = application.applicationContext
+        RetenoNotificationHelper.createChannel(application)
+        val id = RetenoNotificationHelper.getNotificationId(data)
+        val builder = RetenoNotificationHelper.getNotificationBuilderCompat(application, data)
+
         val notificationManager =
-            context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-
-        RetenoNotificationHelper.createChannel(context)
-        val icon = RetenoNotificationHelper.getNotificationIcon(application)
-
-        val builder = NotificationCompat.Builder(context, CHANNEL_DEFAULT_ID)
-            .setSmallIcon(icon)
-            .setContentTitle("textTitle")
-            .setContentText("textContent")
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-            .setAutoCancel(true)
-
-        notificationManager.notify(0, builder.build())
+            application.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.notify(id, builder.build())
     }
 
 
 
     companion object {
-        val TAG: String = RetenoPushService::class.java.simpleName
+        val TAG: String = RetenoNotificationService::class.java.simpleName
 
 
     }

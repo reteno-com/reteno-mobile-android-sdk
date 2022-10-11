@@ -2,7 +2,6 @@ package com.reteno.fcm
 
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
-import com.reteno.push.RetenoPushService
 import com.reteno.util.Logger
 
 open class RetenoFirebaseMessagingService : FirebaseMessagingService() {
@@ -25,7 +24,7 @@ open class RetenoFirebaseMessagingService : FirebaseMessagingService() {
         try {
             handler.onNewToken(token)
         } catch (t: Throwable) {
-            Logger.e(RetenoPushService.TAG, "onNewPushReceived", t)
+            Logger.e(TAG, "onNewPushReceived", t)
         }
     }
 
@@ -36,7 +35,7 @@ open class RetenoFirebaseMessagingService : FirebaseMessagingService() {
         try {
             handler.onMessageReceived(message)
         } catch (t: Throwable) {
-            Logger.e(RetenoPushService.TAG, "onNewPushReceived", t)
+            Logger.e(TAG, "onNewPushReceived", t)
         }
     }
 
