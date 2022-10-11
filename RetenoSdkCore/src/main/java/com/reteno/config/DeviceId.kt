@@ -10,7 +10,7 @@ class DeviceId(private val context: Context, private val sharedPrefsManager: Sha
 
     var id: String = sharedPrefsManager.getDeviceIdUuid()
         private set
-    var mode: DeviceIdMode = DeviceIdMode.APP_SET_ID
+    var mode: DeviceIdMode = DeviceIdMode.ANDROID_ID
         private set
     var externalId: String? = null
         private set
@@ -19,20 +19,8 @@ class DeviceId(private val context: Context, private val sharedPrefsManager: Sha
         changeDeviceIdMode()
     }
 
-    internal fun changeDeviceIdMode(deviceIdMode: DeviceIdMode = DeviceIdMode.APP_SET_ID) {
+    internal fun changeDeviceIdMode(deviceIdMode: DeviceIdMode = DeviceIdMode.ANDROID_ID) {
         when (deviceIdMode) {
-            DeviceIdMode.APP_SET_ID -> {
-                val client = AppSet.getClient(context)
-                client.appSetIdInfo.addOnSuccessListener {
-                    /*@formatter:off*/ Logger.i(TAG, "initDeviceId(): ", "deviceIdMode = [", deviceIdMode, "]", " deviceId = [", it.id, "]")
-                    /*@formatter:on*/
-                    id = it.id
-                }.addOnFailureListener {
-                    /*@formatter:off*/ Logger.i(TAG, "initDeviceId(): ", "deviceIdMode = [", deviceIdMode, "]", " failed trying ANDROID_ID")
-                    /*@formatter:on*/
-                    changeDeviceIdMode(DeviceIdMode.ANDROID_ID)
-                }
-            }
             DeviceIdMode.ANDROID_ID -> {
                 try {
                     val deviceId = Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
@@ -44,6 +32,18 @@ class DeviceId(private val context: Context, private val sharedPrefsManager: Sha
                     /*@formatter:on*/
                     changeDeviceIdMode(DeviceIdMode.RANDOM_UUID)
                     return
+                }
+            }
+            DeviceIdMode.APP_SET_ID -> {
+                val client = AppSet.getClient(context)
+                client.appSetIdInfo.addOnSuccessListener {
+                    /*@formatter:off*/ Logger.i(TAG, "initDeviceId(): ", "deviceIdMode = [", deviceIdMode, "]", " deviceId = [", it.id, "]")
+                    /*@formatter:on*/
+                    id = it.id
+                }.addOnFailureListener {
+                    /*@formatter:off*/ Logger.i(TAG, "initDeviceId(): ", "deviceIdMode = [", deviceIdMode, "]", " failed trying ANDROID_ID")
+                    /*@formatter:on*/
+                    changeDeviceIdMode(DeviceIdMode.ANDROID_ID)
                 }
             }
             DeviceIdMode.RANDOM_UUID -> {

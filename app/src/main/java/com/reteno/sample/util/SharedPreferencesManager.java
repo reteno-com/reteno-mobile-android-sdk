@@ -16,7 +16,7 @@ public class SharedPreferencesManager {
     }
 
     public static DeviceIdMode getDeviceIdMode(Context context) {
-        String deviceIdModeString = getPrefs(context).getString(PREF_KEY_DEVICE_ID_MODE, DeviceIdMode.APP_SET_ID.toString());
+        String deviceIdModeString = getPrefs(context).getString(PREF_KEY_DEVICE_ID_MODE, DeviceIdMode.ANDROID_ID.toString());
         return DeviceIdMode.valueOf(deviceIdModeString);
     }
 
