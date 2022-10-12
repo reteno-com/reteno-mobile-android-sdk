@@ -6,6 +6,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import com.reteno.push.Constants.KEY_ES_LINK
+import com.reteno.push.Util
 import com.reteno.push.internal.getResolveInfoList
 import com.reteno.util.Logger
 import com.reteno.util.toStringVerbose
@@ -13,27 +14,41 @@ import com.reteno.util.toStringVerbose
 class RetenoNotificationClickedActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        /*@formatter:off*/ Logger.i(TAG, "onCreate(): ", "notification clicked, intent.extras = [" , intent.extras?.toStringVerbose() , "]")
+        /*@formatter:off*/ Logger.i(TAG, "onCreate(): ", "notification clicked, intent.extras = [" , intent.extras.toStringVerbose() , "]")
         /*@formatter:on*/
 
         try {
             intent.extras?.let { bundle ->
+                Util.tryToSendToCustomReceiverNotificationClicked(application, bundle)
+
                 getDeepLinkIntent(bundle)?.let { deeplinkIntent ->
-                    resolveIntentActivity(this, deeplinkIntent)
-                    startActivity(deeplinkIntent)
-                    finish()
+                    launchDeeplink(deeplinkIntent)
                     return
                 }
+
+                launchApp()
+                return
             }
 
-            val launchIntent = packageManager.getLaunchIntentForPackage(packageName)
-            intent.component = launchIntent?.component
-            startActivity(intent)
+            launchApp()
         } catch (t: Throwable) {
             /*@formatter:off*/ Logger.e(TAG, "onCreate(): ", t)
             /*@formatter:on*/
         }
 
+        finish()
+    }
+
+    private fun launchDeeplink(deeplinkIntent: Intent) {
+        resolveIntentActivity(this, deeplinkIntent)
+        startActivity(deeplinkIntent)
+        finish()
+    }
+
+    private fun launchApp() {
+        val launchIntent = packageManager.getLaunchIntentForPackage(packageName)
+        intent.component = launchIntent?.component
+        startActivity(intent)
         finish()
     }
 

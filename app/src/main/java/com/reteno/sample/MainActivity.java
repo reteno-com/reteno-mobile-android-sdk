@@ -41,7 +41,7 @@ public class MainActivity extends AppCompatActivity {
             return;
         } else if (shouldShowRequestPermissionRationale(POST_NOTIFICATIONS)) {
             Snackbar.make(
-                    findViewById(R.id.navHostFragment),
+                    getWindow().getDecorView(),
                     "Notification blocked",
                     Snackbar.LENGTH_LONG
             ).setAction("Settings", v -> {

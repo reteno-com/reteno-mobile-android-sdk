@@ -24,7 +24,11 @@ fun Application.getAppName(): String {
     return appName
 }
 
-fun Bundle.toStringVerbose(): String {
+fun Bundle?.toStringVerbose(): String {
+    if (this == null) {
+        return "Bundle = [null]"
+    }
+
     val stringBuilder = java.lang.StringBuilder()
     stringBuilder.append("Bundle: [")
     for (key in keySet()) {

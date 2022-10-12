@@ -15,7 +15,7 @@ object BuildUtil {
      * @param context The application context.
      * @return True if notification trampolines are not supported.
      */
-    fun shouldDisableTrampolines(context: Context?): Boolean {
+    fun shouldDisableTrampolines(context: Context): Boolean {
         return Build.VERSION.SDK_INT >= 31 && getTargetSdkVersion(context) >= 31
     }
 
@@ -25,8 +25,8 @@ object BuildUtil {
      * @param context The application context.
      * @return Target SDK version.
      */
-    private fun getTargetSdkVersion(context: Context?): Int {
-        if (targetSdk == -1 && context != null) {
+    fun getTargetSdkVersion(context: Context): Int {
+        if (targetSdk == -1) {
             targetSdk = context.applicationInfo.targetSdkVersion
         }
         return targetSdk

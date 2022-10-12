@@ -1,8 +1,11 @@
 package com.reteno
 
+import android.app.Activity
 import android.app.Application
 import android.content.Context
 import androidx.annotation.NonNull
+import com.reteno.lifecycle.RetenoActivityHelper
+import com.reteno.lifecycle.RetenoLifecycleCallbacks
 import com.reteno.config.DeviceIdMode
 import com.reteno.config.RestConfig
 import com.reteno.di.ServiceLocator
@@ -31,13 +34,13 @@ class RetenoImpl(private val application: Application) : RetenoLifecycleCallback
         }
     }
 
-    override fun resume() {
+    override fun resume(activity: Activity) {
         /*@formatter:off*/ Logger.i(TAG, "resume(): ", "application = ", application)
         /*@formatter:on*/
         // TODO: Application is in foreground
     }
 
-    override fun pause() {
+    override fun pause(activity: Activity) {
         /*@formatter:off*/ Logger.i(TAG, "pause(): ")
         /*@formatter:on*/
         // TODO: Application is not in foreground

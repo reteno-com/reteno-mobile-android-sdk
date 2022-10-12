@@ -86,7 +86,7 @@ public class FragmentDeviceId extends BaseFragment {
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 DeviceIdMode mode = DeviceIdMode.values()[position];
                 getReteno().changeDeviceIdMode(mode);
-                SharedPreferencesManager.saveDeviceIdMode(view.getContext(), mode);
+                SharedPreferencesManager.saveDeviceIdMode(getContext(), mode);
                 refreshUi();
             }
 

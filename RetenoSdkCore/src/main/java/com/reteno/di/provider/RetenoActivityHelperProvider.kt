@@ -1,6 +1,6 @@
 package com.reteno.di.provider
 
-import com.reteno.RetenoActivityHelper
+import com.reteno.lifecycle.RetenoActivityHelper
 import com.reteno.di.base.ProviderWeakReference
 
 class RetenoActivityHelperProvider() :

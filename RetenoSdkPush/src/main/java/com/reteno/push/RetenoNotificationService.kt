@@ -4,14 +4,12 @@ import android.app.Application
 import android.app.NotificationManager
 import android.content.Context
 import android.os.Bundle
-import androidx.core.app.NotificationCompat
 import com.reteno.RetenoApplication
 import com.reteno.RetenoImpl
 import com.reteno.config.RestConfig
 import com.reteno.di.ServiceLocator
 import com.reteno.domain.controller.ContactController
 import com.reteno.model.device.Device
-import com.reteno.push.RetenoNotificationHelper.CHANNEL_DEFAULT_ID
 import com.reteno.util.Logger
 import com.reteno.util.SharedPrefsManager
 
@@ -49,6 +47,8 @@ class RetenoNotificationService(private val application: Application) {
         /*@formatter:on*/
         // TODO: SEND MESSAGE_DELIVERED event to backend to track it
 
+        Util.tryToSendToCustomReceiverPushReceived(application, data)
+
         RetenoNotificationHelper.createChannel(application)
         val id = RetenoNotificationHelper.getNotificationId(data)
         val builder = RetenoNotificationHelper.getNotificationBuilderCompat(application, data)
@@ -62,7 +62,5 @@ class RetenoNotificationService(private val application: Application) {
 
     companion object {
         val TAG: String = RetenoNotificationService::class.java.simpleName
-
-
     }
 }

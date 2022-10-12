@@ -1,4 +1,4 @@
-package com.reteno
+package com.reteno.lifecycle
 
 import android.annotation.TargetApi
 import android.app.Activity
@@ -11,15 +11,14 @@ import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentManager.FragmentLifecycleCallbacks
 import com.reteno.util.BuildUtil
 import com.reteno.util.Logger
+import com.reteno.util.getAppName
 import java.util.*
+import java.util.concurrent.ConcurrentHashMap
 
 class RetenoActivityHelper {
 
-    private var retenoLifecycleCallbacks: RetenoLifecycleCallbacks =
-        object : RetenoLifecycleCallbacks {
-            override fun pause() {}
-            override fun resume() {}
-        }
+    private val retenoLifecycleCallbacks =
+        ConcurrentHashMap<String, RetenoLifecycleCallbacks>()
 
     /**
      * Retrieves if the activity is paused.
@@ -28,11 +27,6 @@ class RetenoActivityHelper {
      * Whether any of the activities are paused.
      */
     var isActivityPaused = false
-
-    /**
-     * Whether lifecycle callbacks were registered. This is only supported on Android OS &gt;= 4.0.
-     */
-    private var registeredCallbacks = false
 
     // keeps current activity while app is in foreground
     private var currentActivity: Activity? = null
@@ -45,28 +39,41 @@ class RetenoActivityHelper {
     private val fragmentLifecycleCallbacks = object : FragmentLifecycleCallbacks() {
         override fun onFragmentResumed(fragmentManager: FragmentManager, fragment: Fragment) {
             super.onFragmentResumed(fragmentManager, fragment)
-            /*@formatter:off*/ Logger.i(TAG, "onFragmentResumed(): ", "fragment = [" , fragment , "], fragmentManager = [" , fragmentManager , "]") /*@formatter:on*/
+            /*@formatter:off*/ Logger.i(TAG, "onFragmentResumed(): ", "fragment = [" , fragment , "], fragmentManager = [" , fragmentManager , "]")
+            /*@formatter:on*/
         }
 
         override fun onFragmentPaused(fragmentManager: FragmentManager, fragment: Fragment) {
             super.onFragmentPaused(fragmentManager, fragment)
-            /*@formatter:off*/ Logger.i(TAG, "onFragmentPaused(): ", "fragment = [" , fragment , "], fragmentManager = [" , fragmentManager , "]") /*@formatter:on*/
+            /*@formatter:off*/ Logger.i(TAG, "onFragmentPaused(): ", "fragment = [" , fragment , "], fragmentManager = [" , fragmentManager , "]")
+            /*@formatter:on*/
         }
     }
 
     /**
      * Enables lifecycle callbacks for Android devices with Android OS &gt;= 4.0
      */
-
     fun enableLifecycleCallbacks(callbacks: RetenoLifecycleCallbacks, app: Application) {
-        /*@formatter:off*/ Logger.i(TAG, "enableLifecycleCallbacks(): ", "callbacks = [" , callbacks , "], app = [" , app , "]") /*@formatter:on*/
-        retenoLifecycleCallbacks = callbacks
+        /*@formatter:off*/ Logger.i(TAG, "enableLifecycleCallbacks(): ", "callbacks = [" , callbacks , "], app = [" , app , "]")
+        /*@formatter:on*/
+        registerActivityLifecycleCallbacks(app.getAppName(), callbacks)
         if (BuildUtil.shouldDisableTrampolines(app)) {
             app.registerActivityLifecycleCallbacks(NoTrampolinesLifecycleCallbacks())
         } else {
             app.registerActivityLifecycleCallbacks(RetenoActivityLifecycleCallbacks())
         }
-        registeredCallbacks = true
+    }
+
+    fun registerActivityLifecycleCallbacks(
+        key: String,
+        callbacks: RetenoLifecycleCallbacks
+    ) {
+        retenoLifecycleCallbacks[key] = callbacks
+        currentActivity?.let(callbacks::resume)
+    }
+
+    fun unregisterActivityLifecycleCallbacks(key: String) {
+        retenoLifecycleCallbacks.remove(key)
     }
 
 
@@ -78,20 +85,25 @@ class RetenoActivityHelper {
     }
 
     private fun onResume(activity: Activity) {
-        /*@formatter:off*/ Logger.i(TAG, "onResume(): ", "activity = [" , activity , "]") /*@formatter:on*/
+        /*@formatter:off*/ Logger.i(TAG, "onResume(): ", "activity = [" , activity , "]")
+        /*@formatter:on*/
         isActivityPaused = false
         currentActivity = activity
-        retenoLifecycleCallbacks.resume()
+        for ((_, value) in retenoLifecycleCallbacks.entries) {
+            value.resume(activity)
+        }
     }
 
 
     private fun onPause(activity: Activity) {
-        /*@formatter:off*/ Logger.i(TAG, "onPause(): ", "activity = [" , activity , "]") /*@formatter:on*/
+        /*@formatter:off*/ Logger.i(TAG, "onPause(): ", "activity = [" , activity , "]")
+        /*@formatter:on*/
         isActivityPaused = true
     }
 
     private fun onStop(activity: Activity) {
-        /*@formatter:off*/ Logger.i(TAG, "onStop(): ", "activity = [" , activity , "]") /*@formatter:on*/
+        /*@formatter:off*/ Logger.i(TAG, "onStop(): ", "activity = [" , activity , "]")
+        /*@formatter:on*/
         // onStop is called when the activity gets hidden, and is called after onPause.
         //
         // However, if we're switching to another activity, that activity will call onResume,
@@ -99,7 +111,9 @@ class RetenoActivityHelper {
         //
         // Thus, we can call pause from here, only if all activities are paused.
         if (isActivityPaused) {
-            retenoLifecycleCallbacks.pause()
+            for ((_, value) in retenoLifecycleCallbacks.entries) {
+                value.pause(activity)
+            }
         }
         if (currentActivity != null && currentActivity == activity) {
             lastForegroundActivity = currentActivity
@@ -113,7 +127,8 @@ class RetenoActivityHelper {
     }
 
     private fun onDestroy(activity: Activity) {
-        /*@formatter:off*/ Logger.i(TAG, "onDestroy(): ", "activity = [" , activity , "]") /*@formatter:on*/
+        /*@formatter:off*/ Logger.i(TAG, "onDestroy(): ", "activity = [" , activity , "]")
+        /*@formatter:on*/
         if (isActivityPaused && lastForegroundActivity != null && lastForegroundActivity == activity) {
             // prevent activity leak
             lastForegroundActivity = null
@@ -175,7 +190,8 @@ class RetenoActivityHelper {
     @TargetApi(31)
     inner class NoTrampolinesLifecycleCallbacks : RetenoActivityLifecycleCallbacks() {
         override fun onActivityResumed(activity: Activity) {
-            /*@formatter:off*/ Logger.i(TAG, "onActivityResumed(): ", "activity = [" , activity , "]") /*@formatter:on*/
+            /*@formatter:off*/ Logger.i(TAG, "onActivityResumed(): ", "activity = [" , activity , "]")
+            /*@formatter:on*/
             super.onActivityResumed(activity)
             // TODO: Not implemented yet
 //            if (activity.intent != null) {
