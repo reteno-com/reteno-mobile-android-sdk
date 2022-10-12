@@ -2,6 +2,7 @@ package com.reteno.util
 
 import android.app.Application
 import android.content.Context
+import android.os.Bundle
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GoogleApiAvailability
 
@@ -21,6 +22,17 @@ fun Application.getAppName(): String {
     /*@formatter:off*/ Logger.i(TAG, "getAppName(): ", "[", appName, "]")
     /*@formatter:on*/
     return appName
+}
+
+fun Bundle.toStringVerbose(): String {
+    val stringBuilder = java.lang.StringBuilder()
+    stringBuilder.append("Bundle: [")
+    for (key in keySet()) {
+        stringBuilder.append(key).append(" = ").append(get(key)).append("; ")
+    }
+    stringBuilder.delete(stringBuilder.length - 2, stringBuilder.length)
+    stringBuilder.append("]")
+    return stringBuilder.toString()
 }
 
 const val TAG = "Util"

@@ -3,7 +3,9 @@ package com.reteno.push
 import android.app.Application
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
 import android.graphics.Bitmap
 import android.os.Bundle
 import android.text.TextUtils
@@ -12,10 +14,15 @@ import com.reteno.push.Constants.KEY_ES_CONTENT
 import com.reteno.push.Constants.KEY_ES_INTERACTION_ID
 import com.reteno.push.Constants.KEY_ES_NOTIFICATION_IMAGE
 import com.reteno.push.Constants.KEY_ES_TITLE
+import com.reteno.push.interceptor.click.RetenoNotificationClickedActivity
+import com.reteno.push.interceptor.click.RetenoNotificationClickedReceiver
 import com.reteno.push.internal.getApplicationMetaData
 import com.reteno.util.BitmapUtil
+import com.reteno.util.BuildUtil
 import com.reteno.util.Logger
 import com.reteno.util.getAppName
+import java.util.*
+
 
 internal object RetenoNotificationHelper {
 
@@ -52,6 +59,9 @@ internal object RetenoNotificationHelper {
                     .setSummaryText(text)
             )
         }
+
+        val pendingIntent = createPendingIntent(application.applicationContext, bundle)
+        builder.setContentIntent(pendingIntent)
 
         return builder
     }
@@ -143,5 +153,42 @@ internal object RetenoNotificationHelper {
             }
         }
         return bigPicture
+    }
+
+    private fun createPendingIntent(context: Context, message: Bundle): PendingIntent {
+        if (BuildUtil.shouldDisableTrampolines(context)) {
+            val intent: Intent =
+                createActivityIntent(context, message)
+            return PendingIntent.getActivity(
+                context,
+                Random().nextInt(),
+                intent,
+                BuildUtil.createIntentFlags(PendingIntent.FLAG_UPDATE_CURRENT)
+            )
+        } else {
+            val intent: Intent =
+                createBroadcastIntent(context, message)
+            return PendingIntent.getBroadcast(
+                context,
+                Random().nextInt(),
+                intent,
+                BuildUtil.createIntentFlags(0)
+            )
+        }
+    }
+
+    private fun createActivityIntent(context: Context, bundle: Bundle): Intent {
+        val intent = Intent(context, RetenoNotificationClickedActivity::class.java)
+
+        intent.putExtras(bundle)
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK)
+        return intent
+    }
+
+    private fun createBroadcastIntent(context: Context, message: Bundle): Intent {
+        val intent = Intent(context, RetenoNotificationClickedReceiver::class.java)
+        intent.addCategory("retenoAction")
+        intent.putExtras(message)
+        return intent
     }
 }
