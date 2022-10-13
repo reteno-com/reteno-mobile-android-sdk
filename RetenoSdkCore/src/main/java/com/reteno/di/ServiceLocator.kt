@@ -1,15 +1,14 @@
 package com.reteno.di
 
-import android.content.Context
 import com.reteno.di.provider.*
 
-class ServiceLocator(applicationContext: Context) {
+class ServiceLocator {
 
     val sharedPrefsManagerProvider: SharedPrefsManagerProvider =
-        SharedPrefsManagerProvider(applicationContext)
+        SharedPrefsManagerProvider()
 
     val deviceIdProvider: DeviceIdProvider =
-        DeviceIdProvider(applicationContext, sharedPrefsManagerProvider)
+        DeviceIdProvider(sharedPrefsManagerProvider)
     val restConfigProvider: RestConfigProvider = RestConfigProvider(deviceIdProvider)
 
     val retenoActivityHelperProvider: RetenoActivityHelperProvider =

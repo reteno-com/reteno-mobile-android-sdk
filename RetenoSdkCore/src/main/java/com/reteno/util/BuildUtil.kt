@@ -1,8 +1,8 @@
 package com.reteno.util
 
 import android.app.PendingIntent
-import android.content.Context
 import android.os.Build
+import com.reteno.RetenoImpl
 
 object BuildUtil {
     private var targetSdk = -1
@@ -12,22 +12,20 @@ object BuildUtil {
      * Targeting Android 12 means you cannot use a service or broadcast receiver as a trampoline to
      * start an activity. The activity must be started immediately when notification is clicked.
      *
-     * @param context The application context.
      * @return True if notification trampolines are not supported.
      */
-    fun shouldDisableTrampolines(context: Context): Boolean {
-        return Build.VERSION.SDK_INT >= 31 && getTargetSdkVersion(context) >= 31
+    fun shouldDisableTrampolines(): Boolean {
+        return Build.VERSION.SDK_INT >= 31 && getTargetSdkVersion() >= 31
     }
 
     /**
      * Returns target SDK version parsed from manifest.
      *
-     * @param context The application context.
      * @return Target SDK version.
      */
-    fun getTargetSdkVersion(context: Context): Int {
+    fun getTargetSdkVersion(): Int {
         if (targetSdk == -1) {
-            targetSdk = context.applicationInfo.targetSdkVersion
+            targetSdk = RetenoImpl.application.applicationInfo.targetSdkVersion
         }
         return targetSdk
     }

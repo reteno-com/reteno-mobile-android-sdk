@@ -2,22 +2,25 @@ package com.reteno
 
 import android.app.Activity
 import android.app.Application
-import android.content.Context
 import androidx.annotation.NonNull
-import com.reteno.lifecycle.RetenoActivityHelper
-import com.reteno.lifecycle.RetenoLifecycleCallbacks
 import com.reteno.config.DeviceIdMode
 import com.reteno.config.RestConfig
 import com.reteno.di.ServiceLocator
 import com.reteno.domain.controller.EventController
+import com.reteno.lifecycle.RetenoActivityHelper
+import com.reteno.lifecycle.RetenoLifecycleCallbacks
 import com.reteno.util.Logger
 
 
-class RetenoImpl(private val application: Application) : RetenoLifecycleCallbacks, Reteno {
+class RetenoImpl(application: Application) : RetenoLifecycleCallbacks, Reteno {
 
-    private val applicationContext: Context = application.applicationContext
+    init {
+        /*@formatter:off*/ Logger.i(TAG, "RetenoImpl(): ", "context = [" , application , "]")
+        /*@formatter:on*/
+        Companion.application = application
+    }
 
-    val serviceLocator: ServiceLocator = ServiceLocator(applicationContext)
+    val serviceLocator: ServiceLocator = ServiceLocator()
 
     private val restConfig: RestConfig = serviceLocator.restConfigProvider.get()
     val activityHelper: RetenoActivityHelper =
@@ -28,20 +31,20 @@ class RetenoImpl(private val application: Application) : RetenoLifecycleCallback
 
     init {
         try {
-            activityHelper.enableLifecycleCallbacks(this, application)
+            activityHelper.enableLifecycleCallbacks(this)
         } catch (t: Throwable) {
             Logger.e(TAG, "init(): ", t)
         }
     }
 
     override fun resume(activity: Activity) {
-        /*@formatter:off*/ Logger.i(TAG, "resume(): ", "application = ", application)
+        /*@formatter:off*/ Logger.i(TAG, "resume(): ", "activity = [" , activity , "]")
         /*@formatter:on*/
         // TODO: Application is in foreground
     }
 
     override fun pause(activity: Activity) {
-        /*@formatter:off*/ Logger.i(TAG, "pause(): ")
+        /*@formatter:off*/ Logger.i(TAG, "pause(): ", "activity = [" , activity , "]")
         /*@formatter:on*/
         // TODO: Application is not in foreground
     }
@@ -83,5 +86,8 @@ class RetenoImpl(private val application: Application) : RetenoLifecycleCallback
 
     companion object {
         val TAG: String = RetenoImpl::class.java.simpleName
+
+        lateinit var application: Application
+            private set
     }
 }

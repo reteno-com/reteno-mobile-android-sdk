@@ -1,12 +1,12 @@
 package com.reteno.config
 
-import android.content.Context
 import android.provider.Settings
 import com.google.android.gms.appset.AppSet
+import com.reteno.RetenoImpl
 import com.reteno.util.Logger
 import com.reteno.util.SharedPrefsManager
 
-class DeviceId(private val context: Context, private val sharedPrefsManager: SharedPrefsManager) {
+class DeviceId(private val sharedPrefsManager: SharedPrefsManager) {
 
     var id: String = sharedPrefsManager.getDeviceIdUuid()
         private set
@@ -20,6 +20,8 @@ class DeviceId(private val context: Context, private val sharedPrefsManager: Sha
     }
 
     internal fun changeDeviceIdMode(deviceIdMode: DeviceIdMode = DeviceIdMode.ANDROID_ID) {
+        val context = RetenoImpl.application
+
         when (deviceIdMode) {
             DeviceIdMode.ANDROID_ID -> {
                 try {

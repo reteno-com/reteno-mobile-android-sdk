@@ -7,7 +7,7 @@ import com.reteno.util.Logger
 open class RetenoFirebaseMessagingService : FirebaseMessagingService() {
 
     private val handler: RetenoFirebaseServiceHandler by lazy {
-        RetenoFirebaseServiceHandler(application)
+        RetenoFirebaseServiceHandler()
     }
 
     override fun onCreate() {
@@ -30,7 +30,7 @@ open class RetenoFirebaseMessagingService : FirebaseMessagingService() {
 
     override fun onMessageReceived(message: RemoteMessage) {
         super.onMessageReceived(message)
-        /*@formatter:off*/ Logger.i(TAG, "onMessageReceived(): ", "application = ", application, " message.data = [" , message.toString() , "]")
+        /*@formatter:off*/ Logger.i(TAG, "onMessageReceived(): ", "context = [", application, "] message.data = [" , message.toString() , "]")
         /*@formatter:on*/
         try {
             handler.onMessageReceived(message)

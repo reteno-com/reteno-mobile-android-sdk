@@ -3,6 +3,7 @@ package com.reteno.push.interceptor.click
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import com.reteno.RetenoImpl
 import com.reteno.push.Constants.KEY_ES_LINK
 import com.reteno.push.Util
 import com.reteno.util.Logger
@@ -15,7 +16,7 @@ class RetenoNotificationClickedReceiver : BroadcastReceiver() {
         /*@formatter:on*/
         try {
             intent?.extras?.let { bundle->
-                Util.tryToSendToCustomReceiverNotificationClicked(context, bundle)
+                Util.tryToSendToCustomReceiverNotificationClicked(bundle)
             }
 
 
@@ -25,14 +26,17 @@ class RetenoNotificationClickedReceiver : BroadcastReceiver() {
                 return
             }
 
-            getAppLaunchIntent(context)?.let(context::startActivity)
+            getAppLaunchIntent()?.let(context::startActivity)
         } catch (t: Throwable) {
             Logger.e(TAG, "onReceive() ", t)
         }
     }
 
-    private fun getAppLaunchIntent(context: Context): Intent? =
-        context.packageManager.getLaunchIntentForPackage(context.packageName)
+    private fun getAppLaunchIntent(): Intent? {
+        val context = RetenoImpl.application
+        return context.packageManager.getLaunchIntentForPackage(context.packageName)
+    }
+
 
 
     companion object {

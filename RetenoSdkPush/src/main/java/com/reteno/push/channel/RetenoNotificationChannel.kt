@@ -4,11 +4,12 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import android.text.TextUtils
+import com.reteno.RetenoApplication
+import com.reteno.RetenoImpl
 import com.reteno.data.remote.mapper.fromJson
 import com.reteno.data.remote.mapper.fromJsonOrNull
 import com.reteno.push.R
 import com.reteno.util.Logger
-import com.reteno.util.SharedPrefsManager
 import com.reteno.util.Util
 
 object RetenoNotificationChannel {
@@ -20,8 +21,12 @@ object RetenoNotificationChannel {
     private const val FALLBACK_DEFAULT_CHANNEL_NAME = "default"
     private const val FALLBACK_DEFAULT_CHANNEL_DESCRIPTION = "description"
 
-    internal fun createDefaultChannel(context: Context) {
-        val defaultChannel = retrieveDefaultNotificationChannel(context)
+    internal fun createDefaultChannel() {
+        val context = RetenoImpl.application
+        /*@formatter:off*/ Logger.i(TAG, "createDefaultChannel(): ", "context = [" , context , "]")
+        /*@formatter:on*/
+
+        val defaultChannel = retrieveDefaultNotificationChannel()
 
         DEFAULT_CHANNEL_ID = defaultChannel.id
         val channel = NotificationChannel(
@@ -41,15 +46,15 @@ object RetenoNotificationChannel {
      * Configures default notification channel, which will be used when channel isn't specified on
      * Android O.
      *
-     * @param context The application context.
      * @param channel Default channel details.
      */
-    fun configureDefaultNotificationChannel(context: Context, channel: String) {
+    @JvmStatic
+    fun configureDefaultNotificationChannel(channel: String) {
         try {
             if (TextUtils.isEmpty(channel)) {
                 return
             }
-            storeDefaultNotificationChannel(context, channel)
+            storeDefaultNotificationChannel(channel)
         } catch (t: Throwable) {
             /*@formatter:off*/ Logger.e(TAG, "configureDefaultNotificationChannel(): ", t)
             /*@formatter:on*/
@@ -59,24 +64,31 @@ object RetenoNotificationChannel {
     /**
      * Stores default notification channel id.
      *
-     * @param context The application context.
      * @param channel Channel configuration to store.
      */
-    private fun storeDefaultNotificationChannel(context: Context, channel: String) {
-        val sharedPrefsManager = SharedPrefsManager(context)
+    @JvmStatic
+    private fun storeDefaultNotificationChannel(channel: String) {
+        val context = RetenoImpl.application
+        val sharedPrefsManager =
+            ((context as RetenoApplication).getRetenoInstance() as RetenoImpl).serviceLocator.sharedPrefsManagerProvider.get()
         sharedPrefsManager.saveDefaultNotificationChannel(channel)
     }
 
     /**
      * Retrieves stored default notification channel.
      *
-     * @param context The application context.
      * @return The stored default channel or null.
      */
-    private fun retrieveDefaultNotificationChannel(context: Context): NotificationChannelData {
+    @JvmStatic
+    private fun retrieveDefaultNotificationChannel(): NotificationChannelData {
+        val context = RetenoImpl.application
+
         val defaultChannelOrNull: NotificationChannelData? =
             try {
-                val sharedPrefsManager = SharedPrefsManager(context)
+                val serviceLocator =
+                    ((context as RetenoApplication).getRetenoInstance() as RetenoImpl).serviceLocator
+                val sharedPrefsManager = serviceLocator.sharedPrefsManagerProvider.get()
+
                 val jsonChannels = sharedPrefsManager.getDefaultNotificationChannel()
                 jsonChannels.fromJsonOrNull()
             } catch (e: Exception) {
@@ -87,9 +99,9 @@ object RetenoNotificationChannel {
 
 
         return defaultChannelOrNull ?: try {
-            val defaultJson = Util.readFromRaw(context, R.raw.default_channel) ?: ""
+            val defaultJson = Util.readFromRaw(R.raw.default_channel) ?: ""
 
-            configureDefaultNotificationChannel(context, defaultJson)
+            configureDefaultNotificationChannel(defaultJson)
             defaultJson.fromJson()
         } catch (e: Exception) {
             /*@formatter:off*/ Logger.e(TAG, "retrieveNotificationChannels(): ", e)

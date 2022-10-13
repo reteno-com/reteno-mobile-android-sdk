@@ -1,13 +1,15 @@
 package com.reteno.util
 
-import android.content.Context
 import android.content.SharedPreferences
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
+import com.reteno.RetenoImpl
 import java.util.*
 
 
-open class SharedPrefsManager(context: Context) {
+open class SharedPrefsManager {
+
+    private val context = RetenoImpl.application
 
     private val masterKey: MasterKey =
         MasterKey.Builder(context, MasterKey.DEFAULT_MASTER_KEY_ALIAS)

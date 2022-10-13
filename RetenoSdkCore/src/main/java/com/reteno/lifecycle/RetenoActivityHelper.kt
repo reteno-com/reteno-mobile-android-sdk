@@ -2,13 +2,13 @@ package com.reteno.lifecycle
 
 import android.annotation.TargetApi
 import android.app.Activity
-import android.app.Application
 import android.app.Application.ActivityLifecycleCallbacks
 import android.os.Bundle
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentManager.FragmentLifecycleCallbacks
+import com.reteno.RetenoImpl
 import com.reteno.util.BuildUtil
 import com.reteno.util.Logger
 import com.reteno.util.getAppName
@@ -53,11 +53,12 @@ class RetenoActivityHelper {
     /**
      * Enables lifecycle callbacks for Android devices with Android OS &gt;= 4.0
      */
-    fun enableLifecycleCallbacks(callbacks: RetenoLifecycleCallbacks, app: Application) {
+    fun enableLifecycleCallbacks(callbacks: RetenoLifecycleCallbacks) {
+        val app = RetenoImpl.application
         /*@formatter:off*/ Logger.i(TAG, "enableLifecycleCallbacks(): ", "callbacks = [" , callbacks , "], app = [" , app , "]")
         /*@formatter:on*/
         registerActivityLifecycleCallbacks(app.getAppName(), callbacks)
-        if (BuildUtil.shouldDisableTrampolines(app)) {
+        if (BuildUtil.shouldDisableTrampolines()) {
             app.registerActivityLifecycleCallbacks(NoTrampolinesLifecycleCallbacks())
         } else {
             app.registerActivityLifecycleCallbacks(RetenoActivityLifecycleCallbacks())

@@ -5,6 +5,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.util.DisplayMetrics
 import android.view.WindowManager
+import com.reteno.RetenoImpl
 import java.io.IOException
 import java.io.InputStream
 import java.net.URL
@@ -23,11 +24,14 @@ object BitmapUtil {
     /**
      * Create a scaled bitmap.
      *
-     * @param context The application context.
      * @param imageUrl The string of URL image.
      * @return The scaled bitmap.
      */
-    fun getScaledBitmap(context: Context, imageUrl: String): Bitmap? {
+    fun getScaledBitmap(imageUrl: String): Bitmap? {
+        val context = RetenoImpl.application
+        /*@formatter:off*/ Logger.i(TAG, "getScaledBitmap(): ", "context = [" , context , "], imageUrl = [" , imageUrl , "]")
+        /*@formatter:on*/
+
         // Processing an image depending on the current screen size to avoid central crop if the image
         // ratio is more than 2:1. Google aspect ~2:1 - page 78
         // http://commondatastorage.googleapis.com/io2012/presentations/live%20to%20website/105.pdf

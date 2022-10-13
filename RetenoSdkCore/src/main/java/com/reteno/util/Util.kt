@@ -1,6 +1,5 @@
 package com.reteno.util
 
-import android.app.Application
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -8,18 +7,20 @@ import android.os.Build
 import android.os.Bundle
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GoogleApiAvailability
+import com.reteno.RetenoImpl
 import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.io.InputStream
 
 
-internal fun isGooglePlayServicesAvailable(context: Context): Boolean {
+internal fun isGooglePlayServicesAvailable(): Boolean {
+    val context = RetenoImpl.application
     val googleApiAvailability = GoogleApiAvailability.getInstance()
     val resultCode = googleApiAvailability.isGooglePlayServicesAvailable(context)
     return resultCode == ConnectionResult.SUCCESS
 }
 
-fun Application.getAppName(): String {
+fun Context.getAppName(): String {
     val stringId = applicationInfo.labelRes
     val appName = if (stringId == 0) {
         applicationInfo.loadLabel(packageManager).toString()
@@ -68,7 +69,11 @@ fun Bundle?.toStringVerbose(): String {
 
 object Util {
 
-    fun readFromRaw(context: Context, rawResourceId: Int): String? {
+    fun readFromRaw(rawResourceId: Int): String? {
+        val context = RetenoImpl.application
+        /*@formatter:off*/ Logger.i(TAG, "readFromRaw(): ", "context = [" , context , "], rawResourceId = [" , rawResourceId , "]")
+        /*@formatter:on*/
+
         val inputStream: InputStream = context.resources.openRawResource(rawResourceId)
         val outputStream = ByteArrayOutputStream()
 

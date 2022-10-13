@@ -19,7 +19,7 @@ class RetenoNotificationClickedActivity : Activity() {
 
         try {
             intent.extras?.let { bundle ->
-                Util.tryToSendToCustomReceiverNotificationClicked(application, bundle)
+                Util.tryToSendToCustomReceiverNotificationClicked(bundle)
 
                 getDeepLinkIntent(bundle)?.let { deeplinkIntent ->
                     launchDeeplink(deeplinkIntent)
