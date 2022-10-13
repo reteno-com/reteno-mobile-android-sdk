@@ -10,6 +10,7 @@ import com.reteno.config.RestConfig
 import com.reteno.di.ServiceLocator
 import com.reteno.domain.controller.ContactController
 import com.reteno.model.device.Device
+import com.reteno.push.channel.RetenoNotificationChannel
 import com.reteno.util.Logger
 import com.reteno.util.SharedPrefsManager
 
@@ -49,7 +50,7 @@ class RetenoNotificationService(private val application: Application) {
 
         Util.tryToSendToCustomReceiverPushReceived(application, data)
 
-        RetenoNotificationHelper.createChannel(application)
+        RetenoNotificationChannel.createDefaultChannel(application)
         val id = RetenoNotificationHelper.getNotificationId(data)
         val builder = RetenoNotificationHelper.getNotificationBuilderCompat(application, data)
 

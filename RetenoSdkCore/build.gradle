@@ -71,5 +71,5 @@ dependencies {
     implementation "androidx.core:core-ktx:1.9.0"
     implementation 'androidx.security:security-crypto-ktx:1.1.0-alpha03'
 
-    implementation 'com.google.code.gson:gson:2.9.1'
+    api 'com.google.code.gson:gson:2.9.1'
 }

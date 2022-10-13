@@ -7,8 +7,8 @@ import android.net.Uri
 import android.os.Bundle
 import com.reteno.push.Constants.KEY_ES_LINK
 import com.reteno.push.Util
-import com.reteno.push.internal.getResolveInfoList
 import com.reteno.util.Logger
+import com.reteno.util.getResolveInfoList
 import com.reteno.util.toStringVerbose
 
 class RetenoNotificationClickedActivity : Activity() {

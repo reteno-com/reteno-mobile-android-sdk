@@ -49,12 +49,25 @@ open class SharedPrefsManager(context: Context) {
         return token
     }
 
+    fun saveDefaultNotificationChannel(defaultChannel: String) {
+        /*@formatter:off*/ Logger.i(TAG, "saveDefaultNotificationChannel(): ", "defaultChannel = [" , defaultChannel , "]")
+        /*@formatter:on*/
+        sharedPreferences.edit()?.putString(PREF_KEY_NOTIFICATION_CHANNEL_DEFAULT, defaultChannel)?.apply()
+    }
+
+    fun getDefaultNotificationChannel(): String {
+        val defaultChannel = sharedPreferences.getString(PREF_KEY_NOTIFICATION_CHANNEL_DEFAULT, "") ?: ""
+        /*@formatter:off*/ Logger.i(TAG, "getDefaultNotificationChannel(): ", "defaultChannel = ", defaultChannel)
+        /*@formatter:on*/
+        return defaultChannel
+    }
+
     companion object {
         val TAG: String = SharedPrefsManager::class.java.simpleName
 
         private const val SHARED_PREF_NAME = "reteno_shared_prefs"
         private const val PREF_KEY_DEVICE_ID = "device_id"
-        internal const val PREF_KEY_FCM_TOKEN = "fcm_token"
-//        private const val PREF_KEY_FCM_TOKEN_UPDATED = "fcm_token_updated"
+        private const val PREF_KEY_FCM_TOKEN = "fcm_token"
+        private const val PREF_KEY_NOTIFICATION_CHANNEL_DEFAULT = "notification_channel_default"
     }
 }

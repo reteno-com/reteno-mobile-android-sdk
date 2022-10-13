@@ -24,12 +24,10 @@
     public static *** v(...);
     public static *** d(...);
     public static *** i(...);
-    public static *** e(...);
 }
 
 -assumenosideeffects class com.reteno.util.Logger {
     public static *** v(...);
     public static *** d(...);
     public static *** i(...);
-    public static *** e(...);
 }

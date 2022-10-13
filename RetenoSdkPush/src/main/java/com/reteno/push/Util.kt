@@ -3,7 +3,7 @@ package com.reteno.push
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import com.reteno.push.internal.getApplicationMetaData
+import com.reteno.util.getApplicationMetaData
 
 object Util {
     fun tryToSendToCustomReceiverPushReceived(context: Context, data: Bundle) {

@@ -1,8 +1,6 @@
 package com.reteno.push
 
 import android.app.Application
-import android.app.NotificationChannel
-import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
@@ -14,13 +12,10 @@ import com.reteno.push.Constants.KEY_ES_CONTENT
 import com.reteno.push.Constants.KEY_ES_INTERACTION_ID
 import com.reteno.push.Constants.KEY_ES_NOTIFICATION_IMAGE
 import com.reteno.push.Constants.KEY_ES_TITLE
+import com.reteno.push.channel.RetenoNotificationChannel.DEFAULT_CHANNEL_ID
 import com.reteno.push.interceptor.click.RetenoNotificationClickedActivity
 import com.reteno.push.interceptor.click.RetenoNotificationClickedReceiver
-import com.reteno.push.internal.getApplicationMetaData
-import com.reteno.util.BitmapUtil
-import com.reteno.util.BuildUtil
-import com.reteno.util.Logger
-import com.reteno.util.getAppName
+import com.reteno.util.*
 import java.util.*
 
 
@@ -29,9 +24,6 @@ internal object RetenoNotificationHelper {
     val TAG: String = RetenoNotificationHelper::class.java.simpleName
 
     private const val RETENO_DEFAULT_PUSH_ICON = "reteno_default_push_icon"
-    private const val CHANNEL_DEFAULT_NAME = "default"
-    private const val CHANNEL_DEFAULT_DESCRIPTION = "This is a default channel"
-    const val CHANNEL_DEFAULT_ID: String = "CHANNEL_ID"
 
     private const val NOTIFICATION_ID_DEFAULT = 1
 
@@ -44,7 +36,7 @@ internal object RetenoNotificationHelper {
         val text = getNotificationText(bundle)
         val bigPicture = getNotificationBigPictureBitmap(application.applicationContext, bundle)
 
-        val builder = NotificationCompat.Builder(application.applicationContext, CHANNEL_DEFAULT_ID)
+        val builder = NotificationCompat.Builder(application.applicationContext, DEFAULT_CHANNEL_ID)
             .setSmallIcon(icon)
             .setContentTitle(title)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
@@ -64,19 +56,6 @@ internal object RetenoNotificationHelper {
         builder.setContentIntent(pendingIntent)
 
         return builder
-    }
-
-    internal fun createChannel(context: Context) {
-        val name = CHANNEL_DEFAULT_NAME
-        val descriptionText = CHANNEL_DEFAULT_DESCRIPTION
-        val importance = NotificationManager.IMPORTANCE_DEFAULT
-        val mChannel = NotificationChannel(CHANNEL_DEFAULT_ID, name, importance)
-        mChannel.description = descriptionText
-        // Register the channel with the system; you can't change the importance
-        // or other notification behaviors after this
-        val notificationManager =
-            context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        notificationManager.createNotificationChannel(mChannel)
     }
 
     internal fun getNotificationId(bundle: Bundle): Int {
