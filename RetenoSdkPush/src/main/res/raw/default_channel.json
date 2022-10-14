@@ -10,5 +10,5 @@
 	"vibration_pattern":null,
 	"lockscreen_visibility":1,
 	"bypass_dnd":false,
-	"show_badge":false
+	"show_badge":true
 }

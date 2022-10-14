@@ -69,6 +69,7 @@ fun Bundle?.toStringVerbose(): String {
 
 object Util {
 
+    @JvmStatic
     fun readFromRaw(rawResourceId: Int): String? {
         val context = RetenoImpl.application
         /*@formatter:off*/ Logger.i(TAG, "readFromRaw(): ", "context = [" , context , "], rawResourceId = [" , rawResourceId , "]")

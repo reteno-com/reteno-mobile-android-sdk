@@ -33,15 +33,23 @@ object RetenoNotificationChannel {
         /*@formatter:off*/ Logger.i(TAG, "createDefaultChannel(): ", "context = [" , context , "]")
         /*@formatter:on*/
 
-        val defaultChannel = retrieveDefaultNotificationChannelData()
+        val channelData = retrieveDefaultNotificationChannelData()
+        DEFAULT_CHANNEL_ID = channelData.id
 
-        DEFAULT_CHANNEL_ID = defaultChannel.id
         val channel = NotificationChannel(
-            DEFAULT_CHANNEL_ID,
-            defaultChannel.name,
-            defaultChannel.importance
+            channelData.id,
+            channelData.name,
+            channelData.importance
         ).apply {
-            description = defaultChannel.description
+            description = channelData.description
+            channelData.groupId?.let(::setGroup)
+            enableLights(channelData.enableLights)
+            lightColor = channelData.lightColor
+            enableVibration(channelData.enableVibration)
+            channelData.vibrationPattern?.toLongArray()?.let(::setVibrationPattern)
+            lockscreenVisibility = channelData.lockscreenVisibility
+            setBypassDnd(channelData.bypassDnd)
+            setShowBadge(channelData.showBadge)
         }
 
         val notificationManager =
