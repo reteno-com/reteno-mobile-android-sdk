@@ -7,7 +7,7 @@ import com.reteno.RetenoImpl
 import java.util.*
 
 
-open class SharedPrefsManager {
+class SharedPrefsManager {
 
     private val context = RetenoImpl.application
 

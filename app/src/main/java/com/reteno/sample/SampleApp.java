@@ -8,8 +8,8 @@ import androidx.annotation.NonNull;
 import com.reteno.Reteno;
 import com.reteno.RetenoApplication;
 import com.reteno.RetenoImpl;
-import com.reteno.config.DeviceIdMode;
-import com.reteno.sample.util.SharedPreferencesManager;
+import com.reteno.data.local.config.DeviceIdMode;
+import com.reteno.sample.util.AppSharedPreferencesManager;
 
 public class SampleApp extends Application implements RetenoApplication {
 
@@ -19,7 +19,7 @@ public class SampleApp extends Application implements RetenoApplication {
     public void onCreate() {
         super.onCreate();
         retenoInstance = new RetenoImpl(this);
-        DeviceIdMode deviceIdMode = SharedPreferencesManager.getDeviceIdMode(this);
+        DeviceIdMode deviceIdMode = AppSharedPreferencesManager.getDeviceIdMode(this);
         retenoInstance.changeDeviceIdMode(deviceIdMode);
     }
 

@@ -3,9 +3,9 @@ package com.reteno.sample.util;
 import android.content.Context;
 import android.content.SharedPreferences;
 
-import com.reteno.config.DeviceIdMode;
+import com.reteno.data.local.config.DeviceIdMode;
 
-public class SharedPreferencesManager {
+public class AppSharedPreferencesManager {
     public static final String PREF_FILE_NAME = "sharedPrefs";
 
     public static final String PREF_KEY_DEVICE_ID_MODE = "DEVICE_ID_MODE";

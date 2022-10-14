@@ -1,6 +1,6 @@
 package com.reteno.di.provider
 
-import com.reteno.config.RestConfig
+import com.reteno.data.local.config.RestConfig
 import com.reteno.di.base.ProviderWeakReference
 
 class RestConfigProvider(private val deviceIdProvider: DeviceIdProvider) :

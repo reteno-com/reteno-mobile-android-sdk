@@ -1,4 +1,4 @@
-package com.reteno.config
+package com.reteno.data.local.config
 
 enum class DeviceIdMode {
 

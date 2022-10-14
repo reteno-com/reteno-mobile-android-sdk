@@ -3,10 +3,8 @@ package com.reteno
 import android.app.Activity
 import android.app.Application
 import androidx.annotation.NonNull
-import com.reteno.config.DeviceIdMode
-import com.reteno.config.RestConfig
+import com.reteno.data.local.config.DeviceIdMode
 import com.reteno.di.ServiceLocator
-import com.reteno.domain.controller.EventController
 import com.reteno.lifecycle.RetenoActivityHelper
 import com.reteno.lifecycle.RetenoLifecycleCallbacks
 import com.reteno.util.Logger
@@ -22,12 +20,9 @@ class RetenoImpl(application: Application) : RetenoLifecycleCallbacks, Reteno {
 
     val serviceLocator: ServiceLocator = ServiceLocator()
 
-    private val restConfig: RestConfig = serviceLocator.restConfigProvider.get()
-    val activityHelper: RetenoActivityHelper =
+    private val configRepository = serviceLocator.configRepositoryProvider.get()
+    private val activityHelper: RetenoActivityHelper =
         serviceLocator.retenoActivityHelperProvider.get()
-    private val eventsController: EventController = serviceLocator.eventsControllerProvider.get()
-
-    private val sharedPrefsManager = serviceLocator.sharedPrefsManagerProvider.get()
 
     init {
         try {
@@ -54,7 +49,7 @@ class RetenoImpl(application: Application) : RetenoLifecycleCallbacks, Reteno {
         /*@formatter:on*/
         try {
             // TODO: Move this to background thread later
-            restConfig.deviceId.changeDeviceIdMode(deviceIdMode)
+            configRepository.changeDeviceIdMode(deviceIdMode)
         } catch (ex: Throwable) {
             Logger.captureException(ex)
         }
@@ -65,7 +60,7 @@ class RetenoImpl(application: Application) : RetenoLifecycleCallbacks, Reteno {
         /*@formatter:on*/
         try {
             // TODO: Move this to background thread later
-            restConfig.deviceId.setExternalDeviceId(externalDeviceId)
+            configRepository.setExternalDeviceId(externalDeviceId)
         } catch (ex: Throwable) {
             Logger.captureException(ex)
         }

@@ -1,7 +1,7 @@
 package com.reteno
 
 import androidx.annotation.NonNull
-import com.reteno.config.DeviceIdMode
+import com.reteno.data.local.config.DeviceIdMode
 
 
 interface Reteno {

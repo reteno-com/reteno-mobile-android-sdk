@@ -1,4 +1,4 @@
-package com.reteno.config
+package com.reteno.data.local.config
 
 import android.provider.Settings
 import com.google.android.gms.appset.AppSet
@@ -8,11 +8,11 @@ import com.reteno.util.SharedPrefsManager
 
 class DeviceId(private val sharedPrefsManager: SharedPrefsManager) {
 
-    var id: String = sharedPrefsManager.getDeviceIdUuid()
+    internal var id: String = sharedPrefsManager.getDeviceIdUuid()
         private set
-    var mode: DeviceIdMode = DeviceIdMode.ANDROID_ID
+    internal var mode: DeviceIdMode = DeviceIdMode.ANDROID_ID
         private set
-    var externalId: String? = null
+    internal var externalId: String? = null
         private set
 
     init {
@@ -58,7 +58,7 @@ class DeviceId(private val sharedPrefsManager: SharedPrefsManager) {
         mode = deviceIdMode
     }
 
-    fun setExternalDeviceId(externalDeviceId: String) {
+    internal fun setExternalDeviceId(externalDeviceId: String) {
         /*@formatter:off*/ Logger.i(TAG, "initDeviceId(): ", "deviceIdMode = [EXTERNAL_ID]", " deviceId = [", externalDeviceId, "]")
         /*@formatter:on*/
         externalId = externalDeviceId.ifBlank { null }

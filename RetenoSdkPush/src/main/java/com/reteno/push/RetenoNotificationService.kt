@@ -5,41 +5,21 @@ import android.content.Context
 import android.os.Bundle
 import com.reteno.RetenoApplication
 import com.reteno.RetenoImpl
-import com.reteno.config.RestConfig
-import com.reteno.di.ServiceLocator
 import com.reteno.domain.controller.ContactController
-import com.reteno.model.device.Device
 import com.reteno.push.channel.RetenoNotificationChannel
 import com.reteno.util.Logger
-import com.reteno.util.SharedPrefsManager
 
 
 class RetenoNotificationService {
 
-    private val serviceLocator: ServiceLocator =
-        ((RetenoImpl.application as RetenoApplication).getRetenoInstance() as RetenoImpl).serviceLocator
-
-    private val restConfig: RestConfig = serviceLocator.restConfigProvider.get()
-    private val sharedPrefsManager: SharedPrefsManager =
-        serviceLocator.sharedPrefsManagerProvider.get()
-    private val contactController: ContactController =
-        serviceLocator.contactControllerProvider.get()
-
+    private val reteno =
+        ((RetenoImpl.application as RetenoApplication).getRetenoInstance() as RetenoImpl)
+    private val contactController: ContactController = reteno.serviceLocator.contactControllerProvider.get()
 
     fun onNewToken(token: String) {
         /*@formatter:off*/ Logger.i(TAG, "onNewToken(): ", "token = [" , token , "]")
         /*@formatter:on*/
-
-        val oldToken = sharedPrefsManager.getFcmToken()
-        if (token != oldToken) {
-            sharedPrefsManager.saveFcmToken(token)
-
-            val contact = Device.createDevice(
-                deviceId = restConfig.deviceId.id,
-                pushToken = token
-            )
-            contactController.onNewContact(contact)
-        }
+        contactController.onNewFcmToken(token)
     }
 
     fun showNotification(data: Bundle) {
@@ -58,7 +38,6 @@ class RetenoNotificationService {
             context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.notify(id, builder.build())
     }
-
 
 
     companion object {

@@ -21,12 +21,19 @@ object RetenoNotificationChannel {
     private const val FALLBACK_DEFAULT_CHANNEL_NAME = "default"
     private const val FALLBACK_DEFAULT_CHANNEL_DESCRIPTION = "description"
 
-    internal fun createDefaultChannel() {
+    private val configRepository =
+        ((RetenoImpl.application as RetenoApplication).getRetenoInstance() as RetenoImpl)
+            .serviceLocator
+            .configRepositoryProvider
+            .get()
+
+    @JvmStatic
+    fun createDefaultChannel() {
         val context = RetenoImpl.application
         /*@formatter:off*/ Logger.i(TAG, "createDefaultChannel(): ", "context = [" , context , "]")
         /*@formatter:on*/
 
-        val defaultChannel = retrieveDefaultNotificationChannel()
+        val defaultChannel = retrieveDefaultNotificationChannelData()
 
         DEFAULT_CHANNEL_ID = defaultChannel.id
         val channel = NotificationChannel(
@@ -68,10 +75,7 @@ object RetenoNotificationChannel {
      */
     @JvmStatic
     private fun storeDefaultNotificationChannel(channel: String) {
-        val context = RetenoImpl.application
-        val sharedPrefsManager =
-            ((context as RetenoApplication).getRetenoInstance() as RetenoImpl).serviceLocator.sharedPrefsManagerProvider.get()
-        sharedPrefsManager.saveDefaultNotificationChannel(channel)
+        configRepository.saveDefaultNotificationChannel(channel)
     }
 
     /**
@@ -80,17 +84,11 @@ object RetenoNotificationChannel {
      * @return The stored default channel or null.
      */
     @JvmStatic
-    private fun retrieveDefaultNotificationChannel(): NotificationChannelData {
-        val context = RetenoImpl.application
-
+    private fun retrieveDefaultNotificationChannelData(): NotificationChannelData {
         val defaultChannelOrNull: NotificationChannelData? =
             try {
-                val serviceLocator =
-                    ((context as RetenoApplication).getRetenoInstance() as RetenoImpl).serviceLocator
-                val sharedPrefsManager = serviceLocator.sharedPrefsManagerProvider.get()
-
-                val jsonChannels = sharedPrefsManager.getDefaultNotificationChannel()
-                jsonChannels.fromJsonOrNull()
+                val jsonChannel = configRepository.getDefaultNotificationChannel()
+                jsonChannel.fromJsonOrNull()
             } catch (e: Exception) {
                 /*@formatter:off*/ Logger.e(TAG, "retrieveNotificationChannels(): ", e)
                 /*@formatter:on*/

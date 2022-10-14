@@ -11,21 +11,18 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.reteno.RetenoImpl;
-import com.reteno.config.DeviceId;
-import com.reteno.config.DeviceIdMode;
-import com.reteno.config.RestConfig;
+import com.reteno.data.local.config.DeviceIdMode;
+import com.reteno.data.local.ds.ConfigRepository;
 import com.reteno.sample.BaseFragment;
 import com.reteno.sample.databinding.FragmentDeviceIdBinding;
-import com.reteno.sample.util.SharedPreferencesManager;
-import com.reteno.util.SharedPrefsManager;
+import com.reteno.sample.util.AppSharedPreferencesManager;
 
 import java.lang.reflect.Field;
 
 public class FragmentDeviceId extends BaseFragment {
 
     private FragmentDeviceIdBinding binding;
-    private DeviceId deviceId;
-    private SharedPrefsManager sharedPrefsManager;
+    private ConfigRepository configRepository;
 
     public FragmentDeviceId() {
         // Required empty public constructor
@@ -42,7 +39,6 @@ public class FragmentDeviceId extends BaseFragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         readDeviceId();
-        readSharedPrefsManager();
 
         setupSpinner(view);
         initExternalDeviceId(view);
@@ -53,30 +49,15 @@ public class FragmentDeviceId extends BaseFragment {
 
     private void readDeviceId() {
         try {
-            Field field = RetenoImpl.class.getDeclaredField("restConfig");
+            Field field = RetenoImpl.class.getDeclaredField("configRepository");
             field.setAccessible(true);
-            RestConfig restConfig = (RestConfig) field.get(getReteno());
-            deviceId = restConfig.getDeviceId();
+            configRepository = (ConfigRepository) field.get(getReteno());
             field.setAccessible(false);
         } catch (NoSuchFieldException e) {
             e.printStackTrace();
         } catch (IllegalAccessException e) {
             e.printStackTrace();
         }
-    }
-
-    private void readSharedPrefsManager() {
-        try {
-            Field field = RetenoImpl.class.getDeclaredField("sharedPrefsManager");
-            field.setAccessible(true);
-            sharedPrefsManager = (SharedPrefsManager) field.get(getReteno());
-            field.setAccessible(false);
-        } catch (NoSuchFieldException e) {
-            e.printStackTrace();
-        } catch (IllegalAccessException e) {
-            e.printStackTrace();
-        }
-
     }
 
     private void setupSpinner(@NonNull View view) {
@@ -86,7 +67,7 @@ public class FragmentDeviceId extends BaseFragment {
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 DeviceIdMode mode = DeviceIdMode.values()[position];
                 getReteno().changeDeviceIdMode(mode);
-                SharedPreferencesManager.saveDeviceIdMode(getContext(), mode);
+                AppSharedPreferencesManager.saveDeviceIdMode(getContext(), mode);
                 refreshUi();
             }
 
@@ -98,7 +79,7 @@ public class FragmentDeviceId extends BaseFragment {
     }
 
     private void initExternalDeviceId(@NonNull View view) {
-        String externalSavedId = SharedPreferencesManager.getExternalId(view.getContext());
+        String externalSavedId = AppSharedPreferencesManager.getExternalId(view.getContext());
         getReteno().setExternalDeviceId(externalSavedId);
     }
 
@@ -109,12 +90,12 @@ public class FragmentDeviceId extends BaseFragment {
         });
         binding.tilExternalId.setStartIconOnClickListener(v -> {
             String externalId = binding.etExternalId.getText().toString();
-            SharedPreferencesManager.saveExternalId(view.getContext(), externalId);
+            AppSharedPreferencesManager.saveExternalId(view.getContext(), externalId);
             getReteno().setExternalDeviceId(externalId);
             refreshUi();
         });
         binding.tilExternalId.setEndIconOnClickListener(v -> {
-            SharedPreferencesManager.saveExternalId(view.getContext(), "");
+            AppSharedPreferencesManager.saveExternalId(view.getContext(), "");
             getReteno().setExternalDeviceId("");
             binding.etExternalId.setText("");
             refreshUi();
@@ -122,10 +103,10 @@ public class FragmentDeviceId extends BaseFragment {
     }
 
     private void refreshUi() {
-        binding.tvCurrentDeviceIdMode.setText(deviceId.getMode().toString());
-        binding.tvCurrentDeviceId.setText(deviceId.getId());
-        binding.spModesSelection.setSelection(deviceId.getMode().ordinal());
-        binding.tvExternalId.setText(deviceId.getExternalId());
-        binding.etFcmToken.setText(sharedPrefsManager.getFcmToken());
+        binding.tvCurrentDeviceIdMode.setText(configRepository.getDeviceIdMode().toString());
+        binding.tvCurrentDeviceId.setText(configRepository.getDeviceId());
+        binding.spModesSelection.setSelection(configRepository.getDeviceIdMode().ordinal());
+        binding.tvExternalId.setText(configRepository.getExternalId());
+        binding.etFcmToken.setText(configRepository.getFcmToken());
     }
 }

@@ -14,16 +14,25 @@ class ServiceLocator {
     val retenoActivityHelperProvider: RetenoActivityHelperProvider =
         RetenoActivityHelperProvider()
 
+    val configRepositoryProvider: ConfigRepositoryProvider =
+        ConfigRepositoryProvider(
+            sharedPrefsManagerProvider,
+            restConfigProvider
+        )
     val apiClientProvider: ApiClientProvider = ApiClientProvider()
     val eventsRepositoryProvider: EventsRepositoryProvider =
         EventsRepositoryProvider(apiClientProvider)
+
     val eventsControllerProvider: EventsControllerProvider =
         EventsControllerProvider(eventsRepositoryProvider)
 
     val contactRepositoryProvider: ContactRepositoryProvider =
         ContactRepositoryProvider(apiClientProvider)
     val contactControllerProvider: ContactControllerProvider =
-        ContactControllerProvider(contactRepositoryProvider)
+        ContactControllerProvider(
+            contactRepositoryProvider,
+            configRepositoryProvider
+        )
 
     init {
 

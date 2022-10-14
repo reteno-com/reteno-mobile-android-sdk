@@ -1,6 +1,6 @@
 package com.reteno.di.provider
 
-import com.reteno.config.DeviceId
+import com.reteno.data.local.config.DeviceId
 import com.reteno.di.base.ProviderWeakReference
 
 class DeviceIdProvider(private val sharedPrefsManagerProvider: SharedPrefsManagerProvider) :
