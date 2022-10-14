@@ -26,6 +26,7 @@ internal object RetenoNotificationHelper {
 
     private const val NOTIFICATION_ID_DEFAULT = 1
 
+    @JvmStatic
     internal fun getNotificationBuilderCompat(bundle: Bundle): NotificationCompat.Builder {
         val context = RetenoImpl.application
         /*@formatter:off*/ Logger.i(TAG, "getNotificationBuilderCompat(): ", "context = [" , context , "], bundle = [" , bundle.toStringVerbose() , "]")
@@ -58,6 +59,7 @@ internal object RetenoNotificationHelper {
         return builder
     }
 
+    @JvmStatic
     internal fun getNotificationId(bundle: Bundle): Int {
         val notificationIdString: String? = bundle.getString(KEY_ES_INTERACTION_ID)
         // FIXME notification id is calculated by hashCode() function on "es_interaction_id" string. Collisions may appear

@@ -22,7 +22,7 @@ import com.google.gson.annotations.SerializedName
  *       "show_badge":false
  *   }
  */
-data class NotificationChannelData(
+internal data class NotificationChannelData(
     @SerializedName("id") val id: String,
     @SerializedName("name") val name: String,
     @SerializedName("description") val description: String,

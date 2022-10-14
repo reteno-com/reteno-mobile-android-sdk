@@ -1,16 +1,23 @@
 package com.reteno.tests
 
+import android.app.Application
+import androidx.test.core.app.ApplicationProvider
 import com.reteno.RetenoApplication
 import com.reteno.RetenoImpl
+import com.reteno.tests._setup.FakeAndroidKeyStore
 import com.reteno.tests._setup.RetenoTestApp
+import junit.framework.TestCase
 import org.junit.After
 import org.junit.Before
+import org.junit.BeforeClass
 import org.junit.runner.RunWith
 import org.powermock.core.classloader.annotations.PowerMockIgnore
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 import org.robolectric.shadows.ShadowLooper
+import java.security.Provider
+import java.security.Security
 
 @RunWith(RobolectricTestRunner::class)
 @Config(
@@ -34,7 +41,7 @@ import org.robolectric.shadows.ShadowLooper
 abstract class AbstractTest {
 
     protected val application by lazy {
-        RuntimeEnvironment.application
+        ApplicationProvider.getApplicationContext() as Application
     }
     protected val reteno by lazy {
         ((application as RetenoApplication).getRetenoInstance() as RetenoImpl)
@@ -43,11 +50,26 @@ abstract class AbstractTest {
     @Before
     @Throws(Exception::class)
     open fun before() {
+        TestCase.assertNotNull(application)
 
+        val provider = object : Provider("AndroidKeyStore", 1.0, "") {
+            init {
+                put("KeyStore.AndroidKeyStore", FakeAndroidKeyStore.FakeKeyStore::class.java.name)
+            }
+        }
+        Security.addProvider(provider)
     }
 
     @After
     open fun after() {
 
+    }
+
+    companion object {
+        @JvmStatic
+        @BeforeClass
+        fun beforeClass() {
+            FakeAndroidKeyStore.setup
+        }
     }
 }

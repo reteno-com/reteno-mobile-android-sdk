@@ -3,19 +3,13 @@ package com.reteno.tests
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
-import com.reteno.push.channel.RetenoNotificationChannel
-import com.reteno.push.channel.RetenoNotificationChannel.DEFAULT_CHANNEL_ID
-import com.reteno.tests._setup.FakeAndroidKeyStore.FakeKeyStore
 import com.reteno.util.BuildUtil
 import com.reteno.util.Util
 import io.mockk.*
 import junit.framework.TestCase.*
 import org.junit.*
 import org.junit.runners.MethodSorters
-import org.powermock.reflect.Whitebox
 import org.robolectric.annotation.Config
-import java.security.Provider
-import java.security.Security
 
 @Config(sdk = [26])
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
@@ -25,13 +19,6 @@ class RetenoNotificationChannelTest : AbstractTest() {
     @Before
     override fun before() {
         super.before()
-        val provider = object : Provider("AndroidKeyStore", 1.0, "") {
-            init {
-                put("KeyStore.AndroidKeyStore", FakeKeyStore::class.java.name)
-            }
-        }
-        Security.addProvider(provider)
-
         mockkObject(BuildUtil)
         every { BuildUtil.getTargetSdkVersion() } returns 26
     }
@@ -48,27 +35,15 @@ class RetenoNotificationChannelTest : AbstractTest() {
     @Test
     @Throws(Exception::class)
     fun testA_DefaultNotificationChannelFallback() {
-        assertNotNull(application)
-
         mockkStatic(Util::class)
         every { Util.readFromRaw(any<Int>()) } throws Exception("Resource not found exception")
 
-
-        val channelName = Whitebox.getField(
-            RetenoNotificationChannel::class.java,
-            "FALLBACK_DEFAULT_CHANNEL_NAME"
-        ).get(RetenoNotificationChannel::class.java) as String
-        val channelDescription = Whitebox.getField(
-            RetenoNotificationChannel::class.java,
-            "FALLBACK_DEFAULT_CHANNEL_DESCRIPTION"
-        ).get(RetenoNotificationChannel::class.java) as String
-
         val expectedChannel = NotificationChannel(
-            DEFAULT_CHANNEL_ID,
-            channelName,
+            RetenoNotificationChannelProxy.getDefaultChannelId(),
+            RetenoNotificationChannelProxy.FALLBACK_DEFAULT_CHANNEL_NAME,
             NotificationManager.IMPORTANCE_DEFAULT
         ).apply {
-            description = channelDescription
+            description = RetenoNotificationChannelProxy.FALLBACK_DEFAULT_CHANNEL_DESCRIPTION
             enableLights(false)
             lightColor = 0
             enableVibration(false)
@@ -77,10 +52,12 @@ class RetenoNotificationChannelTest : AbstractTest() {
             setShowBadge(false)
         }
 
-        RetenoNotificationChannel.createDefaultChannel()
+        RetenoNotificationChannelProxy.createDefaultChannel()
         val notificationManager =
             application.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        val defaultChannelInSystem = notificationManager.getNotificationChannel(DEFAULT_CHANNEL_ID)
+        val defaultChannelInSystem = notificationManager.getNotificationChannel(
+            RetenoNotificationChannelProxy.getDefaultChannelId()
+        )
         assertNotNull(defaultChannelInSystem)
 
         assertEquals(expectedChannel, defaultChannelInSystem)
@@ -106,8 +83,6 @@ class RetenoNotificationChannelTest : AbstractTest() {
     @Test
     @Throws(Exception::class)
     fun testB_DefaultNotificationChannelJson() {
-        assertNotNull(application)
-
         val expectedChannel = NotificationChannel(
             "defaultId",
             "name",
@@ -122,10 +97,12 @@ class RetenoNotificationChannelTest : AbstractTest() {
             setShowBadge(true)
         }
 
-        RetenoNotificationChannel.createDefaultChannel()
+        RetenoNotificationChannelProxy.createDefaultChannel()
         val notificationManager =
             application.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        val defaultChannelInSystem = notificationManager.getNotificationChannel(DEFAULT_CHANNEL_ID)
+        val defaultChannelInSystem = notificationManager.getNotificationChannel(
+            RetenoNotificationChannelProxy.getDefaultChannelId()
+        )
         assertNotNull(defaultChannelInSystem)
 
         assertEquals(expectedChannel, defaultChannelInSystem)
@@ -149,8 +126,6 @@ class RetenoNotificationChannelTest : AbstractTest() {
     @Test
     @Throws(Exception::class)
     fun testC_DefaultNotificationChannelConfigured() {
-        assertNotNull(application)
-
         val expectedChannel = NotificationChannel(
             "SomeIdSetByClient",
             "someNameSetByClient",
@@ -165,7 +140,7 @@ class RetenoNotificationChannelTest : AbstractTest() {
             setShowBadge(false)
         }
 
-        val configJson ="{" +
+        val configJson = "{" +
                 "\"id\":\"SomeIdSetByClient\"," +
                 "\"name\":\"someNameSetByClient\"," +
                 "\"description\":\"someDescriptionSetByClient\"," +
@@ -177,24 +152,16 @@ class RetenoNotificationChannelTest : AbstractTest() {
                 "\"bypass_dnd\":true," +
                 "\"show_badge\":false" +
                 "}"
-        RetenoNotificationChannel.configureDefaultNotificationChannel(configJson)
+        RetenoNotificationChannelProxy.configureDefaultNotificationChannel(configJson)
 
-        RetenoNotificationChannel.createDefaultChannel()
+        RetenoNotificationChannelProxy.createDefaultChannel()
         val notificationManager =
             application.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        val defaultChannelInSystem = notificationManager.getNotificationChannel(DEFAULT_CHANNEL_ID)
+        val defaultChannelInSystem = notificationManager.getNotificationChannel(
+            RetenoNotificationChannelProxy.getDefaultChannelId()
+        )
         assertNotNull(defaultChannelInSystem)
 
         assertEquals(expectedChannel, defaultChannelInSystem)
-    }
-
-
-
-    companion object {
-        @JvmStatic
-        @BeforeClass
-        fun beforeClass() {
-            com.reteno.tests._setup.FakeAndroidKeyStore.setup
-        }
     }
 }

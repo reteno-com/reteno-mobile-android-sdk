@@ -5,14 +5,15 @@ import android.os.Bundle
 import com.reteno.RetenoImpl
 import com.reteno.util.getApplicationMetaData
 
-object Util {
-    fun tryToSendToCustomReceiverPushReceived(data: Bundle) {
+internal object Util {
+
+    internal fun tryToSendToCustomReceiverPushReceived(data: Bundle) {
         val receiver = RetenoImpl.application.getApplicationMetaData()
             .getString(Constants.META_DATA_KEY_CUSTOM_RECEIVER_PUSH_RECEIVED)
         tryToSendToReceiver(receiver, data)
     }
 
-    fun tryToSendToCustomReceiverNotificationClicked(data: Bundle) {
+    internal fun tryToSendToCustomReceiverNotificationClicked(data: Bundle) {
         val receiver = RetenoImpl.application.getApplicationMetaData()
             .getString(Constants.META_DATA_KEY_CUSTOM_RECEIVER_NOTIFICATION_CLICKED)
         tryToSendToReceiver(receiver, data)

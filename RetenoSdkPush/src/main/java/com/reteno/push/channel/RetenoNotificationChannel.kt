@@ -12,7 +12,7 @@ import com.reteno.push.R
 import com.reteno.util.Logger
 import com.reteno.util.Util
 
-object RetenoNotificationChannel {
+internal object RetenoNotificationChannel {
 
     val TAG: String = RetenoNotificationChannel::class.java.simpleName
     var DEFAULT_CHANNEL_ID: String = "DEFAULT_CHANNEL_ID"
@@ -28,7 +28,7 @@ object RetenoNotificationChannel {
             .get()
 
     @JvmStatic
-    fun createDefaultChannel() {
+    internal fun createDefaultChannel() {
         val context = RetenoImpl.application
         /*@formatter:off*/ Logger.i(TAG, "createDefaultChannel(): ", "context = [" , context , "]")
         /*@formatter:on*/
@@ -64,7 +64,7 @@ object RetenoNotificationChannel {
      * @param channel Default channel details.
      */
     @JvmStatic
-    fun configureDefaultNotificationChannel(channel: String) {
+    internal fun configureDefaultNotificationChannel(channel: String) {
         try {
             if (TextUtils.isEmpty(channel)) {
                 return
