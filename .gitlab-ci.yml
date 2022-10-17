@@ -1,0 +1,50 @@
+image: jangrewe/gitlab-ci-android
+
+cache:
+  - key: "build-number"
+    paths:
+      - build-number
+  - key: "$CI_COMMIT_REF_SLUG"
+    paths:
+      - last-build-hash
+
+# Make Project
+assembleDebug:
+  interruptible: true
+  stage: build
+  script:
+    - ./gradlew assembleDebug
+  artifacts:
+    paths:
+      - app/build/outputs/
+  when: manual
+
+# Run all tests, if any fails, interrupt the pipeline(fail it)
+debugTests:
+  interruptible: true
+  stage: test
+  script:
+    - ./gradlew -Pci --console=plain testDebug
+  when: manual
+
+deployToFirebase:
+  stage: deploy
+  script:
+    - touch build-number
+    - BUILD_NUMBER_CACHE=0
+    - BUILD_NUMBER_VARIABLE=$BUILD_NUMBER
+    - test -s build-number && BUILD_NUMBER_CACHE=$(<build-number)
+    - >
+      test $BUILD_NUMBER_CACHE -lt $BUILD_NUMBER_VARIABLE
+      && echo $((++BUILD_NUMBER_VARIABLE))> build-number
+      || echo $((++BUILD_NUMBER_CACHE))> build-number
+    - export BUILD_NUMBER=$(<build-number)
+    - echo $BUILD_NUMBER
+    - touch last-build-hash
+    - ./gradlew assembleQa appDistributionUploadQa --artifactType="APK"
+  artifacts:
+    paths:
+      - ./app/build/outputs/bundle/qa/app-qa.apk
+    when: on_success
+    expire_in: 2 week
+  when: manual
