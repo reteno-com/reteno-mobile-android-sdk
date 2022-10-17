@@ -1,0 +1,23 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:divider="@drawable/space_vertical"
+    android:orientation="vertical"
+    android:padding="4dp"
+    android:showDividers="middle"
+    tools:context=".fragments.FragmentSentry">
+
+    <Button
+        android:id="@+id/btnCrashApp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Crash app" />
+
+    <Button
+        android:id="@+id/btnCrashSdk"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Crash sdk" />
+
+</LinearLayout>

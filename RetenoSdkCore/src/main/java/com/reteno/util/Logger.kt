@@ -6,13 +6,13 @@ import io.sentry.Hint
 import io.sentry.Hub
 import io.sentry.Sentry
 
-internal object Logger {
+object Logger {
     private const val SENTRY_DSN = BuildConfig.SENTRY_DSN
     private const val HINT_KEY_TAG = "tag"
     private const val HINT_TAG_MESSAGE = "message"
 
     @JvmStatic
-    internal fun captureEvent(msg: String) {
+    fun captureEvent(msg: String) {
         val mainHub = Sentry.getCurrentHub().clone()
         val retenoHub = Hub(mainHub.options.apply {
             dsn = SENTRY_DSN
@@ -22,7 +22,7 @@ internal object Logger {
     }
 
     @JvmStatic
-    internal fun captureException(e: Throwable) {
+    fun captureException(e: Throwable) {
         val mainHub = Sentry.getCurrentHub().clone()
         val retenoHub = Hub(mainHub.options.apply {
             dsn = SENTRY_DSN
@@ -32,7 +32,7 @@ internal object Logger {
     }
 
     @JvmStatic
-    internal fun captureException(tag: String, message: String, e: Throwable) {
+    fun captureException(tag: String, message: String, e: Throwable) {
         val mainHub = Sentry.getCurrentHub().clone()
         val retenoHub = Hub(mainHub.options.apply {
             dsn = SENTRY_DSN
@@ -45,37 +45,37 @@ internal object Logger {
     }
 
     @JvmStatic
-    internal fun v(tag: String, methodName: String, vararg arguments: Any?) {
+    fun v(tag: String, methodName: String, vararg arguments: Any?) {
         val message = buildMessage(methodName, arguments)
         Log.v(tag, message)
     }
 
     @JvmStatic
-    internal fun d(tag: String, methodName: String, vararg arguments: Any?) {
+    fun d(tag: String, methodName: String, vararg arguments: Any?) {
         val message = buildMessage(methodName, arguments)
         Log.d(tag, message)
     }
 
     @JvmStatic
-    internal fun i(tag: String, methodName: String, vararg arguments: Any?) {
+    fun i(tag: String, methodName: String, vararg arguments: Any?) {
         val message = buildMessage(methodName, arguments)
         Log.i(tag, message)
     }
 
     @JvmStatic
-    internal fun w(tag: String, methodName: String, vararg arguments: Any?) {
+    fun w(tag: String, methodName: String, vararg arguments: Any?) {
         val message = buildMessage(methodName, arguments)
         Log.w(tag, message)
     }
 
     @JvmStatic
-    internal fun e(tag: String, message: String) {
+    fun e(tag: String, message: String) {
         Log.e(tag, message)
         captureEvent(message)
     }
 
     @JvmStatic
-    internal fun e(tag: String, message: String, tr: Throwable) {
+    fun e(tag: String, message: String, tr: Throwable) {
         Log.e(tag, message, tr)
         captureException(tag, message, tr)
     }

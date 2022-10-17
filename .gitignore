@@ -16,3 +16,4 @@
 /keystore
 keyring.gpg
 gradle.properties
+signing.properties

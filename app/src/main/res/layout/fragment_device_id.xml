@@ -4,7 +4,7 @@
     android:id="@+id/rootView"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="com.reteno.FragmentDeviceId">
+    tools:context=".fragments.FragmentDeviceId">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -91,5 +91,17 @@
                 android:layout_height="wrap_content" />
         </com.google.android.material.textfield.TextInputLayout>
 
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="32dp"
+            android:text="Firebase FCM push token:" />
+
+
+        <EditText
+            android:id="@+id/etFcmToken"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textStyle="bold" />
     </LinearLayout>
 </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>

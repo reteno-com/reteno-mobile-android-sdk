@@ -61,7 +61,8 @@ internal class RetenoRestClient {
             try {
                 val urlWithParams = generateUrl(url.url, queryParams)
                 val needAuthorizationHeaders = url is ApiContract.MobileApi
-                Logger.i(TAG, "makeRequest", "$method $urlWithParams, $body, $queryParams")
+                /*@formatter:off*/ Logger.i(TAG, "makeRequest(): ", "method = [" , method , "], url = [" , url , "], body = [" , body , "], queryParams = [" , queryParams , "], responseCallback = [" , responseCallback , "]")
+                /*@formatter:on*/
                 urlConnection =
                     defaultHttpConnection(method, urlWithParams, needAuthorizationHeaders)
 
@@ -69,21 +70,27 @@ internal class RetenoRestClient {
                     attachBody(urlConnection, body)
                 }
                 urlConnection.connect()
-                Logger.i(TAG, "makeRequest", "connect, headers: ${urlConnection.headerFields}")
+                Logger.i(TAG, "makeRequest(): ", "connect, headers: ${urlConnection.headerFields}")
 
                 val responseCode = urlConnection.responseCode
-                Logger.i(TAG, "makeRequest", "responseCode: ", responseCode)
+                Logger.i(TAG, "makeRequest(): ", "responseCode: ", responseCode)
 
                 when (responseCode) {
                     200 -> {
                         val response = urlConnection.inputStream.bufferedReader().use { it.readText() }
-                        Logger.i(TAG, "makeRequest", "response: ", response)
+                        Logger.i(TAG, "makeRequest(): ", "response: ", response)
                         responseCallback.onSuccess(response)
+                    }
+                    301 -> {
+                        val response = urlConnection.inputStream.bufferedReader().use { it.readText() }
+                        Logger.i(TAG, "makeRequest(): ", "response: ", response)
+                        responseCallback.onSuccess(response)
+                        /*@formatter:on*/
                     }
                     else -> {
                         val response =
                             urlConnection.errorStream.bufferedReader().use { it.readText() }
-                        Logger.i(TAG, "makeRequest", "response: ", response)
+                        Logger.i(TAG, "makeRequest(): ", "response: ", response)
                         responseCallback.onFailure(responseCode, response, null)
                     }
                 }
@@ -94,10 +101,10 @@ internal class RetenoRestClient {
                     u: $url,
                     e: ${e.message}
                 """.trimIndent()
-                Logger.d(TAG, "makeRequest", errorMessages)
+                Logger.d(TAG, "makeRequest(): ", errorMessages)
                 responseCallback.onFailure(null, null, e)
             } finally {
-                Logger.i(TAG, "makeRequest", "$method $url disconnected")
+                Logger.i(TAG, "makeRequest(): ", "$method $url disconnected")
                 urlConnection?.disconnect()
             }
         }
