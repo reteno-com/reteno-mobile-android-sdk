@@ -29,17 +29,24 @@ class RetenoNotificationHelperTest: AbstractTest() {
 
     @Test
     @Throws(Exception::class)
-    fun testGetNotificationId() {
+    fun getNotificationId_emptyBundle_fallbackDefaultNotificationId() {
         val bundle = Bundle()
 
-        var expectedChannelId = RetenoNotificationHelperProxy.NOTIFICATION_ID_DEFAULT
-        var channelId = RetenoNotificationHelperProxy.getNotificationId(bundle)
+        val expectedChannelId = RetenoNotificationHelperProxy.NOTIFICATION_ID_DEFAULT
+        val channelId = RetenoNotificationHelperProxy.getNotificationId(bundle)
         assertEquals(expectedChannelId, channelId)
+    }
 
+    @Test
+    @Throws(Exception::class)
+    fun getNotificationId_bundleWithInteractionId_hashCodeOfInteractionId() {
         val interactionId = "1234-5678-1234-0987"
-        expectedChannelId = interactionId.hashCode()
-        bundle.putString(Constants.KEY_ES_INTERACTION_ID, interactionId)
-        channelId = RetenoNotificationHelperProxy.getNotificationId(bundle)
+        val expectedChannelId = interactionId.hashCode()
+
+        val bundle = Bundle().apply {
+            putString(Constants.KEY_ES_INTERACTION_ID, interactionId)
+        }
+        val channelId = RetenoNotificationHelperProxy.getNotificationId(bundle)
         assertEquals(expectedChannelId, channelId)
     }
 }

@@ -35,7 +35,7 @@ class RetenoNotificationServiceTest : AbstractTest() {
 
     @Test
     @Throws(Exception::class)
-    fun testOnNewToken() {
+    fun onNewToken_validToken_savedToRepository() {
         val expectedToken = "4bf5c8e5-72d5-4b3c-81d6-85128928e296"
         pushService.onNewToken(expectedToken)
 
@@ -46,7 +46,7 @@ class RetenoNotificationServiceTest : AbstractTest() {
 
     @Test
     @Throws(Exception::class)
-    fun testShowNotification() {
+    fun showNotification_validNotification_notificationShown() {
         val interactionId = "interaction_id_1231_4321_9900_0011"
 
         val bundle = Bundle().apply {

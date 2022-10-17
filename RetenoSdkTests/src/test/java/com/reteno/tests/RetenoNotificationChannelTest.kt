@@ -34,7 +34,7 @@ class RetenoNotificationChannelTest : AbstractTest() {
      */
     @Test
     @Throws(Exception::class)
-    fun testA_DefaultNotificationChannelFallback() {
+    fun testA_createDefaultChannel_missingJsonConfig_fallbackDefaultChannel() {
         mockkStatic(Util::class)
         every { Util.readFromRaw(any<Int>()) } throws Exception("Resource not found exception")
 
@@ -82,7 +82,7 @@ class RetenoNotificationChannelTest : AbstractTest() {
      */
     @Test
     @Throws(Exception::class)
-    fun testB_DefaultNotificationChannelJson() {
+    fun testB_createDefaultChannel_readFromJsonConfig_defaultChannel() {
         val expectedChannel = NotificationChannel(
             "defaultId",
             "name",
@@ -125,7 +125,7 @@ class RetenoNotificationChannelTest : AbstractTest() {
      */
     @Test
     @Throws(Exception::class)
-    fun testC_DefaultNotificationChannelConfigured() {
+    fun testC_createDefaultChannel_customJsonProvided_defaultChannel() {
         val expectedChannel = NotificationChannel(
             "SomeIdSetByClient",
             "someNameSetByClient",
