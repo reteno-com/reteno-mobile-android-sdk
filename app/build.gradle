@@ -62,7 +62,7 @@ android {
             signingConfig signingConfigs.debug
             minifyEnabled true
             debuggable true
-            versionNameSuffix "-debug"
+            versionNameSuffix "-qa"
 
             firebaseAppDistribution {
                 appId="1:987851207632:android:862ec0f79ede137abc7fd5"

@@ -4,6 +4,9 @@ cache:
   - key: "build-number"
     paths:
       - build-number
+  - key: "$CI_COMMIT_REF_SLUG"
+    paths:
+      - last-build-hash
 
 # Make Project
 assembleDebug:
@@ -26,19 +29,20 @@ deployToFirebase:
   stage: deploy
   script:
     - touch build-number
-    - VERSION_RUNNER=$ANDROID_BUILD_NUMBER
-    - test -s build-number && VERSION_RUNNER=$(<build-number)
+    - BUILD_NUMBER_CACHE=0
+    - BUILD_NUMBER_VARIABLE=$BUILD_NUMBER
+    - test -s build-number && BUILD_NUMBER_CACHE=$(<build-number)
     - >
-      test $VERSION_RUNNER -lt $VERSION_PROJECT
-      && echo $((++VERSION_PROJECT))> build-number
-      || echo $((++VERSION_RUNNER))> build-number
+      test $BUILD_NUMBER_CACHE -lt $BUILD_NUMBER_VARIABLE
+      && echo $((++BUILD_NUMBER_VARIABLE))> build-number
+      || echo $((++BUILD_NUMBER_CACHE))> build-number
     - export BUILD_NUMBER=$(<build-number)
     - echo $BUILD_NUMBER
     - touch last-build-hash
     - ./gradlew assembleQa appDistributionUploadQa --artifactType="APK"
   artifacts:
     paths:
-      - ./app/build/outputs/bundle/aa/app-qa.apk
+      - ./app/build/outputs/bundle/qa/app-qa.apk
     when: on_success
     expire_in: 2 week
   when: manual
