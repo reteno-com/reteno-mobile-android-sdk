@@ -17,6 +17,7 @@ assembleDebug:
   artifacts:
     paths:
       - app/build/outputs/
+  when: manual
 
 # Run all tests, if any fails, interrupt the pipeline(fail it)
 debugTests:
@@ -24,6 +25,7 @@ debugTests:
   stage: test
   script:
     - ./gradlew -Pci --console=plain testDebug
+  when: manual
 
 deployToFirebase:
   stage: deploy
