@@ -3,6 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
         android:name=".SampleApp"
@@ -28,10 +29,33 @@
 
         <activity
             android:name=".SecondActivity"
-            android:exported="false">
-        </activity>
+            android:exported="true" />
 
-        <!-- TODO make sure to add tools:node="replace" in your app -->
+        <!-- TODO add this to listen to PushReceived events -->
+        <receiver
+            android:name="com.reteno.sample.CustomReceiverPushReceived"
+            android:enabled="true"
+            android:exported="true"/>
+        <meta-data
+            android:name="com.reteno.Receiver.PushReceived"
+            android:value="com.reteno.sample.CustomReceiverPushReceived" />
+
+        <!-- TODO add this to listen to NotificationClicked events -->
+        <receiver
+            android:name="com.reteno.sample.CustomReceiverNotificationClicked"
+            android:enabled="true"
+            android:exported="true"/>
+        <meta-data
+            android:name="com.reteno.Receiver.NotificationClicked"
+            android:value="com.reteno.sample.CustomReceiverNotificationClicked" />
+
+
+        <!-- TODO add this to set up your notification icon -->
+        <meta-data
+            android:name="@string/notification_icon"
+            android:resource="@drawable/ic_delete" />
+
+        <!-- TODO make sure to add tools:node="replace" in your app if you use Sentry in Application -->
         <meta-data
             android:name="io.sentry.dsn"
             android:value="https://4da29edb20d143ab94cda3c3fe871a77@sentry.reteno.com/4503937502609408"

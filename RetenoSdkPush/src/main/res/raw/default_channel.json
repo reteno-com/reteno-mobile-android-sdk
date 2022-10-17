@@ -1,0 +1,14 @@
+{
+	"id":"defaultId",
+	"name":"name",
+	"description":"description",
+	"groupId":"groupId",
+	"importance":3,
+	"enable_lights":false,
+	"light_color":0,
+	"enable_vibration":false,
+	"vibration_pattern":null,
+	"lockscreen_visibility":1,
+	"bypass_dnd":false,
+	"show_badge":true
+}

@@ -1,9 +1,10 @@
 package com.reteno.util
 
-import android.content.Context
+import android.app.PendingIntent
 import android.os.Build
+import com.reteno.RetenoImpl
 
-internal object BuildUtil {
+object BuildUtil {
     private var targetSdk = -1
 
     /**
@@ -11,23 +12,29 @@ internal object BuildUtil {
      * Targeting Android 12 means you cannot use a service or broadcast receiver as a trampoline to
      * start an activity. The activity must be started immediately when notification is clicked.
      *
-     * @param context The application context.
      * @return True if notification trampolines are not supported.
      */
-    fun shouldDisableTrampolines(context: Context?): Boolean {
-        return Build.VERSION.SDK_INT >= 31 && getTargetSdkVersion(context) >= 31
+    fun shouldDisableTrampolines(): Boolean {
+        return Build.VERSION.SDK_INT >= 31 && getTargetSdkVersion() >= 31
     }
 
     /**
      * Returns target SDK version parsed from manifest.
      *
-     * @param context The application context.
      * @return Target SDK version.
      */
-    private fun getTargetSdkVersion(context: Context?): Int {
-        if (targetSdk == -1 && context != null) {
-            targetSdk = context.applicationInfo.targetSdkVersion
+    fun getTargetSdkVersion(): Int {
+        if (targetSdk == -1) {
+            targetSdk = RetenoImpl.application.applicationInfo.targetSdkVersion
         }
         return targetSdk
     }
+
+    /**
+     * Adds immutable property to the intent flags. Mandatory when targeting API 31.
+     *
+     * @param flags The default flags.
+     * @return Flags with additional immutable property set.
+     */
+    fun createIntentFlags(flags: Int): Int = flags or PendingIntent.FLAG_IMMUTABLE
 }

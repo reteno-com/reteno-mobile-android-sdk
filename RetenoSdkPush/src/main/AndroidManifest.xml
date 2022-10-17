@@ -3,5 +3,13 @@
 
     <application>
 
+        <activity
+            android:name=".interceptor.click.RetenoNotificationClickedActivity"
+            android:exported="false" />
+
+        <receiver
+            android:name=".interceptor.click.RetenoNotificationClickedReceiver"
+            android:enabled="true"
+            android:exported="false" />
     </application>
 </manifest>

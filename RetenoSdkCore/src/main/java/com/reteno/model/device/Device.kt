@@ -6,6 +6,7 @@ import android.content.pm.PackageManager.PackageInfoFlags
 import android.os.Build
 import android.telephony.TelephonyManager
 import androidx.core.content.pm.PackageInfoCompat
+import com.reteno.RetenoImpl
 import com.reteno.util.Logger
 import java.util.*
 
@@ -27,7 +28,6 @@ data class Device(
         val TAG: String = Device::class.java.simpleName
 
         fun createDevice(
-            context: Context,
             deviceId: String,
             externalUserId: String? = null,
             pushToken: String? = null,
@@ -37,22 +37,23 @@ data class Device(
                 deviceId = deviceId,
                 externalUserId = externalUserId,
                 pushToken = pushToken,
-                category = fetchDeviceCategory(context),
+                category = fetchDeviceCategory(),
                 osType = DeviceOS.ANDROID,
                 osVersion = fetchOsVersion(),
                 deviceModel = fetchDeviceModel(),
-                appVersion = fetchAppVersion(context),
+                appVersion = fetchAppVersion(),
                 languageCode = fetchLanguageCode(),
                 timeZone = fetchTimeZone(),
                 advertisingId = advertisingId
             )
-            /*@formatter:off*/ Logger.i(TAG, "createDevice(): ", "context = [" , context , "], deviceId = [" , deviceId , "], externalUserId = [" , externalUserId , "], pushToken = [" , pushToken , "], advertisingId = [" , advertisingId , "]")
+            /*@formatter:off*/ Logger.i(TAG, "createDevice(): ", "deviceId = [" , deviceId , "], externalUserId = [" , externalUserId , "], pushToken = [" , pushToken , "], advertisingId = [" , advertisingId , "]")
             /*@formatter:on*/
             return device
         }
 
 
-        private fun fetchDeviceCategory(context: Context): DeviceCategory {
+        private fun fetchDeviceCategory(): DeviceCategory {
+            val context = RetenoImpl.application
             val telephonyManager =
                 context.applicationContext.getSystemService(Context.TELEPHONY_SERVICE) as? TelephonyManager
 
@@ -90,8 +91,10 @@ data class Device(
             return deviceModel
         }
 
-        private fun fetchAppVersion(context: Context): String? =
+        private fun fetchAppVersion(): String? =
             try {
+                val context = RetenoImpl.application
+
                 val pInfo = if (Build.VERSION.SDK_INT >= 33) {
                     context.packageManager.getPackageInfo(
                         context.packageName,
