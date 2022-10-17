@@ -43,7 +43,7 @@ android {
 
             debuggable true
             minifyEnabled false
-            versionNameSuffix "-debug"
+            versionNameSuffix "-qa"
         }
 
         release {
