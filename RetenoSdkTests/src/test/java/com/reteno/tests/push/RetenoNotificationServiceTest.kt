@@ -1,4 +1,4 @@
-package com.reteno.tests
+package com.reteno.tests.push
 
 import android.app.NotificationManager
 import android.content.Context
@@ -8,6 +8,7 @@ import com.reteno.push.Constants.KEY_ES_INTERACTION_ID
 import com.reteno.push.Constants.KEY_ES_NOTIFICATION_IMAGE
 import com.reteno.push.Constants.KEY_ES_TITLE
 import com.reteno.push.RetenoNotificationService
+import com.reteno.tests.AbstractTest
 import junit.framework.TestCase.assertEquals
 import org.junit.After
 import org.junit.Before

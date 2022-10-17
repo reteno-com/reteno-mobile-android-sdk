@@ -1,8 +1,9 @@
-package com.reteno.tests
+package com.reteno.tests.push
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
+import com.reteno.tests.AbstractTest
 import com.reteno.util.BuildUtil
 import com.reteno.util.Util
 import io.mockk.*

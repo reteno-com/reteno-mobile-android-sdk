@@ -1,8 +1,9 @@
-package com.reteno.tests
+package com.reteno.tests.push
 
 import android.os.Bundle
 import com.reteno.push.Constants
 import com.reteno.push.RetenoNotificationService
+import com.reteno.tests.AbstractTest
 import junit.framework.TestCase.assertEquals
 import org.junit.After
 import org.junit.Before

@@ -1,4 +1,4 @@
-package com.reteno.tests;
+package com.reteno.tests.push;
 
 import com.reteno.push.channel.RetenoNotificationChannel;
 
