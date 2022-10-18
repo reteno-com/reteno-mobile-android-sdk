@@ -4,15 +4,7 @@ plugins {
     id 'com.vanniktech.maven.publish'
 }
 apply from: file("$project.rootDir/config.gradle")
-
-def appPropsFile = file("$project.rootDir/local.properties")
-Properties appProps = new Properties()
-appProps.load(new FileInputStream(appPropsFile))
-
-def sdkKeyPropsFile = file("$project.rootDir/RetenoSdkCore/keys.properties")
-Properties sdkKeys = new Properties()
-sdkKeys.load(new FileInputStream(sdkKeyPropsFile))
-
+apply from: "$project.rootDir/keystore/keystore_config.gradle"
 
 android {
     def globalConfig = rootProject.ext
@@ -26,20 +18,20 @@ android {
 
         consumerProguardFiles "consumer-rules.pro"
 
-        buildConfigField "String", "API_ACCESS_KEY", appProps['reteno.access-key']
+        buildConfigField "String", "API_ACCESS_KEY", config.retenoKey
         buildConfigField "String", "SDK_VERSION", "\"${project.VERSION_NAME}\""
     }
 
     buildTypes {
         debug {
-            buildConfigField "String", "SENTRY_DSN", sdkKeys['reteno.sentry.dsn.debug']
+            buildConfigField "String", "SENTRY_DSN", config.sentryDedugDsn
 
             minifyEnabled false
             versionNameSuffix "-debug"
         }
 
         qa {
-            buildConfigField "String", "SENTRY_DSN", sdkKeys['reteno.sentry.dsn.debug']
+            buildConfigField "String", "SENTRY_DSN", config.sentryDedugDsn
 
             debuggable true
             minifyEnabled false
@@ -47,7 +39,7 @@ android {
         }
 
         release {
-            buildConfigField "String", "SENTRY_DSN", sdkKeys['reteno.sentry.dsn.release']
+            buildConfigField "String", "SENTRY_DSN", config.sentryReleaseDsn
 
             minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
