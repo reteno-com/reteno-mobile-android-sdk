@@ -29,16 +29,16 @@ android {
 
     signingConfigs {
         release {
-            storeFile file(props['STORE_FILE'])
-            storePassword props['KEYSTORE_PASSWORD']
-            keyAlias props['KEY_ALIAS_NAME']
-            keyPassword props['KEY_ALIAS_PASSWORD']
+            storeFile file(keystore_release.storeFile)
+            storePassword keystore_release.storePassword
+            keyAlias keystore_release.keyAlias
+            keyPassword keystore_release.keyPassword
         }
         debug {
-            storeFile file(props['STORE_FILE'])
-            storePassword props['KEYSTORE_PASSWORD']
-            keyAlias props['KEY_ALIAS_NAME']
-            keyPassword props['KEY_ALIAS_PASSWORD']
+            storeFile file(keystore_debug.storeFile)
+            storePassword keystore_debug.storePassword
+            keyAlias keystore_debug.keyAlias
+            keyPassword keystore_debug.keyPassword
         }
     }
 
