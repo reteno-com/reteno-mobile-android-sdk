@@ -4,13 +4,13 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import android.text.TextUtils
-import com.reteno.RetenoApplication
-import com.reteno.RetenoImpl
-import com.reteno.data.remote.mapper.fromJson
-import com.reteno.data.remote.mapper.fromJsonOrNull
+import com.reteno.core.RetenoApplication
+import com.reteno.core.RetenoImpl
+import com.reteno.core.data.remote.mapper.fromJson
+import com.reteno.core.data.remote.mapper.fromJsonOrNull
 import com.reteno.push.R
-import com.reteno.util.Logger
-import com.reteno.util.Util
+import com.reteno.core.util.Logger
+import com.reteno.core.util.Util
 
 internal object RetenoNotificationChannel {
 

@@ -26,7 +26,7 @@
     public static *** i(...);
 }
 
--assumenosideeffects class com.reteno.util.Logger {
+-assumenosideeffects class com.reteno.core.util.Logger {
     public static *** v(...);
     public static *** d(...);
     public static *** i(...);

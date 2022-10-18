@@ -3,11 +3,11 @@ package com.reteno.push
 import android.app.NotificationManager
 import android.content.Context
 import android.os.Bundle
-import com.reteno.RetenoApplication
-import com.reteno.RetenoImpl
-import com.reteno.domain.controller.ContactController
+import com.reteno.core.RetenoApplication
+import com.reteno.core.RetenoImpl
+import com.reteno.core.domain.controller.ContactController
 import com.reteno.push.channel.RetenoNotificationChannel
-import com.reteno.util.Logger
+import com.reteno.core.util.Logger
 
 
 class RetenoNotificationService {

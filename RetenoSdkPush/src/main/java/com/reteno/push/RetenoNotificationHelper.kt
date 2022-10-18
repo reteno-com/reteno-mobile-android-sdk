@@ -6,7 +6,8 @@ import android.graphics.Bitmap
 import android.os.Bundle
 import android.text.TextUtils
 import androidx.core.app.NotificationCompat
-import com.reteno.RetenoImpl
+import com.reteno.core.RetenoImpl
+import com.reteno.core.util.*
 import com.reteno.push.Constants.KEY_ES_CONTENT
 import com.reteno.push.Constants.KEY_ES_INTERACTION_ID
 import com.reteno.push.Constants.KEY_ES_NOTIFICATION_IMAGE
@@ -14,7 +15,6 @@ import com.reteno.push.Constants.KEY_ES_TITLE
 import com.reteno.push.channel.RetenoNotificationChannel.DEFAULT_CHANNEL_ID
 import com.reteno.push.interceptor.click.RetenoNotificationClickedActivity
 import com.reteno.push.interceptor.click.RetenoNotificationClickedReceiver
-import com.reteno.util.*
 import java.util.*
 
 

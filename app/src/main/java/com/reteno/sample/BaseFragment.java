@@ -2,7 +2,7 @@ package com.reteno.sample;
 
 import androidx.fragment.app.Fragment;
 
-import com.reteno.Reteno;
+import com.reteno.core.Reteno;
 
 public abstract class BaseFragment extends Fragment {
 

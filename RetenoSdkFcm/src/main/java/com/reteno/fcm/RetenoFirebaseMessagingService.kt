@@ -2,7 +2,7 @@ package com.reteno.fcm
 
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
-import com.reteno.util.Logger
+import com.reteno.core.util.Logger
 
 open class RetenoFirebaseMessagingService : FirebaseMessagingService() {
 

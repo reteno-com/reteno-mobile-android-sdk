@@ -8,7 +8,7 @@ import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import com.reteno.Reteno;
+import com.reteno.core.Reteno;
 import com.reteno.sample.BaseFragment;
 import com.reteno.sample.databinding.FragmentSentryBinding;
 

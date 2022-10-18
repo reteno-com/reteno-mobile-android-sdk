@@ -2,8 +2,8 @@ package com.reteno.push
 
 import android.content.Intent
 import android.os.Bundle
-import com.reteno.RetenoImpl
-import com.reteno.util.getApplicationMetaData
+import com.reteno.core.RetenoImpl
+import com.reteno.core.util.getApplicationMetaData
 
 internal object Util {
 

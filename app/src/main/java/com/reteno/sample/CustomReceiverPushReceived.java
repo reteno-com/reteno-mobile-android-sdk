@@ -4,8 +4,8 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 
-import com.reteno.util.Logger;
-import com.reteno.util.UtilKt;
+import com.reteno.core.util.UtilKt;
+import com.reteno.core.util.Logger;
 
 public class CustomReceiverPushReceived extends BroadcastReceiver {
 
