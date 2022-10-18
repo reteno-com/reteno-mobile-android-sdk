@@ -1,9 +1,9 @@
-package com.reteno.tests.push
+package com.reteno.robolectric.push
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
-import com.reteno.tests.AbstractTest
+import com.reteno.robolectric.AbstractTest
 import com.reteno.core.util.BuildUtil
 import com.reteno.core.util.Util
 import io.mockk.*

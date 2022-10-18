@@ -1,4 +1,4 @@
-package com.reteno.tests.push;
+package com.reteno.robolectric.push;
 
 import android.os.Bundle;
 

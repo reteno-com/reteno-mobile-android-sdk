@@ -1,4 +1,4 @@
-package com.reteno.tests._setup
+package com.reteno.robolectric._setup
 
 import android.app.Application
 import com.reteno.core.Reteno

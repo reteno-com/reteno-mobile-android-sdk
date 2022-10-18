@@ -1,4 +1,4 @@
-package com.reteno.tests.data
+package com.reteno.core.data
 
 import android.net.Uri
 import android.util.Log

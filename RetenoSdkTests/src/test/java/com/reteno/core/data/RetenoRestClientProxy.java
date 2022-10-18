@@ -1,4 +1,4 @@
-package com.reteno.tests.data;
+package com.reteno.core.data;
 
 import com.reteno.core.data.remote.api.ApiContract;
 import com.reteno.core.data.remote.api.HttpMethod;

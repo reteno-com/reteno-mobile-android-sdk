@@ -1,11 +1,11 @@
-package com.reteno.tests
+package com.reteno.robolectric
 
 import android.app.Application
 import androidx.test.core.app.ApplicationProvider
 import com.reteno.core.RetenoApplication
 import com.reteno.core.RetenoImpl
-import com.reteno.tests._setup.FakeAndroidKeyStore
-import com.reteno.tests._setup.RetenoTestApp
+import com.reteno.robolectric._setup.FakeAndroidKeyStore
+import com.reteno.robolectric._setup.RetenoTestApp
 import junit.framework.TestCase
 import org.junit.After
 import org.junit.Before

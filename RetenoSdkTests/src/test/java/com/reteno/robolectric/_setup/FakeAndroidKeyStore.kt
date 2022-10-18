@@ -1,4 +1,4 @@
-package com.reteno.tests._setup
+package com.reteno.robolectric._setup
 
 import java.io.InputStream
 import java.io.OutputStream
