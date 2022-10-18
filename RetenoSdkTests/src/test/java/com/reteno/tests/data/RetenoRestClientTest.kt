@@ -1,12 +1,11 @@
 package com.reteno.tests.data
 
 import android.net.Uri
-import android.os.Build
 import android.util.Log
-import com.reteno.data.remote.api.ApiContract
-import com.reteno.data.remote.api.ConnectionManager
-import com.reteno.data.remote.api.HttpMethod
-import com.reteno.domain.ResponseCallback
+import com.reteno.core.data.remote.api.ApiContract
+import com.reteno.core.data.remote.api.ConnectionManager
+import com.reteno.core.data.remote.api.HttpMethod
+import com.reteno.core.domain.ResponseCallback
 import io.mockk.*
 import io.mockk.impl.annotations.RelaxedMockK
 import org.junit.After
@@ -17,8 +16,6 @@ import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 import java.io.ByteArrayInputStream
 import java.io.OutputStream
-import java.lang.reflect.Field
-import java.lang.reflect.Modifier
 import java.net.HttpURLConnection
 import javax.net.ssl.HttpsURLConnection
 

@@ -2,10 +2,10 @@ package com.reteno.fcm
 
 import android.os.Bundle
 import com.google.firebase.messaging.RemoteMessage
-import com.reteno.RetenoImpl
+import com.reteno.core.RetenoImpl
 import com.reteno.push.Constants.KEY_ES_INTERACTION_ID
 import com.reteno.push.RetenoNotificationService
-import com.reteno.util.Logger
+import com.reteno.core.util.Logger
 
 class RetenoFirebaseServiceHandler {
 

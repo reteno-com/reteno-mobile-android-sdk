@@ -10,9 +10,9 @@ import android.widget.ArrayAdapter;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import com.reteno.RetenoImpl;
-import com.reteno.data.local.config.DeviceIdMode;
-import com.reteno.data.local.ds.ConfigRepository;
+import com.reteno.core.RetenoImpl;
+import com.reteno.core.data.local.config.DeviceIdMode;
+import com.reteno.core.data.local.ds.ConfigRepository;
 import com.reteno.sample.BaseFragment;
 import com.reteno.sample.databinding.FragmentDeviceIdBinding;
 import com.reteno.sample.util.AppSharedPreferencesManager;

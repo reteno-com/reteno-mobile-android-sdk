@@ -1,9 +1,9 @@
 package com.reteno.tests.data;
 
-import com.reteno.data.remote.api.ApiContract;
-import com.reteno.data.remote.api.HttpMethod;
-import com.reteno.data.remote.api.RetenoRestClient;
-import com.reteno.domain.ResponseCallback;
+import com.reteno.core.data.remote.api.ApiContract;
+import com.reteno.core.data.remote.api.HttpMethod;
+import com.reteno.core.data.remote.api.RetenoRestClient;
+import com.reteno.core.domain.ResponseCallback;
 
 import org.powermock.reflect.Whitebox;
 

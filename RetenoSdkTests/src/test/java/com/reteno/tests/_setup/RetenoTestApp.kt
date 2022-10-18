@@ -1,9 +1,9 @@
 package com.reteno.tests._setup
 
 import android.app.Application
-import com.reteno.Reteno
-import com.reteno.RetenoApplication
-import com.reteno.RetenoImpl
+import com.reteno.core.Reteno
+import com.reteno.core.RetenoApplication
+import com.reteno.core.RetenoImpl
 
 class RetenoTestApp : Application(), RetenoApplication {
     private lateinit var retenoInstance: Reteno

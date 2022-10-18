@@ -2,8 +2,8 @@ package com.reteno.tests
 
 import android.app.Application
 import androidx.test.core.app.ApplicationProvider
-import com.reteno.RetenoApplication
-import com.reteno.RetenoImpl
+import com.reteno.core.RetenoApplication
+import com.reteno.core.RetenoImpl
 import com.reteno.tests._setup.FakeAndroidKeyStore
 import com.reteno.tests._setup.RetenoTestApp
 import junit.framework.TestCase
@@ -13,7 +13,6 @@ import org.junit.BeforeClass
 import org.junit.runner.RunWith
 import org.powermock.core.classloader.annotations.PowerMockIgnore
 import org.robolectric.RobolectricTestRunner
-import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 import org.robolectric.shadows.ShadowLooper
 import java.security.Provider

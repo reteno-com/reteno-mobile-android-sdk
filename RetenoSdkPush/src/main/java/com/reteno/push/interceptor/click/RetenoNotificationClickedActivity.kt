@@ -7,9 +7,9 @@ import android.net.Uri
 import android.os.Bundle
 import com.reteno.push.Constants.KEY_ES_LINK
 import com.reteno.push.Util
-import com.reteno.util.Logger
-import com.reteno.util.getResolveInfoList
-import com.reteno.util.toStringVerbose
+import com.reteno.core.util.Logger
+import com.reteno.core.util.getResolveInfoList
+import com.reteno.core.util.toStringVerbose
 
 class RetenoNotificationClickedActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {

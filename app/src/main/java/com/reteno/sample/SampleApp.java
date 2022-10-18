@@ -5,10 +5,10 @@ import android.app.Application;
 
 import androidx.annotation.NonNull;
 
-import com.reteno.Reteno;
-import com.reteno.RetenoApplication;
-import com.reteno.RetenoImpl;
-import com.reteno.data.local.config.DeviceIdMode;
+import com.reteno.core.Reteno;
+import com.reteno.core.RetenoApplication;
+import com.reteno.core.RetenoImpl;
+import com.reteno.core.data.local.config.DeviceIdMode;
 import com.reteno.sample.util.AppSharedPreferencesManager;
 
 public class SampleApp extends Application implements RetenoApplication {

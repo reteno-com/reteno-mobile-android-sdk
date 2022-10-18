@@ -3,7 +3,7 @@ package com.reteno.sample.util;
 import android.content.Context;
 import android.content.SharedPreferences;
 
-import com.reteno.data.local.config.DeviceIdMode;
+import com.reteno.core.data.local.config.DeviceIdMode;
 
 public class AppSharedPreferencesManager {
     public static final String PREF_FILE_NAME = "sharedPrefs";

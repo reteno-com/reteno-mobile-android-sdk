@@ -3,11 +3,11 @@ package com.reteno.push.interceptor.click
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import com.reteno.RetenoImpl
+import com.reteno.core.RetenoImpl
 import com.reteno.push.Constants.KEY_ES_LINK
 import com.reteno.push.Util
-import com.reteno.util.Logger
-import com.reteno.util.toStringVerbose
+import com.reteno.core.util.Logger
+import com.reteno.core.util.toStringVerbose
 
 class RetenoNotificationClickedReceiver : BroadcastReceiver() {
 

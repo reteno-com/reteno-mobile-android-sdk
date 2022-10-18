@@ -4,8 +4,8 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import com.reteno.tests.AbstractTest
-import com.reteno.util.BuildUtil
-import com.reteno.util.Util
+import com.reteno.core.util.BuildUtil
+import com.reteno.core.util.Util
 import io.mockk.*
 import junit.framework.TestCase.*
 import org.junit.*
