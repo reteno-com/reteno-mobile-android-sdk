@@ -1,20 +1,23 @@
 package com.reteno.core.domain.controller
 
-import android.util.Log
+import com.reteno.core.BaseUnitTest
 import com.reteno.core.data.local.ds.ConfigRepository
 import com.reteno.core.data.remote.ds.InteractionRepository
 import com.reteno.core.model.interaction.Interaction
 import com.reteno.core.model.interaction.InteractionStatus
 import com.reteno.core.util.Util
-import io.mockk.*
+import io.mockk.every
 import io.mockk.impl.annotations.MockK
 import io.mockk.impl.annotations.RelaxedMockK
+import io.mockk.mockkStatic
+import io.mockk.unmockkStatic
+import io.mockk.verify
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
 
 
-class InteractionControllerTest {
+class InteractionControllerTest : BaseUnitTest() {
     // region constants ----------------------------------------------------------------------------
     companion object {
         const val TOKEN = "some_token"
@@ -35,13 +38,8 @@ class InteractionControllerTest {
     private lateinit var SUT: InteractionController
 
     @Before
-    fun before() {
-        MockKAnnotations.init(this)
-
-        mockkStatic(Log::class)
-        every { Log.v(any(), any()) } returns 0
-        every { Log.d(any(), any()) } returns 0
-        every { Log.i(any(), any()) } returns 0
+    override fun before() {
+        super.before()
 
         mockkStatic(Util::class)
         every { Util.getCurrentTimeStamp() } returns CURRENT_TIMESTAMP
@@ -50,9 +48,9 @@ class InteractionControllerTest {
     }
 
     @After
-    fun after() {
+    override fun after() {
+        super.after()
         unmockkStatic(Util::class)
-        unmockkStatic(Log::class)
     }
 
     @Test

@@ -1,5 +1,6 @@
 package com.reteno.core.data.repository
 
+import com.reteno.core.BaseUnitTest
 import com.reteno.core.data.remote.api.ApiClient
 import com.reteno.core.data.remote.api.ApiContract
 import com.reteno.core.domain.ResponseCallback
@@ -12,7 +13,7 @@ import org.junit.Before
 import org.junit.Test
 
 
-class InteractionRepositoryTest {
+class InteractionRepositoryTest : BaseUnitTest() {
     // region constants ----------------------------------------------------------------------------
     companion object {
         private const val TOKEN = "some_token"
@@ -20,8 +21,10 @@ class InteractionRepositoryTest {
         private val INTERACTION_STATUS = InteractionStatus.DELIVERED
         private const val CURRENT_TIMESTAMP = "2022-11-22T11:11:11Z"
 
-        private val EXPECTED_API_CONTRACT_URL = ApiContract.RetenoApi.InteractionStatus(INTERACTION_ID).url
-        private const val EXPECTED_URL = "https://api.reteno.com/api/v1/interactions/$INTERACTION_ID/status"
+        private val EXPECTED_API_CONTRACT_URL =
+            ApiContract.RetenoApi.InteractionStatus(INTERACTION_ID).url
+        private const val EXPECTED_URL =
+            "https://api.reteno.com/api/v1/interactions/$INTERACTION_ID/status"
     }
     // endregion constants -------------------------------------------------------------------------
 
@@ -35,8 +38,8 @@ class InteractionRepositoryTest {
     private lateinit var SUT: InteractionRepositoryImplProxy;
 
     @Before
-    fun before() {
-        MockKAnnotations.init(this)
+    override fun before() {
+        super.before()
         SUT = InteractionRepositoryImplProxy(apiClient)
     }
 
@@ -44,7 +47,8 @@ class InteractionRepositoryTest {
     fun givenValidInteraction_whenInteractionSent_thenApiClientPutsInteractionWithCorrectParameters() {
         // Given
         val interaction = Interaction(INTERACTION_STATUS, CURRENT_TIMESTAMP, TOKEN)
-        val expectedInteractionJson = "{\"status\":\"$INTERACTION_STATUS\",\"time\":\"$CURRENT_TIMESTAMP\",\"token\":\"$TOKEN\"}"
+        val expectedInteractionJson =
+            "{\"status\":\"$INTERACTION_STATUS\",\"time\":\"$CURRENT_TIMESTAMP\",\"token\":\"$TOKEN\"}"
 
         val apiContractCaptured = slot<ApiContract>()
         val jsonBodyCaptured = slot<String>()
