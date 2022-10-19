@@ -22,7 +22,7 @@ public class SampleApp extends Application implements RetenoApplication {
         super.onCreate();
         retenoInstance = new RetenoImpl(this);
         DeviceIdMode deviceIdMode = AppSharedPreferencesManager.getDeviceIdMode(this);
-        retenoInstance.changeDeviceIdMode(deviceIdMode, () -> {
+        retenoInstance.setDeviceIdMode(deviceIdMode, () -> {
             return Unit.INSTANCE;
         });
     }

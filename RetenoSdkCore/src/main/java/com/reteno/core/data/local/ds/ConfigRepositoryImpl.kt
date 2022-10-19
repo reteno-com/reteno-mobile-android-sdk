@@ -1,30 +1,24 @@
 package com.reteno.core.data.local.ds
 
+import com.reteno.core.data.local.config.DeviceId
 import com.reteno.core.data.local.config.DeviceIdMode
 import com.reteno.core.data.local.config.RestConfig
 import com.reteno.core.util.SharedPrefsManager
 
-class ConfigRepositoryImpl(
+internal class ConfigRepositoryImpl(
     private val sharedPrefsManager: SharedPrefsManager,
     private val restConfig: RestConfig
 ) : ConfigRepository {
 
     override fun setExternalDeviceId(externalId: String) {
-        restConfig.deviceId.setExternalDeviceId(externalId)
+        restConfig.setExternalDeviceId(externalId)
     }
 
-    override fun changeDeviceIdMode(mode: DeviceIdMode, onIdChangedCallback: () -> Unit) {
-        restConfig.deviceId.changeDeviceIdMode(mode, onIdChangedCallback)
+    override fun setDeviceIdMode(mode: DeviceIdMode, onDeviceIdChanged: (DeviceId) -> Unit) {
+        restConfig.setDeviceIdMode(mode, onDeviceIdChanged)
     }
 
-    override fun getDeviceId(): String =
-        restConfig.deviceId.id
-
-    override fun getDeviceIdMode(): DeviceIdMode =
-        restConfig.deviceId.mode
-
-    override fun getExternalId(): String? =
-        restConfig.deviceId.externalId
+    override fun getDeviceId(): DeviceId = restConfig.deviceId
 
     override fun saveFcmToken(token: String) {
         sharedPrefsManager.saveFcmToken(token)

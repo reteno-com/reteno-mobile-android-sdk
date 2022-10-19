@@ -4,12 +4,15 @@ import com.reteno.core.di.provider.*
 
 class ServiceLocator {
 
+    // TODO: Separate internal objects from externally exposed
+    // TODO: Mark internal fields as internal
+
     private val sharedPrefsManagerProvider: SharedPrefsManagerProvider =
         SharedPrefsManagerProvider()
 
-    private val deviceIdProvider: DeviceIdProvider =
-        DeviceIdProvider(sharedPrefsManagerProvider)
-    private val restConfigProvider: RestConfigProvider = RestConfigProvider(deviceIdProvider)
+    private val deviceIdHelperProvider: DeviceIdHelperProvider =
+        DeviceIdHelperProvider(sharedPrefsManagerProvider)
+    private val restConfigProvider: RestConfigProvider = RestConfigProvider(deviceIdHelperProvider)
 
     val retenoActivityHelperProvider: RetenoActivityHelperProvider =
         RetenoActivityHelperProvider()

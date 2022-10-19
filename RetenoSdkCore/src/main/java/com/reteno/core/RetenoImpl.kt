@@ -44,12 +44,12 @@ class RetenoImpl(application: Application) : RetenoLifecycleCallbacks, Reteno {
         // TODO: Application is not in foreground
     }
 
-    override fun changeDeviceIdMode(deviceIdMode: DeviceIdMode, onIdChangedCallback: () -> Unit) {
+    override fun setDeviceIdMode(deviceIdMode: DeviceIdMode, onDeviceIdChanged: () -> Unit) {
         /*@formatter:off*/ Logger.i(TAG, "changeDeviceIdMode(): ", "deviceIdMode = [" , deviceIdMode , "]")
         /*@formatter:on*/
         try {
             // TODO: Move this to background thread later
-            contactController.changeDeviceIdMode(deviceIdMode, onIdChangedCallback)
+            contactController.setDeviceIdMode(deviceIdMode, onDeviceIdChanged)
         } catch (ex: Throwable) {
             Logger.captureException(ex)
         }

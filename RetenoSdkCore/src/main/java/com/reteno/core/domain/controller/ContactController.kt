@@ -19,12 +19,12 @@ class ContactController(
         onNewContact()
     }
 
-    fun changeDeviceIdMode(deviceIdMode: DeviceIdMode, onIdChangedCallback: () -> Unit) {
+    fun setDeviceIdMode(deviceIdMode: DeviceIdMode, onDeviceIdChanged: () -> Unit) {
         /*@formatter:off*/ Logger.i(TAG, "changeDeviceIdMode(): ", "deviceIdMode = [" , deviceIdMode , "]")
         /*@formatter:on*/
-        configRepository.changeDeviceIdMode(deviceIdMode) {
+        configRepository.setDeviceIdMode(deviceIdMode) {
             onNewContact()
-            onIdChangedCallback.invoke()
+            onDeviceIdChanged.invoke()
         }
     }
 
@@ -41,9 +41,10 @@ class ContactController(
     private fun onNewContact() {
         val token = configRepository.getFcmToken()
         if (token.isNotBlank()) {
+            val deviceId = configRepository.getDeviceId()
             val contact = Device.createDevice(
-                deviceId = configRepository.getDeviceId(),
-                externalUserId = configRepository.getExternalId(),
+                deviceId = deviceId.id,
+                externalUserId = deviceId.externalId,
                 pushToken = token
             )
 

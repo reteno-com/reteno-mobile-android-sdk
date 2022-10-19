@@ -72,7 +72,7 @@ public class FragmentDeviceId extends BaseFragment {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 DeviceIdMode mode = DeviceIdMode.values()[position];
-                getReteno().changeDeviceIdMode(mode, () -> {
+                getReteno().setDeviceIdMode(mode, () -> {
                     refreshUi();
                     return Unit.INSTANCE;
                 });
@@ -112,10 +112,10 @@ public class FragmentDeviceId extends BaseFragment {
     }
 
     private void refreshUi() {
-        binding.tvCurrentDeviceIdMode.setText(configRepository.getDeviceIdMode().toString());
-        binding.tvCurrentDeviceId.setText(configRepository.getDeviceId());
-        binding.spModesSelection.setSelection(configRepository.getDeviceIdMode().ordinal());
-        binding.tvExternalId.setText(configRepository.getExternalId());
+        binding.tvCurrentDeviceIdMode.setText(configRepository.getDeviceId().getMode$RetenoSdkCore_debug().toString());
+        binding.tvCurrentDeviceId.setText(configRepository.getDeviceId().getId$RetenoSdkCore_debug());
+        binding.spModesSelection.setSelection(configRepository.getDeviceId().getMode$RetenoSdkCore_debug().ordinal());
+        binding.tvExternalId.setText(configRepository.getDeviceId().getExternalId$RetenoSdkCore_debug());
         binding.etFcmToken.setText(configRepository.getFcmToken());
     }
 }
