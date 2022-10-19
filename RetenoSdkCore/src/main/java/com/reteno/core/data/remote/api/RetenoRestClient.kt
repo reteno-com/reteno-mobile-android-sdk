@@ -59,7 +59,7 @@ internal object RetenoRestClient {
         try {
             val urlWithParams = generateUrl(url.url, queryParams)
             val needAuthorizationHeaders = url is ApiContract.MobileApi
-            /*@formatter:off*/ Logger.i(TAG, "makeRequest(): ", "method = [", method, "], url = [", url, "], body = [", body, "], queryParams = [", queryParams, "], responseCallback = [", responseCallback, "]")
+            /*@formatter:off*/ Logger.i(TAG, "makeRequest(): ", "method = [" , method.httpMethodName , "], url = [" , url.url , "], body = [" , body , "], queryParams = [" , queryParams , "], responseCallback = [" , responseCallback , "]")
             /*@formatter:on*/
             urlConnection =
                 defaultHttpConnection(method, urlWithParams, needAuthorizationHeaders)
@@ -101,7 +101,7 @@ internal object RetenoRestClient {
             Logger.d(TAG, "makeRequest(): ", errorMessages)
             responseCallback.onFailure(null, null, e)
         } finally {
-            Logger.i(TAG, "makeRequest(): ", "$method $url disconnected")
+                /*@formatter:off*/ Logger.i(TAG, "makeRequest(): ", "method = ", method.httpMethodName, "; url = ", url.url, "; status = disconnected") /*@formatter:on*/
             urlConnection?.disconnect()
         }
     }

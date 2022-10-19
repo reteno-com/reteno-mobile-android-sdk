@@ -4,12 +4,12 @@ import com.reteno.core.di.provider.*
 
 class ServiceLocator {
 
-    val sharedPrefsManagerProvider: SharedPrefsManagerProvider =
+    private val sharedPrefsManagerProvider: SharedPrefsManagerProvider =
         SharedPrefsManagerProvider()
 
-    val deviceIdProvider: DeviceIdProvider =
+    private val deviceIdProvider: DeviceIdProvider =
         DeviceIdProvider(sharedPrefsManagerProvider)
-    val restConfigProvider: RestConfigProvider = RestConfigProvider(deviceIdProvider)
+    private val restConfigProvider: RestConfigProvider = RestConfigProvider(deviceIdProvider)
 
     val retenoActivityHelperProvider: RetenoActivityHelperProvider =
         RetenoActivityHelperProvider()
@@ -19,20 +19,25 @@ class ServiceLocator {
             sharedPrefsManagerProvider,
             restConfigProvider
         )
-    val apiClientProvider: ApiClientProvider = ApiClientProvider()
-    val eventsRepositoryProvider: EventsRepositoryProvider =
+    private val apiClientProvider: ApiClientProvider = ApiClientProvider()
+    private val eventsRepositoryProvider: EventsRepositoryProvider =
         EventsRepositoryProvider(apiClientProvider)
 
     val eventsControllerProvider: EventsControllerProvider =
         EventsControllerProvider(eventsRepositoryProvider)
 
-    val contactRepositoryProvider: ContactRepositoryProvider =
+    private val contactRepositoryProvider: ContactRepositoryProvider =
         ContactRepositoryProvider(apiClientProvider)
     val contactControllerProvider: ContactControllerProvider =
         ContactControllerProvider(
             contactRepositoryProvider,
             configRepositoryProvider
         )
+
+    private val interactionRepositoryProvider: InteractionRepositoryProvider =
+        InteractionRepositoryProvider(apiClientProvider)
+    val interactionControllerProvider: InteractionControllerProvider =
+        InteractionControllerProvider(configRepositoryProvider, interactionRepositoryProvider)
 
     init {
 

@@ -27,7 +27,6 @@ android {
             buildConfigField "String", "SENTRY_DSN", config.sentryDedugDsn
 
             minifyEnabled false
-            versionNameSuffix "-debug"
         }
 
         qa {
@@ -35,7 +34,6 @@ android {
 
             debuggable true
             minifyEnabled false
-            versionNameSuffix "-qa"
         }
 
         release {

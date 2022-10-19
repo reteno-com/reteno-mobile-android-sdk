@@ -5,6 +5,10 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import com.reteno.core.RetenoApplication
+import com.reteno.core.RetenoImpl
+import com.reteno.core.model.interaction.InteractionStatus
+import com.reteno.push.Constants
 import com.reteno.push.Constants.KEY_ES_LINK
 import com.reteno.push.Util
 import com.reteno.core.util.Logger
@@ -12,6 +16,11 @@ import com.reteno.core.util.getResolveInfoList
 import com.reteno.core.util.toStringVerbose
 
 class RetenoNotificationClickedActivity : Activity() {
+
+    private val reteno =
+        ((RetenoImpl.application as RetenoApplication).getRetenoInstance() as RetenoImpl)
+    private val interactionController = reteno.serviceLocator.interactionControllerProvider.get()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         /*@formatter:off*/ Logger.i(TAG, "onCreate(): ", "notification clicked, intent.extras = [" , intent.extras.toStringVerbose() , "]")
@@ -19,6 +28,10 @@ class RetenoNotificationClickedActivity : Activity() {
 
         try {
             intent.extras?.let { bundle ->
+                bundle.getString(Constants.KEY_ES_INTERACTION_ID)?.let { interactionId ->
+                    interactionController.onInteraction(interactionId, InteractionStatus.OPENED)
+                }
+
                 Util.tryToSendToCustomReceiverNotificationClicked(bundle)
 
                 getDeepLinkIntent(bundle)?.let { deeplinkIntent ->
