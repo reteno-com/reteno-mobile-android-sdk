@@ -4,7 +4,7 @@ import com.reteno.core.data.local.config.DeviceIdMode
 
 interface ConfigRepository {
     fun setExternalDeviceId(externalId: String)
-    fun changeDeviceIdMode(mode: DeviceIdMode)
+    fun changeDeviceIdMode(mode: DeviceIdMode, onIdChangedCallback: () -> Unit)
     fun getDeviceId(): String
     fun getDeviceIdMode(): DeviceIdMode
     fun getExternalId(): String?

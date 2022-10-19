@@ -16,10 +16,10 @@ class DeviceId(private val sharedPrefsManager: SharedPrefsManager) {
         private set
 
     init {
-        changeDeviceIdMode()
+        changeDeviceIdMode(DeviceIdMode.ANDROID_ID) {}
     }
 
-    internal fun changeDeviceIdMode(deviceIdMode: DeviceIdMode = DeviceIdMode.ANDROID_ID) {
+    internal fun changeDeviceIdMode(deviceIdMode: DeviceIdMode, onIdChangedCallback: () -> Unit) {
         val context = RetenoImpl.application
 
         when (deviceIdMode) {
@@ -29,10 +29,11 @@ class DeviceId(private val sharedPrefsManager: SharedPrefsManager) {
                     /*@formatter:off*/ Logger.i(TAG, "initDeviceId(): ", "deviceIdMode = [", deviceIdMode, "]", " deviceId = [", deviceId, "]")
                     /*@formatter:on*/
                     id = deviceId
+                    onIdChangedCallback.invoke()
                 } catch (ex: java.lang.Exception) {
                     /*@formatter:off*/ Logger.i(TAG, "initDeviceId(): ", "deviceIdMode = [", deviceIdMode, "]", " EXCEPTION = [", ex.message, "]")
                     /*@formatter:on*/
-                    changeDeviceIdMode(DeviceIdMode.RANDOM_UUID)
+                    changeDeviceIdMode(DeviceIdMode.RANDOM_UUID, onIdChangedCallback)
                     return
                 }
             }
@@ -42,14 +43,16 @@ class DeviceId(private val sharedPrefsManager: SharedPrefsManager) {
                     /*@formatter:off*/ Logger.i(TAG, "initDeviceId(): ", "deviceIdMode = [", deviceIdMode, "]", " deviceId = [", it.id, "]")
                     /*@formatter:on*/
                     id = it.id
+                    onIdChangedCallback.invoke()
                 }.addOnFailureListener {
                     /*@formatter:off*/ Logger.i(TAG, "initDeviceId(): ", "deviceIdMode = [", deviceIdMode, "]", " failed trying ANDROID_ID")
                     /*@formatter:on*/
-                    changeDeviceIdMode(DeviceIdMode.ANDROID_ID)
+                    changeDeviceIdMode(DeviceIdMode.ANDROID_ID, onIdChangedCallback)
                 }
             }
             DeviceIdMode.RANDOM_UUID -> {
                 id = sharedPrefsManager.getDeviceIdUuid()
+                onIdChangedCallback.invoke()
                 /*@formatter:off*/ Logger.i(TAG, "initDeviceId(): ", "deviceIdMode = [", deviceIdMode, "]", " deviceId = [", id, "]")
                 /*@formatter:on*/
             }

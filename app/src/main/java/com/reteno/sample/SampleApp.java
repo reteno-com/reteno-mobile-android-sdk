@@ -11,6 +11,8 @@ import com.reteno.core.RetenoImpl;
 import com.reteno.core.data.local.config.DeviceIdMode;
 import com.reteno.sample.util.AppSharedPreferencesManager;
 
+import kotlin.Unit;
+
 public class SampleApp extends Application implements RetenoApplication {
 
     private Reteno retenoInstance;
@@ -20,7 +22,9 @@ public class SampleApp extends Application implements RetenoApplication {
         super.onCreate();
         retenoInstance = new RetenoImpl(this);
         DeviceIdMode deviceIdMode = AppSharedPreferencesManager.getDeviceIdMode(this);
-        retenoInstance.changeDeviceIdMode(deviceIdMode);
+        retenoInstance.changeDeviceIdMode(deviceIdMode, () -> {
+            return Unit.INSTANCE;
+        });
     }
 
 

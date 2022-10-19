@@ -6,7 +6,7 @@ import com.reteno.core.data.local.config.DeviceIdMode
 
 interface Reteno {
 
-    fun changeDeviceIdMode(deviceIdMode: DeviceIdMode)
+    fun changeDeviceIdMode(deviceIdMode: DeviceIdMode, onIdChangedCallback: () -> Unit)
 
     fun setExternalDeviceId(@NonNull externalDeviceId: String)
 

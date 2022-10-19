@@ -13,8 +13,8 @@ class ConfigRepositoryImpl(
         restConfig.deviceId.setExternalDeviceId(externalId)
     }
 
-    override fun changeDeviceIdMode(mode: DeviceIdMode) {
-        restConfig.deviceId.changeDeviceIdMode(mode)
+    override fun changeDeviceIdMode(mode: DeviceIdMode, onIdChangedCallback: () -> Unit) {
+        restConfig.deviceId.changeDeviceIdMode(mode, onIdChangedCallback)
     }
 
     override fun getDeviceId(): String =
