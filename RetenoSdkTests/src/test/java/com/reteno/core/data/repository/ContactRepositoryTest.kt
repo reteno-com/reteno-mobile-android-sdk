@@ -4,27 +4,25 @@ import com.reteno.core.BaseUnitTest
 import com.reteno.core.data.remote.api.ApiClient
 import com.reteno.core.data.remote.api.ApiContract
 import com.reteno.core.domain.ResponseCallback
-import com.reteno.core.model.interaction.Interaction
-import com.reteno.core.model.interaction.InteractionStatus
+import com.reteno.core.model.device.Device
+import com.reteno.core.model.device.DeviceCategory
+import com.reteno.core.model.device.DeviceOS
 import io.mockk.*
 import io.mockk.impl.annotations.RelaxedMockK
-import org.junit.Assert.assertEquals
-import org.junit.Before
+import org.junit.Assert
 import org.junit.Test
 
 
-class InteractionRepositoryTest : BaseUnitTest() {
+class ContactRepositoryTest : BaseUnitTest() {
+
     // region constants ----------------------------------------------------------------------------
     companion object {
-        private const val TOKEN = "some_token"
-        private const val INTERACTION_ID = "interaction_id"
-        private val INTERACTION_STATUS = InteractionStatus.DELIVERED
-        private const val CURRENT_TIMESTAMP = "2022-11-22T11:11:11Z"
+        private const val DEVICE_ID = "device_ID"
+        private const val EXTERNAL_DEVICE_ID = "External_device_ID"
+        private const val FCM_TOKEN_NEW = "FCM_Token"
 
-        private val EXPECTED_API_CONTRACT_URL =
-            ApiContract.RetenoApi.InteractionStatus(INTERACTION_ID).url
-        private const val EXPECTED_URL =
-            "https://api.reteno.com/api/v1/interactions/$INTERACTION_ID/status"
+        private val EXPECTED_API_CONTRACT_URL = ApiContract.MobileApi.Device.url
+        private const val EXPECTED_URL = "https://mobile-api.reteno.com/api/v1/device"
     }
     // endregion constants -------------------------------------------------------------------------
 
@@ -35,25 +33,37 @@ class InteractionRepositoryTest : BaseUnitTest() {
 
     // endregion helper fields ---------------------------------------------------------------------
 
-    private lateinit var SUT: InteractionRepositoryImplProxy
+    private lateinit var SUT: ContactRepositoryImplProxy
 
-    @Before
+
     override fun before() {
         super.before()
-        SUT = InteractionRepositoryImplProxy(apiClient)
+        SUT = ContactRepositoryImplProxy(apiClient)
     }
 
     @Test
-    fun givenValidInteraction_whenInteractionSent_thenApiClientPutsInteractionWithCorrectParameters() {
+    fun sendDeviceProperties() {
         // Given
-        val interaction = Interaction(INTERACTION_STATUS, CURRENT_TIMESTAMP, TOKEN)
-        val expectedInteractionJson =
-            "{\"status\":\"$INTERACTION_STATUS\",\"time\":\"$CURRENT_TIMESTAMP\",\"token\":\"$TOKEN\"}"
+        val device = Device(
+            DEVICE_ID,
+            EXTERNAL_DEVICE_ID,
+            FCM_TOKEN_NEW,
+            DeviceCategory.MOBILE,
+            DeviceOS.ANDROID,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+        )
+        val expectedDeviceJson =
+            "{\"deviceId\":\"device_ID\",\"externalUserId\":\"External_device_ID\",\"pushToken\":\"FCM_Token\",\"category\":\"MOBILE\",\"osType\":\"ANDROID\"}"
 
         val apiContractCaptured = slot<ApiContract>()
         val jsonBodyCaptured = slot<String>()
         every {
-            apiClient.put(
+            apiClient.post(
                 url = capture(apiContractCaptured),
                 jsonBody = capture(jsonBodyCaptured),
                 responseHandler = any()
@@ -61,17 +71,17 @@ class InteractionRepositoryTest : BaseUnitTest() {
         } just runs
 
         // When
-        SUT.sendInteraction(INTERACTION_ID, interaction, object : ResponseCallback {
+        SUT.sendDeviceProperties(device, object : ResponseCallback {
             override fun onSuccess(response: String) {}
             override fun onFailure(statusCode: Int?, response: String?, throwable: Throwable?) {}
         })
 
         // Then
-        verify(exactly = 1) { apiClient.put(any(), any(), any()) }
+        verify(exactly = 1) { apiClient.post(any(), any(), any()) }
 
-        assertEquals(EXPECTED_API_CONTRACT_URL, EXPECTED_URL)
-        assertEquals(EXPECTED_API_CONTRACT_URL, apiContractCaptured.captured.url)
-        assertEquals(expectedInteractionJson, jsonBodyCaptured.captured)
+        Assert.assertEquals(EXPECTED_API_CONTRACT_URL, EXPECTED_URL)
+        Assert.assertEquals(EXPECTED_API_CONTRACT_URL, apiContractCaptured.captured.url)
+        Assert.assertEquals(expectedDeviceJson, jsonBodyCaptured.captured)
     }
 
     // region helper methods -----------------------------------------------------------------------
