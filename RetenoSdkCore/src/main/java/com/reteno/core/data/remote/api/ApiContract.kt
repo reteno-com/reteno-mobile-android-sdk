@@ -11,7 +11,7 @@ sealed interface ApiContract {
         }
 
         class InteractionStatus(interactionId: String) : RetenoApi() {
-            override val url = "${BASE_URL}/interactions/$interactionId/status"
+            override val url = "${BASE_URL}interactions/$interactionId/status"
         }
 
         object EventStatus : RetenoApi() { // TODO replace with pushEventStatus endpoint

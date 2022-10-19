@@ -11,6 +11,8 @@ import com.reteno.core.RetenoImpl
 import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.io.InputStream
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 
 
 internal fun isGooglePlayServicesAvailable(): Boolean {
@@ -93,6 +95,12 @@ object Util {
             outputStream.close()
             inputStream.close()
         }
+    }
+
+    @JvmStatic
+    fun getCurrentTimeStamp(): String {
+        val currentDate = Instant.now().truncatedTo(ChronoUnit.SECONDS)
+        return currentDate.toString()
     }
 }
 

@@ -6,15 +6,18 @@ import com.reteno.core.domain.ResponseCallback
 import com.reteno.core.model.interaction.Interaction
 import com.reteno.core.model.interaction.InteractionStatus
 import com.reteno.core.util.Logger
-import java.time.Instant
-import java.time.temporal.ChronoUnit
+import com.reteno.core.util.Util
 
 class InteractionController(private val configRepository: ConfigRepository, private val interactionRepository: InteractionRepository) {
 
     fun onInteraction(interactionId: String, status: InteractionStatus) {
         val fcmToken = configRepository.getFcmToken()
-        val currentDate = Instant.now().truncatedTo(ChronoUnit.SECONDS)
-        val timeStamp = currentDate.toString()
+        if (fcmToken.isBlank()) {
+            /*@formatter:off*/ Logger.i(TAG, "onInteraction(): ", "interactionId = [" , interactionId , "], NO PUSH TOKEN FOUND. Terminating")
+            /*@formatter:on*/
+            return
+        }
+        val timeStamp = Util.getCurrentTimeStamp()
         val interaction = Interaction(status, timeStamp, fcmToken)
         /*@formatter:off*/ Logger.i(TAG, "onInteraction(): ", "interactionId = [" , interactionId , "], interaction = [" , interaction.toString() , "]")
         /*@formatter:on*/
