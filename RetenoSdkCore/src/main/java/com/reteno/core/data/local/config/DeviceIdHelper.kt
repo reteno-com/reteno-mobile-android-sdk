@@ -26,22 +26,28 @@ class DeviceIdHelper(private val sharedPrefsManager: SharedPrefsManager) {
                     /*@formatter:on*/
                     onDeviceIdChanged(currentDeviceId.copy(id = deviceId, mode = deviceIdMode))
                 } catch (ex: java.lang.Exception) {
-                    /*@formatter:off*/ Logger.i(TAG, "initDeviceId(): ", "deviceIdMode = [", deviceIdMode, "]", " EXCEPTION = [", ex.message, "]")
+                    /*@formatter:off*/ Logger.e(TAG, "initDeviceId(): DeviceIdMode.ANDROID_ID", ex)
                     /*@formatter:on*/
                     withDeviceIdMode(currentDeviceId, DeviceIdMode.RANDOM_UUID, onDeviceIdChanged)
                     return
                 }
             }
             DeviceIdMode.APP_SET_ID -> {
-                val client = AppSet.getClient(context)
-                client.appSetIdInfo.addOnSuccessListener {
-                    /*@formatter:off*/ Logger.i(TAG, "initDeviceId(): ", "deviceIdMode = [", deviceIdMode, "]", " deviceId = [", it.id, "]")
+                try {
+                    val client = AppSet.getClient(context)
+                    client.appSetIdInfo.addOnSuccessListener {
+                        /*@formatter:off*/ Logger.i(TAG, "initDeviceId(): ", "deviceIdMode = [", deviceIdMode, "]", " deviceId = [", it.id, "]")
+                        /*@formatter:on*/
+                        onDeviceIdChanged(currentDeviceId.copy(id = it.id, mode = deviceIdMode))
+                    }.addOnFailureListener {
+                        /*@formatter:off*/ Logger.i(TAG, "initDeviceId(): ", "deviceIdMode = [", deviceIdMode, "]", " failed trying ANDROID_ID")
+                        /*@formatter:on*/
+                        withDeviceIdMode(currentDeviceId, DeviceIdMode.RANDOM_UUID, onDeviceIdChanged)
+                    }
+                } catch (ex: java.lang.Exception) {
+                    /*@formatter:off*/ Logger.e(TAG, "initDeviceId(): DeviceIdMode.APP_SET_ID", ex)
                     /*@formatter:on*/
-                    onDeviceIdChanged(currentDeviceId.copy(id = it.id, mode = deviceIdMode))
-                }.addOnFailureListener {
-                    /*@formatter:off*/ Logger.i(TAG, "initDeviceId(): ", "deviceIdMode = [", deviceIdMode, "]", " failed trying ANDROID_ID")
-                    /*@formatter:on*/
-                    withDeviceIdMode(currentDeviceId, DeviceIdMode.ANDROID_ID, onDeviceIdChanged)
+                    withDeviceIdMode(currentDeviceId, DeviceIdMode.RANDOM_UUID, onDeviceIdChanged)
                 }
             }
             DeviceIdMode.RANDOM_UUID -> {
