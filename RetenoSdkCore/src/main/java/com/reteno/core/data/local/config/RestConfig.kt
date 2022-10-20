@@ -4,7 +4,7 @@ import com.reteno.core.util.Logger
 
 class RestConfig(val deviceIdHelper: DeviceIdHelper) {
 
-    var deviceId: DeviceId = DeviceId("")
+    internal var deviceId: DeviceId = DeviceId("")
         private set
 
     init {

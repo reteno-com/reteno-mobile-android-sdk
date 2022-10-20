@@ -11,6 +11,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.reteno.core.RetenoImpl;
+import com.reteno.core._interop.DeviceIdInternal;
 import com.reteno.core.data.local.config.DeviceIdMode;
 import com.reteno.core.data.repository.ConfigRepository;
 import com.reteno.core.di.ServiceLocator;
@@ -112,10 +113,13 @@ public class FragmentDeviceId extends BaseFragment {
     }
 
     private void refreshUi() {
-        binding.tvCurrentDeviceIdMode.setText(configRepository.getDeviceId().getMode$RetenoSdkCore_debug().toString());
-        binding.tvCurrentDeviceId.setText(configRepository.getDeviceId().getId$RetenoSdkCore_debug());
-        binding.spModesSelection.setSelection(configRepository.getDeviceId().getMode$RetenoSdkCore_debug().ordinal());
-        binding.tvExternalId.setText(configRepository.getDeviceId().getExternalId$RetenoSdkCore_debug());
+        String id = DeviceIdInternal.INSTANCE.getIdInternal(configRepository.getDeviceId());
+        String externalId = DeviceIdInternal.INSTANCE.getExternalIdInternal(configRepository.getDeviceId());
+        DeviceIdMode mode = DeviceIdInternal.INSTANCE.getModeInternal(configRepository.getDeviceId());
+        binding.tvCurrentDeviceIdMode.setText(mode.toString());
+        binding.tvCurrentDeviceId.setText(id);
+        binding.spModesSelection.setSelection(mode.ordinal());
+        binding.tvExternalId.setText(externalId);
         binding.etFcmToken.setText(configRepository.getFcmToken());
     }
 }
