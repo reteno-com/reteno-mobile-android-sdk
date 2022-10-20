@@ -5,7 +5,6 @@ import android.content.Context
 import android.content.Intent
 import com.reteno.core.RetenoApplication
 import com.reteno.core.RetenoImpl
-import com.reteno.core.domain.controller.InteractionController
 import com.reteno.core.model.interaction.InteractionStatus
 import com.reteno.push.Constants
 import com.reteno.push.Constants.KEY_ES_LINK
@@ -15,9 +14,16 @@ import com.reteno.core.util.toStringVerbose
 
 class RetenoNotificationClickedReceiver : BroadcastReceiver() {
 
-    private val reteno =
+    // Don't move out of lazy delegate as Robolectric tests will fail
+    // https://github.com/robolectric/robolectric/issues/4308
+    private val reteno by lazy {
         ((RetenoImpl.application as RetenoApplication).getRetenoInstance() as RetenoImpl)
-    private val interactionController = reteno.serviceLocator.interactionControllerProvider.get()
+    }
+    // Don't move out of lazy delegate as Robolectric tests will fail
+    // https://github.com/robolectric/robolectric/issues/4308
+    private val interactionController by lazy {
+        reteno.serviceLocator.interactionControllerProvider.get()
+    }
 
     override fun onReceive(context: Context, intent: Intent?) {
         /*@formatter:off*/ Logger.i(TAG, "onReceive(): ", "notification clicked. Context = [" , context , "], intent.extras = [" , intent?.extras.toStringVerbose() , "]")
