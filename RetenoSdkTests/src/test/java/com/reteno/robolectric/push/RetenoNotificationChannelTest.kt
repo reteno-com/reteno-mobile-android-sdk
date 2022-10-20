@@ -3,7 +3,7 @@ package com.reteno.robolectric.push
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
-import com.reteno.robolectric.AbstractTest
+import com.reteno.robolectric.BaseRobolectricTest
 import com.reteno.core.util.BuildUtil
 import com.reteno.core.util.Util
 import io.mockk.*
@@ -14,7 +14,7 @@ import org.robolectric.annotation.Config
 
 @Config(sdk = [26])
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-class RetenoNotificationChannelTest : AbstractTest() {
+class RetenoNotificationChannelTest : BaseRobolectricTest() {
 
     @Throws(Exception::class)
     @Before

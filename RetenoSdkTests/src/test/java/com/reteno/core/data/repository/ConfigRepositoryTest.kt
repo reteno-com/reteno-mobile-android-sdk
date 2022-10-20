@@ -6,7 +6,7 @@ import com.reteno.core.data.local.config.DeviceIdHelper
 import com.reteno.core.data.local.config.DeviceIdMode
 import com.reteno.core.data.local.config.RestConfig
 import com.reteno.core.util.SharedPrefsManager
-import com.reteno.robolectric.AbstractTest
+import com.reteno.robolectric.BaseRobolectricTest
 import io.mockk.*
 import io.mockk.impl.annotations.MockK
 import org.junit.Assert.assertEquals
@@ -15,7 +15,7 @@ import org.mockito.Matchers.anyString
 import org.robolectric.annotation.Config
 
 @Config(sdk = [26])
-class ConfigRepositoryTest : AbstractTest() {
+class ConfigRepositoryTest : BaseRobolectricTest() {
 
     // region constants ----------------------------------------------------------------------------
     companion object {

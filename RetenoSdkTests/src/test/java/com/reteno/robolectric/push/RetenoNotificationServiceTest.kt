@@ -8,7 +8,7 @@ import com.reteno.push.Constants.KEY_ES_INTERACTION_ID
 import com.reteno.push.Constants.KEY_ES_NOTIFICATION_IMAGE
 import com.reteno.push.Constants.KEY_ES_TITLE
 import com.reteno.push.RetenoNotificationService
-import com.reteno.robolectric.AbstractTest
+import com.reteno.robolectric.BaseRobolectricTest
 import junit.framework.TestCase.assertEquals
 import org.junit.After
 import org.junit.Before
@@ -17,7 +17,7 @@ import org.robolectric.Shadows
 import org.robolectric.annotation.Config
 
 @Config(sdk = [26])
-class RetenoNotificationServiceTest : AbstractTest() {
+class RetenoNotificationServiceTest : BaseRobolectricTest() {
 
     private val pushService by lazy {
         RetenoNotificationService()

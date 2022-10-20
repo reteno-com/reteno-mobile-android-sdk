@@ -39,7 +39,7 @@ import java.security.Security
     "org.w3c.dom.*",
     "jdk.internal.reflect.*"
 )
-abstract class AbstractTest {
+abstract class BaseRobolectricTest {
 
     protected val application by lazy {
         ApplicationProvider.getApplicationContext() as Application

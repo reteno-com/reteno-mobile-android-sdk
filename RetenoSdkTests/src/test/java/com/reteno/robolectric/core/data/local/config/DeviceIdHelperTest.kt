@@ -4,7 +4,7 @@ import android.util.Log
 import com.reteno.core.data.local.config.DeviceId
 import com.reteno.core.data.local.config.DeviceIdMode
 import com.reteno.core.util.SharedPrefsManager
-import com.reteno.robolectric.AbstractTest
+import com.reteno.robolectric.BaseRobolectricTest
 import io.mockk.MockKAnnotations
 import io.mockk.every
 import io.mockk.impl.annotations.RelaxedMockK
@@ -17,7 +17,7 @@ import org.robolectric.annotation.Config
 
 
 @Config(sdk = [26])
-class DeviceIdHelperTest : AbstractTest() {
+class DeviceIdHelperTest : BaseRobolectricTest() {
 
     // region constants ----------------------------------------------------------------------------
     companion object {
