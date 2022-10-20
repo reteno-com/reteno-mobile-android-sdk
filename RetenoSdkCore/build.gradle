@@ -4,6 +4,7 @@ plugins {
     id 'com.vanniktech.maven.publish'
 }
 apply from: file("$project.rootDir/config.gradle")
+apply from: "$project.rootDir/test_dependencies.gradle"
 apply from: "$project.rootDir/keystore/keystore_config.gradle"
 
 android {
@@ -50,6 +51,12 @@ android {
     kotlinOptions {
         jvmTarget = JavaVersion.VERSION_1_8.toString()
     }
+
+    testOptions {
+        unitTests {
+            includeAndroidResources = true
+        }
+    }
 }
 
 dependencies {
@@ -62,4 +69,6 @@ dependencies {
     implementation 'androidx.security:security-crypto-ktx:1.1.0-alpha03'
 
     api 'com.google.code.gson:gson:2.9.1'
+
+    testDependencies()
 }
