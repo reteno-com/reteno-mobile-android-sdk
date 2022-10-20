@@ -39,7 +39,12 @@ debugTests:
     - base64 -d $RELEASE_KEYSTORE > keystore/release.keystore
     - chmod +x ./gradlew
   script:
-    - ./gradlew -Pci --console=plain testDebug
+    - ./gradlew --no-daemon -q -s testDebug
+  artifacts:
+    paths:
+      - ./app/build/reports/tests/testDebugUnitTest
+    when: always
+    expire_in: 2 week
   tags:
     - docker
 
