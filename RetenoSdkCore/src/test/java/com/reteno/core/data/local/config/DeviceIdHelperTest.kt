@@ -31,7 +31,7 @@ class DeviceIdHelperTest : BaseRobolectricTest() {
     private lateinit var sharedPrefsManager: SharedPrefsManager
     // endregion helper fields ---------------------------------------------------------------------
 
-    private lateinit var SUT: DeviceIdHelperProxy
+    private lateinit var SUT: DeviceIdHelper
 
 
     override fun before() {
@@ -43,7 +43,7 @@ class DeviceIdHelperTest : BaseRobolectricTest() {
         every { Log.d(any(), any()) } returns 0
         every { Log.i(any(), any()) } returns 0
 
-        SUT = DeviceIdHelperProxy(sharedPrefsManager)
+        SUT = DeviceIdHelper(sharedPrefsManager)
     }
 
     override fun after() {
@@ -87,14 +87,10 @@ class DeviceIdHelperTest : BaseRobolectricTest() {
         }
 
         // Then
-        val newId = DeviceIdHelperProxy.getId(newDeviceId)
-        val newMode = DeviceIdHelperProxy.getMode(newDeviceId)
-        val newExternalId = DeviceIdHelperProxy.getExternalId(newDeviceId)
-
         assertNotEquals(oldDeviceIdMode, expectedDeviceIdMode)
-        assertNotEquals(DEVICE_ID_UUID, newId)
-        assertEquals(expectedDeviceIdMode, newMode)
-        assertEquals(externalId, newExternalId)
+        assertNotEquals(DEVICE_ID_UUID, newDeviceId.id)
+        assertEquals(expectedDeviceIdMode, newDeviceId.mode)
+        assertEquals(externalId, newDeviceId.externalId)
     }
 
     @Test

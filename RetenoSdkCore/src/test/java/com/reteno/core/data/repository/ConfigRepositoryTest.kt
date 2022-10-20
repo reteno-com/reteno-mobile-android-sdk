@@ -34,7 +34,7 @@ class ConfigRepositoryTest : BaseRobolectricTest() {
     private lateinit var restConfig: RestConfig
     // endregion helper fields ---------------------------------------------------------------------
 
-    private lateinit var SUT: ConfigRepositoryImplProxy
+    private lateinit var SUT: ConfigRepositoryImpl
 
 
     override fun before() {
@@ -47,7 +47,7 @@ class ConfigRepositoryTest : BaseRobolectricTest() {
         every { Log.i(any(), any()) } returns 0
 
         restConfig = spyk(RestConfig(DeviceIdHelper(sharedPrefsManager)), recordPrivateCalls = true)
-        SUT = ConfigRepositoryImplProxy(sharedPrefsManager, restConfig)
+        SUT = ConfigRepositoryImpl(sharedPrefsManager, restConfig)
     }
 
     override fun after() {
@@ -87,7 +87,7 @@ class ConfigRepositoryTest : BaseRobolectricTest() {
         every { restConfig.deviceId } returns deviceId
 
         // When
-        val result = SUT.deviceId
+        val result = SUT.getDeviceId()
 
         // Then
         verify(exactly = 1) { restConfig.deviceId }
@@ -112,7 +112,7 @@ class ConfigRepositoryTest : BaseRobolectricTest() {
         every { sharedPrefsManager.getFcmToken() } returns FCM_TOKEN
 
         // When
-        val result = SUT.fcmToken
+        val result = SUT.getFcmToken()
 
         // Then
         verify(exactly = 1) { sharedPrefsManager.getFcmToken() }
@@ -137,7 +137,7 @@ class ConfigRepositoryTest : BaseRobolectricTest() {
         every { sharedPrefsManager.getDefaultNotificationChannel() } returns DEFAULT_NOTIFICATION_CHANNEL
 
         // When
-        val result = SUT.defaultNotificationChannel
+        val result = SUT.getDefaultNotificationChannel()
 
         // Then
         verify(exactly = 1) { sharedPrefsManager.getDefaultNotificationChannel() }

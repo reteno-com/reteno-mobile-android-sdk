@@ -32,12 +32,12 @@ class ContactRepositoryTest : BaseUnitTest() {
     private lateinit var apiClient: ApiClient
     // endregion helper fields ---------------------------------------------------------------------
 
-    private lateinit var SUT: ContactRepositoryImplProxy
+    private lateinit var SUT: ContactRepositoryImpl
 
 
     override fun before() {
         super.before()
-        SUT = ContactRepositoryImplProxy(apiClient)
+        SUT = ContactRepositoryImpl(apiClient)
     }
 
     @Test

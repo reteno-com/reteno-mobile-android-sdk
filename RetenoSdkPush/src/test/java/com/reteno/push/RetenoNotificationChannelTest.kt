@@ -6,10 +6,12 @@ import android.content.Context
 import com.reteno.core.util.BuildUtil
 import com.reteno.core.util.Util
 import com.reteno.push.base.robolectric.BaseRobolectricTest
+import com.reteno.push.channel.RetenoNotificationChannel
 import io.mockk.*
 import junit.framework.TestCase.*
 import org.junit.*
 import org.junit.runners.MethodSorters
+import org.powermock.reflect.Whitebox
 import org.robolectric.annotation.Config
 
 
@@ -41,11 +43,11 @@ class RetenoNotificationChannelTest : BaseRobolectricTest() {
         every { Util.readFromRaw(any<Int>()) } throws Exception("Resource not found exception")
 
         val expectedChannel = NotificationChannel(
-            RetenoNotificationChannelProxy.getDefaultChannelId(),
-            RetenoNotificationChannelProxy.FALLBACK_DEFAULT_CHANNEL_NAME,
+            RetenoNotificationChannel.DEFAULT_CHANNEL_ID,
+            FALLBACK_DEFAULT_CHANNEL_NAME,
             NotificationManager.IMPORTANCE_DEFAULT
         ).apply {
-            description = RetenoNotificationChannelProxy.FALLBACK_DEFAULT_CHANNEL_DESCRIPTION
+            description = FALLBACK_DEFAULT_CHANNEL_DESCRIPTION
             enableLights(false)
             lightColor = 0
             enableVibration(false)
@@ -54,11 +56,11 @@ class RetenoNotificationChannelTest : BaseRobolectricTest() {
             setShowBadge(false)
         }
 
-        RetenoNotificationChannelProxy.createDefaultChannel()
+        RetenoNotificationChannel.createDefaultChannel()
         val notificationManager =
             application.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         val defaultChannelInSystem = notificationManager.getNotificationChannel(
-            RetenoNotificationChannelProxy.getDefaultChannelId()
+            RetenoNotificationChannel.DEFAULT_CHANNEL_ID
         )
         assertNotNull(defaultChannelInSystem)
 
@@ -99,11 +101,11 @@ class RetenoNotificationChannelTest : BaseRobolectricTest() {
             setShowBadge(true)
         }
 
-        RetenoNotificationChannelProxy.createDefaultChannel()
+        RetenoNotificationChannel.createDefaultChannel()
         val notificationManager =
             application.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         val defaultChannelInSystem = notificationManager.getNotificationChannel(
-            RetenoNotificationChannelProxy.getDefaultChannelId()
+            RetenoNotificationChannel.DEFAULT_CHANNEL_ID
         )
         assertNotNull(defaultChannelInSystem)
 
@@ -154,16 +156,27 @@ class RetenoNotificationChannelTest : BaseRobolectricTest() {
                 "\"bypass_dnd\":true," +
                 "\"show_badge\":false" +
                 "}"
-        RetenoNotificationChannelProxy.configureDefaultNotificationChannel(configJson)
+        RetenoNotificationChannel.configureDefaultNotificationChannel(configJson)
 
-        RetenoNotificationChannelProxy.createDefaultChannel()
+        RetenoNotificationChannel.createDefaultChannel()
         val notificationManager =
             application.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         val defaultChannelInSystem = notificationManager.getNotificationChannel(
-            RetenoNotificationChannelProxy.getDefaultChannelId()
+            RetenoNotificationChannel.DEFAULT_CHANNEL_ID
         )
         assertNotNull(defaultChannelInSystem)
 
         assertEquals(expectedChannel, defaultChannelInSystem)
+    }
+
+    companion object {
+        private val FALLBACK_DEFAULT_CHANNEL_NAME = Whitebox.getField(
+            RetenoNotificationChannel::class.java,
+            "FALLBACK_DEFAULT_CHANNEL_NAME"
+        ).get(RetenoNotificationChannel::class.java) as String
+        private val FALLBACK_DEFAULT_CHANNEL_DESCRIPTION = Whitebox.getField(
+            RetenoNotificationChannel::class.java,
+            "FALLBACK_DEFAULT_CHANNEL_DESCRIPTION"
+        ).get(RetenoNotificationChannel::class.java) as String
     }
 }

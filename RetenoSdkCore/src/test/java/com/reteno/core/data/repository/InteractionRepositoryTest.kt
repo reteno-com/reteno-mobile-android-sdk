@@ -35,12 +35,12 @@ class InteractionRepositoryTest : BaseUnitTest() {
     private lateinit var apiClient: ApiClient
     // endregion helper fields ---------------------------------------------------------------------
 
-    private lateinit var SUT: InteractionRepositoryImplProxy
+    private lateinit var SUT: InteractionRepositoryImpl
 
     @Before
     override fun before() {
         super.before()
-        SUT = InteractionRepositoryImplProxy(apiClient)
+        SUT = InteractionRepositoryImpl(apiClient)
     }
 
     @Test
