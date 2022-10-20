@@ -4,6 +4,7 @@ plugins {
     id 'com.vanniktech.maven.publish'
 }
 apply from: file("$project.rootDir/config.gradle")
+apply from: "$project.rootDir/test_dependencies.gradle"
 apply from: "$project.rootDir/keystore/keystore_config.gradle"
 
 android {
@@ -43,12 +44,28 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
+    sourceSets {
+        debug {
+            java.srcDirs = ['src/main/java', 'src/debug/java']
+        }
+
+        qa {
+            java.srcDirs = ['src/main/java', 'src/debug/java']
+        }
+    }
+
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
     kotlinOptions {
         jvmTarget = JavaVersion.VERSION_1_8.toString()
+    }
+
+    testOptions {
+        unitTests {
+            includeAndroidResources = true
+        }
     }
 }
 
@@ -62,4 +79,6 @@ dependencies {
     implementation 'androidx.security:security-crypto-ktx:1.1.0-alpha03'
 
     api 'com.google.code.gson:gson:2.9.1'
+
+    testDependencies()
 }
