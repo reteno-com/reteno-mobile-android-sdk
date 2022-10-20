@@ -7,7 +7,7 @@ import com.reteno.core.RetenoApplication
 import com.reteno.core.RetenoImpl
 import com.reteno.robolectric._setup.FakeAndroidKeyStore
 import com.reteno.robolectric._setup.RetenoTestApp
-import com.reteno.robolectric.core.data.local.config.DeviceIdHelperTest
+import com.reteno.core.data.local.config.DeviceIdHelperTest
 import junit.framework.TestCase
 import org.junit.After
 import org.junit.Before

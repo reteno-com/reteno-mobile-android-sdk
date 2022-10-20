@@ -1,4 +1,4 @@
-package com.reteno.robolectric.push;
+package com.reteno.push;
 
 import com.reteno.push.channel.RetenoNotificationChannel;
 

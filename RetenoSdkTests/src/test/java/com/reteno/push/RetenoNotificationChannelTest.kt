@@ -1,4 +1,4 @@
-package com.reteno.robolectric.push
+package com.reteno.push
 
 import android.app.NotificationChannel
 import android.app.NotificationManager

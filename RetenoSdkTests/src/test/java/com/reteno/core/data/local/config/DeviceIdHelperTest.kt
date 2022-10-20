@@ -1,8 +1,6 @@
-package com.reteno.robolectric.core.data.local.config
+package com.reteno.core.data.local.config
 
 import android.util.Log
-import com.reteno.core.data.local.config.DeviceId
-import com.reteno.core.data.local.config.DeviceIdMode
 import com.reteno.core.data.local.sharedpref.SharedPrefsManager
 import com.reteno.robolectric.BaseRobolectricTest
 import io.mockk.MockKAnnotations
