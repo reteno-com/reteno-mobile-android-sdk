@@ -18,6 +18,7 @@ import org.junit.Test
 
 
 class InteractionControllerTest : BaseUnitTest() {
+
     // region constants ----------------------------------------------------------------------------
     companion object {
         const val TOKEN = "some_token"
@@ -102,13 +103,4 @@ class InteractionControllerTest : BaseUnitTest() {
         // Then
         verify(exactly = 0) { interactionsRepository.sendInteraction(any(), any(), any()) }
     }
-
-    // region helper methods -----------------------------------------------------------------------
-
-    // endregion helper methods --------------------------------------------------------------------
-
-
-    // region helper classes -----------------------------------------------------------------------
-
-    // endregion helper classes --------------------------------------------------------------------
 }

@@ -14,6 +14,7 @@ import org.junit.Test
 
 
 class InteractionRepositoryTest : BaseUnitTest() {
+
     // region constants ----------------------------------------------------------------------------
     companion object {
         private const val TOKEN = "some_token"
@@ -32,7 +33,6 @@ class InteractionRepositoryTest : BaseUnitTest() {
     // region helper fields ------------------------------------------------------------------------
     @RelaxedMockK
     private lateinit var apiClient: ApiClient
-
     // endregion helper fields ---------------------------------------------------------------------
 
     private lateinit var SUT: InteractionRepositoryImplProxy
@@ -73,13 +73,4 @@ class InteractionRepositoryTest : BaseUnitTest() {
         assertEquals(EXPECTED_API_CONTRACT_URL, apiContractCaptured.captured.url)
         assertEquals(expectedInteractionJson, jsonBodyCaptured.captured)
     }
-
-    // region helper methods -----------------------------------------------------------------------
-
-    // endregion helper methods --------------------------------------------------------------------
-
-
-    // region helper classes -----------------------------------------------------------------------
-
-    // endregion helper classes --------------------------------------------------------------------
 }

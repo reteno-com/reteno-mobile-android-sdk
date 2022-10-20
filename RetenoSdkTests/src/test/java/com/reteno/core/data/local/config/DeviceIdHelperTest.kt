@@ -22,8 +22,6 @@ class DeviceIdHelperTest : BaseRobolectricTest() {
         private const val DEVICE_ID_UUID = "device_ID_UUID"
         const val DEVICE_ID_ANDROID = "device_ID_ANDROID"
         private const val EXTERNAL_DEVICE_ID = "External_device_ID"
-
-
     }
     // endregion constants -------------------------------------------------------------------------
 
@@ -137,13 +135,4 @@ class DeviceIdHelperTest : BaseRobolectricTest() {
         val expectedDeviceId = DeviceId(DEVICE_ID_UUID, EXTERNAL_DEVICE_ID)
         assertEquals(expectedDeviceId, newDeviceId)
     }
-
-    // region helper methods -----------------------------------------------------------------------
-
-    // endregion helper methods --------------------------------------------------------------------
-
-
-    // region helper classes -----------------------------------------------------------------------
-
-    // endregion helper classes --------------------------------------------------------------------
 }

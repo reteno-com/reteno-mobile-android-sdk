@@ -14,6 +14,7 @@ import org.junit.Test
 
 
 class ContactControllerTest : BaseUnitTest() {
+
     // region constants ----------------------------------------------------------------------------
     companion object {
         private const val DEVICE_ID_ANDROID = "device_ID_ANDROID"
@@ -23,7 +24,6 @@ class ContactControllerTest : BaseUnitTest() {
         private const val FCM_TOKEN_OLD = "FCM_Token_OLD"
         private const val FCM_TOKEN_NEW = "FCM_Token"
     }
-
     // endregion constants -------------------------------------------------------------------------
 
 
@@ -191,9 +191,4 @@ class ContactControllerTest : BaseUnitTest() {
         }
     }
     // endregion helper methods --------------------------------------------------------------------
-
-
-    // region helper classes -----------------------------------------------------------------------
-
-    // endregion helper classes --------------------------------------------------------------------
 }

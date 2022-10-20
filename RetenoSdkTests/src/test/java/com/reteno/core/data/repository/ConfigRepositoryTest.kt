@@ -32,7 +32,6 @@ class ConfigRepositoryTest : BaseRobolectricTest() {
     private lateinit var sharedPrefsManager: SharedPrefsManager
 
     private lateinit var restConfig: RestConfig
-
     // endregion helper fields ---------------------------------------------------------------------
 
     private lateinit var SUT: ConfigRepositoryImplProxy
@@ -144,13 +143,4 @@ class ConfigRepositoryTest : BaseRobolectricTest() {
         verify(exactly = 1) { sharedPrefsManager.getDefaultNotificationChannel() }
         assertEquals(DEFAULT_NOTIFICATION_CHANNEL, result)
     }
-
-    // region helper methods -----------------------------------------------------------------------
-
-    // endregion helper methods --------------------------------------------------------------------
-
-
-    // region helper classes -----------------------------------------------------------------------
-
-    // endregion helper classes --------------------------------------------------------------------
 }

@@ -30,7 +30,6 @@ class ContactRepositoryTest : BaseUnitTest() {
     // region helper fields ------------------------------------------------------------------------
     @RelaxedMockK
     private lateinit var apiClient: ApiClient
-
     // endregion helper fields ---------------------------------------------------------------------
 
     private lateinit var SUT: ContactRepositoryImplProxy
@@ -83,13 +82,4 @@ class ContactRepositoryTest : BaseUnitTest() {
         Assert.assertEquals(EXPECTED_API_CONTRACT_URL, apiContractCaptured.captured.url)
         Assert.assertEquals(expectedDeviceJson, jsonBodyCaptured.captured)
     }
-
-    // region helper methods -----------------------------------------------------------------------
-
-    // endregion helper methods --------------------------------------------------------------------
-
-
-    // region helper classes -----------------------------------------------------------------------
-
-    // endregion helper classes --------------------------------------------------------------------
 }
