@@ -1,9 +1,9 @@
-package com.reteno.core.data.local.ds
+package com.reteno.core.data.repository
 
 import com.reteno.core.data.local.config.DeviceId
 import com.reteno.core.data.local.config.DeviceIdMode
 import com.reteno.core.data.local.config.RestConfig
-import com.reteno.core.util.SharedPrefsManager
+import com.reteno.core.data.local.sharedpref.SharedPrefsManager
 
 internal class ConfigRepositoryImpl(
     private val sharedPrefsManager: SharedPrefsManager,

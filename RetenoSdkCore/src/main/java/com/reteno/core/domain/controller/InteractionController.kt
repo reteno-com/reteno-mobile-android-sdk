@@ -1,7 +1,7 @@
 package com.reteno.core.domain.controller
 
-import com.reteno.core.data.local.ds.ConfigRepository
-import com.reteno.core.data.remote.ds.InteractionRepository
+import com.reteno.core.data.repository.ConfigRepository
+import com.reteno.core.data.repository.InteractionRepository
 import com.reteno.core.domain.ResponseCallback
 import com.reteno.core.model.interaction.Interaction
 import com.reteno.core.model.interaction.InteractionStatus

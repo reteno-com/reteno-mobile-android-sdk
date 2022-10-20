@@ -1,4 +1,4 @@
-package com.reteno.core.data.local.ds
+package com.reteno.core.data.repository
 
 import com.reteno.core.data.local.config.DeviceId
 import com.reteno.core.data.local.config.DeviceIdMode

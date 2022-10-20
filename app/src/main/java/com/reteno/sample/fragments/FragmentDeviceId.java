@@ -12,7 +12,7 @@ import androidx.annotation.Nullable;
 
 import com.reteno.core.RetenoImpl;
 import com.reteno.core.data.local.config.DeviceIdMode;
-import com.reteno.core.data.local.ds.ConfigRepository;
+import com.reteno.core.data.repository.ConfigRepository;
 import com.reteno.core.di.ServiceLocator;
 import com.reteno.sample.BaseFragment;
 import com.reteno.sample.databinding.FragmentDeviceIdBinding;

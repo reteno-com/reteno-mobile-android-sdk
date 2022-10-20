@@ -1,8 +1,8 @@
 package com.reteno.core.domain.controller
 
 import com.reteno.core.data.local.config.DeviceIdMode
-import com.reteno.core.data.local.ds.ConfigRepository
-import com.reteno.core.data.remote.ds.ContactRepository
+import com.reteno.core.data.repository.ConfigRepository
+import com.reteno.core.data.repository.ContactRepository
 import com.reteno.core.domain.ResponseCallback
 import com.reteno.core.model.device.Device
 import com.reteno.core.util.Logger

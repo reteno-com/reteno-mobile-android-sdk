@@ -3,8 +3,8 @@ package com.reteno.core.domain.controller
 import com.reteno.core.BaseUnitTest
 import com.reteno.core.data.local.config.DeviceId
 import com.reteno.core.data.local.config.DeviceIdMode
-import com.reteno.core.data.local.ds.ConfigRepository
-import com.reteno.core.data.remote.ds.ContactRepository
+import com.reteno.core.data.repository.ConfigRepository
+import com.reteno.core.data.repository.ContactRepository
 import com.reteno.core.model.device.Device
 import com.reteno.core.model.device.DeviceCategory
 import com.reteno.core.model.device.DeviceOS

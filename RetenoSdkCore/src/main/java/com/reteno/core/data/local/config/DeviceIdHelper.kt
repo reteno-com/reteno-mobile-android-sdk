@@ -4,7 +4,7 @@ import android.provider.Settings
 import com.google.android.gms.appset.AppSet
 import com.reteno.core.RetenoImpl
 import com.reteno.core.util.Logger
-import com.reteno.core.util.SharedPrefsManager
+import com.reteno.core.data.local.sharedpref.SharedPrefsManager
 
 class DeviceIdHelper(private val sharedPrefsManager: SharedPrefsManager) {
 

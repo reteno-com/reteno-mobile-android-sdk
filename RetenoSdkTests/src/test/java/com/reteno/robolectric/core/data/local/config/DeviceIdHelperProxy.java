@@ -3,7 +3,7 @@ package com.reteno.robolectric.core.data.local.config;
 import com.reteno.core.data.local.config.DeviceId;
 import com.reteno.core.data.local.config.DeviceIdHelper;
 import com.reteno.core.data.local.config.DeviceIdMode;
-import com.reteno.core.util.SharedPrefsManager;
+import com.reteno.core.data.local.sharedpref.SharedPrefsManager;
 
 import kotlin.Unit;
 import kotlin.jvm.functions.Function1;
