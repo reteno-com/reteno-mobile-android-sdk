@@ -1,13 +1,12 @@
-package com.reteno.core.data.local.ds
+package com.reteno.core.data.repository
 
+import com.reteno.core.data.local.config.DeviceId
 import com.reteno.core.data.local.config.DeviceIdMode
 
 interface ConfigRepository {
     fun setExternalDeviceId(externalId: String)
-    fun changeDeviceIdMode(mode: DeviceIdMode)
-    fun getDeviceId(): String
-    fun getDeviceIdMode(): DeviceIdMode
-    fun getExternalId(): String?
+    fun setDeviceIdMode(mode: DeviceIdMode, onDeviceIdChanged: (DeviceId) -> Unit)
+    fun getDeviceId(): DeviceId
     fun saveFcmToken(token: String)
     fun getFcmToken(): String
     fun saveDefaultNotificationChannel(channel: String)

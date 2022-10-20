@@ -1,4 +1,4 @@
-package com.reteno.core.data.remote.ds
+package com.reteno.core.data.repository
 
 import com.reteno.core.data.remote.api.ApiClient
 import com.reteno.core.data.remote.api.ApiContract

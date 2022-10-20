@@ -1,8 +1,8 @@
 package com.reteno.core.di.provider
 
-import com.reteno.core.data.local.ds.ConfigRepository
+import com.reteno.core.data.repository.ConfigRepository
 import com.reteno.core.di.base.ProviderWeakReference
-import com.reteno.core.data.local.ds.ConfigRepositoryImpl
+import com.reteno.core.data.repository.ConfigRepositoryImpl
 
 class ConfigRepositoryProvider(
     private val sharedPrefsManagerProvider: SharedPrefsManagerProvider,

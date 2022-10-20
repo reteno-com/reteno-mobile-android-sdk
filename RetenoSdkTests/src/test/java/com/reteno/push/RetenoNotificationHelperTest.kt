@@ -1,9 +1,7 @@
-package com.reteno.robolectric.push
+package com.reteno.push
 
 import android.os.Bundle
-import com.reteno.push.Constants
-import com.reteno.push.RetenoNotificationService
-import com.reteno.robolectric.AbstractTest
+import com.reteno.robolectric.BaseRobolectricTest
 import junit.framework.TestCase.assertEquals
 import org.junit.After
 import org.junit.Before
@@ -11,7 +9,7 @@ import org.junit.Test
 import org.robolectric.annotation.Config
 
 @Config(sdk = [26])
-class RetenoNotificationHelperTest: AbstractTest() {
+class RetenoNotificationHelperTest: BaseRobolectricTest() {
 
     private val pushService by lazy {
         RetenoNotificationService()

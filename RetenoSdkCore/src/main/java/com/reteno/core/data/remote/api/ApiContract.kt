@@ -10,6 +10,10 @@ sealed interface ApiContract {
             private const val BASE_URL = "https://api.reteno.com/api/v1/"
         }
 
+        class InteractionStatus(interactionId: String) : RetenoApi() {
+            override val url = "${BASE_URL}interactions/$interactionId/status"
+        }
+
         object EventStatus : RetenoApi() { // TODO replace with pushEventStatus endpoint
             override val url = "${BASE_URL}contact"
         }

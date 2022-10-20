@@ -1,6 +1,6 @@
 package com.reteno.core.domain.controller
 
-import com.reteno.core.data.remote.ds.EventsRepository
+import com.reteno.core.data.repository.EventsRepository
 import com.reteno.core.domain.ResponseCallback
 import com.reteno.core.model.EventBatch
 import com.reteno.core.model.Events

@@ -1,11 +1,13 @@
 package com.reteno.robolectric
 
 import android.app.Application
+import android.provider.Settings
 import androidx.test.core.app.ApplicationProvider
 import com.reteno.core.RetenoApplication
 import com.reteno.core.RetenoImpl
 import com.reteno.robolectric._setup.FakeAndroidKeyStore
 import com.reteno.robolectric._setup.RetenoTestApp
+import com.reteno.core.data.local.config.DeviceIdHelperTest
 import junit.framework.TestCase
 import org.junit.After
 import org.junit.Before
@@ -37,7 +39,7 @@ import java.security.Security
     "org.w3c.dom.*",
     "jdk.internal.reflect.*"
 )
-abstract class AbstractTest {
+abstract class BaseRobolectricTest {
 
     protected val application by lazy {
         ApplicationProvider.getApplicationContext() as Application
@@ -50,6 +52,9 @@ abstract class AbstractTest {
     @Throws(Exception::class)
     open fun before() {
         TestCase.assertNotNull(application)
+        Settings.Secure.putString(application.contentResolver, Settings.Secure.ANDROID_ID,
+            DeviceIdHelperTest.DEVICE_ID_ANDROID
+        )
 
         val provider = object : Provider("AndroidKeyStore", 1.0, "") {
             init {

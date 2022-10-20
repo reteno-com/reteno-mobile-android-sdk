@@ -20,7 +20,7 @@ class RetenoImpl(application: Application) : RetenoLifecycleCallbacks, Reteno {
 
     val serviceLocator: ServiceLocator = ServiceLocator()
 
-    private val configRepository = serviceLocator.configRepositoryProvider.get()
+    private val contactController = serviceLocator.contactControllerProvider.get()
     private val activityHelper: RetenoActivityHelper =
         serviceLocator.retenoActivityHelperProvider.get()
 
@@ -44,12 +44,12 @@ class RetenoImpl(application: Application) : RetenoLifecycleCallbacks, Reteno {
         // TODO: Application is not in foreground
     }
 
-    override fun changeDeviceIdMode(deviceIdMode: DeviceIdMode) {
+    override fun setDeviceIdMode(deviceIdMode: DeviceIdMode, onDeviceIdChanged: () -> Unit) {
         /*@formatter:off*/ Logger.i(TAG, "changeDeviceIdMode(): ", "deviceIdMode = [" , deviceIdMode , "]")
         /*@formatter:on*/
         try {
             // TODO: Move this to background thread later
-            configRepository.changeDeviceIdMode(deviceIdMode)
+            contactController.setDeviceIdMode(deviceIdMode, onDeviceIdChanged)
         } catch (ex: Throwable) {
             Logger.captureException(ex)
         }
@@ -60,7 +60,7 @@ class RetenoImpl(application: Application) : RetenoLifecycleCallbacks, Reteno {
         /*@formatter:on*/
         try {
             // TODO: Move this to background thread later
-            configRepository.setExternalDeviceId(externalDeviceId)
+            contactController.setExternalDeviceId(externalDeviceId)
         } catch (ex: Throwable) {
             Logger.captureException(ex)
         }

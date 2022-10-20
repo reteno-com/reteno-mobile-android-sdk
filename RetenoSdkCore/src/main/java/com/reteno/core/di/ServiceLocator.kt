@@ -4,12 +4,15 @@ import com.reteno.core.di.provider.*
 
 class ServiceLocator {
 
-    val sharedPrefsManagerProvider: SharedPrefsManagerProvider =
+    // TODO: Separate internal objects from externally exposed
+    // TODO: Mark internal fields as internal
+
+    private val sharedPrefsManagerProvider: SharedPrefsManagerProvider =
         SharedPrefsManagerProvider()
 
-    val deviceIdProvider: DeviceIdProvider =
-        DeviceIdProvider(sharedPrefsManagerProvider)
-    val restConfigProvider: RestConfigProvider = RestConfigProvider(deviceIdProvider)
+    private val deviceIdHelperProvider: DeviceIdHelperProvider =
+        DeviceIdHelperProvider(sharedPrefsManagerProvider)
+    private val restConfigProvider: RestConfigProvider = RestConfigProvider(deviceIdHelperProvider)
 
     val retenoActivityHelperProvider: RetenoActivityHelperProvider =
         RetenoActivityHelperProvider()
@@ -19,20 +22,25 @@ class ServiceLocator {
             sharedPrefsManagerProvider,
             restConfigProvider
         )
-    val apiClientProvider: ApiClientProvider = ApiClientProvider()
-    val eventsRepositoryProvider: EventsRepositoryProvider =
+    private val apiClientProvider: ApiClientProvider = ApiClientProvider()
+    private val eventsRepositoryProvider: EventsRepositoryProvider =
         EventsRepositoryProvider(apiClientProvider)
 
     val eventsControllerProvider: EventsControllerProvider =
         EventsControllerProvider(eventsRepositoryProvider)
 
-    val contactRepositoryProvider: ContactRepositoryProvider =
+    private val contactRepositoryProvider: ContactRepositoryProvider =
         ContactRepositoryProvider(apiClientProvider)
     val contactControllerProvider: ContactControllerProvider =
         ContactControllerProvider(
             contactRepositoryProvider,
             configRepositoryProvider
         )
+
+    private val interactionRepositoryProvider: InteractionRepositoryProvider =
+        InteractionRepositoryProvider(apiClientProvider)
+    val interactionControllerProvider: InteractionControllerProvider =
+        InteractionControllerProvider(configRepositoryProvider, interactionRepositoryProvider)
 
     init {
 
