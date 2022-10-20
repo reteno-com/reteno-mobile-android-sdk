@@ -5,7 +5,7 @@ import com.reteno.core.data.remote.ds.ContactRepositoryImpl;
 import com.reteno.core.domain.ResponseCallback;
 import com.reteno.core.model.device.Device;
 
-public class ContactRepositoryImplProxy {
+class ContactRepositoryImplProxy {
 
     private ContactRepositoryImpl contactRepositoryImpl;
 
