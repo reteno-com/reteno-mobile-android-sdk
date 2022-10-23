@@ -23,10 +23,6 @@ android {
         versionName globalConfig.versionName
     }
 
-    Properties props = new Properties()
-    def propFile = new File('signing.properties')
-    props.load(new FileInputStream(propFile))
-
     signingConfigs {
         release {
             storeFile file(keystore_release.storeFile)
@@ -99,6 +95,9 @@ android {
 dependencies {
 //    implementation project(':RetenoSdkCore')
     implementation project(':RetenoSdkFcm')
+//    implementation 'com.reteno:core:0.1.0-SNAPSHOT@jar'
+//    implementation 'com.reteno:fcm:0.1.0-SNAPSHOT@jar'
+//    implementation 'com.reteno:push:0.1.0-SNAPSHOT@jar'
 
     implementation 'io.sentry:sentry-android:6.4.3'
 
