@@ -8,7 +8,7 @@ import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import com.reteno.core.Reteno;
+import com.reteno.core.RetenoImpl;
 import com.reteno.sample.BaseFragment;
 import com.reteno.sample.databinding.FragmentSentryBinding;
 
@@ -42,7 +42,7 @@ public class FragmentSentry extends BaseFragment {
         });
         binding.btnCrashSdk.setOnClickListener(v -> {
             try {
-                Method method = Reteno.class.getDeclaredMethod("testCrash");
+                Method method = RetenoImpl.class.getDeclaredMethod("testCrash");
                 method.setAccessible(true);
                 method.invoke(getReteno());
                 method.setAccessible(false);

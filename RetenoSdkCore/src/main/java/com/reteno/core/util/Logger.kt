@@ -2,14 +2,17 @@ package com.reteno.core.util
 
 import android.util.Log
 import com.reteno.core.BuildConfig
-import io.sentry.Hint
+import com.reteno.core.RetenoApplication
+import com.reteno.core.RetenoImpl
+import io.sentry.Breadcrumb
 import io.sentry.Hub
 import io.sentry.Sentry
 
 object Logger {
     private const val SENTRY_DSN = BuildConfig.SENTRY_DSN
-    private const val HINT_KEY_TAG = "tag"
-    private const val HINT_TAG_MESSAGE = "message"
+    private const val BREADCRUMB_CATEGORY_CLASS = "className"
+    private const val BREADCRUMB_CATEGORY_METHOD = "methodName"
+    private const val BREADCRUMB_CATEGORY_DEVICE_ID = "deviceId"
 
     @JvmStatic
     fun captureEvent(msg: String) {
@@ -29,19 +32,6 @@ object Logger {
         })
 
         retenoHub.captureException(e)
-    }
-
-    @JvmStatic
-    fun captureException(tag: String, message: String, e: Throwable) {
-        val mainHub = Sentry.getCurrentHub().clone()
-        val retenoHub = Hub(mainHub.options.apply {
-            dsn = SENTRY_DSN
-        })
-
-        val hint = Hint()
-        hint.set(HINT_KEY_TAG, tag)
-        hint.set(HINT_TAG_MESSAGE, message)
-        retenoHub.captureException(e, hint)
     }
 
     @JvmStatic
@@ -75,11 +65,10 @@ object Logger {
     }
 
     @JvmStatic
-    fun e(tag: String, message: String, tr: Throwable) {
-        Log.e(tag, message, tr)
-        captureException(tag, message, tr)
+    fun e(tag: String, methodName: String, tr: Throwable) {
+        Log.e(tag, methodName, tr)
+        captureException(tag, methodName, tr)
     }
-
 
     private fun buildMessage(methodName: String, arguments: Array<out Any?>): String {
         val builder = StringBuilder().append(methodName)
@@ -87,5 +76,41 @@ object Logger {
             builder.append(arg)
         }
         return builder.toString()
+    }
+
+    private fun captureException(tag: String, methodName: String, e: Throwable) {
+        val mainHub = Sentry.getCurrentHub().clone()
+        val retenoHub = Hub(mainHub.options.apply {
+            dsn = SENTRY_DSN
+        })
+
+        addBreadcrumbs(tag, methodName, retenoHub)
+        retenoHub.captureException(e)
+    }
+
+    private fun addBreadcrumbs(tag: String, methodName: String, retenoHub: Hub) {
+        val classBreadcrumb = Breadcrumb.debug(tag).apply {
+            category = BREADCRUMB_CATEGORY_CLASS
+        }
+
+        val methodBreadcrumb = Breadcrumb.debug(methodName).apply {
+            category = BREADCRUMB_CATEGORY_METHOD
+        }
+
+        val serviceLocator =
+            ((RetenoImpl.application as RetenoApplication).getRetenoInstance() as RetenoImpl).serviceLocator
+        val deviceId = serviceLocator.configRepositoryProvider.get().getDeviceId()
+        val deviceIdBreadcrumb = Breadcrumb.debug(BREADCRUMB_CATEGORY_DEVICE_ID).apply {
+            category = BREADCRUMB_CATEGORY_DEVICE_ID
+            setData("id", deviceId.id)
+            setData("mode", deviceId.mode)
+            deviceId.externalId?.let { externalId ->
+                setData("externalId", externalId)
+            }
+        }
+
+        retenoHub.addBreadcrumb(classBreadcrumb)
+        retenoHub.addBreadcrumb(methodBreadcrumb)
+        retenoHub.addBreadcrumb(deviceIdBreadcrumb)
     }
 }

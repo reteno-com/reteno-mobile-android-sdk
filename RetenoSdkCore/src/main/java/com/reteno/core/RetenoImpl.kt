@@ -51,7 +51,7 @@ class RetenoImpl(application: Application) : RetenoLifecycleCallbacks, Reteno {
             // TODO: Move this to background thread later
             contactController.setDeviceIdMode(deviceIdMode, onDeviceIdChanged)
         } catch (ex: Throwable) {
-            Logger.captureException(ex)
+            Logger.e(TAG, "setDeviceIdMode(): ", ex)
         }
     }
 
@@ -62,7 +62,7 @@ class RetenoImpl(application: Application) : RetenoLifecycleCallbacks, Reteno {
             // TODO: Move this to background thread later
             contactController.setExternalDeviceId(externalDeviceId)
         } catch (ex: Throwable) {
-            Logger.captureException(ex)
+            Logger.e(TAG, "setExternalDeviceId(): ", ex)
         }
     }
 
