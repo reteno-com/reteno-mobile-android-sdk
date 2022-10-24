@@ -15,6 +15,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
+import org.powermock.reflect.Whitebox
 import java.io.ByteArrayInputStream
 import java.io.OutputStream
 import java.net.HttpURLConnection
@@ -27,6 +28,25 @@ class RetenoRestClientTest {
         private const val TEST_URL = "http://www.test.com"
         private const val TEST_RESPONSE = "test response"
         private const val TEST_ERROR_RESPONSE = "error response"
+
+        private val TIMEOUT: Int = getField("TIMEOUT")
+        private val READ_TIMEOUT: Int = getField("READ_TIMEOUT")
+        private val HEADER_KEY: String = getField("HEADER_KEY")
+        private val HEADER_VERSION: String = getField("HEADER_VERSION")
+        private val HEADER_CONTENT: String = getField("HEADER_CONTENT")
+        private val HEADER_CONTENT_VALUE: String = getField("HEADER_CONTENT_VALUE")
+        private val HEADER_ENCODING: String = getField("HEADER_ENCODING")
+        private val HEADER_CONTENT_ENCODING: String = getField("HEADER_CONTENT_ENCODING")
+        private val HEADER_ENCODING_VALUE: String = getField("HEADER_ENCODING_VALUE")
+        private val HEADER_ACCEPT: String = getField("HEADER_ACCEPT")
+        private val HEADER_ACCEPT_VALUE: String = getField("HEADER_ACCEPT_VALUE")
+
+        private fun <T> getField(fieldName: String): T {
+            return Whitebox.getField(
+                RetenoRestClient::class.java,
+                fieldName
+            )[RetenoRestClient::class.java] as T
+        }
     }
 
     @RelaxedMockK
@@ -90,10 +110,10 @@ class RetenoRestClientTest {
 
         makeRequest(url = url)
 
-        verify { httpURLConnection.setRequestProperty(eq(RetenoRestClientProxy.HEADER_KEY), any()) }
+        verify { httpURLConnection.setRequestProperty(eq(HEADER_KEY), any()) }
         verify {
             httpURLConnection.setRequestProperty(
-                eq(RetenoRestClientProxy.HEADER_VERSION),
+                eq(HEADER_VERSION),
                 any()
             )
         }
@@ -108,13 +128,13 @@ class RetenoRestClientTest {
 
         verify(inverse = true) {
             httpURLConnection.setRequestProperty(
-                eq(RetenoRestClientProxy.HEADER_KEY),
+                eq(HEADER_KEY),
                 any()
             )
         }
         verify(inverse = true) {
             httpURLConnection.setRequestProperty(
-                eq(RetenoRestClientProxy.HEADER_VERSION),
+                eq(HEADER_VERSION),
                 any()
             )
         }
@@ -129,12 +149,12 @@ class RetenoRestClientTest {
 
         verify {
             httpURLConnection.setRequestProperty(
-                eq(RetenoRestClientProxy.HEADER_ACCEPT),
-                eq(RetenoRestClientProxy.HEADER_ACCEPT_VALUE)
+                eq(HEADER_ACCEPT),
+                eq(HEADER_ACCEPT_VALUE)
             )
         }
-        verify { httpURLConnection.readTimeout = eq(RetenoRestClientProxy.READ_TIMEOUT) }
-        verify { httpURLConnection.connectTimeout = eq(RetenoRestClientProxy.TIMEOUT) }
+        verify { httpURLConnection.readTimeout = eq(READ_TIMEOUT) }
+        verify { httpURLConnection.connectTimeout = eq(TIMEOUT) }
         verify { httpURLConnection.requestMethod = method.httpMethodName }
         verify { httpURLConnection.useCaches = false }
         verify { httpURLConnection.instanceFollowRedirects = true }
@@ -159,14 +179,14 @@ class RetenoRestClientTest {
 
         verify {
             httpURLConnection.setRequestProperty(
-                eq(RetenoRestClientProxy.HEADER_CONTENT),
-                eq(RetenoRestClientProxy.HEADER_CONTENT_VALUE)
+                eq(HEADER_CONTENT),
+                eq(HEADER_CONTENT_VALUE)
             )
         }
         verify {
             httpURLConnection.setRequestProperty(
-                eq(RetenoRestClientProxy.HEADER_ENCODING),
-                eq(RetenoRestClientProxy.HEADER_ENCODING_VALUE)
+                eq(HEADER_ENCODING),
+                eq(HEADER_ENCODING_VALUE)
             )
         }
         verify { httpURLConnection.doInput = true }
@@ -178,7 +198,7 @@ class RetenoRestClientTest {
         val body = "some body"
         val outputStream = mockk<OutputStream>(relaxed = true)
 
-        every { httpURLConnection.getRequestProperty(eq(RetenoRestClientProxy.HEADER_CONTENT_ENCODING)) } returns ""
+        every { httpURLConnection.getRequestProperty(eq(HEADER_CONTENT_ENCODING)) } returns ""
         every { httpURLConnection.outputStream } returns outputStream
         every { ConnectionManager.openConnection(any()) } returns httpURLConnection
 
@@ -273,7 +293,7 @@ class RetenoRestClientTest {
         val spyCallback = spyk<ResponseCallback>()
 
         every { ConnectionManager.openConnection(any()) } returns httpURLConnection
-        every { httpURLConnection.getRequestProperty(eq(RetenoRestClientProxy.HEADER_CONTENT_ENCODING)) } returns ""
+        every { httpURLConnection.getRequestProperty(eq(HEADER_CONTENT_ENCODING)) } returns ""
         every { httpURLConnection.outputStream } throws MockKException(exceptionMessage)
 
         makeRequest(responseCallback = spyCallback)
