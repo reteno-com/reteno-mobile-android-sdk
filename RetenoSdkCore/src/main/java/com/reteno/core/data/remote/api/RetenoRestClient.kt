@@ -4,6 +4,7 @@ import android.net.Uri
 import com.reteno.core.BuildConfig
 import com.reteno.core.domain.ResponseCallback
 import com.reteno.core.util.Logger
+import com.reteno.core.util.Util
 import java.io.BufferedWriter
 import java.io.OutputStreamWriter
 import java.net.HttpURLConnection
@@ -14,7 +15,6 @@ import javax.net.ssl.SSLSocketFactory
 internal object RetenoRestClient {
 
     private val TAG = RetenoRestClient::class.java.simpleName
-    private val IS_DEBUG_MODE = BuildConfig.DEBUG
 
     private const val TIMEOUT = 10_000
     private const val READ_TIMEOUT = 15_000
@@ -116,7 +116,7 @@ internal object RetenoRestClient {
 
         urlConnection.apply {
 
-            if (IS_DEBUG_MODE) {
+            if (Util.isDebugView()) {
                 setRequestProperty(HEADER_DEBUG, "true")
             }
 
