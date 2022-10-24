@@ -7,6 +7,7 @@ import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
@@ -34,6 +35,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         checkPermissions();
+        checkDeepLink(getIntent());
     }
 
     private void checkPermissions() {
@@ -53,6 +55,22 @@ public class MainActivity extends AppCompatActivity {
             }).show();
         } else {
             requestPermissionLauncher.launch(POST_NOTIFICATIONS);
+        }
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        checkDeepLink(intent);
+    }
+
+    private void checkDeepLink(Intent intent) {
+        if (intent != null) {
+            Uri uri = intent.getData();
+            if (uri != null) {
+                TextView tv = findViewById(R.id.tvDeepLinkData);
+                tv.setText("Intent data: " + intent.getData().toString());
+            }
         }
     }
 }

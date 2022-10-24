@@ -5,6 +5,7 @@ import android.util.Log
 import com.reteno.core.data.remote.api.ApiContract
 import com.reteno.core.data.remote.api.ConnectionManager
 import com.reteno.core.data.remote.api.HttpMethod
+import com.reteno.core.data.remote.api.RetenoRestClient
 import com.reteno.core.domain.ResponseCallback
 import io.mockk.*
 import io.mockk.impl.annotations.RelaxedMockK
@@ -289,7 +290,7 @@ class RetenoRestClientTest {
         queryParams: Map<String, Any>? = null,
         responseCallback: ResponseCallback = getCallback()
     ) {
-        RetenoRestClientProxy.makeRequest(method, url, body, queryParams, responseCallback)
+        RetenoRestClient.makeRequest(method, url, body, queryParams, responseCallback)
     }
 
     private fun generateUriWithParams(params: Map<String, Any>): String {

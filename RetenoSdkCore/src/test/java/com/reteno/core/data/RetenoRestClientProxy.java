@@ -1,13 +1,8 @@
 package com.reteno.core.data;
 
-import com.reteno.core.data.remote.api.ApiContract;
-import com.reteno.core.data.remote.api.HttpMethod;
 import com.reteno.core.data.remote.api.RetenoRestClient;
-import com.reteno.core.domain.ResponseCallback;
 
 import org.powermock.reflect.Whitebox;
-
-import java.util.Map;
 
 public class RetenoRestClientProxy {
 
@@ -41,10 +36,6 @@ public class RetenoRestClientProxy {
         } catch (IllegalAccessException | NullPointerException e) {
             e.printStackTrace();
         }
-    }
-
-    static void makeRequest(HttpMethod httpMethod, ApiContract url, String body, Map<String, Object> queryParams, ResponseCallback responseCallback) {
-        RetenoRestClient.makeRequest(httpMethod, url, body, queryParams, responseCallback);
     }
 
     private static Object getField(String fieldName) throws IllegalAccessException {

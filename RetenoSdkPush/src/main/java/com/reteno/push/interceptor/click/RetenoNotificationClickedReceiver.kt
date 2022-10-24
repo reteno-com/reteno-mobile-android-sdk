@@ -3,6 +3,7 @@ package com.reteno.push.interceptor.click
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import com.reteno.core.RetenoApplication
 import com.reteno.core.RetenoImpl
 import com.reteno.core.model.interaction.InteractionStatus
@@ -39,8 +40,11 @@ class RetenoNotificationClickedReceiver : BroadcastReceiver() {
 
 
             intent?.getStringExtra(KEY_ES_LINK)?.let { link ->
-                // TODO: Handle deepling here
-
+                val deepLinkIntent = Intent(Intent.ACTION_VIEW)
+                deepLinkIntent.data = Uri.parse(link)
+                intent.extras?.let { deepLinkIntent.putExtras(it) }
+                deepLinkIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                context.startActivity(deepLinkIntent)
                 return
             }
 
@@ -51,7 +55,7 @@ class RetenoNotificationClickedReceiver : BroadcastReceiver() {
     }
 
     private fun getAppLaunchIntent(): Intent? {
-        val context = RetenoImpl.application
+        val context = RetenoImpl.application.applicationContext
         return context.packageManager.getLaunchIntentForPackage(context.packageName)
     }
 
