@@ -22,7 +22,7 @@ class RetenoNotificationServiceTest : BaseRobolectricTest() {
 
     @Test
     @Throws(Exception::class)
-    fun onNewToken_validToken_savedToRepository() {
+    fun givenValidToken_whenOnNewToken_thenSavedToRepository() {
         val expectedToken = "4bf5c8e5-72d5-4b3c-81d6-85128928e296"
         pushService.onNewToken(expectedToken)
 
@@ -33,7 +33,7 @@ class RetenoNotificationServiceTest : BaseRobolectricTest() {
 
     @Test
     @Throws(Exception::class)
-    fun showNotification_validNotification_notificationShown() {
+    fun givenValidNotification_whenShowNotification_thenNotificationShown() {
         val interactionId = "interaction_id_1231_4321_9900_0011"
 
         val bundle = Bundle().apply {
