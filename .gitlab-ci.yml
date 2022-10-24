@@ -72,7 +72,7 @@ deployQaToFirebase:
     - ./gradlew assembleQa appDistributionUploadQa --artifactType="APK"
   artifacts:
     paths:
-      - ./app/build/outputs/bundle/qa/app-qa.apk
+      - ./app/build/outputs/apk/qa/app-qa.apk
     when: on_success
     expire_in: 2 week
   when: manual
