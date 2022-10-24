@@ -101,7 +101,7 @@ internal object RetenoRestClient {
             Logger.d(TAG, "makeRequest(): ", errorMessages)
             responseCallback.onFailure(null, null, e)
         } finally {
-                /*@formatter:off*/ Logger.i(TAG, "makeRequest(): ", "method = ", method.httpMethodName, "; url = ", url.url, "; status = disconnected") /*@formatter:on*/
+            /*@formatter:off*/ Logger.i(TAG, "makeRequest(): ", "method = ", method.httpMethodName, "; url = ", url.url, "; status = disconnected") /*@formatter:on*/
             urlConnection?.disconnect()
         }
     }

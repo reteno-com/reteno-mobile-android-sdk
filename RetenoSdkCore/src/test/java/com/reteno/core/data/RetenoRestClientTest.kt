@@ -1,7 +1,7 @@
 package com.reteno.core.data
 
 import android.net.Uri
-import android.util.Log
+import com.reteno.core.base.BaseUnitTest
 import com.reteno.core.data.remote.api.ApiContract
 import com.reteno.core.data.remote.api.ConnectionManager
 import com.reteno.core.data.remote.api.HttpMethod
@@ -22,7 +22,7 @@ import java.net.HttpURLConnection
 import javax.net.ssl.HttpsURLConnection
 
 @RunWith(JUnit4::class)
-class RetenoRestClientTest {
+class RetenoRestClientTest : BaseUnitTest() {
 
     companion object {
         private const val TEST_URL = "http://www.test.com"
@@ -53,19 +53,15 @@ class RetenoRestClientTest {
     private lateinit var httpURLConnection: HttpURLConnection
 
     @Before
-    fun setUp() {
-        MockKAnnotations.init(this)
+    override fun before() {
+        super.before()
         mockkObject(ConnectionManager)
-        mockkStatic(Log::class)
-        every { Log.v(any(), any()) } returns 0
-        every { Log.d(any(), any()) } returns 0
-        every { Log.i(any(), any()) } returns 0
     }
 
     @After
-    fun tearDown() {
+    override fun after() {
+        super.after()
         unmockkObject(ConnectionManager)
-        unmockkStatic(Log::class)
     }
 
     @Test
