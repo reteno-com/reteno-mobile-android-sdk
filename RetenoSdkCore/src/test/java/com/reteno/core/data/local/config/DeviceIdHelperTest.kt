@@ -38,17 +38,7 @@ class DeviceIdHelperTest : BaseRobolectricTest() {
         super.before()
         MockKAnnotations.init(this)
 
-        mockkStatic(Log::class)
-        every { Log.v(any(), any()) } returns 0
-        every { Log.d(any(), any()) } returns 0
-        every { Log.i(any(), any()) } returns 0
-
         SUT = DeviceIdHelper(sharedPrefsManager)
-    }
-
-    override fun after() {
-        super.after()
-        unmockkStatic(Log::class)
     }
 
     @Test
