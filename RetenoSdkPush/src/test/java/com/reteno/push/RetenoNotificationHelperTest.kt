@@ -11,7 +11,7 @@ import org.robolectric.annotation.Config
 class RetenoNotificationHelperTest: BaseRobolectricTest() {
 
     @Test
-    fun getNotificationId_emptyBundle_fallbackDefaultNotificationId() {
+    fun givenEmptyBundle_whenGetNotificationId_thenFallbackDefaultNotificationId() {
         val bundle = Bundle()
 
         val expectedChannelId = NOTIFICATION_ID_DEFAULT
@@ -20,7 +20,7 @@ class RetenoNotificationHelperTest: BaseRobolectricTest() {
     }
 
     @Test
-    fun getNotificationId_bundleWithInteractionId_hashCodeOfInteractionId() {
+    fun givenBundleWithInteractionId_whenGetNotificationId_thenHashCodeOfInteractionId() {
         val interactionId = "1234-5678-1234-0987"
         val expectedChannelId = interactionId.hashCode()
 

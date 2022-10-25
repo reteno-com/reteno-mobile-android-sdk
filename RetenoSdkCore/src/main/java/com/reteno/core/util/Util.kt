@@ -8,9 +8,7 @@ import android.os.Bundle
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GoogleApiAvailability
 import com.reteno.core.RetenoImpl
-import java.io.ByteArrayOutputStream
-import java.io.IOException
-import java.io.InputStream
+import java.io.*
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 
@@ -102,6 +100,40 @@ object Util {
         val currentDate = Instant.now().truncatedTo(ChronoUnit.SECONDS)
         return currentDate.toString()
     }
+
+    /**
+     * To enable debugView mode run adb shell with the following command
+     * adb shell setprop debug.com.reteno.debug.view enable
+     * To disable change system property to any other one
+     * adb shell setprop debug.com.reteno.debug.view disable
+     */
+    @JvmStatic
+    internal fun isDebugView() :Boolean {
+        val debugString = getSysProp(PROP_KEY_DEBUG_VIEW)
+        /*@formatter:off*/ Logger.i(TAG, "isDebugView(): debugString = ", debugString)
+        /*@formatter:on*/
+        return debugString == PROP_VALUE_DEBUG_VIEW_ENABLE
+    }
+
+    private fun getSysProp(key: String): String {
+        val process: Process
+        var propvalue = ""
+        try {
+            process = ProcessBuilder("/system/bin/getprop", key).redirectErrorStream(true).start()
+            val br = BufferedReader(InputStreamReader(process.inputStream))
+            var line: String
+            while (br.readLine().also { line = it } != null) {
+                propvalue = line
+            }
+            process.destroy()
+        } catch (e: java.lang.Exception) {
+            Logger.e(TAG, "getSysProp($key): ", e)
+            propvalue = ""
+        }
+        return propvalue
+    }
 }
 
 const val TAG = "Util"
+const val PROP_KEY_DEBUG_VIEW = "debug.com.reteno.debug.view"
+const val PROP_VALUE_DEBUG_VIEW_ENABLE = "enable"
