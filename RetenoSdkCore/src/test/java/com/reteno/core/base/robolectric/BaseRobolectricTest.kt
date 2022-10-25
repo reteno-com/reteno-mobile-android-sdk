@@ -46,10 +46,10 @@ import java.security.Security
 abstract class BaseRobolectricTest {
 
     protected val application by lazy {
-        ApplicationProvider.getApplicationContext() as Application
+        ApplicationProvider.getApplicationContext() as RetenoTestApp
     }
     protected val reteno by lazy {
-        ((application as RetenoApplication).getRetenoInstance() as RetenoImpl)
+        (application as RetenoApplication).getRetenoInstance() as RetenoImpl
     }
 
     @Before
@@ -83,6 +83,8 @@ abstract class BaseRobolectricTest {
         every { Logger.e(any(), any(), any()) } just runs
         every { Logger.captureException(any()) } just runs
         every { Logger.captureEvent(any()) } just runs
+
+        MockKAnnotations.init(this)
     }
 
     @After
