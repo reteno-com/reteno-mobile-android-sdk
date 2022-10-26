@@ -4,6 +4,6 @@ ext {
     androidCompileSdkVersion = 33
     androidBuildToolsVersion = "30.0.3"
 
-    versionCode = 1
+    versionCode = 10
     versionName = "0.1.0"
 }
