@@ -1,5 +1,8 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 buildscript {
+
+    apply from: 'config.gradle'
+
     repositories {
         mavenCentral()
     }
@@ -25,3 +28,9 @@ plugins {
 
 apply from: 'config.gradle'
 apply plugin: "com.vanniktech.maven.publish"
+
+tasks.register('printVersionName') {
+    doLast {
+        println versionName
+    }
+}

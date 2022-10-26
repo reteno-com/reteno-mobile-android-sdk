@@ -1,5 +1,8 @@
 image: jangrewe/gitlab-ci-android
 
+before_script:
+  - export GRADLE_USER_HOME=`pwd`/.gradle
+
 cache:
   - key: "build-number"
     paths:
@@ -7,6 +10,9 @@ cache:
   - key: "$CI_COMMIT_REF_SLUG"
     paths:
       - last-build-hash
+  - key: "$CI_PROJECT_ID"
+    paths:
+      - .gradle/
 
 # Make Project
 assembleDebug:
@@ -69,7 +75,15 @@ deployQaToFirebase:
     - export BUILD_NUMBER=$(<build-number)
     - echo $BUILD_NUMBER
     - touch last-build-hash
+    - echo "" > release-notes.txt
+    - sed -i 's|^|Environment - Qa\n|' release-notes.txt
+    - sed -i '1s|^|Branch - '"$CI_COMMIT_REF_NAME"'\n|' release-notes.txt
+    - git rev-parse --short HEAD> last-build-hash
+    - sed -i '1s|^|Version - '"$BUILD_NUMBER"'\n|' release-notes.txt
     - ./gradlew assembleQa appDistributionUploadQa --artifactType="APK"
+    - RELEASE_NOTES=$(<release-notes.txt)
+    - echo "$RELEASE_NOTES"
+    - ./notify-slack.sh "$RELEASE_NOTES"
   artifacts:
     paths:
       - ./app/build/outputs/apk/qa/app-qa.apk
