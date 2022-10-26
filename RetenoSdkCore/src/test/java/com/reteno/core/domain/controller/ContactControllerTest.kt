@@ -8,6 +8,10 @@ import com.reteno.core.data.repository.ContactRepository
 import com.reteno.core.model.device.Device
 import com.reteno.core.model.device.DeviceCategory
 import com.reteno.core.model.device.DeviceOS
+import com.reteno.core.model.user.Address
+import com.reteno.core.model.user.User
+import com.reteno.core.model.user.UserAttributes
+import com.reteno.core.model.user.UserCustomField
 import io.mockk.*
 import io.mockk.impl.annotations.RelaxedMockK
 import org.junit.Test
@@ -56,7 +60,7 @@ class ContactControllerTest : BaseUnitTest() {
         every { configRepository.getFcmToken() } returns ""
 
         // When
-        SUT.setExternalDeviceId(EXTERNAL_DEVICE_ID)
+        SUT.setExternalUserId(EXTERNAL_DEVICE_ID)
 
         // Then
         verify(exactly = 0) { contactRepository.sendDeviceProperties(any(), any()) }
@@ -72,7 +76,7 @@ class ContactControllerTest : BaseUnitTest() {
         )
 
         // When
-        SUT.setExternalDeviceId(EXTERNAL_DEVICE_ID)
+        SUT.setExternalUserId(EXTERNAL_DEVICE_ID)
 
         // Then
         val expectedDevice =
@@ -160,6 +164,15 @@ class ContactControllerTest : BaseUnitTest() {
         verify(exactly = 1) { configRepository.saveFcmToken(FCM_TOKEN_NEW) }
         val expectedDevice = Device.createDevice(DEVICE_ID_ANDROID, null, FCM_TOKEN_NEW)
         verify(exactly = 1) { contactRepository.sendDeviceProperties(expectedDevice, any()) }
+    }
+
+    @Test
+    fun whenSetUserData_thenInteractWithContactRepository() {
+        val user = mockk<User>()
+
+        SUT.setUserData(user)
+
+        verify { contactRepository.sendUserData(user, any()) }
     }
 
     // region helper methods -----------------------------------------------------------------------

@@ -117,7 +117,7 @@ class RetenoRestClientTest : BaseUnitTest() {
 
     @Test
     fun didntAddedAuthorizationHeaders_callIsNotMobileApi() {
-        val url = ApiContract.RetenoApi.EventStatus
+        val url = ApiContract.RetenoApi.InteractionStatus("")
         every { ConnectionManager.openConnection(any()) } returns httpURLConnection
 
         makeRequest(url = url)
