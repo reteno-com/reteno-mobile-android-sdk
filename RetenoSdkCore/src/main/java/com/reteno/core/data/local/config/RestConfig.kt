@@ -20,10 +20,10 @@ class RestConfig(val deviceIdHelper: DeviceIdHelper) {
         }
     }
 
-    internal fun setExternalDeviceId(externalDeviceId: String?) {
-        /*@formatter:off*/ Logger.i(TAG, "setExternalDeviceId(): ", "externalDeviceId = [" , externalDeviceId , "]")
+    internal fun setExternalUserId(externalUserId: String?) {
+        /*@formatter:off*/ Logger.i(TAG, "setExternalUserId(): ", "externalUserId = [" , externalUserId , "]")
         /*@formatter:on*/
-        deviceId = deviceIdHelper.withExternalDeviceId(deviceId, externalDeviceId)
+        deviceId = deviceIdHelper.withExternalUserId(deviceId, externalUserId)
     }
 
     companion object {

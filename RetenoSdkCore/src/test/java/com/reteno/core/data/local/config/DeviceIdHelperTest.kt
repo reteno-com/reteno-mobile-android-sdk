@@ -89,7 +89,7 @@ class DeviceIdHelperTest : BaseRobolectricTest() {
         val oldDeviceId = DeviceId(DEVICE_ID_UUID, EXTERNAL_DEVICE_ID)
 
         // When
-        val newDeviceId = SUT.withExternalDeviceId(oldDeviceId, null)
+        val newDeviceId = SUT.withExternalUserId(oldDeviceId, null)
 
         // Then
         val expectedDeviceId = DeviceId(DEVICE_ID_UUID, null)
@@ -102,7 +102,7 @@ class DeviceIdHelperTest : BaseRobolectricTest() {
         val oldDeviceId = DeviceId(DEVICE_ID_UUID, EXTERNAL_DEVICE_ID)
 
         // When
-        val newDeviceId = SUT.withExternalDeviceId(oldDeviceId, "")
+        val newDeviceId = SUT.withExternalUserId(oldDeviceId, "")
 
         // Then
         val expectedDeviceId = DeviceId(DEVICE_ID_UUID, null)
@@ -115,7 +115,7 @@ class DeviceIdHelperTest : BaseRobolectricTest() {
         val oldDeviceId = DeviceId(DEVICE_ID_UUID, null)
 
         // When
-        val newDeviceId = SUT.withExternalDeviceId(oldDeviceId, EXTERNAL_DEVICE_ID)
+        val newDeviceId = SUT.withExternalUserId(oldDeviceId, EXTERNAL_DEVICE_ID)
 
         // Then
         val expectedDeviceId = DeviceId(DEVICE_ID_UUID, EXTERNAL_DEVICE_ID)

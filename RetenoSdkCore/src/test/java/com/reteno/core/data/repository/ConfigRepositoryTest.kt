@@ -48,13 +48,13 @@ class ConfigRepositoryTest : BaseRobolectricTest() {
     @Test
     fun given_whenSetExternalDeviceId_thenDelegatedToRestConfig() {
         // Given
-        every { restConfig["setExternalDeviceId"](anyString()) } returns Unit
+        every { restConfig["setExternalUserId"](anyString()) } returns Unit
 
         // When
-        SUT.setExternalDeviceId(EXTERNAL_DEVICE_ID)
+        SUT.setExternalUserId(EXTERNAL_DEVICE_ID)
 
         // Then
-        verify(exactly = 1) { restConfig["setExternalDeviceId"](EXTERNAL_DEVICE_ID) }
+        verify(exactly = 1) { restConfig["setExternalUserId"](EXTERNAL_DEVICE_ID) }
     }
 
     @Test

@@ -10,8 +10,8 @@ internal class ConfigRepositoryImpl(
     private val restConfig: RestConfig
 ) : ConfigRepository {
 
-    override fun setExternalDeviceId(externalId: String) {
-        restConfig.setExternalDeviceId(externalId)
+    override fun setExternalUserId(externalId: String) {
+        restConfig.setExternalUserId(externalId)
     }
 
     override fun setDeviceIdMode(mode: DeviceIdMode, onDeviceIdChanged: (DeviceId) -> Unit) {
