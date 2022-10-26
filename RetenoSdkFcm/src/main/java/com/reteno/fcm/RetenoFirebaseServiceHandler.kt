@@ -40,7 +40,7 @@ class RetenoFirebaseServiceHandler {
 
         val hasInteractionId = messageMap.containsKey(KEY_ES_INTERACTION_ID)
         if (hasInteractionId) {
-            pushService.showNotification(getBundle(messageMap))
+            pushService.handleRetenoNotification(getBundle(messageMap))
         } else {
             // TODO: SEND notification to broadcast receiver to be handled by application dev
         }
