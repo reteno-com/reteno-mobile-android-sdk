@@ -93,11 +93,7 @@ android {
 }
 
 dependencies {
-//    implementation project(':RetenoSdkCore')
     implementation project(':RetenoSdkFcm')
-//    implementation 'com.reteno:core:0.1.0-SNAPSHOT@jar'
-//    implementation 'com.reteno:fcm:0.1.0-SNAPSHOT@jar'
-//    implementation 'com.reteno:push:0.1.0-SNAPSHOT@jar'
 
     implementation 'io.sentry:sentry-android:6.4.3'
 

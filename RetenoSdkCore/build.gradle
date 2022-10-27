@@ -40,7 +40,7 @@ android {
         release {
             buildConfigField "String", "SENTRY_DSN", config.sentryReleaseDsn
 
-            minifyEnabled true
+            minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
