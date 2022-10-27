@@ -5,11 +5,9 @@ import android.util.Log
 import com.reteno.core.Reteno
 import com.reteno.core.RetenoApplication
 import com.reteno.core.RetenoImpl
+import com.reteno.core.di.ServiceLocator
 import com.reteno.core.util.Logger
-import io.mockk.every
-import io.mockk.just
-import io.mockk.mockkStatic
-import io.mockk.runs
+import io.mockk.*
 import org.mockito.Matchers
 
 class RetenoTestApp : Application(), RetenoApplication {
@@ -37,7 +35,8 @@ class RetenoTestApp : Application(), RetenoApplication {
         every { Logger.captureException(any()) } just runs
         every { Logger.captureEvent(any()) } just runs
 
-        retenoInstance = RetenoImpl(this)
+        retenoInstance = spyk(RetenoImpl(this))
+        every { retenoInstance.getProperty("serviceLocator") } returns spyk<ServiceLocator>()
     }
 
     override fun getRetenoInstance(): Reteno {
