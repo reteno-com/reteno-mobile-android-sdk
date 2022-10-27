@@ -69,7 +69,7 @@ class RetenoImpl(application: Application) : RetenoLifecycleCallbacks, Reteno {
             contactController.setExternalUserId(externalUserId)
             user?.let { setUserData(it) }
         } catch (ex: Throwable) {
-            Logger.captureException(ex)
+            Logger.e(TAG, "setUserAttributes(): ", ex)
         }
     }
 

@@ -19,7 +19,7 @@ interface Reteno {
     fun setUserAttributes(externalUserId: String)
 
     /**
-     * Set the user ID and adds or modifies user attributes.
+     * Set the user ID and add or modify user attributes.
      *
      * @see com.reteno.core.model.user.User
      */
