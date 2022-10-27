@@ -1,92 +1,196 @@
-# Reteno-android
+# Android
 
+The Reteno Android SDK for Mobile Customer Engagement and Analytics solutions.
 
+---
 
-## Getting started
+## Overview
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+`Reteno` is a lightweight SDK for Android that helps mobile teams integrate Reteno into their mobile apps. The server-side library makes it easy to call the `Reteno API`
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+##### The SDK supports
 
-## Add your files
+- Native Android applications written in **Java**/**Kotlin** 
 
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/ee/gitlab-basics/add-file.html#add-a-file-using-the-command-line) or push an existing Git repository with the following command:
+- Android 8.0 or later (minSdk = 26)
 
+### Getting started with Reteno SDK for Android
+
+1. Add mavenCentral repository in your project level `build.gradle`:
+
+```groovy
+buildscript { 
+    repositories { 
+    mavenCentral() 
+    } 
+... 
+}
 ```
-cd existing_repo
-git remote add origin https://gitlab.yalantis.com/yespo-sdk/reteno-android.git
-git branch -M main
-git push -uf origin main
+
+2. Add `reteno` and `firebase` dependencies in application level `build.gradle`:
+
+```groovy
+dependencies {
+    implementation 'core.reteno:fcm:(latest_version_here)'
+    ...
+    implementation "com.google.firebase:firebase-messaging:23.1.0"
+    implementation "com.google.firebase:firebase-messaging-ktx:23.1.0"
+}
 ```
 
-## Integrate with your tools
+| **Library**                     | **Description**                                                       |
+| ------------------------------- | --------------------------------------------------------------------- |
+| core.reteno:fcm                 | FCM enables push notifications through SDK and all core functionality |
+| firebase:firebase-messaging     | Firebase cloud messaging                                              |
+| firebase:firebase-messaging-ktx | Firebase cloud messaging Kotlin extensions                            |
 
-- [ ] [Set up project integrations](https://gitlab.yalantis.com/yespo-sdk/reteno-android/-/settings/integrations)
+###### License​ :
 
-## Collaborate with your team
+`Reteno Android SDK` is released under the MIT license. See [LICENSE](https://github.com/reteno-com/reteno-mobile-android-sdk/blob/main/LICENSE) for details.
 
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Automatically merge when pipeline succeeds](https://docs.gitlab.com/ee/user/project/merge_requests/merge_when_pipeline_succeeds.html)
+## 
 
-## Test and Deploy
+## Setting up SDK
 
-Use the built-in continuous integration in GitLab.
+Follow our setup guide to integrate the Reteno SDK with your app.
 
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/index.html)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing(SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
+1. Add reteno.access-key into your local.properties file in root directory of the project:
 
-***
+`reteno.access-key = "********-****-***-****-************"`
 
-# Editing this README
+2. Make sure to enable androidx in your gradle.properties file
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thank you to [makeareadme.com](https://www.makeareadme.com/) for this template.
+```groovy
+android.useAndroidX=true
+android.enableJetifier=true
+```
 
-## Suggestions for a good README
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+3. Make sure to add `core.reteno:fcm` and firebase dependencies in build.gradle
 
-## Name
-Choose a self-explaining name for your project.
+> Note:
+> 
+> Java 1.8 compiler is required. In app level `build.gradle`:
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+```groovy
+android {
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+}
+```
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+4. Edit your custom Application class.
+   Below is sample code you can add to your application class which gets you started with `RetenoSDK`. You may need to create a new class that extends the `Application` on this step. Don't forget to edit your manifest file to use the custom Application class:
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+```java
+package [com.YOUR_PACKAGE];
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+import android.app.Application;
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+import androidx.annotation.NonNull;
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+import com.reteno.core.Reteno;
+import com.reteno.core.RetenoApplication;
+import com.reteno.core.RetenoImpl;
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+public class CustomApplication extends Application implements RetenoApplication {
 
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
+    private Reteno retenoInstance;
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        retenoInstance = new RetenoImpl(this);
+    }
 
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
+    @NonNull
+    @Override
+    public Reteno getRetenoInstance() {
+        return retenoInstance;
+    }
+}
+```
 
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+```kotlin
+package [com.YOUR_PACKAGE];
 
-## License
-For open source projects, say how it is licensed.
+import android.app.Application
+import com.reteno.core.Reteno
+import com.reteno.core.RetenoApplication
+import com.reteno.core.RetenoImpl
 
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+class CustomApplication: Application(), RetenoApplication {
+
+    private lateinit var retenoInstance: Reteno
+
+    override fun onCreate() {
+        super.onCreate()
+        retenoInstance = RetenoImpl(this)
+    }
+
+    override fun getRetenoInstance(): Reteno {
+        return retenoInstance
+    }
+}
+```
+
+**Manifest.xml**
+
+```xml
+<application
+        android:name=".CustomApplication"
+        ...
+        >
+...
+</application>
+```
+
+5. Make sure to use SDK via `Reteno` interface, not `RetenoImpl` implementation. You may now access Reteno SDK across your application via your app instance. E.g. in Activity:
+
+```java
+Reteno reteno = ((CustomApplication)getApplication()).getRetenoInstance();
+```
+
+```kotlin
+val reteno = (application as CustomApplication).getRetenoInstance()
+```
+
+> **Optional.** RetenoSDK utilizes Sentry for its internal purposes. If you are using Sentry in your application make sure to add `tools:node="replace"` in your AndroidManifest.xml for the SentryDSN meta data section.
+
+```xml
+<meta-data
+            android:name="io.sentry.dsn"
+            android:value="https://DSN_HERE"
+            tools:node="replace" />
+```
+
+> **Optional.** You may add your default icon for all Reteno notifications via AndroidManifest.xml
+
+```xml
+<meta-data
+            android:name="@string/notification_icon"
+            android:resource="@drawable/ic_notification" />
+```
+
+> **Note:** If your app is running on Android 13 or later make sure to handle [Notification runtime permissions](https://developer.android.com/develop/ui/views/notifications/notification-permission)
+
+6. Final step: make sure to set up your Firebase application for Firebase Cloud Messaging:
+   
+   - Verify that your Gradle files include the correct FCM and [Reteno libraries](https://docs.reteno.com/reference/android-sdk-setup#getting-started-with-reteno-sdk-for-android) 
+   
+   - Download your `google-services.json` config file (see how [here](https://support.google.com/firebase/answer/7015592?hl=en)).
+   
+   - Add the above file to your root `app/` folder.
+   
+       ![google-services-json](assets/google-services-json.png)
+   
+   - Copy your FCM Server Key. In the [Firebase console](https://console.firebase.google.com/), click the gear icon next to Overview, then click Project Settings->Cloud Messaging -> Manage Service Accounts. Go to Service accounts to download FirebaseAdminSdk account's json key.
+   ![FirebaseConsole](assets/FirebaseConsole.png)
+   
+   ![CloudConsole1](assets/CloudConsole1.png)
+   
+   ![CloudConsole2](assets/CloudConsole2.png)
+- Follow this manual to [set up Reteno admin panel](https://docs.reteno.com/docs/connect-your-mobile-app) with your Firebase key.
+
+##### Now you are ready to run your app and send a marketing push notification to your application.
