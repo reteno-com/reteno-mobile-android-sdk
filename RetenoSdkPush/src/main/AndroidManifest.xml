@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+
+        <activity
+            android:name=".interceptor.click.RetenoNotificationClickedActivity"
+            android:exported="false" />
+
+        <receiver
+            android:name=".interceptor.click.RetenoNotificationClickedReceiver"
+            android:enabled="true"
+            android:exported="false" />
+    </application>
+</manifest>

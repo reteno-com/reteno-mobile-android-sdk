@@ -1,41 +1,84 @@
 plugins {
     id 'com.android.library'
     id 'org.jetbrains.kotlin.android'
+    id 'com.vanniktech.maven.publish'
 }
+apply from: file("$project.rootDir/config.gradle")
+apply from: "$project.rootDir/test_dependencies.gradle"
+apply from: "$project.rootDir/keystore/keystore_config.gradle"
 
 android {
-    namespace 'com.reteno'
-    compileSdk 32
+    def globalConfig = rootProject.ext
+
+    namespace 'com.reteno.core'
+    compileSdk globalConfig.androidCompileSdkVersion
 
     defaultConfig {
-        minSdk 26
-        targetSdk 32
+        minSdk globalConfig.androidMinSdkVersion
+        targetSdk globalConfig.androidTargetSdkVersion
 
-        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles "consumer-rules.pro"
+
+        buildConfigField "String", "API_ACCESS_KEY", config.retenoKey
+        buildConfigField "String", "SDK_VERSION", "\"${project.VERSION_NAME}\""
     }
 
     buildTypes {
-        release {
+        debug {
+            buildConfigField "String", "SENTRY_DSN", config.sentryDedugDsn
+
             minifyEnabled false
+        }
+
+        qa {
+            buildConfigField "String", "SENTRY_DSN", config.sentryDedugDsn
+
+            debuggable true
+            minifyEnabled false
+        }
+
+        release {
+            buildConfigField "String", "SENTRY_DSN", config.sentryReleaseDsn
+
+            minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
+    sourceSets {
+        debug {
+            java.srcDirs = ['src/main/java', 'src/debug/java']
+        }
+
+        qa {
+            java.srcDirs = ['src/main/java', 'src/debug/java']
+        }
+    }
+
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
     kotlinOptions {
-        jvmTarget = '1.8'
+        jvmTarget = JavaVersion.VERSION_1_8.toString()
+    }
+
+    testOptions {
+        unitTests {
+            includeAndroidResources = true
+        }
     }
 }
 
 dependencies {
+    implementation "io.sentry:sentry-android:6.4.2"
 
-    implementation 'androidx.core:core-ktx:1.7.0'
-    implementation 'androidx.appcompat:appcompat:1.5.1'
-    implementation 'com.google.android.material:material:1.6.1'
-    testImplementation 'junit:junit:4.13.2'
-    androidTestImplementation 'androidx.test.ext:junit:1.1.3'
-    androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
+    implementation 'com.google.android.gms:play-services-base:18.1.0'
+    implementation "com.google.android.gms:play-services-appset:16.0.2"
+
+    implementation "androidx.core:core-ktx:1.9.0"
+    implementation 'androidx.security:security-crypto-ktx:1.1.0-alpha03'
+
+    api 'com.google.code.gson:gson:2.9.1'
+
+    testDependencies()
 }

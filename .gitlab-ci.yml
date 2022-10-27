@@ -1,0 +1,94 @@
+image: jangrewe/gitlab-ci-android
+
+before_script:
+  - export GRADLE_USER_HOME=`pwd`/.gradle
+
+cache:
+  - key: "build-number"
+    paths:
+      - build-number
+  - key: "$CI_COMMIT_REF_SLUG"
+    paths:
+      - last-build-hash
+  - key: "$CI_PROJECT_ID"
+    paths:
+      - .gradle/
+
+# Make Project
+assembleDebug:
+  interruptible: true
+  stage: build
+  before_script:
+    - mkdir keystore
+    - base64 -d $DEBUG_KEYSTORE > keystore/debug.keystore
+    - base64 -d $KEYSTORE_CONFIG_GRADLE > keystore/keystore_config.gradle
+    - base64 -d $FIREBASE_JSON > keystore/firebase_app_distribution.json
+    - base64 -d $RELEASE_KEYSTORE > keystore/release.keystore
+    - chmod +x ./gradlew
+  script:
+    - ./gradlew assembleDebug
+  artifacts:
+    paths:
+      - app/build/outputs/
+  tags:
+    - docker
+
+# Run all tests, if any fails, interrupt the pipeline(fail it)
+debugTests:
+  interruptible: true
+  stage: test
+  before_script:
+    - mkdir keystore
+    - base64 -d $DEBUG_KEYSTORE > keystore/debug.keystore
+    - base64 -d $KEYSTORE_CONFIG_GRADLE > keystore/keystore_config.gradle
+    - base64 -d $FIREBASE_JSON > keystore/firebase_app_distribution.json
+    - base64 -d $RELEASE_KEYSTORE > keystore/release.keystore
+    - chmod +x ./gradlew
+  script:
+    - ./gradlew --no-daemon -q -s testDebug
+  artifacts:
+    paths:
+      - ./app/build/reports/tests/testDebugUnitTest
+    when: always
+    expire_in: 2 week
+  tags:
+    - docker
+
+deployQaToFirebase:
+  stage: deploy
+  before_script:
+    - mkdir keystore
+    - base64 -d $DEBUG_KEYSTORE > keystore/debug.keystore
+    - base64 -d $KEYSTORE_CONFIG_GRADLE > keystore/keystore_config.gradle
+    - base64 -d $FIREBASE_JSON > keystore/firebase_app_distribution.json
+    - base64 -d $RELEASE_KEYSTORE > keystore/release.keystore
+    - chmod +x ./gradlew
+  script:
+    - touch build-number
+    - BUILD_NUMBER_CACHE=0
+    - BUILD_NUMBER_VARIABLE=$BUILD_NUMBER
+    - test -s build-number && BUILD_NUMBER_CACHE=$(<build-number)
+    - >
+      test $BUILD_NUMBER_CACHE -lt $BUILD_NUMBER_VARIABLE
+      && echo $((++BUILD_NUMBER_VARIABLE))> build-number
+      || echo $((++BUILD_NUMBER_CACHE))> build-number
+    - export BUILD_NUMBER=$(<build-number)
+    - echo $BUILD_NUMBER
+    - touch last-build-hash
+    - echo "" > release-notes.txt
+    - sed -i 's|^|Environment - Qa\n|' release-notes.txt
+    - sed -i '1s|^|Branch - '"$CI_COMMIT_REF_NAME"'\n|' release-notes.txt
+    - git rev-parse --short HEAD> last-build-hash
+    - sed -i '1s|^|Version - '"$BUILD_NUMBER"'\n|' release-notes.txt
+    - ./gradlew assembleQa appDistributionUploadQa --artifactType="APK"
+    - RELEASE_NOTES=$(<release-notes.txt)
+    - echo "$RELEASE_NOTES"
+    - ./notify-slack.sh "$RELEASE_NOTES"
+  artifacts:
+    paths:
+      - ./app/build/outputs/apk/qa/app-qa.apk
+    when: on_success
+    expire_in: 2 week
+  when: manual
+  tags:
+    - docker

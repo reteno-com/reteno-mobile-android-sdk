@@ -1,0 +1,68 @@
+def dependencyGroup(Closure closure) {
+    closure.delegate = dependencies
+    return closure
+}
+
+/******* Modules Dependencies *******/
+ext.testDependencies = dependencyGroup {
+    junit()
+    mockk()
+    mockito()
+    powermock()
+    robolectric()
+
+    androidx()
+    bouncycastle()
+    dexmaker()
+}
+
+/******* Dependency groups *******/
+
+// Dependencies used for unit tests.
+ext.junit = dependencyGroup {
+    testImplementation 'junit:junit:4.13.2'
+}
+
+ext.mockk = dependencyGroup {
+    testImplementation "io.mockk:mockk:1.13.2"
+}
+
+ext.mockito = dependencyGroup {
+    androidTestImplementation 'org.mockito:mockito-core:1.10.19'
+}
+
+ext.powermock = dependencyGroup {
+    def powermockVersion = '1.6.5'
+
+    testImplementation "org.powermock:powermock-module-junit4:$powermockVersion"
+    testImplementation "org.powermock:powermock-module-junit4-rule:$powermockVersion"
+    testImplementation "org.powermock:powermock-api-mockito:$powermockVersion"
+    testImplementation "org.powermock:powermock-classloading-xstream:$powermockVersion"
+}
+
+ext.robolectric = dependencyGroup {
+    testImplementation('org.robolectric:robolectric:4.8.1') {
+        exclude group: 'commons-logging', module: 'commons-logging'
+        exclude group: 'org.apache.httpcomponents', module: 'httpclient'
+    }
+    testImplementation 'org.robolectric:shadows-play-services:3.3.2'
+}
+
+ext.androidx = dependencyGroup {
+    testImplementation 'androidx.test:core:1.4.0'
+    testImplementation 'androidx.arch.core:core-testing:2.1.0'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.1'
+    androidTestImplementation 'androidx.test:runner:1.2.0'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
+    androidTestImplementation 'androidx.test:rules:1.2.0'
+}
+
+ext.bouncycastle = dependencyGroup {
+    testImplementation 'org.bouncycastle:bcmail-jdk15on:1.65'
+}
+
+ext.dexmaker = dependencyGroup {
+    androidTestImplementation "com.crittercism.dexmaker:dexmaker:1.4"
+    androidTestImplementation "com.crittercism.dexmaker:dexmaker-mockito:1.4"
+    androidTestImplementation "com.crittercism.dexmaker:dexmaker-dx:1.4"
+}

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/app_navigation_main"
+    app:startDestination="@id/fragmentStart">
+
+    <fragment
+        android:id="@+id/fragmentStart"
+        android:name="com.reteno.sample.fragments.FragmentStart"
+        android:label="fragmentStart"
+        tools:layout="@layout/fragment_start">
+
+        <action
+            android:id="@+id/start_to_deviceId"
+            app:destination="@id/fragmentDeviceId" />
+
+        <action
+            android:id="@+id/start_to_sentry"
+            app:destination="@id/fragmentSentry" />
+
+        <action
+            android:id="@+id/start_to_activity_second"
+            app:destination="@id/activitySecond" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/fragmentDeviceId"
+        android:name="com.reteno.sample.fragments.FragmentDeviceId"
+        android:label="fragmentDeviceId"
+        tools:layout="@layout/fragment_device_id"/>
+
+    <fragment
+        android:id="@+id/fragmentSentry"
+        android:name="com.reteno.sample.fragments.FragmentSentry"
+        android:label="fragmentSentry"
+        tools:layout="@layout/fragment_sentry"/>
+
+    <activity
+        android:id="@+id/activitySecond"
+        android:name="com.reteno.sample.SecondActivity"
+        android:label="secondActivity"
+        tools:layout="@layout/activity_second"/>
+
+</navigation>
