@@ -90,7 +90,7 @@ public class FragmentDeviceId extends BaseFragment {
 
     private void initExternalDeviceId(@NonNull View view) {
         String externalSavedId = AppSharedPreferencesManager.getExternalId(view.getContext());
-        getReteno().setExternalDeviceId(externalSavedId);
+        getReteno().setUserAttributes(externalSavedId);
     }
 
     private void initListeners(@NonNull View view) {
@@ -101,12 +101,12 @@ public class FragmentDeviceId extends BaseFragment {
         binding.tilExternalId.setStartIconOnClickListener(v -> {
             String externalId = binding.etExternalId.getText().toString();
             AppSharedPreferencesManager.saveExternalId(view.getContext(), externalId);
-            getReteno().setExternalDeviceId(externalId);
+            getReteno().setUserAttributes(externalId);
             refreshUi();
         });
         binding.tilExternalId.setEndIconOnClickListener(v -> {
             AppSharedPreferencesManager.saveExternalId(view.getContext(), "");
-            getReteno().setExternalDeviceId("");
+            getReteno().setUserAttributes("");
             binding.etExternalId.setText("");
             refreshUi();
         });

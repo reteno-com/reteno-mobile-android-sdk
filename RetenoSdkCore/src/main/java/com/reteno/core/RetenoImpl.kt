@@ -2,11 +2,11 @@ package com.reteno.core
 
 import android.app.Activity
 import android.app.Application
-import androidx.annotation.NonNull
 import com.reteno.core.data.local.config.DeviceIdMode
 import com.reteno.core.di.ServiceLocator
 import com.reteno.core.lifecycle.RetenoActivityHelper
 import com.reteno.core.lifecycle.RetenoLifecycleCallbacks
+import com.reteno.core.model.user.User
 import com.reteno.core.util.Logger
 
 
@@ -55,12 +55,30 @@ class RetenoImpl(application: Application) : RetenoLifecycleCallbacks, Reteno {
         }
     }
 
-    override fun setExternalDeviceId(@NonNull externalDeviceId: String) {
-        /*@formatter:off*/ Logger.i(TAG, "setExternalDeviceId(): ", "externalDeviceId = [" , externalDeviceId , "]")
+    override fun setUserAttributes(externalUserId: String) {
+        /*@formatter:off*/ Logger.i(TAG, "setUserAttributes(): ", "externalUserId = [" , externalUserId , "]")
+        /*@formatter:on*/
+        setUserAttributes(externalUserId, null)
+    }
+
+    override fun setUserAttributes(externalUserId: String, user: User?) {
+        /*@formatter:off*/ Logger.i(TAG, "setUserAttributes(): ", "externalUserId = [" , externalUserId , "], used = [" , user , "]")
         /*@formatter:on*/
         try {
             // TODO: Move this to background thread later
-            contactController.setExternalDeviceId(externalDeviceId)
+            contactController.setExternalUserId(externalUserId)
+            user?.let { setUserData(it) }
+        } catch (ex: Throwable) {
+            Logger.e(TAG, "setUserAttributes(): ", ex)
+        }
+    }
+
+    private fun setUserData(used: User) {
+        /*@formatter:off*/ Logger.i(TAG, "setUserData(): ", "used = [" , used , "]")
+        /*@formatter:on*/
+        try {
+            // TODO: Move this to background thread later
+            contactController.setUserData(used)
         } catch (ex: Throwable) {
             Logger.e(TAG, "setExternalDeviceId(): ", ex)
         }
