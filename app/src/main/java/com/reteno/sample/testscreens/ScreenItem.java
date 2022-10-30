@@ -1,5 +1,7 @@
 package com.reteno.sample.testscreens;
 
+import android.os.Bundle;
+
 import androidx.navigation.NavDirections;
 
 import java.util.Objects;
@@ -9,17 +11,27 @@ public class ScreenItem {
     private final String name;
     private final int navigationId;
     private final NavDirections direction;
+    private final Bundle bundle;
 
     public ScreenItem(String name, int navigationId) {
         this.name = name;
         this.navigationId = navigationId;
         this.direction = null;
+        this.bundle = null;
     }
 
     public ScreenItem(String name, NavDirections direction) {
         this.name = name;
         this.navigationId = -1;
         this.direction = direction;
+        this.bundle = null;
+    }
+
+    public ScreenItem(String name, int navigationId, Bundle bundle) {
+        this.name = name;
+        this.navigationId = navigationId;
+        this.direction = null;
+        this.bundle = bundle;
     }
 
     public String getName() {
@@ -35,6 +47,9 @@ public class ScreenItem {
         return direction;
     }
 
+    public Bundle getBundle() {
+        return bundle;
+    }
 
     @Override
     public boolean equals(Object o) {
