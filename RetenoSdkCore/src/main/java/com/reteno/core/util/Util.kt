@@ -126,8 +126,8 @@ object Util {
                 propvalue = line
             }
             process.destroy()
-        } catch (e: java.lang.Exception) {
-            Logger.e(TAG, "getSysProp($key): ", e)
+        } catch (e: Exception) {
+            Logger.i(TAG, "getSysProp($key): ", e.message)
             propvalue = ""
         }
         return propvalue

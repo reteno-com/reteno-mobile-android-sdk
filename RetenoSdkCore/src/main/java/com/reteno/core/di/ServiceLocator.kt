@@ -42,6 +42,11 @@ class ServiceLocator {
     val interactionControllerProvider: InteractionControllerProvider =
         InteractionControllerProvider(configRepositoryProvider, interactionRepositoryProvider)
 
+    private val deeplinkRepositoryProvider: DeeplinkRepositoryProvider =
+        DeeplinkRepositoryProvider(apiClientProvider)
+    val deeplinkControllerProvider: DeeplinkControllerProvider =
+        DeeplinkControllerProvider(deeplinkRepositoryProvider)
+
     init {
 
     }

@@ -169,11 +169,10 @@ internal object RetenoNotificationHelper {
         return intent
     }
 
-    private fun createBroadcastIntent(message: Bundle): Intent {
+    private fun createBroadcastIntent(bundle: Bundle): Intent {
         val context = RetenoImpl.application
         val intent = Intent(context, RetenoNotificationClickedReceiver::class.java)
-        intent.addCategory("retenoAction")
-        intent.putExtras(message)
+        intent.putExtras(bundle)
         return intent
     }
 }

@@ -1,6 +1,5 @@
 package com.reteno.core.base.robolectric
 
-import android.app.Application
 import android.provider.Settings
 import android.util.Log
 import androidx.test.core.app.ApplicationProvider
@@ -9,6 +8,7 @@ import com.reteno.core.RetenoImpl
 import com.reteno.core.base.robolectric.Constants.DEVICE_ID_ANDROID
 import com.reteno.core.base.robolectric._setup.FakeAndroidKeyStore
 import com.reteno.core.base.robolectric._setup.RetenoTestApp
+import com.reteno.core.data.remote.OperationQueue
 import com.reteno.core.util.Logger
 import io.mockk.*
 import junit.framework.TestCase
@@ -23,10 +23,11 @@ import org.robolectric.annotation.Config
 import org.robolectric.shadows.ShadowLooper
 import java.security.Provider
 import java.security.Security
+import java.util.concurrent.Executor
 
 @RunWith(RobolectricTestRunner::class)
 @Config(
-    sdk = [16],
+    sdk = [26],
     application = RetenoTestApp::class,
     packageName = "com.reteno.core",
     shadows = [ShadowLooper::class]
@@ -43,8 +44,8 @@ import java.security.Security
     "org.w3c.dom.*",
     "jdk.internal.reflect.*"
 )
-abstract class BaseRobolectricTest {
 
+abstract class BaseRobolectricTest {
     protected val application by lazy {
         ApplicationProvider.getApplicationContext() as RetenoTestApp
     }
@@ -84,6 +85,14 @@ abstract class BaseRobolectricTest {
         every { Logger.captureException(any()) } just runs
         every { Logger.captureEvent(any()) } just runs
 
+        mockkObject(OperationQueue)
+        val currentThreadExecutor = Executor(Runnable::run)
+        every { OperationQueue.addParallelOperation(any()) } answers { currentThreadExecutor.execute(firstArg()) }
+        every { OperationQueue.addOperation(any()) } answers {
+            currentThreadExecutor.execute(firstArg())
+            true
+        }
+
         MockKAnnotations.init(this)
     }
 
@@ -91,6 +100,7 @@ abstract class BaseRobolectricTest {
     open fun after() {
         unmockkStatic(Log::class)
         unmockkStatic(Logger::class)
+        unmockkObject(OperationQueue)
     }
 
     companion object {

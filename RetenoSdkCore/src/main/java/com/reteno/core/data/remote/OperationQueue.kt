@@ -7,16 +7,10 @@ import android.os.Process
 import java.util.concurrent.Executor
 import java.util.concurrent.Executors
 
-class OperationQueue {
+object OperationQueue {
 
-    companion object {
-        private const val OPERATION_QUEUE_NAME = "OperationQueue"
-        private const val OPERATION_QUEUE_PRIORITY = Process.THREAD_PRIORITY_DEFAULT
-
-        private val instance = OperationQueue()
-
-        fun getInstance() = instance
-    }
+    private const val OPERATION_QUEUE_NAME = "OperationQueue"
+    private const val OPERATION_QUEUE_PRIORITY = Process.THREAD_PRIORITY_DEFAULT
 
     private val handlerThread: HandlerThread =
         HandlerThread(OPERATION_QUEUE_NAME, OPERATION_QUEUE_PRIORITY)

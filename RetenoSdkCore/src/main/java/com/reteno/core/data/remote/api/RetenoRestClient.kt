@@ -12,7 +12,7 @@ import java.util.zip.GZIPOutputStream
 import javax.net.ssl.HttpsURLConnection
 import javax.net.ssl.SSLSocketFactory
 
-internal object RetenoRestClient {
+object RetenoRestClient {
 
     private val TAG = RetenoRestClient::class.java.simpleName
 
@@ -46,7 +46,6 @@ internal object RetenoRestClient {
      *  @see com.reteno.data.remote.api.ApiContract
      *  @see com.reteno.domain.ResponseCallback
      */
-    @JvmStatic
     fun makeRequest(
         method: HttpMethod,
         url: ApiContract,
