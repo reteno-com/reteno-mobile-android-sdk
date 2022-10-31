@@ -16,16 +16,22 @@ class ContactController(
     fun setExternalUserId(id: String) {
         /*@formatter:off*/ Logger.i(TAG, "setExternalUserId(): ", "id = [" , id , "]")
         /*@formatter:on*/
-        configRepository.setExternalUserId(id)
-        onNewContact()
+        val oldDeviceId = configRepository.getDeviceId()
+        if (oldDeviceId.externalId != id) {
+            configRepository.setExternalUserId(id)
+            onNewContact()
+        }
     }
 
     fun setDeviceIdMode(deviceIdMode: DeviceIdMode, onDeviceIdChanged: () -> Unit) {
         /*@formatter:off*/ Logger.i(TAG, "changeDeviceIdMode(): ", "deviceIdMode = [" , deviceIdMode , "]")
         /*@formatter:on*/
+        val oldDeviceId = configRepository.getDeviceId()
         configRepository.setDeviceIdMode(deviceIdMode) {
-            onNewContact()
-            onDeviceIdChanged.invoke()
+            if (oldDeviceId.id != it.id) {
+                onNewContact()
+                onDeviceIdChanged.invoke()
+            }
         }
     }
 

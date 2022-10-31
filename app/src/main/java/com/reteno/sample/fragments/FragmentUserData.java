@@ -11,6 +11,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.navigation.fragment.NavHostFragment;
 
 import com.reteno.core.model.user.Address;
 import com.reteno.core.model.user.User;
@@ -50,6 +51,8 @@ public class FragmentUserData extends BaseFragment {
         binding.btnSend.setOnClickListener(v -> {
             try {
                 getUserData();
+                Toast.makeText(this.getContext(), "Sent", Toast.LENGTH_SHORT).show();
+                NavHostFragment.findNavController(this).popBackStack();
             } catch (Exception e) {
                 Toast.makeText(this.getContext(), e.getMessage(), Toast.LENGTH_LONG).show();
                 Log.e("FragmentUserData", e.getMessage());
