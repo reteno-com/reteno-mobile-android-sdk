@@ -93,6 +93,9 @@ android {
 }
 
 dependencies {
+    implementation "net.zetetic:android-database-sqlcipher:4.5.2"
+    implementation "androidx.sqlite:sqlite:2.0.1"
+
     implementation project(':RetenoSdkFcm')
 
     implementation 'io.sentry:sentry-android:6.4.3'
