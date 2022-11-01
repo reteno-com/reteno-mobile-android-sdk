@@ -25,6 +25,7 @@ class ContactControllerTest : BaseUnitTest() {
         private const val DEVICE_ID_APP_SET = "device_ID_APP_SET"
         private const val DEVICE_ID_UUID = "device_ID_UUID"
         private const val EXTERNAL_DEVICE_ID = "External_device_ID"
+        private const val EXTERNAL_DEVICE_ID_NEW = "External_device_ID_NEW"
         private const val FCM_TOKEN_OLD = "FCM_Token_OLD"
         private const val FCM_TOKEN_NEW = "FCM_Token"
     }
@@ -76,12 +77,30 @@ class ContactControllerTest : BaseUnitTest() {
         )
 
         // When
-        SUT.setExternalUserId(EXTERNAL_DEVICE_ID)
+        SUT.setExternalUserId(EXTERNAL_DEVICE_ID_NEW)
 
         // Then
         val expectedDevice =
             Device.createDevice(DEVICE_ID_ANDROID, EXTERNAL_DEVICE_ID, FCM_TOKEN_NEW)
         verify(exactly = 1) { contactRepository.sendDeviceProperties(eq(expectedDevice), any()) }
+    }
+
+    @Test
+    fun givenPushTokenAvailableAndExternalIdWasSet_whenSetEqualsExternalDeviceId_thenContactDoesNotSent() {
+        // Given
+        every { configRepository.getFcmToken() } returns FCM_TOKEN_NEW
+        every { configRepository.getDeviceId() } returns DeviceId(
+            DEVICE_ID_ANDROID,
+            EXTERNAL_DEVICE_ID
+        )
+
+        // When
+        SUT.setExternalUserId(EXTERNAL_DEVICE_ID)
+
+        // Then
+        val expectedDevice =
+            Device.createDevice(DEVICE_ID_ANDROID, EXTERNAL_DEVICE_ID, FCM_TOKEN_NEW)
+        verify(exactly = 0) { contactRepository.sendDeviceProperties(eq(expectedDevice), any()) }
     }
 
     @Test
@@ -116,6 +135,28 @@ class ContactControllerTest : BaseUnitTest() {
 
         // When
         SUT.setDeviceIdMode(DeviceIdMode.RANDOM_UUID) {}
+
+        // Then
+        val expectedDevice = Device.createDevice(DEVICE_ID_UUID, null, FCM_TOKEN_NEW)
+        verify(exactly = 1) { contactRepository.sendDeviceProperties(eq(expectedDevice), any()) }
+    }
+
+    @Test
+    fun givenPushTokenAvailable_whenNotChangeDeviceIdMode_thenContactSentOneTime() {
+        // Given
+        val oldDeviceId = DeviceId(DEVICE_ID_ANDROID, null, DeviceIdMode.ANDROID_ID)
+        val newDeviceId = DeviceId(DEVICE_ID_UUID, null, DeviceIdMode.ANDROID_ID)
+
+        every { configRepository.getFcmToken() } returns FCM_TOKEN_NEW
+        every { configRepository.getDeviceId() } returns oldDeviceId
+        every { configRepository.setDeviceIdMode(any(), any()) } answers {
+            every { configRepository.getDeviceId() } returns newDeviceId
+            val callback: (DeviceId) -> Unit = secondArg()
+            callback.invoke(newDeviceId)
+        }
+
+        // When
+        SUT.setDeviceIdMode(DeviceIdMode.ANDROID_ID) {}
 
         // Then
         val expectedDevice = Device.createDevice(DEVICE_ID_UUID, null, FCM_TOKEN_NEW)
