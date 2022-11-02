@@ -27,7 +27,7 @@ import java.util.List;
 
 public class FragmentUserData extends BaseFragment {
 
-    private FragmentUserDataBinding binding;
+    protected FragmentUserDataBinding binding;
 
     public FragmentUserData() {
         // Required empty public constructor
@@ -123,7 +123,7 @@ public class FragmentUserData extends BaseFragment {
         return list;
     }
 
-    private void sendUserData(String externalId, User user) {
+    protected void sendUserData(String externalId, User user) {
         getReteno().setUserAttributes(externalId, user);
     }
 
@@ -142,7 +142,7 @@ public class FragmentUserData extends BaseFragment {
     private View createNewFields() {
         return LayoutInflater
                 .from(binding.getRoot().getContext())
-                .inflate(R.layout.view_user_custom_fields, binding.llCustomData, false);
+                .inflate(R.layout.view_user_custom_fields_horizontal, binding.llCustomData, false);
     }
 
 }

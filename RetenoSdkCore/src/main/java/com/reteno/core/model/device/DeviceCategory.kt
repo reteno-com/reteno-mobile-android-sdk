@@ -5,7 +5,7 @@ enum class DeviceCategory {
     TABLET;
 
     companion object {
-        fun fromString(value: String): DeviceCategory =
+        fun fromString(value: String?): DeviceCategory =
             when (value) {
                 MOBILE.toString() -> MOBILE
                 TABLET.toString() -> TABLET

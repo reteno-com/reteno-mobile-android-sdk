@@ -17,7 +17,7 @@ import androidx.transition.TransitionManager;
 import com.reteno.core.data.local.database.RetenoDatabaseManagerImpl;
 import com.reteno.core.model.device.Device;
 import com.reteno.sample.R;
-import com.reteno.sample.databinding.DialogDbReadDeviceBinding;
+import com.reteno.sample.databinding.DialogDbReadBinding;
 import com.reteno.sample.databinding.ItemDbDeviceBinding;
 
 import java.util.List;
@@ -28,14 +28,14 @@ import kotlin.Pair;
 
 public class DeviceReadDialogFragment extends DialogFragment {
 
-    private DialogDbReadDeviceBinding bindingMain;
+    private DialogDbReadBinding bindingMain;
     private RetenoDatabaseManagerImpl databaseManager;
     private DeviceAdapter adapter;
 
     @NonNull
     @Override
     public Dialog onCreateDialog(@Nullable Bundle savedInstanceState) {
-        bindingMain = DialogDbReadDeviceBinding.inflate(getLayoutInflater());
+        bindingMain = DialogDbReadBinding.inflate(getLayoutInflater());
         return new AlertDialog.Builder(requireActivity())
                 .setView(bindingMain.getRoot())
                 .create();
@@ -63,9 +63,9 @@ public class DeviceReadDialogFragment extends DialogFragment {
 
     private void initRecycler() {
         adapter = new DeviceAdapter(() ->
-                TransitionManager.beginDelayedTransition(bindingMain.rvDeviceList, new AutoTransition())
+                TransitionManager.beginDelayedTransition(bindingMain.rvList, new AutoTransition())
         );
-        bindingMain.rvDeviceList.setAdapter(adapter);
+        bindingMain.rvList.setAdapter(adapter);
     }
 
     private void initRemoveSection() {
@@ -134,13 +134,13 @@ public class DeviceReadDialogFragment extends DialogFragment {
 
         private void initListeners(ItemDbDeviceBinding binding) {
             binding.ivExpand.setOnClickListener(v -> {
-                if (binding.clContent.getVisibility() == View.VISIBLE) {
+                if (binding.llContent.getVisibility() == View.VISIBLE) {
                     onExpandCollapseClickListener.onExpandCollapse();
-                    binding.clContent.setVisibility(View.GONE);
+                    binding.llContent.setVisibility(View.GONE);
                     binding.ivExpand.setImageResource(R.drawable.ic_expand_more);
                 } else {
                     onExpandCollapseClickListener.onExpandCollapse();
-                    binding.clContent.setVisibility(View.VISIBLE);
+                    binding.llContent.setVisibility(View.VISIBLE);
                     binding.ivExpand.setImageResource(R.drawable.ic_expand_less);
                 }
             });
@@ -158,17 +158,17 @@ public class DeviceReadDialogFragment extends DialogFragment {
         private void bind(String timestamp, Device device) {
             bindingHolder.tvValueTimestamp.setText(timestamp);
 
-            bindingHolder.tvValueDeviceId.setText(device.getDeviceId());
-            bindingHolder.tvValueExternalUserId.setText(device.getExternalUserId());
-            bindingHolder.tvValuePushToken.setText(device.getPushToken());
-            bindingHolder.tvValueCategory.setText(device.getCategory().toString());
-            bindingHolder.tvValueOsType.setText(device.getOsType().toString());
-            bindingHolder.tvValueOsVersion.setText(device.getOsVersion());
-            bindingHolder.tvValueDeviceModel.setText(device.getDeviceModel());
-            bindingHolder.tvValueAppVersion.setText(device.getAppVersion());
-            bindingHolder.tvValueLanguageCode.setText(device.getLanguageCode());
-            bindingHolder.tvValueTimeZone.setText(device.getTimeZone());
-            bindingHolder.tvValueAdvertisingId.setText(device.getAdvertisingId());
+            bindingHolder.tvDeviceId.setTextOrHide(device.getDeviceId());
+            bindingHolder.tvExternalUserId.setTextOrHide(device.getExternalUserId());
+            bindingHolder.tvPushToken.setTextOrHide(device.getPushToken());
+            bindingHolder.tvCategory.setTextOrHide(device.getCategory().toString());
+            bindingHolder.tvOsType.setTextOrHide(device.getOsType().toString());
+            bindingHolder.tvOsVersion.setTextOrHide(device.getOsVersion());
+            bindingHolder.tvDeviceModel.setTextOrHide(device.getDeviceModel());
+            bindingHolder.tvAppVersion.setTextOrHide(device.getAppVersion());
+            bindingHolder.tvLanguageCode.setTextOrHide(device.getLanguageCode());
+            bindingHolder.tvTimeZone.setTextOrHide(device.getTimeZone());
+            bindingHolder.tvAdvertisingId.setTextOrHide(device.getAdvertisingId());
         }
     }
 

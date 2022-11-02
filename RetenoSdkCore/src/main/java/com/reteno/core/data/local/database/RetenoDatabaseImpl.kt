@@ -9,21 +9,8 @@ import android.os.SystemClock
 //import net.sqlcipher.database.SQLiteDatabase
 //import net.sqlcipher.database.SQLiteOpenHelper
 //import net.sqlcipher.DatabaseUtils
-import com.reteno.core.data.local.database.DbConstants.COLUMN_TIMESTAMP
-import com.reteno.core.data.local.database.DbConstants.DATABASE_NAME
-import com.reteno.core.data.local.database.DbConstants.DATABASE_VERSION
-import com.reteno.core.data.local.database.DbConstants.Device.COLUMN_ADVERTISING_ID
-import com.reteno.core.data.local.database.DbConstants.Device.COLUMN_APP_VERSION
-import com.reteno.core.data.local.database.DbConstants.Device.COLUMN_CATEGORY
-import com.reteno.core.data.local.database.DbConstants.Device.COLUMN_DEVICE_ID
-import com.reteno.core.data.local.database.DbConstants.Device.COLUMN_DEVICE_MODEL
-import com.reteno.core.data.local.database.DbConstants.Device.COLUMN_EXTERNAL_USER_ID
-import com.reteno.core.data.local.database.DbConstants.Device.COLUMN_LANGUAGE_CODE
-import com.reteno.core.data.local.database.DbConstants.Device.COLUMN_OS_TYPE
-import com.reteno.core.data.local.database.DbConstants.Device.COLUMN_OS_VERSION
-import com.reteno.core.data.local.database.DbConstants.Device.COLUMN_PUSH_TOKEN
-import com.reteno.core.data.local.database.DbConstants.Device.COLUMN_TIMEZONE
-import com.reteno.core.data.local.database.DbConstants.Device.TABLE_NAME_DEVICE
+import com.reteno.core.data.local.database.DbSchema.DATABASE_NAME
+import com.reteno.core.data.local.database.DbSchema.DATABASE_VERSION
 import com.reteno.core.util.Logger
 
 class RetenoDatabaseImpl(context: Context) : RetenoDatabase,
@@ -31,7 +18,10 @@ class RetenoDatabaseImpl(context: Context) : RetenoDatabase,
 
     override fun onCreate(db: SQLiteDatabase) {
         // Create event table.
-        db.execSQL(SQL_CREATE_TABLE_DEVICE)
+        db.execSQL(DbSchema.DeviceSchema.SQL_CREATE_TABLE)
+        db.execSQL(DbSchema.UserSchema.SQL_CREATE_TABLE)
+        db.execSQL(DbSchema.UserAttributesSchema.SQL_CREATE_TABLE)
+        db.execSQL(DbSchema.UserAddressSchema.SQL_CREATE_TABLE)
     }
 
     override fun onUpgrade(db: SQLiteDatabase?, oldVersion: Int, newVersion: Int) {
@@ -79,13 +69,23 @@ class RetenoDatabaseImpl(context: Context) : RetenoDatabase,
             limit
         )
 
-    override fun insert(table: String, nullColumnHack: String?, contentValues: ContentValues) {
+    override fun rawQuery(rawQuery: String, selectionArgs: Array<out String>?): Cursor =
+        getSQLiteDatabaseWithRetries().rawQuery(rawQuery, selectionArgs)
+
+    override fun insert(
+        table: String,
+        nullColumnHack: String?,
+        contentValues: ContentValues
+    ): Long {
+        var rowId: Long = -1
+
         synchronized(LOCK) {
             val writableDb = getSQLiteDatabaseWithRetries()
             try {
                 writableDb.beginTransaction()
-                writableDb.insert(table, nullColumnHack, contentValues)
+                rowId = writableDb.insert(table, nullColumnHack, contentValues)
                 writableDb.setTransactionSuccessful()
+                return rowId
             } catch (e: SQLiteException) {
                 /*@formatter:off*/ Logger.e(TAG, "insert(): Error inserting on table: $table with nullColumnHack: $nullColumnHack and values: $contentValues", e)
                 /*@formatter:on*/
@@ -104,14 +104,22 @@ class RetenoDatabaseImpl(context: Context) : RetenoDatabase,
                 }
             }
         }
+
+        return rowId
     }
 
-    override fun insertOrThrow(table: String, nullColumnHack: String?, contentValues: ContentValues) {
+    override fun insertOrThrow(
+        table: String,
+        nullColumnHack: String?,
+        contentValues: ContentValues
+    ): Long {
+        var rowId: Long = -1
+
         synchronized(LOCK) {
             val writableDb = getSQLiteDatabaseWithRetries()
             try {
                 writableDb.beginTransaction()
-                writableDb.insertOrThrow(table, nullColumnHack, contentValues)
+                rowId = writableDb.insertOrThrow(table, nullColumnHack, contentValues)
                 writableDb.setTransactionSuccessful()
             } catch (e: SQLiteException) {
                 /*@formatter:off*/ Logger.e(TAG, "insertOrThrow(): Error inserting or throw on table: $table with nullColumnHack: $nullColumnHack and values: $contentValues", e)
@@ -131,10 +139,15 @@ class RetenoDatabaseImpl(context: Context) : RetenoDatabase,
                 }
             }
         }
+
+        return rowId
     }
 
     override fun update(
-        table: String, contentValues: ContentValues, whereClause: String?, whereArgs: Array<String?>?
+        table: String,
+        contentValues: ContentValues,
+        whereClause: String?,
+        whereArgs: Array<String?>?
     ): Int {
         var result = 0
         if (contentValues.toString().isEmpty()) return result
@@ -270,22 +283,6 @@ class RetenoDatabaseImpl(context: Context) : RetenoDatabase,
 
         private const val DB_OPEN_RETRY_MAX = 5
         private const val DB_OPEN_RETRY_BACKOFF = 400
-
-        private const val SQL_CREATE_TABLE_DEVICE =
-            "CREATE TABLE IF NOT EXISTS $TABLE_NAME_DEVICE(" +
-                    "$COLUMN_TIMESTAMP TIMESTAMP DEFAULT CURRENT_TIMESTAMP, " +
-                    "$COLUMN_DEVICE_ID TEXT, " +
-                    "$COLUMN_EXTERNAL_USER_ID TEXT, " +
-                    "$COLUMN_PUSH_TOKEN TEXT, " +
-                    "$COLUMN_CATEGORY TEXT, " +
-                    "$COLUMN_OS_TYPE TEXT, " +
-                    "$COLUMN_OS_VERSION TEXT, " +
-                    "$COLUMN_DEVICE_MODEL TEXT, " +
-                    "$COLUMN_APP_VERSION TEXT, " +
-                    "$COLUMN_LANGUAGE_CODE TEXT, " +
-                    "$COLUMN_TIMEZONE TEXT, " +
-                    "$COLUMN_ADVERTISING_ID TEXT" +
-                    ")"
 
         val TAG: String = RetenoDatabaseImpl::class.java.simpleName
     }

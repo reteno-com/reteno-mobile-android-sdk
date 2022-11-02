@@ -62,7 +62,7 @@ public class FragmentCustomData extends Fragment {
         adapter = new KeyAdapter(keySet, key -> {
             if (!TextUtils.isEmpty(key)) {
                 String value = bundle.getString(key);
-                binding.tvCustomDataValue.setText(value);
+                binding.tvCustomDataValue.setTextOrHide(value);
             }
         });
         binding.rvKeySet.setAdapter(adapter);

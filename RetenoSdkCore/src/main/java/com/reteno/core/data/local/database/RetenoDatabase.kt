@@ -17,10 +17,13 @@ interface RetenoDatabase {
         orderBy: String?, limit: String?
     ): Cursor
 
-    fun insert(table: String, nullColumnHack: String?, contentValues: ContentValues)
+    fun rawQuery(rawQuery: String, selectionArgs: Array<out String>?): Cursor
+
+
+    fun insert(table: String, nullColumnHack: String?, contentValues: ContentValues): Long
 
     @Throws(SQLException::class)
-    fun insertOrThrow(table: String, nullColumnHack: String?, contentValues: ContentValues)
+    fun insertOrThrow(table: String, nullColumnHack: String?, contentValues: ContentValues): Long
 
     fun update(
         table: String,

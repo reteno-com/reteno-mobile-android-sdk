@@ -49,236 +49,88 @@
                 app:srcCompat="@drawable/ic_expand_more" />
         </LinearLayout>
 
-        <androidx.constraintlayout.widget.ConstraintLayout
-            android:id="@+id/clContent"
+        <LinearLayout
+            android:id="@+id/llContent"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:visibility="gone"
-            tools:visibility="visible">
+            android:orientation="vertical">
 
-            <TextView
-                android:id="@+id/tvKeyDeviceId"
-                android:layout_width="wrap_content"
+            <com.reteno.sample.view.RetenoView
+                android:id="@+id/tvDeviceId"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="DEVICE_ID: "
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
+                app:retenoHint="DeviceId"
+                tools:retenoText="DEVICE_ID" />
 
-            <TextView
-                android:id="@+id/tvKeyExternalUserId"
-                android:layout_width="wrap_content"
+            <com.reteno.sample.view.RetenoView
+                android:id="@+id/tvExternalUserId"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="EXTERNAL_USER_ID: "
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/tvKeyDeviceId" />
+                app:retenoHint="ExternalUserId"
+                tools:retenoText="EXTERNAL_USER_ID" />
 
-            <TextView
-                android:id="@+id/tvKeyPushToken"
-                android:layout_width="wrap_content"
+            <com.reteno.sample.view.RetenoView
+                android:id="@+id/tvPushToken"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="PUSH_TOKEN: "
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/tvKeyExternalUserId" />
+                app:retenoHint="PushToken"
+                tools:retenoText="PUSH_TOKEN" />
 
-            <TextView
-                android:id="@+id/tvKeyCategory"
-                android:layout_width="wrap_content"
+            <com.reteno.sample.view.RetenoView
+                android:id="@+id/tvCategory"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="CATEGORY: "
-                app:layout_constraintStart_toStartOf="parent"
+                app:retenoHint="Category"
+                tools:retenoText="CATEGORY" />
 
-                app:layout_constraintTop_toBottomOf="@id/tvKeyPushToken" />
-
-            <TextView
-                android:id="@+id/tvKeyOsType"
-                android:layout_width="wrap_content"
+            <com.reteno.sample.view.RetenoView
+                android:id="@+id/tvOsType"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="OS_TYPE: "
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/tvKeyCategory" />
+                app:retenoHint="OsType"
+                tools:retenoText="OS_TYPE" />
 
-            <TextView
-                android:id="@+id/tvKeyOsVersion"
-                android:layout_width="wrap_content"
+            <com.reteno.sample.view.RetenoView
+                android:id="@+id/tvOsVersion"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="OS_VERSION: "
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/tvKeyOsType" />
+                app:retenoHint="OsVersion"
+                tools:retenoText="OS_VERSION" />
 
-            <TextView
-                android:id="@+id/tvKeyDeviceModel"
-                android:layout_width="wrap_content"
+            <com.reteno.sample.view.RetenoView
+                android:id="@+id/tvDeviceModel"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="DEVICE_MODEL: "
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/tvKeyOsVersion" />
+                app:retenoHint="OsDeviceModel"
+                tools:retenoText="DEVICE_MODEL" />
 
-            <TextView
-                android:id="@+id/tvKeyAppVersion"
-                android:layout_width="wrap_content"
+            <com.reteno.sample.view.RetenoView
+                android:id="@+id/tvAppVersion"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="APP_VERSION: "
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/tvKeyDeviceModel" />
+                app:retenoHint="AppVersion"
+                tools:retenoText="APP_VERSION" />
 
-            <TextView
-                android:id="@+id/tvKeyLanguageCode"
-                android:layout_width="wrap_content"
+            <com.reteno.sample.view.RetenoView
+                android:id="@+id/tvLanguageCode"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="LANGUAGE_CODE: "
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/tvKeyAppVersion" />
+                app:retenoHint="LanguageCode"
+                tools:retenoText="LANGUAGE_CODE" />
 
-            <TextView
-                android:id="@+id/tvKeyTimeZone"
-                android:layout_width="wrap_content"
+            <com.reteno.sample.view.RetenoView
+                android:id="@+id/tvTimeZone"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="TIMEZONE: "
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/tvKeyLanguageCode" />
+                app:retenoHint="TimeZone"
+                tools:retenoText="TIMEZONE" />
 
-            <TextView
-                android:id="@+id/tvKeyAdvertisingId"
-                android:layout_width="wrap_content"
+            <com.reteno.sample.view.RetenoView
+                android:id="@+id/tvAdvertisingId"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="ADVERTISING_ID: "
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/tvKeyTimeZone" />
-
-            <com.reteno.sample.view.CopyableTextView
-                android:id="@+id/tvValueDeviceId"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:maxLines="1"
-                android:textAlignment="textEnd"
-                android:textStyle="bold"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toEndOf="@id/tvKeyDeviceId"
-                app:layout_constraintTop_toTopOf="@id/tvKeyDeviceId"
-                tools:text="DEVICE_ID" />
-
-            <com.reteno.sample.view.CopyableTextView
-                android:id="@+id/tvValueExternalUserId"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:maxLines="1"
-                android:textAlignment="textEnd"
-                android:textStyle="bold"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toEndOf="@id/tvKeyExternalUserId"
-                app:layout_constraintTop_toTopOf="@id/tvKeyExternalUserId"
-                tools:text="EXTERNAL_USER_ID" />
-
-            <com.reteno.sample.view.CopyableTextView
-                android:id="@+id/tvValuePushToken"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:maxLines="1"
-                android:textAlignment="textEnd"
-                android:textStyle="bold"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toEndOf="@id/tvKeyPushToken"
-                app:layout_constraintTop_toTopOf="@id/tvKeyPushToken"
-                tools:text="PUSH_TOKEN" />
-
-            <com.reteno.sample.view.CopyableTextView
-                android:id="@+id/tvValueCategory"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:maxLines="1"
-                android:textAlignment="textEnd"
-                android:textStyle="bold"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toEndOf="@id/tvKeyCategory"
-                app:layout_constraintTop_toTopOf="@id/tvKeyCategory"
-                tools:text="CATEGORY" />
-
-            <com.reteno.sample.view.CopyableTextView
-                android:id="@+id/tvValueOsType"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:maxLines="1"
-                android:textAlignment="textEnd"
-                android:textStyle="bold"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toEndOf="@id/tvKeyOsType"
-                app:layout_constraintTop_toTopOf="@id/tvKeyOsType"
-                tools:text="OS_TYPE" />
-
-            <com.reteno.sample.view.CopyableTextView
-                android:id="@+id/tvValueOsVersion"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:maxLines="1"
-                android:textAlignment="textEnd"
-                android:textStyle="bold"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toEndOf="@id/tvKeyOsVersion"
-                app:layout_constraintTop_toTopOf="@id/tvKeyOsVersion"
-                tools:text="OS_VERSION" />
-
-            <com.reteno.sample.view.CopyableTextView
-                android:id="@+id/tvValueDeviceModel"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:maxLines="1"
-                android:textAlignment="textEnd"
-                android:textStyle="bold"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toEndOf="@id/tvKeyDeviceModel"
-                app:layout_constraintTop_toTopOf="@id/tvKeyDeviceModel"
-                tools:text="DEVICE_MODEL" />
-
-            <com.reteno.sample.view.CopyableTextView
-                android:id="@+id/tvValueAppVersion"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:maxLines="1"
-                android:textAlignment="textEnd"
-                android:textStyle="bold"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toEndOf="@id/tvKeyAppVersion"
-                app:layout_constraintTop_toTopOf="@id/tvKeyAppVersion"
-                tools:text="APP_VERSION" />
-
-            <com.reteno.sample.view.CopyableTextView
-                android:id="@+id/tvValueLanguageCode"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:maxLines="1"
-                android:textAlignment="textEnd"
-                android:textStyle="bold"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toEndOf="@id/tvKeyLanguageCode"
-                app:layout_constraintTop_toTopOf="@id/tvKeyLanguageCode"
-                tools:text="LANGUAGE_CODE" />
-
-            <com.reteno.sample.view.CopyableTextView
-                android:id="@+id/tvValueTimeZone"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:maxLines="1"
-                android:textAlignment="textEnd"
-                android:textStyle="bold"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toEndOf="@id/tvKeyTimeZone"
-                app:layout_constraintTop_toTopOf="@id/tvKeyTimeZone"
-                tools:text="TIMEZONE" />
-
-            <com.reteno.sample.view.CopyableTextView
-                android:id="@+id/tvValueAdvertisingId"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:maxLines="1"
-                android:textAlignment="textEnd"
-                android:textStyle="bold"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toEndOf="@id/tvKeyAdvertisingId"
-                app:layout_constraintTop_toTopOf="@id/tvKeyAdvertisingId"
-                tools:text="ADVERTISING_ID" />
-
-        </androidx.constraintlayout.widget.ConstraintLayout>
+                app:retenoHint="AdvertisingId"
+                tools:retenoText="ADVERTISING_ID" />
+        </LinearLayout>
     </LinearLayout>
-
 </androidx.cardview.widget.CardView>

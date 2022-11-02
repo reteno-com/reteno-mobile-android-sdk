@@ -66,28 +66,48 @@
 
     <fragment
         android:id="@+id/fragmentDatabase"
-        android:name="com.reteno.sample.fragments.FragmentDatabase"
+        android:name="com.reteno.sample.fragments.database.FragmentDatabase"
         android:label="fragmentDatabase"
         tools:layout="@layout/fragment_database">
 
         <action
             android:id="@+id/database_to_write_device"
-            app:destination="@id/dialogWriteDeviceToDatabase" />
+            app:destination="@id/dialogWriteDevice" />
         <action
             android:id="@+id/database_to_read_device"
-            app:destination="@id/dialogReadDeviceToDatabase" />
+            app:destination="@id/dialogReadDevice" />
+
+        <action
+            android:id="@+id/database_to_write_user"
+            app:destination="@id/fragmentWriteUser" />
+
+        <action
+            android:id="@+id/database_to_read_user"
+            app:destination="@id/fragmentReadUser" />
     </fragment>
 
     <dialog
-        android:id="@+id/dialogWriteDeviceToDatabase"
+        android:id="@+id/dialogWriteDevice"
         android:name="com.reteno.sample.fragments.database.DeviceWriteDialogFragment"
         android:label="dialogWriteDevice"
         tools:layout="@layout/dialog_db_write_device" />
 
     <dialog
-        android:id="@+id/dialogReadDeviceToDatabase"
+        android:id="@+id/dialogReadDevice"
         android:name="com.reteno.sample.fragments.database.DeviceReadDialogFragment"
         android:label="dialogReadDevice"
-        tools:layout="@layout/dialog_db_read_device" />
+        tools:layout="@layout/dialog_db_read" />
+
+    <fragment
+        android:id="@+id/fragmentWriteUser"
+        android:name="com.reteno.sample.fragments.database.UserWriteFragment"
+        android:label="fragmentWriteUser"
+        tools:layout="@layout/fragment_user_data" />
+
+    <dialog
+        android:id="@+id/fragmentReadUser"
+        android:name="com.reteno.sample.fragments.database.UserReadDialogFragment"
+        android:label="fragmentReadUser"
+        tools:layout="@layout/dialog_db_read" />
 
 </navigation>

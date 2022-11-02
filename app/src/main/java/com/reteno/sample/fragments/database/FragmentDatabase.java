@@ -1,15 +1,14 @@
-package com.reteno.sample.fragments;
+package com.reteno.sample.fragments.database;
 
 import android.os.Bundle;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.navigation.fragment.NavHostFragment;
-
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
 
 import com.reteno.sample.databinding.FragmentDatabaseBinding;
 
@@ -38,6 +37,8 @@ public class FragmentDatabase extends Fragment {
     private void initListeners() {
         binding.btnWriteDevice.setOnClickListener(v -> showDialogWriteDevice());
         binding.btnReadDevice.setOnClickListener(v -> showDialogReadDevice());
+        binding.btnWriteUser.setOnClickListener(v -> showDialogWriteUser());
+        binding.btnReadUser.setOnClickListener(v -> showDialogReadUser());
     }
 
     private void showDialogWriteDevice() {
@@ -46,5 +47,13 @@ public class FragmentDatabase extends Fragment {
 
     private void showDialogReadDevice() {
         NavHostFragment.findNavController(this).navigate(FragmentDatabaseDirections.databaseToReadDevice());
+    }
+
+    private void showDialogWriteUser() {
+        NavHostFragment.findNavController(this).navigate(FragmentDatabaseDirections.databaseToWriteUser());
+    }
+
+    private void showDialogReadUser() {
+        NavHostFragment.findNavController(this).navigate(FragmentDatabaseDirections.databaseToReadUser());
     }
 }
