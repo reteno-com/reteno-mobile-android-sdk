@@ -22,6 +22,7 @@ class RetenoDatabaseImpl(context: Context) : RetenoDatabase,
         db.execSQL(DbSchema.UserSchema.SQL_CREATE_TABLE)
         db.execSQL(DbSchema.UserAttributesSchema.SQL_CREATE_TABLE)
         db.execSQL(DbSchema.UserAddressSchema.SQL_CREATE_TABLE)
+        db.execSQL(DbSchema.InteractionSchema.SQL_CREATE_TABLE)
     }
 
     override fun onUpgrade(db: SQLiteDatabase?, oldVersion: Int, newVersion: Int) {

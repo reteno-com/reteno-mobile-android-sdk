@@ -7,13 +7,8 @@ import androidx.core.database.getStringOrNull
 import com.reteno.core.RetenoImpl
 import com.reteno.core.data.local.database.DbSchema.COLUMN_TIMESTAMP
 import com.reteno.core.data.local.database.DbSchema.DeviceSchema.TABLE_NAME_DEVICE
-import com.reteno.core.data.local.database.DbSchema.UserSchema.COLUMN_DEVICE_ID
-import com.reteno.core.data.local.database.DbSchema.UserSchema.COLUMN_EXTERNAL_USER_ID
-import com.reteno.core.data.local.database.DbSchema.UserSchema.COLUMN_GROUP_NAMES_EXCLUDE
-import com.reteno.core.data.local.database.DbSchema.UserSchema.COLUMN_GROUP_NAMES_INCLUDE
-import com.reteno.core.data.local.database.DbSchema.UserSchema.COLUMN_SUBSCRIPTION_KEYS
-import com.reteno.core.data.local.database.DbSchema.UserSchema.COLUMN_USER_ROW_ID
-import com.reteno.core.data.local.database.DbSchema.UserSchema.TABLE_NAME_USER
+import com.reteno.core.data.local.database.DbSchema.InteractionSchema.COLUMN_ID
+import com.reteno.core.data.local.database.DbSchema.InteractionSchema.TABLE_NAME_INTERACTION
 import com.reteno.core.data.local.database.DbSchema.UserAddressSchema.COLUMN_ADDRESS
 import com.reteno.core.data.local.database.DbSchema.UserAddressSchema.COLUMN_POSTCODE
 import com.reteno.core.data.local.database.DbSchema.UserAddressSchema.COLUMN_REGION
@@ -27,17 +22,26 @@ import com.reteno.core.data.local.database.DbSchema.UserAttributesSchema.COLUMN_
 import com.reteno.core.data.local.database.DbSchema.UserAttributesSchema.COLUMN_TIME_CUSTOM_FIELDS
 import com.reteno.core.data.local.database.DbSchema.UserAttributesSchema.COLUMN_TIME_ZONE
 import com.reteno.core.data.local.database.DbSchema.UserAttributesSchema.TABLE_NAME_USER_ATTRIBUTES
+import com.reteno.core.data.local.database.DbSchema.UserSchema.COLUMN_DEVICE_ID
+import com.reteno.core.data.local.database.DbSchema.UserSchema.COLUMN_EXTERNAL_USER_ID
+import com.reteno.core.data.local.database.DbSchema.UserSchema.COLUMN_GROUP_NAMES_EXCLUDE
+import com.reteno.core.data.local.database.DbSchema.UserSchema.COLUMN_GROUP_NAMES_INCLUDE
+import com.reteno.core.data.local.database.DbSchema.UserSchema.COLUMN_SUBSCRIPTION_KEYS
+import com.reteno.core.data.local.database.DbSchema.UserSchema.COLUMN_USER_ROW_ID
+import com.reteno.core.data.local.database.DbSchema.UserSchema.TABLE_NAME_USER
 import com.reteno.core.data.local.database.DbUtil.getDevice
+import com.reteno.core.data.local.database.DbUtil.getInteraction
 import com.reteno.core.data.local.database.DbUtil.getUser
 import com.reteno.core.data.local.database.DbUtil.putDevice
+import com.reteno.core.data.local.database.DbUtil.putInteraction
 import com.reteno.core.data.local.database.DbUtil.putUser
 import com.reteno.core.data.local.database.DbUtil.putUserAddress
 import com.reteno.core.data.local.database.DbUtil.putUserAttributes
+import com.reteno.core.data.local.model.InteractionModelDb
 import com.reteno.core.data.remote.model.user.UserDTO
 import com.reteno.core.model.device.Device
 import com.reteno.core.util.Logger
 import com.reteno.core.util.allElementsNotNull
-import com.reteno.core.util.allElementsNull
 
 // TODO: USE ENCRYPTION
 //import net.sqlcipher.DatabaseUtils
@@ -102,8 +106,8 @@ class RetenoDatabaseManagerImpl : RetenoDatabaseManager {
 
     override fun getDeviceEventsCount(): Long = databaseManager.getRowCount(TABLE_NAME_DEVICE)
 
-    override fun deleteDeviceEvents(count: Int, ascending: Boolean) {
-        val order = if (ascending) "ASC" else "DESC"
+    override fun deleteDeviceEvents(count: Int, oldest: Boolean) {
+        val order = if (oldest) "ASC" else "DESC"
         databaseManager.delete(
             TABLE_NAME_DEVICE,
             "$COLUMN_TIMESTAMP in (select $COLUMN_TIMESTAMP from $TABLE_NAME_DEVICE ORDER BY $COLUMN_TIMESTAMP $order LIMIT $count)",
@@ -112,6 +116,7 @@ class RetenoDatabaseManagerImpl : RetenoDatabaseManager {
     }
 
 
+    //==============================================================================================
     override fun insertUser(user: UserDTO) {
         contentValues.putUser(user)
         val rowId = databaseManager.insert(TABLE_NAME_USER, null, contentValues)
@@ -186,8 +191,8 @@ class RetenoDatabaseManagerImpl : RetenoDatabaseManager {
 
     override fun getUserEventsCount(): Long = databaseManager.getRowCount(TABLE_NAME_USER)
 
-    override fun deleteUserEvents(count: Int, ascending: Boolean) {
-        val order = if (ascending) "ASC" else "DESC"
+    override fun deleteUserEvents(count: Int, oldest: Boolean) {
+        val order = if (oldest) "ASC" else "DESC"
         databaseManager.delete(
             TABLE_NAME_USER,
             "$COLUMN_TIMESTAMP in (select $COLUMN_TIMESTAMP from $TABLE_NAME_USER ORDER BY $COLUMN_TIMESTAMP $order LIMIT $count)",
@@ -195,6 +200,65 @@ class RetenoDatabaseManagerImpl : RetenoDatabaseManager {
         )
     }
 
+    //==============================================================================================
+    override fun insertInteraction(interaction: InteractionModelDb) {
+        contentValues.putInteraction(interaction)
+        databaseManager.insert(TABLE_NAME_INTERACTION, null, contentValues)
+        contentValues.clear()
+    }
+
+    override fun getInteractionEvents(limit: Int?): List<Pair<String, InteractionModelDb>> {
+        val interactionEvents: MutableList<Pair<String, InteractionModelDb>> = mutableListOf()
+
+        var cursor: Cursor? = null
+        try {
+            cursor = databaseManager.query(
+                TABLE_NAME_INTERACTION,
+                DbSchema.InteractionSchema.getAllColumns(),
+                null,
+                null,
+                null,
+                null,
+                "$COLUMN_TIMESTAMP ASC",
+                limit?.toString()
+            )
+            while (cursor.moveToNext()) {
+                val timestamp = cursor.getStringOrNull(cursor.getColumnIndex(COLUMN_TIMESTAMP))
+                val interaction = cursor.getInteraction()
+
+                if (allElementsNotNull(timestamp, interaction)) {
+                    interactionEvents.add(timestamp!! to interaction!!)
+                } else {
+                    val rowId = cursor.getStringOrNull(cursor.getColumnIndex(COLUMN_ID))
+                    val exception = SQLException("Unable to read data from SQL database. timeStamp=$timestamp, interaction=$interaction")
+                    if (rowId == null) {
+                        /*@formatter:off*/ Logger.e(TAG, "getInteractionEvents(). rowId is NULL ", exception)
+                        /*@formatter:on*/
+                    } else {
+                        databaseManager.delete(TABLE_NAME_USER, "$COLUMN_USER_ROW_ID=?", arrayOf(rowId))
+                        /*@formatter:off*/ Logger.e(TAG, "getInteractionEvents(). Removed invalid entry from database. interaction=$interaction ", exception)
+                        /*@formatter:on*/
+                    }
+                }
+            }
+        } catch (t: Throwable) {
+            handleSQLiteError("Unable to get events from the table.", t)
+        } finally {
+            cursor?.close()
+        }
+        return interactionEvents
+    }
+
+    override fun getInteractionEventsCount(): Long = databaseManager.getRowCount(TABLE_NAME_INTERACTION)
+
+    override fun deleteInteractionEvents(count: Int, oldest: Boolean) {
+        val order = if (oldest) "ASC" else "DESC"
+        databaseManager.delete(
+            TABLE_NAME_INTERACTION,
+            "$COLUMN_TIMESTAMP in (select $COLUMN_TIMESTAMP from $TABLE_NAME_INTERACTION ORDER BY $COLUMN_TIMESTAMP $order LIMIT $count)",
+            null
+        )
+    }
 
     private fun handleSQLiteError(log: String, t: Throwable) {
         /*@formatter:off*/ Logger.e(TAG, "handleSQLiteError(): $log", t)

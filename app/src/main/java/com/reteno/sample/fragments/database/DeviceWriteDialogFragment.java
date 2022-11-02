@@ -21,6 +21,7 @@ import com.reteno.core.model.device.DeviceCategory;
 import com.reteno.core.model.device.DeviceOS;
 import com.reteno.sample.SampleApp;
 import com.reteno.sample.databinding.DialogDbWriteDeviceBinding;
+import com.reteno.sample.util.Util;
 
 public class DeviceWriteDialogFragment extends DialogFragment {
 
@@ -78,16 +79,16 @@ public class DeviceWriteDialogFragment extends DialogFragment {
         binding.btnSubmit.setOnClickListener(v -> {
             Device device = new Device(
                     binding.etDeviceId.getText().toString(),
-                    binding.etExternalUserId.getText().toString(),
-                    binding.etPushToken.getText().toString(),
-                    DeviceCategory.Companion.fromString(binding.etCategory.getText().toString()),
-                    DeviceOS.Companion.fromString(binding.etOsType.getText().toString()),
-                    binding.etOsVersion.getText().toString(),
-                    binding.etDeviceModel.getText().toString(),
-                    binding.etAppVersion.getText().toString(),
-                    binding.etLanguageCode.getText().toString(),
-                    binding.etTimeZone.getText().toString(),
-                    binding.etAdvertisingId.getText().toString()
+                    Util.getTextOrNull(binding.etExternalUserId),
+                    Util.getTextOrNull(binding.etPushToken),
+                    DeviceCategory.Companion.fromString(Util.getTextOrNull(binding.etCategory)),
+                    DeviceOS.Companion.fromString(Util.getTextOrNull(binding.etOsType)),
+                    Util.getTextOrNull(binding.etOsVersion),
+                    Util.getTextOrNull(binding.etDeviceModel),
+                    Util.getTextOrNull(binding.etAppVersion),
+                    Util.getTextOrNull(binding.etLanguageCode),
+                    Util.getTextOrNull(binding.etTimeZone),
+                    Util.getTextOrNull(binding.etAdvertisingId)
             );
 
             databaseManager.insertDevice(device);

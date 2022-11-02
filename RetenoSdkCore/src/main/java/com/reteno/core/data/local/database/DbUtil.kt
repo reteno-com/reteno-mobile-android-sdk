@@ -3,6 +3,7 @@ package com.reteno.core.data.local.database
 import android.content.ContentValues
 import android.database.Cursor
 import androidx.core.database.getStringOrNull
+import com.reteno.core.data.local.model.InteractionModelDb
 import com.reteno.core.data.remote.mapper.fromJson
 import com.reteno.core.data.remote.mapper.listFromJson
 import com.reteno.core.data.remote.mapper.toJson
@@ -13,6 +14,8 @@ import com.reteno.core.data.remote.model.user.UserDTO
 import com.reteno.core.model.device.Device
 import com.reteno.core.model.device.DeviceCategory
 import com.reteno.core.model.device.DeviceOS
+import com.reteno.core.model.interaction.InteractionStatus
+import com.reteno.core.util.allElementsNotNull
 import com.reteno.core.util.allElementsNull
 
 
@@ -179,5 +182,32 @@ internal object DbUtil {
     }
 
     // --------------------- Push Status -----------------------------------------------------------
+    fun ContentValues.putInteraction(interaction: InteractionModelDb) {
+        put(DbSchema.InteractionSchema.COLUMN_INTERACTION_ID, interaction.interactionId)
+        put(DbSchema.InteractionSchema.COLUMN_INTERACTION_TIME, interaction.time)
+        put(DbSchema.InteractionSchema.COLUMN_INTERACTION_STATUS, interaction.status.toString())
+        put(DbSchema.InteractionSchema.COLUMN_INTERACTION_TOKEN, interaction.token)
+    }
 
+    fun Cursor.getInteraction(): InteractionModelDb? {
+        val interactionId =
+            getStringOrNull(getColumnIndex(DbSchema.InteractionSchema.COLUMN_INTERACTION_ID))
+        val status =
+            getStringOrNull(getColumnIndex(DbSchema.InteractionSchema.COLUMN_INTERACTION_STATUS))
+        val time =
+            getStringOrNull(getColumnIndex(DbSchema.InteractionSchema.COLUMN_INTERACTION_TIME))
+        val token =
+            getStringOrNull(getColumnIndex(DbSchema.InteractionSchema.COLUMN_INTERACTION_TOKEN))
+
+        return if (allElementsNotNull(interactionId, status, time, token)) {
+            InteractionModelDb(
+                interactionId = interactionId!!,
+                status = InteractionStatus.fromString(status),
+                time = time!!,
+                token = token!!
+            )
+        } else {
+            null
+        }
+    }
 }

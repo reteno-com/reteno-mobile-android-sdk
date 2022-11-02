@@ -39,6 +39,8 @@ public class FragmentDatabase extends Fragment {
         binding.btnReadDevice.setOnClickListener(v -> showDialogReadDevice());
         binding.btnWriteUser.setOnClickListener(v -> showDialogWriteUser());
         binding.btnReadUser.setOnClickListener(v -> showDialogReadUser());
+        binding.btnWriteInteraction.setOnClickListener(v -> showDialogWriteInteraction());
+        binding.btnReadInteraction.setOnClickListener(v -> showDialogReadInteraction());
     }
 
     private void showDialogWriteDevice() {
@@ -55,5 +57,13 @@ public class FragmentDatabase extends Fragment {
 
     private void showDialogReadUser() {
         NavHostFragment.findNavController(this).navigate(FragmentDatabaseDirections.databaseToReadUser());
+    }
+
+    private void showDialogWriteInteraction() {
+        NavHostFragment.findNavController(this).navigate(FragmentDatabaseDirections.databaseToWriteInteraction());
+    }
+
+    private void showDialogReadInteraction() {
+        NavHostFragment.findNavController(this).navigate(FragmentDatabaseDirections.databaseToReadInteraction());
     }
 }

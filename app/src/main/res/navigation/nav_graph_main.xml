@@ -84,6 +84,14 @@
         <action
             android:id="@+id/database_to_read_user"
             app:destination="@id/fragmentReadUser" />
+
+        <action
+            android:id="@+id/database_to_write_interaction"
+            app:destination="@id/fragmentWriteInteraction" />
+
+        <action
+            android:id="@+id/database_to_read_interaction"
+            app:destination="@id/fragmentReadInteraction" />
     </fragment>
 
     <dialog
@@ -108,6 +116,18 @@
         android:id="@+id/fragmentReadUser"
         android:name="com.reteno.sample.fragments.database.UserReadDialogFragment"
         android:label="fragmentReadUser"
+        tools:layout="@layout/dialog_db_read" />
+
+    <dialog
+        android:id="@+id/fragmentWriteInteraction"
+        android:name="com.reteno.sample.fragments.database.InteractionWriteDialogFragment"
+        android:label="fragmentWriteInteraction"
+        tools:layout="@layout/dialog_db_write_interaction" />
+
+    <dialog
+        android:id="@+id/fragmentReadInteraction"
+        android:name="com.reteno.sample.fragments.database.InteractionReadDialogFragment"
+        android:label="fragmentReadInteraction"
         tools:layout="@layout/dialog_db_read" />
 
 </navigation>

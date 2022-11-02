@@ -20,9 +20,9 @@ import com.reteno.core.model.user.UserCustomField;
 import com.reteno.sample.BaseFragment;
 import com.reteno.sample.R;
 import com.reteno.sample.databinding.FragmentUserDataBinding;
+import com.reteno.sample.util.Util;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public class FragmentUserData extends BaseFragment {
@@ -73,30 +73,30 @@ public class FragmentUserData extends BaseFragment {
     }
 
     private void getUserData() {
-        String externalId = getTextOrNull(binding.etExternalId);
+        String externalId = Util.getTextOrNull(binding.etExternalId);
 
         List<UserCustomField> userCustomData = getUserCustomData();
 
         Address address = new Address(
-                getTextOrNull(binding.etRegion),
-                getTextOrNull(binding.etTown),
-                getTextOrNull(binding.etAddress),
-                getTextOrNull(binding.etPostcode)
+                Util.getTextOrNull(binding.etRegion),
+                Util.getTextOrNull(binding.etTown),
+                Util.getTextOrNull(binding.etAddress),
+                Util.getTextOrNull(binding.etPostcode)
         );
         UserAttributes userAttributes = new UserAttributes(
-                getTextOrNull(binding.etPhone),
-                getTextOrNull(binding.etEmail),
-                getTextOrNull(binding.etFirstName),
-                getTextOrNull(binding.etLastName),
-                getTextOrNull(binding.etLanguageCode),
-                getTextOrNull(binding.etTimeZone),
+                Util.getTextOrNull(binding.etPhone),
+                Util.getTextOrNull(binding.etEmail),
+                Util.getTextOrNull(binding.etFirstName),
+                Util.getTextOrNull(binding.etLastName),
+                Util.getTextOrNull(binding.etLanguageCode),
+                Util.getTextOrNull(binding.etTimeZone),
                 address,
                 userCustomData
         );
 
-        List<String> subscriptionKeys = getListFromEditText(binding.etSubscriptionKeys);
-        List<String> groupNamesInclude = getListFromEditText(binding.etGroupNamesInclude);
-        List<String> groupNamesExclude = getListFromEditText(binding.etGroupNamesExclude);
+        List<String> subscriptionKeys = Util.getListFromEditText(binding.etSubscriptionKeys);
+        List<String> groupNamesInclude = Util.getListFromEditText(binding.etGroupNamesInclude);
+        List<String> groupNamesExclude = Util.getListFromEditText(binding.etGroupNamesExclude);
 
         User user = new User(userAttributes, subscriptionKeys, groupNamesInclude, groupNamesExclude);
         sendUserData(externalId, user);
@@ -113,8 +113,8 @@ public class FragmentUserData extends BaseFragment {
             EditText etKey = (EditText) parent.getChildAt(0);
             EditText etValue = (EditText) parent.getChildAt(1);
 
-            String key = getTextOrNull(etKey);
-            String value = getTextOrNull(etValue);
+            String key = Util.getTextOrNull(etKey);
+            String value = Util.getTextOrNull(etValue);
 
             if (key != null) {
                 list.add(new UserCustomField(key, value));
@@ -125,18 +125,6 @@ public class FragmentUserData extends BaseFragment {
 
     protected void sendUserData(String externalId, User user) {
         getReteno().setUserAttributes(externalId, user);
-    }
-
-    private String getTextOrNull(EditText editText) {
-        String rawText = editText.getText().toString().trim();
-        if (rawText.isEmpty()) return null;
-        return rawText;
-    }
-
-    private List<String> getListFromEditText(EditText editText) {
-        String rawText = editText.getText().toString().trim();
-        if (rawText.isEmpty()) return null;
-        return Arrays.asList(rawText.split(","));
     }
 
     private View createNewFields() {
