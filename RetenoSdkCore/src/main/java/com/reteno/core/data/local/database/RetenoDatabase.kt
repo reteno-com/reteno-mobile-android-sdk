@@ -1,8 +1,8 @@
 package com.reteno.core.data.local.database
 
 import android.content.ContentValues
-import android.database.Cursor
-import android.database.SQLException
+import net.sqlcipher.Cursor
+import net.sqlcipher.SQLException
 
 interface RetenoDatabase {
     fun query(
@@ -18,9 +18,6 @@ interface RetenoDatabase {
     ): Cursor
 
     fun rawQuery(rawQuery: String, selectionArgs: Array<out String>?): Cursor
-
-    // TODO This is a very dangerous method. Should be hidden behind internal at least!
-    fun execSql(rawQuery: String)
 
     fun insert(table: String, nullColumnHack: String?, contentValues: ContentValues): Long
 
@@ -43,4 +40,6 @@ interface RetenoDatabase {
     fun delete(table: String, whereClause: String?, whereArgs: Array<String?>?)
 
     fun getRowCount(tableName: String): Long
+
+    fun cleanEventsRowsInParentTableWithNoChildren()
 }

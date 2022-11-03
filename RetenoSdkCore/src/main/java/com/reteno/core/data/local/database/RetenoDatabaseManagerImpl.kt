@@ -1,8 +1,6 @@
 package com.reteno.core.data.local.database
 
 import android.content.ContentValues
-import android.database.Cursor
-import android.database.SQLException
 import androidx.core.database.getLongOrNull
 import androidx.core.database.getStringOrNull
 import com.reteno.core.RetenoImpl
@@ -56,15 +54,14 @@ import com.reteno.core.model.Events
 import com.reteno.core.model.device.Device
 import com.reteno.core.util.Logger
 import com.reteno.core.util.allElementsNotNull
-
-// TODO: USE ENCRYPTION
-//import net.sqlcipher.DatabaseUtils
-//import net.sqlcipher.database.SQLiteDatabase
+import net.sqlcipher.Cursor
+import net.sqlcipher.SQLException
+import net.sqlcipher.database.SQLiteDatabase
 
 class RetenoDatabaseManagerImpl : RetenoDatabaseManager {
 
     private val databaseManager: RetenoDatabaseImpl by lazy {
-//        SQLiteDatabase.loadLibs(RetenoImpl.application)
+        SQLiteDatabase.loadLibs(RetenoImpl.application)
         RetenoDatabaseImpl(RetenoImpl.application)
     }
     private val contentValues = ContentValues()
@@ -156,6 +153,7 @@ class RetenoDatabaseManagerImpl : RetenoDatabaseManager {
 
     override fun getUser(limit: Int?): List<UserDTO> {
         val userEvents: MutableList<UserDTO> = mutableListOf()
+        val rawQueryLimit: String = limit?.let { " LIMIT $it" } ?: ""
 
         var cursor: Cursor? = null
         try {
@@ -179,7 +177,8 @@ class RetenoDatabaseManagerImpl : RetenoDatabaseManager {
                     "  $TABLE_NAME_USER_ADDRESS.$COLUMN_POSTCODE AS $COLUMN_POSTCODE" +
                     " FROM $TABLE_NAME_USER" +
                     "  LEFT JOIN $TABLE_NAME_USER_ATTRIBUTES ON $TABLE_NAME_USER.$COLUMN_USER_ROW_ID = $TABLE_NAME_USER_ATTRIBUTES.$COLUMN_USER_ROW_ID" +
-                    "  LEFT JOIN $TABLE_NAME_USER_ADDRESS ON $TABLE_NAME_USER.$COLUMN_USER_ROW_ID = $TABLE_NAME_USER_ADDRESS.$COLUMN_USER_ROW_ID"
+                    "  LEFT JOIN $TABLE_NAME_USER_ADDRESS ON $TABLE_NAME_USER.$COLUMN_USER_ROW_ID = $TABLE_NAME_USER_ADDRESS.$COLUMN_USER_ROW_ID" +
+                    rawQueryLimit
             cursor = databaseManager.rawQuery(rawQuery, null)
             while (cursor.moveToNext()) {
                 val timestamp = cursor.getStringOrNull(cursor.getColumnIndex(COLUMN_TIMESTAMP))
@@ -339,7 +338,7 @@ class RetenoDatabaseManagerImpl : RetenoDatabaseManager {
                 null,
                 null,
                 null,
-                null
+                limit?.toString()
             )
             while (cursor.moveToNext()) {
                 val eventsId =
@@ -442,9 +441,7 @@ class RetenoDatabaseManagerImpl : RetenoDatabaseManager {
             null
         )
 
-        val rawQuery = "DELETE FROM $TABLE_NAME_EVENTS WHERE $COLUMN_EVENTS_ID NOT IN " +
-                "(SELECT $COLUMN_EVENTS_ID FROM $TABLE_NAME_EVENT)"
-        databaseManager.execSql(rawQuery)
+        databaseManager.cleanEventsRowsInParentTableWithNoChildren()
     }
 
     private fun handleSQLiteError(log: String, t: Throwable) {

@@ -1,7 +1,6 @@
 package com.reteno.core.data.local.database
 
 import android.content.ContentValues
-import android.database.Cursor
 import androidx.core.database.getStringOrNull
 import com.reteno.core.data.local.model.InteractionModelDb
 import com.reteno.core.data.remote.mapper.fromJson
@@ -20,6 +19,7 @@ import com.reteno.core.model.device.DeviceOS
 import com.reteno.core.model.interaction.InteractionStatus
 import com.reteno.core.util.allElementsNotNull
 import com.reteno.core.util.allElementsNull
+import net.sqlcipher.Cursor
 import java.time.LocalDateTime
 
 

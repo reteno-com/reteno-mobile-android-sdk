@@ -1,23 +1,31 @@
 package com.reteno.core.data.local.database
 
-//import net.sqlcipher.database.SQLiteDatabase
-//import net.sqlcipher.database.SQLiteOpenHelper
-//import net.sqlcipher.DatabaseUtils
 import android.content.ContentValues
 import android.content.Context
-import android.database.Cursor
-import android.database.DatabaseUtils
-import android.database.sqlite.*
+import android.database.sqlite.SQLiteCantOpenDatabaseException
+import android.database.sqlite.SQLiteDatabaseLockedException
 import android.os.SystemClock
+import com.reteno.core.BuildConfig
 import com.reteno.core.data.local.database.DbSchema.DATABASE_NAME
 import com.reteno.core.data.local.database.DbSchema.DATABASE_VERSION
 import com.reteno.core.util.Logger
+import net.sqlcipher.Cursor
+import net.sqlcipher.DatabaseUtils
+import net.sqlcipher.database.SQLiteDatabase
+import net.sqlcipher.database.SQLiteException
+import net.sqlcipher.database.SQLiteOpenHelper
 
 class RetenoDatabaseImpl(context: Context) : RetenoDatabase,
     SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
 
+    private val writableDatabase = getWritableDatabase(BuildConfig.SQL_PASSWORD)
+
+    override fun onOpen(db: SQLiteDatabase?) {
+        super.onOpen(db)
+        db?.execSQL("PRAGMA foreign_keys=ON");
+    }
+
     override fun onCreate(db: SQLiteDatabase) {
-        // Create event table.
         db.execSQL(DbSchema.DeviceSchema.SQL_CREATE_TABLE)
         db.execSQL(DbSchema.UserSchema.SQL_CREATE_TABLE)
         db.execSQL(DbSchema.UserAttributesSchema.SQL_CREATE_TABLE)
@@ -74,9 +82,6 @@ class RetenoDatabaseImpl(context: Context) : RetenoDatabase,
 
     override fun rawQuery(rawQuery: String, selectionArgs: Array<out String>?): Cursor =
         getSQLiteDatabaseWithRetries().rawQuery(rawQuery, selectionArgs)
-
-    override fun execSql(rawQuery: String) =
-        getSQLiteDatabaseWithRetries().execSQL(rawQuery)
 
     override fun insert(
         table: String,
@@ -280,19 +285,25 @@ class RetenoDatabaseImpl(context: Context) : RetenoDatabase,
                     return getSQLiteDatabase()
                 } catch (e: SQLiteCantOpenDatabaseException) {
                     if (firstSQLiteException == null) {
-                        firstSQLiteException = e
+                        firstSQLiteException = SQLiteException(e.message)
                     }
                     if (++count >= DB_OPEN_RETRY_MAX) throw firstSQLiteException
                     SystemClock.sleep((count * DB_OPEN_RETRY_BACKOFF).toLong())
                 } catch (e: SQLiteDatabaseLockedException) {
                     if (firstSQLiteException == null) {
-                        firstSQLiteException = e
+                        firstSQLiteException = SQLiteException(e.message)
                     }
                     if (++count >= DB_OPEN_RETRY_MAX) throw firstSQLiteException
                     SystemClock.sleep((count * DB_OPEN_RETRY_BACKOFF).toLong())
                 }
             }
         }
+    }
+
+    override fun cleanEventsRowsInParentTableWithNoChildren() {
+        val rawQuery = "DELETE FROM ${DbSchema.EventsSchema.TABLE_NAME_EVENTS} WHERE ${DbSchema.EventsSchema.COLUMN_EVENTS_ID} NOT IN " +
+                "(SELECT ${DbSchema.EventsSchema.COLUMN_EVENTS_ID} FROM ${DbSchema.EventSchema.TABLE_NAME_EVENT})"
+        getSQLiteDatabaseWithRetries().execSQL(rawQuery)
     }
 
     /**

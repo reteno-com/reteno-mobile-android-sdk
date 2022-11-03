@@ -17,7 +17,8 @@ enum class DeviceIdMode {
      *
      * Is rotated on app re-install
      * Is rotated on factory reset
-     * https://developers.google.com/android/reference/com/google/android/gms/appset/AppSetIdInfo#public-string-getid
+     * https://developer.android.com/training/articles/app-set-id
+     * https://developers.google.com/android/reference/com/google/android/gms/appset/AppSetIdInfo
      */
     APP_SET_ID,
 
