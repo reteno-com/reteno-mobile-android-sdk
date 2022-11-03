@@ -31,6 +31,8 @@ assembleDebug:
     - base64 -d $KEYSTORE_CONFIG_GRADLE > keystore/keystore_config.gradle
     - base64 -d $FIREBASE_JSON > keystore/firebase_app_distribution.json
     - base64 -d $RELEASE_KEYSTORE > keystore/release.keystore
+    - base64 -d $LOCAL_PROPERTIES > local.properties
+    - base64 -d $KEYS_PROPERTIES > RetenoSdkCore/keys.properties
     - chmod +x ./gradlew
   script:
     - ./gradlew assembleDebug
@@ -50,6 +52,8 @@ debugTests:
     - base64 -d $KEYSTORE_CONFIG_GRADLE > keystore/keystore_config.gradle
     - base64 -d $FIREBASE_JSON > keystore/firebase_app_distribution.json
     - base64 -d $RELEASE_KEYSTORE > keystore/release.keystore
+    - base64 -d $LOCAL_PROPERTIES > local.properties
+    - base64 -d $KEYS_PROPERTIES > RetenoSdkCore/keys.properties
     - chmod +x ./gradlew
   script:
     - ./gradlew --no-daemon -q -s testDebug
@@ -75,6 +79,8 @@ deployQaToFirebase:
     - base64 -d $KEYSTORE_CONFIG_GRADLE > keystore/keystore_config.gradle
     - base64 -d $FIREBASE_JSON > keystore/firebase_app_distribution.json
     - base64 -d $RELEASE_KEYSTORE > keystore/release.keystore
+    - base64 -d $LOCAL_PROPERTIES > local.properties
+    - base64 -d $KEYS_PROPERTIES > RetenoSdkCore/keys.properties
     - chmod +x ./gradlew
   script:
     - touch build-number
