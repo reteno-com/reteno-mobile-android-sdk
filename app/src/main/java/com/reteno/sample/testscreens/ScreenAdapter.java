@@ -1,5 +1,6 @@
 package com.reteno.sample.testscreens;
 
+import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.ViewGroup;
 
@@ -9,7 +10,7 @@ import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.ListAdapter;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.reteno.sample.databinding.RecyclerItemBinding;
+import com.reteno.sample.databinding.ItemButtonGoToFragmentBinding;
 
 import java.util.List;
 
@@ -27,7 +28,7 @@ public class ScreenAdapter extends ListAdapter<ScreenItem, ScreenAdapter.ScreenV
     @Override
     public ScreenViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         return new ScreenViewHolder(
-                RecyclerItemBinding.inflate(
+                ItemButtonGoToFragmentBinding.inflate(
                         LayoutInflater.from(parent.getContext()),
                         parent,
                         false
@@ -42,10 +43,10 @@ public class ScreenAdapter extends ListAdapter<ScreenItem, ScreenAdapter.ScreenV
 
     static class ScreenViewHolder extends RecyclerView.ViewHolder {
 
-        private final RecyclerItemBinding binding;
+        private final ItemButtonGoToFragmentBinding binding;
         private final ScreenItemClick itemClick;
 
-        ScreenViewHolder(RecyclerItemBinding binding, ScreenItemClick itemClick) {
+        ScreenViewHolder(ItemButtonGoToFragmentBinding binding, ScreenItemClick itemClick) {
             super(binding.getRoot());
             this.binding = binding;
             this.itemClick = itemClick;
@@ -56,7 +57,11 @@ public class ScreenAdapter extends ListAdapter<ScreenItem, ScreenAdapter.ScreenV
 
             binding.buttonItem.setOnClickListener(v -> {
                 if (screen.getNavigationId() != -1) {
-                    itemClick.NavigateById(screen.getNavigationId());
+                    if (screen.getBundle() != null) {
+                        itemClick.navigateById(screen.getNavigationId(), screen.getBundle());
+                    } else {
+                        itemClick.navigateById(screen.getNavigationId());
+                    }
                 } else if (screen.getDirection() != null) {
                     itemClick.navigateByDirections(screen.getDirection());
                 }
@@ -80,9 +85,11 @@ public class ScreenAdapter extends ListAdapter<ScreenItem, ScreenAdapter.ScreenV
                 }
             };
 
-   public interface ScreenItemClick {
+    public interface ScreenItemClick {
 
-        void NavigateById(int fragmentId);
+        void navigateById(int fragmentId);
+
+        void navigateById(int fragmentId, Bundle bundle);
 
         void navigateByDirections(NavDirections navDirections);
     }

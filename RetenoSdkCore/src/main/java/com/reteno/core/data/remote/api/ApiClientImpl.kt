@@ -6,7 +6,7 @@ import com.reteno.core.domain.ResponseCallback
 internal class ApiClientImpl : ApiClient {
 
     override fun put(url: ApiContract, jsonBody: String, responseHandler: ResponseCallback) {
-        OperationQueue.getInstance().addOperation {
+        OperationQueue.addOperation {
             putSync(url, jsonBody, responseHandler)
         }
     }
@@ -16,7 +16,7 @@ internal class ApiClientImpl : ApiClient {
     }
 
     override fun post(url: ApiContract, jsonBody: String, responseHandler: ResponseCallback) {
-        OperationQueue.getInstance().addOperation {
+        OperationQueue.addOperation {
             postSync(url, jsonBody, responseHandler)
         }
     }
@@ -27,7 +27,7 @@ internal class ApiClientImpl : ApiClient {
 
     override fun get(url: ApiContract, queryParams: Map<String, Any>?, responseHandler: ResponseCallback
     ) {
-        OperationQueue.getInstance().addOperation {
+        OperationQueue.addOperation {
             getSync(url, queryParams, responseHandler)
         }
     }
