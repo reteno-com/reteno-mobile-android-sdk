@@ -39,15 +39,14 @@ public class MainActivity extends AppCompatActivity {
 
         checkPermissions();
         checkDeepLink(getIntent());
-
-        setNavigation();
+        setNavigation(getIntent());
     }
 
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         checkDeepLink(intent);
-        setNavigation();
+        setNavigation(intent);
     }
 
     private void checkPermissions() {
@@ -75,8 +74,8 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void setNavigation() {
-        Bundle bundle = getIntent().getExtras();
+    private void setNavigation(Intent intent) {
+        Bundle bundle = intent.getExtras();
         NavHostFragment navHostFragment = (NavHostFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.navHostFragment);
         navHostFragment.getNavController().setGraph(R.navigation.nav_graph_main, bundle);
