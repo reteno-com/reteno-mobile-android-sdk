@@ -12,5 +12,5 @@ abstract class BaseReadViewHolder<Model, ViewHolderBinding extends ViewBinding> 
     }
 
 
-    protected abstract void bind(String timestamp, Model user);
+    protected abstract void bind(Model user);
 }

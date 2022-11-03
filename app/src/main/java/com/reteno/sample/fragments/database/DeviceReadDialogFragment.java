@@ -40,7 +40,7 @@ public class DeviceReadDialogFragment extends BaseReadDialogFragment<Device, Ite
 
     @Override
     protected void initItems() {
-        List<Pair<String, Device>> newItems = databaseManager.getDevices(null);
+        List<Device> newItems = databaseManager.getDevices(null);
         adapter.setItems(newItems);
     }
 
@@ -82,9 +82,7 @@ public class DeviceReadDialogFragment extends BaseReadDialogFragment<Device, Ite
         }
 
         @Override
-        protected void bind(String timestamp, Device device) {
-            bindingHolder.tvValueTimestamp.setText(timestamp);
-
+        protected void bind(Device device) {
             bindingHolder.tvDeviceId.setTextOrHide(device.getDeviceId());
             bindingHolder.tvExternalUserId.setTextOrHide(device.getExternalUserId());
             bindingHolder.tvPushToken.setTextOrHide(device.getPushToken());

@@ -45,8 +45,7 @@ public class EventReadDialogFragment extends BaseReadDialogFragment<Events, Item
     @Override
     protected void initItems() {
         List<Events> newEvents = databaseManager.getEvents(null);
-        List<Pair<String, Events>> newItems = newEvents.stream().map(events -> new Pair<String, Events>("", events)).collect(Collectors.toList());
-        adapter.setItems(newItems);
+        adapter.setItems(newEvents);
     }
 
     //==============================================================================================
@@ -75,7 +74,7 @@ public class EventReadDialogFragment extends BaseReadDialogFragment<Events, Item
         }
 
         @Override
-        protected void bind(String timestamp, Events events) {
+        protected void bind(Events events) {
             bindingHolder.tvDeviceId.setText(events.getDeviceId());
             bindingHolder.tvExternalUserId.setText(events.getExternalUserId());
 

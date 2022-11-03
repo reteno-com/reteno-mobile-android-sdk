@@ -12,14 +12,14 @@ import kotlin.Pair;
 
 abstract class BaseReadAdapter<Model, ViewHolderBinding extends ViewBinding, ViewHolder extends BaseReadViewHolder<Model, ViewHolderBinding>> extends RecyclerView.Adapter<ViewHolder> {
 
-    protected List<Pair<String, Model>> items;
+    protected List<Model> items;
     protected final ViewHolderListener onExpandCollapseClickListener;
 
     BaseReadAdapter(ViewHolderListener listener) {
         this.onExpandCollapseClickListener = listener;
     }
 
-    void setItems(List<Pair<String, Model>> newItems) {
+    void setItems(List<Model> newItems) {
         this.items = newItems;
         notifyDataSetChanged();
     }
@@ -30,9 +30,9 @@ abstract class BaseReadAdapter<Model, ViewHolderBinding extends ViewBinding, Vie
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-        Pair<String, Model> item = items.get(position);
+        Model item = items.get(position);
         initListeners(holder.bindingHolder);
-        holder.bind(item.component1(), item.component2());
+        holder.bind(item);
     }
 
     @Override

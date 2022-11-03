@@ -35,7 +35,7 @@ public class InteractionReadDialogFragment extends BaseReadDialogFragment<Intera
 
     @Override
     protected void initItems() {
-        List<Pair<String, InteractionModelDb>> newItems = databaseManager.getInteractions(null);
+        List<InteractionModelDb> newItems = databaseManager.getInteractions(null);
         adapter.setItems(newItems);
     }
 
@@ -83,9 +83,7 @@ public class InteractionReadDialogFragment extends BaseReadDialogFragment<Intera
         }
 
         @Override
-        protected void bind(String timestamp, InteractionModelDb interaction) {
-            bindingHolder.tvValueTimestamp.setText(timestamp);
-
+        protected void bind(InteractionModelDb interaction) {
             bindingHolder.tvInteractionId.setText(interaction.getInteractionId());
             bindingHolder.tvStatus.setText(interaction.getStatus().toString());
             bindingHolder.tvTime.setText(interaction.getTime());

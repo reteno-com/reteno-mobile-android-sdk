@@ -76,8 +76,8 @@ class RetenoDatabaseManagerImpl : RetenoDatabaseManager {
         contentValues.clear()
     }
 
-    override fun getDevices(limit: Int?): List<Pair<String, Device>> {
-        val deviceEvents: MutableList<Pair<String, Device>> = mutableListOf()
+    override fun getDevices(limit: Int?): List<Device> {
+        val deviceEvents: MutableList<Device> = mutableListOf()
 
         var cursor: Cursor? = null
         try {
@@ -95,8 +95,8 @@ class RetenoDatabaseManagerImpl : RetenoDatabaseManager {
                 val timestamp = cursor.getStringOrNull(cursor.getColumnIndex(COLUMN_TIMESTAMP))
                 val device = cursor.getDevice()
 
-                if (allElementsNotNull(timestamp, device)) {
-                    deviceEvents.add(timestamp!! to device!!)
+                if (device != null) {
+                    deviceEvents.add(device)
                 } else {
                     val rowId = cursor.getStringOrNull(cursor.getColumnIndex(COLUMN_DEVICE_ROW_ID))
                     val exception =
@@ -154,8 +154,8 @@ class RetenoDatabaseManagerImpl : RetenoDatabaseManager {
         }
     }
 
-    override fun getUser(limit: Int?): List<Pair<String, UserDTO>> {
-        val userEvents: MutableList<Pair<String, UserDTO>> = mutableListOf()
+    override fun getUser(limit: Int?): List<UserDTO> {
+        val userEvents: MutableList<UserDTO> = mutableListOf()
 
         var cursor: Cursor? = null
         try {
@@ -185,8 +185,8 @@ class RetenoDatabaseManagerImpl : RetenoDatabaseManager {
                 val timestamp = cursor.getStringOrNull(cursor.getColumnIndex(COLUMN_TIMESTAMP))
                 val user = cursor.getUser()
 
-                if (allElementsNotNull(timestamp, user)) {
-                    userEvents.add(timestamp!! to user!!)
+                if (user != null) {
+                    userEvents.add(user)
                 } else {
                     val rowId = cursor.getStringOrNull(cursor.getColumnIndex(COLUMN_USER_ROW_ID))
                     val exception =
@@ -231,8 +231,8 @@ class RetenoDatabaseManagerImpl : RetenoDatabaseManager {
         contentValues.clear()
     }
 
-    override fun getInteractions(limit: Int?): List<Pair<String, InteractionModelDb>> {
-        val interactionEvents: MutableList<Pair<String, InteractionModelDb>> = mutableListOf()
+    override fun getInteractions(limit: Int?): List<InteractionModelDb> {
+        val interactionEvents: MutableList<InteractionModelDb> = mutableListOf()
 
         var cursor: Cursor? = null
         try {
@@ -250,8 +250,8 @@ class RetenoDatabaseManagerImpl : RetenoDatabaseManager {
                 val timestamp = cursor.getStringOrNull(cursor.getColumnIndex(COLUMN_TIMESTAMP))
                 val interaction = cursor.getInteraction()
 
-                if (allElementsNotNull(timestamp, interaction)) {
-                    interactionEvents.add(timestamp!! to interaction!!)
+                if (interaction != null) {
+                    interactionEvents.add(interaction)
                 } else {
                     val rowId =
                         cursor.getStringOrNull(cursor.getColumnIndex(COLUMN_INTERACTION_ROW_ID))

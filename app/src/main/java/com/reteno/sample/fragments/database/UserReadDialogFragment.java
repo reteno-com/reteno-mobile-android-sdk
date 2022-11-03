@@ -20,8 +20,6 @@ import com.reteno.sample.databinding.ViewUserCustomFieldsVerticalBinding;
 import java.util.List;
 import java.util.Locale;
 
-import kotlin.Pair;
-
 
 public class UserReadDialogFragment extends BaseReadDialogFragment<UserDTO, ItemDbUserBinding, UserReadDialogFragment.UserViewHolder, UserReadDialogFragment.UserAdapter> {
 
@@ -40,7 +38,7 @@ public class UserReadDialogFragment extends BaseReadDialogFragment<UserDTO, Item
 
     @Override
     protected void initItems() {
-        List<Pair<String, UserDTO>> newItems = databaseManager.getUser(null);
+        List<UserDTO> newItems = databaseManager.getUser(null);
         adapter.setItems(newItems);
     }
 
@@ -87,9 +85,7 @@ public class UserReadDialogFragment extends BaseReadDialogFragment<UserDTO, Item
         }
 
         @Override
-        protected void bind(String timestamp, UserDTO user) {
-            bindingHolder.tvValueTimestamp.setText(timestamp);
-
+        protected void bind(UserDTO user) {
             bindingHolder.tvDeviceId.setTextOrHide(user.getDeviceId());
             bindingHolder.tvExternalUserId.setTextOrHide(user.getExternalUserId());
             bindingHolder.tvSubscriptionKeys.setTextOrHide(JsonMappersKt.toJsonOrNull(user.getSubscriptionKeys()));

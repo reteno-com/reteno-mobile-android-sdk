@@ -8,17 +8,17 @@ import com.reteno.core.model.device.Device
 interface RetenoDatabaseManager {
 
     fun insertDevice(device: Device)
-    fun getDevices(limit: Int? = null): List<Pair<String, Device>>
+    fun getDevices(limit: Int? = null): List<Device>
     fun getDeviceCount(): Long
     fun deleteDevices(count: Int, oldest: Boolean = true)
 
     fun insertUser(user: UserDTO)
-    fun getUser(limit: Int? = null): List<Pair<String, UserDTO>>
+    fun getUser(limit: Int? = null): List<UserDTO>
     fun getUserCount(): Long
     fun deleteUsers(count: Int, oldest: Boolean = true)
 
     fun insertInteraction(interaction: InteractionModelDb)
-    fun getInteractions(limit: Int? = null): List<Pair<String, InteractionModelDb>>
+    fun getInteractions(limit: Int? = null): List<InteractionModelDb>
     fun getInteractionCount(): Long
     fun deleteInteractions(count: Int, oldest: Boolean = true)
 
