@@ -29,18 +29,18 @@ public class DeviceReadDialogFragment extends BaseReadDialogFragment<Device, Ite
 
     @Override
     protected void initCount() {
-        long deviceEventsCount = databaseManager.getDeviceEventsCount();
+        long deviceEventsCount = databaseManager.getDeviceCount();
         bindingMain.tvCount.setText(String.format(Locale.US, "Count: %d", deviceEventsCount));
     }
 
     @Override
     protected void deleteItems(int count) {
-        databaseManager.deleteDeviceEvents(count, true);
+        databaseManager.deleteDevices(count, true);
     }
 
     @Override
     protected void initItems() {
-        List<Pair<String, Device>> newItems = databaseManager.getDeviceEvents(null);
+        List<Pair<String, Device>> newItems = databaseManager.getDevices(null);
         adapter.setItems(newItems);
     }
 

@@ -11,12 +11,16 @@ import com.reteno.core.data.remote.model.user.AddressDTO
 import com.reteno.core.data.remote.model.user.UserAttributesDTO
 import com.reteno.core.data.remote.model.user.UserCustomFieldDTO
 import com.reteno.core.data.remote.model.user.UserDTO
+import com.reteno.core.model.Event
+import com.reteno.core.model.Events
+import com.reteno.core.model.Parameter
 import com.reteno.core.model.device.Device
 import com.reteno.core.model.device.DeviceCategory
 import com.reteno.core.model.device.DeviceOS
 import com.reteno.core.model.interaction.InteractionStatus
 import com.reteno.core.util.allElementsNotNull
 import com.reteno.core.util.allElementsNull
+import java.time.LocalDateTime
 
 
 internal object DbUtil {
@@ -83,8 +87,8 @@ internal object DbUtil {
         put(DbSchema.UserSchema.COLUMN_GROUP_NAMES_EXCLUDE, user.groupNamesExclude?.toJson())
     }
 
-    fun ContentValues.putUserAttributes(rowId: Long, userAttributes: UserAttributesDTO) {
-        put(DbSchema.UserSchema.COLUMN_USER_ROW_ID, rowId)
+    fun ContentValues.putUserAttributes(parentRowId: Long, userAttributes: UserAttributesDTO) {
+        put(DbSchema.UserSchema.COLUMN_USER_ROW_ID, parentRowId)
 
         put(DbSchema.UserAttributesSchema.COLUMN_PHONE, userAttributes.phone)
         put(DbSchema.UserAttributesSchema.COLUMN_EMAIL, userAttributes.email)
@@ -99,8 +103,8 @@ internal object DbUtil {
         )
     }
 
-    fun ContentValues.putUserAddress(rowId: Long, userAddress: AddressDTO) {
-        put(DbSchema.UserSchema.COLUMN_USER_ROW_ID, rowId)
+    fun ContentValues.putUserAddress(parentRowId: Long, userAddress: AddressDTO) {
+        put(DbSchema.UserSchema.COLUMN_USER_ROW_ID, parentRowId)
 
         put(DbSchema.UserAddressSchema.COLUMN_REGION, userAddress.region)
         put(DbSchema.UserAddressSchema.COLUMN_TOWN, userAddress.town)
@@ -209,5 +213,46 @@ internal object DbUtil {
         } else {
             null
         }
+    }
+
+    // --------------------- Push Status -----------------------------------------------------------
+    fun ContentValues.putEvents(events: Events) {
+        put(DbSchema.EventsSchema.COLUMN_EVENTS_DEVICE_ID, events.deviceId)
+        put(DbSchema.EventsSchema.COLUMN_EVENTS_EXTERNAL_USER_ID, events.externalUserId)
+    }
+
+    fun List<Event>.toContentValuesList(parentRowId: Long): List<ContentValues> {
+        val contentValues = mutableListOf<ContentValues>()
+
+        for (event in this) {
+            val singleContentValues = ContentValues().apply {
+                put(DbSchema.EventsSchema.COLUMN_EVENTS_ID, parentRowId)
+                put(DbSchema.EventSchema.COLUMN_EVENT_TYPE_KEY, event.eventTypeKey)
+                put(DbSchema.EventSchema.COLUMN_EVENT_OCCURRED, event.occurred.toString())
+                put(DbSchema.EventSchema.COLUMN_EVENT_PARAMS, event.params?.toJson())
+            }
+            contentValues.add(singleContentValues)
+        }
+
+        return contentValues
+    }
+
+    fun Cursor.getEvents(): Event? {
+        val eventTypeKey =
+            getStringOrNull(getColumnIndex(DbSchema.EventSchema.COLUMN_EVENT_TYPE_KEY))
+        val occurredString =
+            getStringOrNull(getColumnIndex(DbSchema.EventSchema.COLUMN_EVENT_OCCURRED))
+        val occurred = LocalDateTime.parse(occurredString)
+
+        val paramsString = getStringOrNull(getColumnIndex(DbSchema.EventSchema.COLUMN_EVENT_PARAMS))
+        val params: List<Parameter>? = paramsString?.listFromJson<Parameter>()
+
+        val result: Event? = if (allElementsNotNull(eventTypeKey, occurred)) {
+            Event(eventTypeKey!!, occurred!!, params)
+        } else {
+            null
+        }
+
+        return result
     }
 }

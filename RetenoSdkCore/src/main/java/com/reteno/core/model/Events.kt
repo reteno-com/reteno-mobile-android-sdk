@@ -8,5 +8,5 @@ data class Events(
     @SerializedName("externalUserId")
     val externalUserId: String? = null,
     @SerializedName("events")
-    val events: List<EventBatch>
+    val eventList: List<Event>
 )

@@ -19,8 +19,16 @@ interface RetenoDatabase {
 
     fun rawQuery(rawQuery: String, selectionArgs: Array<out String>?): Cursor
 
+    // TODO This is a very dangerous method. Should be hidden behind internal at least!
+    fun execSql(rawQuery: String)
 
     fun insert(table: String, nullColumnHack: String?, contentValues: ContentValues): Long
+
+    fun insertMultiple(
+        table: String,
+        nullColumnHack: String?,
+        contentValues: List<ContentValues>
+    ): List<Long>
 
     @Throws(SQLException::class)
     fun insertOrThrow(table: String, nullColumnHack: String?, contentValues: ContentValues): Long

@@ -1,5 +1,7 @@
 package com.reteno.core.data.local.database
 
+import com.reteno.core.data.local.database.DbSchema.EventsSchema.COLUMN_EVENTS_ID
+import com.reteno.core.data.local.database.DbSchema.EventsSchema.TABLE_NAME_EVENTS
 import com.reteno.core.data.local.database.DbSchema.UserSchema.COLUMN_USER_ROW_ID
 import com.reteno.core.data.local.database.DbSchema.UserSchema.TABLE_NAME_USER
 
@@ -13,6 +15,7 @@ internal object DbSchema {
     internal object DeviceSchema {
         internal const val TABLE_NAME_DEVICE = "Device"
 
+        internal const val COLUMN_DEVICE_ROW_ID = "row_id"
         internal const val COLUMN_DEVICE_ID = "deviceId"
         internal const val COLUMN_EXTERNAL_USER_ID = "externalUserId"
         internal const val COLUMN_PUSH_TOKEN = "pushToken"
@@ -26,7 +29,9 @@ internal object DbSchema {
         internal const val COLUMN_ADVERTISING_ID = "advertisingId"
 
         internal const val SQL_CREATE_TABLE =
-            "CREATE TABLE IF NOT EXISTS $TABLE_NAME_DEVICE(" +
+            "CREATE TABLE IF NOT EXISTS $TABLE_NAME_DEVICE" +
+                    "(" +
+                    "$COLUMN_DEVICE_ROW_ID INTEGER PRIMARY KEY, " +
                     "$COLUMN_TIMESTAMP TIMESTAMP DEFAULT CURRENT_TIMESTAMP, " +
                     "$COLUMN_DEVICE_ID TEXT NOT NULL, " +
                     "$COLUMN_EXTERNAL_USER_ID TEXT, " +
@@ -42,6 +47,7 @@ internal object DbSchema {
                     ")"
 
         fun getAllColumns(): Array<String> = arrayOf(
+            COLUMN_DEVICE_ROW_ID,
             COLUMN_TIMESTAMP,
             COLUMN_DEVICE_ID,
             COLUMN_EXTERNAL_USER_ID,
@@ -69,7 +75,8 @@ internal object DbSchema {
         internal const val COLUMN_GROUP_NAMES_EXCLUDE = "groupNamesExclude"
 
         internal const val SQL_CREATE_TABLE =
-            "CREATE TABLE IF NOT EXISTS ${TABLE_NAME_USER}(" +
+            "CREATE TABLE IF NOT EXISTS $TABLE_NAME_USER" +
+                    "(" +
                     "$COLUMN_USER_ROW_ID INTEGER PRIMARY KEY, " +
                     "$COLUMN_TIMESTAMP TIMESTAMP DEFAULT CURRENT_TIMESTAMP, " +
                     "$COLUMN_DEVICE_ID TEXT, " +
@@ -92,7 +99,8 @@ internal object DbSchema {
         internal const val COLUMN_TIME_CUSTOM_FIELDS = "fields"
 
         internal const val SQL_CREATE_TABLE =
-            "CREATE TABLE IF NOT EXISTS ${TABLE_NAME_USER_ATTRIBUTES}(" +
+            "CREATE TABLE IF NOT EXISTS $TABLE_NAME_USER_ATTRIBUTES" +
+                    "(" +
                     "$COLUMN_USER_ROW_ID INTEGER NOT NULL, " +
                     "$COLUMN_PHONE TEXT, " +
                     "$COLUMN_EMAIL TEXT, " +
@@ -114,7 +122,8 @@ internal object DbSchema {
         internal const val COLUMN_POSTCODE = "postcode"
 
         internal const val SQL_CREATE_TABLE =
-            "CREATE TABLE IF NOT EXISTS ${TABLE_NAME_USER_ADDRESS}(" +
+            "CREATE TABLE IF NOT EXISTS $TABLE_NAME_USER_ADDRESS" +
+                    "(" +
                     "$COLUMN_USER_ROW_ID INTEGER NOT NULL, " +
                     "$COLUMN_REGION TEXT, " +
                     "$COLUMN_TOWN TEXT, " +
@@ -128,7 +137,7 @@ internal object DbSchema {
     internal object InteractionSchema {
         internal const val TABLE_NAME_INTERACTION = "Interaction"
 
-        internal const val COLUMN_ID = "id"
+        internal const val COLUMN_INTERACTION_ROW_ID = "row_id"
 
         internal const val COLUMN_INTERACTION_ID = "interactionId"
         internal const val COLUMN_INTERACTION_STATUS = "status"
@@ -136,8 +145,9 @@ internal object DbSchema {
         internal const val COLUMN_INTERACTION_TOKEN = "token"
 
         internal const val SQL_CREATE_TABLE =
-            "CREATE TABLE IF NOT EXISTS ${TABLE_NAME_INTERACTION}(" +
-                    "$COLUMN_ID INTEGER PRIMARY KEY, " +
+            "CREATE TABLE IF NOT EXISTS $TABLE_NAME_INTERACTION" +
+                    "(" +
+                    "$COLUMN_INTERACTION_ROW_ID INTEGER PRIMARY KEY, " +
                     "$COLUMN_TIMESTAMP TIMESTAMP DEFAULT CURRENT_TIMESTAMP, " +
                     "$COLUMN_INTERACTION_ID TEXT, " +
                     "$COLUMN_INTERACTION_STATUS TEXT, " +
@@ -146,12 +156,65 @@ internal object DbSchema {
                     ")"
 
         fun getAllColumns(): Array<String> = arrayOf(
-            COLUMN_ID,
+            COLUMN_INTERACTION_ROW_ID,
             COLUMN_TIMESTAMP,
             COLUMN_INTERACTION_ID,
             COLUMN_INTERACTION_STATUS,
             COLUMN_INTERACTION_TIME,
             COLUMN_INTERACTION_TOKEN
+        )
+    }
+
+    // --------------------- Events ----------------------------------------------------------------
+    internal object EventsSchema {
+        internal const val TABLE_NAME_EVENTS = "Events"
+
+        internal const val COLUMN_EVENTS_ID = "events_id"
+
+        internal const val COLUMN_EVENTS_DEVICE_ID = "deviceId"
+        internal const val COLUMN_EVENTS_EXTERNAL_USER_ID = "externalUserId"
+
+        internal const val SQL_CREATE_TABLE =
+            "CREATE TABLE IF NOT EXISTS $TABLE_NAME_EVENTS" +
+                    "(" +
+                    "$COLUMN_EVENTS_ID INTEGER PRIMARY KEY, " +
+                    "$COLUMN_EVENTS_DEVICE_ID TEXT, " +
+                    "$COLUMN_EVENTS_EXTERNAL_USER_ID TEXT" +
+                    ")"
+
+        fun getAllColumns(): Array<String> = arrayOf(
+            COLUMN_EVENTS_ID,
+            COLUMN_EVENTS_DEVICE_ID,
+            COLUMN_EVENTS_EXTERNAL_USER_ID
+        )
+    }
+
+    internal object EventSchema {
+        internal const val TABLE_NAME_EVENT = "Event"
+
+        internal const val COLUMN_EVENT_ROW_ID = "row_id"
+
+        internal const val COLUMN_EVENT_TYPE_KEY = "eventTypeKey"
+        internal const val COLUMN_EVENT_OCCURRED = "occurred"
+        internal const val COLUMN_EVENT_PARAMS = "params"
+
+        internal const val SQL_CREATE_TABLE =
+            "CREATE TABLE IF NOT EXISTS $TABLE_NAME_EVENT" +
+                    "(" +
+                    "$COLUMN_EVENTS_ID INTEGER NOT NULL, " +
+                    "$COLUMN_EVENT_ROW_ID INTEGER PRIMARY KEY, " +
+                    "$COLUMN_EVENT_TYPE_KEY TEXT, " +
+                    "$COLUMN_EVENT_OCCURRED TIMESTAMP, " +
+                    "$COLUMN_EVENT_PARAMS TEXT, " +
+                    "FOREIGN KEY ($COLUMN_EVENTS_ID) REFERENCES $TABLE_NAME_EVENTS ($COLUMN_EVENTS_ID)" +
+                    ")"
+
+        fun getAllColumns(): Array<String> = arrayOf(
+            COLUMN_EVENTS_ID,
+            COLUMN_EVENT_ROW_ID,
+            COLUMN_EVENT_TYPE_KEY,
+            COLUMN_EVENT_OCCURRED,
+            COLUMN_EVENT_PARAMS
         )
     }
 }

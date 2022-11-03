@@ -92,6 +92,14 @@
         <action
             android:id="@+id/database_to_read_interaction"
             app:destination="@id/fragmentReadInteraction" />
+
+        <action
+            android:id="@+id/database_to_write_event"
+            app:destination="@id/fragmentWriteEvent" />
+
+        <action
+            android:id="@+id/database_to_read_event"
+            app:destination="@id/fragmentReadEvent" />
     </fragment>
 
     <dialog
@@ -130,4 +138,15 @@
         android:label="fragmentReadInteraction"
         tools:layout="@layout/dialog_db_read" />
 
+    <dialog
+        android:id="@+id/fragmentWriteEvent"
+        android:name="com.reteno.sample.fragments.database.EventWriteDialogFragment"
+        android:label="fragmentWriteEvent"
+        tools:layout="@layout/dialog_db_write_event" />
+
+    <dialog
+        android:id="@+id/fragmentReadEvent"
+        android:name="com.reteno.sample.fragments.database.EventReadDialogFragment"
+        android:label="fragmentReadEvent"
+        tools:layout="@layout/dialog_db_read" />
 </navigation>

@@ -34,19 +34,19 @@ public class UserReadDialogFragment extends BaseReadDialogFragment<UserDTO, Item
 
     @Override
     protected void initCount() {
-        long userEventsCount = databaseManager.getUserEventsCount();
+        long userEventsCount = databaseManager.getUserCount();
         bindingMain.tvCount.setText(String.format(Locale.US, "Count: %d", userEventsCount));
     }
 
     @Override
     protected void initItems() {
-        List<Pair<String, UserDTO>> newItems = databaseManager.getUserEvents(null);
+        List<Pair<String, UserDTO>> newItems = databaseManager.getUser(null);
         adapter.setItems(newItems);
     }
 
     @Override
     protected void deleteItems(int count) {
-        databaseManager.deleteUserEvents(count, true);
+        databaseManager.deleteUsers(count, true);
     }
 
     //==============================================================================================
@@ -135,8 +135,8 @@ public class UserReadDialogFragment extends BaseReadDialogFragment<UserDTO, Item
         private View createNewFields(String key, String value) {
             ViewUserCustomFieldsVerticalBinding binding = ViewUserCustomFieldsVerticalBinding.inflate(LayoutInflater
                     .from(bindingHolder.getRoot().getContext()), bindingHolder.llCustomFields, false);
-            binding.etCustomFieldKey.setText(key);
-            binding.etCustomFieldValue.setText(value);
+            binding.etKey.setText(key);
+            binding.etValue.setText(value);
             return binding.getRoot();
         }
     }

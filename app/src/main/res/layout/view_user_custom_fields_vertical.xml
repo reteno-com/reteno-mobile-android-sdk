@@ -6,13 +6,13 @@
     android:padding="4dp">
 
     <EditText
-        android:id="@+id/etCustomFieldKey"
+        android:id="@+id/etKey"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:hint="Key" />
 
     <EditText
-        android:id="@+id/etCustomFieldValue"
+        android:id="@+id/etValue"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:hint="Value" />

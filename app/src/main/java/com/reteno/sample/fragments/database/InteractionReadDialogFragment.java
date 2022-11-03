@@ -29,19 +29,19 @@ public class InteractionReadDialogFragment extends BaseReadDialogFragment<Intera
 
     @Override
     protected void initCount() {
-        long count = databaseManager.getInteractionEventsCount();
+        long count = databaseManager.getInteractionCount();
         bindingMain.tvCount.setText(String.format(Locale.US, "Count: %d", count));
     }
 
     @Override
     protected void initItems() {
-        List<Pair<String, InteractionModelDb>> newItems = databaseManager.getInteractionEvents(null);
+        List<Pair<String, InteractionModelDb>> newItems = databaseManager.getInteractions(null);
         adapter.setItems(newItems);
     }
 
     @Override
     protected void deleteItems(int count) {
-        databaseManager.deleteInteractionEvents(count, true);
+        databaseManager.deleteInteractions(count, true);
     }
 
     //==============================================================================================

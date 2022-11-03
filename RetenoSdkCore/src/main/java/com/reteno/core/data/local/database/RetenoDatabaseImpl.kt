@@ -1,14 +1,14 @@
 package com.reteno.core.data.local.database
 
+//import net.sqlcipher.database.SQLiteDatabase
+//import net.sqlcipher.database.SQLiteOpenHelper
+//import net.sqlcipher.DatabaseUtils
 import android.content.ContentValues
 import android.content.Context
 import android.database.Cursor
 import android.database.DatabaseUtils
 import android.database.sqlite.*
 import android.os.SystemClock
-//import net.sqlcipher.database.SQLiteDatabase
-//import net.sqlcipher.database.SQLiteOpenHelper
-//import net.sqlcipher.DatabaseUtils
 import com.reteno.core.data.local.database.DbSchema.DATABASE_NAME
 import com.reteno.core.data.local.database.DbSchema.DATABASE_VERSION
 import com.reteno.core.util.Logger
@@ -23,6 +23,8 @@ class RetenoDatabaseImpl(context: Context) : RetenoDatabase,
         db.execSQL(DbSchema.UserAttributesSchema.SQL_CREATE_TABLE)
         db.execSQL(DbSchema.UserAddressSchema.SQL_CREATE_TABLE)
         db.execSQL(DbSchema.InteractionSchema.SQL_CREATE_TABLE)
+        db.execSQL(DbSchema.EventsSchema.SQL_CREATE_TABLE)
+        db.execSQL(DbSchema.EventSchema.SQL_CREATE_TABLE)
     }
 
     override fun onUpgrade(db: SQLiteDatabase?, oldVersion: Int, newVersion: Int) {
@@ -73,6 +75,9 @@ class RetenoDatabaseImpl(context: Context) : RetenoDatabase,
     override fun rawQuery(rawQuery: String, selectionArgs: Array<out String>?): Cursor =
         getSQLiteDatabaseWithRetries().rawQuery(rawQuery, selectionArgs)
 
+    override fun execSql(rawQuery: String) =
+        getSQLiteDatabaseWithRetries().execSQL(rawQuery)
+
     override fun insert(
         table: String,
         nullColumnHack: String?,
@@ -107,6 +112,47 @@ class RetenoDatabaseImpl(context: Context) : RetenoDatabase,
         }
 
         return rowId
+    }
+
+    override fun insertMultiple(
+        table: String,
+        nullColumnHack: String?,
+        contentValues: List<ContentValues>
+    ): List<Long> {
+        val rowIds = mutableListOf<Long>()
+
+        synchronized(LOCK) {
+            val writableDb = getSQLiteDatabaseWithRetries()
+            try {
+                writableDb.beginTransaction()
+
+                for (contentValue in contentValues) {
+                    val rowId = writableDb.insert(table, nullColumnHack, contentValue)
+                    rowIds.add(rowId)
+                }
+
+                writableDb.setTransactionSuccessful()
+                return rowIds
+            } catch (e: SQLiteException) {
+                /*@formatter:off*/ Logger.e(TAG, "insert(): Error inserting on table: $table with nullColumnHack: $nullColumnHack and values: $contentValues", e)
+                /*@formatter:on*/
+            } catch (e: IllegalStateException) {
+                /*@formatter:off*/ Logger.e(TAG, "insert(): Error under inserting transaction under table: $table with nullColumnHack: $nullColumnHack and values: $contentValues", e)
+                /*@formatter:on*/
+            } finally {
+                try {
+                    writableDb.endTransaction() // May throw if transaction was never opened or DB is full.
+                } catch (e: IllegalStateException) {
+                    /*@formatter:off*/ Logger.e(TAG, "insert(): Error closing transaction! ", e)
+                    /*@formatter:on*/
+                } catch (e: SQLiteException) {
+                    /*@formatter:off*/ Logger.e(TAG, "insert(): Error closing transaction! ", e)
+                    /*@formatter:on*/
+                }
+            }
+        }
+
+        return rowIds
     }
 
     override fun insertOrThrow(
