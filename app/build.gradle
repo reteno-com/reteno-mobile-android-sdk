@@ -95,12 +95,14 @@ android {
 dependencies {
     implementation project(':RetenoSdkFcm')
 
-    implementation 'io.sentry:sentry-android:6.4.3'
+    implementation "net.zetetic:android-database-sqlcipher:4.5.2"
+    implementation "androidx.sqlite:sqlite:2.0.1"
 
     implementation platform('com.google.firebase:firebase-bom:30.4.1')
-
     implementation "com.google.firebase:firebase-messaging:23.0.8"
     implementation "com.google.firebase:firebase-messaging-ktx:23.0.8"
+
+    implementation 'io.sentry:sentry-android:6.4.3'
 
     implementation "androidx.navigation:navigation-fragment-ktx:2.5.2"
     implementation "androidx.navigation:navigation-ui-ktx:2.5.2"

@@ -4,11 +4,11 @@ import com.google.gson.annotations.SerializedName
 
 data class AddressDTO(
     @SerializedName("region")
-    val region: String?,
+    val region: String? = null,
     @SerializedName("town")
-    val town: String?,
+    val town: String? = null,
     @SerializedName("address")
-    val address: String?,
+    val address: String? = null,
     @SerializedName("postcode")
-    val postcode: String?
+    val postcode: String? = null
 )

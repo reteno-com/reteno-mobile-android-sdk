@@ -52,7 +52,7 @@ class ContactControllerTest : BaseUnitTest() {
 
     override fun after() {
         super.after()
-        mockkObject(Device.Companion)
+        unmockkObject(Device.Companion)
     }
 
     @Test

@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="4dp"
+    android:background="@android:color/darker_gray"
+    app:cardCornerRadius="8dp">
+
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="8dp"
+        android:divider="@drawable/space_vertical"
+        android:orientation="vertical"
+        android:showDividers="middle">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/tvKeyTimestamp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:maxLines="1"
+                android:text="TIMESTAMP: " />
+
+            <TextView
+                android:id="@+id/tvValueTimestamp"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textAlignment="textEnd"
+                android:textStyle="bold"
+                tools:text="TIMESTAMP" />
+
+            <com.google.android.material.imageview.ShapeableImageView
+                android:id="@+id/ivExpand"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:background="@android:color/holo_blue_light"
+                app:shapeAppearanceOverlay="@style/shapeable_circle"
+                app:srcCompat="@drawable/ic_expand_more" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/llContent"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone"
+            tools:visibility="visible">
+
+            <TextView
+                android:id="@+id/tvHeaderUser"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:text="User"
+                android:textStyle="bold" />
+
+            <com.reteno.sample.view.RetenoView
+                android:id="@+id/tvDeviceId"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:retenoHint="deviceId"
+                tools:retenoText="deviceId" />
+
+            <com.reteno.sample.view.RetenoView
+                android:id="@+id/tvExternalUserId"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:retenoHint="externalUserId"
+                tools:retenoText="externalUserId" />
+
+            <com.reteno.sample.view.RetenoView
+                android:id="@+id/tvSubscriptionKeys"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:retenoHint="subscriptionKeys"
+                tools:retenoText="subscriptionKeys" />
+
+            <com.reteno.sample.view.RetenoView
+                android:id="@+id/tvGroupNamesInclude"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:maxLines="1"
+                app:retenoHint="groupNamesInclude"
+                tools:retenoText="groupNamesInclude" />
+
+            <com.reteno.sample.view.RetenoView
+                android:id="@+id/tvGroupNamesExclude"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:retenoHint="groupNamesExclude"
+                tools:retenoText="groupNamesExclude" />
+
+            <LinearLayout
+                android:id="@+id/llUserAttributes"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+
+                <TextView
+                    android:id="@+id/tvHeaderUserAttributes"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:text="User Attributes"
+                    android:textStyle="bold" />
+
+                <com.reteno.sample.view.RetenoView
+                    android:id="@+id/tvPhone"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:retenoHint="phone"
+                    tools:retenoText="phone" />
+
+                <com.reteno.sample.view.RetenoView
+                    android:id="@+id/tvEmail"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:retenoHint="email"
+                    tools:retenoText="email" />
+
+                <com.reteno.sample.view.RetenoView
+                    android:id="@+id/tvFirstName"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:retenoHint="firstName"
+                    tools:retenoText="firstName" />
+
+                <com.reteno.sample.view.RetenoView
+                    android:id="@+id/tvLastName"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:retenoHint="lastName"
+                    tools:retenoText="lastName" />
+
+                <com.reteno.sample.view.RetenoView
+                    android:id="@+id/tvLanguageCode"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:retenoHint="languageCode"
+                    tools:retenoText="languageCode" />
+
+                <com.reteno.sample.view.RetenoView
+                    android:id="@+id/tvTimeZone"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:retenoHint="timeZone"
+                    tools:retenoText="timeZone" />
+
+                <LinearLayout
+                    android:id="@+id/llAddress"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/tvHeaderAddress"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        android:text="User Address"
+                        android:textStyle="bold" />
+
+
+                    <com.reteno.sample.view.RetenoView
+                        android:id="@+id/tvRegion"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        app:retenoHint="region"
+                        tools:retenoText="region" />
+
+                    <com.reteno.sample.view.RetenoView
+                        android:id="@+id/tvTown"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        app:retenoHint="town"
+                        tools:retenoText="town" />
+
+                    <com.reteno.sample.view.RetenoView
+                        android:id="@+id/tvAddress"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        app:retenoHint="address"
+                        tools:retenoText="address" />
+
+                    <com.reteno.sample.view.RetenoView
+                        android:id="@+id/tvPostCode"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        app:retenoHint="postCode"
+                        tools:text="postCode" />
+
+                    <HorizontalScrollView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
+
+                        <LinearLayout
+                            android:id="@+id/llCustomFields"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_gravity="center"
+                                android:text="Custom Fields"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+                    </HorizontalScrollView>
+                </LinearLayout>
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+</androidx.cardview.widget.CardView>

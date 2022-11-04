@@ -2,8 +2,9 @@ package com.reteno.core.domain.controller
 
 import com.reteno.core.data.repository.EventsRepository
 import com.reteno.core.domain.ResponseCallback
-import com.reteno.core.model.EventBatch
+import com.reteno.core.model.Event
 import com.reteno.core.model.Events
+import com.reteno.core.model.Parameter
 import com.reteno.core.util.Logger
 import java.time.LocalDateTime
 import java.time.ZoneOffset
@@ -20,7 +21,8 @@ class EventController(
         eventsRepository.sendOutcomeEvent(events, object : ResponseCallback {
 
             override fun onSuccess(response: String) {
-                val lastSentEventTime = events.events.last().occurred.toEpochSecond(ZoneOffset.UTC) // TODO temporary solution
+                val lastSentEventTime =
+                    events.eventList.last().occurred.toEpochSecond(ZoneOffset.UTC) // TODO temporary solution
                 clearEventsUntilDate(lastSentEventTime)
             }
 
@@ -56,13 +58,13 @@ class EventController(
         return Events(
             "deviceId",
             "1",
-            events = listOf(
-                EventBatch(
+            eventList = listOf(
+                Event(
                     "Notify open",
                     LocalDateTime.now(),
-                    params = mapOf(
-                        "param1" to 1,
-                        "param2" to false
+                    params = listOf(
+                        Parameter("param1", "1"),
+                        Parameter("param2", "false")
                     )
                 )
             )

@@ -2,15 +2,18 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="horizontal">
+    android:orientation="horizontal"
+    android:padding="4dp">
 
     <EditText
+        android:id="@+id/etKey"
         android:layout_width="0dp"
         android:layout_height="match_parent"
         android:layout_weight="1"
         android:hint="Key" />
 
     <EditText
+        android:id="@+id/etValue"
         android:layout_width="0dp"
         android:layout_height="match_parent"
         android:layout_weight="1"

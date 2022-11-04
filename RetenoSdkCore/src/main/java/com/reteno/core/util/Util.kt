@@ -12,6 +12,9 @@ import java.io.*
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 
+fun <T : Any> allElementsNull(vararg elements: T?) = elements.all { it == null }
+
+fun <T : Any> allElementsNotNull(vararg elements: T?) = elements.all { it != null }
 
 internal fun isGooglePlayServicesAvailable(): Boolean {
     val context = RetenoImpl.application
@@ -108,7 +111,7 @@ object Util {
      * adb shell setprop debug.com.reteno.debug.view disable
      */
     @JvmStatic
-    internal fun isDebugView() :Boolean {
+    internal fun isDebugView(): Boolean {
         val debugString = getSysProp(PROP_KEY_DEBUG_VIEW)
         /*@formatter:off*/ Logger.i(TAG, "isDebugView(): debugString = ", debugString)
         /*@formatter:on*/

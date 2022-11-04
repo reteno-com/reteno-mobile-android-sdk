@@ -27,6 +27,7 @@ data class Device(
     companion object {
         val TAG: String = Device::class.java.simpleName
 
+        @JvmStatic
         fun createDevice(
             deviceId: String,
             externalUserId: String? = null,
