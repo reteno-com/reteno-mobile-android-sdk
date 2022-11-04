@@ -10,6 +10,9 @@ import com.google.android.gms.common.GoogleApiAvailability
 import com.reteno.core.RetenoImpl
 import java.io.*
 import java.time.Instant
+import java.time.ZoneId
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 
 fun <T : Any> allElementsNull(vararg elements: T?) = elements.all { it == null }
@@ -70,7 +73,17 @@ fun Bundle?.toStringVerbose(): String {
     return stringBuilder.toString()
 }
 
+fun isRepeatableError(statusCode: Int?): Boolean {
+    return statusCode !in 400..499
+}
+
+fun isNonRepeatableError(statusCode: Int?) = !isRepeatableError(statusCode)
+
 object Util {
+
+    private val formatter = DateTimeFormatter
+        .ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'")
+        .withZone(ZoneId.of("UTC"))
 
     @JvmStatic
     fun readFromRaw(rawResourceId: Int): String? {
@@ -118,6 +131,10 @@ object Util {
         return debugString == PROP_VALUE_DEBUG_VIEW_ENABLE
     }
 
+    fun ZonedDateTime.formatToRemote(): String {
+        return formatter.format(this)
+    }
+
     private fun getSysProp(key: String): String {
         val process: Process
         var propvalue = ""
@@ -140,3 +157,4 @@ object Util {
 const val TAG = "Util"
 const val PROP_KEY_DEBUG_VIEW = "debug.com.reteno.debug.view"
 const val PROP_VALUE_DEBUG_VIEW_ENABLE = "enable"
+const val THREAD_PREFIX_NAME = "Reteno_thread_"

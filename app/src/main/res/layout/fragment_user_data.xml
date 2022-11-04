@@ -161,7 +161,7 @@
                 android:id="@+id/etLanguageCode"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="languageCode1" />
+                android:text="uk-UA" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
@@ -175,7 +175,7 @@
                 android:id="@+id/etTimeZone"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="timeZone1" />
+                android:text="Europe/Kiev" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <TextView
