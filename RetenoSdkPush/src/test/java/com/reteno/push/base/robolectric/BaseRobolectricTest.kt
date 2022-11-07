@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.test.core.app.ApplicationProvider
 import com.reteno.core.RetenoApplication
 import com.reteno.core.RetenoImpl
+import com.reteno.core.data.remote.OperationQueue
 import com.reteno.core.util.Logger
 import com.reteno.push.base.robolectric.Constants.DEVICE_ID_ANDROID
 import com.reteno.push.base.robolectric._setup.FakeAndroidKeyStore
@@ -22,10 +23,11 @@ import org.robolectric.annotation.Config
 import org.robolectric.shadows.ShadowLooper
 import java.security.Provider
 import java.security.Security
+import java.util.concurrent.Executor
 
 @RunWith(RobolectricTestRunner::class)
 @Config(
-    sdk = [16],
+    sdk = [26],
     application = RetenoTestApp::class,
     packageName = "com.reteno.core",
     shadows = [ShadowLooper::class]
@@ -82,6 +84,14 @@ abstract class BaseRobolectricTest {
         every { Logger.captureException(any()) } just runs
         every { Logger.captureEvent(any()) } just runs
 
+        mockkObject(OperationQueue)
+        val currentThreadExecutor = Executor(Runnable::run)
+        every { OperationQueue.addParallelOperation(any()) } answers { currentThreadExecutor.execute(firstArg()) }
+        every { OperationQueue.addOperation(any()) } answers {
+            currentThreadExecutor.execute(firstArg())
+            true
+        }
+
         MockKAnnotations.init(this)
     }
 
@@ -89,6 +99,7 @@ abstract class BaseRobolectricTest {
     open fun after() {
         unmockkStatic(Log::class)
         unmockkStatic(Logger::class)
+        unmockkObject(OperationQueue)
     }
 
     companion object {

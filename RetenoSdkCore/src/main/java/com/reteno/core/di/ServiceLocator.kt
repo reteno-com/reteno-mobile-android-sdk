@@ -30,7 +30,7 @@ class ServiceLocator {
         EventsControllerProvider(eventsRepositoryProvider)
 
     private val contactRepositoryProvider: ContactRepositoryProvider =
-        ContactRepositoryProvider(apiClientProvider)
+        ContactRepositoryProvider(apiClientProvider, restConfigProvider)
     val contactControllerProvider: ContactControllerProvider =
         ContactControllerProvider(
             contactRepositoryProvider,
@@ -41,6 +41,11 @@ class ServiceLocator {
         InteractionRepositoryProvider(apiClientProvider)
     val interactionControllerProvider: InteractionControllerProvider =
         InteractionControllerProvider(configRepositoryProvider, interactionRepositoryProvider)
+
+    private val deeplinkRepositoryProvider: DeeplinkRepositoryProvider =
+        DeeplinkRepositoryProvider(apiClientProvider)
+    val deeplinkControllerProvider: DeeplinkControllerProvider =
+        DeeplinkControllerProvider(deeplinkRepositoryProvider)
 
     init {
 

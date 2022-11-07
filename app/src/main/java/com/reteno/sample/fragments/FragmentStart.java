@@ -11,6 +11,7 @@ import androidx.navigation.NavDirections;
 import androidx.navigation.fragment.NavHostFragment;
 
 import com.reteno.sample.BaseFragment;
+import com.reteno.sample.R;
 import com.reteno.sample.databinding.FragmentStartBinding;
 import com.reteno.sample.testscreens.ScreenAdapter;
 import com.reteno.sample.testscreens.ScreenItem;
@@ -39,8 +40,13 @@ public class FragmentStart extends BaseFragment {
 
         ScreenAdapter adapter = new ScreenAdapter(getScreenList(), new ScreenAdapter.ScreenItemClick() {
             @Override
-            public void NavigateById(int fragmentId) {
+            public void navigateById(int fragmentId) {
                 NavHostFragment.findNavController(FragmentStart.this).navigate(fragmentId);
+            }
+
+            @Override
+            public void navigateById(int fragmentId, Bundle bundle) {
+                NavHostFragment.findNavController(FragmentStart.this).navigate(fragmentId, bundle);
             }
 
             @Override
@@ -58,6 +64,8 @@ public class FragmentStart extends BaseFragment {
         screens.add(new ScreenItem("Device Id", FragmentStartDirections.startToDeviceId()));
         screens.add(new ScreenItem("Sentry", FragmentStartDirections.startToSentry()));
         screens.add(new ScreenItem("Second Activity", FragmentStartDirections.startToActivitySecond()));
+        screens.add(new ScreenItem("User data", FragmentStartDirections.startToUserData()));
+        screens.add(new ScreenItem("Custom Data", R.id.start_to_custom_data, getArguments()));
 
         return screens;
     }

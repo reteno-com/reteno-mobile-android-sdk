@@ -9,6 +9,8 @@ import com.reteno.core.RetenoImpl
 import com.reteno.core.domain.controller.InteractionController
 import com.reteno.core.model.interaction.InteractionStatus
 import com.reteno.push.Constants
+import com.reteno.push.Constants.KEY_ES_LINK_UNWRAPPED
+import com.reteno.push.Constants.KEY_ES_LINK_WRAPPED
 import com.reteno.push.Util
 import com.reteno.push.base.robolectric.BaseRobolectricTest
 import io.mockk.*
@@ -23,14 +25,22 @@ import org.robolectric.annotation.Config
 @Config(sdk = [26])
 class RetenoNotificationClickedReceiverTest : BaseRobolectricTest() {
 
+    // region constants ----------------------------------------------------------------------------
+    companion object {
+        private const val DEEPLINK_WRAPPED = "https://wrapped.com"
+        private const val DEEPLINK_UNWRAPPED = "https://unwrapped.com"
+    }
+    // endregion constants -------------------------------------------------------------------------
+
+    // region helper fields ------------------------------------------------------------------------
     private var receiver: RetenoNotificationClickedReceiver? = null
 
     @RelaxedMockK
     private lateinit var context: Context
+    // endregion helper fields ---------------------------------------------------------------------
 
     @Before
     fun setUp() {
-        MockKAnnotations.init(this)
         receiver = RetenoNotificationClickedReceiver()
         mockkObject(Util)
     }
@@ -68,7 +78,7 @@ class RetenoNotificationClickedReceiverTest : BaseRobolectricTest() {
         val application = mockk<Application>()
         val mockIntent = Intent()
 
-        every { context.packageManager.getLaunchIntentForPackage(any())  } returns mockIntent
+        every { context.packageManager.getLaunchIntentForPackage(any()) } returns mockIntent
         every { context.packageName } returns "com.reteno.example"
         every { application.applicationContext } returns context
         every { RetenoImpl.application } returns application
@@ -106,7 +116,7 @@ class RetenoNotificationClickedReceiverTest : BaseRobolectricTest() {
         val extra = Bundle().apply { putString("key", "value") }
         val intent = Intent()
         intent.putExtras(extra)
-        intent.putExtra(Constants.KEY_ES_LINK, deepLink)
+        intent.putExtra(Constants.KEY_ES_LINK_WRAPPED, deepLink)
         justRun { context.startActivity(capture(intentSlot)) }
 
         receiver!!.onReceive(context, intent)
@@ -132,7 +142,7 @@ class RetenoNotificationClickedReceiverTest : BaseRobolectricTest() {
         val interactionController = mockk<InteractionController>()
 
         every { reteno.serviceLocator.interactionControllerProvider.get() } returns interactionController
-        every { ( application as RetenoApplication).getRetenoInstance() } returns reteno
+        every { (application as RetenoApplication).getRetenoInstance() } returns reteno
         every { RetenoImpl.application } returns application
         justRun { interactionController.onInteraction(any(), any()) }
 
@@ -142,4 +152,55 @@ class RetenoNotificationClickedReceiverTest : BaseRobolectricTest() {
         unmockkObject(RetenoImpl)
     }
 
+    @Test
+    fun givenPushWithCustomDataNoDeeplinkReceived_whenNotificationClicked_thenCustomDataDeliveredToLaunchActivity() {
+        // Given
+        mockkObject(IntentHandler.AppLaunchIntent)
+        every { IntentHandler.AppLaunchIntent.getAppLaunchIntent(any()) } returns Intent()
+
+        val intentSlot = slot<Intent>()
+        val customDataKey = "customDataKey"
+        val customDataValue = "customDataValue"
+
+        val extra = Bundle().apply { putString(customDataKey, customDataValue) }
+        val intent = Intent()
+        intent.putExtras(extra)
+        justRun { context.startActivity(capture(intentSlot)) }
+
+        // When
+        receiver!!.onReceive(context, intent)
+
+        // Then
+        intentSlot.captured.run {
+            assertTrue(extras?.containsKey(customDataKey) ?: false)
+            assertEquals(customDataValue, extras?.getString(customDataKey))
+        }
+
+        unmockkObject(IntentHandler.AppLaunchIntent)
+    }
+
+    @Test
+    fun givenPushWithCustomDataDeeplinkReceived_whenNotificationClicked_thenCustomDataDeliveredToLaunchActivity() {
+        // Given
+        val intentSlot = slot<Intent>()
+        val customDataKey = "customDataKey"
+        val customDataValue = "customDataValue"
+
+        val extra = Bundle().apply { putString(customDataKey, customDataValue) }
+        val intent = Intent().apply {
+            putExtras(extra)
+            putExtra(KEY_ES_LINK_WRAPPED, DEEPLINK_WRAPPED)
+            putExtra(KEY_ES_LINK_UNWRAPPED,DEEPLINK_UNWRAPPED)
+        }
+        justRun { context.startActivity(capture(intentSlot)) }
+
+        // When
+        receiver!!.onReceive(context, intent)
+
+        // Then
+        intentSlot.captured.run {
+            assertTrue(extras?.containsKey(customDataKey) ?: false)
+            assertEquals(customDataValue, extras?.getString(customDataKey))
+        }
+    }
 }

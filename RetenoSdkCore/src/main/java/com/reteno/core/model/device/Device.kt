@@ -69,7 +69,7 @@ data class Device(
         }
 
         private fun fetchOsVersion(): String {
-            val osVersion = "${Build.VERSION.CODENAME} (API=${Build.VERSION.SDK_INT})"
+            val osVersion = "${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})"
             /*@formatter:off*/ Logger.i(TAG, "fetchOsVersion(): ", osVersion)
             /*@formatter:on*/
             return osVersion
@@ -117,7 +117,7 @@ data class Device(
             }
 
         private fun fetchLanguageCode(): String {
-            val languageCode = Locale.getDefault().toString()
+            val languageCode = Locale.getDefault().toLanguageTag()
             /*@formatter:off*/ Logger.i(TAG, "fetchLanguageCode(): ", languageCode)
             /*@formatter:on*/
             return languageCode

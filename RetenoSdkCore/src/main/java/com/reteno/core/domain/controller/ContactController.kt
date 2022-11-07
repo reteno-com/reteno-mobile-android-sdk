@@ -5,6 +5,7 @@ import com.reteno.core.data.repository.ConfigRepository
 import com.reteno.core.data.repository.ContactRepository
 import com.reteno.core.domain.ResponseCallback
 import com.reteno.core.model.device.Device
+import com.reteno.core.model.user.User
 import com.reteno.core.util.Logger
 
 class ContactController(
@@ -12,19 +13,25 @@ class ContactController(
     private val configRepository: ConfigRepository
 ) {
 
-    fun setExternalDeviceId(id: String) {
-        /*@formatter:off*/ Logger.i(TAG, "setExternalDeviceId(): ", "id = [" , id , "]")
+    fun setExternalUserId(id: String) {
+        /*@formatter:off*/ Logger.i(TAG, "setExternalUserId(): ", "id = [" , id , "]")
         /*@formatter:on*/
-        configRepository.setExternalDeviceId(id)
-        onNewContact()
+        val oldDeviceId = configRepository.getDeviceId()
+        if (oldDeviceId.externalId != id) {
+            configRepository.setExternalUserId(id)
+            onNewContact()
+        }
     }
 
     fun setDeviceIdMode(deviceIdMode: DeviceIdMode, onDeviceIdChanged: () -> Unit) {
         /*@formatter:off*/ Logger.i(TAG, "changeDeviceIdMode(): ", "deviceIdMode = [" , deviceIdMode , "]")
         /*@formatter:on*/
+        val oldDeviceId = configRepository.getDeviceId()
         configRepository.setDeviceIdMode(deviceIdMode) {
-            onNewContact()
-            onDeviceIdChanged.invoke()
+            if (oldDeviceId.id != it.id) {
+                onNewContact()
+                onDeviceIdChanged.invoke()
+            }
         }
     }
 
@@ -36,6 +43,26 @@ class ContactController(
             configRepository.saveFcmToken(token)
             onNewContact()
         }
+    }
+
+    fun setUserData(used: User) {
+        /*@formatter:off*/ Logger.i(TAG, "setUserData(): ", "used = [" , used , "]") 
+        /*@formatter:on*/
+
+        contactRepository.sendUserData(used, object : ResponseCallback {
+            override fun onSuccess(response: String) {
+                /*@formatter:off*/ Logger.i(TAG, "onSuccess(): ", "response = [" , response , "]")
+                /*@formatter:on*/
+                // TODO add saving to db
+            }
+
+            override fun onFailure(statusCode: Int?, response: String?, throwable: Throwable?) {
+                /*@formatter:off*/ Logger.i(TAG, "onFailure(): ", "statusCode = [" , statusCode , "], response = [" , response , "], throwable = [" , throwable , "]")
+                /*@formatter:on*/
+                // TODO handle error retry strategy(if needed)
+            }
+
+        })
     }
 
     private fun onNewContact() {

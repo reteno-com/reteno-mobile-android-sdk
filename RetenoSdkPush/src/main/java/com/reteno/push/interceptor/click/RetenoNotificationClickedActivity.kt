@@ -1,95 +1,80 @@
 package com.reteno.push.interceptor.click
 
 import android.app.Activity
-import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import android.os.Bundle
 import com.reteno.core.RetenoApplication
 import com.reteno.core.RetenoImpl
 import com.reteno.core.model.interaction.InteractionStatus
-import com.reteno.push.Constants
-import com.reteno.push.Constants.KEY_ES_LINK
-import com.reteno.push.Util
 import com.reteno.core.util.Logger
-import com.reteno.core.util.getResolveInfoList
 import com.reteno.core.util.toStringVerbose
+import com.reteno.push.Constants
+import com.reteno.push.Constants.KEY_ES_LINK_UNWRAPPED
+import com.reteno.push.Constants.KEY_ES_LINK_WRAPPED
+import com.reteno.push.Util
 
 class RetenoNotificationClickedActivity : Activity() {
 
-    private val reteno =
+    private val reteno by lazy {
         ((RetenoImpl.application as RetenoApplication).getRetenoInstance() as RetenoImpl)
-    private val interactionController = reteno.serviceLocator.interactionControllerProvider.get()
+    }
+    private val interactionController by lazy {
+        reteno.serviceLocator.interactionControllerProvider.get()
+    }
+    private val deeplinkController by lazy {
+        reteno.serviceLocator.deeplinkControllerProvider.get()
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         /*@formatter:off*/ Logger.i(TAG, "onCreate(): ", "notification clicked, intent.extras = [" , intent.extras.toStringVerbose() , "]")
         /*@formatter:on*/
 
-        try {
-            intent.extras?.let { bundle ->
-                bundle.getString(Constants.KEY_ES_INTERACTION_ID)?.let { interactionId ->
-                    interactionController.onInteraction(interactionId, InteractionStatus.OPENED)
-                }
-
-                Util.tryToSendToCustomReceiverNotificationClicked(bundle)
-
-                getDeepLinkIntent(bundle)?.let { deeplinkIntent ->
-                    launchDeeplink(deeplinkIntent)
-                    return
-                }
-
-                launchApp()
-                return
-            }
-
-            launchApp()
-        } catch (t: Throwable) {
-            /*@formatter:off*/ Logger.e(TAG, "onCreate(): ", t)
-            /*@formatter:on*/
-        }
+        sendInteractionStatus(intent)
+        handleIntent(intent)
 
         finish()
+    }
+
+    private fun sendInteractionStatus(intent: Intent?) {
+        intent?.extras?.getString(Constants.KEY_ES_INTERACTION_ID)?.let { interactionId ->
+            interactionController.onInteraction(interactionId, InteractionStatus.OPENED)
+        }
+    }
+
+    private fun handleIntent(intent: Intent?) {
+        try {
+            intent?.extras?.let { bundle ->
+                Util.tryToSendToCustomReceiverNotificationClicked(bundle)
+
+                IntentHandler.getDeepLinkIntent(bundle)?.let { deeplinkIntent ->
+                    val linkWrapped = deeplinkIntent.getStringExtra(KEY_ES_LINK_WRAPPED).orEmpty()
+                    val linkUnwrapped = deeplinkIntent.getStringExtra(KEY_ES_LINK_UNWRAPPED).orEmpty()
+                    deeplinkController.triggerDeeplinkClicked(linkWrapped, linkUnwrapped)
+                    launchDeeplink(deeplinkIntent)
+                } ?: launchApp(intent)
+            } ?: launchApp(intent)
+        } catch (t: Throwable) {
+            /*@formatter:off*/ Logger.e(RetenoNotificationClickedReceiver.TAG, "handleIntent() ", t)
+            /*@formatter:on*/
+        }
     }
 
     private fun launchDeeplink(deeplinkIntent: Intent) {
-        resolveIntentActivity(this, deeplinkIntent)
-        startActivity(deeplinkIntent)
+        IntentHandler.resolveIntentActivity(this, deeplinkIntent)
+        this.startActivity(deeplinkIntent)
         finish()
     }
 
-    private fun launchApp() {
-        val launchIntent = packageManager.getLaunchIntentForPackage(packageName)
-        intent.component = launchIntent?.component
-        startActivity(intent)
-        finish()
-    }
-
-    private fun getDeepLinkIntent(bundle: Bundle): Intent? {
-        val esLink = bundle.getString(KEY_ES_LINK) ?: return null
-
-        val deepLinkIntent = Intent(Intent.ACTION_VIEW, Uri.parse(esLink))
-        deepLinkIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-        return deepLinkIntent
-    }
-
-    /**
-     * Checks if url can be handled by current app to skip chooser dialog.
-     */
-
-    // TODO: Needs to be tested
-    private fun resolveIntentActivity(context: Context, deepLinkIntent: Intent) {
-        val resolveInfoList = context.getResolveInfoList(deepLinkIntent)
-        if (resolveInfoList.isNotEmpty()) {
-            for (resolveInfo in resolveInfoList) {
-                if (resolveInfo?.activityInfo != null && resolveInfo.activityInfo.name != null) {
-                    if (resolveInfo.activityInfo.name.contains(context.packageName)) {
-                        deepLinkIntent.setPackage(resolveInfo.activityInfo.packageName)
-                    }
-                    return
-                }
-            }
+    private fun launchApp(intent: Intent?) {
+        val launchIntent = IntentHandler.AppLaunchIntent.getAppLaunchIntent(this)
+        if (intent == null || launchIntent == null) {
+            return
         }
+
+        intent.component = launchIntent.component
+        this.startActivity(intent)
+        finish()
     }
 
     companion object {
