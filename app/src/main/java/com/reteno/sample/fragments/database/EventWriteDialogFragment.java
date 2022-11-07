@@ -3,7 +3,6 @@ package com.reteno.sample.fragments.database;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.os.Bundle;
-import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
@@ -12,13 +11,11 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.fragment.app.DialogFragment;
 
 import com.reteno.core.Reteno;
 import com.reteno.core.RetenoImpl;
 import com.reteno.core._interop.DeviceIdInternal;
 import com.reteno.core.data.local.config.DeviceId;
-import com.reteno.core.data.local.database.RetenoDatabaseManagerImpl;
 import com.reteno.core.data.remote.mapper.EventMapperKt;
 import com.reteno.core.data.remote.model.event.EventsDTO;
 import com.reteno.core.model.event.Event;
@@ -35,10 +32,9 @@ import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-public class EventWriteDialogFragment extends DialogFragment {
+public class EventWriteDialogFragment extends BaseDatabaseDialogFragment {
 
     private DialogDbWriteEventBinding binding;
-    private RetenoDatabaseManagerImpl databaseManager;
 
     @NonNull
     @Override
@@ -49,18 +45,10 @@ public class EventWriteDialogFragment extends DialogFragment {
                 .create();
     }
 
-    @Nullable
-    @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        databaseManager = new RetenoDatabaseManagerImpl();
-        return super.onCreateView(inflater, container, savedInstanceState);
-    }
-
     @Override
     public void onDestroyView() {
         super.onDestroyView();
         binding = null;
-        databaseManager = null;
     }
 
     @Override

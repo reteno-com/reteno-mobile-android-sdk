@@ -3,21 +3,14 @@ package com.reteno.sample.fragments.database;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.os.Bundle;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.fragment.app.DialogFragment;
 import androidx.viewbinding.ViewBinding;
 
-import com.reteno.core.data.local.database.RetenoDatabaseManagerImpl;
-
-public abstract class BaseReadDialogFragment<Model, ViewHolderBinding extends ViewBinding, ViewHolder extends BaseReadViewHolder<Model, ViewHolderBinding>, Adapter extends BaseReadAdapter<Model, ViewHolderBinding, ViewHolder>> extends DialogFragment {
+public abstract class BaseReadDialogFragment<Model, ViewHolderBinding extends ViewBinding, ViewHolder extends BaseReadViewHolder<Model, ViewHolderBinding>, Adapter extends BaseReadAdapter<Model, ViewHolderBinding, ViewHolder>> extends BaseDatabaseDialogFragment {
 
     protected com.reteno.sample.databinding.DialogDbReadBinding bindingMain;
-    protected RetenoDatabaseManagerImpl databaseManager;
     protected Adapter adapter;
 
     @NonNull
@@ -29,18 +22,10 @@ public abstract class BaseReadDialogFragment<Model, ViewHolderBinding extends Vi
                 .create();
     }
 
-    @Nullable
-    @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        databaseManager = new RetenoDatabaseManagerImpl();
-        return super.onCreateView(inflater, container, savedInstanceState);
-    }
-
     @Override
     public void onDestroyView() {
         super.onDestroyView();
         bindingMain = null;
-        databaseManager = null;
     }
 
     @Override

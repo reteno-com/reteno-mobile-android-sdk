@@ -21,7 +21,7 @@ class RetenoImpl(application: Application) : RetenoLifecycleCallbacks, Reteno {
         Companion.application = application
     }
 
-    val serviceLocator: ServiceLocator = ServiceLocator()
+    val serviceLocator: ServiceLocator = ServiceLocator(application)
 
     private val contactController = serviceLocator.contactControllerProvider.get()
     private val scheduleController = serviceLocator.scheduleControllerProvider.get()
