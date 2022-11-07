@@ -59,13 +59,13 @@ class DeviceIdHelper(private val sharedPrefsManager: SharedPrefsManager) {
         }
     }
 
-    internal fun withExternalDeviceId(
+    internal fun withExternalUserId(
         currentDeviceId: DeviceId,
-        externalDeviceId: String?
+        externalUserId: String?
     ): DeviceId {
-        /*@formatter:off*/ Logger.i(TAG, "initDeviceId(): ", "deviceIdMode = [EXTERNAL_ID]", " deviceId = [", externalDeviceId, "]")
+        /*@formatter:off*/ Logger.i(TAG, "withExternalUserId(): ", "currentDeviceId = [" , currentDeviceId , "], externalUserId = [" , externalUserId , "]") 
         /*@formatter:on*/
-        val externalId = externalDeviceId?.ifBlank { null }
+        val externalId = externalUserId?.ifBlank { null }
         return currentDeviceId.copy(externalId = externalId)
     }
 

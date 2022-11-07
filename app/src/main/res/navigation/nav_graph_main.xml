@@ -22,6 +22,13 @@
         <action
             android:id="@+id/start_to_activity_second"
             app:destination="@id/activitySecond" />
+        <action
+            android:id="@+id/start_to_userData"
+            app:destination="@id/fragmentUserData" />
+
+        <action
+            android:id="@+id/start_to_custom_data"
+            app:destination="@id/fragmentCustomData" />
     </fragment>
 
     <fragment
@@ -41,5 +48,16 @@
         android:name="com.reteno.sample.SecondActivity"
         android:label="secondActivity"
         tools:layout="@layout/activity_second"/>
+    <fragment
+        android:id="@+id/fragmentUserData"
+        android:name="com.reteno.sample.fragments.FragmentUserData"
+        android:label="FragmentUserData"
+        tools:layout="@layout/fragment_user_data"/>
+
+    <fragment
+        android:id="@+id/fragmentCustomData"
+        android:name="com.reteno.sample.fragments.FragmentCustomData"
+        android:label="fragmentCustomData"
+        tools:layout="@layout/fragment_custom_data"/>
 
 </navigation>
