@@ -69,7 +69,7 @@ class RetenoDatabaseManagerImpl : RetenoDatabaseManager {
 
     override fun insertDevice(device: Device) {
         contentValues.putDevice(device)
-        databaseManager.insert(TABLE_NAME_DEVICE, null, contentValues)
+        databaseManager.insert(table = TABLE_NAME_DEVICE, contentValues = contentValues)
         contentValues.clear()
     }
 
@@ -79,14 +79,10 @@ class RetenoDatabaseManagerImpl : RetenoDatabaseManager {
         var cursor: Cursor? = null
         try {
             cursor = databaseManager.query(
-                TABLE_NAME_DEVICE,
-                DbSchema.DeviceSchema.getAllColumns(),
-                null,
-                null,
-                null,
-                null,
-                "$COLUMN_TIMESTAMP ASC",
-                limit?.toString()
+                table = TABLE_NAME_DEVICE,
+                columns = DbSchema.DeviceSchema.getAllColumns(),
+                orderBy = "$COLUMN_TIMESTAMP ASC",
+                limit = limit?.toString()
             )
             while (cursor.moveToNext()) {
                 val timestamp = cursor.getStringOrNull(cursor.getColumnIndex(COLUMN_TIMESTAMP))
@@ -103,9 +99,9 @@ class RetenoDatabaseManagerImpl : RetenoDatabaseManager {
                         /*@formatter:on*/
                     } else {
                         databaseManager.delete(
-                            TABLE_NAME_DEVICE,
-                            "$COLUMN_DEVICE_ROW_ID=?",
-                            arrayOf(rowId)
+                            table = TABLE_NAME_DEVICE,
+                            whereClause = "$COLUMN_DEVICE_ROW_ID=?",
+                            whereArgs = arrayOf(rowId)
                         )
                         /*@formatter:off*/ Logger.e(TAG, "getDevices(). Removed invalid entry from database. device=$device ", exception)
                         /*@formatter:on*/
@@ -125,9 +121,8 @@ class RetenoDatabaseManagerImpl : RetenoDatabaseManager {
     override fun deleteDevices(count: Int, oldest: Boolean) {
         val order = if (oldest) "ASC" else "DESC"
         databaseManager.delete(
-            TABLE_NAME_DEVICE,
-            "$COLUMN_DEVICE_ROW_ID in (select $COLUMN_DEVICE_ROW_ID from $TABLE_NAME_DEVICE ORDER BY $COLUMN_TIMESTAMP $order LIMIT $count)",
-            null
+            table = TABLE_NAME_DEVICE,
+            whereClause = "$COLUMN_DEVICE_ROW_ID in (select $COLUMN_DEVICE_ROW_ID from $TABLE_NAME_DEVICE ORDER BY $COLUMN_TIMESTAMP $order LIMIT $count)"
         )
     }
 
@@ -135,17 +130,17 @@ class RetenoDatabaseManagerImpl : RetenoDatabaseManager {
     //==============================================================================================
     override fun insertUser(user: UserDTO) {
         contentValues.putUser(user)
-        val rowId = databaseManager.insert(TABLE_NAME_USER, null, contentValues)
+        val rowId = databaseManager.insert(table = TABLE_NAME_USER, contentValues = contentValues)
         contentValues.clear()
 
         user.userAttributes?.let { userAttrs ->
             contentValues.putUserAttributes(rowId, userAttrs)
-            databaseManager.insert(TABLE_NAME_USER_ATTRIBUTES, null, contentValues)
+            databaseManager.insert(table = TABLE_NAME_USER_ATTRIBUTES, contentValues = contentValues)
             contentValues.clear()
 
             userAttrs.address?.let { userAddress ->
                 contentValues.putUserAddress(rowId, userAddress)
-                databaseManager.insert(TABLE_NAME_USER_ADDRESS, null, contentValues)
+                databaseManager.insert(table = TABLE_NAME_USER_ADDRESS, contentValues = contentValues)
                 contentValues.clear()
             }
         }
@@ -179,7 +174,7 @@ class RetenoDatabaseManagerImpl : RetenoDatabaseManager {
                     "  LEFT JOIN $TABLE_NAME_USER_ATTRIBUTES ON $TABLE_NAME_USER.$COLUMN_USER_ROW_ID = $TABLE_NAME_USER_ATTRIBUTES.$COLUMN_USER_ROW_ID" +
                     "  LEFT JOIN $TABLE_NAME_USER_ADDRESS ON $TABLE_NAME_USER.$COLUMN_USER_ROW_ID = $TABLE_NAME_USER_ADDRESS.$COLUMN_USER_ROW_ID" +
                     rawQueryLimit
-            cursor = databaseManager.rawQuery(rawQuery, null)
+            cursor = databaseManager.rawQuery(rawQuery)
             while (cursor.moveToNext()) {
                 val timestamp = cursor.getStringOrNull(cursor.getColumnIndex(COLUMN_TIMESTAMP))
                 val user = cursor.getUser()
@@ -195,9 +190,9 @@ class RetenoDatabaseManagerImpl : RetenoDatabaseManager {
                         /*@formatter:on*/
                     } else {
                         databaseManager.delete(
-                            TABLE_NAME_USER,
-                            "$COLUMN_USER_ROW_ID=?",
-                            arrayOf(rowId)
+                            table = TABLE_NAME_USER,
+                            whereClause = "$COLUMN_USER_ROW_ID=?",
+                            whereArgs = arrayOf(rowId)
                         )
                         /*@formatter:off*/ Logger.e(TAG, "getUser(). Removed invalid entry from database. user=$user ", exception)
                         /*@formatter:on*/
@@ -217,16 +212,15 @@ class RetenoDatabaseManagerImpl : RetenoDatabaseManager {
     override fun deleteUsers(count: Int, oldest: Boolean) {
         val order = if (oldest) "ASC" else "DESC"
         databaseManager.delete(
-            TABLE_NAME_USER,
-            "$COLUMN_USER_ROW_ID in (select $COLUMN_USER_ROW_ID from $TABLE_NAME_USER ORDER BY $COLUMN_TIMESTAMP $order LIMIT $count)",
-            null
+            table = TABLE_NAME_USER,
+            whereClause = "$COLUMN_USER_ROW_ID in (select $COLUMN_USER_ROW_ID from $TABLE_NAME_USER ORDER BY $COLUMN_TIMESTAMP $order LIMIT $count)"
         )
     }
 
     //==============================================================================================
     override fun insertInteraction(interaction: InteractionModelDb) {
         contentValues.putInteraction(interaction)
-        databaseManager.insert(TABLE_NAME_INTERACTION, null, contentValues)
+        databaseManager.insert(table = TABLE_NAME_INTERACTION, contentValues = contentValues)
         contentValues.clear()
     }
 
@@ -236,14 +230,10 @@ class RetenoDatabaseManagerImpl : RetenoDatabaseManager {
         var cursor: Cursor? = null
         try {
             cursor = databaseManager.query(
-                TABLE_NAME_INTERACTION,
-                DbSchema.InteractionSchema.getAllColumns(),
-                null,
-                null,
-                null,
-                null,
-                "$COLUMN_TIMESTAMP ASC",
-                limit?.toString()
+                table = TABLE_NAME_INTERACTION,
+                columns = DbSchema.InteractionSchema.getAllColumns(),
+                orderBy = "$COLUMN_TIMESTAMP ASC",
+                limit = limit?.toString()
             )
             while (cursor.moveToNext()) {
                 val timestamp = cursor.getStringOrNull(cursor.getColumnIndex(COLUMN_TIMESTAMP))
@@ -261,9 +251,9 @@ class RetenoDatabaseManagerImpl : RetenoDatabaseManager {
                         /*@formatter:on*/
                     } else {
                         databaseManager.delete(
-                            TABLE_NAME_INTERACTION,
-                            "$COLUMN_INTERACTION_ROW_ID=?",
-                            arrayOf(rowId)
+                            table = TABLE_NAME_INTERACTION,
+                            whereClause = "$COLUMN_INTERACTION_ROW_ID=?",
+                            whereArgs = arrayOf(rowId)
                         )
                         /*@formatter:off*/ Logger.e(TAG, "getInteractions(). Removed invalid entry from database. interaction=$interaction ", exception)
                         /*@formatter:on*/
@@ -283,9 +273,8 @@ class RetenoDatabaseManagerImpl : RetenoDatabaseManager {
     override fun deleteInteractions(count: Int, oldest: Boolean) {
         val order = if (oldest) "ASC" else "DESC"
         databaseManager.delete(
-            TABLE_NAME_INTERACTION,
-            "$COLUMN_INTERACTION_ROW_ID in (select $COLUMN_INTERACTION_ROW_ID from $TABLE_NAME_INTERACTION ORDER BY $COLUMN_TIMESTAMP $order LIMIT $count)",
-            null
+            table = TABLE_NAME_INTERACTION,
+            whereClause = "$COLUMN_INTERACTION_ROW_ID in (select $COLUMN_INTERACTION_ROW_ID from $TABLE_NAME_INTERACTION ORDER BY $COLUMN_TIMESTAMP $order LIMIT $count)"
         )
     }
 
@@ -295,13 +284,10 @@ class RetenoDatabaseManagerImpl : RetenoDatabaseManager {
         var cursor: Cursor? = null
         try {
             cursor = databaseManager.query(
-                TABLE_NAME_EVENTS,
-                DbSchema.EventsSchema.getAllColumns(),
-                "$COLUMN_EVENTS_DEVICE_ID=? AND $COLUMN_EVENTS_EXTERNAL_USER_ID=?",
-                arrayOf(events.deviceId, events.externalUserId ?: "NULL"),
-                null,
-                null,
-                null
+                table = TABLE_NAME_EVENTS,
+                columns = DbSchema.EventsSchema.getAllColumns(),
+                selection ="$COLUMN_EVENTS_DEVICE_ID=? AND $COLUMN_EVENTS_EXTERNAL_USER_ID=?",
+                selectionArgs = arrayOf(events.deviceId, events.externalUserId ?: "NULL")
             )
 
             if (cursor.moveToFirst()) {
@@ -317,12 +303,12 @@ class RetenoDatabaseManagerImpl : RetenoDatabaseManager {
 
         if (parentRowId == -1L) {
             contentValues.putEvents(events)
-            parentRowId = databaseManager.insert(TABLE_NAME_EVENTS, null, contentValues)
+            parentRowId = databaseManager.insert(table = TABLE_NAME_EVENTS, contentValues = contentValues)
             contentValues.clear()
         }
 
         val eventListContentValues = events.eventList.toContentValuesList(parentRowId)
-        databaseManager.insertMultiple(TABLE_NAME_EVENT, null, eventListContentValues)
+        databaseManager.insertMultiple(table = TABLE_NAME_EVENT, contentValues = eventListContentValues)
     }
 
     override fun getEvents(limit: Int?): List<EventsDTO> {
@@ -331,14 +317,9 @@ class RetenoDatabaseManagerImpl : RetenoDatabaseManager {
         val eventsParentTableList: MutableMap<String, EventsDTO> = mutableMapOf()
         try {
             cursor = databaseManager.query(
-                TABLE_NAME_EVENTS,
-                DbSchema.EventsSchema.getAllColumns(),
-                null,
-                null,
-                null,
-                null,
-                null,
-                limit?.toString()
+                table = TABLE_NAME_EVENTS,
+                columns = DbSchema.EventsSchema.getAllColumns(),
+                limit = limit?.toString()
             )
             while (cursor.moveToNext()) {
                 val eventsId =
@@ -360,9 +341,9 @@ class RetenoDatabaseManagerImpl : RetenoDatabaseManager {
                         /*@formatter:on*/
                     } else {
                         databaseManager.delete(
-                            TABLE_NAME_EVENTS,
-                            "$COLUMN_EVENTS_ID=?",
-                            arrayOf(rowId)
+                            table = TABLE_NAME_EVENTS,
+                            whereClause = "$COLUMN_EVENTS_ID=?",
+                            whereArgs = arrayOf(rowId)
                         )
                         /*@formatter:off*/ Logger.e(TAG, "getEvents(). Removed invalid entry from database. eventsId=$eventsId, deviceId=$deviceId, externalUserId=$externalUserId", exception)
                         /*@formatter:on*/
@@ -383,14 +364,10 @@ class RetenoDatabaseManagerImpl : RetenoDatabaseManager {
             var cursorChild: Cursor? = null
             try {
                 cursorChild = databaseManager.query(
-                    TABLE_NAME_EVENT,
-                    DbSchema.EventSchema.getAllColumns(),
-                    "$COLUMN_EVENTS_ID=?",
-                    arrayOf(foreignKeyRowId),
-                    null,
-                    null,
-                    null,
-                    null
+                    table = TABLE_NAME_EVENT,
+                    columns = DbSchema.EventSchema.getAllColumns(),
+                    selection = "$COLUMN_EVENTS_ID=?",
+                    selectionArgs = arrayOf(foreignKeyRowId)
                 )
 
                 while (cursorChild.moveToNext()) {
@@ -408,9 +385,9 @@ class RetenoDatabaseManagerImpl : RetenoDatabaseManager {
                             /*@formatter:on*/
                         } else {
                             databaseManager.delete(
-                                TABLE_NAME_EVENT,
-                                "$COLUMN_EVENT_ROW_ID=?",
-                                arrayOf(rowId)
+                                table = TABLE_NAME_EVENT,
+                                whereClause = "$COLUMN_EVENT_ROW_ID=?",
+                                whereArgs = arrayOf(rowId)
                             )
                             /*@formatter:off*/ Logger.e(TAG, "getEvents(). Removed invalid entry from database. events=$events ", exception)
                             /*@formatter:on*/
@@ -436,9 +413,8 @@ class RetenoDatabaseManagerImpl : RetenoDatabaseManager {
     override fun deleteEvents(count: Int, oldest: Boolean) {
         val order = if (oldest) "ASC" else "DESC"
         databaseManager.delete(
-            TABLE_NAME_EVENT,
-            "$COLUMN_EVENT_ROW_ID in (select $COLUMN_EVENT_ROW_ID from $TABLE_NAME_EVENT ORDER BY $COLUMN_EVENT_OCCURRED $order LIMIT $count)",
-            null
+            table = TABLE_NAME_EVENT,
+            whereClause = "$COLUMN_EVENT_ROW_ID in (select $COLUMN_EVENT_ROW_ID from $TABLE_NAME_EVENT ORDER BY $COLUMN_EVENT_OCCURRED $order LIMIT $count)"
         )
 
         databaseManager.cleanEventsRowsInParentTableWithNoChildren()

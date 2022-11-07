@@ -46,26 +46,6 @@ class RetenoDatabaseImpl(context: Context) : RetenoDatabase,
         selectionArgs: Array<String>?,
         groupBy: String?,
         having: String?,
-        orderBy: String?
-    ): Cursor {
-        return getSQLiteDatabaseWithRetries().query(
-            table,
-            columns,
-            selection,
-            selectionArgs,
-            groupBy,
-            having,
-            orderBy
-        )
-    }
-
-    override fun query(
-        table: String,
-        columns: Array<String>,
-        selection: String?,
-        selectionArgs: Array<String>?,
-        groupBy: String?,
-        having: String?,
         orderBy: String?,
         limit: String?
     ): Cursor =
