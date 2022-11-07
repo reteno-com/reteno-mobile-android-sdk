@@ -53,7 +53,7 @@ data class Device(
         }
 
 
-        private fun fetchDeviceCategory(): DeviceCategory {
+        internal fun fetchDeviceCategory(): DeviceCategory {
             val context = RetenoImpl.application
             val telephonyManager =
                 context.applicationContext.getSystemService(Context.TELEPHONY_SERVICE) as? TelephonyManager
@@ -69,7 +69,7 @@ data class Device(
             return deviceCategory
         }
 
-        private fun fetchOsVersion(): String {
+        internal fun fetchOsVersion(): String {
             val osVersion = "${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})"
             /*@formatter:off*/ Logger.i(TAG, "fetchOsVersion(): ", osVersion)
             /*@formatter:on*/
@@ -77,7 +77,7 @@ data class Device(
         }
 
 
-        private fun fetchDeviceModel(): String {
+        internal fun fetchDeviceModel(): String {
             val manufacturer = Build.MANUFACTURER
             val model = Build.MODEL
 
@@ -92,7 +92,7 @@ data class Device(
             return deviceModel
         }
 
-        private fun fetchAppVersion(): String? =
+        internal fun fetchAppVersion(): String? =
             try {
                 val context = RetenoImpl.application
 
@@ -117,14 +117,14 @@ data class Device(
                 null
             }
 
-        private fun fetchLanguageCode(): String {
+        internal fun fetchLanguageCode(): String {
             val languageCode = Locale.getDefault().toLanguageTag()
             /*@formatter:off*/ Logger.i(TAG, "fetchLanguageCode(): ", languageCode)
             /*@formatter:on*/
             return languageCode
         }
 
-        private fun fetchTimeZone(): String {
+        internal fun fetchTimeZone(): String {
             val timeZone = TimeZone.getDefault().toZoneId().id
             /*@formatter:off*/ Logger.i(TAG, "fetchTimeZone(): ", timeZone)
             /*@formatter:on*/

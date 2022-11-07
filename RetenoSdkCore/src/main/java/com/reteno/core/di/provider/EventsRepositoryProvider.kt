@@ -6,14 +6,14 @@ import com.reteno.core.di.base.ProviderWeakReference
 
 class EventsRepositoryProvider(
     private val apiClientProvider: ApiClientProvider,
-    private val retenoDatabaseManagerProvider: RetenoDatabaseManagerProvider,
+    private val databaseManagerProvider: DatabaseManagerProvider,
     private val configRepositoryProvider: ConfigRepositoryProvider
 ) : ProviderWeakReference<EventsRepository>() {
 
     override fun create(): EventsRepository {
         return EventsRepositoryImpl(
             apiClientProvider.get(),
-            retenoDatabaseManagerProvider.get(),
+            databaseManagerProvider.get(),
             configRepositoryProvider.get()
         )
     }

@@ -96,7 +96,7 @@ internal object DbSchema {
         internal const val COLUMN_LAST_NAME = "lastName"
         internal const val COLUMN_LANGUAGE_CODE = "languageCode"
         internal const val COLUMN_TIME_ZONE = "timeZone"
-        internal const val COLUMN_TIME_CUSTOM_FIELDS = "fields"
+        internal const val COLUMN_CUSTOM_FIELDS = "fields"
 
         internal const val SQL_CREATE_TABLE =
             "CREATE TABLE IF NOT EXISTS $TABLE_NAME_USER_ATTRIBUTES" +
@@ -108,7 +108,7 @@ internal object DbSchema {
                     "$COLUMN_LAST_NAME TEXT, " +
                     "$COLUMN_LANGUAGE_CODE TEXT, " +
                     "$COLUMN_TIME_ZONE TEXT, " +
-                    "$COLUMN_TIME_CUSTOM_FIELDS TEXT, " +
+                    "$COLUMN_CUSTOM_FIELDS TEXT, " +
                     "FOREIGN KEY ($COLUMN_USER_ROW_ID) REFERENCES $TABLE_NAME_USER ($COLUMN_USER_ROW_ID) ON DELETE CASCADE" +
                     ")"
     }

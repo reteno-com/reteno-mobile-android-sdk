@@ -8,17 +8,12 @@ class ServiceLocator(context: Context) {
     // TODO: Separate internal objects from externally exposed
     // TODO: Mark internal fields as internal
 
-    private val sharedPrefsManagerProvider: SharedPrefsManagerProvider =
-        SharedPrefsManagerProvider()
+    private val sharedPrefsManagerProvider: SharedPrefsManagerProvider = SharedPrefsManagerProvider()
 
-    private val deviceIdHelperProvider: DeviceIdHelperProvider =
-        DeviceIdHelperProvider(sharedPrefsManagerProvider)
+    private val deviceIdHelperProvider: DeviceIdHelperProvider = DeviceIdHelperProvider(sharedPrefsManagerProvider)
     private val restConfigProvider: RestConfigProvider = RestConfigProvider(deviceIdHelperProvider)
-    private val retenoDatabaseManagerProvider = RetenoDatabaseManagerProvider()
 
-    val retenoActivityHelperProvider: RetenoActivityHelperProvider =
-        RetenoActivityHelperProvider()
-
+    val retenoActivityHelperProvider: RetenoActivityHelperProvider = RetenoActivityHelperProvider()
     private val apiClientProvider: ApiClientProvider = ApiClientProvider()
     private val databaseProvider: DatabaseProvider = DatabaseProvider(context)
     val databaseManagerProvider: DatabaseManagerProvider = DatabaseManagerProvider(databaseProvider)
@@ -32,7 +27,7 @@ class ServiceLocator(context: Context) {
     private val eventsRepositoryProvider: EventsRepositoryProvider =
         EventsRepositoryProvider(
             apiClientProvider,
-            retenoDatabaseManagerProvider,
+            databaseManagerProvider,
             configRepositoryProvider
         )
 
@@ -40,11 +35,11 @@ class ServiceLocator(context: Context) {
         ContactRepositoryProvider(
             apiClientProvider,
             configRepositoryProvider,
-            retenoDatabaseManagerProvider
+            databaseManagerProvider
         )
 
     private val interactionRepositoryProvider: InteractionRepositoryProvider =
-        InteractionRepositoryProvider(apiClientProvider, retenoDatabaseManagerProvider)
+        InteractionRepositoryProvider(apiClientProvider, databaseManagerProvider)
     val interactionControllerProvider: InteractionControllerProvider =
         InteractionControllerProvider(configRepositoryProvider, interactionRepositoryProvider)
 

@@ -36,5 +36,5 @@ interface RetenoDatabase {
 
     fun getRowCount(tableName: String): Long
 
-    fun cleanEventsRowsInParentTableWithNoChildren()
+    fun cleanUnlinkedEvents()
 }

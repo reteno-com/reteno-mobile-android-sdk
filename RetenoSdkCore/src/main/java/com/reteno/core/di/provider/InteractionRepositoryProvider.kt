@@ -6,13 +6,13 @@ import com.reteno.core.di.base.ProviderWeakReference
 
 class InteractionRepositoryProvider(
     private val apiClientProvider: ApiClientProvider,
-    private val retenoDatabaseManagerProvider: RetenoDatabaseManagerProvider
+    private val databaseManagerProvider: DatabaseManagerProvider
 ) : ProviderWeakReference<InteractionRepository>() {
 
     override fun create(): InteractionRepository {
         return InteractionRepositoryImpl(
             apiClientProvider.get(),
-            retenoDatabaseManagerProvider.get()
+            databaseManagerProvider.get()
         )
     }
 }
