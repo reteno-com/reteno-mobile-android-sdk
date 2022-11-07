@@ -48,9 +48,9 @@ import com.reteno.core.data.local.database.DbUtil.putUserAddress
 import com.reteno.core.data.local.database.DbUtil.putUserAttributes
 import com.reteno.core.data.local.database.DbUtil.toContentValuesList
 import com.reteno.core.data.local.model.InteractionModelDb
+import com.reteno.core.data.remote.model.event.EventDTO
+import com.reteno.core.data.remote.model.event.EventsDTO
 import com.reteno.core.data.remote.model.user.UserDTO
-import com.reteno.core.model.Event
-import com.reteno.core.model.Events
 import com.reteno.core.model.device.Device
 import com.reteno.core.util.Logger
 import com.reteno.core.util.allElementsNotNull
@@ -289,7 +289,7 @@ class RetenoDatabaseManagerImpl : RetenoDatabaseManager {
         )
     }
 
-    override fun insertEvents(events: Events) {
+    override fun insertEvents(events: EventsDTO) {
         var parentRowId: Long = -1L
 
         var cursor: Cursor? = null
@@ -325,10 +325,10 @@ class RetenoDatabaseManagerImpl : RetenoDatabaseManager {
         databaseManager.insertMultiple(TABLE_NAME_EVENT, null, eventListContentValues)
     }
 
-    override fun getEvents(limit: Int?): List<Events> {
+    override fun getEvents(limit: Int?): List<EventsDTO> {
         var cursor: Cursor? = null
 
-        val eventsParentTableList: MutableMap<String, Events> = mutableMapOf<String, Events>()
+        val eventsParentTableList: MutableMap<String, EventsDTO> = mutableMapOf()
         try {
             cursor = databaseManager.query(
                 TABLE_NAME_EVENTS,
@@ -348,9 +348,9 @@ class RetenoDatabaseManagerImpl : RetenoDatabaseManager {
                 val externalUserId =
                     cursor.getStringOrNull(cursor.getColumnIndex(DbSchema.EventsSchema.COLUMN_EVENTS_EXTERNAL_USER_ID))
 
-                if (allElementsNotNull(eventsId, deviceId, externalUserId)) {
+                if (allElementsNotNull(eventsId, deviceId)) {
                     eventsParentTableList[eventsId!!] =
-                        Events(deviceId!!, externalUserId!!, listOf())
+                        EventsDTO(deviceId!!, externalUserId, listOf())
                 } else {
                     val rowId = cursor.getStringOrNull(cursor.getColumnIndex(COLUMN_EVENTS_ID))
                     val exception =
@@ -375,10 +375,10 @@ class RetenoDatabaseManagerImpl : RetenoDatabaseManager {
             cursor?.close()
         }
 
-        val eventsResult: MutableList<Events> = mutableListOf()
+        val eventsResult: MutableList<EventsDTO> = mutableListOf()
         for (eventsParent in eventsParentTableList.entries.iterator()) {
             val foreignKeyRowId = eventsParent.key
-            val eventList: MutableList<Event> = mutableListOf()
+            val eventList: MutableList<EventDTO> = mutableListOf()
 
             var cursorChild: Cursor? = null
             try {
@@ -424,7 +424,7 @@ class RetenoDatabaseManagerImpl : RetenoDatabaseManager {
             }
 
             val singleEventResult =
-                Events(eventsParent.value.deviceId, eventsParent.value.externalUserId, eventList)
+                EventsDTO(eventsParent.value.deviceId, eventsParent.value.externalUserId, eventList)
             eventsResult.add(singleEventResult)
         }
 

@@ -1,6 +1,8 @@
 package com.reteno.core.data.repository
 
-import com.reteno.core.data.local.config.RestConfig
+import com.reteno.core.data.local.database.RetenoDatabaseManager
+import com.reteno.core.data.remote.OperationQueue
+import com.reteno.core.data.remote.PushOperationQueue
 import com.reteno.core.data.remote.api.ApiClient
 import com.reteno.core.data.remote.api.ApiContract
 import com.reteno.core.data.remote.mapper.toJson
@@ -8,16 +10,97 @@ import com.reteno.core.data.remote.mapper.toRemote
 import com.reteno.core.domain.ResponseCallback
 import com.reteno.core.model.device.Device
 import com.reteno.core.model.user.User
+import com.reteno.core.util.Logger
+import com.reteno.core.util.isNonRepeatableError
 
-internal class ContactRepositoryImpl(
+class ContactRepositoryImpl(
     private val apiClient: ApiClient,
-    private val restConfig: RestConfig
+    private val configRepository: ConfigRepository,
+    private val databaseManager: RetenoDatabaseManager
 ) : ContactRepository {
-    override fun sendDeviceProperties(device: Device, responseHandler: ResponseCallback) {
-        apiClient.post(ApiContract.MobileApi.Device, device.toJson(), responseHandler)
+
+    override fun saveDeviceData(device: Device) {
+        /*@formatter:off*/ Logger.i(TAG, "saveDeviceData(): ", "device = [" , device , "]")
+        /*@formatter:on*/
+        OperationQueue.addOperation {
+            databaseManager.insertDevice(device)
+            pushDeviceData()
+        }
     }
 
-    override fun sendUserData(user: User, responseHandler: ResponseCallback) {
-        apiClient.post(ApiContract.MobileApi.User, user.toRemote(restConfig.deviceId).toJson(), responseHandler)
+    override fun saveUserData(user: User) {
+        /*@formatter:off*/ Logger.i(TAG, "saveUserData(): ", "user = [" , user , "]")
+        /*@formatter:on*/
+        //databaseManager.insertUserData(user)
+        OperationQueue.addOperation {
+            databaseManager.insertUser(user.toRemote(configRepository.getDeviceId()))
+            pushUserData()
+        }
+    }
+
+    override fun pushDeviceData() {
+        val device = databaseManager.getDevices(1).firstOrNull() ?: kotlin.run {
+            PushOperationQueue.nextOperation()
+            return
+        }
+        /*@formatter:off*/ Logger.i(TAG, "pushDeviceData(): ", "device = [" , device , "]")
+        /*@formatter:on*/
+        apiClient.post(
+            ApiContract.MobileApi.Device,
+            device.toJson(),
+            object : ResponseCallback {
+                override fun onSuccess(response: String) {
+                    /*@formatter:off*/ Logger.i(TAG, "onSuccess(): ", "response = [" , response , "]")
+                /*@formatter:on*/
+                    databaseManager.deleteDevices(1)
+                    pushDeviceData()
+                }
+
+                override fun onFailure(statusCode: Int?, response: String?, throwable: Throwable?) {
+                    /*@formatter:off*/ Logger.i(TAG, "onFailure(): ", "statusCode = [" , statusCode , "], response = [" , response , "], throwable = [" , throwable , "]")
+                /*@formatter:on*/
+                    if (isNonRepeatableError(statusCode)) {
+                        databaseManager.deleteDevices(1)
+                        pushDeviceData()
+                    }
+                    PushOperationQueue.removeAllOperations()
+                }
+
+            })
+    }
+
+    override fun pushUserData() {
+        val user = databaseManager.getUser(1).firstOrNull() ?: kotlin.run {
+            PushOperationQueue.nextOperation()
+            return
+        }
+        /*@formatter:off*/ Logger.i(TAG, "pushUserData(): ", "user = [" , user , "]")
+        /*@formatter:on*/
+        apiClient.post(
+            ApiContract.MobileApi.User,
+            user.toJson(),
+            object : ResponseCallback {
+                override fun onSuccess(response: String) {
+                    /*@formatter:off*/ Logger.i(TAG, "onSuccess(): ", "response = [" , response , "]")
+                    /*@formatter:on*/
+                    databaseManager.deleteUsers(1)
+                    pushUserData()
+                }
+
+                override fun onFailure(statusCode: Int?, response: String?, throwable: Throwable?) {
+                    /*@formatter:off*/ Logger.i(TAG, "onFailure(): ", "statusCode = [" , statusCode , "], response = [" , response , "], throwable = [" , throwable , "]")
+                    /*@formatter:on*/
+                    if (isNonRepeatableError(statusCode)) {
+                        databaseManager.deleteUsers(1)
+                        pushUserData()
+                    }
+                    PushOperationQueue.removeAllOperations()
+                }
+
+            })
+    }
+
+    companion object {
+        private val TAG = ContactRepositoryImpl::class.java.simpleName
     }
 }

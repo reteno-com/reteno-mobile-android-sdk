@@ -6,8 +6,11 @@ import com.reteno.core.data.local.config.DeviceIdMode
 import com.reteno.core.di.ServiceLocator
 import com.reteno.core.lifecycle.RetenoActivityHelper
 import com.reteno.core.lifecycle.RetenoLifecycleCallbacks
+import com.reteno.core.model.event.Event
+import com.reteno.core.model.event.Parameter
 import com.reteno.core.model.user.User
 import com.reteno.core.util.Logger
+import java.time.ZonedDateTime
 
 
 class RetenoImpl(application: Application) : RetenoLifecycleCallbacks, Reteno {
@@ -21,6 +24,9 @@ class RetenoImpl(application: Application) : RetenoLifecycleCallbacks, Reteno {
     val serviceLocator: ServiceLocator = ServiceLocator()
 
     private val contactController = serviceLocator.contactControllerProvider.get()
+    private val scheduleController = serviceLocator.scheduleControllerProvider.get()
+    private val eventController = serviceLocator.eventsControllerProvider.get()
+
     private val activityHelper: RetenoActivityHelper =
         serviceLocator.retenoActivityHelperProvider.get()
 
@@ -35,12 +41,14 @@ class RetenoImpl(application: Application) : RetenoLifecycleCallbacks, Reteno {
     override fun resume(activity: Activity) {
         /*@formatter:off*/ Logger.i(TAG, "resume(): ", "activity = [" , activity , "]")
         /*@formatter:on*/
+        scheduleRequest()
         // TODO: Application is in foreground
     }
 
     override fun pause(activity: Activity) {
         /*@formatter:off*/ Logger.i(TAG, "pause(): ", "activity = [" , activity , "]")
         /*@formatter:on*/
+        stopScheduler()
         // TODO: Application is not in foreground
     }
 
@@ -73,6 +81,16 @@ class RetenoImpl(application: Application) : RetenoLifecycleCallbacks, Reteno {
         }
     }
 
+    override fun logEvent(
+        eventType: String,
+        date: ZonedDateTime,
+        parameters: List<Parameter>?
+    ) {
+        /*@formatter:off*/ Logger.i(TAG, "logEvent(): ", "eventType = [" , eventType , "], date = [" , date , "], parameters = [" , parameters , "]") 
+        /*@formatter:on*/
+        eventController.saveEvent(Event(eventType, date, parameters))
+    }
+
     private fun setUserData(used: User) {
         /*@formatter:off*/ Logger.i(TAG, "setUserData(): ", "used = [" , used , "]")
         /*@formatter:on*/
@@ -82,6 +100,14 @@ class RetenoImpl(application: Application) : RetenoLifecycleCallbacks, Reteno {
         } catch (ex: Throwable) {
             Logger.e(TAG, "setExternalDeviceId(): ", ex)
         }
+    }
+
+    private fun scheduleRequest() {
+        scheduleController.startScheduler()
+    }
+
+    private fun stopScheduler() {
+        scheduleController.stopScheduler()
     }
 
     /**

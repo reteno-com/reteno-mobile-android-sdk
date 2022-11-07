@@ -6,13 +6,13 @@ import com.reteno.core.data.local.model.InteractionModelDb
 import com.reteno.core.data.remote.mapper.fromJson
 import com.reteno.core.data.remote.mapper.listFromJson
 import com.reteno.core.data.remote.mapper.toJson
+import com.reteno.core.data.remote.model.event.EventDTO
+import com.reteno.core.data.remote.model.event.EventsDTO
+import com.reteno.core.data.remote.model.event.ParameterDTO
 import com.reteno.core.data.remote.model.user.AddressDTO
 import com.reteno.core.data.remote.model.user.UserAttributesDTO
 import com.reteno.core.data.remote.model.user.UserCustomFieldDTO
 import com.reteno.core.data.remote.model.user.UserDTO
-import com.reteno.core.model.Event
-import com.reteno.core.model.Events
-import com.reteno.core.model.Parameter
 import com.reteno.core.model.device.Device
 import com.reteno.core.model.device.DeviceCategory
 import com.reteno.core.model.device.DeviceOS
@@ -20,7 +20,6 @@ import com.reteno.core.model.interaction.InteractionStatus
 import com.reteno.core.util.allElementsNotNull
 import com.reteno.core.util.allElementsNull
 import net.sqlcipher.Cursor
-import java.time.LocalDateTime
 
 
 internal object DbUtil {
@@ -144,6 +143,7 @@ internal object DbUtil {
                 lastName,
                 languageCode,
                 timeZone,
+                userAddress,
                 customFields
             )
         ) {
@@ -216,19 +216,19 @@ internal object DbUtil {
     }
 
     // --------------------- Push Status -----------------------------------------------------------
-    fun ContentValues.putEvents(events: Events) {
+    fun ContentValues.putEvents(events: EventsDTO) {
         put(DbSchema.EventsSchema.COLUMN_EVENTS_DEVICE_ID, events.deviceId)
         put(DbSchema.EventsSchema.COLUMN_EVENTS_EXTERNAL_USER_ID, events.externalUserId)
     }
 
-    fun List<Event>.toContentValuesList(parentRowId: Long): List<ContentValues> {
+    fun List<EventDTO>.toContentValuesList(parentRowId: Long): List<ContentValues> {
         val contentValues = mutableListOf<ContentValues>()
 
         for (event in this) {
             val singleContentValues = ContentValues().apply {
                 put(DbSchema.EventsSchema.COLUMN_EVENTS_ID, parentRowId)
                 put(DbSchema.EventSchema.COLUMN_EVENT_TYPE_KEY, event.eventTypeKey)
-                put(DbSchema.EventSchema.COLUMN_EVENT_OCCURRED, event.occurred.toString())
+                put(DbSchema.EventSchema.COLUMN_EVENT_OCCURRED, event.occurred)
                 put(DbSchema.EventSchema.COLUMN_EVENT_PARAMS, event.params?.toJson())
             }
             contentValues.add(singleContentValues)
@@ -237,18 +237,17 @@ internal object DbUtil {
         return contentValues
     }
 
-    fun Cursor.getEvents(): Event? {
+    fun Cursor.getEvents(): EventDTO? {
         val eventTypeKey =
             getStringOrNull(getColumnIndex(DbSchema.EventSchema.COLUMN_EVENT_TYPE_KEY))
-        val occurredString =
+        val occurred =
             getStringOrNull(getColumnIndex(DbSchema.EventSchema.COLUMN_EVENT_OCCURRED))
-        val occurred = LocalDateTime.parse(occurredString)
 
         val paramsString = getStringOrNull(getColumnIndex(DbSchema.EventSchema.COLUMN_EVENT_PARAMS))
-        val params: List<Parameter>? = paramsString?.listFromJson<Parameter>()
+        val params: List<ParameterDTO>? = paramsString?.listFromJson()
 
-        val result: Event? = if (allElementsNotNull(eventTypeKey, occurred)) {
-            Event(eventTypeKey!!, occurred!!, params)
+        val result: EventDTO? = if (allElementsNotNull(eventTypeKey, occurred)) {
+            EventDTO(eventTypeKey!!, occurred!!, params)
         } else {
             null
         }

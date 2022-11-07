@@ -1,10 +1,10 @@
 package com.reteno.core.data.repository
 
-import com.reteno.core.domain.ResponseCallback
-import com.reteno.core.model.Events
+import com.reteno.core.model.event.Event
 
 interface EventsRepository {
 
-    fun sendOutcomeEvent(events: Events, responseHandler: ResponseCallback)
+    fun saveEvent(event: Event)
+    fun pushEvents()
 
 }

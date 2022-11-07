@@ -13,39 +13,60 @@ class ServiceLocator {
     private val deviceIdHelperProvider: DeviceIdHelperProvider =
         DeviceIdHelperProvider(sharedPrefsManagerProvider)
     private val restConfigProvider: RestConfigProvider = RestConfigProvider(deviceIdHelperProvider)
+    private val retenoDatabaseManagerProvider = RetenoDatabaseManagerProvider()
 
     val retenoActivityHelperProvider: RetenoActivityHelperProvider =
         RetenoActivityHelperProvider()
 
+    private val apiClientProvider: ApiClientProvider = ApiClientProvider()
+
+    /** Repository **/
     val configRepositoryProvider: ConfigRepositoryProvider =
         ConfigRepositoryProvider(
             sharedPrefsManagerProvider,
             restConfigProvider
         )
-    private val apiClientProvider: ApiClientProvider = ApiClientProvider()
     private val eventsRepositoryProvider: EventsRepositoryProvider =
-        EventsRepositoryProvider(apiClientProvider)
-
-    val eventsControllerProvider: EventsControllerProvider =
-        EventsControllerProvider(eventsRepositoryProvider)
+        EventsRepositoryProvider(
+            apiClientProvider,
+            retenoDatabaseManagerProvider,
+            configRepositoryProvider
+        )
 
     private val contactRepositoryProvider: ContactRepositoryProvider =
-        ContactRepositoryProvider(apiClientProvider, restConfigProvider)
+        ContactRepositoryProvider(
+            apiClientProvider,
+            configRepositoryProvider,
+            retenoDatabaseManagerProvider
+        )
+
+    private val interactionRepositoryProvider: InteractionRepositoryProvider =
+        InteractionRepositoryProvider(apiClientProvider, retenoDatabaseManagerProvider)
+    val interactionControllerProvider: InteractionControllerProvider =
+        InteractionControllerProvider(configRepositoryProvider, interactionRepositoryProvider)
+
+    private val deeplinkRepositoryProvider: DeeplinkRepositoryProvider =
+        DeeplinkRepositoryProvider(apiClientProvider)
+
+    /** Controller **/
+    val deeplinkControllerProvider: DeeplinkControllerProvider =
+        DeeplinkControllerProvider(deeplinkRepositoryProvider)
+
     val contactControllerProvider: ContactControllerProvider =
         ContactControllerProvider(
             contactRepositoryProvider,
             configRepositoryProvider
         )
 
-    private val interactionRepositoryProvider: InteractionRepositoryProvider =
-        InteractionRepositoryProvider(apiClientProvider)
-    val interactionControllerProvider: InteractionControllerProvider =
-        InteractionControllerProvider(configRepositoryProvider, interactionRepositoryProvider)
+    val eventsControllerProvider: EventsControllerProvider =
+        EventsControllerProvider(eventsRepositoryProvider)
 
-    private val deeplinkRepositoryProvider: DeeplinkRepositoryProvider =
-        DeeplinkRepositoryProvider(apiClientProvider)
-    val deeplinkControllerProvider: DeeplinkControllerProvider =
-        DeeplinkControllerProvider(deeplinkRepositoryProvider)
+    val scheduleControllerProvider: ScheduleControllerProvider =
+        ScheduleControllerProvider(
+            contactControllerProvider,
+            interactionControllerProvider,
+            eventsControllerProvider
+        )
 
     init {
 

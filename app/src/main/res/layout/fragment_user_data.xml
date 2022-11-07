@@ -34,8 +34,7 @@
             <EditText
                 android:id="@+id/etExternalId"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="externalId1" />
+                android:layout_height="wrap_content" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <TextView
@@ -54,8 +53,7 @@
             <EditText
                 android:id="@+id/etSubscriptionKeys"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="subscriptionKey1,subscriptionKey1" />
+                android:layout_height="wrap_content"/>
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
@@ -68,8 +66,7 @@
             <EditText
                 android:id="@+id/etGroupNamesInclude"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="groupNameInclude1,groupNameInclude2" />
+                android:layout_height="wrap_content" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
@@ -82,8 +79,7 @@
             <EditText
                 android:id="@+id/etGroupNamesExclude"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="groupNameExclude1,groupNameExclude2" />
+                android:layout_height="wrap_content" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <TextView
@@ -104,8 +100,7 @@
             <EditText
                 android:id="@+id/etPhone"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="phone1" />
+                android:layout_height="wrap_content"/>
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
@@ -118,8 +113,7 @@
             <EditText
                 android:id="@+id/etEmail"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="email1" />
+                android:layout_height="wrap_content"/>
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
@@ -132,8 +126,7 @@
             <EditText
                 android:id="@+id/etFirstName"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="firstName1" />
+                android:layout_height="wrap_content" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
@@ -146,8 +139,7 @@
             <EditText
                 android:id="@+id/etLastName"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="lastName1" />
+                android:layout_height="wrap_content" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
@@ -160,8 +152,7 @@
             <EditText
                 android:id="@+id/etLanguageCode"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="uk-UA" />
+                android:layout_height="wrap_content"/>
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
@@ -174,8 +165,7 @@
             <EditText
                 android:id="@+id/etTimeZone"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Europe/Kiev" />
+                android:layout_height="wrap_content" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <TextView
@@ -196,8 +186,7 @@
             <EditText
                 android:id="@+id/etRegion"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="region1" />
+                android:layout_height="wrap_content" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
@@ -210,8 +199,7 @@
             <EditText
                 android:id="@+id/etTown"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="town1" />
+                android:layout_height="wrap_content" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
@@ -224,8 +212,7 @@
             <EditText
                 android:id="@+id/etAddress"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="address1" />
+                android:layout_height="wrap_content" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
@@ -238,8 +225,7 @@
             <EditText
                 android:id="@+id/etPostcode"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="postcode1" />
+                android:layout_height="wrap_content"/>
         </com.google.android.material.textfield.TextInputLayout>
 
 
