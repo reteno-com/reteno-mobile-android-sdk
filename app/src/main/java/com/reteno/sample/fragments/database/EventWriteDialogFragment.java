@@ -19,9 +19,11 @@ import com.reteno.core.RetenoImpl;
 import com.reteno.core._interop.DeviceIdInternal;
 import com.reteno.core.data.local.config.DeviceId;
 import com.reteno.core.data.local.database.RetenoDatabaseManagerImpl;
-import com.reteno.core.model.Event;
-import com.reteno.core.model.Events;
-import com.reteno.core.model.Parameter;
+import com.reteno.core.data.remote.mapper.EventMapperKt;
+import com.reteno.core.data.remote.model.event.EventsDTO;
+import com.reteno.core.model.event.Event;
+import com.reteno.core.model.event.Events;
+import com.reteno.core.model.event.Parameter;
 import com.reteno.sample.R;
 import com.reteno.sample.SampleApp;
 import com.reteno.sample.databinding.DialogDbWriteEventBinding;
@@ -29,7 +31,7 @@ import com.reteno.sample.databinding.ViewEventWriteBinding;
 import com.reteno.sample.databinding.ViewUserCustomFieldsHorizontalBinding;
 import com.reteno.sample.util.Util;
 
-import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -70,7 +72,8 @@ public class EventWriteDialogFragment extends DialogFragment {
     private void initListeners() {
         binding.btnSubmit.setOnClickListener(v -> {
             Events events = getEventData();
-            databaseManager.insertEvents(events);
+            EventsDTO eventsDTO = EventMapperKt.toRemote(events);
+            databaseManager.insertEvents(eventsDTO);
             Toast.makeText(this.getContext(), "Sent", Toast.LENGTH_SHORT).show();
         });
 
@@ -110,7 +113,7 @@ public class EventWriteDialogFragment extends DialogFragment {
             EditText etEventTypeKey = (EditText) parent.getChildAt(0);
 
             String eventTypeKey = Util.getTextOrNull(etEventTypeKey);
-            LocalDateTime occurred = LocalDateTime.now();
+            ZonedDateTime occurred = ZonedDateTime.now();
 
             if (eventTypeKey != null) {
                 List<Parameter> params = getParamsList(parent);

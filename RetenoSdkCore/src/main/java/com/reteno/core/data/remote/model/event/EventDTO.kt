@@ -1,13 +1,12 @@
-package com.reteno.core.model
+package com.reteno.core.data.remote.model.event
 
 import com.google.gson.annotations.SerializedName
-import java.time.LocalDateTime
 
-data class Event(
+data class EventDTO(
     @SerializedName("eventTypeKey")
     val eventTypeKey: String,
     @SerializedName("occurred")
-    val occurred: LocalDateTime,
+    val occurred: String,
     @SerializedName("params")
-    val params: List<Parameter>?
+    val params: List<ParameterDTO>? = null
 )

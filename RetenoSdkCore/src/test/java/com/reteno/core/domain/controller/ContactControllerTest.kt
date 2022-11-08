@@ -16,7 +16,7 @@ import io.mockk.*
 import io.mockk.impl.annotations.RelaxedMockK
 import org.junit.Test
 
-
+// TODO review later (B.S.)
 class ContactControllerTest : BaseUnitTest() {
 
     // region constants ----------------------------------------------------------------------------
@@ -64,7 +64,7 @@ class ContactControllerTest : BaseUnitTest() {
         SUT.setExternalUserId(EXTERNAL_DEVICE_ID)
 
         // Then
-        verify(exactly = 0) { contactRepository.sendDeviceProperties(any(), any()) }
+        verify(exactly = 0) { contactRepository.saveDeviceData(any()) }
     }
 
     @Test
@@ -82,7 +82,7 @@ class ContactControllerTest : BaseUnitTest() {
         // Then
         val expectedDevice =
             Device.createDevice(DEVICE_ID_ANDROID, EXTERNAL_DEVICE_ID, FCM_TOKEN_NEW)
-        verify(exactly = 1) { contactRepository.sendDeviceProperties(eq(expectedDevice), any()) }
+        verify(exactly = 1) { contactRepository.saveDeviceData(eq(expectedDevice)) }
     }
 
     @Test
@@ -100,7 +100,7 @@ class ContactControllerTest : BaseUnitTest() {
         // Then
         val expectedDevice =
             Device.createDevice(DEVICE_ID_ANDROID, EXTERNAL_DEVICE_ID, FCM_TOKEN_NEW)
-        verify(exactly = 0) { contactRepository.sendDeviceProperties(eq(expectedDevice), any()) }
+        verify(exactly = 0) { contactRepository.saveDeviceData(eq(expectedDevice)) }
     }
 
     @Test
@@ -116,7 +116,7 @@ class ContactControllerTest : BaseUnitTest() {
         SUT.setDeviceIdMode(DeviceIdMode.RANDOM_UUID) {}
 
         // Then
-        verify(exactly = 0) { contactRepository.sendDeviceProperties(any(), any()) }
+        verify(exactly = 0) { contactRepository.saveDeviceData(any()) }
     }
 
     @Test
@@ -138,7 +138,7 @@ class ContactControllerTest : BaseUnitTest() {
 
         // Then
         val expectedDevice = Device.createDevice(DEVICE_ID_UUID, null, FCM_TOKEN_NEW)
-        verify(exactly = 1) { contactRepository.sendDeviceProperties(eq(expectedDevice), any()) }
+        verify(exactly = 1) { contactRepository.saveDeviceData(eq(expectedDevice)) }
     }
 
     @Test
@@ -160,7 +160,7 @@ class ContactControllerTest : BaseUnitTest() {
 
         // Then
         val expectedDevice = Device.createDevice(DEVICE_ID_UUID, null, FCM_TOKEN_NEW)
-        verify(exactly = 1) { contactRepository.sendDeviceProperties(eq(expectedDevice), any()) }
+        verify(exactly = 1) { contactRepository.saveDeviceData(eq(expectedDevice)) }
     }
 
     @Test
@@ -173,7 +173,7 @@ class ContactControllerTest : BaseUnitTest() {
 
         // Then
         verify(exactly = 0) { configRepository.saveFcmToken(any()) }
-        verify(exactly = 0) { contactRepository.sendDeviceProperties(any(), any()) }
+        verify(exactly = 0) { contactRepository.saveDeviceData(any()) }
     }
 
     @Test
@@ -188,7 +188,7 @@ class ContactControllerTest : BaseUnitTest() {
         // Then
         verify(exactly = 1) { configRepository.saveFcmToken(FCM_TOKEN_NEW) }
         val expectedDevice = Device.createDevice(DEVICE_ID_ANDROID, null, FCM_TOKEN_NEW)
-        verify(exactly = 1) { contactRepository.sendDeviceProperties(expectedDevice, any()) }
+        verify(exactly = 1) { contactRepository.saveDeviceData(expectedDevice) }
     }
 
     @Test
@@ -196,7 +196,7 @@ class ContactControllerTest : BaseUnitTest() {
         // Given
         every { configRepository.getFcmToken() } returns FCM_TOKEN_OLD andThen FCM_TOKEN_NEW
         every { configRepository.getDeviceId() } returns DeviceId(DEVICE_ID_ANDROID, null)
-        every { contactRepository.sendDeviceProperties(any(), any()) } just runs
+        every { contactRepository.saveDeviceData(any()) } just runs
 
         // When
         SUT.onNewFcmToken(FCM_TOKEN_NEW)
@@ -204,7 +204,7 @@ class ContactControllerTest : BaseUnitTest() {
         // Then
         verify(exactly = 1) { configRepository.saveFcmToken(FCM_TOKEN_NEW) }
         val expectedDevice = Device.createDevice(DEVICE_ID_ANDROID, null, FCM_TOKEN_NEW)
-        verify(exactly = 1) { contactRepository.sendDeviceProperties(expectedDevice, any()) }
+        verify(exactly = 1) { contactRepository.saveDeviceData(expectedDevice) }
     }
 
     @Test
@@ -213,7 +213,7 @@ class ContactControllerTest : BaseUnitTest() {
 
         SUT.setUserData(user)
 
-        verify { contactRepository.sendUserData(user, any()) }
+        verify { contactRepository.saveUserData(user) }
     }
 
     // region helper methods -----------------------------------------------------------------------

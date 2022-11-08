@@ -16,7 +16,7 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 
-
+// TODO review later (B.S.)
 class InteractionControllerTest : BaseUnitTest() {
 
     // region constants ----------------------------------------------------------------------------
@@ -65,10 +65,9 @@ class InteractionControllerTest : BaseUnitTest() {
         // Then
         val expectedInteraction = Interaction(InteractionStatus.DELIVERED, CURRENT_TIMESTAMP, TOKEN)
         verify(exactly = 1) {
-            interactionsRepository.sendInteraction(
+            interactionsRepository.saveInteraction(
                 eq(INTERACTION_ID),
-                eq(expectedInteraction),
-                any()
+                eq(expectedInteraction)
             )
         }
     }
@@ -84,10 +83,9 @@ class InteractionControllerTest : BaseUnitTest() {
         // Then
         val expectedInteraction = Interaction(InteractionStatus.OPENED, CURRENT_TIMESTAMP, TOKEN)
         verify(exactly = 1) {
-            interactionsRepository.sendInteraction(
+            interactionsRepository.saveInteraction(
                 eq(INTERACTION_ID),
-                eq(expectedInteraction),
-                any()
+                eq(expectedInteraction)
             )
         }
     }
@@ -101,6 +99,6 @@ class InteractionControllerTest : BaseUnitTest() {
         SUT.onInteraction(INTERACTION_ID, InteractionStatus.DELIVERED)
 
         // Then
-        verify(exactly = 0) { interactionsRepository.sendInteraction(any(), any(), any()) }
+        verify(exactly = 0) { interactionsRepository.saveInteraction(any(), any()) }
     }
 }

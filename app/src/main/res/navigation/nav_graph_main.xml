@@ -33,6 +33,9 @@
         <action
             android:id="@+id/start_to_database"
             app:destination="@id/fragmentDatabase" />
+        <action
+            android:id="@+id/start_to_customEvent"
+            app:destination="@id/fragmentCustomEvent" />
     </fragment>
 
     <fragment
@@ -149,4 +152,9 @@
         android:name="com.reteno.sample.fragments.database.EventReadDialogFragment"
         android:label="fragmentReadEvent"
         tools:layout="@layout/dialog_db_read" />
+    <fragment
+        android:id="@+id/fragmentCustomEvent"
+        android:name="com.reteno.sample.fragments.FragmentCustomEvent"
+        android:label="fragment_custom_event"
+        tools:layout="@layout/fragment_custom_event" />
 </navigation>

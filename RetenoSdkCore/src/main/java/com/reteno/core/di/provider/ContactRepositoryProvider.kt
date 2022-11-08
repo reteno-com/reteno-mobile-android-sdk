@@ -6,13 +6,15 @@ import com.reteno.core.di.base.ProviderWeakReference
 
 class ContactRepositoryProvider(
     private val apiClientProvider: ApiClientProvider,
-    private val restConfigProvider: RestConfigProvider
+    private val configRepositoryProvider: ConfigRepositoryProvider,
+    private val retenoDatabaseManagerProvider: RetenoDatabaseManagerProvider
 ) : ProviderWeakReference<ContactRepository>() {
 
     override fun create(): ContactRepository {
         return ContactRepositoryImpl(
             apiClientProvider.get(),
-            restConfigProvider.get()
+            configRepositoryProvider.get(),
+            retenoDatabaseManagerProvider.get()
         )
     }
 }
