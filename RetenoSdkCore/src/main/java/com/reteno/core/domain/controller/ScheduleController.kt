@@ -55,6 +55,7 @@ class ScheduleController(
         /*@formatter:off*/ Logger.i(TAG, "stopScheduler(): ", "")
         /*@formatter:on*/
         scheduler?.shutdownNow()
+        scheduler = null
     }
 
     /**

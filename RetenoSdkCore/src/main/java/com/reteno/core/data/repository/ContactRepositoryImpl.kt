@@ -31,7 +31,6 @@ class ContactRepositoryImpl(
     override fun saveUserData(user: User) {
         /*@formatter:off*/ Logger.i(TAG, "saveUserData(): ", "user = [" , user , "]")
         /*@formatter:on*/
-        //databaseManager.insertUserData(user)
         OperationQueue.addOperation {
             databaseManager.insertUser(user.toRemote(configRepository.getDeviceId()))
             pushUserData()
