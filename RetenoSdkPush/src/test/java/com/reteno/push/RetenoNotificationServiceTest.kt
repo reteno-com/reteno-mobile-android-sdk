@@ -13,24 +13,27 @@ import com.reteno.push.Constants.KEY_ES_TITLE
 import com.reteno.push.base.robolectric.BaseRobolectricTest
 import com.reteno.push.channel.RetenoNotificationChannel
 import io.mockk.*
-import io.mockk.impl.annotations.MockK
+import io.mockk.impl.annotations.RelaxedMockK
 import junit.framework.TestCase.assertEquals
 import org.junit.Test
 import org.robolectric.Shadows
 import org.robolectric.annotation.Config
 
+// TODO review later (B.S.)
 @Config(sdk = [26])
 class RetenoNotificationServiceTest : BaseRobolectricTest() {
 
     private var pushService: RetenoNotificationService? = null
 
-    @MockK
+    @RelaxedMockK
     private lateinit var interactionController: InteractionController
-    @MockK
+    @RelaxedMockK
     private lateinit var contactController: ContactController
 
     override fun before() {
         super.before()
+        every { reteno.serviceLocator.interactionControllerProvider.get() } returns interactionController
+        every { reteno.serviceLocator.contactControllerProvider.get() } returns contactController
         pushService = RetenoNotificationService()
 
         mockkObject(Util)
@@ -58,9 +61,7 @@ class RetenoNotificationServiceTest : BaseRobolectricTest() {
         pushService!!.onNewToken(expectedToken)
 
         // Then
-        val configRepository = reteno.serviceLocator.configRepositoryProvider.get()
-        val actualToken = configRepository.getFcmToken()
-        assertEquals(expectedToken, actualToken)
+        verify { contactController.onNewFcmToken(eq(expectedToken)) }
     }
 
     @Test
@@ -89,8 +90,6 @@ class RetenoNotificationServiceTest : BaseRobolectricTest() {
         every { RetenoNotificationChannel.isNotificationPermissionGranted() } returns true
         every { RetenoNotificationChannel.isNotificationChannelEnabled(RetenoNotificationChannel.DEFAULT_CHANNEL_ID) } returns true
 
-        every { reteno.serviceLocator.interactionControllerProvider.get() } returns interactionController
-        every { reteno.serviceLocator.contactControllerProvider.get() } returns contactController
         justRun { interactionController.onInteraction(any(), any()) }
         pushService = spyk(RetenoNotificationService())
 
