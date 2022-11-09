@@ -9,6 +9,7 @@ enum class DeviceCategory {
             when (value) {
                 MOBILE.toString() -> MOBILE
                 TABLET.toString() -> TABLET
+                null -> Device.fetchDeviceCategory()
                 else -> MOBILE
             }
     }

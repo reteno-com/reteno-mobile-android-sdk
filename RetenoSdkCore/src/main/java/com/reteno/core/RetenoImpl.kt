@@ -21,11 +21,11 @@ class RetenoImpl(application: Application) : RetenoLifecycleCallbacks, Reteno {
         Companion.application = application
     }
 
-    val serviceLocator: ServiceLocator = ServiceLocator()
+    val serviceLocator: ServiceLocator = ServiceLocator(application)
 
-    private val contactController = serviceLocator.contactControllerProvider.get()
-    private val scheduleController = serviceLocator.scheduleControllerProvider.get()
-    private val eventController = serviceLocator.eventsControllerProvider.get()
+    private val contactController by lazy { serviceLocator.contactControllerProvider.get() }
+    private val scheduleController by lazy { serviceLocator.scheduleControllerProvider.get() }
+    private val eventController by lazy { serviceLocator.eventsControllerProvider.get() }
 
     private val activityHelper: RetenoActivityHelper =
         serviceLocator.retenoActivityHelperProvider.get()

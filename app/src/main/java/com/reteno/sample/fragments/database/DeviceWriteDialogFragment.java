@@ -3,19 +3,15 @@ package com.reteno.sample.fragments.database;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.os.Bundle;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.fragment.app.DialogFragment;
 
 import com.reteno.core.Reteno;
 import com.reteno.core.RetenoImpl;
 import com.reteno.core._interop.DeviceIdInternal;
 import com.reteno.core.data.local.config.DeviceId;
-import com.reteno.core.data.local.database.RetenoDatabaseManagerImpl;
 import com.reteno.core.model.device.Device;
 import com.reteno.core.model.device.DeviceCategory;
 import com.reteno.core.model.device.DeviceOS;
@@ -23,10 +19,9 @@ import com.reteno.sample.SampleApp;
 import com.reteno.sample.databinding.DialogDbWriteDeviceBinding;
 import com.reteno.sample.util.Util;
 
-public class DeviceWriteDialogFragment extends DialogFragment {
+public class DeviceWriteDialogFragment extends BaseDatabaseDialogFragment {
 
     private DialogDbWriteDeviceBinding binding;
-    private RetenoDatabaseManagerImpl databaseManager;
 
     @NonNull
     @Override
@@ -37,11 +32,10 @@ public class DeviceWriteDialogFragment extends DialogFragment {
                 .create();
     }
 
-    @Nullable
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        databaseManager = new RetenoDatabaseManagerImpl();
-        return super.onCreateView(inflater, container, savedInstanceState);
+    public void onDestroyView() {
+        super.onDestroyView();
+        binding = null;
     }
 
     @Override
@@ -92,13 +86,7 @@ public class DeviceWriteDialogFragment extends DialogFragment {
             );
 
             databaseManager.insertDevice(device);
+            Toast.makeText(this.getContext(), "Sent", Toast.LENGTH_SHORT).show();
         });
-    }
-
-    @Override
-    public void onDestroyView() {
-        super.onDestroyView();
-        binding = null;
-        databaseManager = null;
     }
 }

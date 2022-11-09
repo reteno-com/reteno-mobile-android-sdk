@@ -36,7 +36,7 @@ class RetenoTestApp : Application(), RetenoApplication {
         every { Logger.captureEvent(any()) } just runs
 
         retenoInstance = spyk(RetenoImpl(this))
-        every { retenoInstance.getProperty("serviceLocator") } returns spyk<ServiceLocator>()
+        every { retenoInstance.getProperty("serviceLocator") } returns spyk(ServiceLocator(this))
     }
 
     override fun getRetenoInstance(): Reteno {

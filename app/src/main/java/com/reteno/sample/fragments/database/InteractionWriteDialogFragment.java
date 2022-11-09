@@ -3,25 +3,20 @@ package com.reteno.sample.fragments.database;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.os.Bundle;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.fragment.app.DialogFragment;
 
-import com.reteno.core.data.local.database.RetenoDatabaseManagerImpl;
 import com.reteno.core.data.local.model.InteractionModelDb;
 import com.reteno.core.model.interaction.InteractionStatus;
 import com.reteno.core.util.UtilKt;
 import com.reteno.sample.databinding.DialogDbWriteInteractionBinding;
 import com.reteno.sample.util.Util;
 
-public class InteractionWriteDialogFragment extends DialogFragment {
+public class InteractionWriteDialogFragment extends BaseDatabaseDialogFragment {
 
     private DialogDbWriteInteractionBinding binding;
-    private RetenoDatabaseManagerImpl databaseManager;
 
     @NonNull
     @Override
@@ -32,11 +27,10 @@ public class InteractionWriteDialogFragment extends DialogFragment {
                 .create();
     }
 
-    @Nullable
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        databaseManager = new RetenoDatabaseManagerImpl();
-        return super.onCreateView(inflater, container, savedInstanceState);
+    public void onDestroyView() {
+        super.onDestroyView();
+        binding = null;
     }
 
     @Override
@@ -60,14 +54,8 @@ public class InteractionWriteDialogFragment extends DialogFragment {
                         token
                 );
                 databaseManager.insertInteraction(interaction);
+                Toast.makeText(this.getContext(), "Sent", Toast.LENGTH_SHORT).show();
             }
         });
-    }
-
-    @Override
-    public void onDestroyView() {
-        super.onDestroyView();
-        binding = null;
-        databaseManager = null;
     }
 }

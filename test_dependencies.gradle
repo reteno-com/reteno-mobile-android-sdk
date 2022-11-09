@@ -14,6 +14,8 @@ ext.testDependencies = dependencyGroup {
     androidx()
     bouncycastle()
     dexmaker()
+
+    sqlCipher()
 }
 
 /******* Dependency groups *******/
@@ -65,4 +67,9 @@ ext.dexmaker = dependencyGroup {
     androidTestImplementation "com.crittercism.dexmaker:dexmaker:1.4"
     androidTestImplementation "com.crittercism.dexmaker:dexmaker-mockito:1.4"
     androidTestImplementation "com.crittercism.dexmaker:dexmaker-dx:1.4"
+}
+
+ext.sqlCipher = dependencyGroup {
+    testImplementation "net.zetetic:android-database-sqlcipher:4.5.2"
+    testImplementation "androidx.sqlite:sqlite:2.2.0"
 }

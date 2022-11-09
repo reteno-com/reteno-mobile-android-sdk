@@ -46,26 +46,6 @@ class RetenoDatabaseImpl(context: Context) : RetenoDatabase,
         selectionArgs: Array<String>?,
         groupBy: String?,
         having: String?,
-        orderBy: String?
-    ): Cursor {
-        return getSQLiteDatabaseWithRetries().query(
-            table,
-            columns,
-            selection,
-            selectionArgs,
-            groupBy,
-            having,
-            orderBy
-        )
-    }
-
-    override fun query(
-        table: String,
-        columns: Array<String>,
-        selection: String?,
-        selectionArgs: Array<String>?,
-        groupBy: String?,
-        having: String?,
         orderBy: String?,
         limit: String?
     ): Cursor =
@@ -300,7 +280,7 @@ class RetenoDatabaseImpl(context: Context) : RetenoDatabase,
         }
     }
 
-    override fun cleanEventsRowsInParentTableWithNoChildren() {
+    override fun cleanUnlinkedEvents() {
         val rawQuery = "DELETE FROM ${DbSchema.EventsSchema.TABLE_NAME_EVENTS} WHERE ${DbSchema.EventsSchema.COLUMN_EVENTS_ID} NOT IN " +
                 "(SELECT ${DbSchema.EventsSchema.COLUMN_EVENTS_ID} FROM ${DbSchema.EventSchema.TABLE_NAME_EVENT})"
         getSQLiteDatabaseWithRetries().execSQL(rawQuery)
