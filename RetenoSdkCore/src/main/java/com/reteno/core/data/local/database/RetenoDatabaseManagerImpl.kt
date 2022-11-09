@@ -268,12 +268,21 @@ class RetenoDatabaseManagerImpl(private val database: RetenoDatabase) : RetenoDa
 
         var cursor: Cursor? = null
         try {
-            cursor = database.query(
-                table = TABLE_NAME_EVENTS,
-                columns = DbSchema.EventsSchema.getAllColumns(),
-                selection = "$COLUMN_EVENTS_DEVICE_ID=? AND $COLUMN_EVENTS_EXTERNAL_USER_ID=?",
-                selectionArgs = arrayOf(events.deviceId, events.externalUserId ?: "NULL")
-            )
+            cursor = if (events.externalUserId == null) {
+                database.query(
+                    table = TABLE_NAME_EVENTS,
+                    columns = DbSchema.EventsSchema.getAllColumns(),
+                    selection = "$COLUMN_EVENTS_DEVICE_ID=? AND $COLUMN_EVENTS_EXTERNAL_USER_ID IS NULL",
+                    selectionArgs = arrayOf(events.deviceId)
+                )
+            } else {
+                database.query(
+                    table = TABLE_NAME_EVENTS,
+                    columns = DbSchema.EventsSchema.getAllColumns(),
+                    selection = "$COLUMN_EVENTS_DEVICE_ID=? AND $COLUMN_EVENTS_EXTERNAL_USER_ID=?",
+                    selectionArgs = arrayOf(events.deviceId, events.externalUserId)
+                )
+            }
 
             if (cursor.moveToFirst()) {
                 cursor.getLongOrNull(cursor.getColumnIndex(COLUMN_EVENTS_ID))?.let {
