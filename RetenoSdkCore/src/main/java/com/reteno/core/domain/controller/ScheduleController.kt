@@ -1,6 +1,8 @@
 package com.reteno.core.domain.controller
 
+import androidx.work.WorkManager
 import com.reteno.core.data.remote.PushOperationQueue
+import com.reteno.core.data.workmanager.PushDataWorker
 import com.reteno.core.util.Logger
 import com.reteno.core.util.RetenoThreadFactory
 import java.util.concurrent.Executors
@@ -11,7 +13,8 @@ import kotlin.random.Random
 class ScheduleController(
     private val contactController: ContactController,
     private val interactionController: InteractionController,
-    private val eventController: EventController
+    private val eventController: EventController,
+    private val workManager: WorkManager
 ) {
 
     companion object {
@@ -45,6 +48,18 @@ class ScheduleController(
             REGULAR_DELAY + Random.nextLong(RANDOM_DELAY),
             REGULAR_DELAY,
             TimeUnit.MILLISECONDS
+        )
+
+        enqueuePushWorkManagerPeriodicWork()
+    }
+
+    private fun enqueuePushWorkManagerPeriodicWork() {
+        /*@formatter:off*/ Logger.i(TAG, "enqueuePushWorkManagerPeriodicWork(): ")
+        /*@formatter:on*/
+        workManager.enqueueUniquePeriodicWork(
+            PushDataWorker.PUSH_DATA_WORK_NAME,
+            PushDataWorker.EXISTING_PERIODIC_WORK_POLICY,
+            PushDataWorker.buildWorker()
         )
     }
 

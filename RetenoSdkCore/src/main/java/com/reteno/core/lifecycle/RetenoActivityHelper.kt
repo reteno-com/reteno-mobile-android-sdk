@@ -159,10 +159,9 @@ class RetenoActivityHelper {
     /**
      * Checks whether activity is in foreground.
      */
-    internal fun canPresentMessages(): Boolean {
-        return (currentActivity != null && !currentActivity!!.isFinishing
-                && !isActivityPaused)
-    }
+    internal fun canPresentMessages(): Boolean =
+        currentActivity != null && !currentActivity!!.isFinishing && !isActivityPaused
+
 
     /**
      * Runs any pending actions that have been queued.

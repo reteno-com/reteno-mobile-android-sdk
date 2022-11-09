@@ -123,7 +123,6 @@ object Util {
      * To disable change system property to any other one
      * adb shell setprop debug.com.reteno.debug.view disable
      */
-    @JvmStatic
     internal fun isDebugView(): Boolean {
         val debugString = getSysProp(PROP_KEY_DEBUG_VIEW)
         /*@formatter:off*/ Logger.i(TAG, "isDebugView(): debugString = ", debugString)
@@ -140,11 +139,8 @@ object Util {
         var propvalue = ""
         try {
             process = ProcessBuilder("/system/bin/getprop", key).redirectErrorStream(true).start()
-            val br = BufferedReader(InputStreamReader(process.inputStream))
-            var line: String
-            while (br.readLine().also { line = it } != null) {
-                propvalue = line
-            }
+            val reader = BufferedReader(InputStreamReader(process.inputStream))
+            propvalue = reader.readLine()
             process.destroy()
         } catch (e: Exception) {
             Logger.i(TAG, "getSysProp($key): ", e.message)

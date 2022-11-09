@@ -418,6 +418,18 @@ class RetenoDatabaseManagerImpl(private val database: RetenoDatabase) : RetenoDa
         database.cleanUnlinkedEvents()
     }
 
+    override fun isDatabaseEmpty(): Boolean {
+        val devices = getDevices()
+        val users = getUser()
+        val interactions = getInteractions()
+        val events = getEvents()
+        
+        val result = (devices.isEmpty() && users.isEmpty() && interactions.isEmpty() && events.isEmpty())
+        /*@formatter:off*/ Logger.i(TAG, "isDatabaseEmpty(): ", "result = $result")
+        /*@formatter:on*/
+        return result
+    }
+
     //==============================================================================================
     private fun handleSQLiteError(log: String, t: Throwable) {
         /*@formatter:off*/ Logger.e(TAG, "handleSQLiteError(): $log", t)
