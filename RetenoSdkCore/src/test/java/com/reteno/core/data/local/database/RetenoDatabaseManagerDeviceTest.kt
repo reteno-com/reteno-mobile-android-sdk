@@ -20,7 +20,7 @@ import junit.framework.TestCase.assertTrue
 import net.sqlcipher.Cursor
 
 
-class RetenoDatabaseManagerImplDeviceTest : BaseRobolectricTest() {
+class RetenoDatabaseManagerDeviceTest : BaseRobolectricTest() {
 
     // region constants ----------------------------------------------------------------------------
     companion object Constants {

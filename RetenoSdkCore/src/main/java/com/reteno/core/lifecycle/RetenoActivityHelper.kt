@@ -65,7 +65,7 @@ class RetenoActivityHelper {
         }
     }
 
-    fun registerActivityLifecycleCallbacks(
+    private fun registerActivityLifecycleCallbacks(
         key: String,
         callbacks: RetenoLifecycleCallbacks
     ) {

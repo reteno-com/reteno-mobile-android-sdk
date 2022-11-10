@@ -7,7 +7,7 @@ import junit.framework.TestCase.*
 import org.junit.Test
 
 
-class RetenoDatabaseManagerImplTest : BaseRobolectricTest() {
+class RetenoDatabaseManagerTest : BaseRobolectricTest() {
 
 
     // region helper fields ------------------------------------------------------------------------

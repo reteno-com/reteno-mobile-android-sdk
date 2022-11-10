@@ -129,7 +129,6 @@ class RetenoDatabaseManagerImpl(private val database: RetenoDatabase) : RetenoDa
         }
     }
 
-    // TODO: Not covered with Unit tests
     override fun getUser(limit: Int?): List<UserDTO> {
         val userEvents: MutableList<UserDTO> = mutableListOf()
         val rawQueryLimit: String = limit?.let { " LIMIT $it" } ?: ""
