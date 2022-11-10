@@ -5,6 +5,7 @@ import com.reteno.core.data.remote.PushOperationQueue
 import com.reteno.core.data.workmanager.PushDataWorker
 import com.reteno.core.util.Logger
 import com.reteno.core.util.RetenoThreadFactory
+import com.reteno.core.util.Util
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
@@ -19,6 +20,7 @@ class ScheduleController(
 
     companion object {
         private val TAG: String = ScheduleController::class.java.simpleName
+        private const val REGULAR_DELAY_DEBUG_VIEW = 10_000L
         private const val REGULAR_DELAY = 30_000L
         private const val RANDOM_DELAY = 10_000L
         private const val FORCE_PUSH_MIN_DELAY = 1_000L
@@ -39,14 +41,19 @@ class ScheduleController(
     fun startScheduler() {
         /*@formatter:off*/ Logger.i(TAG, "startScheduler(): ", "")
         /*@formatter:on*/
+        val delay = if (Util.isDebugView()) {
+            REGULAR_DELAY_DEBUG_VIEW
+        } else {
+            REGULAR_DELAY
+        }
         scheduler?.shutdownNow()
         scheduler = Executors.newScheduledThreadPool(1, RetenoThreadFactory())
         scheduler?.scheduleAtFixedRate(
             {
                 sendData()
             },
-            REGULAR_DELAY + Random.nextLong(RANDOM_DELAY),
-            REGULAR_DELAY,
+            delay + Random.nextLong(RANDOM_DELAY),
+            delay,
             TimeUnit.MILLISECONDS
         )
 
