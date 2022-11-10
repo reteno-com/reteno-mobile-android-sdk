@@ -1,6 +1,5 @@
 package com.reteno.core.data.repository
 
-import android.util.Log
 import com.reteno.core.base.robolectric.BaseRobolectricTest
 import com.reteno.core.data.local.config.DeviceId
 import com.reteno.core.data.local.config.DeviceIdHelper
@@ -41,7 +40,7 @@ class ConfigRepositoryTest : BaseRobolectricTest() {
         super.before()
         MockKAnnotations.init(this)
 
-        restConfig = spyk(RestConfig(DeviceIdHelper(sharedPrefsManager)), recordPrivateCalls = true)
+        restConfig = spyk(RestConfig(DeviceIdHelper(sharedPrefsManager), ""), recordPrivateCalls = true)
         SUT = ConfigRepositoryImpl(sharedPrefsManager, restConfig)
     }
 

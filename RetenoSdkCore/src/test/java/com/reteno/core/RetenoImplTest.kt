@@ -49,7 +49,7 @@ class RetenoImplTest : BaseUnitTest() {
     fun externalId_whenSetUserAttributes_thenInteractWithController() {
         val application = mockk<Application>()
 
-        val retenoImpl = RetenoImpl(application)
+        val retenoImpl = RetenoImpl(application, "")
 
         retenoImpl.setUserAttributes(EXTERNAL_USER_ID)
         verify { contactController.setExternalUserId(eq(EXTERNAL_USER_ID)) }
@@ -60,7 +60,7 @@ class RetenoImplTest : BaseUnitTest() {
     fun externalIdAndUserNull_whenSetUserAttributesWithUser_thenInteractWithController() {
         val application = mockk<Application>()
 
-        val retenoImpl = RetenoImpl(application)
+        val retenoImpl = RetenoImpl(application, "")
 
         retenoImpl.setUserAttributes(EXTERNAL_USER_ID, null)
         verify { contactController.setExternalUserId(eq(EXTERNAL_USER_ID)) }
@@ -72,7 +72,7 @@ class RetenoImplTest : BaseUnitTest() {
         val user = mockk<User>()
         val application = mockk<Application>()
 
-        val retenoImpl = RetenoImpl(application)
+        val retenoImpl = RetenoImpl(application, "")
 
         retenoImpl.setUserAttributes(EXTERNAL_USER_ID, user)
         verify { contactController.setExternalUserId(eq(EXTERNAL_USER_ID)) }
@@ -82,7 +82,7 @@ class RetenoImplTest : BaseUnitTest() {
     @Test
     fun whenLogEvent_thenInteractWithEventController() {
         val application = mockk<Application>()
-        val retenoImpl = RetenoImpl(application)
+        val retenoImpl = RetenoImpl(application, "")
 
         val event = Event(
             eventTypeKey = "EVENT_TYPE_KEY",
@@ -103,7 +103,7 @@ class RetenoImplTest : BaseUnitTest() {
             lambda<() -> Unit>().captured.invoke()
         }
 
-        val retenoImpl = RetenoImpl(application)
+        val retenoImpl = RetenoImpl(application, "")
 
         retenoImpl.setDeviceIdMode(deviceIdMode, callback)
         verify { contactController.setDeviceIdMode(deviceIdMode, any()) }
@@ -118,7 +118,7 @@ class RetenoImplTest : BaseUnitTest() {
         val callback = { lambdaCalled = true }
         justRun { contactController.setDeviceIdMode(any(), captureLambda()) }
 
-        val retenoImpl = RetenoImpl(application)
+        val retenoImpl = RetenoImpl(application, "")
 
         retenoImpl.setDeviceIdMode(deviceIdMode, callback)
         verify { contactController.setDeviceIdMode(deviceIdMode, any()) }
@@ -127,7 +127,7 @@ class RetenoImplTest : BaseUnitTest() {
 
     @Test
     fun whenResumeApp_thenStartScheduler() {
-        val retenoImpl = RetenoImpl(mockk())
+        val retenoImpl = RetenoImpl(mockk(), "")
         retenoImpl.resume(mockk())
 
         verify { scheduleController.startScheduler() }
@@ -135,20 +135,18 @@ class RetenoImplTest : BaseUnitTest() {
 
     @Test
     fun whenPauseApp_thenStopScheduler() {
-        val retenoImpl = RetenoImpl(mockk())
+        val retenoImpl = RetenoImpl(mockk(), "")
         retenoImpl.pause(mockk())
 
         verify { scheduleController.stopScheduler() }
     }
     @Test
     fun whenForcePush_thenCallScheduleController() {
-        val retenoImpl = RetenoImpl(mockk())
+        val retenoImpl = RetenoImpl(mockk(), "")
 
         retenoImpl.forcePushData()
 
         verify(exactly = 1) { scheduleController.forcePush() }
 
     }
-
-
 }

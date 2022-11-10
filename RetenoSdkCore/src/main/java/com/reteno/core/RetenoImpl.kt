@@ -13,7 +13,7 @@ import com.reteno.core.util.Logger
 import java.time.ZonedDateTime
 
 
-class RetenoImpl(application: Application) : RetenoLifecycleCallbacks, Reteno {
+class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleCallbacks, Reteno {
 
     init {
         /*@formatter:off*/ Logger.i(TAG, "RetenoImpl(): ", "context = [" , application , "]")
@@ -21,7 +21,7 @@ class RetenoImpl(application: Application) : RetenoLifecycleCallbacks, Reteno {
         Companion.application = application
     }
 
-    val serviceLocator: ServiceLocator = ServiceLocator(application)
+    val serviceLocator: ServiceLocator = ServiceLocator(application, accessKey)
 
     private val contactController by lazy { serviceLocator.contactControllerProvider.get() }
     private val scheduleController by lazy { serviceLocator.scheduleControllerProvider.get() }

@@ -45,7 +45,7 @@ class ScheduleControllerTest : BaseRobolectricTest() {
     @Test
     fun firstCalled_scheduleNewFixRateTask() {
         val controller =
-            ScheduleController(contactController, interactionController, eventController, mockk())
+            ScheduleController(contactController, interactionController, eventController, mockk(relaxed = true))
 
         controller.startScheduler()
 
@@ -55,7 +55,7 @@ class ScheduleControllerTest : BaseRobolectricTest() {
     @Test
     fun executionTask_addedPushOperation() {
         val controller =
-            ScheduleController(contactController, interactionController, eventController, mockk())
+            ScheduleController(contactController, interactionController, eventController, mockk(relaxed = true))
 
         val currentThreadExecutor = Executor(Runnable::run)
         every { PushOperationQueue.addOperation(any()) } answers {
@@ -76,7 +76,7 @@ class ScheduleControllerTest : BaseRobolectricTest() {
     @Test
     fun stopSchedule() {
         val controller =
-            ScheduleController(contactController, interactionController, eventController, mockk())
+            ScheduleController(contactController, interactionController, eventController, mockk(relaxed = true))
 
         controller.startScheduler()
         controller.stopScheduler()
@@ -87,7 +87,7 @@ class ScheduleControllerTest : BaseRobolectricTest() {
     @Test
     fun forcePush_addPushOperation() {
         val controller =
-            ScheduleController(contactController, interactionController, eventController, mockk())
+            ScheduleController(contactController, interactionController, eventController, mockk(relaxed = true))
 
         controller.forcePush()
 
@@ -98,7 +98,7 @@ class ScheduleControllerTest : BaseRobolectricTest() {
     @Test
     fun forcePushCalledTwiceOneSecond_doesNotAddPushOperationTwice() {
         val controller =
-            ScheduleController(contactController, interactionController, eventController, mockk())
+            ScheduleController(contactController, interactionController, eventController, mockk(relaxed = true))
 
         controller.forcePush()
         controller.forcePush()
