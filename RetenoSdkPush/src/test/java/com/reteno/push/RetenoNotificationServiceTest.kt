@@ -19,7 +19,6 @@ import org.junit.Test
 import org.robolectric.Shadows
 import org.robolectric.annotation.Config
 
-// TODO review later (B.S.)
 @Config(sdk = [26])
 class RetenoNotificationServiceTest : BaseRobolectricTest() {
 
@@ -109,8 +108,6 @@ class RetenoNotificationServiceTest : BaseRobolectricTest() {
 
         every { RetenoNotificationChannel.isNotificationChannelEnabled(RetenoNotificationChannel.DEFAULT_CHANNEL_ID) } returns false
 
-        every { reteno.serviceLocator.interactionControllerProvider.get() } returns interactionController
-        every { reteno.serviceLocator.contactControllerProvider.get() } returns contactController
         justRun { interactionController.onInteraction(any(), any()) }
         pushService = spyk(RetenoNotificationService())
 
@@ -130,8 +127,6 @@ class RetenoNotificationServiceTest : BaseRobolectricTest() {
 
         every { RetenoNotificationChannel.isNotificationPermissionGranted() } returns false
 
-        every { reteno.serviceLocator.interactionControllerProvider.get() } returns interactionController
-        every { reteno.serviceLocator.contactControllerProvider.get() } returns contactController
         justRun { interactionController.onInteraction(any(), any()) }
         pushService = spyk(RetenoNotificationService())
 
