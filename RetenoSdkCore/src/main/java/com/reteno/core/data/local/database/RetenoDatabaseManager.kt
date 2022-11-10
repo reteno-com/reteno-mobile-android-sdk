@@ -26,4 +26,6 @@ interface RetenoDatabaseManager {
     fun getEvents(limit: Int? = null): List<EventsDTO>
     fun getEventsCount(): Long
     fun deleteEvents(count: Int, oldest: Boolean = true)
+
+    fun isDatabaseEmpty(): Boolean
 }

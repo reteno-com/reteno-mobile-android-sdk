@@ -1,6 +1,7 @@
 package com.reteno.core.data.local.database
 
 import android.content.ContentValues
+import androidx.core.database.getLongOrNull
 import androidx.core.database.getStringOrNull
 
 import com.reteno.core.base.robolectric.BaseRobolectricTest
@@ -8,6 +9,7 @@ import com.reteno.core.data.remote.model.user.AddressDTO
 import com.reteno.core.data.remote.model.user.UserAttributesDTO
 import com.reteno.core.data.remote.model.user.UserCustomFieldDTO
 import com.reteno.core.data.remote.model.user.UserDTO
+import com.reteno.core.util.Logger
 import org.junit.Assert.assertEquals
 
 import org.junit.Test
@@ -15,10 +17,11 @@ import org.junit.Test
 import io.mockk.*
 import io.mockk.impl.annotations.MockK
 import io.mockk.impl.annotations.RelaxedMockK
+import junit.framework.TestCase.assertTrue
 import net.sqlcipher.Cursor
 
 
-class RetenoDatabaseManagerImplUserTest : BaseRobolectricTest() {
+class RetenoDatabaseManagerUserTest : BaseRobolectricTest() {
 
     // region constants ----------------------------------------------------------------------------
     companion object {
@@ -49,6 +52,37 @@ class RetenoDatabaseManagerImplUserTest : BaseRobolectricTest() {
         private const val TOWN = "TOWN"
         private const val ADDRESS = "ADDRESS"
         private const val POSTCODE = "POSTCODE"
+
+        private val userAddressDTO = AddressDTO(
+            region = REGION,
+            town = TOWN,
+            address = ADDRESS,
+            postcode = POSTCODE
+        )
+
+        private val customField1 =
+            UserCustomFieldDTO(key = CUSTOM_FIELD_KEY_1, value = CUSTOM_FIELD_VALUE_1)
+        private val customField2 =
+            UserCustomFieldDTO(key = CUSTOM_FIELD_KEY_2, value = CUSTOM_FIELD_VALUE_2)
+
+        private val userAttributesDTO = UserAttributesDTO(
+            phone = PHONE,
+            email = EMAIL,
+            firstName = FIRST_NAME,
+            lastName = LAST_NAME,
+            languageCode = LANGUAGE_CODE,
+            timeZone = TIME_ZONE,
+            address = userAddressDTO,
+            fields = listOf(customField1, customField2)
+        )
+        private val userDTO = UserDTO(
+            deviceId = DEVICE_ID,
+            externalUserId = EXTERNAL_USER_ID,
+            userAttributes = userAttributesDTO,
+            subscriptionKeys = SUBSCRIPTION_KEYS,
+            groupNamesInclude = GROUP_NAMES_INCLUDE,
+            groupNamesExclude = GROUP_NAMES_EXCLUDE
+        )
 
         private const val COLUMN_INDEX_TIMESTAMP = 1
         private const val COLUMN_INDEX_USER_ROW_ID = 2
@@ -104,36 +138,8 @@ class RetenoDatabaseManagerImplUserTest : BaseRobolectricTest() {
     @Test
     fun givenValidFullUserProvided_whenInsertUser_thenUserIsSavedToDb() {
         // Given
-        val customField1 = UserCustomFieldDTO(key = CUSTOM_FIELD_KEY_1, value = CUSTOM_FIELD_VALUE_1)
-        val customField2 = UserCustomFieldDTO(key = CUSTOM_FIELD_KEY_2, value = CUSTOM_FIELD_VALUE_2)
-
-        val userAddressDTO = AddressDTO(
-            region = REGION,
-            town = TOWN,
-            address = ADDRESS,
-            postcode = POSTCODE
-        )
-
-        val userAttributesDTO = UserAttributesDTO(
-            phone = PHONE,
-            email = EMAIL,
-            firstName = FIRST_NAME,
-            lastName = LAST_NAME,
-            languageCode = LANGUAGE_CODE,
-            timeZone = TIME_ZONE,
-            address = userAddressDTO,
-            fields = listOf(customField1, customField2)
-        )
-        val user = UserDTO(
-            deviceId = DEVICE_ID,
-            externalUserId = EXTERNAL_USER_ID,
-            userAttributes = userAttributesDTO,
-            subscriptionKeys = SUBSCRIPTION_KEYS,
-            groupNamesInclude = GROUP_NAMES_INCLUDE,
-            groupNamesExclude = GROUP_NAMES_EXCLUDE
-        )
         val expectedContentValuesUser = ContentValues().apply {
-            putUser(user)
+            putUser(userDTO)
         }
         val expectedContentValuesUserAttributes = ContentValues().apply {
             putUserAttributes(ROW_ID_INSERTED, userAttributesDTO)
@@ -157,7 +163,7 @@ class RetenoDatabaseManagerImplUserTest : BaseRobolectricTest() {
         }
 
         // When
-        SUT?.insertUser(user)
+        SUT?.insertUser(userDTO)
 
         // Then
         verify(exactly = 1) {
@@ -174,28 +180,9 @@ class RetenoDatabaseManagerImplUserTest : BaseRobolectricTest() {
     @Test
     fun givenValidUserWithoutAddressProvided_whenInsertUser_thenUserIsSavedToDb() {
         // Given
-        val customField1 = UserCustomFieldDTO(key = CUSTOM_FIELD_KEY_1, value = CUSTOM_FIELD_VALUE_1)
-        val customField2 = UserCustomFieldDTO(key = CUSTOM_FIELD_KEY_2, value = CUSTOM_FIELD_VALUE_2)
+        val userAttributesDTO = userAttributesDTO.copy(address = null)
+        val user = userDTO.copy(userAttributes = userAttributesDTO)
 
-        val userAddressDTO = null
-        val userAttributesDTO = UserAttributesDTO(
-            phone = PHONE,
-            email = EMAIL,
-            firstName = FIRST_NAME,
-            lastName = LAST_NAME,
-            languageCode = LANGUAGE_CODE,
-            timeZone = TIME_ZONE,
-            address = userAddressDTO,
-            fields = listOf(customField1, customField2)
-        )
-        val user = UserDTO(
-            deviceId = DEVICE_ID,
-            externalUserId = EXTERNAL_USER_ID,
-            userAttributes = userAttributesDTO,
-            subscriptionKeys = SUBSCRIPTION_KEYS,
-            groupNamesInclude = GROUP_NAMES_INCLUDE,
-            groupNamesExclude = GROUP_NAMES_EXCLUDE
-        )
         val expectedContentValuesUser = ContentValues().apply {
             putUser(user)
         }
@@ -236,15 +223,7 @@ class RetenoDatabaseManagerImplUserTest : BaseRobolectricTest() {
     @Test
     fun givenValidUserWithoutAttributesProvided_whenInsertUser_thenUserIsSavedToDb() {
         // Given
-        val userAttributesDTO = null
-        val user = UserDTO(
-            deviceId = DEVICE_ID,
-            externalUserId = EXTERNAL_USER_ID,
-            userAttributes = userAttributesDTO,
-            subscriptionKeys = SUBSCRIPTION_KEYS,
-            groupNamesInclude = GROUP_NAMES_INCLUDE,
-            groupNamesExclude = GROUP_NAMES_EXCLUDE
-        )
+        val user = userDTO.copy(userAttributes = null)
         val expectedContentValuesUser = ContentValues().apply {
             putUser(user)
         }
@@ -272,6 +251,90 @@ class RetenoDatabaseManagerImplUserTest : BaseRobolectricTest() {
         }
         assertEquals(expectedContentValuesUser, actualContentValuesUser)
         assertEquals(expectedContentValuesUserAttributes, actualContentValuesUserAttributes)
+    }
+
+    @Test
+    fun givenUsersAvailableInDatabase_whenGetUser_thenUsersReturned() {
+        // Given
+        mockCursorRecordsNumber(2)
+        mockDatabaseQuery()
+
+        val user1 = userDTO
+        val user2 = userDTO.copy(userAttributes = null)
+        every { cursor.getUser() } returns user1 andThen user2
+
+        // When
+        val users = SUT?.getUser(null)
+
+        // Then
+        verify(exactly = 1) { database.rawQuery(any(), any()) }
+        verify(exactly = 1) { cursor.close() }
+
+        assertEquals(2, users?.size)
+        assertEquals(user1, users?.get(0))
+        assertEquals(user2, users?.get(1))
+    }
+
+    @Test
+    fun givenUsersNotAvailableInDatabase_whenGetUser_thenEmptyListReturned() {
+        // Given
+        mockCursorRecordsNumber(0)
+        mockDatabaseQuery()
+
+        // When
+        val users = SUT?.getUser(null)
+
+        // Then
+        verify(exactly = 1) { database.rawQuery(any(), any()) }
+        verify(exactly = 1) { cursor.close() }
+
+        assertEquals(0, users?.size)
+    }
+
+    @Test
+    fun givenUserCorruptedInDatabaseAndRowIdDetected_whenGetUser_thenCorruptedRowRemoved() {
+        // Given
+        mockCursorRecordsNumber(1)
+        mockDatabaseQuery()
+
+        every { cursor.getUser() } returns null
+        every { cursor.getLongOrNull(COLUMN_INDEX_USER_ROW_ID) } returns ROW_ID_CORRUPTED
+
+        // When
+        val users = SUT?.getUser(null)
+
+        // Then
+        verify(exactly = 1) { database.rawQuery(any(), any()) }
+        verify(exactly = 1) {
+            database.delete(
+                DbSchema.UserSchema.TABLE_NAME_USER,
+                "${DbSchema.UserSchema.COLUMN_USER_ROW_ID}=?",
+                arrayOf(ROW_ID_CORRUPTED.toString())
+            )
+        }
+        verify(exactly = 1) { cursor.close() }
+
+        assertTrue(users?.isEmpty() ?: false)
+    }
+
+    @Test
+    fun givenUserCorruptedInDatabaseAndRowIdNotDetected_whenGetUser_thenExceptionIsLogged() {
+        // Given
+        mockCursorRecordsNumber(1)
+        mockDatabaseQuery()
+        every { cursor.getUser() } returns null
+        every { cursor.getLongOrNull(COLUMN_INDEX_USER_ROW_ID) } returns null
+
+        // When
+        val users = SUT?.getUser(null)
+
+        // Then
+        verify(exactly = 1) { database.rawQuery(any(), any()) }
+        verify(exactly = 1) { Logger.e(any(), any(), any()) }
+        verify(exactly = 0) { database.delete(any(), any(), any()) }
+        verify(exactly = 1) { cursor.close() }
+
+        assertTrue(users?.isEmpty() ?: false)
     }
 
     @Test
@@ -376,14 +439,7 @@ class RetenoDatabaseManagerImplUserTest : BaseRobolectricTest() {
     }
 
     private fun mockDatabaseQuery() {
-        every {
-            database.query(
-                table = DbSchema.InteractionSchema.TABLE_NAME_INTERACTION,
-                columns = DbSchema.InteractionSchema.getAllColumns(),
-                orderBy = any(),
-                limit = null
-            )
-        } returns cursor
+        every { database.rawQuery(any(), any()) } returns cursor
     }
     // endregion helper methods --------------------------------------------------------------------
 }

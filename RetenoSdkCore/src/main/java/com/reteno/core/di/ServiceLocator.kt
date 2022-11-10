@@ -59,11 +59,13 @@ class ServiceLocator(context: Context) {
     val eventsControllerProvider: EventsControllerProvider =
         EventsControllerProvider(eventsRepositoryProvider)
 
+    private val workManagerProvider: WorkManagerProvider = WorkManagerProvider(context)
     val scheduleControllerProvider: ScheduleControllerProvider =
         ScheduleControllerProvider(
             contactControllerProvider,
             interactionControllerProvider,
-            eventsControllerProvider
+            eventsControllerProvider,
+            workManagerProvider
         )
 
     init {

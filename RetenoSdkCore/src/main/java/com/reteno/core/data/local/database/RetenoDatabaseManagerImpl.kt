@@ -129,7 +129,6 @@ class RetenoDatabaseManagerImpl(private val database: RetenoDatabase) : RetenoDa
         }
     }
 
-    // TODO: Not covered with Unit tests
     override fun getUser(limit: Int?): List<UserDTO> {
         val userEvents: MutableList<UserDTO> = mutableListOf()
         val rawQueryLimit: String = limit?.let { " LIMIT $it" } ?: ""
@@ -408,6 +407,9 @@ class RetenoDatabaseManagerImpl(private val database: RetenoDatabase) : RetenoDa
 
     override fun getEventsCount(): Long = database.getRowCount(TABLE_NAME_EVENT)
 
+    /**
+     * Call [database.cleanUnlinkedEvents] each time you remove events from Event table (Child table)
+     */
     override fun deleteEvents(count: Int, oldest: Boolean) {
         val order = if (oldest) "ASC" else "DESC"
         database.delete(
@@ -416,6 +418,21 @@ class RetenoDatabaseManagerImpl(private val database: RetenoDatabase) : RetenoDa
         )
 
         database.cleanUnlinkedEvents()
+    }
+
+    override fun isDatabaseEmpty(): Boolean {
+        val deviceCount = getDeviceCount()
+        val userCount = getUserCount()
+        val interactionCount = getInteractionCount()
+        val eventCount = getEventsCount()
+
+        val result = deviceCount == 0L
+                && userCount == 0L
+                && interactionCount == 0L
+                && eventCount == 0L
+        /*@formatter:off*/ Logger.i(TAG, "isDatabaseEmpty(): ", "result = $result")
+        /*@formatter:on*/
+        return result
     }
 
     //==============================================================================================
