@@ -36,6 +36,13 @@ interface Reteno {
     // TODO for testing, need review in future!
     fun logEvent(eventType: String, date: ZonedDateTime, parameters: List<Parameter>?)
 
+
+    /**
+     *  Sends stored data without waiting for a send queue.
+     *  But not more often than [com.reteno.core.domain.controller.ScheduleController.Companion.FORCE_PUSH_MIN_DELAY] millis.
+     */
+    fun forcePushData()
+
     companion object {
         val TAG: String = Reteno::class.java.simpleName
     }

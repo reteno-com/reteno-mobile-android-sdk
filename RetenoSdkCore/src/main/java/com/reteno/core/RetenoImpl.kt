@@ -91,6 +91,12 @@ class RetenoImpl(application: Application) : RetenoLifecycleCallbacks, Reteno {
         eventController.saveEvent(Event(eventType, date, parameters))
     }
 
+    override fun forcePushData() {
+        /*@formatter:off*/ Logger.i(TAG, "forcePushData(): ", "")
+        /*@formatter:on*/
+        scheduleController.forcePush()
+    }
+
     private fun setUserData(used: User) {
         /*@formatter:off*/ Logger.i(TAG, "setUserData(): ", "used = [" , used , "]")
         /*@formatter:on*/

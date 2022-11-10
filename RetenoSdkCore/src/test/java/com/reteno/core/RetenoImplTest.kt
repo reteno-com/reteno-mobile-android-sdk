@@ -140,5 +140,15 @@ class RetenoImplTest : BaseUnitTest() {
 
         verify { scheduleController.stopScheduler() }
     }
+    @Test
+    fun whenForcePush_thenCallScheduleController() {
+        val retenoImpl = RetenoImpl(mockk())
+
+        retenoImpl.forcePushData()
+
+        verify(exactly = 1) { scheduleController.forcePush() }
+
+    }
+
 
 }
