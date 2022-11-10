@@ -5,21 +5,28 @@ import com.reteno.core.base.BaseUnitTest
 import com.reteno.core.data.local.config.DeviceIdMode
 import com.reteno.core.di.ServiceLocator
 import com.reteno.core.domain.controller.ContactController
-import com.reteno.core.domain.controller.InteractionController
+import com.reteno.core.domain.controller.EventController
+import com.reteno.core.domain.controller.ScheduleController
+import com.reteno.core.model.event.Event
+import com.reteno.core.model.event.Parameter
 import com.reteno.core.model.user.User
 import io.mockk.*
 import io.mockk.impl.annotations.RelaxedMockK
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
-// TODO review later (B.S.)
-class RetenoImplTest: BaseUnitTest() {
+import java.time.ZonedDateTime
+
+class RetenoImplTest : BaseUnitTest() {
 
     @RelaxedMockK
     private lateinit var contactController: ContactController
 
     @RelaxedMockK
-    private lateinit var interactionController: InteractionController
+    private lateinit var scheduleController: ScheduleController
+
+    @RelaxedMockK
+    private lateinit var eventController: EventController
 
     companion object {
         private const val EXTERNAL_USER_ID = "external_user_ID"
@@ -29,8 +36,8 @@ class RetenoImplTest: BaseUnitTest() {
         super.before()
         mockkConstructor(ServiceLocator::class)
         every { anyConstructed<ServiceLocator>().contactControllerProvider.get() } returns contactController
-        every { anyConstructed<ServiceLocator>().scheduleControllerProvider.get() } returns mockk(relaxed = true)
-        every { anyConstructed<ServiceLocator>().eventsControllerProvider.get() } returns mockk(relaxed = true)
+        every { anyConstructed<ServiceLocator>().scheduleControllerProvider.get() } returns scheduleController
+        every { anyConstructed<ServiceLocator>().eventsControllerProvider.get() } returns eventController
     }
 
     override fun after() {
@@ -73,6 +80,20 @@ class RetenoImplTest: BaseUnitTest() {
     }
 
     @Test
+    fun whenLogEvent_thenInteractWithEventController() {
+        val application = mockk<Application>()
+        val retenoImpl = RetenoImpl(application)
+
+        val event = Event(
+            eventTypeKey = "EVENT_TYPE_KEY",
+            occurred = ZonedDateTime.now(),
+            params = listOf(Parameter("key", "value"))
+        )
+        retenoImpl.logEvent(event.eventTypeKey, event.occurred, event.params)
+        verify { eventController.saveEvent(event) }
+    }
+
+    @Test
     fun whenSetDeviceIdMode_thenIdHasChanged() {
         var lambdaCalled = false
         val deviceIdMode = DeviceIdMode.ANDROID_ID
@@ -104,5 +125,20 @@ class RetenoImplTest: BaseUnitTest() {
         assertFalse(lambdaCalled)
     }
 
+    @Test
+    fun whenResumeApp_thenStartScheduler() {
+        val retenoImpl = RetenoImpl(mockk())
+        retenoImpl.resume(mockk())
+
+        verify { scheduleController.startScheduler() }
+    }
+
+    @Test
+    fun whenPauseApp_thenStopScheduler() {
+        val retenoImpl = RetenoImpl(mockk())
+        retenoImpl.pause(mockk())
+
+        verify { scheduleController.stopScheduler() }
+    }
 
 }

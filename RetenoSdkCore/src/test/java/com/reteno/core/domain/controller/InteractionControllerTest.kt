@@ -16,7 +16,6 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 
-// TODO review later (B.S.)
 class InteractionControllerTest : BaseUnitTest() {
 
     // region constants ----------------------------------------------------------------------------
@@ -100,5 +99,11 @@ class InteractionControllerTest : BaseUnitTest() {
 
         // Then
         verify(exactly = 0) { interactionsRepository.saveInteraction(any(), any()) }
+    }
+
+    @Test
+    fun whenPushInteraction_thenRepositoryInteractionPushCalled() {
+        SUT.pushInteractions()
+        verify(exactly = 1) { interactionsRepository.pushInteractions() }
     }
 }

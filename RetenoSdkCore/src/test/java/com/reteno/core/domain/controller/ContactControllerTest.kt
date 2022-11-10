@@ -16,7 +16,6 @@ import io.mockk.*
 import io.mockk.impl.annotations.RelaxedMockK
 import org.junit.Test
 
-// TODO review later (B.S.)
 class ContactControllerTest : BaseUnitTest() {
 
     // region constants ----------------------------------------------------------------------------
@@ -214,6 +213,18 @@ class ContactControllerTest : BaseUnitTest() {
         SUT.setUserData(user)
 
         verify { contactRepository.saveUserData(user) }
+    }
+
+    @Test
+    fun whenPushDeviceData_thenInteractWithContactRepository() {
+        SUT.pushDeviceData()
+        verify { contactRepository.pushDeviceData() }
+    }
+
+    @Test
+    fun whenPushUserData_thenInteractWithContactRepository() {
+        SUT.pushUserData()
+        verify { contactRepository.pushUserData() }
     }
 
     // region helper methods -----------------------------------------------------------------------
