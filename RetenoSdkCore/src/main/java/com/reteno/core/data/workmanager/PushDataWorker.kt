@@ -6,6 +6,7 @@ import com.reteno.core.RetenoApplication
 import com.reteno.core.RetenoImpl
 import com.reteno.core.util.Logger
 import com.reteno.core.util.Util
+import java.util.UUID
 import java.util.concurrent.TimeUnit
 
 class PushDataWorker(context: Context, params: WorkerParameters) : Worker(context, params) {
@@ -30,28 +31,44 @@ class PushDataWorker(context: Context, params: WorkerParameters) : Worker(contex
                 /*@formatter:off*/ Logger.i(TAG, "doWork(): ", "Database is empty, nothing to do, cancelling periodic work")
                 /*@formatter:on*/
                 WorkManager.getInstance(applicationContext).cancelUniqueWork(PUSH_DATA_WORK_NAME)
+                Result.failure()
             } else {
                 /*@formatter:off*/ Logger.i(TAG, "doWork(): ", "Database has data, sending to server")
                 /*@formatter:on*/
                 val scheduleController = serviceLocator.scheduleControllerProvider.get()
                 scheduleController.forcePush()
+                Result.success()
             }
-
-            Result.success()
         }
     }
 
     companion object {
         private val TAG: String = PushDataWorker::class.java.simpleName
 
-        internal const val PUSH_DATA_WORK_NAME = "PUSH_DATA_TASK_TAG"
-        internal val EXISTING_PERIODIC_WORK_POLICY = ExistingPeriodicWorkPolicy.KEEP
+        private const val PUSH_DATA_WORK_NAME = "PUSH_DATA_TASK_TAG"
+        private val EXISTING_PERIODIC_WORK_POLICY = ExistingPeriodicWorkPolicy.KEEP
 
         private val INITIAL_DELAY_DEBUG = TimeInterval(20L, TimeUnit.SECONDS)
         private val INITIAL_DELAY_DEFAULT = TimeInterval(15L, TimeUnit.MINUTES)
         private val INTERVAL = TimeInterval(15L, TimeUnit.SECONDS)
 
-        internal fun buildWorker(): PeriodicWorkRequest {
+        /**
+         * Enqueues periodic work provided by PushDataWorker
+         * @return UUID of the periodic work that was submitted
+         */
+        internal fun enqueuePeriodicWork(workManager: WorkManager): UUID {
+            /*@formatter:off*/ Logger.i(TAG, "enqueuePushWorkManagerPeriodicWork(): ")
+            /*@formatter:on*/
+            val workRequest = buildWorker()
+            workManager.enqueueUniquePeriodicWork(
+                PUSH_DATA_WORK_NAME,
+                EXISTING_PERIODIC_WORK_POLICY,
+                workRequest
+            )
+            return workRequest.id
+        }
+
+        private fun buildWorker(): PeriodicWorkRequest {
             val initialDelay = if (Util.isDebugView()) {
                 INITIAL_DELAY_DEBUG
             } else {

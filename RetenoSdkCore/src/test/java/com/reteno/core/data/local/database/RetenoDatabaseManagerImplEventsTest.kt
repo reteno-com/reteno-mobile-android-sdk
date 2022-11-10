@@ -38,6 +38,16 @@ class RetenoDatabaseManagerImplEventsTest : BaseRobolectricTest() {
         private const val DEVICE_ID = "valueDeviceId"
         private const val EXTERNAL_USER_ID = "valueExternalUserId"
 
+        private val param1 = ParameterDTO(name = EVENT_PARAMS_NAME_1, value = EVENT_PARAMS_VALUE_1)
+        private val param2 = ParameterDTO(name = EVENT_PARAMS_NAME_2, value = EVENT_PARAMS_VALUE_2)
+        private val event1 = EventDTO(eventTypeKey = EVENT_TYPE_KEY_1, occurred = EVENT_OCCURRED_1, params = null)
+        private val event2 = EventDTO(eventTypeKey = EVENT_TYPE_KEY_2, occurred = EVENT_OCCURRED_2, params = listOf(param1, param2))
+        private val events = EventsDTO(
+            deviceId = DEVICE_ID,
+            externalUserId = EXTERNAL_USER_ID,
+            eventList = listOf(event1, event2)
+        )
+
         private const val COLUMN_INDEX_EVENTS_ID = 1
         private const val COLUMN_INDEX_EVENTS_DEVICE_ID = 2
         private const val COLUMN_INDEX_EVENTS_EXTERNAL_USER_ID = 3
@@ -84,16 +94,6 @@ class RetenoDatabaseManagerImplEventsTest : BaseRobolectricTest() {
         // Given
         every { cursor.getLongOrNull(COLUMN_INDEX_EVENTS_ID) } returns PARENT_ROW_ID_NOT_FOUND
 
-        val param1 = ParameterDTO(name = EVENT_PARAMS_NAME_1, value = EVENT_PARAMS_VALUE_1)
-        val param2 = ParameterDTO(name = EVENT_PARAMS_NAME_2, value = EVENT_PARAMS_VALUE_2)
-        val event1 = EventDTO(eventTypeKey = EVENT_TYPE_KEY_1, occurred = EVENT_OCCURRED_1, params = null)
-        val event2 = EventDTO(eventTypeKey = EVENT_TYPE_KEY_2, occurred = EVENT_OCCURRED_2, params = listOf(param1, param2))
-        val events = EventsDTO(
-            deviceId = DEVICE_ID,
-            externalUserId = EXTERNAL_USER_ID,
-            eventList = listOf(event1, event2)
-        )
-
         val expectedParentContentValues = ContentValues().apply {
             putEvents(events)
         }
@@ -131,16 +131,6 @@ class RetenoDatabaseManagerImplEventsTest : BaseRobolectricTest() {
         every { cursor.moveToFirst() } returns true
         every { cursor.getLongOrNull(COLUMN_INDEX_EVENTS_ID) } returns ROW_ID_INSERTED
 
-        val param1 = ParameterDTO(name = EVENT_PARAMS_NAME_1, value = EVENT_PARAMS_VALUE_1)
-        val param2 = ParameterDTO(name = EVENT_PARAMS_NAME_2, value = EVENT_PARAMS_VALUE_2)
-        val event1 = EventDTO(eventTypeKey = EVENT_TYPE_KEY_1, occurred = EVENT_OCCURRED_1, params = null)
-        val event2 = EventDTO(eventTypeKey = EVENT_TYPE_KEY_2, occurred = EVENT_OCCURRED_2, params = listOf(param1, param2))
-        val events = EventsDTO(
-            deviceId = DEVICE_ID,
-            externalUserId = EXTERNAL_USER_ID,
-            eventList = listOf(event1, event2)
-        )
-
         val expectedChildContentValues = events.eventList.toContentValuesList(ROW_ID_INSERTED)
 
         // When
@@ -176,11 +166,6 @@ class RetenoDatabaseManagerImplEventsTest : BaseRobolectricTest() {
         mockCursorRecordsNumber(cursorChild,2)
         mockDatabaseQueryParent()
         mockDatabaseQueryChild()
-
-        val param1 = ParameterDTO(name = EVENT_PARAMS_NAME_1, value = EVENT_PARAMS_VALUE_1)
-        val param2 = ParameterDTO(name = EVENT_PARAMS_NAME_2, value = EVENT_PARAMS_VALUE_2)
-        val event1 = EventDTO(eventTypeKey = EVENT_TYPE_KEY_1, occurred = EVENT_OCCURRED_1, params = null)
-        val event2 = EventDTO(eventTypeKey = EVENT_TYPE_KEY_2, occurred = EVENT_OCCURRED_2, params = listOf(param1, param2))
 
         every { cursor.getLongOrNull(COLUMN_INDEX_EVENTS_ID) } returns ROW_ID_INSERTED
         every { cursor.getStringOrNull(COLUMN_INDEX_EVENTS_DEVICE_ID) } returns DEVICE_ID

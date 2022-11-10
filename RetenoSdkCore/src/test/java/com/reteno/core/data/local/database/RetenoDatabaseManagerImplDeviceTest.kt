@@ -23,7 +23,7 @@ import net.sqlcipher.Cursor
 class RetenoDatabaseManagerImplDeviceTest : BaseRobolectricTest() {
 
     // region constants ----------------------------------------------------------------------------
-    companion object {
+    companion object Constants {
         private const val ROW_ID_CORRUPTED = 101L
 
         private const val ROW_ID_INSERTED = 1L
@@ -54,6 +54,35 @@ class RetenoDatabaseManagerImplDeviceTest : BaseRobolectricTest() {
         private const val COLUMN_INDEX_LANGUAGE_CODE = 11
         private const val COLUMN_INDEX_TIME_ZONE = 12
         private const val COLUMN_INDEX_ADVERTISING_ID = 13
+
+
+        private val device1 = Device(
+            deviceId = DEVICE_ID,
+            externalUserId = null,
+            pushToken = PUSH_TOKEN,
+            category = CATEGORY,
+            osType = OS_TYPE,
+            osVersion = null,
+            deviceModel = null,
+            appVersion = null,
+            languageCode = null,
+            timeZone = null,
+            advertisingId = null
+        )
+
+        private val device2 = Device(
+            deviceId = DEVICE_ID,
+            externalUserId = EXTERNAL_USER_ID,
+            pushToken = PUSH_TOKEN,
+            category = CATEGORY,
+            osType = OS_TYPE,
+            osVersion = OS_VERSION,
+            deviceModel = DEVICE_MODEL,
+            appVersion = APP_VERSION,
+            languageCode = LANGUAGE_CODE,
+            timeZone = TIME_ZONE,
+            advertisingId = ADVERTISING_ID
+        )
     }
     // endregion constants -------------------------------------------------------------------------
 
@@ -88,21 +117,8 @@ class RetenoDatabaseManagerImplDeviceTest : BaseRobolectricTest() {
     @Test
     fun givenValidDeviceProvided_whenInsertDevice_thenDeviceIsSavedToDb() {
         // Given
-        val device = Device(
-            deviceId = DEVICE_ID,
-            externalUserId = EXTERNAL_USER_ID,
-            pushToken = PUSH_TOKEN,
-            category = CATEGORY,
-            osType = OS_TYPE,
-            osVersion = OS_VERSION,
-            deviceModel = DEVICE_MODEL,
-            appVersion = APP_VERSION,
-            languageCode = LANGUAGE_CODE,
-            timeZone = TIME_ZONE,
-            advertisingId = ADVERTISING_ID
-        )
         val expectedContentValues = ContentValues().apply {
-            putDevice(device)
+            putDevice(device2)
         }
 
         var actualContentValues = ContentValues()
@@ -112,7 +128,7 @@ class RetenoDatabaseManagerImplDeviceTest : BaseRobolectricTest() {
         }
 
         // When
-        SUT?.insertDevice(device)
+        SUT?.insertDevice(device2)
 
         // Then
         verify(exactly = 1) {
@@ -130,32 +146,6 @@ class RetenoDatabaseManagerImplDeviceTest : BaseRobolectricTest() {
         mockCursorRecordsNumber(2)
         mockDatabaseQuery()
 
-        val device1 = Device(
-            deviceId = DEVICE_ID,
-            externalUserId = null,
-            pushToken = PUSH_TOKEN,
-            category = CATEGORY,
-            osType = OS_TYPE,
-            osVersion = null,
-            deviceModel = null,
-            appVersion = null,
-            languageCode = null,
-            timeZone = null,
-            advertisingId = null
-        )
-        val device2 = Device(
-            deviceId = DEVICE_ID,
-            externalUserId = EXTERNAL_USER_ID,
-            pushToken = PUSH_TOKEN,
-            category = CATEGORY,
-            osType = OS_TYPE,
-            osVersion = OS_VERSION,
-            deviceModel = DEVICE_MODEL,
-            appVersion = APP_VERSION,
-            languageCode = LANGUAGE_CODE,
-            timeZone = TIME_ZONE,
-            advertisingId = ADVERTISING_ID
-        )
         every { cursor.getDevice() } returns device1 andThen device2
 
         // When

@@ -16,6 +16,8 @@ ext.testDependencies = dependencyGroup {
     dexmaker()
 
     sqlCipher()
+
+    workManager()
 }
 
 /******* Dependency groups *******/
@@ -72,4 +74,8 @@ ext.dexmaker = dependencyGroup {
 ext.sqlCipher = dependencyGroup {
     testImplementation "net.zetetic:android-database-sqlcipher:4.5.2"
     testImplementation "androidx.sqlite:sqlite:2.2.0"
+}
+
+ext.workManager = dependencyGroup {
+    implementation 'androidx.work:work-testing:2.7.1'
 }

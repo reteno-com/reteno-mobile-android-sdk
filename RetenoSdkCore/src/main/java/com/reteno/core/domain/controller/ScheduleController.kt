@@ -50,17 +50,7 @@ class ScheduleController(
             TimeUnit.MILLISECONDS
         )
 
-        enqueuePushWorkManagerPeriodicWork()
-    }
-
-    private fun enqueuePushWorkManagerPeriodicWork() {
-        /*@formatter:off*/ Logger.i(TAG, "enqueuePushWorkManagerPeriodicWork(): ")
-        /*@formatter:on*/
-        workManager.enqueueUniquePeriodicWork(
-            PushDataWorker.PUSH_DATA_WORK_NAME,
-            PushDataWorker.EXISTING_PERIODIC_WORK_POLICY,
-            PushDataWorker.buildWorker()
-        )
+        PushDataWorker.enqueuePeriodicWork(workManager)
     }
 
     /**

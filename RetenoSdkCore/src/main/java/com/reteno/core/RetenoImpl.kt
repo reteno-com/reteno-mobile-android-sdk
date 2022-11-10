@@ -38,14 +38,14 @@ class RetenoImpl(application: Application) : RetenoLifecycleCallbacks, Reteno {
         }
     }
 
-    override fun resume(activity: Activity) {
+    override fun resume(activity: Activity?) {
         /*@formatter:off*/ Logger.i(TAG, "resume(): ", "activity = [" , activity , "]")
         /*@formatter:on*/
         startPushScheduler()
         // TODO: Application is in foreground
     }
 
-    override fun pause(activity: Activity) {
+    override fun pause(activity: Activity?) {
         /*@formatter:off*/ Logger.i(TAG, "pause(): ", "activity = [" , activity , "]")
         /*@formatter:on*/
         stopPushScheduler()

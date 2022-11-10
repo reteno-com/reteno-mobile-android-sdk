@@ -36,5 +36,8 @@ interface RetenoDatabase {
 
     fun getRowCount(tableName: String): Long
 
+    /**
+     * Call this method each time you remove any record from Event table (Child table)
+     */
     fun cleanUnlinkedEvents()
 }

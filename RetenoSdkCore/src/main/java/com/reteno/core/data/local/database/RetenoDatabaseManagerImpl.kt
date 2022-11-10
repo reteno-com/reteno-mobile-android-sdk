@@ -408,6 +408,9 @@ class RetenoDatabaseManagerImpl(private val database: RetenoDatabase) : RetenoDa
 
     override fun getEventsCount(): Long = database.getRowCount(TABLE_NAME_EVENT)
 
+    /**
+     * Call [database.cleanUnlinkedEvents] each time you remove events from Event table (Child table)
+     */
     override fun deleteEvents(count: Int, oldest: Boolean) {
         val order = if (oldest) "ASC" else "DESC"
         database.delete(
@@ -419,12 +422,15 @@ class RetenoDatabaseManagerImpl(private val database: RetenoDatabase) : RetenoDa
     }
 
     override fun isDatabaseEmpty(): Boolean {
-        val devices = getDevices()
-        val users = getUser()
-        val interactions = getInteractions()
-        val events = getEvents()
-        
-        val result = (devices.isEmpty() && users.isEmpty() && interactions.isEmpty() && events.isEmpty())
+        val deviceCount = getDeviceCount()
+        val userCount = getUserCount()
+        val interactionCount = getInteractionCount()
+        val eventCount = getEventsCount()
+
+        val result = deviceCount == 0L
+                && userCount == 0L
+                && interactionCount == 0L
+                && eventCount == 0L
         /*@formatter:off*/ Logger.i(TAG, "isDatabaseEmpty(): ", "result = $result")
         /*@formatter:on*/
         return result

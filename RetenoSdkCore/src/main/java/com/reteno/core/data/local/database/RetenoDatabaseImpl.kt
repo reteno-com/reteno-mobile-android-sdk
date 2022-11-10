@@ -280,6 +280,9 @@ class RetenoDatabaseImpl(context: Context) : RetenoDatabase,
         }
     }
 
+    /**
+     * Call this method each time you remove any record from Event table (Child table)
+     */
     override fun cleanUnlinkedEvents() {
         val rawQuery = "DELETE FROM ${DbSchema.EventsSchema.TABLE_NAME_EVENTS} WHERE ${DbSchema.EventsSchema.COLUMN_EVENTS_ID} NOT IN " +
                 "(SELECT ${DbSchema.EventsSchema.COLUMN_EVENTS_ID} FROM ${DbSchema.EventSchema.TABLE_NAME_EVENT})"

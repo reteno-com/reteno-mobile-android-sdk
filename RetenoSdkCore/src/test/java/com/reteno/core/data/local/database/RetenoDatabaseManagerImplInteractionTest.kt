@@ -33,6 +33,19 @@ class RetenoDatabaseManagerImplInteractionTest : BaseRobolectricTest() {
         private const val INTERACTION_TIME = "interactionTime"
         private const val INTERACTION_TOKEN = "interactionToken"
 
+        private val interaction1 = InteractionModelDb(
+            interactionId = INTERACTION_ID,
+            status = INTERACTION_STATUS,
+            time = INTERACTION_TIME,
+            token = INTERACTION_TOKEN
+        )
+        private val interaction2 = InteractionModelDb(
+            interactionId = "${INTERACTION_ID}_2",
+            status = INTERACTION_STATUS,
+            time = "${INTERACTION_TIME}_2}",
+            token = "${INTERACTION_TOKEN}_2"
+        )
+
         private const val COLUMN_INDEX_TIMESTAMP = 1
         private const val COLUMN_INDEX_INTERACTION_ROW_ID = 2
         private const val COLUMN_INDEX_INTERACTION_ID = 3
@@ -73,14 +86,8 @@ class RetenoDatabaseManagerImplInteractionTest : BaseRobolectricTest() {
     @Test
     fun givenValidInteractionProvided_whenInsertInteraction_thenInteractionIsSavedToDb() {
         // Given
-        val interaction = InteractionModelDb(
-            interactionId = INTERACTION_ID,
-            status = INTERACTION_STATUS,
-            time = INTERACTION_TIME,
-            token = INTERACTION_TOKEN
-        )
         val expectedContentValues = ContentValues().apply {
-            putInteraction(interaction)
+            putInteraction(interaction1)
         }
 
         var actualContentValues = ContentValues()
@@ -90,7 +97,7 @@ class RetenoDatabaseManagerImplInteractionTest : BaseRobolectricTest() {
         }
 
         // When
-        SUT?.insertInteraction(interaction)
+        SUT?.insertInteraction(interaction1)
 
         // Then
         verify(exactly = 1) {
@@ -108,18 +115,6 @@ class RetenoDatabaseManagerImplInteractionTest : BaseRobolectricTest() {
         mockCursorRecordsNumber(2)
         mockDatabaseQuery()
 
-        val interaction1 = InteractionModelDb(
-            interactionId = INTERACTION_ID,
-            status = INTERACTION_STATUS,
-            time = INTERACTION_TIME,
-            token = INTERACTION_TOKEN
-        )
-        val interaction2 = InteractionModelDb(
-            interactionId = "${INTERACTION_ID}_2",
-            status = INTERACTION_STATUS,
-            time = "${INTERACTION_TIME}_2}",
-            token = "${INTERACTION_TOKEN}_2"
-        )
         every { cursor.getInteraction() } returns interaction1 andThen interaction2
 
         // When
