@@ -36,6 +36,9 @@
         <action
             android:id="@+id/start_to_customEvent"
             app:destination="@id/fragmentCustomEvent" />
+        <action
+            android:id="@+id/start_to_forcePush"
+            app:destination="@id/fragmentForcePush" />
     </fragment>
 
     <fragment
@@ -157,4 +160,9 @@
         android:name="com.reteno.sample.fragments.FragmentCustomEvent"
         android:label="fragment_custom_event"
         tools:layout="@layout/fragment_custom_event" />
+    <fragment
+        android:id="@+id/fragmentForcePush"
+        android:name="com.reteno.sample.fragments.FragmentForcePush"
+        android:label="fragment_force_push"
+        tools:layout="@layout/fragment_force_push" />
 </navigation>
