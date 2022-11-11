@@ -1,6 +1,7 @@
 package com.reteno.core.data.repository
 
 import com.reteno.core.data.local.database.RetenoDatabaseManager
+import com.reteno.core.data.local.mappers.toDb
 import com.reteno.core.data.remote.OperationQueue
 import com.reteno.core.data.remote.PushOperationQueue
 import com.reteno.core.data.remote.api.ApiClient
@@ -23,7 +24,7 @@ class ContactRepositoryImpl(
         /*@formatter:off*/ Logger.i(TAG, "saveDeviceData(): ", "device = [" , device , "]")
         /*@formatter:on*/
         OperationQueue.addOperation {
-            databaseManager.insertDevice(device)
+            databaseManager.insertDevice(device.toDb())
             pushDeviceData()
         }
     }
@@ -32,7 +33,7 @@ class ContactRepositoryImpl(
         /*@formatter:off*/ Logger.i(TAG, "saveUserData(): ", "user = [" , user , "]")
         /*@formatter:on*/
         OperationQueue.addOperation {
-            databaseManager.insertUser(user.toRemote(configRepository.getDeviceId()))
+            databaseManager.insertUser(user.toDb(configRepository.getDeviceId()))
             pushUserData()
         }
     }
@@ -46,18 +47,18 @@ class ContactRepositoryImpl(
         /*@formatter:on*/
         apiClient.post(
             ApiContract.MobileApi.Device,
-            device.toJson(),
+            device.toRemote().toJson(),
             object : ResponseCallback {
                 override fun onSuccess(response: String) {
                     /*@formatter:off*/ Logger.i(TAG, "onSuccess(): ", "response = [" , response , "]")
-                /*@formatter:on*/
+                    /*@formatter:on*/
                     databaseManager.deleteDevices(1)
                     pushDeviceData()
                 }
 
                 override fun onFailure(statusCode: Int?, response: String?, throwable: Throwable?) {
                     /*@formatter:off*/ Logger.i(TAG, "onFailure(): ", "statusCode = [" , statusCode , "], response = [" , response , "], throwable = [" , throwable , "]")
-                /*@formatter:on*/
+                    /*@formatter:on*/
                     if (isNonRepeatableError(statusCode)) {
                         databaseManager.deleteDevices(1)
                         pushDeviceData()
@@ -77,7 +78,7 @@ class ContactRepositoryImpl(
         /*@formatter:on*/
         apiClient.post(
             ApiContract.MobileApi.User,
-            user.toJson(),
+            user.toRemote().toJson(),
             object : ResponseCallback {
                 override fun onSuccess(response: String) {
                     /*@formatter:off*/ Logger.i(TAG, "onSuccess(): ", "response = [" , response , "]")

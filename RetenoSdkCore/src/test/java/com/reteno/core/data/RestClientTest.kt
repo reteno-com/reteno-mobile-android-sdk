@@ -25,6 +25,7 @@ import javax.net.ssl.HttpsURLConnection
 @RunWith(JUnit4::class)
 class RestClientTest : BaseUnitTest() {
 
+    // region constants ----------------------------------------------------------------------------
     companion object {
         private const val TEST_URL = "http://www.test.com"
         private const val TEST_RESPONSE = "test response"
@@ -49,10 +50,13 @@ class RestClientTest : BaseUnitTest() {
             )[RestClient::class.java] as T
         }
     }
+    // endregion constants -------------------------------------------------------------------------
 
+    // region helper fields ------------------------------------------------------------------------
     @RelaxedMockK
     private lateinit var httpURLConnection: HttpURLConnection
     private lateinit var restClient: RestClient
+    // endregion helper fields ---------------------------------------------------------------------
 
     @Before
     override fun before() {
@@ -302,6 +306,7 @@ class RestClientTest : BaseUnitTest() {
         verify(inverse = true) { spyCallback.onSuccess(any()) }
     }
 
+    // region helper methods -----------------------------------------------------------------------
     private fun makeRequest(
         method: HttpMethod = HttpMethod.POST,
         url: ApiContract = ApiContract.Custom(TEST_URL),
@@ -343,7 +348,6 @@ class RestClientTest : BaseUnitTest() {
                 error?.invoke(statusCode, response, throwable)
             }
         }
-
     }
-
+    // endregion helper methods --------------------------------------------------------------------
 }

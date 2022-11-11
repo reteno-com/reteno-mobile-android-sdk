@@ -11,6 +11,7 @@ import java.util.concurrent.ScheduledExecutorService
 
 class ScheduleControllerTest : BaseRobolectricTest() {
 
+    // region helper fields ------------------------------------------------------------------------
     @RelaxedMockK
     private lateinit var contactController: ContactController
 
@@ -22,6 +23,7 @@ class ScheduleControllerTest : BaseRobolectricTest() {
 
     @RelaxedMockK
     private lateinit var scheduler: ScheduledExecutorService
+    // endregion helper fields ---------------------------------------------------------------------
 
     override fun before() {
         super.before()

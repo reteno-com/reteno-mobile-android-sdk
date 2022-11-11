@@ -32,15 +32,14 @@ class InteractionRepositoryTest : BaseRobolectricTest() {
     }
     // endregion constants -------------------------------------------------------------------------
 
-
     // region helper fields ------------------------------------------------------------------------
     @RelaxedMockK
     private lateinit var apiClient: ApiClient
     @RelaxedMockK
     private lateinit var retenoDatabaseManager: RetenoDatabaseManager
-    // endregion helper fields ---------------------------------------------------------------------
 
     private lateinit var SUT: InteractionRepositoryImpl
+    // endregion helper fields ---------------------------------------------------------------------
 
     @Before
     override fun before() {
@@ -157,6 +156,5 @@ class InteractionRepositoryTest : BaseRobolectricTest() {
         // Then
         verify(exactly = 0) { apiClient.put(any(), any(), any()) }
         verify { PushOperationQueue.nextOperation() }
-
     }
 }

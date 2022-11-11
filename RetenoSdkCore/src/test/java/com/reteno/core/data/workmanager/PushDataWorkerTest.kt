@@ -20,7 +20,7 @@ import junit.framework.TestCase.assertNotNull
 import org.hamcrest.CoreMatchers.`is`
 import org.hamcrest.MatcherAssert.assertThat
 import org.junit.Test
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.Executor
 import java.util.concurrent.Executors
 
@@ -38,9 +38,9 @@ class PushDataWorkerTest : BaseRobolectricTest() {
     private lateinit var databaseManager: RetenoDatabaseManager
 
     private var executor: Executor? = null
-    private var SUT: PushDataWorker? = null
     private lateinit var workUuid: UUID
 
+    private var SUT: PushDataWorker? = null
     // endregion helper fields ---------------------------------------------------------------------
 
     override fun before() {
@@ -54,11 +54,7 @@ class PushDataWorkerTest : BaseRobolectricTest() {
         initializeWorkManager(application, executor!!)
         workUuid = PushDataWorker.enqueuePeriodicWork(WorkManager.getInstance(application))
 
-        SUT = TestWorkerBuilder.from(
-            application,
-            PushDataWorker::class.java,
-            executor!!
-        ).build()
+        SUT = TestWorkerBuilder<PushDataWorker>(application, executor!!).build()
         assertNotNull(SUT)
     }
 

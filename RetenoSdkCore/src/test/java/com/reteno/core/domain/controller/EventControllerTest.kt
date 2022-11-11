@@ -12,10 +12,18 @@ import java.time.ZonedDateTime
 
 class EventControllerTest : BaseUnitTest() {
 
+    // region constants ----------------------------------------------------------------------------
+    companion object {
+        private const val EVENT_TYPE_KEY = "key"
+    }
+    // endregion constants -------------------------------------------------------------------------
+
+    // region helper fields ------------------------------------------------------------------------
     @RelaxedMockK
     private lateinit var eventsRepository: EventsRepository
 
     private lateinit var SUT: EventController
+    // endregion helper fields ---------------------------------------------------------------------
 
     @Before
     override fun before() {
@@ -26,7 +34,7 @@ class EventControllerTest : BaseUnitTest() {
 
     @Test
     fun whenSaveEvent_thenEventPassedToRepository() {
-        val event = Event("key", ZonedDateTime.now(), emptyList())
+        val event = Event(EVENT_TYPE_KEY, ZonedDateTime.now(), emptyList())
 
         SUT.saveEvent(event)
 

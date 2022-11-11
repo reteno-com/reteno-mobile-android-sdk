@@ -9,7 +9,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.reteno.core.data.local.model.interaction.InteractionDb;
-import com.reteno.core.domain.model.interaction.InteractionStatus;
+import com.reteno.core.data.local.model.interaction.InteractionStatusDb;
 import com.reteno.core.util.UtilKt;
 import com.reteno.sample.databinding.DialogDbWriteInteractionBinding;
 import com.reteno.sample.util.Util;
@@ -49,7 +49,7 @@ public class InteractionWriteDialogFragment extends BaseDatabaseDialogFragment {
             if (UtilKt.allElementsNotNull(interactionId, status, time, token)) {
                 InteractionDb interaction = new InteractionDb(
                         interactionId,
-                        InteractionStatus.fromString(status),
+                        InteractionStatusDb.fromString(status),
                         time,
                         token
                 );

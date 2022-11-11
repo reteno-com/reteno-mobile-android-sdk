@@ -33,9 +33,9 @@ class InteractionControllerTest : BaseUnitTest() {
 
     @RelaxedMockK
     private lateinit var interactionsRepository: InteractionRepository
-    // endregion helper fields ---------------------------------------------------------------------
 
     private lateinit var SUT: InteractionController
+    // endregion helper fields ---------------------------------------------------------------------
 
     @Before
     override fun before() {

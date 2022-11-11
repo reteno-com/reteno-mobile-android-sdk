@@ -3,6 +3,7 @@ package com.reteno.core.domain.controller
 import com.reteno.core.data.local.config.DeviceIdMode
 import com.reteno.core.data.repository.ConfigRepository
 import com.reteno.core.data.repository.ContactRepository
+import com.reteno.core.domain.Validator
 import com.reteno.core.domain.model.device.Device
 import com.reteno.core.domain.model.user.User
 import com.reteno.core.util.Logger
@@ -44,11 +45,12 @@ class ContactController(
         }
     }
 
-    fun setUserData(used: User) {
-        /*@formatter:off*/ Logger.i(TAG, "setUserData(): ", "used = [" , used , "]") 
+    fun setUserData(user: User) {
+        /*@formatter:off*/ Logger.i(TAG, "setUserData(): ", "user = [" , user , "]")
         /*@formatter:on*/
 
-        contactRepository.saveUserData(used)
+        val validUser = Validator.validateUser(user)
+        validUser?.let(contactRepository::saveUserData)
     }
 
     private fun onNewContact() {

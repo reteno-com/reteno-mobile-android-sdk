@@ -3,11 +3,15 @@ package com.reteno.core.data.repository
 import com.reteno.core.base.robolectric.BaseRobolectricTest
 import com.reteno.core.data.local.config.DeviceId
 import com.reteno.core.data.local.database.RetenoDatabaseManager
+import com.reteno.core.data.local.mappers.toDb
+import com.reteno.core.data.local.model.device.DeviceCategoryDb
+import com.reteno.core.data.local.model.device.DeviceDb
+import com.reteno.core.data.local.model.device.DeviceOsDb
+import com.reteno.core.data.local.model.user.UserDb
 import com.reteno.core.data.remote.PushOperationQueue
 import com.reteno.core.data.remote.api.ApiClient
 import com.reteno.core.data.remote.api.ApiContract
-import com.reteno.core.data.remote.mapper.toRemote
-import com.reteno.core.data.remote.model.user.UserRemote
+import com.reteno.core.data.remote.mapper.toJson
 import com.reteno.core.domain.ResponseCallback
 import com.reteno.core.domain.model.device.Device
 import com.reteno.core.domain.model.device.DeviceCategory
@@ -27,9 +31,28 @@ class ContactRepositoryTest : BaseRobolectricTest() {
         private const val DEVICE_ID = "device_ID"
         private const val EXTERNAL_DEVICE_ID = "External_device_ID"
         private const val FCM_TOKEN_NEW = "FCM_Token"
+        private val CATEGORY = DeviceCategory.MOBILE
+        private val OS_TYPE = DeviceOS.ANDROID
+
+        private const val USER_ATTRS_PHONE = "+380990009900"
+        private const val USER_ATTRS_EMAIL = "email@gmail.com"
+        private const val USER_ATTRS_FIRST_NAME = "John"
+        private const val USER_ATTRS_LAST_NAME = "Doe"
+        private const val USER_ATTRS_LANGUAGE_CODE = "ua"
+        private const val USER_ATTRS_TIMEZONE = "Kyiv"
+        private const val USER_ATTRS_FIELD_KEY_1 = "key1"
+        private const val USER_ATTRS_FIELD_VALUE_1 = "value1"
+        private const val USER_ATTRS_FIELD_KEY_2 = "key2"
+        private const val USER_ATTRS_FIELD_VALUE_2 = "value2"
+        private const val USER_ATTRS_ADDRESS_REGION = "UA"
+        private const val USER_ATTRS_ADDRESS_TOWN = "Dnipro"
+        private const val USER_ATTRS_ADDRESS_ADDRESS = "Street, 7"
+        private const val USER_ATTRS_ADDRESS_POSTCODE = "45000"
+        private val USER_SUBSCRIPTION_KEYS = listOf("key1", "key2")
+        private val USER_GROUP_NAMES_INCLUDE = listOf("add1")
+        private val USER_GROUP_NAMES_EXCLUDE = listOf("remove1")
     }
     // endregion constants -------------------------------------------------------------------------
-
 
     // region helper fields ------------------------------------------------------------------------
     @RelaxedMockK
@@ -38,10 +61,9 @@ class ContactRepositoryTest : BaseRobolectricTest() {
     private lateinit var configRepository: ConfigRepository
     @RelaxedMockK
     private lateinit var retenoDatabaseManager: RetenoDatabaseManager
-    // endregion helper fields ---------------------------------------------------------------------
 
     private lateinit var SUT: ContactRepositoryImpl
-
+    // endregion helper fields ---------------------------------------------------------------------
 
     override fun before() {
         super.before()
@@ -58,8 +80,9 @@ class ContactRepositoryTest : BaseRobolectricTest() {
     fun whenSaveDeviceData_thenInsertDbAndPush() {
         // Given
         val device = getDevice()
+        val deviceDb = getDeviceDb()
         every { retenoDatabaseManager.getDevices(any()) } returnsMany listOf(
-            listOf(device),
+            listOf(deviceDb),
             emptyList()
         )
 
@@ -68,15 +91,15 @@ class ContactRepositoryTest : BaseRobolectricTest() {
 
         // Then
         verify(exactly = 1) { apiClient.post(any(), any(), any()) }
-        verify { retenoDatabaseManager.insertDevice(device) }
+        verify { retenoDatabaseManager.insertDevice(deviceDb) }
     }
 
     @Test
     fun whenDbHasSavedDeviceData_thenSendToApi() {
         // Given
-        val device = getDevice()
+        val device = getDeviceDb()
         val expectedDeviceJson =
-            "{\"deviceId\":\"device_ID\",\"externalUserId\":\"External_device_ID\",\"pushToken\":\"FCM_Token\",\"category\":\"MOBILE\",\"osType\":\"ANDROID\"}"
+            "{\"deviceId\":\"${DEVICE_ID}\",\"externalUserId\":\"${EXTERNAL_DEVICE_ID}\",\"pushToken\":\"${FCM_TOKEN_NEW}\",\"category\":\"${CATEGORY}\",\"osType\":\"${OS_TYPE}\"}"
 
         every { retenoDatabaseManager.getDevices(any()) } returnsMany listOf(
             listOf(device),
@@ -92,8 +115,8 @@ class ContactRepositoryTest : BaseRobolectricTest() {
 
     @Test
     fun whenDevicePushSuccessful_thenTryPushNextDevice() {
-        val deviceData = mockk<Device>(relaxed = true)
-        every { retenoDatabaseManager.getDevices(any()) } returnsMany listOf(listOf(deviceData), listOf(deviceData), emptyList())
+        val deviceDataDb = mockk<DeviceDb>(relaxed = true)
+        every { retenoDatabaseManager.getDevices(any()) } returnsMany listOf(listOf(deviceDataDb), listOf(deviceDataDb), emptyList())
         every { apiClient.post(url = any(), jsonBody = any(), responseHandler = any()) } answers {
             val callback = thirdArg<ResponseCallback>()
             callback.onSuccess("")
@@ -108,8 +131,8 @@ class ContactRepositoryTest : BaseRobolectricTest() {
 
     @Test
     fun whenDevicePushFailedAndErrorIsRepeatable_cancelPushOperations() {
-        val deviceData = mockk<Device>(relaxed = true)
-        every { retenoDatabaseManager.getDevices(any()) } returns listOf(deviceData)
+        val deviceDataDb = mockk<DeviceDb>(relaxed = true)
+        every { retenoDatabaseManager.getDevices(any()) } returns listOf(deviceDataDb)
         every { apiClient.post(url = any(), jsonBody = any(), responseHandler = any()) } answers {
             val callback = thirdArg<ResponseCallback>()
             callback.onFailure(500, null, null)
@@ -123,8 +146,8 @@ class ContactRepositoryTest : BaseRobolectricTest() {
 
     @Test
     fun whenDevicePushFailedAndErrorIsNonRepeatable_thenTryPushNextDevice() {
-        val deviceData = mockk<Device>(relaxed = true)
-        every { retenoDatabaseManager.getDevices(any()) } returnsMany listOf(listOf(deviceData), listOf(deviceData), emptyList())
+        val deviceDataDb = mockk<DeviceDb>(relaxed = true)
+        every { retenoDatabaseManager.getDevices(any()) } returnsMany listOf(listOf(deviceDataDb), listOf(deviceDataDb), emptyList())
         every { apiClient.post(url = any(), jsonBody = any(), responseHandler = any()) } answers {
             val callback = thirdArg<ResponseCallback>()
             callback.onFailure(400, null, null)
@@ -153,32 +176,18 @@ class ContactRepositoryTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun whenSendUsedData_thenCallUserToRemoteMapper() {
-        val user = User(
-            userAttributes = UserAttributes(
-                phone = "123",
-                email = "email@gmail.com",
-                firstName = null,
-                lastName = null,
-                languageCode = null,
-                timeZone = null,
-                address = null,
-                fields = listOf()
-            ),
-            subscriptionKeys = listOf(),
-            groupNamesInclude = listOf(),
-            groupNamesExclude = listOf()
-        )
+    fun whenSendUsedData_thenCallUserToDbMapper() {
+        val user = getUser()
 
-        mockkStatic(User::toRemote)
+        mockkStatic(User::toDb)
         val deviceId = DeviceId(DEVICE_ID, EXTERNAL_DEVICE_ID)
         every { configRepository.getDeviceId() } returns deviceId
 
         SUT.saveUserData(user)
 
-        verify { user.toRemote(deviceId) }
+        verify { user.toDb(deviceId) }
 
-        unmockkStatic(User::toRemote)
+        unmockkStatic(User::toDb)
     }
 
     @Test
@@ -186,7 +195,7 @@ class ContactRepositoryTest : BaseRobolectricTest() {
         // Given
         val user = getUser()
         every { configRepository.getDeviceId() } returns mockk(relaxed = true)
-        val userDb = user.toRemote(mockk(relaxed = true))
+        val userDb = user.toDb(mockk(relaxed = true))
         every { retenoDatabaseManager.getUser(any()) } returnsMany listOf(
             listOf(userDb),
             emptyList()
@@ -204,11 +213,10 @@ class ContactRepositoryTest : BaseRobolectricTest() {
     fun whenDbHasSavedUser_thenSendToApi() {
         // Given
         val expectedUserJson =
-            "{\"deviceId\":\"device_ID\",\"externalUserId\":\"External_device_ID\",\"userAttributes\":{\"phone\":\"380999360360\",\"email\":\"email@gmail.com\",\"firstName\":\"John\",\"lastName\":\"Doe\",\"languageCode\":\"ua\",\"timeZone\":\"Kyiv\",\"address\":{\"region\":\"UA\",\"town\":\"Dnipro\",\"address\":\"Street, 7\",\"postcode\":\"45000\"},\"fields\":[{\"key\":\"key1\",\"value\":\"value\"},{\"key\":\"key2\",\"value\":\"true\"}]},\"subscriptionKeys\":[\"key1, key2\"],\"groupNamesInclude\":[\"add1\"],\"groupNamesExclude\":[\"remove1\"]}"
-
+            "{\"deviceId\":\"${DEVICE_ID}\",\"externalUserId\":\"${EXTERNAL_DEVICE_ID}\",\"userAttributes\":{\"phone\":\"${USER_ATTRS_PHONE}\",\"email\":\"${USER_ATTRS_EMAIL}\",\"firstName\":\"${USER_ATTRS_FIRST_NAME}\",\"lastName\":\"${USER_ATTRS_LAST_NAME}\",\"languageCode\":\"${USER_ATTRS_LANGUAGE_CODE}\",\"timeZone\":\"${USER_ATTRS_TIMEZONE}\",\"address\":{\"region\":\"${USER_ATTRS_ADDRESS_REGION}\",\"town\":\"${USER_ATTRS_ADDRESS_TOWN}\",\"address\":\"${USER_ATTRS_ADDRESS_ADDRESS}\",\"postcode\":\"${USER_ATTRS_ADDRESS_POSTCODE}\"},\"fields\":[{\"key\":\"${USER_ATTRS_FIELD_KEY_1}\",\"value\":\"${USER_ATTRS_FIELD_VALUE_1}\"},{\"key\":\"${USER_ATTRS_FIELD_KEY_2}\",\"value\":\"${USER_ATTRS_FIELD_VALUE_2}\"}]},\"subscriptionKeys\":${USER_SUBSCRIPTION_KEYS.toJson()},\"groupNamesInclude\":${USER_GROUP_NAMES_INCLUDE.toJson()},\"groupNamesExclude\":${USER_GROUP_NAMES_EXCLUDE.toJson()}}"
         val deviceId = DeviceId(DEVICE_ID, EXTERNAL_DEVICE_ID)
         every { configRepository.getDeviceId() } returns deviceId
-        val userDb = getUser().toRemote(deviceId)
+        val userDb = getUser().toDb(deviceId)
         every { configRepository.getDeviceId() } returns DeviceId(DEVICE_ID, EXTERNAL_DEVICE_ID)
         every { retenoDatabaseManager.getUser(any()) } returnsMany listOf(
             listOf(userDb),
@@ -224,7 +232,7 @@ class ContactRepositoryTest : BaseRobolectricTest() {
 
     @Test
     fun whenUserPushSuccessful_thenTryPushNextUser() {
-        val userData = mockk<UserRemote>(relaxed = true)
+        val userData = mockk<UserDb>(relaxed = true)
         every { retenoDatabaseManager.getUser(any()) } returnsMany listOf(listOf(userData), listOf(userData), emptyList())
         every { apiClient.post(url = any(), jsonBody = any(), responseHandler = any()) } answers {
             val callback = thirdArg<ResponseCallback>()
@@ -240,7 +248,7 @@ class ContactRepositoryTest : BaseRobolectricTest() {
 
     @Test
     fun whenUserPushFailedAndErrorIsRepeatable_cancelPushOperations() {
-        val userData = mockk<UserRemote>(relaxed = true)
+        val userData = mockk<UserDb>(relaxed = true)
         every { retenoDatabaseManager.getUser(any()) } returns listOf(userData)
         every { apiClient.post(url = any(), jsonBody = any(), responseHandler = any()) } answers {
             val callback = thirdArg<ResponseCallback>()
@@ -255,7 +263,7 @@ class ContactRepositoryTest : BaseRobolectricTest() {
 
     @Test
     fun whenUserPushFailedAndErrorIsNonRepeatable_thenTryPushNextUser() {
-        val userData = mockk<UserRemote>(relaxed = true)
+        val userData = mockk<UserDb>(relaxed = true)
         every { retenoDatabaseManager.getUser(any()) } returnsMany listOf(listOf(userData), listOf(userData), emptyList())
         every { apiClient.post(url = any(), jsonBody = any(), responseHandler = any()) } answers {
             val callback = thirdArg<ResponseCallback>()
@@ -284,31 +292,30 @@ class ContactRepositoryTest : BaseRobolectricTest() {
 
     }
 
-    private fun getUser(): User {
-        return User(
-            userAttributes = UserAttributes(
-                phone = "380999360360",
-                email = "email@gmail.com",
-                firstName = "John",
-                lastName = "Doe",
-                languageCode = "ua",
-                timeZone = "Kyiv",
-                address = Address(
-                    region = "UA",
-                    town = "Dnipro",
-                    address = "Street, 7",
-                    postcode = "45000"
-                ),
-                fields = listOf(
-                    UserCustomField("key1", "value"),
-                    UserCustomField("key2", "true")
-                )
+    // region helper methods -----------------------------------------------------------------------
+    private fun getUser() = User(
+        userAttributes = UserAttributes(
+            phone = USER_ATTRS_PHONE,
+            email = USER_ATTRS_EMAIL,
+            firstName = USER_ATTRS_FIRST_NAME,
+            lastName = USER_ATTRS_LAST_NAME,
+            languageCode = USER_ATTRS_LANGUAGE_CODE,
+            timeZone = USER_ATTRS_TIMEZONE,
+            address = Address(
+                region = USER_ATTRS_ADDRESS_REGION,
+                town = USER_ATTRS_ADDRESS_TOWN,
+                address = USER_ATTRS_ADDRESS_ADDRESS,
+                postcode = USER_ATTRS_ADDRESS_POSTCODE
             ),
-            subscriptionKeys = listOf("key1, key2"),
-            groupNamesInclude = listOf("add1"),
-            groupNamesExclude = listOf("remove1")
-        )
-    }
+            fields = listOf(
+                UserCustomField(USER_ATTRS_FIELD_KEY_1, USER_ATTRS_FIELD_VALUE_1),
+                UserCustomField(USER_ATTRS_FIELD_KEY_2, USER_ATTRS_FIELD_VALUE_2)
+            )
+        ),
+        subscriptionKeys = USER_SUBSCRIPTION_KEYS,
+        groupNamesInclude = USER_GROUP_NAMES_INCLUDE,
+        groupNamesExclude = USER_GROUP_NAMES_EXCLUDE
+    )
 
     private fun getDevice() = Device(
         DEVICE_ID,
@@ -323,4 +330,19 @@ class ContactRepositoryTest : BaseRobolectricTest() {
         null,
         null
     )
+
+    private fun getDeviceDb() = DeviceDb(
+        DEVICE_ID,
+        EXTERNAL_DEVICE_ID,
+        FCM_TOKEN_NEW,
+        DeviceCategoryDb.MOBILE,
+        DeviceOsDb.ANDROID,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+    )
+    // endregion helper methods --------------------------------------------------------------------
 }

@@ -3,20 +3,17 @@ package com.reteno.core.data.local.database
 import android.content.ContentValues
 import androidx.core.database.getLongOrNull
 import androidx.core.database.getStringOrNull
-
 import com.reteno.core.base.robolectric.BaseRobolectricTest
 import com.reteno.core.data.local.model.interaction.InteractionDb
 import com.reteno.core.data.local.model.interaction.InteractionStatusDb
 import com.reteno.core.util.Logger
-import org.junit.Assert.assertEquals
-
-import org.junit.Test
-
 import io.mockk.*
 import io.mockk.impl.annotations.MockK
 import io.mockk.impl.annotations.RelaxedMockK
 import junit.framework.TestCase.assertTrue
 import net.sqlcipher.Cursor
+import org.junit.Assert.assertEquals
+import org.junit.Test
 
 
 class RetenoDatabaseManagerInteractionTest : BaseRobolectricTest() {
@@ -55,16 +52,15 @@ class RetenoDatabaseManagerInteractionTest : BaseRobolectricTest() {
     }
     // endregion constants -------------------------------------------------------------------------
 
-
     // region helper fields ------------------------------------------------------------------------
     @RelaxedMockK
     private lateinit var database: RetenoDatabase
 
     @MockK
     private lateinit var cursor: Cursor
-    // endregion helper fields ---------------------------------------------------------------------
 
     private var SUT: RetenoDatabaseManagerImpl? = null
+    // endregion helper fields ---------------------------------------------------------------------
 
     override fun before() {
         super.before()

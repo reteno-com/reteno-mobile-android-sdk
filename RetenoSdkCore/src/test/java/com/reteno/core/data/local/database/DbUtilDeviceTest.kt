@@ -3,14 +3,18 @@ package com.reteno.core.data.local.database
 import android.content.ContentValues
 import androidx.core.database.getStringOrNull
 import com.reteno.core.base.robolectric.BaseRobolectricTest
+import com.reteno.core.data.local.mappers.toDb
+import com.reteno.core.data.local.model.device.DeviceCategoryDb
+import com.reteno.core.data.local.model.device.DeviceDb
+import com.reteno.core.data.local.model.device.DeviceOsDb
 import com.reteno.core.domain.model.device.Device
-import com.reteno.core.domain.model.device.DeviceCategory
 import com.reteno.core.domain.model.device.DeviceOS
-import io.mockk.*
+import io.mockk.clearMocks
+import io.mockk.every
+import io.mockk.impl.annotations.MockK
 import net.sqlcipher.Cursor
 import org.junit.Assert.assertEquals
 import org.junit.Test
-import io.mockk.impl.annotations.MockK
 
 
 class DbUtilDeviceTest : BaseRobolectricTest() {
@@ -21,8 +25,8 @@ class DbUtilDeviceTest : BaseRobolectricTest() {
         private const val EXTERNAL_USER_ID = "valueExternalUserId"
 
         private const val PUSH_TOKEN = "valuePushToken"
-        private val CATEGORY = DeviceCategory.TABLET
-        private val OS_TYPE = DeviceOS.ANDROID
+        private val CATEGORY = DeviceCategoryDb.TABLET
+        private val OS_TYPE = DeviceOsDb.ANDROID
         private const val OS_VERSION = "valueOsVersion"
         private const val DEVICE_MODEL = "valueDeviceModel"
         private const val APP_VERSION = "valueAppVersion"
@@ -66,7 +70,7 @@ class DbUtilDeviceTest : BaseRobolectricTest() {
     @Test
     fun givenDeviceProvided_whenPutDevice_thenContentValuesUpdated() {
         // Given
-        val device = Device(
+        val device = DeviceDb(
             deviceId = DEVICE_ID,
             externalUserId = EXTERNAL_USER_ID,
             pushToken = PUSH_TOKEN,
@@ -117,7 +121,7 @@ class DbUtilDeviceTest : BaseRobolectricTest() {
         // Given
         mockDeviceFull()
 
-        val expectedDevice = Device(
+        val expectedDevice = DeviceDb(
             deviceId = DEVICE_ID,
             externalUserId = EXTERNAL_USER_ID,
             pushToken = PUSH_TOKEN,
@@ -155,7 +159,7 @@ class DbUtilDeviceTest : BaseRobolectricTest() {
             languageCode = Device.fetchLanguageCode(),
             timeZone = Device.fetchTimeZone(),
             advertisingId = null
-        )
+        ).toDb()
 
         // When
         val actualDevice = cursor.getDevice()

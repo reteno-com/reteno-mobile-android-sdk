@@ -10,9 +10,9 @@ enum class InteractionStatusDb {
         @JvmStatic
         fun fromString(value: String?): InteractionStatusDb =
             when (value) {
-                InteractionStatus.DELIVERED.toString() -> InteractionStatusDb.DELIVERED
-                InteractionStatus.OPENED.toString() -> InteractionStatusDb.OPENED
-                else -> InteractionStatusDb.DELIVERED
+                InteractionStatus.DELIVERED.toString() -> DELIVERED
+                InteractionStatus.OPENED.toString() -> OPENED
+                else -> DELIVERED
             }
     }
 }

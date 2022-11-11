@@ -12,9 +12,10 @@ import com.reteno.core.Reteno;
 import com.reteno.core.RetenoImpl;
 import com.reteno.core._interop.DeviceIdInternal;
 import com.reteno.core.data.local.config.DeviceId;
+import com.reteno.core.data.local.model.device.DeviceCategoryDb;
+import com.reteno.core.data.local.model.device.DeviceDb;
+import com.reteno.core.data.local.model.device.DeviceOsDb;
 import com.reteno.core.domain.model.device.Device;
-import com.reteno.core.domain.model.device.DeviceCategory;
-import com.reteno.core.domain.model.device.DeviceOS;
 import com.reteno.sample.SampleApp;
 import com.reteno.sample.databinding.DialogDbWriteDeviceBinding;
 import com.reteno.sample.util.Util;
@@ -71,12 +72,12 @@ public class DeviceWriteDialogFragment extends BaseDatabaseDialogFragment {
 
     private void initListeners() {
         binding.btnSubmit.setOnClickListener(v -> {
-            Device device = new Device(
+            DeviceDb device = new DeviceDb(
                     binding.etDeviceId.getText().toString(),
                     Util.getTextOrNull(binding.etExternalUserId),
                     Util.getTextOrNull(binding.etPushToken),
-                    DeviceCategory.Companion.fromString(Util.getTextOrNull(binding.etCategory)),
-                    DeviceOS.Companion.fromString(Util.getTextOrNull(binding.etOsType)),
+                    DeviceCategoryDb.Companion.fromString(Util.getTextOrNull(binding.etCategory)),
+                    DeviceOsDb.Companion.fromString(Util.getTextOrNull(binding.etOsType)),
                     Util.getTextOrNull(binding.etOsVersion),
                     Util.getTextOrNull(binding.etDeviceModel),
                     Util.getTextOrNull(binding.etAppVersion),

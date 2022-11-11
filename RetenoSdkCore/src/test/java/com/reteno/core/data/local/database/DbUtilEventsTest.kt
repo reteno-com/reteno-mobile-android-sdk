@@ -3,9 +3,9 @@ package com.reteno.core.data.local.database
 import android.content.ContentValues
 import androidx.core.database.getStringOrNull
 import com.reteno.core.base.robolectric.BaseRobolectricTest
-import com.reteno.core.data.remote.model.event.EventRemote
-import com.reteno.core.data.remote.model.event.EventsRemote
-import com.reteno.core.data.remote.model.event.ParameterRemote
+import com.reteno.core.data.local.model.event.EventDb
+import com.reteno.core.data.local.model.event.EventsDb
+import com.reteno.core.data.local.model.event.ParameterDb
 import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
@@ -69,7 +69,7 @@ class DbUtilEventsTest : BaseRobolectricTest() {
     @Test
     fun givenEventsProvided_whenPutEvents_thenContentValuesUpdated() {
         // Given
-        val events = EventsRemote(
+        val events = EventsDb(
             deviceId = DEVICE_ID,
             externalUserId = EXTERNAL_USER_ID,
             eventList = listOf()
@@ -93,14 +93,14 @@ class DbUtilEventsTest : BaseRobolectricTest() {
     @Test
     fun givenEventsProvided_whenToContentValuesList_thenContentValuesListReturned() {
         // Given
-        val parameter1 = ParameterRemote(name = FIELD_PARAM_NAME_1, value = FIELD_PARAM_VALUE_1)
-        val parameter2 = ParameterRemote(name = FIELD_PARAM_NAME_2, value = FIELD_PARAM_VALUE_2)
+        val parameter1 = ParameterDb(name = FIELD_PARAM_NAME_1, value = FIELD_PARAM_VALUE_1)
+        val parameter2 = ParameterDb(name = FIELD_PARAM_NAME_2, value = FIELD_PARAM_VALUE_2)
         val params1 = listOf(parameter1, parameter2)
         val params2 = listOf(parameter2, parameter1)
 
-        val event1 = EventRemote(eventTypeKey = EVENT_1_TYPE_KEY, occurred = EVENT_1_OCCURRED, params = params1)
-        val event2 = EventRemote(eventTypeKey = EVENT_2_TYPE_KEY, occurred = EVENT_2_OCCURRED, params = params2)
-        val event3 = EventRemote(eventTypeKey = EVENT_3_TYPE_KEY, occurred = EVENT_3_OCCURRED, params = null)
+        val event1 = EventDb(eventTypeKey = EVENT_1_TYPE_KEY, occurred = EVENT_1_OCCURRED, params = params1)
+        val event2 = EventDb(eventTypeKey = EVENT_2_TYPE_KEY, occurred = EVENT_2_OCCURRED, params = params2)
+        val event3 = EventDb(eventTypeKey = EVENT_3_TYPE_KEY, occurred = EVENT_3_OCCURRED, params = null)
         val eventList = listOf(event1, event2, event3)
 
         val expectedParams1 = "[${getExpectedParam1()},${getExpectedParam2()}]"
@@ -132,8 +132,8 @@ class DbUtilEventsTest : BaseRobolectricTest() {
         // Given
         mockEventFull()
 
-        val expectedParams = listOf(ParameterRemote(FIELD_PARAM_NAME_1, FIELD_PARAM_VALUE_1), ParameterRemote(FIELD_PARAM_NAME_2, FIELD_PARAM_VALUE_2))
-        val expectedEvent = EventRemote(
+        val expectedParams = listOf(ParameterDb(FIELD_PARAM_NAME_1, FIELD_PARAM_VALUE_1), ParameterDb(FIELD_PARAM_NAME_2, FIELD_PARAM_VALUE_2))
+        val expectedEvent = EventDb(
             eventTypeKey = EVENT_1_TYPE_KEY,
             occurred = EVENT_1_OCCURRED,
             params = expectedParams
@@ -151,7 +151,7 @@ class DbUtilEventsTest : BaseRobolectricTest() {
         // Given
         mockEventParamsEmpty()
 
-        val expectedEvent = EventRemote(
+        val expectedEvent = EventDb(
             eventTypeKey = EVENT_1_TYPE_KEY,
             occurred = EVENT_1_OCCURRED,
             params = listOf()
@@ -169,7 +169,7 @@ class DbUtilEventsTest : BaseRobolectricTest() {
         // Given
         mockEventParamsNull()
 
-        val expectedEvent = EventRemote(
+        val expectedEvent = EventDb(
             eventTypeKey = EVENT_1_TYPE_KEY,
             occurred = EVENT_1_OCCURRED,
             params = null

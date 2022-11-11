@@ -33,10 +33,9 @@ class InteractionRepositoryImpl(
         }
         /*@formatter:off*/ Logger.i(TAG, "pushInteractions(): ", "interactionDb = [" , interactionDb , "]")
         /*@formatter:on*/
-        val interaction = interactionDb.toRemote()
         apiClient.put(
             ApiContract.RetenoApi.InteractionStatus(interactionDb.interactionId),
-            interaction.toJson(),
+            interactionDb.toRemote().toJson(),
             object : ResponseCallback {
 
                 override fun onSuccess(response: String) {

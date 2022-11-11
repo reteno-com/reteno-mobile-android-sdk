@@ -20,12 +20,12 @@ import com.reteno.core.data.local.database.DbSchema.UserAddressSchema.COLUMN_POS
 import com.reteno.core.data.local.database.DbSchema.UserAddressSchema.COLUMN_REGION
 import com.reteno.core.data.local.database.DbSchema.UserAddressSchema.COLUMN_TOWN
 import com.reteno.core.data.local.database.DbSchema.UserAddressSchema.TABLE_NAME_USER_ADDRESS
+import com.reteno.core.data.local.database.DbSchema.UserAttributesSchema.COLUMN_CUSTOM_FIELDS
 import com.reteno.core.data.local.database.DbSchema.UserAttributesSchema.COLUMN_EMAIL
 import com.reteno.core.data.local.database.DbSchema.UserAttributesSchema.COLUMN_FIRST_NAME
 import com.reteno.core.data.local.database.DbSchema.UserAttributesSchema.COLUMN_LANGUAGE_CODE
 import com.reteno.core.data.local.database.DbSchema.UserAttributesSchema.COLUMN_LAST_NAME
 import com.reteno.core.data.local.database.DbSchema.UserAttributesSchema.COLUMN_PHONE
-import com.reteno.core.data.local.database.DbSchema.UserAttributesSchema.COLUMN_CUSTOM_FIELDS
 import com.reteno.core.data.local.database.DbSchema.UserAttributesSchema.COLUMN_TIME_ZONE
 import com.reteno.core.data.local.database.DbSchema.UserAttributesSchema.TABLE_NAME_USER_ATTRIBUTES
 import com.reteno.core.data.local.database.DbSchema.UserSchema.COLUMN_DEVICE_ID
@@ -35,11 +35,11 @@ import com.reteno.core.data.local.database.DbSchema.UserSchema.COLUMN_GROUP_NAME
 import com.reteno.core.data.local.database.DbSchema.UserSchema.COLUMN_SUBSCRIPTION_KEYS
 import com.reteno.core.data.local.database.DbSchema.UserSchema.COLUMN_USER_ROW_ID
 import com.reteno.core.data.local.database.DbSchema.UserSchema.TABLE_NAME_USER
+import com.reteno.core.data.local.model.device.DeviceDb
+import com.reteno.core.data.local.model.event.EventDb
+import com.reteno.core.data.local.model.event.EventsDb
 import com.reteno.core.data.local.model.interaction.InteractionDb
-import com.reteno.core.data.remote.model.event.EventRemote
-import com.reteno.core.data.remote.model.event.EventsRemote
-import com.reteno.core.data.remote.model.user.UserRemote
-import com.reteno.core.domain.model.device.Device
+import com.reteno.core.data.local.model.user.UserDb
 import com.reteno.core.util.Logger
 import com.reteno.core.util.allElementsNotNull
 import net.sqlcipher.Cursor
@@ -50,14 +50,14 @@ class RetenoDatabaseManagerImpl(private val database: RetenoDatabase) : RetenoDa
     private val contentValues = ContentValues()
 
 
-    override fun insertDevice(device: Device) {
+    override fun insertDevice(device: DeviceDb) {
         contentValues.putDevice(device)
         database.insert(table = TABLE_NAME_DEVICE, contentValues = contentValues)
         contentValues.clear()
     }
 
-    override fun getDevices(limit: Int?): List<Device> {
-        val deviceEvents: MutableList<Device> = mutableListOf()
+    override fun getDevices(limit: Int?): List<DeviceDb> {
+        val deviceEvents: MutableList<DeviceDb> = mutableListOf()
 
         var cursor: Cursor? = null
         try {
@@ -111,7 +111,7 @@ class RetenoDatabaseManagerImpl(private val database: RetenoDatabase) : RetenoDa
 
 
     //==============================================================================================
-    override fun insertUser(user: UserRemote) {
+    override fun insertUser(user: UserDb) {
         contentValues.putUser(user)
         val rowId = database.insert(table = TABLE_NAME_USER, contentValues = contentValues)
         contentValues.clear()
@@ -129,8 +129,8 @@ class RetenoDatabaseManagerImpl(private val database: RetenoDatabase) : RetenoDa
         }
     }
 
-    override fun getUser(limit: Int?): List<UserRemote> {
-        val userEvents: MutableList<UserRemote> = mutableListOf()
+    override fun getUser(limit: Int?): List<UserDb> {
+        val userEvents: MutableList<UserDb> = mutableListOf()
         val rawQueryLimit: String = limit?.let { " LIMIT $it" } ?: ""
 
         var cursor: Cursor? = null
@@ -262,7 +262,7 @@ class RetenoDatabaseManagerImpl(private val database: RetenoDatabase) : RetenoDa
     }
 
     //==============================================================================================
-    override fun insertEvents(events: EventsRemote) {
+    override fun insertEvents(events: EventsDb) {
         var parentRowId: Long = -1L
 
         var cursor: Cursor? = null
@@ -304,10 +304,10 @@ class RetenoDatabaseManagerImpl(private val database: RetenoDatabase) : RetenoDa
         database.insertMultiple(table = TABLE_NAME_EVENT, contentValues = eventListContentValues)
     }
 
-    override fun getEvents(limit: Int?): List<EventsRemote> {
+    override fun getEvents(limit: Int?): List<EventsDb> {
         var cursor: Cursor? = null
 
-        val eventsParentTableList: MutableMap<String, EventsRemote> = mutableMapOf()
+        val eventsParentTableList: MutableMap<String, EventsDb> = mutableMapOf()
         try {
             cursor = database.query(
                 table = TABLE_NAME_EVENTS,
@@ -321,7 +321,7 @@ class RetenoDatabaseManagerImpl(private val database: RetenoDatabase) : RetenoDa
 
                 if (allElementsNotNull(eventsId, deviceId)) {
                     eventsParentTableList[eventsId!!.toString()] =
-                        EventsRemote(deviceId!!, externalUserId, listOf())
+                        EventsDb(deviceId!!, externalUserId, listOf())
                 } else {
                     val exception =
                         SQLException("Unable to read data from SQL database getEvents(). eventsId=$eventsId, deviceId=$deviceId, externalUserId=$externalUserId")
@@ -345,10 +345,10 @@ class RetenoDatabaseManagerImpl(private val database: RetenoDatabase) : RetenoDa
             cursor?.close()
         }
 
-        val eventsResult: MutableList<EventsRemote> = mutableListOf()
+        val eventsResult: MutableList<EventsDb> = mutableListOf()
         for (eventsParent in eventsParentTableList.entries.iterator()) {
             val foreignKeyRowId = eventsParent.key
-            val eventList: MutableList<EventRemote> = mutableListOf()
+            val eventList: MutableList<EventDb> = mutableListOf()
 
             var cursorChild: Cursor? = null
             try {
@@ -391,7 +391,7 @@ class RetenoDatabaseManagerImpl(private val database: RetenoDatabase) : RetenoDa
 
 
             if (eventList.isNotEmpty()) {
-                val singleEventResult = EventsRemote(
+                val singleEventResult = EventsDb(
                     eventsParent.value.deviceId,
                     eventsParent.value.externalUserId,
                     eventList

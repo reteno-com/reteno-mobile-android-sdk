@@ -8,10 +8,7 @@ import com.reteno.core.data.repository.ContactRepository
 import com.reteno.core.domain.model.device.Device
 import com.reteno.core.domain.model.device.DeviceCategory
 import com.reteno.core.domain.model.device.DeviceOS
-import com.reteno.core.domain.model.user.Address
 import com.reteno.core.domain.model.user.User
-import com.reteno.core.domain.model.user.UserAttributes
-import com.reteno.core.domain.model.user.UserCustomField
 import io.mockk.*
 import io.mockk.impl.annotations.RelaxedMockK
 import org.junit.Test
@@ -27,6 +24,11 @@ class ContactControllerTest : BaseUnitTest() {
         private const val EXTERNAL_DEVICE_ID_NEW = "External_device_ID_NEW"
         private const val FCM_TOKEN_OLD = "FCM_Token_OLD"
         private const val FCM_TOKEN_NEW = "FCM_Token"
+
+
+        private val USER_SUBSCRIPTION_KEYS = listOf("SUBSCRIPTION_KEYS")
+        private val USER_GROUP_NAMES_INCLUDE = listOf("GROUP_NAMES_INCLUDE")
+        private val USER_GROUP_NAMES_EXCLUDE = listOf("GROUP_NAMES_EXCLUDE")
     }
     // endregion constants -------------------------------------------------------------------------
 
@@ -37,9 +39,9 @@ class ContactControllerTest : BaseUnitTest() {
 
     @RelaxedMockK
     private lateinit var configRepository: ConfigRepository
-    // endregion helper fields ---------------------------------------------------------------------
 
     private lateinit var SUT: ContactController
+    // endregion helper fields ---------------------------------------------------------------------
 
     override fun before() {
         super.before()
@@ -208,7 +210,12 @@ class ContactControllerTest : BaseUnitTest() {
 
     @Test
     fun whenSetUserData_thenInteractWithContactRepository() {
-        val user = mockk<User>()
+        val user = User(
+            userAttributes = null,
+            subscriptionKeys = USER_SUBSCRIPTION_KEYS,
+            groupNamesInclude = USER_GROUP_NAMES_INCLUDE,
+            groupNamesExclude = USER_GROUP_NAMES_EXCLUDE
+        )
 
         SUT.setUserData(user)
 

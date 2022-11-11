@@ -19,6 +19,21 @@ import java.time.ZonedDateTime
 
 class RetenoImplTest : BaseUnitTest() {
 
+    // region constants ----------------------------------------------------------------------------
+    companion object {
+        private const val EXTERNAL_USER_ID = "external_user_ID"
+
+        private val USER_SUBSCRIPTION_KEYS = listOf("SUBSCRIPTION_KEYS")
+        private val USER_GROUP_NAMES_INCLUDE = listOf("GROUP_NAMES_INCLUDE")
+        private val USER_GROUP_NAMES_EXCLUDE = listOf("GROUP_NAMES_EXCLUDE")
+
+        private const val EVENT_TYPE_KEY = "EVENT_TYPE_KEY"
+        private const val EVENT_PARAMETER_KEY_1 = "KEY1"
+        private const val EVENT_PARAMETER_VALUE_1 = "VALUE1"
+    }
+    // endregion constants -------------------------------------------------------------------------
+
+    // region helper fields ------------------------------------------------------------------------
     @RelaxedMockK
     private lateinit var contactController: ContactController
 
@@ -27,10 +42,7 @@ class RetenoImplTest : BaseUnitTest() {
 
     @RelaxedMockK
     private lateinit var eventController: EventController
-
-    companion object {
-        private const val EXTERNAL_USER_ID = "external_user_ID"
-    }
+    // endregion helper fields ---------------------------------------------------------------------
 
     override fun before() {
         super.before()
@@ -69,14 +81,19 @@ class RetenoImplTest : BaseUnitTest() {
 
     @Test
     fun externalIdAndUser_whenSetUserAttributesWithUser_thenInteractWithController() {
-        val user = mockk<User>()
+        val userFull = User(
+            userAttributes = null,
+            subscriptionKeys = USER_SUBSCRIPTION_KEYS,
+            groupNamesInclude = USER_GROUP_NAMES_INCLUDE,
+            groupNamesExclude = USER_GROUP_NAMES_EXCLUDE
+        )
         val application = mockk<Application>()
 
         val retenoImpl = RetenoImpl(application, "")
 
-        retenoImpl.setUserAttributes(EXTERNAL_USER_ID, user)
+        retenoImpl.setUserAttributes(EXTERNAL_USER_ID, userFull)
         verify { contactController.setExternalUserId(eq(EXTERNAL_USER_ID)) }
-        verify { contactController.setUserData(user) }
+        verify { contactController.setUserData(userFull) }
     }
 
     @Test
@@ -85,9 +102,9 @@ class RetenoImplTest : BaseUnitTest() {
         val retenoImpl = RetenoImpl(application, "")
 
         val event = Event(
-            eventTypeKey = "EVENT_TYPE_KEY",
+            eventTypeKey = EVENT_TYPE_KEY,
             occurred = ZonedDateTime.now(),
-            params = listOf(Parameter("key", "value"))
+            params = listOf(Parameter(EVENT_PARAMETER_KEY_1, EVENT_PARAMETER_VALUE_1))
         )
         retenoImpl.logEvent(event.eventTypeKey, event.occurred, event.params)
         verify { eventController.saveEvent(event) }
@@ -147,6 +164,5 @@ class RetenoImplTest : BaseUnitTest() {
         retenoImpl.forcePushData()
 
         verify(exactly = 1) { scheduleController.forcePush() }
-
     }
 }
