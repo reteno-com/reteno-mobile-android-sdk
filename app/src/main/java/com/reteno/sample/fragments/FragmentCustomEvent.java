@@ -13,7 +13,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.navigation.fragment.NavHostFragment;
 
-import com.reteno.core.model.event.Parameter;
+import com.reteno.core.domain.model.event.Parameter;
 import com.reteno.sample.BaseFragment;
 import com.reteno.sample.R;
 import com.reteno.sample.databinding.FragmentCustomEventBinding;

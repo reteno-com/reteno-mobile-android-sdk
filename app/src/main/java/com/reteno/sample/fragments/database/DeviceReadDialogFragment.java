@@ -8,7 +8,7 @@ import androidx.annotation.NonNull;
 import androidx.transition.AutoTransition;
 import androidx.transition.TransitionManager;
 
-import com.reteno.core.model.device.Device;
+import com.reteno.core.domain.model.device.Device;
 import com.reteno.sample.R;
 import com.reteno.sample.databinding.ItemDbDeviceBinding;
 

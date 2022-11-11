@@ -2,21 +2,22 @@ package com.reteno.core.data.local.database
 
 import android.content.ContentValues
 import androidx.core.database.getStringOrNull
-import com.reteno.core.data.local.model.InteractionModelDb
+import com.reteno.core.data.local.model.interaction.InteractionDb
+import com.reteno.core.data.local.model.interaction.InteractionStatusDb
 import com.reteno.core.data.remote.mapper.fromJson
 import com.reteno.core.data.remote.mapper.listFromJson
 import com.reteno.core.data.remote.mapper.toJson
-import com.reteno.core.data.remote.model.event.EventDTO
-import com.reteno.core.data.remote.model.event.EventsDTO
-import com.reteno.core.data.remote.model.event.ParameterDTO
-import com.reteno.core.data.remote.model.user.AddressDTO
-import com.reteno.core.data.remote.model.user.UserAttributesDTO
-import com.reteno.core.data.remote.model.user.UserCustomFieldDTO
-import com.reteno.core.data.remote.model.user.UserDTO
-import com.reteno.core.model.device.Device
-import com.reteno.core.model.device.DeviceCategory
-import com.reteno.core.model.device.DeviceOS
-import com.reteno.core.model.interaction.InteractionStatus
+import com.reteno.core.data.remote.model.event.EventRemote
+import com.reteno.core.data.remote.model.event.EventsRemote
+import com.reteno.core.data.remote.model.event.ParameterRemote
+import com.reteno.core.data.remote.model.user.AddressRemote
+import com.reteno.core.data.remote.model.user.UserAttributesRemote
+import com.reteno.core.data.remote.model.user.UserCustomFieldRemote
+import com.reteno.core.data.remote.model.user.UserRemote
+import com.reteno.core.domain.model.device.Device
+import com.reteno.core.domain.model.device.DeviceCategory
+import com.reteno.core.domain.model.device.DeviceOS
+import com.reteno.core.domain.model.interaction.InteractionStatus
 import com.reteno.core.util.allElementsNotNull
 import com.reteno.core.util.allElementsNull
 import net.sqlcipher.Cursor
@@ -70,7 +71,7 @@ fun Cursor.getDevice(): Device? {
 
 
 // --------------------- User ------------------------------------------------------------------
-fun ContentValues.putUser(user: UserDTO) {
+fun ContentValues.putUser(user: UserRemote) {
     put(DbSchema.UserSchema.COLUMN_DEVICE_ID, user.deviceId)
     put(DbSchema.UserSchema.COLUMN_EXTERNAL_USER_ID, user.externalUserId)
     put(DbSchema.UserSchema.COLUMN_SUBSCRIPTION_KEYS, user.subscriptionKeys?.toJson())
@@ -78,7 +79,7 @@ fun ContentValues.putUser(user: UserDTO) {
     put(DbSchema.UserSchema.COLUMN_GROUP_NAMES_EXCLUDE, user.groupNamesExclude?.toJson())
 }
 
-fun ContentValues.putUserAttributes(parentRowId: Long, userAttributes: UserAttributesDTO) {
+fun ContentValues.putUserAttributes(parentRowId: Long, userAttributes: UserAttributesRemote) {
     put(DbSchema.UserSchema.COLUMN_USER_ROW_ID, parentRowId)
 
     put(DbSchema.UserAttributesSchema.COLUMN_PHONE, userAttributes.phone)
@@ -91,7 +92,7 @@ fun ContentValues.putUserAttributes(parentRowId: Long, userAttributes: UserAttri
     put(DbSchema.UserAttributesSchema.COLUMN_CUSTOM_FIELDS, userAttributes.fields?.toJson())
 }
 
-fun ContentValues.putUserAddress(parentRowId: Long, userAddress: AddressDTO) {
+fun ContentValues.putUserAddress(parentRowId: Long, userAddress: AddressRemote) {
     put(DbSchema.UserSchema.COLUMN_USER_ROW_ID, parentRowId)
 
     put(DbSchema.UserAddressSchema.COLUMN_REGION, userAddress.region)
@@ -100,7 +101,7 @@ fun ContentValues.putUserAddress(parentRowId: Long, userAddress: AddressDTO) {
     put(DbSchema.UserAddressSchema.COLUMN_POSTCODE, userAddress.postcode)
 }
 
-fun Cursor.getUser(): UserDTO? {
+fun Cursor.getUser(): UserRemote? {
     val region = getStringOrNull(getColumnIndex(DbSchema.UserAddressSchema.COLUMN_REGION))
     val town = getStringOrNull(getColumnIndex(DbSchema.UserAddressSchema.COLUMN_TOWN))
     val address = getStringOrNull(getColumnIndex(DbSchema.UserAddressSchema.COLUMN_ADDRESS))
@@ -109,7 +110,7 @@ fun Cursor.getUser(): UserDTO? {
     val userAddress = if (allElementsNull(region, town, address, postCode)) {
         null
     } else {
-        AddressDTO(region = region, town = town, address = address, postcode = postCode)
+        AddressRemote(region = region, town = town, address = address, postcode = postCode)
     }
 
     val phone = getStringOrNull(getColumnIndex(DbSchema.UserAttributesSchema.COLUMN_PHONE))
@@ -118,7 +119,7 @@ fun Cursor.getUser(): UserDTO? {
     val lastName = getStringOrNull(getColumnIndex(DbSchema.UserAttributesSchema.COLUMN_LAST_NAME))
     val languageCode = getStringOrNull(getColumnIndex(DbSchema.UserAttributesSchema.COLUMN_LANGUAGE_CODE))
     val timeZone = getStringOrNull(getColumnIndex(DbSchema.UserAttributesSchema.COLUMN_TIME_ZONE))
-    val customFields = getStringOrNull(getColumnIndex(DbSchema.UserAttributesSchema.COLUMN_CUSTOM_FIELDS))?.listFromJson<UserCustomFieldDTO>()
+    val customFields = getStringOrNull(getColumnIndex(DbSchema.UserAttributesSchema.COLUMN_CUSTOM_FIELDS))?.listFromJson<UserCustomFieldRemote>()
 
     val userAttributes = if (allElementsNull(
             phone,
@@ -133,7 +134,7 @@ fun Cursor.getUser(): UserDTO? {
     ) {
         null
     } else {
-        UserAttributesDTO(
+        UserAttributesRemote(
             phone = phone,
             email = email,
             firstName = firstName,
@@ -154,7 +155,7 @@ fun Cursor.getUser(): UserDTO? {
     return if (deviceId == null || externalUserId == null) {
         null
     } else {
-        UserDTO(
+        UserRemote(
             deviceId = deviceId,
             externalUserId = externalUserId,
             userAttributes = userAttributes,
@@ -166,23 +167,23 @@ fun Cursor.getUser(): UserDTO? {
 }
 
 // --------------------- Push Status -----------------------------------------------------------
-fun ContentValues.putInteraction(interaction: InteractionModelDb) {
+fun ContentValues.putInteraction(interaction: InteractionDb) {
     put(DbSchema.InteractionSchema.COLUMN_INTERACTION_ID, interaction.interactionId)
     put(DbSchema.InteractionSchema.COLUMN_INTERACTION_TIME, interaction.time)
     put(DbSchema.InteractionSchema.COLUMN_INTERACTION_STATUS, interaction.status.toString())
     put(DbSchema.InteractionSchema.COLUMN_INTERACTION_TOKEN, interaction.token)
 }
 
-fun Cursor.getInteraction(): InteractionModelDb? {
+fun Cursor.getInteraction(): InteractionDb? {
     val interactionId = getStringOrNull(getColumnIndex(DbSchema.InteractionSchema.COLUMN_INTERACTION_ID))
     val status = getStringOrNull(getColumnIndex(DbSchema.InteractionSchema.COLUMN_INTERACTION_STATUS))
     val time = getStringOrNull(getColumnIndex(DbSchema.InteractionSchema.COLUMN_INTERACTION_TIME))
     val token = getStringOrNull(getColumnIndex(DbSchema.InteractionSchema.COLUMN_INTERACTION_TOKEN))
 
     return if (allElementsNotNull(interactionId, status, time, token)) {
-        InteractionModelDb(
+        InteractionDb(
             interactionId = interactionId!!,
-            status = InteractionStatus.fromString(status),
+            status = InteractionStatusDb.fromString(status),
             time = time!!,
             token = token!!
         )
@@ -192,12 +193,12 @@ fun Cursor.getInteraction(): InteractionModelDb? {
 }
 
 // --------------------- Events ----------------------------------------------------------------
-fun ContentValues.putEvents(events: EventsDTO) {
+fun ContentValues.putEvents(events: EventsRemote) {
     put(DbSchema.EventsSchema.COLUMN_EVENTS_DEVICE_ID, events.deviceId)
     put(DbSchema.EventsSchema.COLUMN_EVENTS_EXTERNAL_USER_ID, events.externalUserId)
 }
 
-fun List<EventDTO>.toContentValuesList(parentRowId: Long): List<ContentValues> {
+fun List<EventRemote>.toContentValuesList(parentRowId: Long): List<ContentValues> {
     val contentValues = mutableListOf<ContentValues>()
 
     for (event in this) {
@@ -213,15 +214,15 @@ fun List<EventDTO>.toContentValuesList(parentRowId: Long): List<ContentValues> {
     return contentValues
 }
 
-fun Cursor.getEvent(): EventDTO? {
+fun Cursor.getEvent(): EventRemote? {
     val eventTypeKey = getStringOrNull(getColumnIndex(DbSchema.EventSchema.COLUMN_EVENT_TYPE_KEY))
     val occurred = getStringOrNull(getColumnIndex(DbSchema.EventSchema.COLUMN_EVENT_OCCURRED))
 
     val paramsString = getStringOrNull(getColumnIndex(DbSchema.EventSchema.COLUMN_EVENT_PARAMS))
-    val params: List<ParameterDTO>? = paramsString?.listFromJson<ParameterDTO>()
+    val params: List<ParameterRemote>? = paramsString?.listFromJson<ParameterRemote>()
 
-    val result: EventDTO? = if (allElementsNotNull(eventTypeKey, occurred)) {
-        EventDTO(eventTypeKey!!, occurred!!, params)
+    val result: EventRemote? = if (allElementsNotNull(eventTypeKey, occurred)) {
+        EventRemote(eventTypeKey!!, occurred!!, params)
     } else {
         null
     }

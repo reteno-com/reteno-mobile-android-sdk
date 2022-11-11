@@ -8,8 +8,8 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import com.reteno.core.data.local.model.InteractionModelDb;
-import com.reteno.core.model.interaction.InteractionStatus;
+import com.reteno.core.data.local.model.interaction.InteractionDb;
+import com.reteno.core.domain.model.interaction.InteractionStatus;
 import com.reteno.core.util.UtilKt;
 import com.reteno.sample.databinding.DialogDbWriteInteractionBinding;
 import com.reteno.sample.util.Util;
@@ -47,7 +47,7 @@ public class InteractionWriteDialogFragment extends BaseDatabaseDialogFragment {
             String token = Util.getTextOrNull(binding.etToken);
 
             if (UtilKt.allElementsNotNull(interactionId, status, time, token)) {
-                InteractionModelDb interaction = new InteractionModelDb(
+                InteractionDb interaction = new InteractionDb(
                         interactionId,
                         InteractionStatus.fromString(status),
                         time,

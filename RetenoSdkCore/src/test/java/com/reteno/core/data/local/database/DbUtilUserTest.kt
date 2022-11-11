@@ -3,10 +3,10 @@ package com.reteno.core.data.local.database
 import android.content.ContentValues
 import androidx.core.database.getStringOrNull
 import com.reteno.core.base.robolectric.BaseRobolectricTest
-import com.reteno.core.data.remote.model.user.AddressDTO
-import com.reteno.core.data.remote.model.user.UserAttributesDTO
-import com.reteno.core.data.remote.model.user.UserCustomFieldDTO
-import com.reteno.core.data.remote.model.user.UserDTO
+import com.reteno.core.data.remote.model.user.AddressRemote
+import com.reteno.core.data.remote.model.user.UserAttributesRemote
+import com.reteno.core.data.remote.model.user.UserCustomFieldRemote
+import com.reteno.core.data.remote.model.user.UserRemote
 import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
@@ -87,7 +87,7 @@ class DbUtilUserTest : BaseRobolectricTest() {
     @Test
     fun givenUserProvided_whenPutUser_thenContentValuesUpdated() {
         // Given
-        val user = UserDTO(
+        val user = UserRemote(
             deviceId = DEVICE_ID,
             externalUserId = EXTERNAL_USER_ID,
             userAttributes = null,
@@ -119,7 +119,7 @@ class DbUtilUserTest : BaseRobolectricTest() {
     @Test
     fun givenUserProvided_whenPutUserExternalUserIdOnly_thenContentValuesUpdated() {
         // Given
-        val user = UserDTO(
+        val user = UserRemote(
             deviceId = DEVICE_ID,
             externalUserId = EXTERNAL_USER_ID,
             userAttributes = null,
@@ -151,7 +151,7 @@ class DbUtilUserTest : BaseRobolectricTest() {
     @Test
     fun givenUserAttributesProvided_whenPutUserAttributesNoCustomFields_thenContentValuesUpdated() {
         // Given
-        val userAttributesDTO = UserAttributesDTO(
+        val userAttributesRemote = UserAttributesRemote(
             phone = PHONE,
             email = EMAIL,
             firstName = FIRST_NAME,
@@ -173,7 +173,7 @@ class DbUtilUserTest : BaseRobolectricTest() {
         )
 
         // When
-        contentValues.putUserAttributes(USER_PARENT_ROW_ID, userAttributesDTO)
+        contentValues.putUserAttributes(USER_PARENT_ROW_ID, userAttributesRemote)
 
         // Then
         assertEquals(keySet.toSet(), contentValues.keySet())
@@ -192,13 +192,13 @@ class DbUtilUserTest : BaseRobolectricTest() {
     fun givenUserAttributesProvided_whenPutUserAttributesWithCustomFields_thenContentValuesUpdated() {
         // Given
         val expectedCustomFieldsResult = getExpectedCustomFields()
-        val customFields = listOf<UserCustomFieldDTO>(
-            UserCustomFieldDTO(FIELD_KEY1, FIELD_VALUE1),
-            UserCustomFieldDTO(FIELD_KEY2, FIELD_VALUE2),
-            UserCustomFieldDTO(FIELD_KEY3, null)
+        val customFields = listOf(
+            UserCustomFieldRemote(FIELD_KEY1, FIELD_VALUE1),
+            UserCustomFieldRemote(FIELD_KEY2, FIELD_VALUE2),
+            UserCustomFieldRemote(FIELD_KEY3, null)
         )
 
-        val userAttributesDTO = UserAttributesDTO(
+        val userAttributesRemote = UserAttributesRemote(
             phone = PHONE,
             email = EMAIL,
             firstName = FIRST_NAME,
@@ -220,7 +220,7 @@ class DbUtilUserTest : BaseRobolectricTest() {
         )
 
         // When
-        contentValues.putUserAttributes(USER_PARENT_ROW_ID, userAttributesDTO)
+        contentValues.putUserAttributes(USER_PARENT_ROW_ID, userAttributesRemote)
 
         // Then
         assertEquals(keySet.toSet(), contentValues.keySet())
@@ -238,7 +238,7 @@ class DbUtilUserTest : BaseRobolectricTest() {
     @Test
     fun givenUserAddressProvided_whenPutUserAddress_thenContentValuesUpdated() {
         // Given
-        val userAddressDTO = AddressDTO(
+        val userAddressRemote = AddressRemote(
             region = REGION,
             town = TOWN,
             address = ADDRESS,
@@ -253,7 +253,7 @@ class DbUtilUserTest : BaseRobolectricTest() {
         )
 
         // When
-        contentValues.putUserAddress(USER_PARENT_ROW_ID, userAddressDTO)
+        contentValues.putUserAddress(USER_PARENT_ROW_ID, userAddressRemote)
 
         // Then
         assertEquals(keySet.toSet(), contentValues.keySet())
@@ -272,19 +272,19 @@ class DbUtilUserTest : BaseRobolectricTest() {
         mockUserAddressFull()
         mockUserAttributesFull()
 
-        val expectedAddress = AddressDTO(
+        val expectedAddress = AddressRemote(
             region = REGION,
             town = TOWN,
             address = ADDRESS,
             postcode = POSTCODE
         )
 
-        val expectedCustomFields = listOf<UserCustomFieldDTO>(
-            UserCustomFieldDTO(FIELD_KEY1, FIELD_VALUE1),
-            UserCustomFieldDTO(FIELD_KEY2, FIELD_VALUE2),
-            UserCustomFieldDTO(FIELD_KEY3, null)
+        val expectedCustomFields = listOf(
+            UserCustomFieldRemote(FIELD_KEY1, FIELD_VALUE1),
+            UserCustomFieldRemote(FIELD_KEY2, FIELD_VALUE2),
+            UserCustomFieldRemote(FIELD_KEY3, null)
         )
-        val expectedUserAttributes = UserAttributesDTO(
+        val expectedUserAttributes = UserAttributesRemote(
             phone = PHONE,
             email = EMAIL,
             firstName = FIRST_NAME,
@@ -295,7 +295,7 @@ class DbUtilUserTest : BaseRobolectricTest() {
             fields = expectedCustomFields
         )
 
-        val expectedUser = UserDTO(
+        val expectedUser = UserRemote(
             deviceId = DEVICE_ID,
             externalUserId = EXTERNAL_USER_ID,
             userAttributes = expectedUserAttributes,
@@ -320,12 +320,12 @@ class DbUtilUserTest : BaseRobolectricTest() {
 
         val expectedAddress = null
 
-        val expectedCustomFields = listOf<UserCustomFieldDTO>(
-            UserCustomFieldDTO(FIELD_KEY1, FIELD_VALUE1),
-            UserCustomFieldDTO(FIELD_KEY2, FIELD_VALUE2),
-            UserCustomFieldDTO(FIELD_KEY3, null)
+        val expectedCustomFields = listOf(
+            UserCustomFieldRemote(FIELD_KEY1, FIELD_VALUE1),
+            UserCustomFieldRemote(FIELD_KEY2, FIELD_VALUE2),
+            UserCustomFieldRemote(FIELD_KEY3, null)
         )
-        val expectedUserAttributes = UserAttributesDTO(
+        val expectedUserAttributes = UserAttributesRemote(
             phone = PHONE,
             email = EMAIL,
             firstName = FIRST_NAME,
@@ -336,7 +336,7 @@ class DbUtilUserTest : BaseRobolectricTest() {
             fields = expectedCustomFields
         )
 
-        val expectedUser = UserDTO(
+        val expectedUser = UserRemote(
             deviceId = DEVICE_ID,
             externalUserId = EXTERNAL_USER_ID,
             userAttributes = expectedUserAttributes,
@@ -359,14 +359,14 @@ class DbUtilUserTest : BaseRobolectricTest() {
         mockUserAddressFull()
         mockUserAttributesWithoutCustomFields()
 
-        val expectedAddress = AddressDTO(
+        val expectedAddress = AddressRemote(
             region = REGION,
             town = TOWN,
             address = ADDRESS,
             postcode = POSTCODE
         )
 
-        val expectedUserAttributes = UserAttributesDTO(
+        val expectedUserAttributes = UserAttributesRemote(
             phone = PHONE,
             email = EMAIL,
             firstName = FIRST_NAME,
@@ -377,7 +377,7 @@ class DbUtilUserTest : BaseRobolectricTest() {
             fields = null
         )
 
-        val expectedUser = UserDTO(
+        val expectedUser = UserRemote(
             deviceId = DEVICE_ID,
             externalUserId = EXTERNAL_USER_ID,
             userAttributes = expectedUserAttributes,
@@ -400,7 +400,7 @@ class DbUtilUserTest : BaseRobolectricTest() {
         mockUserAddressEmpty()
         mockUserAttributesEmpty()
 
-        val expectedUser = UserDTO(
+        val expectedUser = UserRemote(
             deviceId = DEVICE_ID,
             externalUserId = EXTERNAL_USER_ID,
             userAttributes = null,
@@ -423,7 +423,7 @@ class DbUtilUserTest : BaseRobolectricTest() {
         mockUserAddressEmpty()
         mockUserAttributesEmpty()
 
-        val expectedUser = UserDTO(
+        val expectedUser = UserRemote(
             deviceId = DEVICE_ID,
             externalUserId = EXTERNAL_USER_ID,
             userAttributes = null,

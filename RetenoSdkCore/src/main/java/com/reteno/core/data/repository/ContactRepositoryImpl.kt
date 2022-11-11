@@ -8,8 +8,8 @@ import com.reteno.core.data.remote.api.ApiContract
 import com.reteno.core.data.remote.mapper.toJson
 import com.reteno.core.data.remote.mapper.toRemote
 import com.reteno.core.domain.ResponseCallback
-import com.reteno.core.model.device.Device
-import com.reteno.core.model.user.User
+import com.reteno.core.domain.model.device.Device
+import com.reteno.core.domain.model.user.User
 import com.reteno.core.util.Logger
 import com.reteno.core.util.isNonRepeatableError
 

@@ -7,9 +7,9 @@ import com.reteno.core.di.ServiceLocator
 import com.reteno.core.domain.controller.ContactController
 import com.reteno.core.domain.controller.EventController
 import com.reteno.core.domain.controller.ScheduleController
-import com.reteno.core.model.event.Event
-import com.reteno.core.model.event.Parameter
-import com.reteno.core.model.user.User
+import com.reteno.core.domain.model.event.Event
+import com.reteno.core.domain.model.event.Parameter
+import com.reteno.core.domain.model.user.User
 import io.mockk.*
 import io.mockk.impl.annotations.RelaxedMockK
 import org.junit.Assert.assertFalse

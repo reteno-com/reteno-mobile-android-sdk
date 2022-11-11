@@ -3,8 +3,8 @@ package com.reteno.core.domain.controller
 import com.reteno.core.data.local.config.DeviceIdMode
 import com.reteno.core.data.repository.ConfigRepository
 import com.reteno.core.data.repository.ContactRepository
-import com.reteno.core.model.device.Device
-import com.reteno.core.model.user.User
+import com.reteno.core.domain.model.device.Device
+import com.reteno.core.domain.model.user.User
 import com.reteno.core.util.Logger
 
 class ContactController(

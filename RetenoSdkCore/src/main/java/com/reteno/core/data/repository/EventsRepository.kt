@@ -1,6 +1,6 @@
 package com.reteno.core.data.repository
 
-import com.reteno.core.model.event.Event
+import com.reteno.core.domain.model.event.Event
 
 interface EventsRepository {
 

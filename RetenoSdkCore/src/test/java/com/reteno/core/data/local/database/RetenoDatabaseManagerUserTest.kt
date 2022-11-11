@@ -5,10 +5,10 @@ import androidx.core.database.getLongOrNull
 import androidx.core.database.getStringOrNull
 
 import com.reteno.core.base.robolectric.BaseRobolectricTest
-import com.reteno.core.data.remote.model.user.AddressDTO
-import com.reteno.core.data.remote.model.user.UserAttributesDTO
-import com.reteno.core.data.remote.model.user.UserCustomFieldDTO
-import com.reteno.core.data.remote.model.user.UserDTO
+import com.reteno.core.data.remote.model.user.AddressRemote
+import com.reteno.core.data.remote.model.user.UserAttributesRemote
+import com.reteno.core.data.remote.model.user.UserCustomFieldRemote
+import com.reteno.core.data.remote.model.user.UserRemote
 import com.reteno.core.util.Logger
 import org.junit.Assert.assertEquals
 
@@ -53,7 +53,7 @@ class RetenoDatabaseManagerUserTest : BaseRobolectricTest() {
         private const val ADDRESS = "ADDRESS"
         private const val POSTCODE = "POSTCODE"
 
-        private val userAddressDTO = AddressDTO(
+        private val userAddressRemote = AddressRemote(
             region = REGION,
             town = TOWN,
             address = ADDRESS,
@@ -61,24 +61,24 @@ class RetenoDatabaseManagerUserTest : BaseRobolectricTest() {
         )
 
         private val customField1 =
-            UserCustomFieldDTO(key = CUSTOM_FIELD_KEY_1, value = CUSTOM_FIELD_VALUE_1)
+            UserCustomFieldRemote(key = CUSTOM_FIELD_KEY_1, value = CUSTOM_FIELD_VALUE_1)
         private val customField2 =
-            UserCustomFieldDTO(key = CUSTOM_FIELD_KEY_2, value = CUSTOM_FIELD_VALUE_2)
+            UserCustomFieldRemote(key = CUSTOM_FIELD_KEY_2, value = CUSTOM_FIELD_VALUE_2)
 
-        private val userAttributesDTO = UserAttributesDTO(
+        private val userAttributesRemote = UserAttributesRemote(
             phone = PHONE,
             email = EMAIL,
             firstName = FIRST_NAME,
             lastName = LAST_NAME,
             languageCode = LANGUAGE_CODE,
             timeZone = TIME_ZONE,
-            address = userAddressDTO,
+            address = userAddressRemote,
             fields = listOf(customField1, customField2)
         )
-        private val userDTO = UserDTO(
+        private val userRemote = UserRemote(
             deviceId = DEVICE_ID,
             externalUserId = EXTERNAL_USER_ID,
-            userAttributes = userAttributesDTO,
+            userAttributes = userAttributesRemote,
             subscriptionKeys = SUBSCRIPTION_KEYS,
             groupNamesInclude = GROUP_NAMES_INCLUDE,
             groupNamesExclude = GROUP_NAMES_EXCLUDE
@@ -139,13 +139,13 @@ class RetenoDatabaseManagerUserTest : BaseRobolectricTest() {
     fun givenValidFullUserProvided_whenInsertUser_thenUserIsSavedToDb() {
         // Given
         val expectedContentValuesUser = ContentValues().apply {
-            putUser(userDTO)
+            putUser(userRemote)
         }
         val expectedContentValuesUserAttributes = ContentValues().apply {
-            putUserAttributes(ROW_ID_INSERTED, userAttributesDTO)
+            putUserAttributes(ROW_ID_INSERTED, userAttributesRemote)
         }
         val expectedContentValuesUserAddress = ContentValues().apply {
-            putUserAddress(ROW_ID_INSERTED, userAddressDTO)
+            putUserAddress(ROW_ID_INSERTED, userAddressRemote)
         }
 
         var actualContentValuesUser = ContentValues()
@@ -163,7 +163,7 @@ class RetenoDatabaseManagerUserTest : BaseRobolectricTest() {
         }
 
         // When
-        SUT?.insertUser(userDTO)
+        SUT?.insertUser(userRemote)
 
         // Then
         verify(exactly = 1) {
@@ -180,8 +180,8 @@ class RetenoDatabaseManagerUserTest : BaseRobolectricTest() {
     @Test
     fun givenValidUserWithoutAddressProvided_whenInsertUser_thenUserIsSavedToDb() {
         // Given
-        val userAttributesDTO = userAttributesDTO.copy(address = null)
-        val user = userDTO.copy(userAttributes = userAttributesDTO)
+        val userAttributesDTO = userAttributesRemote.copy(address = null)
+        val user = userRemote.copy(userAttributes = userAttributesDTO)
 
         val expectedContentValuesUser = ContentValues().apply {
             putUser(user)
@@ -223,7 +223,7 @@ class RetenoDatabaseManagerUserTest : BaseRobolectricTest() {
     @Test
     fun givenValidUserWithoutAttributesProvided_whenInsertUser_thenUserIsSavedToDb() {
         // Given
-        val user = userDTO.copy(userAttributes = null)
+        val user = userRemote.copy(userAttributes = null)
         val expectedContentValuesUser = ContentValues().apply {
             putUser(user)
         }
@@ -259,8 +259,8 @@ class RetenoDatabaseManagerUserTest : BaseRobolectricTest() {
         mockCursorRecordsNumber(2)
         mockDatabaseQuery()
 
-        val user1 = userDTO
-        val user2 = userDTO.copy(userAttributes = null)
+        val user1 = userRemote
+        val user2 = userRemote.copy(userAttributes = null)
         every { cursor.getUser() } returns user1 andThen user2
 
         // When

@@ -35,11 +35,11 @@ import com.reteno.core.data.local.database.DbSchema.UserSchema.COLUMN_GROUP_NAME
 import com.reteno.core.data.local.database.DbSchema.UserSchema.COLUMN_SUBSCRIPTION_KEYS
 import com.reteno.core.data.local.database.DbSchema.UserSchema.COLUMN_USER_ROW_ID
 import com.reteno.core.data.local.database.DbSchema.UserSchema.TABLE_NAME_USER
-import com.reteno.core.data.local.model.InteractionModelDb
-import com.reteno.core.data.remote.model.event.EventDTO
-import com.reteno.core.data.remote.model.event.EventsDTO
-import com.reteno.core.data.remote.model.user.UserDTO
-import com.reteno.core.model.device.Device
+import com.reteno.core.data.local.model.interaction.InteractionDb
+import com.reteno.core.data.remote.model.event.EventRemote
+import com.reteno.core.data.remote.model.event.EventsRemote
+import com.reteno.core.data.remote.model.user.UserRemote
+import com.reteno.core.domain.model.device.Device
 import com.reteno.core.util.Logger
 import com.reteno.core.util.allElementsNotNull
 import net.sqlcipher.Cursor
@@ -111,7 +111,7 @@ class RetenoDatabaseManagerImpl(private val database: RetenoDatabase) : RetenoDa
 
 
     //==============================================================================================
-    override fun insertUser(user: UserDTO) {
+    override fun insertUser(user: UserRemote) {
         contentValues.putUser(user)
         val rowId = database.insert(table = TABLE_NAME_USER, contentValues = contentValues)
         contentValues.clear()
@@ -129,8 +129,8 @@ class RetenoDatabaseManagerImpl(private val database: RetenoDatabase) : RetenoDa
         }
     }
 
-    override fun getUser(limit: Int?): List<UserDTO> {
-        val userEvents: MutableList<UserDTO> = mutableListOf()
+    override fun getUser(limit: Int?): List<UserRemote> {
+        val userEvents: MutableList<UserRemote> = mutableListOf()
         val rawQueryLimit: String = limit?.let { " LIMIT $it" } ?: ""
 
         var cursor: Cursor? = null
@@ -201,14 +201,14 @@ class RetenoDatabaseManagerImpl(private val database: RetenoDatabase) : RetenoDa
     }
 
     //==============================================================================================
-    override fun insertInteraction(interaction: InteractionModelDb) {
+    override fun insertInteraction(interaction: InteractionDb) {
         contentValues.putInteraction(interaction)
         database.insert(table = TABLE_NAME_INTERACTION, contentValues = contentValues)
         contentValues.clear()
     }
 
-    override fun getInteractions(limit: Int?): List<InteractionModelDb> {
-        val interactionEvents: MutableList<InteractionModelDb> = mutableListOf()
+    override fun getInteractions(limit: Int?): List<InteractionDb> {
+        val interactionEvents: MutableList<InteractionDb> = mutableListOf()
 
         var cursor: Cursor? = null
         try {
@@ -262,7 +262,7 @@ class RetenoDatabaseManagerImpl(private val database: RetenoDatabase) : RetenoDa
     }
 
     //==============================================================================================
-    override fun insertEvents(events: EventsDTO) {
+    override fun insertEvents(events: EventsRemote) {
         var parentRowId: Long = -1L
 
         var cursor: Cursor? = null
@@ -304,10 +304,10 @@ class RetenoDatabaseManagerImpl(private val database: RetenoDatabase) : RetenoDa
         database.insertMultiple(table = TABLE_NAME_EVENT, contentValues = eventListContentValues)
     }
 
-    override fun getEvents(limit: Int?): List<EventsDTO> {
+    override fun getEvents(limit: Int?): List<EventsRemote> {
         var cursor: Cursor? = null
 
-        val eventsParentTableList: MutableMap<String, EventsDTO> = mutableMapOf()
+        val eventsParentTableList: MutableMap<String, EventsRemote> = mutableMapOf()
         try {
             cursor = database.query(
                 table = TABLE_NAME_EVENTS,
@@ -321,7 +321,7 @@ class RetenoDatabaseManagerImpl(private val database: RetenoDatabase) : RetenoDa
 
                 if (allElementsNotNull(eventsId, deviceId)) {
                     eventsParentTableList[eventsId!!.toString()] =
-                        EventsDTO(deviceId!!, externalUserId, listOf())
+                        EventsRemote(deviceId!!, externalUserId, listOf())
                 } else {
                     val exception =
                         SQLException("Unable to read data from SQL database getEvents(). eventsId=$eventsId, deviceId=$deviceId, externalUserId=$externalUserId")
@@ -345,10 +345,10 @@ class RetenoDatabaseManagerImpl(private val database: RetenoDatabase) : RetenoDa
             cursor?.close()
         }
 
-        val eventsResult: MutableList<EventsDTO> = mutableListOf()
+        val eventsResult: MutableList<EventsRemote> = mutableListOf()
         for (eventsParent in eventsParentTableList.entries.iterator()) {
             val foreignKeyRowId = eventsParent.key
-            val eventList: MutableList<EventDTO> = mutableListOf()
+            val eventList: MutableList<EventRemote> = mutableListOf()
 
             var cursorChild: Cursor? = null
             try {
@@ -391,7 +391,7 @@ class RetenoDatabaseManagerImpl(private val database: RetenoDatabase) : RetenoDa
 
 
             if (eventList.isNotEmpty()) {
-                val singleEventResult = EventsDTO(
+                val singleEventResult = EventsRemote(
                     eventsParent.value.deviceId,
                     eventsParent.value.externalUserId,
                     eventList

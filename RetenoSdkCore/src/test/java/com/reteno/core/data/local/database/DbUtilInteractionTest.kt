@@ -3,8 +3,8 @@ package com.reteno.core.data.local.database
 import android.content.ContentValues
 import androidx.core.database.getStringOrNull
 import com.reteno.core.base.robolectric.BaseRobolectricTest
-import com.reteno.core.data.local.model.InteractionModelDb
-import com.reteno.core.model.interaction.InteractionStatus
+import com.reteno.core.data.local.model.interaction.InteractionDb
+import com.reteno.core.data.local.model.interaction.InteractionStatusDb
 import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
@@ -19,7 +19,7 @@ class DbUtilInteractionTest : BaseRobolectricTest() {
     // region constants ----------------------------------------------------------------------------
     companion object {
         private const val INTERACTION_ID = "interactionId1"
-        private val INTERACTION_STATUS = InteractionStatus.DELIVERED
+        private val INTERACTION_STATUS = InteractionStatusDb.DELIVERED
         private const val INTERACTION_TIME = "interactionTime1"
         private const val INTERACTION_TOKEN = "interactionToken1"
 
@@ -52,7 +52,7 @@ class DbUtilInteractionTest : BaseRobolectricTest() {
     @Test
     fun givenInteractionProvided_whenPutInteraction_thenContentValuesUpdated() {
         // Given
-        val interaction = InteractionModelDb(
+        val interaction = InteractionDb(
             interactionId = INTERACTION_ID,
             status = INTERACTION_STATUS,
             time = INTERACTION_TIME,
@@ -83,7 +83,7 @@ class DbUtilInteractionTest : BaseRobolectricTest() {
         // Given
         mockInteractionFull()
 
-        val expectedInteraction = InteractionModelDb(
+        val expectedInteraction = InteractionDb(
             interactionId = INTERACTION_ID,
             status = INTERACTION_STATUS,
             time = INTERACTION_TIME,

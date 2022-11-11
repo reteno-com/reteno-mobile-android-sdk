@@ -7,10 +7,10 @@ import com.reteno.core.data.remote.api.ApiClient
 import com.reteno.core.data.remote.api.ApiContract
 import com.reteno.core.data.remote.mapper.toJson
 import com.reteno.core.data.remote.mapper.toRemote
-import com.reteno.core.data.remote.model.event.EventsDTO
+import com.reteno.core.data.remote.model.event.EventsRemote
 import com.reteno.core.domain.ResponseCallback
-import com.reteno.core.model.event.Event
-import com.reteno.core.model.event.Events
+import com.reteno.core.domain.model.event.Event
+import com.reteno.core.domain.model.event.Events
 import com.reteno.core.util.Logger
 import com.reteno.core.util.isNonRepeatableError
 
@@ -39,7 +39,7 @@ class EventsRepositoryImpl(
     }
 
     override fun pushEvents() {
-        val events: EventsDTO = databaseManager.getEvents(1).firstOrNull() ?: kotlin.run {
+        val events: EventsRemote = databaseManager.getEvents(1).firstOrNull() ?: kotlin.run {
             PushOperationQueue.nextOperation()
             return
         }

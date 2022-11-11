@@ -1,12 +1,19 @@
 package com.reteno.core.data.local.mappers
 
-import com.reteno.core.data.local.model.InteractionModelDb
-import com.reteno.core.model.interaction.Interaction
+import com.reteno.core.data.local.model.interaction.InteractionDb
+import com.reteno.core.data.local.model.interaction.InteractionStatusDb
+import com.reteno.core.domain.model.interaction.Interaction
+import com.reteno.core.domain.model.interaction.InteractionStatus
 
-
-fun Interaction.toDb(interactionId: String) = InteractionModelDb(
+fun Interaction.toDb(interactionId: String) = InteractionDb(
     interactionId = interactionId,
-    status = status,
+    status = status.toDb(),
     time = time,
     token = token
 )
+
+fun InteractionStatus.toDb(): InteractionStatusDb =
+    when (this) {
+        InteractionStatus.DELIVERED -> InteractionStatusDb.DELIVERED
+        InteractionStatus.OPENED -> InteractionStatusDb.OPENED
+    }

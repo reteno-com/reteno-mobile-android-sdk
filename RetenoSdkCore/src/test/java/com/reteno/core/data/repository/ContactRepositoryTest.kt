@@ -7,18 +7,17 @@ import com.reteno.core.data.remote.PushOperationQueue
 import com.reteno.core.data.remote.api.ApiClient
 import com.reteno.core.data.remote.api.ApiContract
 import com.reteno.core.data.remote.mapper.toRemote
-import com.reteno.core.data.remote.model.user.UserDTO
+import com.reteno.core.data.remote.model.user.UserRemote
 import com.reteno.core.domain.ResponseCallback
-import com.reteno.core.model.device.Device
-import com.reteno.core.model.device.DeviceCategory
-import com.reteno.core.model.device.DeviceOS
-import com.reteno.core.model.user.Address
-import com.reteno.core.model.user.User
-import com.reteno.core.model.user.UserAttributes
-import com.reteno.core.model.user.UserCustomField
+import com.reteno.core.domain.model.device.Device
+import com.reteno.core.domain.model.device.DeviceCategory
+import com.reteno.core.domain.model.device.DeviceOS
+import com.reteno.core.domain.model.user.Address
+import com.reteno.core.domain.model.user.User
+import com.reteno.core.domain.model.user.UserAttributes
+import com.reteno.core.domain.model.user.UserCustomField
 import io.mockk.*
 import io.mockk.impl.annotations.RelaxedMockK
-import org.junit.Assert
 import org.junit.Test
 
 class ContactRepositoryTest : BaseRobolectricTest() {
@@ -225,7 +224,7 @@ class ContactRepositoryTest : BaseRobolectricTest() {
 
     @Test
     fun whenUserPushSuccessful_thenTryPushNextUser() {
-        val userData = mockk<UserDTO>(relaxed = true)
+        val userData = mockk<UserRemote>(relaxed = true)
         every { retenoDatabaseManager.getUser(any()) } returnsMany listOf(listOf(userData), listOf(userData), emptyList())
         every { apiClient.post(url = any(), jsonBody = any(), responseHandler = any()) } answers {
             val callback = thirdArg<ResponseCallback>()
@@ -241,7 +240,7 @@ class ContactRepositoryTest : BaseRobolectricTest() {
 
     @Test
     fun whenUserPushFailedAndErrorIsRepeatable_cancelPushOperations() {
-        val userData = mockk<UserDTO>(relaxed = true)
+        val userData = mockk<UserRemote>(relaxed = true)
         every { retenoDatabaseManager.getUser(any()) } returns listOf(userData)
         every { apiClient.post(url = any(), jsonBody = any(), responseHandler = any()) } answers {
             val callback = thirdArg<ResponseCallback>()
@@ -256,7 +255,7 @@ class ContactRepositoryTest : BaseRobolectricTest() {
 
     @Test
     fun whenUserPushFailedAndErrorIsNonRepeatable_thenTryPushNextUser() {
-        val userData = mockk<UserDTO>(relaxed = true)
+        val userData = mockk<UserRemote>(relaxed = true)
         every { retenoDatabaseManager.getUser(any()) } returnsMany listOf(listOf(userData), listOf(userData), emptyList())
         every { apiClient.post(url = any(), jsonBody = any(), responseHandler = any()) } answers {
             val callback = thirdArg<ResponseCallback>()

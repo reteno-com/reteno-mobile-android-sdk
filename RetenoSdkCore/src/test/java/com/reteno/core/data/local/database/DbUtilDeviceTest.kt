@@ -3,9 +3,9 @@ package com.reteno.core.data.local.database
 import android.content.ContentValues
 import androidx.core.database.getStringOrNull
 import com.reteno.core.base.robolectric.BaseRobolectricTest
-import com.reteno.core.model.device.Device
-import com.reteno.core.model.device.DeviceCategory
-import com.reteno.core.model.device.DeviceOS
+import com.reteno.core.domain.model.device.Device
+import com.reteno.core.domain.model.device.DeviceCategory
+import com.reteno.core.domain.model.device.DeviceOS
 import io.mockk.*
 import net.sqlcipher.Cursor
 import org.junit.Assert.assertEquals

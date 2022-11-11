@@ -8,12 +8,12 @@ import com.reteno.core.data.remote.api.ApiClient
 import com.reteno.core.data.remote.api.ApiContract
 import com.reteno.core.data.remote.mapper.toJson
 import com.reteno.core.data.remote.mapper.toRemote
-import com.reteno.core.data.remote.model.event.EventDTO
-import com.reteno.core.data.remote.model.event.EventsDTO
-import com.reteno.core.data.remote.model.event.ParameterDTO
+import com.reteno.core.data.remote.model.event.EventRemote
+import com.reteno.core.data.remote.model.event.EventsRemote
+import com.reteno.core.data.remote.model.event.ParameterRemote
 import com.reteno.core.domain.ResponseCallback
-import com.reteno.core.model.event.Event
-import com.reteno.core.model.event.Events
+import com.reteno.core.domain.model.event.Event
+import com.reteno.core.domain.model.event.Events
 import io.mockk.*
 import io.mockk.impl.annotations.RelaxedMockK
 import org.junit.Before
@@ -151,14 +151,14 @@ class EventsRepositoryTest : BaseRobolectricTest() {
 
     }
 
-    private fun getEvents() = EventsDTO(
+    private fun getEvents() = EventsRemote(
         deviceId = DEVICE_ID,
         externalUserId = EXTERNAL_DEVICE_ID,
         eventList = listOf(
-            EventDTO(
+            EventRemote(
                 eventTypeKey = EVENT_TYPE_KEY,
                 occurred = OCCURRED,
-                params = listOf(ParameterDTO("key", "false"))
+                params = listOf(ParameterRemote("key", "false"))
             )
         )
     )

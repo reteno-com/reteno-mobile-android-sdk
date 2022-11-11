@@ -1,9 +1,9 @@
 package com.reteno.core.data.local.database
 
-import com.reteno.core.data.local.model.InteractionModelDb
-import com.reteno.core.data.remote.model.event.EventsDTO
-import com.reteno.core.data.remote.model.user.UserDTO
-import com.reteno.core.model.device.Device
+import com.reteno.core.data.local.model.interaction.InteractionDb
+import com.reteno.core.data.remote.model.event.EventsRemote
+import com.reteno.core.data.remote.model.user.UserRemote
+import com.reteno.core.domain.model.device.Device
 
 interface RetenoDatabaseManager {
 
@@ -12,18 +12,18 @@ interface RetenoDatabaseManager {
     fun getDeviceCount(): Long
     fun deleteDevices(count: Int, oldest: Boolean = true)
 
-    fun insertUser(user: UserDTO)
-    fun getUser(limit: Int? = null): List<UserDTO>
+    fun insertUser(user: UserRemote)
+    fun getUser(limit: Int? = null): List<UserRemote>
     fun getUserCount(): Long
     fun deleteUsers(count: Int, oldest: Boolean = true)
 
-    fun insertInteraction(interaction: InteractionModelDb)
-    fun getInteractions(limit: Int? = null): List<InteractionModelDb>
+    fun insertInteraction(interaction: InteractionDb)
+    fun getInteractions(limit: Int? = null): List<InteractionDb>
     fun getInteractionCount(): Long
     fun deleteInteractions(count: Int, oldest: Boolean = true)
 
-    fun insertEvents(events: EventsDTO)
-    fun getEvents(limit: Int? = null): List<EventsDTO>
+    fun insertEvents(events: EventsRemote)
+    fun getEvents(limit: Int? = null): List<EventsRemote>
     fun getEventsCount(): Long
     fun deleteEvents(count: Int, oldest: Boolean = true)
 

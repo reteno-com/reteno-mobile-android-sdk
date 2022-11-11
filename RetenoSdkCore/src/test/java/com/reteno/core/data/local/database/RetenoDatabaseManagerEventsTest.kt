@@ -4,9 +4,9 @@ import android.content.ContentValues
 import androidx.core.database.getLongOrNull
 import androidx.core.database.getStringOrNull
 import com.reteno.core.base.robolectric.BaseRobolectricTest
-import com.reteno.core.data.remote.model.event.EventDTO
-import com.reteno.core.data.remote.model.event.EventsDTO
-import com.reteno.core.data.remote.model.event.ParameterDTO
+import com.reteno.core.data.remote.model.event.EventRemote
+import com.reteno.core.data.remote.model.event.EventsRemote
+import com.reteno.core.data.remote.model.event.ParameterRemote
 import com.reteno.core.util.Logger
 import io.mockk.*
 import io.mockk.impl.annotations.MockK
@@ -38,11 +38,11 @@ class RetenoDatabaseManagerEventsTest : BaseRobolectricTest() {
         private const val DEVICE_ID = "valueDeviceId"
         private const val EXTERNAL_USER_ID = "valueExternalUserId"
 
-        private val param1 = ParameterDTO(name = EVENT_PARAMS_NAME_1, value = EVENT_PARAMS_VALUE_1)
-        private val param2 = ParameterDTO(name = EVENT_PARAMS_NAME_2, value = EVENT_PARAMS_VALUE_2)
-        private val event1 = EventDTO(eventTypeKey = EVENT_TYPE_KEY_1, occurred = EVENT_OCCURRED_1, params = null)
-        private val event2 = EventDTO(eventTypeKey = EVENT_TYPE_KEY_2, occurred = EVENT_OCCURRED_2, params = listOf(param1, param2))
-        private val events = EventsDTO(
+        private val param1 = ParameterRemote(name = EVENT_PARAMS_NAME_1, value = EVENT_PARAMS_VALUE_1)
+        private val param2 = ParameterRemote(name = EVENT_PARAMS_NAME_2, value = EVENT_PARAMS_VALUE_2)
+        private val event1 = EventRemote(eventTypeKey = EVENT_TYPE_KEY_1, occurred = EVENT_OCCURRED_1, params = null)
+        private val event2 = EventRemote(eventTypeKey = EVENT_TYPE_KEY_2, occurred = EVENT_OCCURRED_2, params = listOf(param1, param2))
+        private val events = EventsRemote(
             deviceId = DEVICE_ID,
             externalUserId = EXTERNAL_USER_ID,
             eventList = listOf(event1, event2)
@@ -219,7 +219,7 @@ class RetenoDatabaseManagerEventsTest : BaseRobolectricTest() {
         }
         verify(exactly = 1) { cursor.close() }
 
-        assertEquals(listOf<EventDTO>(), actualEvents)
+        assertEquals(listOf<EventRemote>(), actualEvents)
     }
 
     @Test
@@ -257,7 +257,7 @@ class RetenoDatabaseManagerEventsTest : BaseRobolectricTest() {
 
         verify(exactly = 1) { database.cleanUnlinkedEvents() }
 
-        assertEquals(listOf<EventDTO>(), actualEvents)
+        assertEquals(listOf<EventRemote>(), actualEvents)
     }
 
     @Test

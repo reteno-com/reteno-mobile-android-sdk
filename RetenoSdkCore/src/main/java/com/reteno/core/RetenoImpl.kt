@@ -6,9 +6,9 @@ import com.reteno.core.data.local.config.DeviceIdMode
 import com.reteno.core.di.ServiceLocator
 import com.reteno.core.lifecycle.RetenoActivityHelper
 import com.reteno.core.lifecycle.RetenoLifecycleCallbacks
-import com.reteno.core.model.event.Event
-import com.reteno.core.model.event.Parameter
-import com.reteno.core.model.user.User
+import com.reteno.core.domain.model.event.Event
+import com.reteno.core.domain.model.event.Parameter
+import com.reteno.core.domain.model.user.User
 import com.reteno.core.util.Logger
 import java.time.ZonedDateTime
 

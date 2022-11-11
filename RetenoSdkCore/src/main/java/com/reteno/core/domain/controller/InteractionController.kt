@@ -2,8 +2,8 @@ package com.reteno.core.domain.controller
 
 import com.reteno.core.data.repository.ConfigRepository
 import com.reteno.core.data.repository.InteractionRepository
-import com.reteno.core.model.interaction.Interaction
-import com.reteno.core.model.interaction.InteractionStatus
+import com.reteno.core.domain.model.interaction.Interaction
+import com.reteno.core.domain.model.interaction.InteractionStatus
 import com.reteno.core.util.Logger
 import com.reteno.core.util.Util
 

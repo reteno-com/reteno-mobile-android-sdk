@@ -5,8 +5,8 @@ import androidx.core.database.getLongOrNull
 import androidx.core.database.getStringOrNull
 
 import com.reteno.core.base.robolectric.BaseRobolectricTest
-import com.reteno.core.data.local.model.InteractionModelDb
-import com.reteno.core.model.interaction.InteractionStatus
+import com.reteno.core.data.local.model.interaction.InteractionDb
+import com.reteno.core.data.local.model.interaction.InteractionStatusDb
 import com.reteno.core.util.Logger
 import org.junit.Assert.assertEquals
 
@@ -29,17 +29,17 @@ class RetenoDatabaseManagerInteractionTest : BaseRobolectricTest() {
         private const val TIMESTAMP = "TimeStampHere_Z"
 
         private const val INTERACTION_ID = "interactionId"
-        private val INTERACTION_STATUS = InteractionStatus.DELIVERED
+        private val INTERACTION_STATUS = InteractionStatusDb.DELIVERED
         private const val INTERACTION_TIME = "interactionTime"
         private const val INTERACTION_TOKEN = "interactionToken"
 
-        private val interaction1 = InteractionModelDb(
+        private val interaction1 = InteractionDb(
             interactionId = INTERACTION_ID,
             status = INTERACTION_STATUS,
             time = INTERACTION_TIME,
             token = INTERACTION_TOKEN
         )
-        private val interaction2 = InteractionModelDb(
+        private val interaction2 = InteractionDb(
             interactionId = "${INTERACTION_ID}_2",
             status = INTERACTION_STATUS,
             time = "${INTERACTION_TIME}_2}",

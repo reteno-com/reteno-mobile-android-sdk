@@ -7,8 +7,9 @@ import com.reteno.core.data.remote.PushOperationQueue
 import com.reteno.core.data.remote.api.ApiClient
 import com.reteno.core.data.remote.api.ApiContract
 import com.reteno.core.data.remote.mapper.toJson
+import com.reteno.core.data.remote.mapper.toRemote
 import com.reteno.core.domain.ResponseCallback
-import com.reteno.core.model.interaction.Interaction
+import com.reteno.core.domain.model.interaction.Interaction
 import com.reteno.core.util.Logger
 import com.reteno.core.util.isNonRepeatableError
 
@@ -26,20 +27,15 @@ class InteractionRepositoryImpl(
     }
 
     override fun pushInteractions() {
-        val interactions = databaseManager.getInteractions(1).firstOrNull() ?: kotlin.run {
+        val interactionDb = databaseManager.getInteractions(1).firstOrNull() ?: kotlin.run {
             PushOperationQueue.nextOperation()
             return
         }
-        /*@formatter:off*/ Logger.i(TAG, "pushInteractions(): ", "interactions = [" , interactions , "]")
+        /*@formatter:off*/ Logger.i(TAG, "pushInteractions(): ", "interactionDb = [" , interactionDb , "]")
         /*@formatter:on*/
-        val interaction = Interaction(
-            status = interactions.status,
-            time = interactions.time,
-            token = interactions.token
-        )
-
+        val interaction = interactionDb.toRemote()
         apiClient.put(
-            ApiContract.RetenoApi.InteractionStatus(interactions.interactionId),
+            ApiContract.RetenoApi.InteractionStatus(interactionDb.interactionId),
             interaction.toJson(),
             object : ResponseCallback {
 

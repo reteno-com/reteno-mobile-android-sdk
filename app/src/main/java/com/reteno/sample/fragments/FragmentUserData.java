@@ -13,10 +13,10 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.navigation.fragment.NavHostFragment;
 
-import com.reteno.core.model.user.Address;
-import com.reteno.core.model.user.User;
-import com.reteno.core.model.user.UserAttributes;
-import com.reteno.core.model.user.UserCustomField;
+import com.reteno.core.domain.model.user.Address;
+import com.reteno.core.domain.model.user.User;
+import com.reteno.core.domain.model.user.UserAttributes;
+import com.reteno.core.domain.model.user.UserCustomField;
 import com.reteno.sample.BaseFragment;
 import com.reteno.sample.R;
 import com.reteno.sample.databinding.FragmentUserDataBinding;
