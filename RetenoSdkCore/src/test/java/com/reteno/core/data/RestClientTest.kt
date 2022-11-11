@@ -2,10 +2,11 @@ package com.reteno.core.data
 
 import android.net.Uri
 import com.reteno.core.base.BaseUnitTest
+import com.reteno.core.data.local.config.RestConfig
 import com.reteno.core.data.remote.api.ApiContract
 import com.reteno.core.data.remote.api.ConnectionManager
 import com.reteno.core.data.remote.api.HttpMethod
-import com.reteno.core.data.remote.api.RetenoRestClient
+import com.reteno.core.data.remote.api.RestClient
 import com.reteno.core.domain.ResponseCallback
 import io.mockk.*
 import io.mockk.impl.annotations.RelaxedMockK
@@ -22,7 +23,7 @@ import java.net.HttpURLConnection
 import javax.net.ssl.HttpsURLConnection
 
 @RunWith(JUnit4::class)
-class RetenoRestClientTest : BaseUnitTest() {
+class RestClientTest : BaseUnitTest() {
 
     companion object {
         private const val TEST_URL = "http://www.test.com"
@@ -43,19 +44,21 @@ class RetenoRestClientTest : BaseUnitTest() {
 
         private fun <T> getField(fieldName: String): T {
             return Whitebox.getField(
-                RetenoRestClient::class.java,
+                RestClient::class.java,
                 fieldName
-            )[RetenoRestClient::class.java] as T
+            )[RestClient::class.java] as T
         }
     }
 
     @RelaxedMockK
     private lateinit var httpURLConnection: HttpURLConnection
+    private lateinit var restClient: RestClient
 
     @Before
     override fun before() {
         super.before()
         mockkObject(ConnectionManager)
+        restClient = RestClient(RestConfig(mockk(relaxed = true), ""))
     }
 
     @After
@@ -306,7 +309,7 @@ class RetenoRestClientTest : BaseUnitTest() {
         queryParams: Map<String, Any>? = null,
         responseCallback: ResponseCallback = getCallback()
     ) {
-        RetenoRestClient.makeRequest(method, url, body, queryParams, responseCallback)
+        restClient.makeRequest(method, url, body, queryParams, responseCallback)
     }
 
     private fun generateUriWithParams(params: Map<String, Any>): String {

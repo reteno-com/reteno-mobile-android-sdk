@@ -2,6 +2,7 @@ package com.reteno.core.data.remote.api
 
 import android.net.Uri
 import com.reteno.core.BuildConfig
+import com.reteno.core.data.local.config.RestConfig
 import com.reteno.core.domain.ResponseCallback
 import com.reteno.core.util.Logger
 import com.reteno.core.util.Util
@@ -12,25 +13,27 @@ import java.util.zip.GZIPOutputStream
 import javax.net.ssl.HttpsURLConnection
 import javax.net.ssl.SSLSocketFactory
 
-object RetenoRestClient {
+class RestClient(private val restConfig: RestConfig) {
 
-    private val TAG = RetenoRestClient::class.java.simpleName
+    companion object {
+        private val TAG = RestClient::class.java.simpleName
 
-    private const val TIMEOUT = 10_000
-    private const val READ_TIMEOUT = 15_000
+        private const val TIMEOUT = 10_000
+        private const val READ_TIMEOUT = 15_000
 
-    private const val HEADER_DEBUG = "X-Reteno-Debug"
+        private const val HEADER_DEBUG = "X-Reteno-Debug"
 
-    private const val HEADER_KEY = "X-Reteno-Access-Key"
-    private const val HEADER_VERSION = "X-Reteno-SDK-Version"
+        private const val HEADER_KEY = "X-Reteno-Access-Key"
+        private const val HEADER_VERSION = "X-Reteno-SDK-Version"
 
-    private const val HEADER_CONTENT = "Content-Type"
-    private const val HEADER_CONTENT_VALUE = "application/json; charset=UTF-8"
-    private const val HEADER_ENCODING = "Accept-Encoding"
-    private const val HEADER_CONTENT_ENCODING = "Content-Encoding"
-    private const val HEADER_ENCODING_VALUE = "gzip"
-    private const val HEADER_ACCEPT = "Accept"
-    private const val HEADER_ACCEPT_VALUE = "*/*"
+        private const val HEADER_CONTENT = "Content-Type"
+        private const val HEADER_CONTENT_VALUE = "application/json; charset=UTF-8"
+        private const val HEADER_ENCODING = "Accept-Encoding"
+        private const val HEADER_CONTENT_ENCODING = "Content-Encoding"
+        private const val HEADER_ENCODING_VALUE = "gzip"
+        private const val HEADER_ACCEPT = "Accept"
+        private const val HEADER_ACCEPT_VALUE = "*/*"
+    }
 
 
     /**
@@ -120,8 +123,8 @@ object RetenoRestClient {
             }
 
             if (needAuthorizationHeaders) {
-                setRequestProperty(HEADER_KEY, BuildConfig.API_ACCESS_KEY)
-                setRequestProperty(HEADER_VERSION, BuildConfig.SDK_VERSION.toString())
+                setRequestProperty(HEADER_KEY, restConfig.accessKey)
+                setRequestProperty(HEADER_VERSION, BuildConfig.SDK_VERSION)
             }
             setRequestProperty(HEADER_ACCEPT, HEADER_ACCEPT_VALUE)
 

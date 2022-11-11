@@ -3,7 +3,7 @@ package com.reteno.core.di
 import android.content.Context
 import com.reteno.core.di.provider.*
 
-class ServiceLocator(context: Context) {
+class ServiceLocator(context: Context, accessKey: String) {
 
     // TODO: Separate internal objects from externally exposed
     // TODO: Mark internal fields as internal
@@ -11,10 +11,11 @@ class ServiceLocator(context: Context) {
     private val sharedPrefsManagerProvider: SharedPrefsManagerProvider = SharedPrefsManagerProvider()
 
     private val deviceIdHelperProvider: DeviceIdHelperProvider = DeviceIdHelperProvider(sharedPrefsManagerProvider)
-    private val restConfigProvider: RestConfigProvider = RestConfigProvider(deviceIdHelperProvider)
+    private val restConfigProvider: RestConfigProvider = RestConfigProvider(deviceIdHelperProvider, accessKey)
+    private val restClientProvider: RestClientProvider = RestClientProvider(restConfigProvider)
 
     val retenoActivityHelperProvider: RetenoActivityHelperProvider = RetenoActivityHelperProvider()
-    private val apiClientProvider: ApiClientProvider = ApiClientProvider()
+    private val apiClientProvider: ApiClientProvider = ApiClientProvider(restClientProvider)
     private val databaseProvider: DatabaseProvider = DatabaseProvider(context)
     val databaseManagerProvider: DatabaseManagerProvider = DatabaseManagerProvider(databaseProvider)
 

@@ -20,7 +20,7 @@ public class SampleApp extends Application implements RetenoApplication {
     @Override
     public void onCreate() {
         super.onCreate();
-        retenoInstance = new RetenoImpl(this);
+        retenoInstance = new RetenoImpl(this, BuildConfig.API_ACCESS_KEY);
         DeviceIdMode deviceIdMode = AppSharedPreferencesManager.getDeviceIdMode(this);
         retenoInstance.setDeviceIdMode(deviceIdMode, () -> {
             return Unit.INSTANCE;

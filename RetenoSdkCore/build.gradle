@@ -6,10 +6,6 @@ plugins {
 apply from: file("$project.rootDir/config.gradle")
 apply from: "$project.rootDir/test_dependencies.gradle"
 
-def appPropsFile = file("$project.rootDir/local.properties")
-Properties appProps = new Properties()
-appProps.load(new FileInputStream(appPropsFile))
-
 def sdkPropsFile = file("$project.rootDir/RetenoSdkCore/keys.properties")
 Properties sdkProps = new Properties()
 sdkProps.load(new FileInputStream(sdkPropsFile))
@@ -26,7 +22,6 @@ android {
 
         consumerProguardFiles "consumer-rules.pro"
 
-        buildConfigField "String", "API_ACCESS_KEY", appProps['reteno.access-key']
         buildConfigField "String", "SQL_PASSWORD", sdkProps['sql.password']
         buildConfigField "String", "SDK_VERSION", "\"${project.VERSION_NAME}\""
     }
