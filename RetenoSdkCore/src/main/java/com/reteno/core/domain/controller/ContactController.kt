@@ -50,7 +50,7 @@ class ContactController(
         /*@formatter:on*/
 
         val validUser = Validator.validateUser(user)
-        validUser?.let(contactRepository::saveUserData)
+        validUser?.let(contactRepository::saveUserData) ?: Logger.e(TAG, "setUserData(): user = [$user]")
     }
 
     private fun onNewContact() {
