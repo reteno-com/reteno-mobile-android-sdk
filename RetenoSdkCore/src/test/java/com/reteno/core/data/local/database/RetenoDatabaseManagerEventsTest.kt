@@ -4,14 +4,15 @@ import android.content.ContentValues
 import androidx.core.database.getLongOrNull
 import androidx.core.database.getStringOrNull
 import com.reteno.core.base.robolectric.BaseRobolectricTest
-import com.reteno.core.data.remote.model.event.EventDTO
-import com.reteno.core.data.remote.model.event.EventsDTO
-import com.reteno.core.data.remote.model.event.ParameterDTO
+import com.reteno.core.data.local.model.event.EventDb
+import com.reteno.core.data.local.model.event.EventsDb
+import com.reteno.core.data.local.model.event.ParameterDb
 import com.reteno.core.util.Logger
 import io.mockk.*
 import io.mockk.impl.annotations.MockK
 import io.mockk.impl.annotations.RelaxedMockK
-import junit.framework.TestCase.*
+import junit.framework.TestCase.assertEquals
+import junit.framework.TestCase.assertTrue
 import net.sqlcipher.Cursor
 import org.junit.Test
 import java.time.ZonedDateTime
@@ -38,11 +39,11 @@ class RetenoDatabaseManagerEventsTest : BaseRobolectricTest() {
         private const val DEVICE_ID = "valueDeviceId"
         private const val EXTERNAL_USER_ID = "valueExternalUserId"
 
-        private val param1 = ParameterDTO(name = EVENT_PARAMS_NAME_1, value = EVENT_PARAMS_VALUE_1)
-        private val param2 = ParameterDTO(name = EVENT_PARAMS_NAME_2, value = EVENT_PARAMS_VALUE_2)
-        private val event1 = EventDTO(eventTypeKey = EVENT_TYPE_KEY_1, occurred = EVENT_OCCURRED_1, params = null)
-        private val event2 = EventDTO(eventTypeKey = EVENT_TYPE_KEY_2, occurred = EVENT_OCCURRED_2, params = listOf(param1, param2))
-        private val events = EventsDTO(
+        private val param1 = ParameterDb(name = EVENT_PARAMS_NAME_1, value = EVENT_PARAMS_VALUE_1)
+        private val param2 = ParameterDb(name = EVENT_PARAMS_NAME_2, value = EVENT_PARAMS_VALUE_2)
+        private val event1 = EventDb(eventTypeKey = EVENT_TYPE_KEY_1, occurred = EVENT_OCCURRED_1, params = null)
+        private val event2 = EventDb(eventTypeKey = EVENT_TYPE_KEY_2, occurred = EVENT_OCCURRED_2, params = listOf(param1, param2))
+        private val events = EventsDb(
             deviceId = DEVICE_ID,
             externalUserId = EXTERNAL_USER_ID,
             eventList = listOf(event1, event2)
@@ -58,7 +59,6 @@ class RetenoDatabaseManagerEventsTest : BaseRobolectricTest() {
     }
     // endregion constants -------------------------------------------------------------------------
 
-
     // region helper fields ------------------------------------------------------------------------
     @RelaxedMockK
     private lateinit var database: RetenoDatabase
@@ -67,9 +67,9 @@ class RetenoDatabaseManagerEventsTest : BaseRobolectricTest() {
     private lateinit var cursor: Cursor
     @MockK
     private lateinit var cursorChild: Cursor
-    // endregion helper fields ---------------------------------------------------------------------
 
     private var SUT: RetenoDatabaseManagerImpl? = null
+    // endregion helper fields ---------------------------------------------------------------------
 
     override fun before() {
         super.before()
@@ -219,7 +219,7 @@ class RetenoDatabaseManagerEventsTest : BaseRobolectricTest() {
         }
         verify(exactly = 1) { cursor.close() }
 
-        assertEquals(listOf<EventDTO>(), actualEvents)
+        assertEquals(listOf<EventDb>(), actualEvents)
     }
 
     @Test
@@ -257,7 +257,7 @@ class RetenoDatabaseManagerEventsTest : BaseRobolectricTest() {
 
         verify(exactly = 1) { database.cleanUnlinkedEvents() }
 
-        assertEquals(listOf<EventDTO>(), actualEvents)
+        assertEquals(listOf<EventDb>(), actualEvents)
     }
 
     @Test

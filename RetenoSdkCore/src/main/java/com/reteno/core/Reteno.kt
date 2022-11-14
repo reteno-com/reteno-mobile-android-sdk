@@ -1,8 +1,8 @@
 package com.reteno.core
 
 import com.reteno.core.data.local.config.DeviceIdMode
-import com.reteno.core.model.event.Parameter
-import com.reteno.core.model.user.User
+import com.reteno.core.domain.model.event.Parameter
+import com.reteno.core.domain.model.user.User
 import java.time.ZonedDateTime
 
 

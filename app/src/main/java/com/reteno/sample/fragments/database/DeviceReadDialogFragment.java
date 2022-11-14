@@ -8,17 +8,15 @@ import androidx.annotation.NonNull;
 import androidx.transition.AutoTransition;
 import androidx.transition.TransitionManager;
 
-import com.reteno.core.model.device.Device;
+import com.reteno.core.data.local.model.device.DeviceDb;
 import com.reteno.sample.R;
 import com.reteno.sample.databinding.ItemDbDeviceBinding;
 
 import java.util.List;
 import java.util.Locale;
 
-import kotlin.Pair;
 
-
-public class DeviceReadDialogFragment extends BaseReadDialogFragment<Device, ItemDbDeviceBinding, DeviceReadDialogFragment.DeviceViewHolder, DeviceReadDialogFragment.DeviceAdapter> {
+public class DeviceReadDialogFragment extends BaseReadDialogFragment<DeviceDb, ItemDbDeviceBinding, DeviceReadDialogFragment.DeviceViewHolder, DeviceReadDialogFragment.DeviceAdapter> {
 
     @Override
     protected void initAdapter() {
@@ -40,12 +38,12 @@ public class DeviceReadDialogFragment extends BaseReadDialogFragment<Device, Ite
 
     @Override
     protected void initItems() {
-        List<Device> newItems = databaseManager.getDevices(null);
+        List<DeviceDb> newItems = databaseManager.getDevices(null);
         adapter.setItems(newItems);
     }
 
     //==============================================================================================
-    static class DeviceAdapter extends BaseReadAdapter<Device, ItemDbDeviceBinding, DeviceViewHolder> {
+    static class DeviceAdapter extends BaseReadAdapter<DeviceDb, ItemDbDeviceBinding, DeviceViewHolder> {
 
         DeviceAdapter(ViewHolderListener listener) {
             super(listener);
@@ -75,14 +73,14 @@ public class DeviceReadDialogFragment extends BaseReadDialogFragment<Device, Ite
     }
 
     //==============================================================================================
-    static class DeviceViewHolder extends BaseReadViewHolder<Device, ItemDbDeviceBinding> {
+    static class DeviceViewHolder extends BaseReadViewHolder<DeviceDb, ItemDbDeviceBinding> {
 
         DeviceViewHolder(ItemDbDeviceBinding binding) {
             super(binding);
         }
 
         @Override
-        protected void bind(Device device) {
+        protected void bind(DeviceDb device) {
             bindingHolder.tvDeviceId.setTextOrHide(device.getDeviceId());
             bindingHolder.tvExternalUserId.setTextOrHide(device.getExternalUserId());
             bindingHolder.tvPushToken.setTextOrHide(device.getPushToken());

@@ -8,9 +8,9 @@ import androidx.annotation.NonNull;
 import androidx.transition.AutoTransition;
 import androidx.transition.TransitionManager;
 
-import com.reteno.core.data.remote.model.event.EventDTO;
-import com.reteno.core.data.remote.model.event.EventsDTO;
-import com.reteno.core.data.remote.model.event.ParameterDTO;
+import com.reteno.core.data.local.model.event.EventDb;
+import com.reteno.core.data.local.model.event.EventsDb;
+import com.reteno.core.data.local.model.event.ParameterDb;
 import com.reteno.sample.databinding.ItemDbEventBinding;
 import com.reteno.sample.databinding.ViewEventReadBinding;
 import com.reteno.sample.databinding.ViewUserCustomFieldsVerticalBinding;
@@ -19,7 +19,7 @@ import java.util.List;
 import java.util.Locale;
 
 
-public class EventReadDialogFragment extends BaseReadDialogFragment<EventsDTO, ItemDbEventBinding, EventReadDialogFragment.EventsViewHolder, EventReadDialogFragment.EventsAdapter> {
+public class EventReadDialogFragment extends BaseReadDialogFragment<EventsDb, ItemDbEventBinding, EventReadDialogFragment.EventsViewHolder, EventReadDialogFragment.EventsAdapter> {
 
     @Override
     protected void initAdapter() {
@@ -41,12 +41,12 @@ public class EventReadDialogFragment extends BaseReadDialogFragment<EventsDTO, I
 
     @Override
     protected void initItems() {
-        List<EventsDTO> newEvents = databaseManager.getEvents(null);
+        List<EventsDb> newEvents = databaseManager.getEvents(null);
         adapter.setItems(newEvents);
     }
 
     //==============================================================================================
-    static class EventsAdapter extends BaseReadAdapter<EventsDTO, ItemDbEventBinding, EventsViewHolder> {
+    static class EventsAdapter extends BaseReadAdapter<EventsDb, ItemDbEventBinding, EventsViewHolder> {
 
         EventsAdapter(ViewHolderListener listener) {
             super(listener);
@@ -64,33 +64,33 @@ public class EventReadDialogFragment extends BaseReadDialogFragment<EventsDTO, I
     }
 
     //==============================================================================================
-    static class EventsViewHolder extends BaseReadViewHolder<EventsDTO, ItemDbEventBinding> {
+    static class EventsViewHolder extends BaseReadViewHolder<EventsDb, ItemDbEventBinding> {
 
         EventsViewHolder(ItemDbEventBinding binding) {
             super(binding);
         }
 
         @Override
-        protected void bind(EventsDTO events) {
+        protected void bind(EventsDb events) {
             bindingHolder.tvDeviceId.setText(events.getDeviceId());
             bindingHolder.tvExternalUserId.setText(events.getExternalUserId());
 
-            List<EventDTO> eventList = events.getEventList();
+            List<EventDb> eventList = events.getEventList();
             bindingHolder.llContent.removeAllViews();
-            for (EventDTO event : eventList) {
+            for (EventDb event : eventList) {
                 View eventView = createNewEvent(bindingHolder.llContent, event);
                 bindingHolder.llContent.addView(eventView);
             }
         }
 
-        private View createNewEvent(ViewGroup parentViewGroup, EventDTO event) {
+        private View createNewEvent(ViewGroup parentViewGroup, EventDb event) {
             ViewEventReadBinding binding = ViewEventReadBinding.inflate(LayoutInflater
                     .from(bindingHolder.getRoot().getContext()), parentViewGroup, false);
             binding.tvEventTypeKey.setText(event.getEventTypeKey());
             binding.tvOccurred.setText(event.getOccurred());
 
             if (event.getParams() != null) {
-                for (ParameterDTO param : event.getParams()) {
+                for (ParameterDb param : event.getParams()) {
                     View paramsView = createNewParams(binding.llEvent, param.getName(), param.getValue());
                     binding.llEvent.addView(paramsView);
                 }

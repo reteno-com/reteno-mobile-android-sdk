@@ -3,10 +3,10 @@ package com.reteno.core.data.local.database
 import android.content.ContentValues
 import androidx.core.database.getStringOrNull
 import com.reteno.core.base.robolectric.BaseRobolectricTest
-import com.reteno.core.data.remote.model.user.AddressDTO
-import com.reteno.core.data.remote.model.user.UserAttributesDTO
-import com.reteno.core.data.remote.model.user.UserCustomFieldDTO
-import com.reteno.core.data.remote.model.user.UserDTO
+import com.reteno.core.data.local.model.user.AddressDb
+import com.reteno.core.data.local.model.user.UserAttributesDb
+import com.reteno.core.data.local.model.user.UserCustomFieldDb
+import com.reteno.core.data.local.model.user.UserDb
 import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
@@ -42,6 +42,37 @@ class DbUtilUserTest : BaseRobolectricTest() {
         private const val TOWN = "town1"
         private const val ADDRESS = "address1"
         private const val POSTCODE = "postcode1"
+
+        private val addressFull = AddressDb(
+            region = REGION,
+            town = TOWN,
+            address = ADDRESS,
+            postcode = POSTCODE
+        )
+
+        private val customFieldsFull = listOf(
+            UserCustomFieldDb(FIELD_KEY1, FIELD_VALUE1),
+            UserCustomFieldDb(FIELD_KEY2, FIELD_VALUE2),
+            UserCustomFieldDb(FIELD_KEY3, null)
+        )
+        private val userAttributesFull = UserAttributesDb(
+            phone = PHONE,
+            email = EMAIL,
+            firstName = FIRST_NAME,
+            lastName = LAST_NAME,
+            languageCode = LANGUAGE_CODE,
+            timeZone = TIME_ZONE,
+            address = addressFull,
+            fields = customFieldsFull
+        )
+        private val userFull = UserDb(
+            deviceId = DEVICE_ID,
+            externalUserId = EXTERNAL_USER_ID,
+            userAttributes = userAttributesFull,
+            subscriptionKeys = SUBSCRIPTION_KEYS,
+            groupNamesInclude = GROUP_NAMES_INCLUDE,
+            groupNamesExclude = GROUP_NAMES_EXCLUDE,
+        )
 
         private const val USER_PARENT_ROW_ID = 1L
 
@@ -87,14 +118,7 @@ class DbUtilUserTest : BaseRobolectricTest() {
     @Test
     fun givenUserProvided_whenPutUser_thenContentValuesUpdated() {
         // Given
-        val user = UserDTO(
-            deviceId = DEVICE_ID,
-            externalUserId = EXTERNAL_USER_ID,
-            userAttributes = null,
-            subscriptionKeys = SUBSCRIPTION_KEYS,
-            groupNamesInclude = GROUP_NAMES_INCLUDE,
-            groupNamesExclude = GROUP_NAMES_EXCLUDE,
-        )
+        val user = userFull.copy(userAttributes = null)
         val keySet = arrayOf(
             DbSchema.UserSchema.COLUMN_DEVICE_ID,
             DbSchema.UserSchema.COLUMN_EXTERNAL_USER_ID,
@@ -119,20 +143,15 @@ class DbUtilUserTest : BaseRobolectricTest() {
     @Test
     fun givenUserProvided_whenPutUserExternalUserIdOnly_thenContentValuesUpdated() {
         // Given
-        val user = UserDTO(
-            deviceId = DEVICE_ID,
-            externalUserId = EXTERNAL_USER_ID,
+        val user = userFull.copy(
             userAttributes = null,
             subscriptionKeys = null,
             groupNamesInclude = null,
-            groupNamesExclude = null,
+            groupNamesExclude = null
         )
         val keySet = arrayOf(
             DbSchema.UserSchema.COLUMN_DEVICE_ID,
-            DbSchema.UserSchema.COLUMN_EXTERNAL_USER_ID,
-            DbSchema.UserSchema.COLUMN_SUBSCRIPTION_KEYS,
-            DbSchema.UserSchema.COLUMN_GROUP_NAMES_INCLUDE,
-            DbSchema.UserSchema.COLUMN_GROUP_NAMES_EXCLUDE
+            DbSchema.UserSchema.COLUMN_EXTERNAL_USER_ID
         )
 
         // When
@@ -151,16 +170,7 @@ class DbUtilUserTest : BaseRobolectricTest() {
     @Test
     fun givenUserAttributesProvided_whenPutUserAttributesNoCustomFields_thenContentValuesUpdated() {
         // Given
-        val userAttributesDTO = UserAttributesDTO(
-            phone = PHONE,
-            email = EMAIL,
-            firstName = FIRST_NAME,
-            lastName = LAST_NAME,
-            languageCode = LANGUAGE_CODE,
-            timeZone = TIME_ZONE,
-            address = null,
-            fields = null
-        )
+        val userAttributesDb = userAttributesFull.copy(address = null, fields = null)
         val keySet = arrayOf(
             DbSchema.UserSchema.COLUMN_USER_ROW_ID,
             DbSchema.UserAttributesSchema.COLUMN_PHONE,
@@ -168,12 +178,11 @@ class DbUtilUserTest : BaseRobolectricTest() {
             DbSchema.UserAttributesSchema.COLUMN_FIRST_NAME,
             DbSchema.UserAttributesSchema.COLUMN_LAST_NAME,
             DbSchema.UserAttributesSchema.COLUMN_LANGUAGE_CODE,
-            DbSchema.UserAttributesSchema.COLUMN_TIME_ZONE,
-            DbSchema.UserAttributesSchema.COLUMN_CUSTOM_FIELDS
+            DbSchema.UserAttributesSchema.COLUMN_TIME_ZONE
         )
 
         // When
-        contentValues.putUserAttributes(USER_PARENT_ROW_ID, userAttributesDTO)
+        contentValues.putUserAttributes(USER_PARENT_ROW_ID, userAttributesDb)
 
         // Then
         assertEquals(keySet.toSet(), contentValues.keySet())
@@ -192,22 +201,8 @@ class DbUtilUserTest : BaseRobolectricTest() {
     fun givenUserAttributesProvided_whenPutUserAttributesWithCustomFields_thenContentValuesUpdated() {
         // Given
         val expectedCustomFieldsResult = getExpectedCustomFields()
-        val customFields = listOf<UserCustomFieldDTO>(
-            UserCustomFieldDTO(FIELD_KEY1, FIELD_VALUE1),
-            UserCustomFieldDTO(FIELD_KEY2, FIELD_VALUE2),
-            UserCustomFieldDTO(FIELD_KEY3, null)
-        )
 
-        val userAttributesDTO = UserAttributesDTO(
-            phone = PHONE,
-            email = EMAIL,
-            firstName = FIRST_NAME,
-            lastName = LAST_NAME,
-            languageCode = LANGUAGE_CODE,
-            timeZone = TIME_ZONE,
-            address = null,
-            fields = customFields
-        )
+        val userAttributesDb = userAttributesFull.copy(address = null)
         val keySet = arrayOf(
             DbSchema.UserSchema.COLUMN_USER_ROW_ID,
             DbSchema.UserAttributesSchema.COLUMN_PHONE,
@@ -220,7 +215,7 @@ class DbUtilUserTest : BaseRobolectricTest() {
         )
 
         // When
-        contentValues.putUserAttributes(USER_PARENT_ROW_ID, userAttributesDTO)
+        contentValues.putUserAttributes(USER_PARENT_ROW_ID, userAttributesDb)
 
         // Then
         assertEquals(keySet.toSet(), contentValues.keySet())
@@ -238,12 +233,6 @@ class DbUtilUserTest : BaseRobolectricTest() {
     @Test
     fun givenUserAddressProvided_whenPutUserAddress_thenContentValuesUpdated() {
         // Given
-        val userAddressDTO = AddressDTO(
-            region = REGION,
-            town = TOWN,
-            address = ADDRESS,
-            postcode = POSTCODE
-        )
         val keySet = arrayOf(
             DbSchema.UserSchema.COLUMN_USER_ROW_ID,
             DbSchema.UserAddressSchema.COLUMN_REGION,
@@ -253,7 +242,7 @@ class DbUtilUserTest : BaseRobolectricTest() {
         )
 
         // When
-        contentValues.putUserAddress(USER_PARENT_ROW_ID, userAddressDTO)
+        contentValues.putUserAddress(USER_PARENT_ROW_ID, addressFull)
 
         // Then
         assertEquals(keySet.toSet(), contentValues.keySet())
@@ -272,43 +261,11 @@ class DbUtilUserTest : BaseRobolectricTest() {
         mockUserAddressFull()
         mockUserAttributesFull()
 
-        val expectedAddress = AddressDTO(
-            region = REGION,
-            town = TOWN,
-            address = ADDRESS,
-            postcode = POSTCODE
-        )
-
-        val expectedCustomFields = listOf<UserCustomFieldDTO>(
-            UserCustomFieldDTO(FIELD_KEY1, FIELD_VALUE1),
-            UserCustomFieldDTO(FIELD_KEY2, FIELD_VALUE2),
-            UserCustomFieldDTO(FIELD_KEY3, null)
-        )
-        val expectedUserAttributes = UserAttributesDTO(
-            phone = PHONE,
-            email = EMAIL,
-            firstName = FIRST_NAME,
-            lastName = LAST_NAME,
-            languageCode = LANGUAGE_CODE,
-            timeZone = TIME_ZONE,
-            address = expectedAddress,
-            fields = expectedCustomFields
-        )
-
-        val expectedUser = UserDTO(
-            deviceId = DEVICE_ID,
-            externalUserId = EXTERNAL_USER_ID,
-            userAttributes = expectedUserAttributes,
-            subscriptionKeys = SUBSCRIPTION_KEYS,
-            groupNamesInclude = GROUP_NAMES_INCLUDE,
-            groupNamesExclude = GROUP_NAMES_EXCLUDE,
-        )
-
         // When
         val actualUser = cursor.getUser()
 
         // Then
-        assertEquals(expectedUser, actualUser)
+        assertEquals(userFull, actualUser)
     }
 
     @Test
@@ -318,32 +275,8 @@ class DbUtilUserTest : BaseRobolectricTest() {
         mockUserAddressEmpty()
         mockUserAttributesFull()
 
-        val expectedAddress = null
-
-        val expectedCustomFields = listOf<UserCustomFieldDTO>(
-            UserCustomFieldDTO(FIELD_KEY1, FIELD_VALUE1),
-            UserCustomFieldDTO(FIELD_KEY2, FIELD_VALUE2),
-            UserCustomFieldDTO(FIELD_KEY3, null)
-        )
-        val expectedUserAttributes = UserAttributesDTO(
-            phone = PHONE,
-            email = EMAIL,
-            firstName = FIRST_NAME,
-            lastName = LAST_NAME,
-            languageCode = LANGUAGE_CODE,
-            timeZone = TIME_ZONE,
-            address = expectedAddress,
-            fields = expectedCustomFields
-        )
-
-        val expectedUser = UserDTO(
-            deviceId = DEVICE_ID,
-            externalUserId = EXTERNAL_USER_ID,
-            userAttributes = expectedUserAttributes,
-            subscriptionKeys = SUBSCRIPTION_KEYS,
-            groupNamesInclude = GROUP_NAMES_INCLUDE,
-            groupNamesExclude = GROUP_NAMES_EXCLUDE,
-        )
+        val expectedUserAttributes = userAttributesFull.copy(address = null)
+        val expectedUser = userFull.copy(userAttributes = expectedUserAttributes)
 
         // When
         val actualUser = cursor.getUser()
@@ -359,32 +292,8 @@ class DbUtilUserTest : BaseRobolectricTest() {
         mockUserAddressFull()
         mockUserAttributesWithoutCustomFields()
 
-        val expectedAddress = AddressDTO(
-            region = REGION,
-            town = TOWN,
-            address = ADDRESS,
-            postcode = POSTCODE
-        )
-
-        val expectedUserAttributes = UserAttributesDTO(
-            phone = PHONE,
-            email = EMAIL,
-            firstName = FIRST_NAME,
-            lastName = LAST_NAME,
-            languageCode = LANGUAGE_CODE,
-            timeZone = TIME_ZONE,
-            address = expectedAddress,
-            fields = null
-        )
-
-        val expectedUser = UserDTO(
-            deviceId = DEVICE_ID,
-            externalUserId = EXTERNAL_USER_ID,
-            userAttributes = expectedUserAttributes,
-            subscriptionKeys = SUBSCRIPTION_KEYS,
-            groupNamesInclude = GROUP_NAMES_INCLUDE,
-            groupNamesExclude = GROUP_NAMES_EXCLUDE,
-        )
+        val expectedUserAttributes = userAttributesFull.copy(fields = null)
+        val expectedUser = userFull.copy(userAttributes = expectedUserAttributes)
 
         // When
         val actualUser = cursor.getUser()
@@ -400,14 +309,7 @@ class DbUtilUserTest : BaseRobolectricTest() {
         mockUserAddressEmpty()
         mockUserAttributesEmpty()
 
-        val expectedUser = UserDTO(
-            deviceId = DEVICE_ID,
-            externalUserId = EXTERNAL_USER_ID,
-            userAttributes = null,
-            subscriptionKeys = SUBSCRIPTION_KEYS,
-            groupNamesInclude = GROUP_NAMES_INCLUDE,
-            groupNamesExclude = GROUP_NAMES_EXCLUDE,
-        )
+        val expectedUser = userFull.copy(userAttributes = null)
 
         // When
         val actualUser = cursor.getUser()
@@ -423,9 +325,7 @@ class DbUtilUserTest : BaseRobolectricTest() {
         mockUserAddressEmpty()
         mockUserAttributesEmpty()
 
-        val expectedUser = UserDTO(
-            deviceId = DEVICE_ID,
-            externalUserId = EXTERNAL_USER_ID,
+        val expectedUser = userFull.copy(
             userAttributes = null,
             subscriptionKeys = null,
             groupNamesInclude = null,

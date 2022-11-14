@@ -25,16 +25,14 @@ class ConfigRepositoryTest : BaseRobolectricTest() {
     }
     // endregion constants -------------------------------------------------------------------------
 
-
     // region helper fields ------------------------------------------------------------------------
     @MockK
     private lateinit var sharedPrefsManager: SharedPrefsManager
 
     private lateinit var restConfig: RestConfig
-    // endregion helper fields ---------------------------------------------------------------------
 
     private lateinit var SUT: ConfigRepositoryImpl
-
+    // endregion helper fields ---------------------------------------------------------------------
 
     override fun before() {
         super.before()

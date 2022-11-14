@@ -2,10 +2,8 @@ package com.reteno.core.data.workmanager
 
 import android.content.Context
 import android.util.Log
-import androidx.work.Configuration
+import androidx.work.*
 import androidx.work.ListenableWorker.Result
-import androidx.work.WorkInfo
-import androidx.work.WorkManager
 import androidx.work.testing.TestWorkerBuilder
 import androidx.work.testing.WorkManagerTestInitHelper
 import com.reteno.core.base.robolectric.BaseRobolectricTest
@@ -20,9 +18,10 @@ import junit.framework.TestCase.assertNotNull
 import org.hamcrest.CoreMatchers.`is`
 import org.hamcrest.MatcherAssert.assertThat
 import org.junit.Test
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.Executor
 import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 
 
 class PushDataWorkerTest : BaseRobolectricTest() {
@@ -38,9 +37,9 @@ class PushDataWorkerTest : BaseRobolectricTest() {
     private lateinit var databaseManager: RetenoDatabaseManager
 
     private var executor: Executor? = null
-    private var SUT: PushDataWorker? = null
     private lateinit var workUuid: UUID
 
+    private var SUT: PushDataWorker? = null
     // endregion helper fields ---------------------------------------------------------------------
 
     override fun before() {
@@ -54,11 +53,7 @@ class PushDataWorkerTest : BaseRobolectricTest() {
         initializeWorkManager(application, executor!!)
         workUuid = PushDataWorker.enqueuePeriodicWork(WorkManager.getInstance(application))
 
-        SUT = TestWorkerBuilder.from(
-            application,
-            PushDataWorker::class.java,
-            executor!!
-        ).build()
+        SUT = TestWorkerBuilder<PushDataWorker>(application, executor!!).build()
         assertNotNull(SUT)
     }
 
@@ -110,6 +105,53 @@ class PushDataWorkerTest : BaseRobolectricTest() {
 
         val workState = WorkManager.getInstance(application).getWorkInfoById(workUuid).get()
         assertEquals(WorkInfo.State.ENQUEUED, workState.state)
+    }
+
+    @Test
+    fun givenConstraintsSatisfied_whenWorkEnqueued_thenWorkIsRunning() {
+        // Given
+        val workManager = WorkManager.getInstance(application)
+        val testDriver = WorkManagerTestInitHelper.getTestDriver(application)!!
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .build()
+        val request = PeriodicWorkRequestBuilder<PushDataWorker>(15, TimeUnit.MINUTES)
+            .setConstraints(constraints)
+            .build()
+
+        // When
+        WorkManager.getInstance(application).enqueue(request).result.get()
+        with(testDriver) {
+            setPeriodDelayMet(request.id)
+            setAllConstraintsMet(request.id)
+        }
+
+        // Then
+        val workInfo = workManager.getWorkInfoById(request.id).get()
+        assertEquals(workInfo.state, WorkInfo.State.RUNNING)
+    }
+
+    @Test
+    fun givenConstraintsNotSatisfied_whenWorkEnqueued_thenWorkIsEnqueued() {
+        // Given
+        val workManager = WorkManager.getInstance(application)
+        val testDriver = WorkManagerTestInitHelper.getTestDriver(application)!!
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .build()
+        val request = PeriodicWorkRequestBuilder<PushDataWorker>(15, TimeUnit.MINUTES)
+            .setConstraints(constraints)
+            .build()
+
+        // When
+        WorkManager.getInstance(application).enqueue(request).result.get()
+        with(testDriver) {
+            setPeriodDelayMet(request.id)
+        }
+
+        // Then
+        val workInfo = workManager.getWorkInfoById(request.id).get()
+        assertEquals(workInfo.state, WorkInfo.State.ENQUEUED)
     }
 
     // region helper methods -----------------------------------------------------------------------

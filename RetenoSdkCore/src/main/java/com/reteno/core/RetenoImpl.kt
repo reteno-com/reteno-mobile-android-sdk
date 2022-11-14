@@ -4,12 +4,13 @@ import android.app.Activity
 import android.app.Application
 import com.reteno.core.data.local.config.DeviceIdMode
 import com.reteno.core.di.ServiceLocator
+import com.reteno.core.domain.model.event.Event
+import com.reteno.core.domain.model.event.Parameter
+import com.reteno.core.domain.model.user.User
 import com.reteno.core.lifecycle.RetenoActivityHelper
 import com.reteno.core.lifecycle.RetenoLifecycleCallbacks
-import com.reteno.core.model.event.Event
-import com.reteno.core.model.event.Parameter
-import com.reteno.core.model.user.User
 import com.reteno.core.util.Logger
+import com.reteno.core.util.allElementsNull
 import java.time.ZonedDateTime
 
 
@@ -75,7 +76,7 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
         try {
             // TODO: Move this to background thread later
             contactController.setExternalUserId(externalUserId)
-            user?.let { setUserData(it) }
+            setUserData(user)
         } catch (ex: Throwable) {
             Logger.e(TAG, "setUserAttributes(): ", ex)
         }
@@ -97,12 +98,12 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
         scheduleController.forcePush()
     }
 
-    private fun setUserData(used: User) {
-        /*@formatter:off*/ Logger.i(TAG, "setUserData(): ", "used = [" , used , "]")
+    private fun setUserData(user: User?) {
+        /*@formatter:off*/ Logger.i(TAG, "setUserData(): ", "used = [" , user , "]")
         /*@formatter:on*/
         try {
             // TODO: Move this to background thread later
-            contactController.setUserData(used)
+            user?.let(contactController::setUserData)
         } catch (ex: Throwable) {
             Logger.e(TAG, "setExternalDeviceId(): ", ex)
         }

@@ -14,9 +14,8 @@ class RetenoDatabaseManagerTest : BaseRobolectricTest() {
     @RelaxedMockK
     private lateinit var database: RetenoDatabase
 
-    // endregion helper fields ---------------------------------------------------------------------
-
     private var SUT: RetenoDatabaseManagerImpl? = null
+    // endregion helper fields ---------------------------------------------------------------------
 
     override fun before() {
         super.before()

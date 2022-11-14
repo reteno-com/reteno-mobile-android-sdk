@@ -15,12 +15,12 @@ import com.reteno.core.Reteno;
 import com.reteno.core.RetenoImpl;
 import com.reteno.core._interop.DeviceIdInternal;
 import com.reteno.core.data.local.config.DeviceId;
-import com.reteno.core.data.remote.mapper.UserMappersKt;
-import com.reteno.core.data.remote.model.user.UserDTO;
-import com.reteno.core.model.user.Address;
-import com.reteno.core.model.user.User;
-import com.reteno.core.model.user.UserAttributes;
-import com.reteno.core.model.user.UserCustomField;
+import com.reteno.core.data.local.mappers.UserMappersKt;
+import com.reteno.core.data.local.model.user.UserDb;
+import com.reteno.core.domain.model.user.Address;
+import com.reteno.core.domain.model.user.User;
+import com.reteno.core.domain.model.user.UserAttributes;
+import com.reteno.core.domain.model.user.UserCustomField;
 import com.reteno.core.util.UtilKt;
 import com.reteno.sample.R;
 import com.reteno.sample.SampleApp;
@@ -148,8 +148,8 @@ public class UserWriteFragment extends BaseDatabaseDialogFragment {
         DeviceId deviceId = getDeviceId();
         deviceId = deviceId.copy(DeviceIdInternal.INSTANCE.getIdInternal(deviceId), externalId, DeviceIdInternal.INSTANCE.getModeInternal(deviceId));
 
-        UserDTO userDTO = UserMappersKt.toRemote(user, deviceId);
-        databaseManager.insertUser(userDTO);
+        UserDb userDb = UserMappersKt.toDb(user, deviceId);
+        databaseManager.insertUser(userDb);
     }
 
     private DeviceId getDeviceId() {

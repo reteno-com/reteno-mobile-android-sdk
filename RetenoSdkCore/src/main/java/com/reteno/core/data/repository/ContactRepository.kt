@@ -1,7 +1,7 @@
 package com.reteno.core.data.repository
 
-import com.reteno.core.model.device.Device
-import com.reteno.core.model.user.User
+import com.reteno.core.domain.model.device.Device
+import com.reteno.core.domain.model.user.User
 
 interface ContactRepository {
     fun saveUserData(user: User)

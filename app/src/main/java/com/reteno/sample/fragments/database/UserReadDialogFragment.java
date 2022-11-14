@@ -8,11 +8,11 @@ import androidx.annotation.NonNull;
 import androidx.transition.AutoTransition;
 import androidx.transition.TransitionManager;
 
+import com.reteno.core.data.local.model.user.AddressDb;
+import com.reteno.core.data.local.model.user.UserAttributesDb;
+import com.reteno.core.data.local.model.user.UserCustomFieldDb;
+import com.reteno.core.data.local.model.user.UserDb;
 import com.reteno.core.data.remote.mapper.JsonMappersKt;
-import com.reteno.core.data.remote.model.user.AddressDTO;
-import com.reteno.core.data.remote.model.user.UserAttributesDTO;
-import com.reteno.core.data.remote.model.user.UserCustomFieldDTO;
-import com.reteno.core.data.remote.model.user.UserDTO;
 import com.reteno.sample.R;
 import com.reteno.sample.databinding.ItemDbUserBinding;
 import com.reteno.sample.databinding.ViewUserCustomFieldsVerticalBinding;
@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.Locale;
 
 
-public class UserReadDialogFragment extends BaseReadDialogFragment<UserDTO, ItemDbUserBinding, UserReadDialogFragment.UserViewHolder, UserReadDialogFragment.UserAdapter> {
+public class UserReadDialogFragment extends BaseReadDialogFragment<UserDb, ItemDbUserBinding, UserReadDialogFragment.UserViewHolder, UserReadDialogFragment.UserAdapter> {
 
     @Override
     protected void initAdapter() {
@@ -38,7 +38,7 @@ public class UserReadDialogFragment extends BaseReadDialogFragment<UserDTO, Item
 
     @Override
     protected void initItems() {
-        List<UserDTO> newItems = databaseManager.getUser(null);
+        List<UserDb> newItems = databaseManager.getUser(null);
         adapter.setItems(newItems);
     }
 
@@ -48,7 +48,7 @@ public class UserReadDialogFragment extends BaseReadDialogFragment<UserDTO, Item
     }
 
     //==============================================================================================
-    static class UserAdapter extends BaseReadAdapter<UserDTO, ItemDbUserBinding, UserViewHolder> {
+    static class UserAdapter extends BaseReadAdapter<UserDb, ItemDbUserBinding, UserViewHolder> {
 
         UserAdapter(ViewHolderListener listener) {
             super(listener);
@@ -78,21 +78,21 @@ public class UserReadDialogFragment extends BaseReadDialogFragment<UserDTO, Item
     }
 
     //==============================================================================================
-    static class UserViewHolder extends BaseReadViewHolder<UserDTO, ItemDbUserBinding> {
+    static class UserViewHolder extends BaseReadViewHolder<UserDb, ItemDbUserBinding> {
 
         UserViewHolder(ItemDbUserBinding binding) {
             super(binding);
         }
 
         @Override
-        protected void bind(UserDTO user) {
+        protected void bind(UserDb user) {
             bindingHolder.tvDeviceId.setTextOrHide(user.getDeviceId());
             bindingHolder.tvExternalUserId.setTextOrHide(user.getExternalUserId());
             bindingHolder.tvSubscriptionKeys.setTextOrHide(JsonMappersKt.toJsonOrNull(user.getSubscriptionKeys()));
             bindingHolder.tvGroupNamesInclude.setTextOrHide(JsonMappersKt.toJsonOrNull(user.getGroupNamesInclude()));
             bindingHolder.tvGroupNamesInclude.setTextOrHide(JsonMappersKt.toJsonOrNull(user.getGroupNamesExclude()));
 
-            UserAttributesDTO userAttributes = user.getUserAttributes();
+            UserAttributesDb userAttributes = user.getUserAttributes();
             if (userAttributes != null) {
                 bindingHolder.llUserAttributes.setVisibility(View.VISIBLE);
                 bindingHolder.tvPhone.setTextOrHide(userAttributes.getPhone());
@@ -102,7 +102,7 @@ public class UserReadDialogFragment extends BaseReadDialogFragment<UserDTO, Item
                 bindingHolder.tvLanguageCode.setTextOrHide(userAttributes.getLanguageCode());
                 bindingHolder.tvTimeZone.setTextOrHide(userAttributes.getTimeZone());
 
-                AddressDTO address = userAttributes.getAddress();
+                AddressDb address = userAttributes.getAddress();
                 if (address != null) {
                     bindingHolder.llAddress.setVisibility(View.VISIBLE);
                     bindingHolder.tvRegion.setTextOrHide(address.getRegion());
@@ -113,10 +113,10 @@ public class UserReadDialogFragment extends BaseReadDialogFragment<UserDTO, Item
                     bindingHolder.llAddress.setVisibility(View.GONE);
                 }
 
-                List<UserCustomFieldDTO> customFields = userAttributes.getFields();
+                List<UserCustomFieldDb> customFields = userAttributes.getFields();
                 if (customFields != null && !customFields.isEmpty()) {
                     bindingHolder.llCustomFields.setVisibility(View.VISIBLE);
-                    for (UserCustomFieldDTO customField : customFields) {
+                    for (UserCustomFieldDb customField : customFields) {
                         View customFieldView = createNewFields(customField.getKey(), customField.getValue());
                         bindingHolder.llCustomFields.addView(customFieldView);
                     }

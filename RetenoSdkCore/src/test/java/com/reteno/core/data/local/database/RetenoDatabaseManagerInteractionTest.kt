@@ -3,20 +3,17 @@ package com.reteno.core.data.local.database
 import android.content.ContentValues
 import androidx.core.database.getLongOrNull
 import androidx.core.database.getStringOrNull
-
 import com.reteno.core.base.robolectric.BaseRobolectricTest
-import com.reteno.core.data.local.model.InteractionModelDb
-import com.reteno.core.model.interaction.InteractionStatus
+import com.reteno.core.data.local.model.interaction.InteractionDb
+import com.reteno.core.data.local.model.interaction.InteractionStatusDb
 import com.reteno.core.util.Logger
-import org.junit.Assert.assertEquals
-
-import org.junit.Test
-
 import io.mockk.*
 import io.mockk.impl.annotations.MockK
 import io.mockk.impl.annotations.RelaxedMockK
 import junit.framework.TestCase.assertTrue
 import net.sqlcipher.Cursor
+import org.junit.Assert.assertEquals
+import org.junit.Test
 
 
 class RetenoDatabaseManagerInteractionTest : BaseRobolectricTest() {
@@ -29,17 +26,17 @@ class RetenoDatabaseManagerInteractionTest : BaseRobolectricTest() {
         private const val TIMESTAMP = "TimeStampHere_Z"
 
         private const val INTERACTION_ID = "interactionId"
-        private val INTERACTION_STATUS = InteractionStatus.DELIVERED
+        private val INTERACTION_STATUS = InteractionStatusDb.DELIVERED
         private const val INTERACTION_TIME = "interactionTime"
         private const val INTERACTION_TOKEN = "interactionToken"
 
-        private val interaction1 = InteractionModelDb(
+        private val interaction1 = InteractionDb(
             interactionId = INTERACTION_ID,
             status = INTERACTION_STATUS,
             time = INTERACTION_TIME,
             token = INTERACTION_TOKEN
         )
-        private val interaction2 = InteractionModelDb(
+        private val interaction2 = InteractionDb(
             interactionId = "${INTERACTION_ID}_2",
             status = INTERACTION_STATUS,
             time = "${INTERACTION_TIME}_2}",
@@ -55,16 +52,15 @@ class RetenoDatabaseManagerInteractionTest : BaseRobolectricTest() {
     }
     // endregion constants -------------------------------------------------------------------------
 
-
     // region helper fields ------------------------------------------------------------------------
     @RelaxedMockK
     private lateinit var database: RetenoDatabase
 
     @MockK
     private lateinit var cursor: Cursor
-    // endregion helper fields ---------------------------------------------------------------------
 
     private var SUT: RetenoDatabaseManagerImpl? = null
+    // endregion helper fields ---------------------------------------------------------------------
 
     override fun before() {
         super.before()

@@ -8,17 +8,15 @@ import androidx.annotation.NonNull;
 import androidx.transition.AutoTransition;
 import androidx.transition.TransitionManager;
 
-import com.reteno.core.data.local.model.InteractionModelDb;
+import com.reteno.core.data.local.model.interaction.InteractionDb;
 import com.reteno.sample.R;
 import com.reteno.sample.databinding.ItemDbInteractionBinding;
 
 import java.util.List;
 import java.util.Locale;
 
-import kotlin.Pair;
 
-
-public class InteractionReadDialogFragment extends BaseReadDialogFragment<InteractionModelDb, ItemDbInteractionBinding, InteractionReadDialogFragment.InteractionViewHolder, InteractionReadDialogFragment.InteractionAdapter> {
+public class InteractionReadDialogFragment extends BaseReadDialogFragment<InteractionDb, ItemDbInteractionBinding, InteractionReadDialogFragment.InteractionViewHolder, InteractionReadDialogFragment.InteractionAdapter> {
 
     @Override
     protected void initAdapter() {
@@ -35,7 +33,7 @@ public class InteractionReadDialogFragment extends BaseReadDialogFragment<Intera
 
     @Override
     protected void initItems() {
-        List<InteractionModelDb> newItems = databaseManager.getInteractions(null);
+        List<InteractionDb> newItems = databaseManager.getInteractions(null);
         adapter.setItems(newItems);
     }
 
@@ -45,7 +43,7 @@ public class InteractionReadDialogFragment extends BaseReadDialogFragment<Intera
     }
 
     //==============================================================================================
-    static class InteractionAdapter extends BaseReadAdapter<InteractionModelDb, ItemDbInteractionBinding, InteractionViewHolder> {
+    static class InteractionAdapter extends BaseReadAdapter<InteractionDb, ItemDbInteractionBinding, InteractionViewHolder> {
 
         InteractionAdapter(ViewHolderListener listener) {
             super(listener);
@@ -76,14 +74,14 @@ public class InteractionReadDialogFragment extends BaseReadDialogFragment<Intera
     }
 
     //==============================================================================================
-    static class InteractionViewHolder extends BaseReadViewHolder<InteractionModelDb, ItemDbInteractionBinding> {
+    static class InteractionViewHolder extends BaseReadViewHolder<InteractionDb, ItemDbInteractionBinding> {
 
         InteractionViewHolder(ItemDbInteractionBinding binding) {
             super(binding);
         }
 
         @Override
-        protected void bind(InteractionModelDb interaction) {
+        protected void bind(InteractionDb interaction) {
             bindingHolder.tvInteractionId.setText(interaction.getInteractionId());
             bindingHolder.tvStatus.setText(interaction.getStatus().toString());
             bindingHolder.tvTime.setText(interaction.getTime());

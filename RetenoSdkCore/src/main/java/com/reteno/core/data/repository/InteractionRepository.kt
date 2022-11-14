@@ -1,6 +1,6 @@
 package com.reteno.core.data.repository
 
-import com.reteno.core.model.interaction.Interaction
+import com.reteno.core.domain.model.interaction.Interaction
 
 interface InteractionRepository {
 

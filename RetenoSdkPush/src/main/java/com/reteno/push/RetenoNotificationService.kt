@@ -5,7 +5,7 @@ import android.content.Context
 import android.os.Bundle
 import com.reteno.core.RetenoApplication
 import com.reteno.core.RetenoImpl
-import com.reteno.core.model.interaction.InteractionStatus
+import com.reteno.core.domain.model.interaction.InteractionStatus
 import com.reteno.core.util.Logger
 import com.reteno.push.Constants.KEY_ES_INTERACTION_ID
 import com.reteno.push.channel.RetenoNotificationChannel

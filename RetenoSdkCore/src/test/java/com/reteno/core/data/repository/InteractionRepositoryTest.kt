@@ -3,13 +3,13 @@ package com.reteno.core.data.repository
 import com.reteno.core.base.robolectric.BaseRobolectricTest
 import com.reteno.core.data.local.database.RetenoDatabaseManager
 import com.reteno.core.data.local.mappers.toDb
-import com.reteno.core.data.local.model.InteractionModelDb
+import com.reteno.core.data.local.model.interaction.InteractionDb
 import com.reteno.core.data.remote.PushOperationQueue
 import com.reteno.core.data.remote.api.ApiClient
 import com.reteno.core.data.remote.api.ApiContract
 import com.reteno.core.domain.ResponseCallback
-import com.reteno.core.model.interaction.Interaction
-import com.reteno.core.model.interaction.InteractionStatus
+import com.reteno.core.domain.model.interaction.Interaction
+import com.reteno.core.domain.model.interaction.InteractionStatus
 import io.mockk.*
 import io.mockk.impl.annotations.RelaxedMockK
 import org.junit.Assert
@@ -32,15 +32,14 @@ class InteractionRepositoryTest : BaseRobolectricTest() {
     }
     // endregion constants -------------------------------------------------------------------------
 
-
     // region helper fields ------------------------------------------------------------------------
     @RelaxedMockK
     private lateinit var apiClient: ApiClient
     @RelaxedMockK
     private lateinit var retenoDatabaseManager: RetenoDatabaseManager
-    // endregion helper fields ---------------------------------------------------------------------
 
     private lateinit var SUT: InteractionRepositoryImpl
+    // endregion helper fields ---------------------------------------------------------------------
 
     @Before
     override fun before() {
@@ -84,7 +83,7 @@ class InteractionRepositoryTest : BaseRobolectricTest() {
                 responseHandler = any()
             )
         } just runs
-        every { retenoDatabaseManager.getInteractions(any()) } returns listOf(dbInteraction) andThen emptyList<InteractionModelDb>()
+        every { retenoDatabaseManager.getInteractions(any()) } returns listOf(dbInteraction) andThen emptyList<InteractionDb>()
 
         // When
         SUT.pushInteractions()
@@ -100,7 +99,7 @@ class InteractionRepositoryTest : BaseRobolectricTest() {
 
     @Test
     fun givenValidInteraction_whenInteractionPushSuccessful_thenTryPushNextInteraction() {
-        val dbInteraction = mockk<InteractionModelDb>(relaxed = true)
+        val dbInteraction = mockk<InteractionDb>(relaxed = true)
         every { retenoDatabaseManager.getInteractions(any()) } returnsMany listOf(listOf(dbInteraction), listOf(dbInteraction), emptyList())
         every { apiClient.put(url = any(), jsonBody = any(), responseHandler = any()) } answers {
             val callback = thirdArg<ResponseCallback>()
@@ -116,7 +115,7 @@ class InteractionRepositoryTest : BaseRobolectricTest() {
 
     @Test
     fun givenValidInteraction_whenInteractionPushFailedAndErrorIsRepeatable_cancelPushOperations() {
-        val dbInteraction = mockk<InteractionModelDb>(relaxed = true)
+        val dbInteraction = mockk<InteractionDb>(relaxed = true)
         every { retenoDatabaseManager.getInteractions(any()) } returns listOf(dbInteraction)
         every { apiClient.put(url = any(), jsonBody = any(), responseHandler = any()) } answers {
             val callback = thirdArg<ResponseCallback>()
@@ -131,7 +130,7 @@ class InteractionRepositoryTest : BaseRobolectricTest() {
 
     @Test
     fun givenValidInteraction_whenInteractionPushFailedAndErrorIsNonRepeatable_thenTryPushNextInteraction() {
-        val dbInteraction = mockk<InteractionModelDb>(relaxed = true)
+        val dbInteraction = mockk<InteractionDb>(relaxed = true)
         every { retenoDatabaseManager.getInteractions(any()) } returnsMany listOf(listOf(dbInteraction), listOf(dbInteraction), emptyList())
         every { apiClient.put(url = any(), jsonBody = any(), responseHandler = any()) } answers {
             val callback = thirdArg<ResponseCallback>()
@@ -157,6 +156,5 @@ class InteractionRepositoryTest : BaseRobolectricTest() {
         // Then
         verify(exactly = 0) { apiClient.put(any(), any(), any()) }
         verify { PushOperationQueue.nextOperation() }
-
     }
 }

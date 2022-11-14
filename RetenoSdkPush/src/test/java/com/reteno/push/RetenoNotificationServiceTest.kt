@@ -5,7 +5,7 @@ import android.content.Context
 import android.os.Bundle
 import com.reteno.core.domain.controller.ContactController
 import com.reteno.core.domain.controller.InteractionController
-import com.reteno.core.model.interaction.InteractionStatus
+import com.reteno.core.domain.model.interaction.InteractionStatus
 import com.reteno.push.Constants.KEY_ES_CONTENT
 import com.reteno.push.Constants.KEY_ES_INTERACTION_ID
 import com.reteno.push.Constants.KEY_ES_NOTIFICATION_IMAGE

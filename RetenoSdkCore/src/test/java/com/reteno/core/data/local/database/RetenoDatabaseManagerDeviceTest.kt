@@ -3,21 +3,18 @@ package com.reteno.core.data.local.database
 import android.content.ContentValues
 import androidx.core.database.getLongOrNull
 import androidx.core.database.getStringOrNull
-
 import com.reteno.core.base.robolectric.BaseRobolectricTest
-import com.reteno.core.model.device.Device
-import com.reteno.core.model.device.DeviceCategory
-import com.reteno.core.model.device.DeviceOS
+import com.reteno.core.data.local.model.device.DeviceCategoryDb
+import com.reteno.core.data.local.model.device.DeviceDb
+import com.reteno.core.data.local.model.device.DeviceOsDb
 import com.reteno.core.util.Logger
-import org.junit.Assert.assertEquals
-
-import org.junit.Test
-
 import io.mockk.*
 import io.mockk.impl.annotations.MockK
 import io.mockk.impl.annotations.RelaxedMockK
 import junit.framework.TestCase.assertTrue
 import net.sqlcipher.Cursor
+import org.junit.Assert.assertEquals
+import org.junit.Test
 
 
 class RetenoDatabaseManagerDeviceTest : BaseRobolectricTest() {
@@ -32,8 +29,8 @@ class RetenoDatabaseManagerDeviceTest : BaseRobolectricTest() {
         private const val DEVICE_ID = "valueDeviceId"
         private const val EXTERNAL_USER_ID = "valueExternalUserId"
         private const val PUSH_TOKEN = "valuePushToken"
-        private val CATEGORY = DeviceCategory.TABLET
-        private val OS_TYPE = DeviceOS.ANDROID
+        private val CATEGORY = DeviceCategoryDb.TABLET
+        private val OS_TYPE = DeviceOsDb.ANDROID
         private const val OS_VERSION = "valueOsVersion"
         private const val DEVICE_MODEL = "valueDeviceModel"
         private const val APP_VERSION = "valueAppVersion"
@@ -56,7 +53,7 @@ class RetenoDatabaseManagerDeviceTest : BaseRobolectricTest() {
         private const val COLUMN_INDEX_ADVERTISING_ID = 13
 
 
-        private val device1 = Device(
+        private val device1 = DeviceDb(
             deviceId = DEVICE_ID,
             externalUserId = null,
             pushToken = PUSH_TOKEN,
@@ -70,7 +67,7 @@ class RetenoDatabaseManagerDeviceTest : BaseRobolectricTest() {
             advertisingId = null
         )
 
-        private val device2 = Device(
+        private val device2 = DeviceDb(
             deviceId = DEVICE_ID,
             externalUserId = EXTERNAL_USER_ID,
             pushToken = PUSH_TOKEN,
@@ -86,16 +83,15 @@ class RetenoDatabaseManagerDeviceTest : BaseRobolectricTest() {
     }
     // endregion constants -------------------------------------------------------------------------
 
-
     // region helper fields ------------------------------------------------------------------------
     @RelaxedMockK
     private lateinit var database: RetenoDatabase
 
     @MockK
     private lateinit var cursor: Cursor
-    // endregion helper fields ---------------------------------------------------------------------
 
     private var SUT: RetenoDatabaseManagerImpl? = null
+    // endregion helper fields ---------------------------------------------------------------------
 
     override fun before() {
         super.before()

@@ -3,22 +3,19 @@ package com.reteno.core.data.local.database
 import android.content.ContentValues
 import androidx.core.database.getLongOrNull
 import androidx.core.database.getStringOrNull
-
 import com.reteno.core.base.robolectric.BaseRobolectricTest
-import com.reteno.core.data.remote.model.user.AddressDTO
-import com.reteno.core.data.remote.model.user.UserAttributesDTO
-import com.reteno.core.data.remote.model.user.UserCustomFieldDTO
-import com.reteno.core.data.remote.model.user.UserDTO
+import com.reteno.core.data.local.model.user.AddressDb
+import com.reteno.core.data.local.model.user.UserAttributesDb
+import com.reteno.core.data.local.model.user.UserCustomFieldDb
+import com.reteno.core.data.local.model.user.UserDb
 import com.reteno.core.util.Logger
-import org.junit.Assert.assertEquals
-
-import org.junit.Test
-
 import io.mockk.*
 import io.mockk.impl.annotations.MockK
 import io.mockk.impl.annotations.RelaxedMockK
 import junit.framework.TestCase.assertTrue
 import net.sqlcipher.Cursor
+import org.junit.Assert.assertEquals
+import org.junit.Test
 
 
 class RetenoDatabaseManagerUserTest : BaseRobolectricTest() {
@@ -53,7 +50,7 @@ class RetenoDatabaseManagerUserTest : BaseRobolectricTest() {
         private const val ADDRESS = "ADDRESS"
         private const val POSTCODE = "POSTCODE"
 
-        private val userAddressDTO = AddressDTO(
+        private val userAddressFull = AddressDb(
             region = REGION,
             town = TOWN,
             address = ADDRESS,
@@ -61,24 +58,24 @@ class RetenoDatabaseManagerUserTest : BaseRobolectricTest() {
         )
 
         private val customField1 =
-            UserCustomFieldDTO(key = CUSTOM_FIELD_KEY_1, value = CUSTOM_FIELD_VALUE_1)
+            UserCustomFieldDb(key = CUSTOM_FIELD_KEY_1, value = CUSTOM_FIELD_VALUE_1)
         private val customField2 =
-            UserCustomFieldDTO(key = CUSTOM_FIELD_KEY_2, value = CUSTOM_FIELD_VALUE_2)
+            UserCustomFieldDb(key = CUSTOM_FIELD_KEY_2, value = CUSTOM_FIELD_VALUE_2)
 
-        private val userAttributesDTO = UserAttributesDTO(
+        private val userAttributesFull = UserAttributesDb(
             phone = PHONE,
             email = EMAIL,
             firstName = FIRST_NAME,
             lastName = LAST_NAME,
             languageCode = LANGUAGE_CODE,
             timeZone = TIME_ZONE,
-            address = userAddressDTO,
+            address = userAddressFull,
             fields = listOf(customField1, customField2)
         )
-        private val userDTO = UserDTO(
+        private val userFull = UserDb(
             deviceId = DEVICE_ID,
             externalUserId = EXTERNAL_USER_ID,
-            userAttributes = userAttributesDTO,
+            userAttributes = userAttributesFull,
             subscriptionKeys = SUBSCRIPTION_KEYS,
             groupNamesInclude = GROUP_NAMES_INCLUDE,
             groupNamesExclude = GROUP_NAMES_EXCLUDE
@@ -107,16 +104,15 @@ class RetenoDatabaseManagerUserTest : BaseRobolectricTest() {
     }
     // endregion constants -------------------------------------------------------------------------
 
-
     // region helper fields ------------------------------------------------------------------------
     @RelaxedMockK
     private lateinit var database: RetenoDatabase
 
     @MockK
     private lateinit var cursor: Cursor
-    // endregion helper fields ---------------------------------------------------------------------
 
     private var SUT: RetenoDatabaseManagerImpl? = null
+    // endregion helper fields ---------------------------------------------------------------------
 
     override fun before() {
         super.before()
@@ -139,13 +135,13 @@ class RetenoDatabaseManagerUserTest : BaseRobolectricTest() {
     fun givenValidFullUserProvided_whenInsertUser_thenUserIsSavedToDb() {
         // Given
         val expectedContentValuesUser = ContentValues().apply {
-            putUser(userDTO)
+            putUser(userFull)
         }
         val expectedContentValuesUserAttributes = ContentValues().apply {
-            putUserAttributes(ROW_ID_INSERTED, userAttributesDTO)
+            putUserAttributes(ROW_ID_INSERTED, userAttributesFull)
         }
         val expectedContentValuesUserAddress = ContentValues().apply {
-            putUserAddress(ROW_ID_INSERTED, userAddressDTO)
+            putUserAddress(ROW_ID_INSERTED, userAddressFull)
         }
 
         var actualContentValuesUser = ContentValues()
@@ -163,7 +159,7 @@ class RetenoDatabaseManagerUserTest : BaseRobolectricTest() {
         }
 
         // When
-        SUT?.insertUser(userDTO)
+        SUT?.insertUser(userFull)
 
         // Then
         verify(exactly = 1) {
@@ -180,14 +176,14 @@ class RetenoDatabaseManagerUserTest : BaseRobolectricTest() {
     @Test
     fun givenValidUserWithoutAddressProvided_whenInsertUser_thenUserIsSavedToDb() {
         // Given
-        val userAttributesDTO = userAttributesDTO.copy(address = null)
-        val user = userDTO.copy(userAttributes = userAttributesDTO)
+        val userAttributes = userAttributesFull.copy(address = null)
+        val user = userFull.copy(userAttributes = userAttributes)
 
         val expectedContentValuesUser = ContentValues().apply {
             putUser(user)
         }
         val expectedContentValuesUserAttributes = ContentValues().apply {
-            putUserAttributes(ROW_ID_INSERTED, userAttributesDTO)
+            putUserAttributes(ROW_ID_INSERTED, userAttributes)
         }
         val expectedContentValuesUserAddress = ContentValues()
 
@@ -223,7 +219,7 @@ class RetenoDatabaseManagerUserTest : BaseRobolectricTest() {
     @Test
     fun givenValidUserWithoutAttributesProvided_whenInsertUser_thenUserIsSavedToDb() {
         // Given
-        val user = userDTO.copy(userAttributes = null)
+        val user = userFull.copy(userAttributes = null)
         val expectedContentValuesUser = ContentValues().apply {
             putUser(user)
         }
@@ -259,8 +255,8 @@ class RetenoDatabaseManagerUserTest : BaseRobolectricTest() {
         mockCursorRecordsNumber(2)
         mockDatabaseQuery()
 
-        val user1 = userDTO
-        val user2 = userDTO.copy(userAttributes = null)
+        val user1 = userFull
+        val user2 = userFull.copy(userAttributes = null)
         every { cursor.getUser() } returns user1 andThen user2
 
         // When

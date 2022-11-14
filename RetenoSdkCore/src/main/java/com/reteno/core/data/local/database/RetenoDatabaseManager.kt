@@ -1,29 +1,29 @@
 package com.reteno.core.data.local.database
 
-import com.reteno.core.data.local.model.InteractionModelDb
-import com.reteno.core.data.remote.model.event.EventsDTO
-import com.reteno.core.data.remote.model.user.UserDTO
-import com.reteno.core.model.device.Device
+import com.reteno.core.data.local.model.device.DeviceDb
+import com.reteno.core.data.local.model.event.EventsDb
+import com.reteno.core.data.local.model.interaction.InteractionDb
+import com.reteno.core.data.local.model.user.UserDb
 
 interface RetenoDatabaseManager {
 
-    fun insertDevice(device: Device)
-    fun getDevices(limit: Int? = null): List<Device>
+    fun insertDevice(device: DeviceDb)
+    fun getDevices(limit: Int? = null): List<DeviceDb>
     fun getDeviceCount(): Long
     fun deleteDevices(count: Int, oldest: Boolean = true)
 
-    fun insertUser(user: UserDTO)
-    fun getUser(limit: Int? = null): List<UserDTO>
+    fun insertUser(user: UserDb)
+    fun getUser(limit: Int? = null): List<UserDb>
     fun getUserCount(): Long
     fun deleteUsers(count: Int, oldest: Boolean = true)
 
-    fun insertInteraction(interaction: InteractionModelDb)
-    fun getInteractions(limit: Int? = null): List<InteractionModelDb>
+    fun insertInteraction(interaction: InteractionDb)
+    fun getInteractions(limit: Int? = null): List<InteractionDb>
     fun getInteractionCount(): Long
     fun deleteInteractions(count: Int, oldest: Boolean = true)
 
-    fun insertEvents(events: EventsDTO)
-    fun getEvents(limit: Int? = null): List<EventsDTO>
+    fun insertEvents(events: EventsDb)
+    fun getEvents(limit: Int? = null): List<EventsDb>
     fun getEventsCount(): Long
     fun deleteEvents(count: Int, oldest: Boolean = true)
 

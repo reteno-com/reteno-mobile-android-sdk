@@ -7,7 +7,7 @@ import android.os.Bundle
 import com.reteno.core.RetenoApplication
 import com.reteno.core.RetenoImpl
 import com.reteno.core.domain.controller.InteractionController
-import com.reteno.core.model.interaction.InteractionStatus
+import com.reteno.core.domain.model.interaction.InteractionStatus
 import com.reteno.push.Constants
 import com.reteno.push.Util
 import com.reteno.push.base.robolectric.BaseRobolectricTest

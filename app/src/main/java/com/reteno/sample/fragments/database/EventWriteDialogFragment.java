@@ -16,11 +16,11 @@ import com.reteno.core.Reteno;
 import com.reteno.core.RetenoImpl;
 import com.reteno.core._interop.DeviceIdInternal;
 import com.reteno.core.data.local.config.DeviceId;
-import com.reteno.core.data.remote.mapper.EventMapperKt;
-import com.reteno.core.data.remote.model.event.EventsDTO;
-import com.reteno.core.model.event.Event;
-import com.reteno.core.model.event.Events;
-import com.reteno.core.model.event.Parameter;
+import com.reteno.core.data.local.mappers.EventMapperKt;
+import com.reteno.core.data.local.model.event.EventsDb;
+import com.reteno.core.domain.model.event.Event;
+import com.reteno.core.domain.model.event.Events;
+import com.reteno.core.domain.model.event.Parameter;
 import com.reteno.sample.R;
 import com.reteno.sample.SampleApp;
 import com.reteno.sample.databinding.DialogDbWriteEventBinding;
@@ -60,8 +60,8 @@ public class EventWriteDialogFragment extends BaseDatabaseDialogFragment {
     private void initListeners() {
         binding.btnSubmit.setOnClickListener(v -> {
             Events events = getEventData();
-            EventsDTO eventsDTO = EventMapperKt.toRemote(events);
-            databaseManager.insertEvents(eventsDTO);
+            EventsDb eventsDb = EventMapperKt.toDb(events);
+            databaseManager.insertEvents(eventsDb);
             Toast.makeText(this.getContext(), "Sent", Toast.LENGTH_SHORT).show();
         });
 

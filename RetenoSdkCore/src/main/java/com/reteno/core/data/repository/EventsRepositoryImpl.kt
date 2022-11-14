@@ -1,16 +1,16 @@
 package com.reteno.core.data.repository
 
 import com.reteno.core.data.local.database.RetenoDatabaseManager
+import com.reteno.core.data.local.mappers.toDb
+import com.reteno.core.data.local.model.event.EventsDb
 import com.reteno.core.data.remote.OperationQueue
 import com.reteno.core.data.remote.PushOperationQueue
 import com.reteno.core.data.remote.api.ApiClient
 import com.reteno.core.data.remote.api.ApiContract
 import com.reteno.core.data.remote.mapper.toJson
 import com.reteno.core.data.remote.mapper.toRemote
-import com.reteno.core.data.remote.model.event.EventsDTO
 import com.reteno.core.domain.ResponseCallback
-import com.reteno.core.model.event.Event
-import com.reteno.core.model.event.Events
+import com.reteno.core.domain.model.event.Event
 import com.reteno.core.util.Logger
 import com.reteno.core.util.isNonRepeatableError
 
@@ -24,14 +24,14 @@ class EventsRepositoryImpl(
         /*@formatter:off*/ Logger.i(TAG, "saveEvent(): ", "event = [" , event , "]")
         /*@formatter:on*/
         val deviceId = configRepository.getDeviceId()
-        val events = Events(
+        val events = EventsDb(
             deviceId = deviceId.id,
             externalUserId = deviceId.externalId,
-            eventList = listOf(event)
+            eventList = listOf(event.toDb())
         )
         OperationQueue.addOperation {
             try {
-                databaseManager.insertEvents(events.toRemote())
+                databaseManager.insertEvents(events)
             } catch (e: Exception) {
                 Logger.e(TAG, "saveEvent()", e)
             }
@@ -39,7 +39,7 @@ class EventsRepositoryImpl(
     }
 
     override fun pushEvents() {
-        val events: EventsDTO = databaseManager.getEvents(1).firstOrNull() ?: kotlin.run {
+        val events: EventsDb = databaseManager.getEvents(1).firstOrNull() ?: kotlin.run {
             PushOperationQueue.nextOperation()
             return
         }
@@ -49,7 +49,7 @@ class EventsRepositoryImpl(
 
         apiClient.post(
             ApiContract.MobileApi.Events,
-            events.toJson(),
+            events.toRemote().toJson(),
             object : ResponseCallback {
 
                 override fun onSuccess(response: String) {
