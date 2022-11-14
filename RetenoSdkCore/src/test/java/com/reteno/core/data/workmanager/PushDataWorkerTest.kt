@@ -120,15 +120,16 @@ class PushDataWorkerTest : BaseRobolectricTest() {
             .build()
 
         // When
-        WorkManager.getInstance(application).enqueue(request).result.get()
+        val operation = WorkManager.getInstance(application).enqueue(request)
+        operation.result.addListener({
+            // Then
+            val workInfo = workManager.getWorkInfoById(request.id).get()
+            assertEquals(workInfo.state, WorkInfo.State.RUNNING)
+        }, executor!!)
         with(testDriver) {
             setPeriodDelayMet(request.id)
             setAllConstraintsMet(request.id)
         }
-
-        // Then
-        val workInfo = workManager.getWorkInfoById(request.id).get()
-        assertEquals(workInfo.state, WorkInfo.State.RUNNING)
     }
 
     @Test
