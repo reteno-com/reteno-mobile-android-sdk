@@ -59,7 +59,7 @@ android {
 
         qa {
             signingConfig signingConfigs.debug
-            minifyEnabled true
+            minifyEnabled false
             debuggable true
             versionNameSuffix "-qa"
 
