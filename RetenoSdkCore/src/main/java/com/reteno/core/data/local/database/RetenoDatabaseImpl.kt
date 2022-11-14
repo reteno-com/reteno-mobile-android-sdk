@@ -211,13 +211,15 @@ class RetenoDatabaseImpl(context: Context) : RetenoDatabase,
         return result
     }
 
-    override fun delete(table: String, whereClause: String?, whereArgs: Array<String?>?) {
+    override fun delete(table: String, whereClause: String?, whereArgs: Array<String?>?) : Int {
         val writableDb = getSQLiteDatabaseWithRetries()
+
+        var count = 0
 
         synchronized(LOCK) {
             try {
                 writableDb.beginTransaction()
-                writableDb.delete(table, whereClause, whereArgs)
+                count = writableDb.delete(table, whereClause, whereArgs)
                 writableDb.setTransactionSuccessful()
             } catch (e: SQLiteException) {
                 /*@formatter:off*/ Logger.e(TAG, "delete(): Error deleting on table: $table with whereClause: $whereClause and whereArgs: $whereArgs", e)
@@ -237,6 +239,7 @@ class RetenoDatabaseImpl(context: Context) : RetenoDatabase,
                 }
             }
         }
+        return count
     }
 
     override fun getRowCount(tableName: String): Long {

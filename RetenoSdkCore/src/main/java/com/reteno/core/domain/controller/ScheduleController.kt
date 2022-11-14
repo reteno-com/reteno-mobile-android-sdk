@@ -1,6 +1,7 @@
 package com.reteno.core.domain.controller
 
 import androidx.work.WorkManager
+import com.reteno.core.data.remote.OperationQueue
 import com.reteno.core.data.remote.PushOperationQueue
 import com.reteno.core.data.workmanager.PushDataWorker
 import com.reteno.core.util.Logger
@@ -24,6 +25,7 @@ class ScheduleController(
         private const val REGULAR_DELAY = 30_000L
         private const val RANDOM_DELAY = 10_000L
         private const val FORCE_PUSH_MIN_DELAY = 1_000L
+        private const val CLEAR_OLD_DATA_DELAY = 3_000L
     }
 
     private var scheduler: ScheduledExecutorService? = null
@@ -84,6 +86,26 @@ class ScheduleController(
         lastForcePushTime = System.currentTimeMillis()
 
         sendData()
+    }
+
+    /**
+     *  Deletes [com.reteno.core.model.event.Event] and [com.reteno.core.model.interaction.Interaction]
+     *  older than 24 hours from the database
+     *
+     *  @see InteractionController.KEEP_INTERACTION_HOURS
+     *  @see EventController.KEEP_EVENT_HOURS
+     */
+    fun clearOldData() {
+        /*@formatter:off*/ Logger.i(TAG, "clearOldData(): ", "")
+        /*@formatter:on*/
+        OperationQueue.addOperationAfterDelay(
+            interactionController::clearOldInteractions,
+            CLEAR_OLD_DATA_DELAY
+        )
+        OperationQueue.addOperationAfterDelay(
+            eventController::clearOldEvents,
+            CLEAR_OLD_DATA_DELAY
+        )
     }
 
     private fun sendData() {

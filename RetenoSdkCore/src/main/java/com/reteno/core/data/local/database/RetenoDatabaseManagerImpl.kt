@@ -14,6 +14,7 @@ import com.reteno.core.data.local.database.DbSchema.EventsSchema.COLUMN_EVENTS_E
 import com.reteno.core.data.local.database.DbSchema.EventsSchema.COLUMN_EVENTS_ID
 import com.reteno.core.data.local.database.DbSchema.EventsSchema.TABLE_NAME_EVENTS
 import com.reteno.core.data.local.database.DbSchema.InteractionSchema.COLUMN_INTERACTION_ROW_ID
+import com.reteno.core.data.local.database.DbSchema.InteractionSchema.COLUMN_INTERACTION_TIME
 import com.reteno.core.data.local.database.DbSchema.InteractionSchema.TABLE_NAME_INTERACTION
 import com.reteno.core.data.local.database.DbSchema.UserAddressSchema.COLUMN_ADDRESS
 import com.reteno.core.data.local.database.DbSchema.UserAddressSchema.COLUMN_POSTCODE
@@ -261,6 +262,13 @@ class RetenoDatabaseManagerImpl(private val database: RetenoDatabase) : RetenoDa
         )
     }
 
+    override fun deleteInteractionByTime(outdatedTime: String): Int {
+        return database.delete(
+            table = TABLE_NAME_INTERACTION,
+            whereClause = "$COLUMN_INTERACTION_TIME < '$outdatedTime'"
+        )
+    }
+
     //==============================================================================================
     override fun insertEvents(events: EventsDb) {
         var parentRowId: Long = -1L
@@ -418,6 +426,15 @@ class RetenoDatabaseManagerImpl(private val database: RetenoDatabase) : RetenoDa
         )
 
         database.cleanUnlinkedEvents()
+    }
+
+    override fun deleteEventsByTime(outdatedTime: String): Int {
+        val count = database.delete(
+            table = TABLE_NAME_EVENT,
+            whereClause = "$COLUMN_EVENT_OCCURRED < '$outdatedTime'"
+        )
+        database.cleanUnlinkedEvents()
+        return count
     }
 
     override fun isDatabaseEmpty(): Boolean {

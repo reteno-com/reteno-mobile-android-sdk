@@ -33,8 +33,7 @@ interface Reteno {
      *  @param date time when event occurred
      *  @param parameters additional custom event parameters
      */
-    // TODO for testing, need review in future!
-    fun logEvent(eventType: String, date: ZonedDateTime, parameters: List<Parameter>?)
+    fun logEvent(eventType: String, date: ZonedDateTime, parameters: List<Parameter>? = null)
 
 
     /**

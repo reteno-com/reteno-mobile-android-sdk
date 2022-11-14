@@ -8,6 +8,7 @@ import com.reteno.core.data.local.model.event.EventDb
 import com.reteno.core.data.local.model.event.EventsDb
 import com.reteno.core.data.local.model.event.ParameterDb
 import com.reteno.core.util.Logger
+import com.reteno.core.util.Util.formatToRemote
 import io.mockk.*
 import io.mockk.impl.annotations.MockK
 import io.mockk.impl.annotations.RelaxedMockK
@@ -441,13 +442,30 @@ class RetenoDatabaseManagerEventsTest : BaseRobolectricTest() {
                     "ORDER BY ${DbSchema.EventSchema.COLUMN_EVENT_OCCURRED} $order " +
                     "LIMIT $count)"
 
-        justRun { database.delete(any(), any(), any()) }
+        every { database.delete(any(), any(), any()) } returns 0
 
         // When
         SUT?.deleteEvents(count, true)
 
         // Then
         verify(exactly = 1) { database.delete(DbSchema.EventSchema.TABLE_NAME_EVENT, whereClauseExpected) }
+    }
+
+    @Test
+    fun whenDeleteEventsByTime_thenEventsDeleted() {
+        // Given
+        val outdatedTime = ZonedDateTime.now().formatToRemote()
+        val countExpected = 2
+        val whereClauseExpected = "${DbSchema.EventSchema.COLUMN_EVENT_OCCURRED} < '$outdatedTime'"
+
+        every { database.delete(any(), any(), any()) } returns countExpected
+
+        // When
+        SUT?.deleteEventsByTime(outdatedTime)
+
+        // Then
+        verify(exactly = 1) { database.delete(DbSchema.EventSchema.TABLE_NAME_EVENT, whereClauseExpected) }
+        verify(exactly = 1) { database.cleanUnlinkedEvents() }
     }
 
     @Test
@@ -461,7 +479,7 @@ class RetenoDatabaseManagerEventsTest : BaseRobolectricTest() {
                 "ORDER BY ${DbSchema.EventSchema.COLUMN_EVENT_OCCURRED} $order " +
                 "LIMIT $count)"
 
-        justRun { database.delete(any(), any(), any()) }
+        every { database.delete(any(), any(), any()) } returns 0
 
         // When
         SUT?.deleteEvents(count, false)

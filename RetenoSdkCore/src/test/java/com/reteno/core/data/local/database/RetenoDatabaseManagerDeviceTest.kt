@@ -284,7 +284,7 @@ class RetenoDatabaseManagerDeviceTest : BaseRobolectricTest() {
                     "ORDER BY ${DbSchema.COLUMN_TIMESTAMP} $order " +
                     "LIMIT $count)"
 
-        justRun { database.delete(any(), any(), any()) }
+        every { database.delete(any(), any(), any()) } returns 0
 
         // When
         SUT?.deleteDevices(count, true)
@@ -304,7 +304,7 @@ class RetenoDatabaseManagerDeviceTest : BaseRobolectricTest() {
                 "ORDER BY ${DbSchema.COLUMN_TIMESTAMP} $order " +
                 "LIMIT $count)"
 
-        justRun { database.delete(any(), any(), any()) }
+        every { database.delete(any(), any(), any()) } returns 0
 
         // When
         SUT?.deleteDevices(count, false)

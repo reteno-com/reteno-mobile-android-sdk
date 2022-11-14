@@ -7,13 +7,15 @@ import com.reteno.core.base.robolectric.BaseRobolectricTest
 import com.reteno.core.data.local.model.interaction.InteractionDb
 import com.reteno.core.data.local.model.interaction.InteractionStatusDb
 import com.reteno.core.util.Logger
+import com.reteno.core.util.Util.formatToRemote
+import org.junit.Assert.assertEquals
+import org.junit.Test
 import io.mockk.*
 import io.mockk.impl.annotations.MockK
 import io.mockk.impl.annotations.RelaxedMockK
 import junit.framework.TestCase.assertTrue
 import net.sqlcipher.Cursor
-import org.junit.Assert.assertEquals
-import org.junit.Test
+import java.time.ZonedDateTime
 
 
 class RetenoDatabaseManagerInteractionTest : BaseRobolectricTest() {
@@ -251,7 +253,7 @@ class RetenoDatabaseManagerInteractionTest : BaseRobolectricTest() {
                     "ORDER BY ${DbSchema.COLUMN_TIMESTAMP} $order " +
                     "LIMIT $count)"
 
-        justRun { database.delete(any(), any(), any()) }
+        every { database.delete(any(), any(), any()) } returns 0
 
         // When
         SUT?.deleteInteractions(count, true)
@@ -271,10 +273,26 @@ class RetenoDatabaseManagerInteractionTest : BaseRobolectricTest() {
                 "ORDER BY ${DbSchema.COLUMN_TIMESTAMP} $order " +
                 "LIMIT $count)"
 
-        justRun { database.delete(any(), any(), any()) }
+        every { database.delete(any(), any(), any()) } returns 0
 
         // When
         SUT?.deleteInteractions(count, false)
+
+        // Then
+        verify(exactly = 1) { database.delete(DbSchema.InteractionSchema.TABLE_NAME_INTERACTION, whereClauseExpected) }
+    }
+
+    @Test
+    fun whenDeleteInteractionsByTime_thenInteractionsDeleted() {
+        // Given
+        val outdatedTime = ZonedDateTime.now().formatToRemote()
+        val countExpected = 2
+        val whereClauseExpected = "${DbSchema.InteractionSchema.COLUMN_INTERACTION_TIME} < '$outdatedTime'"
+
+        every { database.delete(any(), any(), any()) } returns countExpected
+
+        // When
+        SUT?.deleteInteractionByTime(outdatedTime)
 
         // Then
         verify(exactly = 1) { database.delete(DbSchema.InteractionSchema.TABLE_NAME_INTERACTION, whereClauseExpected) }

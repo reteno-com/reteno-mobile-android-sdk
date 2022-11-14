@@ -10,11 +10,13 @@ import com.reteno.core.data.remote.api.ApiContract
 import com.reteno.core.domain.ResponseCallback
 import com.reteno.core.domain.model.interaction.Interaction
 import com.reteno.core.domain.model.interaction.InteractionStatus
+import com.reteno.core.util.Logger
 import io.mockk.*
 import io.mockk.impl.annotations.RelaxedMockK
 import org.junit.Assert
 import org.junit.Before
 import org.junit.Test
+import java.time.ZonedDateTime
 
 class InteractionRepositoryTest : BaseRobolectricTest() {
 
@@ -156,5 +158,28 @@ class InteractionRepositoryTest : BaseRobolectricTest() {
         // Then
         verify(exactly = 0) { apiClient.put(any(), any(), any()) }
         verify { PushOperationQueue.nextOperation() }
+
+    }
+
+    @Test
+    fun noOutdatedInteraction_whenClearOldInteractions_thenSentNothing() {
+        every { retenoDatabaseManager.deleteInteractionByTime(any()) } returns 0
+
+        SUT.clearOldInteractions(ZonedDateTime.now())
+
+        verify(exactly = 1) { retenoDatabaseManager.deleteInteractionByTime(any()) }
+        verify(exactly = 0) { Logger.captureEvent(any()) }
+    }
+
+    @Test
+    fun thereAreOutdatedInteraction_whenClearOldInteractions_thenSentCountDeleted() {
+        val deletedInteractions = 2
+        every { retenoDatabaseManager.deleteInteractionByTime(any()) } returns deletedInteractions
+        val expectedMsg = "Outdated Interactions: - $deletedInteractions"
+
+        SUT.clearOldInteractions(ZonedDateTime.now())
+
+        verify(exactly = 1) { retenoDatabaseManager.deleteInteractionByTime(any()) }
+        verify(exactly = 1) { Logger.captureEvent(eq(expectedMsg)) }
     }
 }

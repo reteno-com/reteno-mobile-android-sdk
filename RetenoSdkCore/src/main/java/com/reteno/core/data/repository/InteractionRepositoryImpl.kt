@@ -11,7 +11,9 @@ import com.reteno.core.data.remote.mapper.toRemote
 import com.reteno.core.domain.ResponseCallback
 import com.reteno.core.domain.model.interaction.Interaction
 import com.reteno.core.util.Logger
+import com.reteno.core.util.Util.formatToRemote
 import com.reteno.core.util.isNonRepeatableError
+import java.time.ZonedDateTime
 
 class InteractionRepositoryImpl(
     private val apiClient: ApiClient,
@@ -57,6 +59,20 @@ class InteractionRepositoryImpl(
 
             }
         )
+    }
+
+    override fun clearOldInteractions(outdatedTime: ZonedDateTime) {
+        /*@formatter:off*/ Logger.i(TAG, "clearOldInteractions(): ", "outdatedTime = [" , outdatedTime , "]")
+        /*@formatter:on*/
+        OperationQueue.addOperation {
+            val removedInteractionsCount = databaseManager.deleteInteractionByTime(outdatedTime.formatToRemote())
+            /*@formatter:off*/ Logger.i(TAG, "clearOldInteractions(): ", "removedInteractionsCount = [" , removedInteractionsCount , "]")
+            /*@formatter:on*/
+            if (removedInteractionsCount > 0) {
+                val msg = "Outdated Interactions: - $removedInteractionsCount"
+                Logger.captureEvent(msg)
+            }
+        }
     }
 
     companion object {

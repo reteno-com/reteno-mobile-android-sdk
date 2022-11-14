@@ -10,7 +10,6 @@ import com.reteno.core.domain.model.user.User
 import com.reteno.core.lifecycle.RetenoActivityHelper
 import com.reteno.core.lifecycle.RetenoLifecycleCallbacks
 import com.reteno.core.util.Logger
-import com.reteno.core.util.allElementsNull
 import java.time.ZonedDateTime
 
 
@@ -42,6 +41,7 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
     override fun resume(activity: Activity?) {
         /*@formatter:off*/ Logger.i(TAG, "resume(): ", "activity = [" , activity , "]")
         /*@formatter:on*/
+        clearOldData()
         startPushScheduler()
         // TODO: Application is in foreground
     }
@@ -107,6 +107,10 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
         } catch (ex: Throwable) {
             Logger.e(TAG, "setExternalDeviceId(): ", ex)
         }
+    }
+
+    private fun clearOldData() {
+        scheduleController.clearOldData()
     }
 
     private fun startPushScheduler() {

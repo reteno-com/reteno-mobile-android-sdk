@@ -1,6 +1,7 @@
 package com.reteno.core.domain.controller
 
 import com.reteno.core.base.robolectric.BaseRobolectricTest
+import com.reteno.core.data.remote.OperationQueue
 import com.reteno.core.data.remote.PushOperationQueue
 import io.mockk.*
 import io.mockk.impl.annotations.RelaxedMockK
@@ -10,6 +11,10 @@ import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 
 class ScheduleControllerTest : BaseRobolectricTest() {
+
+    companion object {
+        private const val CLEAR_OLD_DATA_DELAY = 3000L
+    }
 
     // region helper fields ------------------------------------------------------------------------
     @RelaxedMockK
@@ -107,6 +112,18 @@ class ScheduleControllerTest : BaseRobolectricTest() {
 
         verify(exactly = 4) { PushOperationQueue.addOperation(any()) }
         verify(exactly = 1) { PushOperationQueue.nextOperation() }
+    }
+
+    @Test
+    fun clearOldOperation_thenAddOperationToQueueWithDelay() {
+        val controller =
+            ScheduleController(contactController, interactionController, eventController, mockk(relaxed = true))
+
+        controller.clearOldData()
+
+        verify(exactly = 2) { OperationQueue.addOperationAfterDelay(any(), eq(CLEAR_OLD_DATA_DELAY)) }
+        verify { interactionController.clearOldInteractions() }
+        verify { eventController.clearOldEvents() }
     }
 
 }

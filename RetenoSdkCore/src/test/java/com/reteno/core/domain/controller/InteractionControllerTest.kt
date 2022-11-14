@@ -6,15 +6,13 @@ import com.reteno.core.data.repository.InteractionRepository
 import com.reteno.core.domain.model.interaction.Interaction
 import com.reteno.core.domain.model.interaction.InteractionStatus
 import com.reteno.core.util.Util
-import io.mockk.every
+import io.mockk.*
 import io.mockk.impl.annotations.MockK
 import io.mockk.impl.annotations.RelaxedMockK
-import io.mockk.mockkStatic
-import io.mockk.unmockkStatic
-import io.mockk.verify
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
+import java.time.ZonedDateTime
 
 class InteractionControllerTest : BaseUnitTest() {
 
@@ -106,4 +104,45 @@ class InteractionControllerTest : BaseUnitTest() {
         SUT.pushInteractions()
         verify(exactly = 1) { interactionsRepository.pushInteractions() }
     }
+
+    @Test
+    fun whenClearOldInteractions_thenRepositoryInteractionPushCalled() {
+        mockkStatic(ZonedDateTime::class)
+        mockkObject(Util)
+        val mockData = mockk<ZonedDateTime>()
+        val mockOutDatedData = mockk<ZonedDateTime>()
+        every { Util.isDebugView() } returns false
+        every { ZonedDateTime.now() } returns mockData
+        every { mockData.minusHours(any()) } returns mockOutDatedData
+
+        SUT.clearOldInteractions()
+
+        verify(exactly = 1) { interactionsRepository.clearOldInteractions(mockOutDatedData) }
+        verify(exactly = 1) { ZonedDateTime.now() }
+        verify(exactly = 1) { mockData.minusHours(24) }
+
+        unmockkStatic(ZonedDateTime::class)
+        unmockkObject(Util)
+    }
+
+    @Test
+    fun givenDebugMode_whenClearOldInteractions_thenRepositoryInteractionPushCalled() {
+        mockkStatic(ZonedDateTime::class)
+        mockkObject(Util)
+        val mockData = mockk<ZonedDateTime>()
+        val mockOutDatedData = mockk<ZonedDateTime>()
+        every { Util.isDebugView() } returns true
+        every { ZonedDateTime.now() } returns mockData
+        every { mockData.minusHours(any()) } returns mockOutDatedData
+
+        SUT.clearOldInteractions()
+
+        verify(exactly = 1) { interactionsRepository.clearOldInteractions(mockOutDatedData) }
+        verify(exactly = 1) { ZonedDateTime.now() }
+        verify(exactly = 1) { mockData.minusHours(1) }
+
+        unmockkStatic(ZonedDateTime::class)
+        unmockkObject(Util)
+    }
+
 }

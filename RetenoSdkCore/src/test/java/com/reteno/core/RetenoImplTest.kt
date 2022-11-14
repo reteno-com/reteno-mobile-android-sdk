@@ -157,6 +157,7 @@ class RetenoImplTest : BaseUnitTest() {
 
         verify { scheduleController.stopScheduler() }
     }
+
     @Test
     fun whenForcePush_thenCallScheduleController() {
         val retenoImpl = RetenoImpl(mockk(), "")
@@ -165,4 +166,13 @@ class RetenoImplTest : BaseUnitTest() {
 
         verify(exactly = 1) { scheduleController.forcePush() }
     }
+
+    @Test
+    fun whenResumeApp_thenStartScheduler_thenCalledClearOleEvents() {
+        val retenoImpl = RetenoImpl(mockk(), "")
+        retenoImpl.resume(mockk())
+
+        verify { scheduleController.clearOldData() }
+    }
+
 }
