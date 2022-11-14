@@ -12,7 +12,9 @@ import com.reteno.core.data.remote.mapper.toRemote
 import com.reteno.core.domain.ResponseCallback
 import com.reteno.core.domain.model.event.Event
 import com.reteno.core.util.Logger
+import com.reteno.core.util.Util.formatToRemote
 import com.reteno.core.util.isNonRepeatableError
+import java.time.ZonedDateTime
 
 class EventsRepositoryImpl(
     private val apiClient: ApiClient,
@@ -71,6 +73,20 @@ class EventsRepositoryImpl(
 
             }
         )
+    }
+
+    override fun clearOldEvents(outdatedTime: ZonedDateTime) {
+        /*@formatter:off*/ Logger.i(TAG, "clearOldEvents(): ", "outdatedTime = [" , outdatedTime , "]")
+        /*@formatter:on*/
+        OperationQueue.addOperation {
+            val removedEventsCount = databaseManager.deleteEventsByTime(outdatedTime.formatToRemote())
+            /*@formatter:off*/ Logger.i(TAG, "clearOldEvents(): ", "removedEventsCount = [" , removedEventsCount , "]")
+            /*@formatter:on*/
+            if (removedEventsCount > 0) {
+                val msg = "Outdated Events: - $removedEventsCount"
+                Logger.captureEvent(msg)
+            }
+        }
     }
 
     companion object {

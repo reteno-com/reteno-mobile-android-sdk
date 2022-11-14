@@ -15,6 +15,7 @@ import com.reteno.core.data.remote.mapper.toRemote
 import com.reteno.core.domain.ResponseCallback
 import com.reteno.core.domain.model.event.Event
 import com.reteno.core.domain.model.event.Events
+import com.reteno.core.util.Logger
 import io.mockk.every
 import io.mockk.impl.annotations.RelaxedMockK
 import io.mockk.mockkObject
@@ -157,7 +158,28 @@ class EventsRepositoryTest : BaseRobolectricTest() {
         verify { PushOperationQueue.nextOperation() }
     }
 
-    // region helper methods -----------------------------------------------------------------------
+    @Test
+    fun noOutdatedInteraction_whenClearOldInteractions_thenSentNothing() {
+        every { retenoDatabaseManager.deleteEventsByTime(any()) } returns 0
+
+        SUT.clearOldEvents(ZonedDateTime.now())
+
+        verify(exactly = 1) { retenoDatabaseManager.deleteEventsByTime(any()) }
+        verify(exactly = 0) { Logger.captureEvent(any()) }
+    }
+
+    @Test
+    fun thereAreOutdatedInteraction_whenClearOldInteractions_thenSentCountDeleted() {
+        val deletedEvents = 2
+        every { retenoDatabaseManager.deleteEventsByTime(any()) } returns deletedEvents
+        val expectedMsg = "Outdated Events: - $deletedEvents"
+
+        SUT.clearOldEvents(ZonedDateTime.now())
+
+        verify(exactly = 1) { retenoDatabaseManager.deleteEventsByTime(any()) }
+        verify(exactly = 1) { Logger.captureEvent(eq(expectedMsg)) }
+    }
+
     private fun getEvents() = EventsDb(
         deviceId = DEVICE_ID,
         externalUserId = EXTERNAL_DEVICE_ID,

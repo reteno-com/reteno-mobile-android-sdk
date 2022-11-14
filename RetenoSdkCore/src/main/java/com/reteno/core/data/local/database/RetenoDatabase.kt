@@ -32,7 +32,7 @@ interface RetenoDatabase {
         whereArgs: Array<String?>?
     ): Int
 
-    fun delete(table: String, whereClause: String? = null, whereArgs: Array<String?>? = null)
+    fun delete(table: String, whereClause: String? = null, whereArgs: Array<String?>? = null): Int
 
     fun getRowCount(tableName: String): Long
 

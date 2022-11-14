@@ -92,6 +92,10 @@ abstract class BaseRobolectricTest {
             currentThreadExecutor.execute(firstArg())
             true
         }
+        every { OperationQueue.addOperationAfterDelay(any(), any()) } answers {
+            currentThreadExecutor.execute(firstArg())
+            true
+        }
 
         MockKAnnotations.init(this)
     }

@@ -21,11 +21,13 @@ interface RetenoDatabaseManager {
     fun getInteractions(limit: Int? = null): List<InteractionDb>
     fun getInteractionCount(): Long
     fun deleteInteractions(count: Int, oldest: Boolean = true)
+    fun deleteInteractionByTime(outdatedTime: String): Int
 
     fun insertEvents(events: EventsDb)
     fun getEvents(limit: Int? = null): List<EventsDb>
     fun getEventsCount(): Long
     fun deleteEvents(count: Int, oldest: Boolean = true)
+    fun deleteEventsByTime(outdatedTime: String): Int
 
     fun isDatabaseEmpty(): Boolean
 }
