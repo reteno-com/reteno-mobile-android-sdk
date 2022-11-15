@@ -39,6 +39,9 @@
         <action
             android:id="@+id/start_to_forcePush"
             app:destination="@id/fragmentForcePush" />
+        <action
+            android:id="@+id/start_to_screenTracking"
+            app:destination="@id/fragmentScreenTracking" />
     </fragment>
 
     <fragment
@@ -155,14 +158,22 @@
         android:name="com.reteno.sample.fragments.database.EventReadDialogFragment"
         android:label="fragmentReadEvent"
         tools:layout="@layout/dialog_db_read" />
+
     <fragment
         android:id="@+id/fragmentCustomEvent"
         android:name="com.reteno.sample.fragments.FragmentCustomEvent"
         android:label="fragment_custom_event"
         tools:layout="@layout/fragment_custom_event" />
+
     <fragment
         android:id="@+id/fragmentForcePush"
         android:name="com.reteno.sample.fragments.FragmentForcePush"
         android:label="fragment_force_push"
         tools:layout="@layout/fragment_force_push" />
+
+    <fragment
+        android:id="@+id/fragmentScreenTracking"
+        android:name="com.reteno.sample.fragments.FragmentScreenTracking"
+        android:label="fragment_screen_tracking"
+        tools:layout="@layout/fragment_screen_tracking" />
 </navigation>
