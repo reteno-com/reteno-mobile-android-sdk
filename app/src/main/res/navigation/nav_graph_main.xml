@@ -42,6 +42,9 @@
         <action
             android:id="@+id/start_to_screenTracking"
             app:destination="@id/fragmentScreenTracking" />
+        <action
+            android:id="@+id/start_to_appInbox"
+            app:destination="@id/fragmentAppInbox" />
     </fragment>
 
     <fragment
@@ -176,4 +179,9 @@
         android:name="com.reteno.sample.fragments.FragmentScreenTracking"
         android:label="fragment_screen_tracking"
         tools:layout="@layout/fragment_screen_tracking" />
+    <fragment
+        android:id="@+id/fragmentAppInbox"
+        android:name="com.reteno.sample.fragments.FragmentAppInbox"
+        android:label="fragment_app_inbox"
+        tools:layout="@layout/fragment_app_inbox" />
 </navigation>

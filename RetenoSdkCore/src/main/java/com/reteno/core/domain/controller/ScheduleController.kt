@@ -16,6 +16,7 @@ class ScheduleController(
     private val contactController: ContactController,
     private val interactionController: InteractionController,
     private val eventController: EventController,
+    private val appInboxController: AppInboxController,
     private val workManager: WorkManager
 ) {
 
@@ -111,6 +112,10 @@ class ScheduleController(
             eventController::clearOldEvents,
             CLEAR_OLD_DATA_DELAY
         )
+        OperationQueue.addOperationAfterDelay(
+            appInboxController::clearOldMessagesStatus,
+            CLEAR_OLD_DATA_DELAY
+        )
     }
 
     private fun sendData() {
@@ -138,6 +143,12 @@ class ScheduleController(
             /*@formatter:off*/ Logger.i(TAG, "sendData(): ", "step: pushEvents")
             /*@formatter:on*/
             eventController.pushEvents()
+        }
+
+        PushOperationQueue.addOperation {
+            /*@formatter:off*/ Logger.i(TAG, "sendData(): ", "step: pushAppInboxStatuses")
+            /*@formatter:on*/
+            appInboxController.pushAppInboxMessagesStatus()
         }
 
         PushOperationQueue.nextOperation()

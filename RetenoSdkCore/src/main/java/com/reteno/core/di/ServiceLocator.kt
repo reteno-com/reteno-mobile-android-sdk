@@ -46,6 +46,9 @@ class ServiceLocator(context: Context, accessKey: String) {
     private val deeplinkRepositoryProvider: DeeplinkRepositoryProvider =
         DeeplinkRepositoryProvider(apiClientProvider)
 
+    private val appInboxRepositoryProvider: AppInboxRepositoryProvider =
+        AppInboxRepositoryProvider(apiClientProvider, databaseManagerProvider)
+
     /** Controller **/
     val deeplinkControllerProvider: DeeplinkControllerProvider =
         DeeplinkControllerProvider(deeplinkRepositoryProvider)
@@ -60,14 +63,26 @@ class ServiceLocator(context: Context, accessKey: String) {
         EventsControllerProvider(eventsRepositoryProvider)
 
     private val workManagerProvider: WorkManagerProvider = WorkManagerProvider(context)
+
+    private val appInboxControllerProvider: AppInboxControllerProvider =
+        AppInboxControllerProvider(appInboxRepositoryProvider)
+
     val scheduleControllerProvider: ScheduleControllerProvider =
         ScheduleControllerProvider(
             contactControllerProvider,
             interactionControllerProvider,
             eventsControllerProvider,
+            appInboxControllerProvider,
             workManagerProvider
         )
 
     /** Controller dependent **/
     internal val retenoActivityHelperProvider: RetenoActivityHelperProvider = RetenoActivityHelperProvider(eventsControllerProvider)
+
+    /** App Inbox **/
+    val appInboxProvider: AppInboxProvider = AppInboxProvider(appInboxControllerProvider)
+
+    init {
+
+    }
 }

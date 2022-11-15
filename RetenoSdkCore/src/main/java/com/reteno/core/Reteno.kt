@@ -1,5 +1,6 @@
 package com.reteno.core
 
+import com.reteno.core.appinbox.AppInbox
 import com.reteno.core.domain.model.event.Event
 import com.reteno.core.domain.model.user.User
 import com.reteno.core.lifecycle.ScreenTrackingConfig
@@ -47,6 +48,11 @@ interface Reteno {
      *  But not more often than [com.reteno.core.domain.controller.ScheduleController.Companion.FORCE_PUSH_MIN_DELAY] millis.
      */
     fun forcePushData()
+
+    /**
+     *  Get [AppInbox] instance.
+     */
+    fun getAppInboxMessaging(): AppInbox
 
     companion object {
         val TAG: String = Reteno::class.java.simpleName

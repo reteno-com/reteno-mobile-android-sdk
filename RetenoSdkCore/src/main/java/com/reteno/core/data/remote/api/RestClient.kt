@@ -29,6 +29,7 @@ class RestClient(private val restConfig: RestConfig) {
 
         private const val HEADER_KEY = "X-Reteno-Access-Key"
         private const val HEADER_VERSION = "X-Reteno-SDK-Version"
+        private const val HEADER_DEVICE_ID = "X-Reteno-Device-ID"
 
         private const val HEADER_CONTENT = "Content-Type"
         private const val HEADER_CONTENT_VALUE = "application/json; charset=UTF-8"
@@ -55,20 +56,19 @@ class RestClient(private val restConfig: RestConfig) {
      */
     fun makeRequest(
         method: HttpMethod,
-        url: ApiContract,
+        apiContract: ApiContract,
         body: String?,
-        queryParams: Map<String, Any>? = null,
+        queryParams: Map<String, String?>? = null,
         responseCallback: ResponseCallback
     ) {
         var urlConnection: HttpURLConnection? = null
 
         try {
-            val urlWithParams = generateUrl(url.url, queryParams)
-            val needAuthorizationHeaders = url is ApiContract.MobileApi
-            /*@formatter:off*/ Logger.i(TAG, "makeRequest(): ", "method = [" , method.httpMethodName , "], url = [" , url.url , "], body = [" , body , "], queryParams = [" , queryParams , "], responseCallback = [" , responseCallback , "]")
+            val urlWithParams = generateUrl(apiContract.url, queryParams)
+            /*@formatter:off*/ Logger.i(TAG, "makeRequest(): ", "method = [" , method.httpMethodName , "], apiContract = [" , apiContract.url , "], body = [" , body , "], queryParams = [" , queryParams , "], responseCallback = [" , responseCallback , "]")
             /*@formatter:on*/
             urlConnection =
-                defaultHttpConnection(method, urlWithParams, needAuthorizationHeaders)
+                defaultHttpConnection(method, urlWithParams, apiContract)
 
             if (body != null) {
                 attachBody(urlConnection, body)
@@ -101,13 +101,13 @@ class RestClient(private val restConfig: RestConfig) {
         } catch (e: Exception) {
             val errorMessages = """
                     m: $method,
-                    u: $url,
+                    u: ${apiContract.url},
                     e: ${e.message}
                 """.trimIndent()
             Logger.d(TAG, "makeRequest(): ", errorMessages)
             responseCallback.onFailure(null, null, e)
         } finally {
-            /*@formatter:off*/ Logger.i(TAG, "makeRequest(): ", "method = ", method.httpMethodName, "; url = ", url.url, "; status = disconnected") /*@formatter:on*/
+            /*@formatter:off*/ Logger.i(TAG, "makeRequest(): ", "method = ", method.httpMethodName, "; apiContract = ", apiContract.url, "; status = disconnected") /*@formatter:on*/
             urlConnection?.disconnect()
         }
     }
@@ -115,7 +115,7 @@ class RestClient(private val restConfig: RestConfig) {
     private fun defaultHttpConnection(
         method: HttpMethod,
         url: String,
-        needAuthorizationHeaders: Boolean
+        apiContract: ApiContract
     ): HttpURLConnection {
         val useSsl = url.startsWith("https") // TODO (bs) need to test
         val urlConnection = ConnectionManager.openConnection(url)
@@ -126,11 +126,20 @@ class RestClient(private val restConfig: RestConfig) {
                 setRequestProperty(HEADER_DEBUG, "true")
             }
 
-            if (needAuthorizationHeaders) {
-                setRequestProperty(HEADER_KEY, restConfig.accessKey)
-                setRequestProperty(HEADER_VERSION, BuildConfig.SDK_VERSION)
+            when (apiContract) {
+                is ApiContract.MobileApi -> {
+                    setRequestProperty(HEADER_KEY, restConfig.accessKey)
+                    setRequestProperty(HEADER_VERSION, BuildConfig.SDK_VERSION)
+                }
+                is ApiContract.AppInbox -> {
+                    setRequestProperty(HEADER_KEY, restConfig.accessKey)
+                    setRequestProperty(HEADER_VERSION, BuildConfig.SDK_VERSION)
+                    setRequestProperty(HEADER_DEVICE_ID, restConfig.deviceId.id)
+                }
+                else -> { /* NO-OP */ }
             }
             setRequestProperty(HEADER_ACCEPT, HEADER_ACCEPT_VALUE)
+            setRequestProperty(HEADER_CONTENT, HEADER_CONTENT_VALUE)
 
             if (useSsl) {
                 val socketFactory = SSLSocketFactory.getDefault() as SSLSocketFactory
@@ -139,7 +148,6 @@ class RestClient(private val restConfig: RestConfig) {
             }
             if (method != HttpMethod.GET) {
                 doInput = true
-                setRequestProperty(HEADER_CONTENT, HEADER_CONTENT_VALUE)
                 setRequestProperty(HEADER_ENCODING, HEADER_ENCODING_VALUE)
                 setChunkedStreamingMode(0)
             }
@@ -155,7 +163,7 @@ class RestClient(private val restConfig: RestConfig) {
         return urlConnection
     }
 
-    private fun generateUrl(url: String, params: Map<String, Any>?): String {
+    private fun generateUrl(url: String, params: Map<String, String?>?): String {
         return if (!params.isNullOrEmpty()) {
             attachGetParams(url, params)
         } else {
@@ -178,10 +186,12 @@ class RestClient(private val restConfig: RestConfig) {
         os.close()
     }
 
-    private fun attachGetParams(url: String, params: Map<String, Any>): String {
+    private fun attachGetParams(url: String, params: Map<String, String?>): String {
         val builder = Uri.parse(url).buildUpon()
-        params.forEach { (key, value) ->
-            builder.appendQueryParameter(key, value.toString())
+        params
+            .filter { it.value != null }
+            .forEach { (key, value) ->
+            builder.appendQueryParameter(key, value)
         }
         return builder.build().toString()
     }

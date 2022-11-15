@@ -10,6 +10,6 @@ interface ApiClient {
     fun post(url: ApiContract, jsonBody: String, responseHandler: ResponseCallback)
     fun postSync(url: ApiContract, jsonBody: String, responseHandler: ResponseCallback)
 
-    fun get(url: ApiContract, queryParams: Map<String, Any>?, responseHandler: ResponseCallback)
-    fun getSync(url: ApiContract, queryParams: Map<String, Any>?, responseHandler: ResponseCallback)
+    fun get(url: ApiContract, queryParams: Map<String, String?>?, responseHandler: ResponseCallback)
+    fun getSync(url: ApiContract, queryParams: Map<String, String?>?, responseHandler: ResponseCallback)
 }

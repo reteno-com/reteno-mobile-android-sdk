@@ -2,6 +2,7 @@ package com.reteno.core
 
 import android.app.Activity
 import android.app.Application
+import com.reteno.core.appinbox.AppInbox
 import com.reteno.core.di.ServiceLocator
 import com.reteno.core.domain.model.event.Event
 import com.reteno.core.domain.model.user.User
@@ -24,6 +25,8 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
     private val contactController by lazy { serviceLocator.contactControllerProvider.get() }
     private val scheduleController by lazy { serviceLocator.scheduleControllerProvider.get() }
     private val eventController by lazy { serviceLocator.eventsControllerProvider.get() }
+
+    private val appInbox by lazy { serviceLocator.appInboxProvider.get() }
 
     private val activityHelper: RetenoActivityHelper by lazy { serviceLocator.retenoActivityHelperProvider.get() }
 
@@ -90,6 +93,10 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
         /*@formatter:off*/ Logger.i(TAG, "forcePushData(): ", "")
         /*@formatter:on*/
         scheduleController.forcePush()
+    }
+
+    override fun getAppInboxMessaging(): AppInbox {
+        return appInbox
     }
 
     private fun setUserData(user: User?) {
