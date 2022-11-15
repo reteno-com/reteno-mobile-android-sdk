@@ -2,9 +2,9 @@ package com.reteno.core.domain.controller
 
 import com.reteno.core.base.BaseUnitTest
 import com.reteno.core.data.repository.EventsRepository
+import com.reteno.core.domain.model.event.Event
 import com.reteno.core.util.Util
 import io.mockk.*
-import com.reteno.core.domain.model.event.Event
 import io.mockk.impl.annotations.RelaxedMockK
 import org.junit.Before
 import org.junit.Test
@@ -35,9 +35,9 @@ class EventControllerTest : BaseUnitTest() {
 
     @Test
     fun whenSaveEvent_thenEventPassedToRepository() {
-        val event = Event(EVENT_TYPE_KEY, ZonedDateTime.now(), emptyList())
+        val event = Event.Custom(EVENT_TYPE_KEY, ZonedDateTime.now(), emptyList())
 
-        SUT.saveEvent(event)
+        SUT.trackEvent(event)
 
         verify(exactly = 1) {
             eventsRepository.saveEvent(event)

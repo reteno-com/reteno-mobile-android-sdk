@@ -10,10 +10,16 @@ class EventController(
     private val eventsRepository: EventsRepository
 ) {
 
-    fun saveEvent(event: Event) {
-        /*@formatter:off*/ Logger.i(TAG, "saveEvent(): ", "event = [" , event , "]")
+    fun trackEvent(event: Event) {
+        /*@formatter:off*/ Logger.i(TAG, "trackEvent(): ", "event = [" , event , "]")
         /*@formatter:on*/
         eventsRepository.saveEvent(event)
+    }
+
+    fun trackScreenViewEvent(screenName: String) {
+        /*@formatter:off*/ Logger.i(TAG, "trackScreenViewEvent(): ", "screenName = [" , screenName , "]")
+        /*@formatter:on*/
+        eventsRepository.saveEvent(Event.ScreenView(screenName))
     }
 
     fun pushEvents() {

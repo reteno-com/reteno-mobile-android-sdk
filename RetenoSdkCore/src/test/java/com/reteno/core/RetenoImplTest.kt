@@ -101,13 +101,13 @@ class RetenoImplTest : BaseUnitTest() {
         val application = mockk<Application>()
         val retenoImpl = RetenoImpl(application, "")
 
-        val event = Event(
-            eventTypeKey = EVENT_TYPE_KEY,
-            occurred = ZonedDateTime.now(),
-            params = listOf(Parameter(EVENT_PARAMETER_KEY_1, EVENT_PARAMETER_VALUE_1))
+        val event = Event.Custom(
+            typeKey = EVENT_TYPE_KEY,
+            dateOccurred = ZonedDateTime.now(),
+            parameters = listOf(Parameter(EVENT_PARAMETER_KEY_1, EVENT_PARAMETER_VALUE_1))
         )
-        retenoImpl.logEvent(event.eventTypeKey, event.occurred, event.params)
-        verify { eventController.saveEvent(event) }
+        retenoImpl.logEvent(event)
+        verify { eventController.trackEvent(event) }
     }
 
     @Test

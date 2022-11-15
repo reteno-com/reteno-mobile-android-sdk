@@ -1,9 +1,9 @@
 package com.reteno.core
 
 import com.reteno.core.data.local.config.DeviceIdMode
-import com.reteno.core.domain.model.event.Parameter
+import com.reteno.core.domain.model.event.Event
 import com.reteno.core.domain.model.user.User
-import java.time.ZonedDateTime
+import com.reteno.core.lifecycle.ScreenTrackingConfig
 
 
 interface Reteno {
@@ -23,17 +23,31 @@ interface Reteno {
     /**
      * Set the user ID and add or modify user attributes.
      *
-     * @see com.reteno.core.model.user.User
+     * @see com.reteno.core.domain.model.user
      */
     fun setUserAttributes(externalUserId: String, user: User?)
 
     /**
      *  Tracking events
-     *  @param eventType key for event type
-     *  @param date time when event occurred
-     *  @param parameters additional custom event parameters
+     *  @param event model to track
      */
-    fun logEvent(eventType: String, date: ZonedDateTime, parameters: List<Parameter>? = null)
+    fun logEvent(event: Event)
+
+    /**
+     *  Tracking screen view events.
+     *  Call this method when screen (fragment, activity, view) appeared for user
+     *  @param screenName to track
+     */
+    fun logScreenView(screenName: String)
+
+    /**
+     * Enables automatic screen tracking. Screen view event happens on Fragment's onStart() by default
+     * lifecycle callback.
+     * @see com.reteno.core.lifecycle.ScreenTrackingConfig for additional configuration
+     *
+     * @param config - parameters for auto screen tracking
+     */
+    fun autoScreenTracking(config: ScreenTrackingConfig)
 
 
     /**
