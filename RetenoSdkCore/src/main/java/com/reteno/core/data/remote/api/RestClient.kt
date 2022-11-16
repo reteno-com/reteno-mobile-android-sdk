@@ -18,7 +18,11 @@ class RestClient(private val restConfig: RestConfig) {
     companion object {
         private val TAG = RestClient::class.java.simpleName
 
+        /** TIMEOUT should be not more than @see [com.reteno.core.domain.controller.ScheduleController.REGULAR_DELAY]
+         * to prevent adding new operations while REST queries are ongoing
+         **/
         private const val TIMEOUT = 10_000
+
         private const val READ_TIMEOUT = 15_000
 
         private const val HEADER_DEBUG = "X-Reteno-Debug"

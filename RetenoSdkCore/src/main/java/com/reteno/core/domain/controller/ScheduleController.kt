@@ -22,7 +22,12 @@ class ScheduleController(
     companion object {
         private val TAG: String = ScheduleController::class.java.simpleName
         private const val REGULAR_DELAY_DEBUG_VIEW = 10_000L
+
+        /** REGULAR_DELAY should be not less than @see [com.reteno.core.data.remote.api.RestClient.TIMEOUT]
+         * to prevent adding new operations while REST queries are ongoing
+         **/
         private const val REGULAR_DELAY = 30_000L
+
         private const val RANDOM_DELAY = 10_000L
         private const val FORCE_PUSH_MIN_DELAY = 1_000L
         private const val CLEAR_OLD_DATA_DELAY = 3_000L
