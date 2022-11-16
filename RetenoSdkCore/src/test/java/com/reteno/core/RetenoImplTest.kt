@@ -10,6 +10,9 @@ import com.reteno.core.domain.controller.ScheduleController
 import com.reteno.core.domain.model.event.Event
 import com.reteno.core.domain.model.event.Parameter
 import com.reteno.core.domain.model.user.User
+import com.reteno.core.lifecycle.RetenoActivityHelper
+import com.reteno.core.lifecycle.ScreenTrackingConfig
+import com.reteno.core.lifecycle.ScreenTrackingTrigger
 import io.mockk.*
 import io.mockk.impl.annotations.RelaxedMockK
 import org.junit.Assert.assertFalse
@@ -22,14 +25,16 @@ class RetenoImplTest : BaseUnitTest() {
     // region constants ----------------------------------------------------------------------------
     companion object {
         private const val EXTERNAL_USER_ID = "external_user_ID"
-
         private val USER_SUBSCRIPTION_KEYS = listOf("SUBSCRIPTION_KEYS")
+
         private val USER_GROUP_NAMES_INCLUDE = listOf("GROUP_NAMES_INCLUDE")
         private val USER_GROUP_NAMES_EXCLUDE = listOf("GROUP_NAMES_EXCLUDE")
-
         private const val EVENT_TYPE_KEY = "EVENT_TYPE_KEY"
+
         private const val EVENT_PARAMETER_KEY_1 = "KEY1"
         private const val EVENT_PARAMETER_VALUE_1 = "VALUE1"
+
+        private const val TRACK_SCREEN_NAME = "ScreenNameHere"
     }
     // endregion constants -------------------------------------------------------------------------
 
@@ -42,6 +47,9 @@ class RetenoImplTest : BaseUnitTest() {
 
     @RelaxedMockK
     private lateinit var eventController: EventController
+
+    @RelaxedMockK
+    private lateinit var retenoActivityHelper: RetenoActivityHelper
     // endregion helper fields ---------------------------------------------------------------------
 
     override fun before() {
@@ -50,6 +58,7 @@ class RetenoImplTest : BaseUnitTest() {
         every { anyConstructed<ServiceLocator>().contactControllerProvider.get() } returns contactController
         every { anyConstructed<ServiceLocator>().scheduleControllerProvider.get() } returns scheduleController
         every { anyConstructed<ServiceLocator>().eventsControllerProvider.get() } returns eventController
+        every { anyConstructed<ServiceLocator>().retenoActivityHelperProvider.get() } returns retenoActivityHelper
     }
 
     override fun after() {
@@ -108,6 +117,25 @@ class RetenoImplTest : BaseUnitTest() {
         )
         retenoImpl.logEvent(event)
         verify { eventController.trackEvent(event) }
+    }
+
+    @Test
+    fun whenLogScreenView_thenInteractWithEventController() {
+        val application = mockk<Application>()
+        val retenoImpl = RetenoImpl(application, "")
+
+        retenoImpl.logScreenView(TRACK_SCREEN_NAME)
+        verify(exactly = 1) { eventController.trackScreenViewEvent(TRACK_SCREEN_NAME) }
+    }
+
+    @Test
+    fun whenAutoScreenTracking_thenInteractWithActivityHelper() {
+        val application = mockk<Application>()
+        val retenoImpl = RetenoImpl(application, "")
+
+        val config = ScreenTrackingConfig(true, listOf(), ScreenTrackingTrigger.ON_RESUME)
+        retenoImpl.autoScreenTracking(config)
+        verify(exactly = 1) { retenoActivityHelper.autoScreenTracking(config) }
     }
 
     @Test

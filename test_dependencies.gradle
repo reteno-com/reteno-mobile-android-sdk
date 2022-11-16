@@ -50,6 +50,8 @@ ext.robolectric = dependencyGroup {
         exclude group: 'org.apache.httpcomponents', module: 'httpclient'
     }
     testImplementation 'org.robolectric:shadows-play-services:3.3.2'
+
+    testImplementation 'androidx.fragment:fragment-testing:1.4.1'
 }
 
 ext.androidx = dependencyGroup {
