@@ -1,11 +1,10 @@
 package com.reteno.core.domain.controller
 
 import com.reteno.core.data.repository.AppInboxRepository
+import com.reteno.core.domain.SchedulerUtils
 import com.reteno.core.domain.callback.appinbox.AppInboxMessagesCallback
 import com.reteno.core.domain.callback.appinbox.AppInboxMessagesCountCallback
 import com.reteno.core.util.Logger
-import com.reteno.core.util.Util
-import java.time.ZonedDateTime
 
 class AppInboxController(private val appInboxRepository: AppInboxRepository) {
 
@@ -46,19 +45,12 @@ class AppInboxController(private val appInboxRepository: AppInboxRepository) {
     fun clearOldMessagesStatus() {
         /*@formatter:off*/ Logger.i(TAG, "clearOldMessagesStatus(): ", "") 
         /*@formatter:on*/
-        val keepDataHours = if (Util.isDebugView()) {
-            KEEP_EVENT_HOURS_DEBUG
-        } else {
-            KEEP_EVENT_HOURS
-        }
-        val outdatedTime = ZonedDateTime.now().minusHours(keepDataHours)
+        val outdatedTime = SchedulerUtils.getOutdatedTime()
         appInboxRepository.clearOldMessages(outdatedTime)
     }
 
     companion object {
         private val TAG: String = AppInboxController::class.java.simpleName
-        private const val KEEP_EVENT_HOURS = 24L
-        private const val KEEP_EVENT_HOURS_DEBUG = 1L
     }
 
 }

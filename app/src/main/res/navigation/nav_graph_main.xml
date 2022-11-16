@@ -181,7 +181,7 @@
         tools:layout="@layout/fragment_screen_tracking" />
     <fragment
         android:id="@+id/fragmentAppInbox"
-        android:name="com.reteno.sample.fragments.FragmentAppInbox"
+        android:name="com.reteno.sample.fragments.inbox.FragmentAppInbox"
         android:label="fragment_app_inbox"
         tools:layout="@layout/fragment_app_inbox" />
 </navigation>

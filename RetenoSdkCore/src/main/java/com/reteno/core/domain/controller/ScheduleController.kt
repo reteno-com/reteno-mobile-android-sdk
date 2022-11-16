@@ -98,8 +98,7 @@ class ScheduleController(
      *  Deletes [com.reteno.core.model.event.Event] and [com.reteno.core.model.interaction.Interaction]
      *  older than 24 hours from the database
      *
-     *  @see InteractionController.KEEP_INTERACTION_HOURS
-     *  @see EventController.KEEP_EVENT_HOURS
+     *  @see com.reteno.core.domain.SchedulerUtils
      */
     fun clearOldData() {
         /*@formatter:off*/ Logger.i(TAG, "clearOldData(): ", "")

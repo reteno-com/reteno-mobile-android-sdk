@@ -9,6 +9,11 @@ import com.reteno.core.lifecycle.ScreenTrackingConfig
 interface Reteno {
 
     /**
+     *  Get [AppInbox] instance.
+     */
+    val appInbox: AppInbox
+
+    /**
      *  Set the user ID.
      */
     fun setUserAttributes(externalUserId: String)
@@ -48,11 +53,6 @@ interface Reteno {
      *  But not more often than [com.reteno.core.domain.controller.ScheduleController.Companion.FORCE_PUSH_MIN_DELAY] millis.
      */
     fun forcePushData()
-
-    /**
-     *  Get [AppInbox] instance.
-     */
-    fun getAppInboxMessaging(): AppInbox
 
     companion object {
         val TAG: String = Reteno::class.java.simpleName

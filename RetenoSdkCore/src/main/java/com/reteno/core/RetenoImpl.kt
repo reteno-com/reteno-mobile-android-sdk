@@ -26,7 +26,7 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
     private val scheduleController by lazy { serviceLocator.scheduleControllerProvider.get() }
     private val eventController by lazy { serviceLocator.eventsControllerProvider.get() }
 
-    private val appInbox by lazy { serviceLocator.appInboxProvider.get() }
+    override val appInbox by lazy { serviceLocator.appInboxProvider.get() }
 
     private val activityHelper: RetenoActivityHelper by lazy { serviceLocator.retenoActivityHelperProvider.get() }
 
@@ -93,10 +93,6 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
         /*@formatter:off*/ Logger.i(TAG, "forcePushData(): ", "")
         /*@formatter:on*/
         scheduleController.forcePush()
-    }
-
-    override fun getAppInboxMessaging(): AppInbox {
-        return appInbox
     }
 
     private fun setUserData(user: User?) {
