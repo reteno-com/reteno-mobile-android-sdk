@@ -105,7 +105,7 @@ public class EventWriteDialogFragment extends BaseDatabaseDialogFragment {
 
             if (eventTypeKey != null) {
                 List<Parameter> params = getParamsList(parent);
-                list.add(new Event(eventTypeKey, occurred, params));
+                list.add(new Event.Custom(eventTypeKey, occurred, params));
             }
         }
         return list;

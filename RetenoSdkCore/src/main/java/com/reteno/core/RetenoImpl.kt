@@ -5,12 +5,11 @@ import android.app.Application
 import com.reteno.core.data.local.config.DeviceIdMode
 import com.reteno.core.di.ServiceLocator
 import com.reteno.core.domain.model.event.Event
-import com.reteno.core.domain.model.event.Parameter
 import com.reteno.core.domain.model.user.User
 import com.reteno.core.lifecycle.RetenoActivityHelper
 import com.reteno.core.lifecycle.RetenoLifecycleCallbacks
+import com.reteno.core.lifecycle.ScreenTrackingConfig
 import com.reteno.core.util.Logger
-import java.time.ZonedDateTime
 
 
 class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleCallbacks, Reteno {
@@ -27,8 +26,7 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
     private val scheduleController by lazy { serviceLocator.scheduleControllerProvider.get() }
     private val eventController by lazy { serviceLocator.eventsControllerProvider.get() }
 
-    private val activityHelper: RetenoActivityHelper =
-        serviceLocator.retenoActivityHelperProvider.get()
+    private val activityHelper: RetenoActivityHelper by lazy { serviceLocator.retenoActivityHelperProvider.get() }
 
     init {
         try {
@@ -82,14 +80,22 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
         }
     }
 
-    override fun logEvent(
-        eventType: String,
-        date: ZonedDateTime,
-        parameters: List<Parameter>?
-    ) {
-        /*@formatter:off*/ Logger.i(TAG, "logEvent(): ", "eventType = [" , eventType , "], date = [" , date , "], parameters = [" , parameters , "]") 
+    override fun logEvent(event: Event) {
+        /*@formatter:off*/ Logger.i(TAG, "logEvent(): ", "eventType = [" , event.eventTypeKey , "], date = [" , event.occurred , "], parameters = [" , event.params , "]")
         /*@formatter:on*/
-        eventController.saveEvent(Event(eventType, date, parameters))
+        eventController.trackEvent(event)
+    }
+
+    override fun logScreenView(screenName: String) {
+        /*@formatter:off*/ Logger.i(TAG, "logScreenView(): ", "screenName = [" , screenName , "]")
+        /*@formatter:on*/
+        eventController.trackScreenViewEvent(screenName)
+    }
+
+    override fun autoScreenTracking(config: ScreenTrackingConfig) {
+        /*@formatter:off*/ Logger.i(TAG, "autoScreenTracking(): ", "config = [" , config , "]")
+        /*@formatter:on*/
+        activityHelper.autoScreenTracking(config)
     }
 
     override fun forcePushData() {

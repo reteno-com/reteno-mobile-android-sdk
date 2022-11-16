@@ -65,7 +65,7 @@ class EventsRepositoryTest : BaseRobolectricTest() {
 
     @Test
     fun givenValidEvents_whenEventsSent_thenSaveEvents() {
-        val event = Event(EVENT_TYPE_KEY, ZonedDateTime.now())
+        val event = Event.Custom(EVENT_TYPE_KEY, ZonedDateTime.now())
         val events = Events(
             deviceId = DEVICE_ID,
             externalUserId = EXTERNAL_DEVICE_ID,

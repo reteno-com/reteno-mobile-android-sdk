@@ -13,6 +13,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.navigation.fragment.NavHostFragment;
 
+import com.reteno.core.domain.model.event.Event;
 import com.reteno.core.domain.model.event.Parameter;
 import com.reteno.sample.BaseFragment;
 import com.reteno.sample.R;
@@ -79,7 +80,7 @@ public class FragmentCustomEvent extends BaseFragment {
         }
         List<Parameter> params = getUserCustomData();
 
-        getReteno().logEvent(eventTypeKey, ZonedDateTime.now(), params);
+        getReteno().logEvent(new Event.Custom(eventTypeKey, ZonedDateTime.now(), params));
     }
 
     private List<Parameter> getUserCustomData() {

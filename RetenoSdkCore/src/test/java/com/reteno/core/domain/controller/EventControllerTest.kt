@@ -2,10 +2,13 @@ package com.reteno.core.domain.controller
 
 import com.reteno.core.base.BaseUnitTest
 import com.reteno.core.data.repository.EventsRepository
+import com.reteno.core.domain.model.event.Event
+import com.reteno.core.domain.model.event.Event.Companion.SCREEN_VIEW_EVENT_TYPE_KEY
+import com.reteno.core.domain.model.event.Event.Companion.SCREEN_VIEW_PARAM_NAME
 import com.reteno.core.util.Util
 import io.mockk.*
-import com.reteno.core.domain.model.event.Event
 import io.mockk.impl.annotations.RelaxedMockK
+import junit.framework.TestCase.assertEquals
 import org.junit.Before
 import org.junit.Test
 import java.time.ZonedDateTime
@@ -16,6 +19,8 @@ class EventControllerTest : BaseUnitTest() {
     // region constants ----------------------------------------------------------------------------
     companion object {
         private const val EVENT_TYPE_KEY = "key"
+
+        private const val SCREEN_NAME = "CustomScreenName"
     }
     // endregion constants -------------------------------------------------------------------------
 
@@ -34,14 +39,29 @@ class EventControllerTest : BaseUnitTest() {
     }
 
     @Test
-    fun whenSaveEvent_thenEventPassedToRepository() {
-        val event = Event(EVENT_TYPE_KEY, ZonedDateTime.now(), emptyList())
+    fun whenTrackEvent_thenEventPassedToRepository() {
+        val event = Event.Custom(EVENT_TYPE_KEY, ZonedDateTime.now(), emptyList())
 
-        SUT.saveEvent(event)
+        SUT.trackEvent(event)
 
         verify(exactly = 1) {
             eventsRepository.saveEvent(event)
         }
+    }
+
+    @Test
+    fun whenTrackScreenViewEvent_thenEventPassedToRepository() {
+        val eventCaptured = slot<Event>()
+        justRun { eventsRepository.saveEvent(capture(eventCaptured)) }
+
+        SUT.trackScreenViewEvent(SCREEN_NAME)
+
+        verify(exactly = 1) { eventsRepository.saveEvent(any()) }
+        assertEquals(SCREEN_VIEW_EVENT_TYPE_KEY, eventCaptured.captured.eventTypeKey)
+        assertEquals(1, eventCaptured.captured.params?.size)
+        val paramsActual = eventCaptured.captured.params?.get(0)
+        assertEquals(SCREEN_VIEW_PARAM_NAME, paramsActual?.name)
+        assertEquals(SCREEN_NAME, paramsActual?.value)
     }
 
     @Test

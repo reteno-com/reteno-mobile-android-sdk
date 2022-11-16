@@ -14,7 +14,6 @@ class ServiceLocator(context: Context, accessKey: String) {
     private val restConfigProvider: RestConfigProvider = RestConfigProvider(deviceIdHelperProvider, accessKey)
     private val restClientProvider: RestClientProvider = RestClientProvider(restConfigProvider)
 
-    val retenoActivityHelperProvider: RetenoActivityHelperProvider = RetenoActivityHelperProvider()
     private val apiClientProvider: ApiClientProvider = ApiClientProvider(restClientProvider)
     private val databaseProvider: DatabaseProvider = DatabaseProvider(context)
     val databaseManagerProvider: DatabaseManagerProvider = DatabaseManagerProvider(databaseProvider)
@@ -57,11 +56,11 @@ class ServiceLocator(context: Context, accessKey: String) {
             configRepositoryProvider
         )
 
-    val eventsControllerProvider: EventsControllerProvider =
+    internal val eventsControllerProvider: EventsControllerProvider =
         EventsControllerProvider(eventsRepositoryProvider)
 
     private val workManagerProvider: WorkManagerProvider = WorkManagerProvider(context)
-    val scheduleControllerProvider: ScheduleControllerProvider =
+    internal val scheduleControllerProvider: ScheduleControllerProvider =
         ScheduleControllerProvider(
             contactControllerProvider,
             interactionControllerProvider,
@@ -69,7 +68,6 @@ class ServiceLocator(context: Context, accessKey: String) {
             workManagerProvider
         )
 
-    init {
-
-    }
+    /** Controller dependent **/
+    internal val retenoActivityHelperProvider: RetenoActivityHelperProvider = RetenoActivityHelperProvider(eventsControllerProvider)
 }
