@@ -49,6 +49,7 @@ class EventsRepositoryImpl(
         /*@formatter:off*/ Logger.i(TAG, "pushEvents(): ", "events = [" , events , "]")
         /*@formatter:on*/
 
+        val eventListSize = events.eventList.size
         apiClient.post(
             ApiContract.MobileApi.Events,
             events.toRemote().toJson(),
@@ -57,7 +58,7 @@ class EventsRepositoryImpl(
                 override fun onSuccess(response: String) {
                     /*@formatter:off*/ Logger.i(TAG, "onSuccess(): ", "response = [" , response , "]")
                     /*@formatter:on*/
-                    databaseManager.deleteEvents(1)
+                    databaseManager.deleteEvents(eventListSize)
                     pushEvents()
                 }
 
@@ -65,7 +66,7 @@ class EventsRepositoryImpl(
                     /*@formatter:off*/ Logger.i(TAG, "onFailure(): ", "statusCode = [" , statusCode , "], response = [" , response , "], throwable = [" , throwable , "]")
                     /*@formatter:on*/
                     if (isNonRepeatableError(statusCode)) {
-                        databaseManager.deleteEvents(1)
+                        databaseManager.deleteEvents(eventListSize)
                         pushEvents()
                     }
                     PushOperationQueue.removeAllOperations()
