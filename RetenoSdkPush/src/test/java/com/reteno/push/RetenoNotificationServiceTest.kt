@@ -5,6 +5,7 @@ import android.content.Context
 import android.os.Bundle
 import com.reteno.core.domain.controller.ContactController
 import com.reteno.core.domain.controller.InteractionController
+import com.reteno.core.domain.controller.ScheduleController
 import com.reteno.core.domain.model.interaction.InteractionStatus
 import com.reteno.push.Constants.KEY_ES_CONTENT
 import com.reteno.push.Constants.KEY_ES_INTERACTION_ID
@@ -28,11 +29,14 @@ class RetenoNotificationServiceTest : BaseRobolectricTest() {
     private lateinit var interactionController: InteractionController
     @RelaxedMockK
     private lateinit var contactController: ContactController
+    @RelaxedMockK
+    private lateinit var scheduleController: ScheduleController
 
     override fun before() {
         super.before()
         every { reteno.serviceLocator.interactionControllerProvider.get() } returns interactionController
         every { reteno.serviceLocator.contactControllerProvider.get() } returns contactController
+        every { reteno.serviceLocator.scheduleControllerProvider.get() } returns scheduleController
         pushService = RetenoNotificationService()
 
         mockkObject(Util)
