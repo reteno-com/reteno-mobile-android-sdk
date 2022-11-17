@@ -1,8 +1,13 @@
 package com.reteno.core.data.repository
 
+import android.text.TextUtils
+import com.google.android.gms.tasks.OnCompleteListener
+import com.google.firebase.messaging.FirebaseMessaging
 import com.reteno.core.data.local.config.DeviceId
 import com.reteno.core.data.local.config.RestConfig
 import com.reteno.core.data.local.sharedpref.SharedPrefsManager
+import com.reteno.core.util.Logger
+
 
 internal class ConfigRepositoryImpl(
     private val sharedPrefsManager: SharedPrefsManager,
@@ -19,7 +24,32 @@ internal class ConfigRepositoryImpl(
         sharedPrefsManager.saveFcmToken(token)
     }
 
-    override fun getFcmToken(): String = sharedPrefsManager.getFcmToken()
+    override fun getFcmToken(): String {
+        val currentToken = sharedPrefsManager.getFcmToken()
+        if (TextUtils.isEmpty(currentToken)) {
+            getAndSaveFreshFcmToken()
+        }
+
+        /*@formatter:off*/ Logger.i(TAG, "getFcmToken(): ", currentToken)
+        /*@formatter:on*/
+        return currentToken
+    }
+
+    private fun getAndSaveFreshFcmToken() {
+        FirebaseMessaging.getInstance().token.addOnCompleteListener(OnCompleteListener { task ->
+            if (!task.isSuccessful) {
+                Logger.e(
+                    TAG,
+                    "Fetching FCM registration token failed",
+                    task.exception ?: Throwable("")
+                )
+                return@OnCompleteListener
+            }
+
+            val freshToken = task.result
+            saveFcmToken(freshToken)
+        })
+    }
 
     override fun saveDefaultNotificationChannel(channel: String) {
         sharedPrefsManager.saveDefaultNotificationChannel(channel)
@@ -27,4 +57,16 @@ internal class ConfigRepositoryImpl(
 
     override fun getDefaultNotificationChannel(): String =
         sharedPrefsManager.getDefaultNotificationChannel()
+
+    override fun saveNotificationsEnabled(enabled: Boolean) {
+        sharedPrefsManager.saveNotificationsEnabled(enabled)
+    }
+
+    override fun getNotificationsEnabled(): Boolean =
+        sharedPrefsManager.getNotificationsEnabled()
+
+    companion object {
+        val TAG: String = ConfigRepositoryImpl::class.java.simpleName
+    }
 }
+

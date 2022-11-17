@@ -81,7 +81,7 @@ class ServiceLocator(context: Context, accessKey: String) {
         )
 
     /** Controller dependent **/
-    internal val retenoActivityHelperProvider: RetenoActivityHelperProvider = RetenoActivityHelperProvider(eventsControllerProvider)
+    val retenoActivityHelperProvider: RetenoActivityHelperProvider = RetenoActivityHelperProvider(eventsControllerProvider)
 
     /** App Inbox **/
     val appInboxProvider: AppInboxProvider = AppInboxProvider(appInboxControllerProvider)

@@ -9,6 +9,7 @@ import com.reteno.core.domain.model.interaction.InteractionStatus
 import com.reteno.core.util.Logger
 import com.reteno.push.Constants.KEY_ES_INTERACTION_ID
 import com.reteno.push.channel.RetenoNotificationChannel
+import com.reteno.push.receiver.NotificationsEnabledManager
 
 
 class RetenoNotificationService {
@@ -33,6 +34,7 @@ class RetenoNotificationService {
         RetenoNotificationChannel.createDefaultChannel()
         showNotification(data)
         handleInteractionStatus(data)
+        NotificationsEnabledManager.onCheckState(RetenoImpl.application)
     }
 
     private fun showNotification(data: Bundle) {
@@ -46,9 +48,9 @@ class RetenoNotificationService {
 
     private fun handleInteractionStatus(data: Bundle) {
         val channelEnabled =
-            RetenoNotificationChannel.isNotificationChannelEnabled(RetenoNotificationChannel.DEFAULT_CHANNEL_ID)
+            RetenoNotificationChannel.isNotificationChannelEnabled(RetenoImpl.application, RetenoNotificationChannel.DEFAULT_CHANNEL_ID)
         val permissionsGranted =
-            RetenoNotificationChannel.isNotificationPermissionGranted()
+            RetenoNotificationChannel.isNotificationPermissionGranted(RetenoImpl.application)
 
         if (channelEnabled && permissionsGranted) {
             data.getString(KEY_ES_INTERACTION_ID)?.let { interactionId ->

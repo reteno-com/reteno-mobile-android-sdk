@@ -10,6 +10,8 @@ data class DeviceRemote(
     val externalUserId: String?,
     @SerializedName("pushToken")
     val pushToken: String?,
+    @SerializedName("pushSubscribed")
+    val pushSubscribed: Boolean?,
     @SerializedName("category")
     val category: DeviceCategoryRemote,
     @SerializedName("osType")

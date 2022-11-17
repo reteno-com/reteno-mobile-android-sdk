@@ -4,6 +4,7 @@ import android.app.Application
 import com.reteno.core.RetenoImpl.Companion.application
 import com.reteno.core.appinbox.AppInboxImpl
 import com.reteno.core.base.BaseUnitTest
+import com.reteno.core.base.robolectric.BaseRobolectricTest
 import com.reteno.core.di.ServiceLocator
 import com.reteno.core.domain.controller.ContactController
 import com.reteno.core.domain.controller.EventController
@@ -20,7 +21,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 import java.time.ZonedDateTime
 
-class RetenoImplTest : BaseUnitTest() {
+class RetenoImplTest : BaseRobolectricTest() {
 
     // region constants ----------------------------------------------------------------------------
     companion object {
@@ -53,6 +54,8 @@ class RetenoImplTest : BaseUnitTest() {
 
     @RelaxedMockK
     private lateinit var inbox: AppInboxImpl
+
+    private val retenoImpl by lazy { RetenoImpl(application, "") }
     // endregion helper fields ---------------------------------------------------------------------
 
     override fun before() {
@@ -72,106 +75,112 @@ class RetenoImplTest : BaseUnitTest() {
 
     @Test
     fun externalId_whenSetUserAttributes_thenInteractWithController() {
-        val application = mockk<Application>()
-
-        val retenoImpl = RetenoImpl(application, "")
-
+        // When
         retenoImpl.setUserAttributes(EXTERNAL_USER_ID)
+
+        // Then
         verify { contactController.setExternalUserId(eq(EXTERNAL_USER_ID)) }
         verify(exactly = 0) { contactController.setUserData(any()) }
     }
 
     @Test
     fun externalIdAndUserNull_whenSetUserAttributesWithUser_thenInteractWithController() {
-        val application = mockk<Application>()
-
-        val retenoImpl = RetenoImpl(application, "")
-
+        // When
         retenoImpl.setUserAttributes(EXTERNAL_USER_ID, null)
+
+        // Then
         verify { contactController.setExternalUserId(eq(EXTERNAL_USER_ID)) }
         verify(exactly = 0) { contactController.setUserData(any()) }
     }
 
     @Test
     fun externalIdAndUser_whenSetUserAttributesWithUser_thenInteractWithController() {
+        // Given
         val userFull = User(
             userAttributes = null,
             subscriptionKeys = USER_SUBSCRIPTION_KEYS,
             groupNamesInclude = USER_GROUP_NAMES_INCLUDE,
             groupNamesExclude = USER_GROUP_NAMES_EXCLUDE
         )
-        val application = mockk<Application>()
 
-        val retenoImpl = RetenoImpl(application, "")
-
+        // When
         retenoImpl.setUserAttributes(EXTERNAL_USER_ID, userFull)
+
+        // Then
         verify { contactController.setExternalUserId(eq(EXTERNAL_USER_ID)) }
         verify { contactController.setUserData(userFull) }
     }
 
     @Test
     fun whenLogEvent_thenInteractWithEventController() {
-        val application = mockk<Application>()
-        val retenoImpl = RetenoImpl(application, "")
-
+        // Given
         val event = Event.Custom(
             typeKey = EVENT_TYPE_KEY,
             dateOccurred = ZonedDateTime.now(),
             parameters = listOf(Parameter(EVENT_PARAMETER_KEY_1, EVENT_PARAMETER_VALUE_1))
         )
+
+        // When
         retenoImpl.logEvent(event)
+
+        // Then
         verify { eventController.trackEvent(event) }
     }
 
     @Test
     fun whenLogScreenView_thenInteractWithEventController() {
-        val application = mockk<Application>()
-        val retenoImpl = RetenoImpl(application, "")
-
+        // When
         retenoImpl.logScreenView(TRACK_SCREEN_NAME)
+
+        // Then
         verify(exactly = 1) { eventController.trackScreenViewEvent(TRACK_SCREEN_NAME) }
     }
 
     @Test
     fun whenAutoScreenTracking_thenInteractWithActivityHelper() {
-        val application = mockk<Application>()
-        val retenoImpl = RetenoImpl(application, "")
-
+        // Given
         val config = ScreenTrackingConfig(true, listOf(), ScreenTrackingTrigger.ON_RESUME)
+
+        // When
         retenoImpl.autoScreenTracking(config)
+
+        // Then
         verify(exactly = 1) { retenoActivityHelper.autoScreenTracking(config) }
     }
 
     @Test
     fun whenResumeApp_thenStartScheduler() {
-        val retenoImpl = RetenoImpl(mockk(), "")
+        // When
         retenoImpl.resume(mockk())
 
+        // Then
         verify { scheduleController.startScheduler() }
     }
 
     @Test
     fun whenPauseApp_thenStopScheduler() {
-        val retenoImpl = RetenoImpl(mockk(), "")
+        // When
         retenoImpl.pause(mockk())
 
+        // Then
         verify { scheduleController.stopScheduler() }
     }
 
     @Test
     fun whenForcePush_thenCallScheduleController() {
-        val retenoImpl = RetenoImpl(mockk(), "")
-
+        // When
         retenoImpl.forcePushData()
 
+        // Then
         verify(exactly = 1) { scheduleController.forcePush() }
     }
 
     @Test
     fun whenResumeApp_thenStartScheduler_thenCalledClearOleEvents() {
-        val retenoImpl = RetenoImpl(mockk(), "")
+        // When
         retenoImpl.resume(mockk())
 
+        // Then
         verify { scheduleController.clearOldData() }
     }
 

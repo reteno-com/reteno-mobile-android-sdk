@@ -190,6 +190,7 @@ class ContactControllerTest : BaseUnitTest() {
                 deviceId = deviceId,
                 externalUserId = externalUserId,
                 pushToken = pushToken,
+                pushSubscribed = true,
                 category = DeviceCategory.MOBILE,
                 osType = DeviceOS.ANDROID,
                 osVersion = null,

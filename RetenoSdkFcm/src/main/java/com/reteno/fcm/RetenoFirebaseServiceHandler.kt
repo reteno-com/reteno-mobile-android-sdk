@@ -12,7 +12,7 @@ class RetenoFirebaseServiceHandler {
     private val pushService: RetenoNotificationService = RetenoNotificationService()
 
     /**
-     * Call from your implementation of [FirebaseMessagingService.onCreate]
+     * Call from your implementation of [com.google.firebase.messaging.FirebaseMessagingService.onCreate]
      */
     fun onCreate() {
         /*@formatter:off*/ Logger.i(TAG, "onCreate(): ", "context = ", RetenoImpl.application)
@@ -21,7 +21,7 @@ class RetenoFirebaseServiceHandler {
     }
 
     /**
-     * Call from your implementation of [FirebaseMessagingService.onNewToken]
+     * Call from your implementation of [com.google.firebase.messaging.FirebaseMessagingService.onNewToken]
      */
     fun onNewToken(token: String) {
         /*@formatter:off*/ Logger.i(TAG, "onNewToken(): ", "token = [" , token , "]")
@@ -31,7 +31,7 @@ class RetenoFirebaseServiceHandler {
 
     /**
      * Call from your implementation of
-     * [FirebaseMessagingService.onMessageReceived]
+     * [com.google.firebase.messaging.FirebaseMessagingService.onMessageReceived]
      */
     fun onMessageReceived(remoteMessage: RemoteMessage) {
         val messageMap = remoteMessage.data

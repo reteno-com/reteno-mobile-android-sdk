@@ -7,6 +7,7 @@ import com.reteno.core.domain.controller.ContactController
 import com.reteno.core.domain.controller.InteractionController
 import com.reteno.core.domain.controller.ScheduleController
 import com.reteno.core.domain.model.interaction.InteractionStatus
+import com.reteno.core.lifecycle.RetenoActivityHelper
 import com.reteno.push.Constants.KEY_ES_CONTENT
 import com.reteno.push.Constants.KEY_ES_INTERACTION_ID
 import com.reteno.push.Constants.KEY_ES_NOTIFICATION_IMAGE
@@ -23,6 +24,9 @@ import org.robolectric.annotation.Config
 @Config(sdk = [26])
 class RetenoNotificationServiceTest : BaseRobolectricTest() {
 
+    companion object {
+        private const val DEFAULT_CHANNEL_ID: String = "DEFAULT_CHANNEL_ID"
+    }
     private var pushService: RetenoNotificationService? = null
 
     @RelaxedMockK
@@ -31,26 +35,30 @@ class RetenoNotificationServiceTest : BaseRobolectricTest() {
     private lateinit var contactController: ContactController
     @RelaxedMockK
     private lateinit var scheduleController: ScheduleController
+    @RelaxedMockK
+    private lateinit var activityHelper: RetenoActivityHelper
 
     override fun before() {
         super.before()
         every { reteno.serviceLocator.interactionControllerProvider.get() } returns interactionController
         every { reteno.serviceLocator.contactControllerProvider.get() } returns contactController
         every { reteno.serviceLocator.scheduleControllerProvider.get() } returns scheduleController
+        every { reteno.serviceLocator.retenoActivityHelperProvider.get() } returns activityHelper
+        justRun { activityHelper.registerActivityLifecycleCallbacks(any(), any()) }
+
         pushService = RetenoNotificationService()
 
         mockkObject(Util)
         justRun { Util.tryToSendToCustomReceiverPushReceived(any()) }
         justRun { Util.tryToSendToCustomReceiverNotificationClicked(any()) }
-
-        mockkStatic(RetenoNotificationChannel::class)
+        mockkObject(RetenoNotificationChannel)
     }
 
     override fun after() {
         super.after()
         pushService = null
 
-        unmockkStatic(RetenoNotificationChannel::class)
+        unmockkObject(RetenoNotificationChannel)
         unmockkObject(Util)
     }
 
@@ -90,8 +98,10 @@ class RetenoNotificationServiceTest : BaseRobolectricTest() {
         val interactionId = "interaction_id_1231_4321_9900_0011"
         val bundle = buildBundle(interactionId)
 
-        every { RetenoNotificationChannel.isNotificationPermissionGranted() } returns true
-        every { RetenoNotificationChannel.isNotificationChannelEnabled(RetenoNotificationChannel.DEFAULT_CHANNEL_ID) } returns true
+        justRun { RetenoNotificationChannel.createDefaultChannel() }
+        every { RetenoNotificationChannel.DEFAULT_CHANNEL_ID } returns DEFAULT_CHANNEL_ID
+        every { RetenoNotificationChannel.isNotificationChannelEnabled(any(), DEFAULT_CHANNEL_ID) } returns true
+        every { RetenoNotificationChannel.isNotificationPermissionGranted(any()) } returns true
 
         justRun { interactionController.onInteraction(any(), any()) }
         pushService = spyk(RetenoNotificationService())
@@ -100,7 +110,7 @@ class RetenoNotificationServiceTest : BaseRobolectricTest() {
         pushService!!.handleRetenoNotification(bundle)
 
         // Then
-        verify(exactly = 1) { interactionController.onInteraction(interactionId, InteractionStatus.DELIVERED) }
+        verify(exactly = 1) { interactionController.onInteraction(eq(interactionId), eq(InteractionStatus.DELIVERED)) }
         verify(exactly = 1) { scheduleController.forcePush() }
     }
 
@@ -111,7 +121,9 @@ class RetenoNotificationServiceTest : BaseRobolectricTest() {
         val interactionId = "interaction_id_1231_4321_9900_0011"
         val bundle = buildBundle(interactionId)
 
-        every { RetenoNotificationChannel.isNotificationChannelEnabled(RetenoNotificationChannel.DEFAULT_CHANNEL_ID) } returns false
+        justRun { RetenoNotificationChannel.createDefaultChannel() }
+        every { RetenoNotificationChannel.DEFAULT_CHANNEL_ID } returns DEFAULT_CHANNEL_ID
+        every { RetenoNotificationChannel.isNotificationChannelEnabled(any(), DEFAULT_CHANNEL_ID) } returns false
 
         justRun { interactionController.onInteraction(any(), any()) }
         pushService = spyk(RetenoNotificationService())
@@ -120,7 +132,7 @@ class RetenoNotificationServiceTest : BaseRobolectricTest() {
         pushService!!.handleRetenoNotification(bundle)
 
         // Then
-        verify(exactly = 0) { interactionController.onInteraction(interactionId, InteractionStatus.DELIVERED) }
+        verify(exactly = 0) { interactionController.onInteraction(eq(interactionId), eq(InteractionStatus.DELIVERED)) }
         verify(exactly = 0) { scheduleController.forcePush() }
     }
 
@@ -131,7 +143,7 @@ class RetenoNotificationServiceTest : BaseRobolectricTest() {
         val interactionId = "interaction_id_1231_4321_9900_0011"
         val bundle = buildBundle(interactionId)
 
-        every { RetenoNotificationChannel.isNotificationPermissionGranted() } returns false
+        every { RetenoNotificationChannel.isNotificationPermissionGranted(any()) } returns false
 
         justRun { interactionController.onInteraction(any(), any()) }
         pushService = spyk(RetenoNotificationService())
@@ -140,7 +152,7 @@ class RetenoNotificationServiceTest : BaseRobolectricTest() {
         pushService!!.handleRetenoNotification(bundle)
 
         // Then
-        verify(exactly = 0) { interactionController.onInteraction(interactionId, InteractionStatus.DELIVERED) }
+        verify(exactly = 0) { interactionController.onInteraction(eq(interactionId), eq(InteractionStatus.DELIVERED)) }
         verify(exactly = 0) { scheduleController.forcePush() }
     }
 

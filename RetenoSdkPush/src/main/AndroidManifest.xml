@@ -11,5 +11,27 @@
             android:name=".interceptor.click.RetenoNotificationClickedReceiver"
             android:enabled="true"
             android:exported="false" />
+
+        <receiver
+            android:name="com.reteno.push.receiver.NotificationChannelStateChangeReceiver"
+            android:enabled="true"
+            android:exported="true" >
+
+            <intent-filter>
+                <action android:name="android.app.action.APP_BLOCK_STATE_CHANGED" />
+                <action android:name="android.app.action.NOTIFICATION_CHANNEL_BLOCK_STATE_CHANGED" />
+                <action android:name="android.app.action.NOTIFICATION_CHANNEL_GROUP_BLOCK_STATE_CHANGED" />
+            </intent-filter>
+        </receiver>
+
+        <receiver
+            android:name="com.reteno.push.receiver.AppResumeReceiver"
+            android:enabled="true"
+            android:exported="false" >
+
+            <intent-filter>
+                <action android:name="com.reteno.app-resume" />
+            </intent-filter>
+        </receiver>
     </application>
 </manifest>

@@ -318,31 +318,33 @@ class ContactRepositoryTest : BaseRobolectricTest() {
     )
 
     private fun getDevice() = Device(
-        DEVICE_ID,
-        EXTERNAL_DEVICE_ID,
-        FCM_TOKEN_NEW,
-        DeviceCategory.MOBILE,
-        DeviceOS.ANDROID,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null
+        deviceId = DEVICE_ID,
+        externalUserId = EXTERNAL_DEVICE_ID,
+        pushToken = FCM_TOKEN_NEW,
+        pushSubscribed = null,
+        category = DeviceCategory.MOBILE,
+        osType = DeviceOS.ANDROID,
+        osVersion = null,
+        deviceModel = null,
+        appVersion = null,
+        languageCode = null,
+        timeZone = null,
+        advertisingId = null
     )
 
     private fun getDeviceDb() = DeviceDb(
-        DEVICE_ID,
-        EXTERNAL_DEVICE_ID,
-        FCM_TOKEN_NEW,
-        DeviceCategoryDb.MOBILE,
-        DeviceOsDb.ANDROID,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null
+        deviceId = DEVICE_ID,
+        externalUserId = EXTERNAL_DEVICE_ID,
+        pushToken = FCM_TOKEN_NEW,
+        pushSubscribed = null,
+        category = DeviceCategoryDb.MOBILE,
+        osType = DeviceOsDb.ANDROID,
+        osVersion = null,
+        deviceModel = null,
+        appVersion = null,
+        languageCode = null,
+        timeZone = null,
+        advertisingId = null
     )
     // endregion helper methods --------------------------------------------------------------------
 }

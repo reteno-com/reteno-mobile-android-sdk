@@ -77,6 +77,13 @@
                 tools:retenoText="PUSH_TOKEN" />
 
             <com.reteno.sample.view.RetenoView
+                android:id="@+id/tvPushSubscribed"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:retenoHint="PushSubscribed"
+                tools:retenoText="TRUE" />
+
+            <com.reteno.sample.view.RetenoView
                 android:id="@+id/tvCategory"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
