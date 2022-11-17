@@ -24,6 +24,9 @@ class RetenoNotificationClickedActivity : Activity() {
     private val deeplinkController by lazy {
         reteno.serviceLocator.deeplinkControllerProvider.get()
     }
+    private val scheduleController by lazy {
+        reteno.serviceLocator.scheduleControllerProvider.get()
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -39,6 +42,7 @@ class RetenoNotificationClickedActivity : Activity() {
     private fun sendInteractionStatus(intent: Intent?) {
         intent?.extras?.getString(Constants.KEY_ES_INTERACTION_ID)?.let { interactionId ->
             interactionController.onInteraction(interactionId, InteractionStatus.OPENED)
+            scheduleController.forcePush()
         }
     }
 

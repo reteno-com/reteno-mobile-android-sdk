@@ -31,6 +31,10 @@ class RetenoNotificationClickedReceiver : BroadcastReceiver() {
         reteno.serviceLocator.deeplinkControllerProvider.get()
     }
 
+    private val scheduleController by lazy {
+        reteno.serviceLocator.scheduleControllerProvider.get()
+    }
+
     override fun onReceive(context: Context, intent: Intent?) {
         /*@formatter:off*/ Logger.i(TAG, "onReceive(): ", "notification clicked. Context = [" , context , "], intent.extras = [" , intent?.extras.toStringVerbose() , "]")
         /*@formatter:on*/
@@ -41,6 +45,7 @@ class RetenoNotificationClickedReceiver : BroadcastReceiver() {
     private fun sendInteractionStatus(intent: Intent?) {
         intent?.extras?.getString(Constants.KEY_ES_INTERACTION_ID)?.let { interactionId ->
             interactionController.onInteraction(interactionId, InteractionStatus.OPENED)
+            scheduleController.forcePush()
         }
     }
 

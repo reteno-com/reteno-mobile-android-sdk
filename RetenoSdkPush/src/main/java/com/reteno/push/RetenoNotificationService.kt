@@ -18,6 +18,7 @@ class RetenoNotificationService {
     private val serviceLocator = reteno.serviceLocator
     private val contactController = serviceLocator.contactControllerProvider.get()
     private val interactionController = serviceLocator.interactionControllerProvider.get()
+    private val scheduleController = serviceLocator.scheduleControllerProvider.get()
 
     fun onNewToken(token: String) {
         /*@formatter:off*/ Logger.i(TAG, "onNewToken(): ", "token = [" , token , "]")
@@ -52,6 +53,7 @@ class RetenoNotificationService {
         if (channelEnabled && permissionsGranted) {
             data.getString(KEY_ES_INTERACTION_ID)?.let { interactionId ->
                 interactionController.onInteraction(interactionId, InteractionStatus.DELIVERED)
+                scheduleController.forcePush()
             }
         }
     }

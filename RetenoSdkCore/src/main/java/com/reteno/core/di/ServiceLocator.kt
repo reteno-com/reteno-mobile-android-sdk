@@ -60,7 +60,7 @@ class ServiceLocator(context: Context, accessKey: String) {
         EventsControllerProvider(eventsRepositoryProvider)
 
     private val workManagerProvider: WorkManagerProvider = WorkManagerProvider(context)
-    internal val scheduleControllerProvider: ScheduleControllerProvider =
+    val scheduleControllerProvider: ScheduleControllerProvider =
         ScheduleControllerProvider(
             contactControllerProvider,
             interactionControllerProvider,
