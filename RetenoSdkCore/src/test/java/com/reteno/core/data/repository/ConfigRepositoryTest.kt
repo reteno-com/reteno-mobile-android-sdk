@@ -55,19 +55,6 @@ class ConfigRepositoryTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun given_whnSetDeviceIdMode_thenDelegatedToRestConfig() {
-        // Given
-        val deviceIdMode = DeviceIdMode.RANDOM_UUID
-        every { restConfig["setDeviceIdMode"](ofType(DeviceIdMode::class), ofType(Function1::class)) } returns Unit
-
-        // When
-        SUT.setDeviceIdMode(deviceIdMode) {}
-
-        // Then
-        verify(exactly = 1) { restConfig["setDeviceIdMode"](DeviceIdMode.RANDOM_UUID, ofType(Function1::class)) }
-    }
-
-    @Test
     fun given_whenGetDeviceId_thenDelegatedToRestConfig() {
         // Given
         val deviceId = DeviceId(DEVICE_ID, EXTERNAL_DEVICE_ID, DeviceIdMode.RANDOM_UUID)

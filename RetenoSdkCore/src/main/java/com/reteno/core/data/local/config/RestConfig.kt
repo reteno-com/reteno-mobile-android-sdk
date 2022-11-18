@@ -8,15 +8,14 @@ class RestConfig(private val deviceIdHelper: DeviceIdHelper, internal val access
         private set
 
     init {
-        setDeviceIdMode(DeviceIdMode.ANDROID_ID) {}
+        initDeviceId(DeviceIdMode.ANDROID_ID)
     }
 
-    internal fun setDeviceIdMode(deviceIdMode: DeviceIdMode, onDeviceIdChanged: (DeviceId) -> Unit) {
+    private fun initDeviceId(deviceIdMode: DeviceIdMode) {
         /*@formatter:off*/ Logger.i(TAG, "changeDeviceIdMode(): ", "deviceIdMode = [" , deviceIdMode , "]")
         /*@formatter:on*/
         deviceIdHelper.withDeviceIdMode(deviceId, deviceIdMode) {
             deviceId = it
-            onDeviceIdChanged.invoke(deviceId)
         }
     }
 

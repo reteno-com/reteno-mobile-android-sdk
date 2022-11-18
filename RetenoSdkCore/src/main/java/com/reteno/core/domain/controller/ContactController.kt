@@ -1,6 +1,5 @@
 package com.reteno.core.domain.controller
 
-import com.reteno.core.data.local.config.DeviceIdMode
 import com.reteno.core.data.repository.ConfigRepository
 import com.reteno.core.data.repository.ContactRepository
 import com.reteno.core.domain.Validator
@@ -20,18 +19,6 @@ class ContactController(
         if (oldDeviceId.externalId != id) {
             configRepository.setExternalUserId(id)
             onNewContact()
-        }
-    }
-
-    fun setDeviceIdMode(deviceIdMode: DeviceIdMode, onDeviceIdChanged: () -> Unit) {
-        /*@formatter:off*/ Logger.i(TAG, "changeDeviceIdMode(): ", "deviceIdMode = [" , deviceIdMode , "]")
-        /*@formatter:on*/
-        val oldDeviceId = configRepository.getDeviceId()
-        configRepository.setDeviceIdMode(deviceIdMode) {
-            if (oldDeviceId.id != it.id) {
-                onNewContact()
-                onDeviceIdChanged.invoke()
-            }
         }
     }
 

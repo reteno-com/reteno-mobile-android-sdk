@@ -1,19 +1,11 @@
 package com.reteno.core
 
-import com.reteno.core.data.local.config.DeviceIdMode
 import com.reteno.core.domain.model.event.Event
 import com.reteno.core.domain.model.user.User
 import com.reteno.core.lifecycle.ScreenTrackingConfig
 
 
 interface Reteno {
-
-    /**
-     * Sets the type of device ID to use. Default: [DeviceIdMode.ANDROID_ID]
-     *
-     * @see com.reteno.core.data.local.config.DeviceIdMode
-     */
-    fun setDeviceIdMode(deviceIdMode: DeviceIdMode, onDeviceIdChanged: () -> Unit)
 
     /**
      *  Set the user ID.

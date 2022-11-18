@@ -2,7 +2,6 @@ package com.reteno.core.domain.controller
 
 import com.reteno.core.base.BaseUnitTest
 import com.reteno.core.data.local.config.DeviceId
-import com.reteno.core.data.local.config.DeviceIdMode
 import com.reteno.core.data.repository.ConfigRepository
 import com.reteno.core.data.repository.ContactRepository
 import com.reteno.core.domain.model.device.Device
@@ -102,66 +101,6 @@ class ContactControllerTest : BaseUnitTest() {
         val expectedDevice =
             Device.createDevice(DEVICE_ID_ANDROID, EXTERNAL_DEVICE_ID, FCM_TOKEN_NEW)
         verify(exactly = 0) { contactRepository.saveDeviceData(eq(expectedDevice)) }
-    }
-
-    @Test
-    fun givenPushTokenNotAvailable_whenChangeDeviceIdMode_thenContactNotSent() {
-        // Given
-        every { configRepository.getFcmToken() } returns ""
-        every { configRepository.setDeviceIdMode(any(), any()) } answers {
-            val callback: (DeviceId) -> Unit = secondArg()
-            callback.invoke(DeviceId(DEVICE_ID_UUID, null, DeviceIdMode.RANDOM_UUID))
-        }
-
-        // When
-        SUT.setDeviceIdMode(DeviceIdMode.RANDOM_UUID) {}
-
-        // Then
-        verify(exactly = 0) { contactRepository.saveDeviceData(any()) }
-    }
-
-    @Test
-    fun givenPushTokenAvailable_whenChangeDeviceIdMode_thenContactSent() {
-        // Given
-        val oldDeviceId = DeviceId(DEVICE_ID_ANDROID, null, DeviceIdMode.ANDROID_ID)
-        val newDeviceId = DeviceId(DEVICE_ID_UUID, null, DeviceIdMode.RANDOM_UUID)
-
-        every { configRepository.getFcmToken() } returns FCM_TOKEN_NEW
-        every { configRepository.getDeviceId() } returns oldDeviceId
-        every { configRepository.setDeviceIdMode(any(), any()) } answers {
-            every { configRepository.getDeviceId() } returns newDeviceId
-            val callback: (DeviceId) -> Unit = secondArg()
-            callback.invoke(newDeviceId)
-        }
-
-        // When
-        SUT.setDeviceIdMode(DeviceIdMode.RANDOM_UUID) {}
-
-        // Then
-        val expectedDevice = Device.createDevice(DEVICE_ID_UUID, null, FCM_TOKEN_NEW)
-        verify(exactly = 1) { contactRepository.saveDeviceData(eq(expectedDevice)) }
-    }
-
-    @Test
-    fun givenPushTokenAvailable_whenNotChangeDeviceIdMode_thenContactSentOneTime() {
-        // Given
-        val oldDeviceId = DeviceId(DEVICE_ID_ANDROID, null, DeviceIdMode.ANDROID_ID)
-        val newDeviceId = DeviceId(DEVICE_ID_UUID, null, DeviceIdMode.ANDROID_ID)
-
-        every { configRepository.getFcmToken() } returns FCM_TOKEN_NEW
-        every { configRepository.getDeviceId() } returns oldDeviceId
-        every { configRepository.setDeviceIdMode(any(), any()) } answers {
-            every { configRepository.getDeviceId() } returns newDeviceId
-            val callback: (DeviceId) -> Unit = secondArg()
-            callback.invoke(newDeviceId)
-        }
-
-        // When
-        SUT.setDeviceIdMode(DeviceIdMode.ANDROID_ID) {}
-
-        // Then
-        val expectedDevice = Device.createDevice(DEVICE_ID_UUID, null, FCM_TOKEN_NEW)
-        verify(exactly = 1) { contactRepository.saveDeviceData(eq(expectedDevice)) }
     }
 
     @Test
