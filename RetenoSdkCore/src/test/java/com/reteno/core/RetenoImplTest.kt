@@ -2,7 +2,6 @@ package com.reteno.core
 
 import android.app.Application
 import com.reteno.core.base.BaseUnitTest
-import com.reteno.core.data.local.config.DeviceIdMode
 import com.reteno.core.di.ServiceLocator
 import com.reteno.core.domain.controller.ContactController
 import com.reteno.core.domain.controller.EventController
@@ -15,8 +14,6 @@ import com.reteno.core.lifecycle.ScreenTrackingConfig
 import com.reteno.core.lifecycle.ScreenTrackingTrigger
 import io.mockk.*
 import io.mockk.impl.annotations.RelaxedMockK
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.ZonedDateTime
 
@@ -136,38 +133,6 @@ class RetenoImplTest : BaseUnitTest() {
         val config = ScreenTrackingConfig(true, listOf(), ScreenTrackingTrigger.ON_RESUME)
         retenoImpl.autoScreenTracking(config)
         verify(exactly = 1) { retenoActivityHelper.autoScreenTracking(config) }
-    }
-
-    @Test
-    fun whenSetDeviceIdMode_thenIdHasChanged() {
-        var lambdaCalled = false
-        val deviceIdMode = DeviceIdMode.ANDROID_ID
-        val application = mockk<Application>()
-        val callback = { lambdaCalled = true }
-        every { contactController.setDeviceIdMode(any(), captureLambda()) } answers {
-            lambda<() -> Unit>().captured.invoke()
-        }
-
-        val retenoImpl = RetenoImpl(application, "")
-
-        retenoImpl.setDeviceIdMode(deviceIdMode, callback)
-        verify { contactController.setDeviceIdMode(deviceIdMode, any()) }
-        assertTrue(lambdaCalled)
-    }
-
-    @Test
-    fun whenSetDeviceIdMode_thenIdHasNotChanged() {
-        var lambdaCalled = false
-        val deviceIdMode = DeviceIdMode.ANDROID_ID
-        val application = mockk<Application>()
-        val callback = { lambdaCalled = true }
-        justRun { contactController.setDeviceIdMode(any(), captureLambda()) }
-
-        val retenoImpl = RetenoImpl(application, "")
-
-        retenoImpl.setDeviceIdMode(deviceIdMode, callback)
-        verify { contactController.setDeviceIdMode(deviceIdMode, any()) }
-        assertFalse(lambdaCalled)
     }
 
     @Test

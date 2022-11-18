@@ -1,7 +1,6 @@
 package com.reteno.core.data.repository
 
 import com.reteno.core.data.local.config.DeviceId
-import com.reteno.core.data.local.config.DeviceIdMode
 import com.reteno.core.data.local.config.RestConfig
 import com.reteno.core.data.local.sharedpref.SharedPrefsManager
 
@@ -12,10 +11,6 @@ internal class ConfigRepositoryImpl(
 
     override fun setExternalUserId(externalId: String) {
         restConfig.setExternalUserId(externalId)
-    }
-
-    override fun setDeviceIdMode(mode: DeviceIdMode, onDeviceIdChanged: (DeviceId) -> Unit) {
-        restConfig.setDeviceIdMode(mode, onDeviceIdChanged)
     }
 
     override fun getDeviceId(): DeviceId = restConfig.deviceId

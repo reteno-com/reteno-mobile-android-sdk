@@ -2,7 +2,6 @@ package com.reteno.core
 
 import android.app.Activity
 import android.app.Application
-import com.reteno.core.data.local.config.DeviceIdMode
 import com.reteno.core.di.ServiceLocator
 import com.reteno.core.domain.model.event.Event
 import com.reteno.core.domain.model.user.User
@@ -49,17 +48,6 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
         /*@formatter:on*/
         stopPushScheduler()
         // TODO: Application is not in foreground
-    }
-
-    override fun setDeviceIdMode(deviceIdMode: DeviceIdMode, onDeviceIdChanged: () -> Unit) {
-        /*@formatter:off*/ Logger.i(TAG, "changeDeviceIdMode(): ", "deviceIdMode = [" , deviceIdMode , "]")
-        /*@formatter:on*/
-        try {
-            // TODO: Move this to background thread later
-            contactController.setDeviceIdMode(deviceIdMode, onDeviceIdChanged)
-        } catch (ex: Throwable) {
-            Logger.e(TAG, "setDeviceIdMode(): ", ex)
-        }
     }
 
     override fun setUserAttributes(externalUserId: String) {
