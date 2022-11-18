@@ -21,7 +21,7 @@ sealed class Event(
     )
 
     companion object {
-        internal const val SCREEN_VIEW_EVENT_TYPE_KEY = "ScreenView"
-        internal const val SCREEN_VIEW_PARAM_NAME = "ScreenClass"
+        internal const val SCREEN_VIEW_EVENT_TYPE_KEY = "screenView"
+        internal const val SCREEN_VIEW_PARAM_NAME = "screenClass"
     }
 }
