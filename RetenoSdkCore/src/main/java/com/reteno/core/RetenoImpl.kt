@@ -2,7 +2,6 @@ package com.reteno.core
 
 import android.app.Activity
 import android.app.Application
-import com.reteno.core.appinbox.AppInbox
 import com.reteno.core.di.ServiceLocator
 import com.reteno.core.domain.model.event.Event
 import com.reteno.core.domain.model.user.User

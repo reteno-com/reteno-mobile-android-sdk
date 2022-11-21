@@ -1,20 +1,24 @@
 package com.reteno.core.data.repository
 
-import com.reteno.core.domain.callback.appinbox.AppInboxMessagesCallback
-import com.reteno.core.domain.callback.appinbox.AppInboxMessagesCountCallback
+import com.reteno.core.domain.callback.appinbox.RetenoResultCallback
+import com.reteno.core.domain.model.appinbox.AppInboxMessages
 import java.time.ZonedDateTime
 
 interface AppInboxRepository {
 
     fun saveMessageOpened(messageId: String)
-    fun saveAllMessageOpened()
+    fun setAllMessageOpened(callback: RetenoResultCallback<Unit>)
     fun getMessages(
         page: Int? = null,
         pageSize: Int? = null,
-        resultCallback: AppInboxMessagesCallback
+        resultCallback: RetenoResultCallback<AppInboxMessages>
     )
-    fun getMessagesCount(resultCallback: AppInboxMessagesCountCallback)
+    fun getMessagesCount(resultCallback: RetenoResultCallback<Int>)
     fun pushMessagesStatus()
     fun clearOldMessages(outdatedTime: ZonedDateTime)
+
+    fun subscribeOnMessagesCountChanged(callback: RetenoResultCallback<Int>)
+    fun unsubscribeMessagesCountChanged(callback: RetenoResultCallback<Int>)
+    fun unsubscribeAllMessagesCountChanged()
 
 }

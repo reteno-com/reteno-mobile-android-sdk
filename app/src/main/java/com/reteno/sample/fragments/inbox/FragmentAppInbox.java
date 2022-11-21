@@ -11,14 +11,13 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import com.reteno.core.domain.callback.appinbox.AppInboxMessagesCallback;
-import com.reteno.core.domain.callback.appinbox.AppInboxMessagesCountCallback;
-import com.reteno.core.domain.model.appinbox.AppInboxMessage;
+import com.reteno.core.domain.callback.appinbox.RetenoResultCallback;
+import com.reteno.core.domain.model.appinbox.AppInboxMessages;
 import com.reteno.sample.BaseFragment;
 import com.reteno.sample.databinding.FragmentAppInboxBinding;
 import com.reteno.sample.util.Util;
 
-import java.util.List;
+import kotlin.Unit;
 
 public class FragmentAppInbox extends BaseFragment {
 
@@ -68,7 +67,18 @@ public class FragmentAppInbox extends BaseFragment {
         });
 
         binding.btnMarkAllAsOpened.setOnClickListener(v -> {
-            getReteno().getAppInbox().markAllMessagesAsOpened();
+            getReteno().getAppInbox().markAllMessagesAsOpened(new RetenoResultCallback<Unit>() {
+                @Override
+                public void onSuccess(Unit result) {
+                    Toast.makeText(requireContext(), "Mark All Messages As Opened", Toast.LENGTH_SHORT).show();
+                }
+
+                @Override
+                public void onFailure(@Nullable Integer statusCode, @Nullable String response, @Nullable Throwable throwable) {
+                    String msg = "Error " + statusCode + " " + response + " " + throwable.getMessage();
+                    Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show();
+                }
+            });
         });
 
         binding.btnObserveCount.setOnClickListener(v -> {
@@ -80,10 +90,10 @@ public class FragmentAppInbox extends BaseFragment {
     private void loadMessage() {
         Integer page = Util.saveParseInt(Util.getTextOrNull(binding.etPage));
         Integer pageSize = Util.saveParseInt(Util.getTextOrNull(binding.etPageSize));
-        getReteno().getAppInbox().getAppInboxMessages(page, pageSize, new AppInboxMessagesCallback() {
+        getReteno().getAppInbox().getAppInboxMessages(page, pageSize, new RetenoResultCallback<AppInboxMessages>() {
             @Override
-            public void onSuccess(@NonNull List<AppInboxMessage> messages, int totalPages) {
-                adapter.submitList(messages);
+            public void onSuccess(AppInboxMessages result) {
+                adapter.submitList(result.getMessages());
             }
 
             @Override
@@ -95,9 +105,9 @@ public class FragmentAppInbox extends BaseFragment {
     }
 
     private void loadMessagesCount() {
-        getReteno().getAppInbox().getAppInboxMessagesCount(new AppInboxMessagesCountCallback() {
+        getReteno().getAppInbox().getAppInboxMessagesCount(new RetenoResultCallback<Integer>() {
             @Override
-            public void onSuccess(int count) {
+            public void onSuccess(Integer count) {
                 binding.textView.setText("AppInbox messages count: " + count);
             }
 
@@ -110,9 +120,9 @@ public class FragmentAppInbox extends BaseFragment {
     }
 
     private void observeMessageCount() {
-        getReteno().getAppInbox().observeAppInboxMessagesCount(new AppInboxMessagesCountCallback() {
+        getReteno().getAppInbox().subscribeOnMessagesCountChanged(new RetenoResultCallback<Integer>() {
             @Override
-            public void onSuccess(int count) {
+            public void onSuccess(Integer count) {
                 binding.textView.setText("AppInbox messages count: " + count);
             }
 
@@ -124,4 +134,10 @@ public class FragmentAppInbox extends BaseFragment {
         });
     }
 
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        binding.rvInboxMessages.setAdapter(null);
+        getReteno().getAppInbox().unsubscribeAllMessagesCountChanged();
+    }
 }

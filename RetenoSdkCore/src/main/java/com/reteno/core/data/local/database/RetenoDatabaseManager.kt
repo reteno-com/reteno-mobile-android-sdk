@@ -1,5 +1,6 @@
 package com.reteno.core.data.local.database
 
+import com.reteno.core.data.local.model.appinbox.AppInboxMessageDb
 import com.reteno.core.data.local.model.device.DeviceDb
 import com.reteno.core.data.local.model.event.EventsDb
 import com.reteno.core.data.local.model.interaction.InteractionDb
@@ -28,6 +29,13 @@ interface RetenoDatabaseManager {
     fun getEventsCount(): Long
     fun deleteEvents(count: Int, oldest: Boolean = true)
     fun deleteEventsByTime(outdatedTime: String): Int
+
+    fun insertAppInboxMessage(message: AppInboxMessageDb)
+    fun getAppInboxMessages(limit: Int? = null): List<AppInboxMessageDb>
+    fun getAppInboxMessagesCount(): Long
+    fun deleteAppInboxMessages(count: Int, oldest: Boolean = true)
+    fun deleteAllAppInboxMessages()
+    fun deleteAppInboxMessagesByTime(outdatedTime: String): Int
 
     fun isDatabaseEmpty(): Boolean
 }

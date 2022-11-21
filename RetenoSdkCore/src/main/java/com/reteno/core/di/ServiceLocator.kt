@@ -47,7 +47,11 @@ class ServiceLocator(context: Context, accessKey: String) {
         DeeplinkRepositoryProvider(apiClientProvider)
 
     private val appInboxRepositoryProvider: AppInboxRepositoryProvider =
-        AppInboxRepositoryProvider(apiClientProvider, databaseManagerProvider)
+        AppInboxRepositoryProvider(
+            apiClientProvider,
+            databaseManagerProvider,
+            configRepositoryProvider
+        )
 
     /** Controller **/
     val deeplinkControllerProvider: DeeplinkControllerProvider =

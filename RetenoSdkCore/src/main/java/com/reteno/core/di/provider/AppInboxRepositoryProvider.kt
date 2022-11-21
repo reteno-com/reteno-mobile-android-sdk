@@ -6,13 +6,15 @@ import com.reteno.core.di.base.ProviderWeakReference
 
 class AppInboxRepositoryProvider(
     private val apiClientProvider: ApiClientProvider,
-    private val databaseManagerProvider: DatabaseManagerProvider
+    private val databaseManagerProvider: DatabaseManagerProvider,
+    private val configRepositoryProvider: ConfigRepositoryProvider
 ) : ProviderWeakReference<AppInboxRepository>() {
 
     override fun create(): AppInboxRepository {
         return AppInboxRepositoryImpl(
             apiClientProvider.get(),
-            databaseManagerProvider.get()
+            databaseManagerProvider.get(),
+            configRepositoryProvider.get()
         )
     }
 }

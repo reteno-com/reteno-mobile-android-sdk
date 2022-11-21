@@ -1,8 +1,9 @@
 package com.reteno.core.domain.callback.appinbox
 
-interface AppInboxMessagesCountCallback {
 
-    fun onSuccess(count: Int)
+interface RetenoResultCallback<T> {
+
+    fun onSuccess(result: T)
 
     fun onFailure(statusCode: Int?, response: String?, throwable: Throwable?)
 }

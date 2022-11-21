@@ -3,6 +3,9 @@ package com.reteno.core.data.local.database
 import android.content.ContentValues
 import androidx.core.database.getLongOrNull
 import androidx.core.database.getStringOrNull
+import com.reteno.core.data.local.database.DbSchema.AppInboxSchema.COLUMN_APP_INBOX_ID
+import com.reteno.core.data.local.database.DbSchema.AppInboxSchema.COLUMN_APP_INBOX_TIME
+import com.reteno.core.data.local.database.DbSchema.AppInboxSchema.TABLE_NAME_APP_INBOX
 import com.reteno.core.data.local.database.DbSchema.COLUMN_TIMESTAMP
 import com.reteno.core.data.local.database.DbSchema.DeviceSchema.COLUMN_DEVICE_ROW_ID
 import com.reteno.core.data.local.database.DbSchema.DeviceSchema.TABLE_NAME_DEVICE
@@ -36,6 +39,7 @@ import com.reteno.core.data.local.database.DbSchema.UserSchema.COLUMN_GROUP_NAME
 import com.reteno.core.data.local.database.DbSchema.UserSchema.COLUMN_SUBSCRIPTION_KEYS
 import com.reteno.core.data.local.database.DbSchema.UserSchema.COLUMN_USER_ROW_ID
 import com.reteno.core.data.local.database.DbSchema.UserSchema.TABLE_NAME_USER
+import com.reteno.core.data.local.model.appinbox.AppInboxMessageDb
 import com.reteno.core.data.local.model.device.DeviceDb
 import com.reteno.core.data.local.model.event.EventDb
 import com.reteno.core.data.local.model.event.EventsDb
@@ -435,6 +439,78 @@ class RetenoDatabaseManagerImpl(private val database: RetenoDatabase) : RetenoDa
         )
         database.cleanUnlinkedEvents()
         return count
+    }
+
+    /** AppInbox **/
+    override fun insertAppInboxMessage(message: AppInboxMessageDb) {
+        contentValues.putAppInbox(message)
+        database.insert(table = TABLE_NAME_APP_INBOX, contentValues = contentValues)
+        contentValues.clear()
+    }
+
+    override fun getAppInboxMessages(limit: Int?): List<AppInboxMessageDb> {
+        val inboxMessage: MutableList<AppInboxMessageDb> = mutableListOf()
+
+        var cursor: Cursor? = null
+        try {
+            cursor = database.query(
+                table = TABLE_NAME_APP_INBOX,
+                columns = DbSchema.AppInboxSchema.getAllColumns(),
+                orderBy = "$COLUMN_TIMESTAMP ASC",
+                limit = limit?.toString()
+            )
+            while (cursor.moveToNext()) {
+                val timestamp = cursor.getStringOrNull(cursor.getColumnIndex(COLUMN_TIMESTAMP))
+                val inbox = cursor.getAppInbox()
+
+                if (inbox != null) {
+                    inboxMessage.add(inbox)
+                } else {
+                    val rowId =
+                        cursor.getLongOrNull(cursor.getColumnIndex(COLUMN_APP_INBOX_ID))
+                    val exception =
+                        SQLException("Unable to read data from SQL database. timeStamp=$timestamp, inboxMessage=null. rowId = $rowId")
+                    if (rowId == null) {
+                        /*@formatter:off*/ Logger.e(TAG, "getAppInboxMessages(). rowId is NULL ", exception)
+                        /*@formatter:on*/
+                    } else {
+                        database.delete(
+                            table = TABLE_NAME_APP_INBOX,
+                            whereClause = "$COLUMN_APP_INBOX_ID=?",
+                            whereArgs = arrayOf(rowId.toString())
+                        )
+                        /*@formatter:off*/ Logger.e(TAG, "getAppInboxMessages(). Removed invalid entry from database. inboxMessage=null, rowId = $rowId", exception)
+                        /*@formatter:on*/
+                    }
+                }
+            }
+        } catch (t: Throwable) {
+            handleSQLiteError("Unable to get AppInboxMessage from the table.", t)
+        } finally {
+            cursor?.close()
+        }
+        return inboxMessage
+    }
+
+    override fun getAppInboxMessagesCount(): Long = database.getRowCount(TABLE_NAME_APP_INBOX)
+
+    override fun deleteAppInboxMessages(count: Int, oldest: Boolean) {
+        val order = if (oldest) "ASC" else "DESC"
+        database.delete(
+            table = TABLE_NAME_APP_INBOX,
+            whereClause = "$COLUMN_APP_INBOX_ID in (select $COLUMN_APP_INBOX_ID from $TABLE_NAME_APP_INBOX ORDER BY $COLUMN_TIMESTAMP $order LIMIT $count)"
+        )
+    }
+
+    override fun deleteAllAppInboxMessages() {
+        database.delete(table = TABLE_NAME_APP_INBOX)
+    }
+
+    override fun deleteAppInboxMessagesByTime(outdatedTime: String): Int {
+        return database.delete(
+            table = TABLE_NAME_APP_INBOX,
+            whereClause = "$COLUMN_APP_INBOX_TIME < '$outdatedTime'"
+        )
     }
 
     override fun isDatabaseEmpty(): Boolean {

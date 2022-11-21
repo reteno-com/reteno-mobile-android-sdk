@@ -5,5 +5,5 @@ ext {
     androidBuildToolsVersion = "30.0.3"
 
     versionCode = 16
-    versionName = "1.0.0"
+    versionName = "1.2.0"
 }
