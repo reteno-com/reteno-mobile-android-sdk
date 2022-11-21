@@ -9,13 +9,14 @@ import androidx.fragment.app.FragmentActivity
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentManager.FragmentLifecycleCallbacks
 import com.reteno.core.RetenoImpl
+import com.reteno.core.domain.controller.EventController
 import com.reteno.core.util.BuildUtil
 import com.reteno.core.util.Logger
 import com.reteno.core.util.getAppName
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 
-class RetenoActivityHelper {
+class RetenoActivityHelper(private val eventController: EventController) {
 
     private val retenoLifecycleCallbacks =
         ConcurrentHashMap<String, RetenoLifecycleCallbacks>()
@@ -26,7 +27,7 @@ class RetenoActivityHelper {
     /**
      * Whether any of the activities are paused.
      */
-    var isActivityPaused = false
+    private var isActivityPaused = false
 
     // keeps current activity while app is in foreground
     private var currentActivity: Activity? = null
@@ -36,17 +37,35 @@ class RetenoActivityHelper {
 
     private val pendingActions: Queue<Runnable> = LinkedList()
 
+    private var screenTrackingConfig = ScreenTrackingConfig(true)
+
     private val fragmentLifecycleCallbacks = object : FragmentLifecycleCallbacks() {
-        override fun onFragmentResumed(fragmentManager: FragmentManager, fragment: Fragment) {
-            super.onFragmentResumed(fragmentManager, fragment)
-            /*@formatter:off*/ Logger.i(TAG, "onFragmentResumed(): ", "fragment = [" , fragment , "], fragmentManager = [" , fragmentManager , "]")
-            /*@formatter:on*/
+        override fun onFragmentStarted(fragmentManager: FragmentManager, fragment: Fragment) {
+            super.onFragmentStarted(fragmentManager, fragment)
+            val fragmentName = fragment::class.java.simpleName
+
+            if (screenTrackingConfig.trigger == ScreenTrackingTrigger.ON_START
+                && screenTrackingConfig.enable
+                && !screenTrackingConfig.excludeScreens.contains(fragmentName)
+            ) {
+                /*@formatter:off*/ Logger.i(TAG, "onFragmentStarted(): ", "trackScreen $fragmentName")
+                /*@formatter:on*/
+                eventController.trackScreenViewEvent(fragmentName)
+            }
         }
 
-        override fun onFragmentPaused(fragmentManager: FragmentManager, fragment: Fragment) {
-            super.onFragmentPaused(fragmentManager, fragment)
-            /*@formatter:off*/ Logger.i(TAG, "onFragmentPaused(): ", "fragment = [" , fragment , "], fragmentManager = [" , fragmentManager , "]")
-            /*@formatter:on*/
+        override fun onFragmentResumed(fragmentManager: FragmentManager, fragment: Fragment) {
+            super.onFragmentResumed(fragmentManager, fragment)
+            val fragmentName = fragment::class.java.simpleName
+
+            if (screenTrackingConfig.trigger == ScreenTrackingTrigger.ON_RESUME
+                && screenTrackingConfig.enable
+                && !screenTrackingConfig.excludeScreens.contains(fragmentName)
+            ) {
+                /*@formatter:off*/ Logger.i(TAG, "onFragmentResumed(): ", "trackScreen $fragmentName")
+                /*@formatter:on*/
+                eventController.trackScreenViewEvent(fragmentName)
+            }
         }
     }
 
@@ -65,7 +84,11 @@ class RetenoActivityHelper {
         }
     }
 
-    fun registerActivityLifecycleCallbacks(
+    fun autoScreenTracking(config: ScreenTrackingConfig) {
+        screenTrackingConfig = config
+    }
+
+    private fun registerActivityLifecycleCallbacks(
         key: String,
         callbacks: RetenoLifecycleCallbacks
     ) {
@@ -159,10 +182,9 @@ class RetenoActivityHelper {
     /**
      * Checks whether activity is in foreground.
      */
-    internal fun canPresentMessages(): Boolean {
-        return (currentActivity != null && !currentActivity!!.isFinishing
-                && !isActivityPaused)
-    }
+    internal fun canPresentMessages(): Boolean =
+        currentActivity != null && !currentActivity!!.isFinishing && !isActivityPaused
+
 
     /**
      * Runs any pending actions that have been queued.

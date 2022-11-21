@@ -7,7 +7,8 @@ import android.os.Bundle
 import com.reteno.core.RetenoApplication
 import com.reteno.core.RetenoImpl
 import com.reteno.core.domain.controller.InteractionController
-import com.reteno.core.model.interaction.InteractionStatus
+import com.reteno.core.domain.controller.ScheduleController
+import com.reteno.core.domain.model.interaction.InteractionStatus
 import com.reteno.push.Constants
 import com.reteno.push.Constants.KEY_ES_LINK_UNWRAPPED
 import com.reteno.push.Constants.KEY_ES_LINK_WRAPPED
@@ -140,8 +141,10 @@ class RetenoNotificationClickedReceiverTest : BaseRobolectricTest() {
         val application = mockk<Application>(moreInterfaces = arrayOf(RetenoApplication::class))
         val reteno = mockk<RetenoImpl>()
         val interactionController = mockk<InteractionController>()
+        val scheduleController = mockk<ScheduleController>(relaxed = true)
 
         every { reteno.serviceLocator.interactionControllerProvider.get() } returns interactionController
+        every { reteno.serviceLocator.scheduleControllerProvider.get() } returns scheduleController
         every { (application as RetenoApplication).getRetenoInstance() } returns reteno
         every { RetenoImpl.application } returns application
         justRun { interactionController.onInteraction(any(), any()) }

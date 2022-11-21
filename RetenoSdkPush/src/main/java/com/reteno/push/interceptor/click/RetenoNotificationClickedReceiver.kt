@@ -5,7 +5,7 @@ import android.content.Context
 import android.content.Intent
 import com.reteno.core.RetenoApplication
 import com.reteno.core.RetenoImpl
-import com.reteno.core.model.interaction.InteractionStatus
+import com.reteno.core.domain.model.interaction.InteractionStatus
 import com.reteno.core.util.Logger
 import com.reteno.core.util.toStringVerbose
 import com.reteno.push.Constants
@@ -31,6 +31,10 @@ class RetenoNotificationClickedReceiver : BroadcastReceiver() {
         reteno.serviceLocator.deeplinkControllerProvider.get()
     }
 
+    private val scheduleController by lazy {
+        reteno.serviceLocator.scheduleControllerProvider.get()
+    }
+
     override fun onReceive(context: Context, intent: Intent?) {
         /*@formatter:off*/ Logger.i(TAG, "onReceive(): ", "notification clicked. Context = [" , context , "], intent.extras = [" , intent?.extras.toStringVerbose() , "]")
         /*@formatter:on*/
@@ -41,6 +45,7 @@ class RetenoNotificationClickedReceiver : BroadcastReceiver() {
     private fun sendInteractionStatus(intent: Intent?) {
         intent?.extras?.getString(Constants.KEY_ES_INTERACTION_ID)?.let { interactionId ->
             interactionController.onInteraction(interactionId, InteractionStatus.OPENED)
+            scheduleController.forcePush()
         }
     }
 

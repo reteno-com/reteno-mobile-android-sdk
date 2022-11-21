@@ -1,8 +1,11 @@
 package com.reteno.core.data.repository
 
-import com.reteno.core.domain.ResponseCallback
-import com.reteno.core.model.interaction.Interaction
+import com.reteno.core.domain.model.interaction.Interaction
+import java.time.ZonedDateTime
 
 interface InteractionRepository {
-    fun sendInteraction(interactionId: String, interaction: Interaction, responseHandler: ResponseCallback)
+
+    fun saveInteraction(interactionId: String, interaction: Interaction)
+    fun pushInteractions()
+    fun clearOldInteractions(outdatedTime: ZonedDateTime)
 }

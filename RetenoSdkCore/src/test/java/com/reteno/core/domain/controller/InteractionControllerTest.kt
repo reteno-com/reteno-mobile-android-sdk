@@ -3,19 +3,16 @@ package com.reteno.core.domain.controller
 import com.reteno.core.base.BaseUnitTest
 import com.reteno.core.data.repository.ConfigRepository
 import com.reteno.core.data.repository.InteractionRepository
-import com.reteno.core.model.interaction.Interaction
-import com.reteno.core.model.interaction.InteractionStatus
+import com.reteno.core.domain.model.interaction.Interaction
+import com.reteno.core.domain.model.interaction.InteractionStatus
 import com.reteno.core.util.Util
-import io.mockk.every
+import io.mockk.*
 import io.mockk.impl.annotations.MockK
 import io.mockk.impl.annotations.RelaxedMockK
-import io.mockk.mockkStatic
-import io.mockk.unmockkStatic
-import io.mockk.verify
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
-
+import java.time.ZonedDateTime
 
 class InteractionControllerTest : BaseUnitTest() {
 
@@ -34,9 +31,9 @@ class InteractionControllerTest : BaseUnitTest() {
 
     @RelaxedMockK
     private lateinit var interactionsRepository: InteractionRepository
-    // endregion helper fields ---------------------------------------------------------------------
 
     private lateinit var SUT: InteractionController
+    // endregion helper fields ---------------------------------------------------------------------
 
     @Before
     override fun before() {
@@ -65,10 +62,9 @@ class InteractionControllerTest : BaseUnitTest() {
         // Then
         val expectedInteraction = Interaction(InteractionStatus.DELIVERED, CURRENT_TIMESTAMP, TOKEN)
         verify(exactly = 1) {
-            interactionsRepository.sendInteraction(
+            interactionsRepository.saveInteraction(
                 eq(INTERACTION_ID),
-                eq(expectedInteraction),
-                any()
+                eq(expectedInteraction)
             )
         }
     }
@@ -84,10 +80,9 @@ class InteractionControllerTest : BaseUnitTest() {
         // Then
         val expectedInteraction = Interaction(InteractionStatus.OPENED, CURRENT_TIMESTAMP, TOKEN)
         verify(exactly = 1) {
-            interactionsRepository.sendInteraction(
+            interactionsRepository.saveInteraction(
                 eq(INTERACTION_ID),
-                eq(expectedInteraction),
-                any()
+                eq(expectedInteraction)
             )
         }
     }
@@ -101,6 +96,53 @@ class InteractionControllerTest : BaseUnitTest() {
         SUT.onInteraction(INTERACTION_ID, InteractionStatus.DELIVERED)
 
         // Then
-        verify(exactly = 0) { interactionsRepository.sendInteraction(any(), any(), any()) }
+        verify(exactly = 0) { interactionsRepository.saveInteraction(any(), any()) }
     }
+
+    @Test
+    fun whenPushInteraction_thenRepositoryInteractionPushCalled() {
+        SUT.pushInteractions()
+        verify(exactly = 1) { interactionsRepository.pushInteractions() }
+    }
+
+    @Test
+    fun whenClearOldInteractions_thenRepositoryInteractionPushCalled() {
+        mockkStatic(ZonedDateTime::class)
+        mockkObject(Util)
+        val mockData = mockk<ZonedDateTime>()
+        val mockOutDatedData = mockk<ZonedDateTime>()
+        every { Util.isDebugView() } returns false
+        every { ZonedDateTime.now() } returns mockData
+        every { mockData.minusHours(any()) } returns mockOutDatedData
+
+        SUT.clearOldInteractions()
+
+        verify(exactly = 1) { interactionsRepository.clearOldInteractions(mockOutDatedData) }
+        verify(exactly = 1) { ZonedDateTime.now() }
+        verify(exactly = 1) { mockData.minusHours(24) }
+
+        unmockkStatic(ZonedDateTime::class)
+        unmockkObject(Util)
+    }
+
+    @Test
+    fun givenDebugMode_whenClearOldInteractions_thenRepositoryInteractionPushCalled() {
+        mockkStatic(ZonedDateTime::class)
+        mockkObject(Util)
+        val mockData = mockk<ZonedDateTime>()
+        val mockOutDatedData = mockk<ZonedDateTime>()
+        every { Util.isDebugView() } returns true
+        every { ZonedDateTime.now() } returns mockData
+        every { mockData.minusHours(any()) } returns mockOutDatedData
+
+        SUT.clearOldInteractions()
+
+        verify(exactly = 1) { interactionsRepository.clearOldInteractions(mockOutDatedData) }
+        verify(exactly = 1) { ZonedDateTime.now() }
+        verify(exactly = 1) { mockData.minusHours(1) }
+
+        unmockkStatic(ZonedDateTime::class)
+        unmockkObject(Util)
+    }
+
 }

@@ -4,8 +4,6 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -20,8 +18,6 @@ import com.reteno.sample.databinding.FragmentDeviceIdBinding;
 import com.reteno.sample.util.AppSharedPreferencesManager;
 
 import java.lang.reflect.Field;
-
-import kotlin.Unit;
 
 public class FragmentDeviceId extends BaseFragment {
 
@@ -60,32 +56,10 @@ public class FragmentDeviceId extends BaseFragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        setupSpinner(view);
         initExternalDeviceId(view);
         initListeners(view);
 
         refreshUi();
-    }
-
-    private void setupSpinner(@NonNull View view) {
-        binding.spModesSelection.setAdapter(new ArrayAdapter<>(view.getContext(), android.R.layout.simple_spinner_item, DeviceIdMode.values()));
-        binding.spModesSelection.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                DeviceIdMode mode = DeviceIdMode.values()[position];
-                getReteno().setDeviceIdMode(mode, () -> {
-                    refreshUi();
-                    return Unit.INSTANCE;
-                });
-                AppSharedPreferencesManager.saveDeviceIdMode(getContext(), mode);
-                refreshUi();
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-                binding.tvCurrentDeviceIdMode.setText("NOTHING SELECTED!!! ERROR!");
-            }
-        });
     }
 
     private void initExternalDeviceId(@NonNull View view) {
@@ -118,7 +92,6 @@ public class FragmentDeviceId extends BaseFragment {
         DeviceIdMode mode = DeviceIdInternal.INSTANCE.getModeInternal(configRepository.getDeviceId());
         binding.tvCurrentDeviceIdMode.setText(mode.toString());
         binding.tvCurrentDeviceId.setText(id);
-        binding.spModesSelection.setSelection(mode.ordinal());
         binding.tvExternalId.setText(externalId);
         binding.etFcmToken.setText(configRepository.getFcmToken());
     }

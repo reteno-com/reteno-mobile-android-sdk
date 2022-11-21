@@ -4,12 +4,6 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
-import com.reteno.core.data.remote.OperationQueue
-import com.reteno.core.data.remote.api.ApiContract
-import com.reteno.core.data.remote.api.HttpMethod
-import com.reteno.core.data.remote.api.RetenoRestClient
-import com.reteno.core.domain.ResponseCallback
-import com.reteno.core.util.Logger
 import com.reteno.core.util.getResolveInfoList
 import com.reteno.push.Constants
 

@@ -2,11 +2,11 @@ package com.reteno.core.domain.controller
 
 import com.reteno.core.data.repository.ConfigRepository
 import com.reteno.core.data.repository.InteractionRepository
-import com.reteno.core.domain.ResponseCallback
-import com.reteno.core.model.interaction.Interaction
-import com.reteno.core.model.interaction.InteractionStatus
+import com.reteno.core.domain.model.interaction.Interaction
+import com.reteno.core.domain.model.interaction.InteractionStatus
 import com.reteno.core.util.Logger
 import com.reteno.core.util.Util
+import java.time.ZonedDateTime
 
 class InteractionController(private val configRepository: ConfigRepository, private val interactionRepository: InteractionRepository) {
 
@@ -21,26 +21,34 @@ class InteractionController(private val configRepository: ConfigRepository, priv
         val interaction = Interaction(status, timeStamp, fcmToken)
         /*@formatter:off*/ Logger.i(TAG, "onInteraction(): ", "interactionId = [" , interactionId , "], interaction = [" , interaction.toString() , "]")
         /*@formatter:on*/
-        sendInteraction(interactionId, interaction)
+        saveInteraction(interactionId, interaction)
     }
 
-    private fun sendInteraction(interactionId: String, interaction: Interaction) {
-        interactionRepository.sendInteraction(interactionId, interaction, object :
-            ResponseCallback {
-            override fun onSuccess(response: String) {
-                /*@formatter:off*/ Logger.i(ContactController.TAG, "onSuccess(): ", "response = [" , response , "]")
-                /*@formatter:on*/
-            }
+    fun pushInteractions() {
+        /*@formatter:off*/ Logger.i(TAG, "pushInteractions(): ", "")
+        /*@formatter:on*/
+        interactionRepository.pushInteractions()
+    }
 
-            override fun onFailure(statusCode: Int?, response: String?, throwable: Throwable?) {
-                /*@formatter:off*/ Logger.i(ContactController.TAG, "onFailure(): ", "statusCode = [" , statusCode , "], response = [" , response , "], throwable = [" , throwable , "]")
-                /*@formatter:on*/
-            }
+    private fun saveInteraction(interactionId: String, interaction: Interaction) {
+        interactionRepository.saveInteraction(interactionId, interaction)
+    }
 
-        })
+    fun clearOldInteractions() {
+        /*@formatter:off*/ Logger.i(TAG, "clearOldInteractions(): ", "")
+        /*@formatter:on*/
+        val keepDataHours = if (Util.isDebugView()) {
+            KEEP_INTERACTION_HOURS_DEBUG
+        } else {
+            KEEP_INTERACTION_HOURS
+        }
+        val outdatedTime = ZonedDateTime.now().minusHours(keepDataHours)
+        interactionRepository.clearOldInteractions(outdatedTime)
     }
 
     companion object {
-        val TAG: String = InteractionController::class.java.simpleName
+        private val TAG: String = InteractionController::class.java.simpleName
+        private const val KEEP_INTERACTION_HOURS = 24L
+        private const val KEEP_INTERACTION_HOURS_DEBUG = 1L
     }
 }

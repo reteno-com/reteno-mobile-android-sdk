@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="shapeable_circle">
+        <item name="cornerSize">50%</item>
+    </style>
+</resources>

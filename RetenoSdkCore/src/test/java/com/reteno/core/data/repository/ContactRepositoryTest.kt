@@ -1,180 +1,348 @@
 package com.reteno.core.data.repository
 
-import com.reteno.core.base.BaseUnitTest
+import com.reteno.core.base.robolectric.BaseRobolectricTest
 import com.reteno.core.data.local.config.DeviceId
-import com.reteno.core.data.local.config.RestConfig
+import com.reteno.core.data.local.database.RetenoDatabaseManager
+import com.reteno.core.data.local.mappers.toDb
+import com.reteno.core.data.local.model.device.DeviceCategoryDb
+import com.reteno.core.data.local.model.device.DeviceDb
+import com.reteno.core.data.local.model.device.DeviceOsDb
+import com.reteno.core.data.local.model.user.UserDb
+import com.reteno.core.data.remote.PushOperationQueue
 import com.reteno.core.data.remote.api.ApiClient
 import com.reteno.core.data.remote.api.ApiContract
-import com.reteno.core.data.remote.mapper.toRemote
+import com.reteno.core.data.remote.mapper.toJson
 import com.reteno.core.domain.ResponseCallback
-import com.reteno.core.model.device.Device
-import com.reteno.core.model.device.DeviceCategory
-import com.reteno.core.model.device.DeviceOS
-import com.reteno.core.model.user.Address
-import com.reteno.core.model.user.User
-import com.reteno.core.model.user.UserAttributes
-import com.reteno.core.model.user.UserCustomField
+import com.reteno.core.domain.model.device.Device
+import com.reteno.core.domain.model.device.DeviceCategory
+import com.reteno.core.domain.model.device.DeviceOS
+import com.reteno.core.domain.model.user.Address
+import com.reteno.core.domain.model.user.User
+import com.reteno.core.domain.model.user.UserAttributes
+import com.reteno.core.domain.model.user.UserCustomField
 import io.mockk.*
 import io.mockk.impl.annotations.RelaxedMockK
-import org.junit.Assert
 import org.junit.Test
 
-
-class ContactRepositoryTest : BaseUnitTest() {
+class ContactRepositoryTest : BaseRobolectricTest() {
 
     // region constants ----------------------------------------------------------------------------
     companion object {
         private const val DEVICE_ID = "device_ID"
         private const val EXTERNAL_DEVICE_ID = "External_device_ID"
         private const val FCM_TOKEN_NEW = "FCM_Token"
+        private val CATEGORY = DeviceCategory.MOBILE
+        private val OS_TYPE = DeviceOS.ANDROID
 
-        private val EXPECTED_API_CONTRACT_URL = ApiContract.MobileApi.Device.url
-        private const val EXPECTED_URL = "https://mobile-api.reteno.com/api/v1/device"
+        private const val USER_ATTRS_PHONE = "+380990009900"
+        private const val USER_ATTRS_EMAIL = "email@gmail.com"
+        private const val USER_ATTRS_FIRST_NAME = "John"
+        private const val USER_ATTRS_LAST_NAME = "Doe"
+        private const val USER_ATTRS_LANGUAGE_CODE = "ua"
+        private const val USER_ATTRS_TIMEZONE = "Kyiv"
+        private const val USER_ATTRS_FIELD_KEY_1 = "key1"
+        private const val USER_ATTRS_FIELD_VALUE_1 = "value1"
+        private const val USER_ATTRS_FIELD_KEY_2 = "key2"
+        private const val USER_ATTRS_FIELD_VALUE_2 = "value2"
+        private const val USER_ATTRS_ADDRESS_REGION = "UA"
+        private const val USER_ATTRS_ADDRESS_TOWN = "Dnipro"
+        private const val USER_ATTRS_ADDRESS_ADDRESS = "Street, 7"
+        private const val USER_ATTRS_ADDRESS_POSTCODE = "45000"
+        private val USER_SUBSCRIPTION_KEYS = listOf("key1", "key2")
+        private val USER_GROUP_NAMES_INCLUDE = listOf("add1")
+        private val USER_GROUP_NAMES_EXCLUDE = listOf("remove1")
     }
     // endregion constants -------------------------------------------------------------------------
-
 
     // region helper fields ------------------------------------------------------------------------
     @RelaxedMockK
     private lateinit var apiClient: ApiClient
     @RelaxedMockK
-    private lateinit var restConfig: RestConfig
-    // endregion helper fields ---------------------------------------------------------------------
+    private lateinit var configRepository: ConfigRepository
+    @RelaxedMockK
+    private lateinit var retenoDatabaseManager: RetenoDatabaseManager
 
     private lateinit var SUT: ContactRepositoryImpl
-
+    // endregion helper fields ---------------------------------------------------------------------
 
     override fun before() {
         super.before()
-        SUT = ContactRepositoryImpl(apiClient, restConfig)
+        mockkObject(PushOperationQueue)
+        SUT = ContactRepositoryImpl(apiClient, configRepository, retenoDatabaseManager)
+    }
+
+    override fun after() {
+        super.after()
+        unmockkObject(PushOperationQueue)
     }
 
     @Test
-    fun sendDeviceProperties() {
+    fun whenSaveDeviceData_thenInsertDbAndPush() {
         // Given
-        val device = Device(
-            DEVICE_ID,
-            EXTERNAL_DEVICE_ID,
-            FCM_TOKEN_NEW,
-            DeviceCategory.MOBILE,
-            DeviceOS.ANDROID,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
+        val device = getDevice()
+        val deviceDb = getDeviceDb()
+        every { retenoDatabaseManager.getDevices(any()) } returnsMany listOf(
+            listOf(deviceDb),
+            emptyList()
         )
-        val expectedDeviceJson =
-            "{\"deviceId\":\"device_ID\",\"externalUserId\":\"External_device_ID\",\"pushToken\":\"FCM_Token\",\"category\":\"MOBILE\",\"osType\":\"ANDROID\"}"
-
-        val apiContractCaptured = slot<ApiContract>()
-        val jsonBodyCaptured = slot<String>()
-        every {
-            apiClient.post(
-                url = capture(apiContractCaptured),
-                jsonBody = capture(jsonBodyCaptured),
-                responseHandler = any()
-            )
-        } just runs
 
         // When
-        SUT.sendDeviceProperties(device, object : ResponseCallback {
-            override fun onSuccess(response: String) {}
-            override fun onFailure(statusCode: Int?, response: String?, throwable: Throwable?) {}
-        })
+        SUT.saveDeviceData(device)
 
         // Then
         verify(exactly = 1) { apiClient.post(any(), any(), any()) }
-
-        Assert.assertEquals(EXPECTED_API_CONTRACT_URL, EXPECTED_URL)
-        Assert.assertEquals(EXPECTED_API_CONTRACT_URL, apiContractCaptured.captured.url)
-        Assert.assertEquals(expectedDeviceJson, jsonBodyCaptured.captured)
+        verify { retenoDatabaseManager.insertDevice(deviceDb) }
     }
 
     @Test
-    fun whenSendUsedData_thenCallUserToRemoteMapper() {
-        val user = User(
-            userAttributes = UserAttributes(
-                phone = "123",
-                email = "email@gmail.com",
-                firstName = null,
-                lastName = null,
-                languageCode = null,
-                timeZone = null,
-                address = null,
-                fields = listOf()
-            ),
-            subscriptionKeys = listOf(),
-            groupNamesInclude = listOf(),
-            groupNamesExclude = listOf()
-        )
-
-        mockkStatic(User::toRemote)
-        val deviceId = DeviceId(DEVICE_ID, EXTERNAL_DEVICE_ID)
-        every { restConfig.deviceId } returns deviceId
-
-        SUT.sendUserData(user, object : ResponseCallback {
-            override fun onSuccess(response: String) {}
-            override fun onFailure(statusCode: Int?, response: String?, throwable: Throwable?) {}
-        })
-
-        verify { user.toRemote(deviceId) }
-
-        unmockkStatic(User::toRemote)
-    }
-
-    @Test
-    fun sendUserData() {
+    fun whenDbHasSavedDeviceData_thenSendToApi() {
         // Given
-        val user = User(
-            userAttributes = UserAttributes(
-                phone = "380999360360",
-                email = "email@gmail.com",
-                firstName = "John",
-                lastName = "Doe",
-                languageCode = "ua",
-                timeZone = "Kyiv",
-                address = Address(
-                    region = "UA",
-                    town = "Dnipro",
-                    address = "Street, 7",
-                    postcode = "45000"
-                ),
-                fields = listOf(
-                    UserCustomField("key1", "value"),
-                    UserCustomField("key2", "true")
-                )
-            ),
-            subscriptionKeys = listOf("key1, key2"),
-            groupNamesInclude = listOf("add1"),
-            groupNamesExclude = listOf("remove1")
+        val device = getDeviceDb()
+        val expectedDeviceJson =
+            "{\"deviceId\":\"${DEVICE_ID}\",\"externalUserId\":\"${EXTERNAL_DEVICE_ID}\",\"pushToken\":\"${FCM_TOKEN_NEW}\",\"category\":\"${CATEGORY}\",\"osType\":\"${OS_TYPE}\"}"
+
+        every { retenoDatabaseManager.getDevices(any()) } returnsMany listOf(
+            listOf(device),
+            emptyList()
         )
 
-        val expectedUserJson = "{\"deviceId\":\"device_ID\",\"externalUserId\":\"External_device_ID\",\"userAttributes\":{\"phone\":\"380999360360\",\"email\":\"email@gmail.com\",\"firstName\":\"John\",\"lastName\":\"Doe\",\"languageCode\":\"ua\",\"timeZone\":\"Kyiv\",\"address\":{\"region\":\"UA\",\"town\":\"Dnipro\",\"address\":\"Street, 7\",\"postcode\":\"45000\"},\"fields\":[{\"key\":\"key1\",\"value\":\"value\"},{\"key\":\"key2\",\"value\":\"true\"}]},\"subscriptionKeys\":[\"key1, key2\"],\"groupNamesInclude\":[\"add1\"],\"groupNamesExclude\":[\"remove1\"]}"
+        // When
+        SUT.pushDeviceData()
 
-        every { restConfig.deviceId } returns DeviceId(DEVICE_ID, EXTERNAL_DEVICE_ID)
+        // Then
+        verify(exactly = 1) { apiClient.post(eq(ApiContract.MobileApi.Device), eq(expectedDeviceJson), any()) }
+    }
 
-        val apiContractCaptured = slot<ApiContract>()
-        val jsonBodyCaptured = slot<String>()
-        justRun {
-            apiClient.post(
-                url = capture(apiContractCaptured),
-                jsonBody = capture(jsonBodyCaptured),
-                responseHandler = any()
-            )
+    @Test
+    fun whenDevicePushSuccessful_thenTryPushNextDevice() {
+        val deviceDataDb = mockk<DeviceDb>(relaxed = true)
+        every { retenoDatabaseManager.getDevices(any()) } returnsMany listOf(listOf(deviceDataDb), listOf(deviceDataDb), emptyList())
+        every { apiClient.post(url = any(), jsonBody = any(), responseHandler = any()) } answers {
+            val callback = thirdArg<ResponseCallback>()
+            callback.onSuccess("")
         }
 
+        SUT.pushDeviceData()
+
+        verify(exactly = 2) { apiClient.post(any(), any(), any()) }
+        verify(exactly = 2) { retenoDatabaseManager.deleteDevices(1) }
+        verify(exactly = 1) { PushOperationQueue.nextOperation() }
+    }
+
+    @Test
+    fun whenDevicePushFailedAndErrorIsRepeatable_cancelPushOperations() {
+        val deviceDataDb = mockk<DeviceDb>(relaxed = true)
+        every { retenoDatabaseManager.getDevices(any()) } returns listOf(deviceDataDb)
+        every { apiClient.post(url = any(), jsonBody = any(), responseHandler = any()) } answers {
+            val callback = thirdArg<ResponseCallback>()
+            callback.onFailure(500, null, null)
+        }
+
+        SUT.pushDeviceData()
+
+        verify(exactly = 1) { apiClient.post(any(), any(), any()) }
+        verify(exactly = 1) { PushOperationQueue.removeAllOperations() }
+    }
+
+    @Test
+    fun whenDevicePushFailedAndErrorIsNonRepeatable_thenTryPushNextDevice() {
+        val deviceDataDb = mockk<DeviceDb>(relaxed = true)
+        every { retenoDatabaseManager.getDevices(any()) } returnsMany listOf(listOf(deviceDataDb), listOf(deviceDataDb), emptyList())
+        every { apiClient.post(url = any(), jsonBody = any(), responseHandler = any()) } answers {
+            val callback = thirdArg<ResponseCallback>()
+            callback.onFailure(400, null, null)
+        }
+
+        SUT.pushDeviceData()
+
+        verify(exactly = 2) { apiClient.post(any(), any(), any()) }
+        verify(exactly = 3) { retenoDatabaseManager.getDevices(1) }
+        verify(exactly = 2) { retenoDatabaseManager.deleteDevices(1) }
+        verify(exactly = 1) { PushOperationQueue.nextOperation() }
+    }
+
+    @Test
+    fun givenNoDeviceInDb_whenDevicePush_thenApiClientPutsDoesNotCalled() {
+        // Given
+        every { retenoDatabaseManager.getDevices(any()) } returns emptyList()
+
         // When
-        SUT.sendUserData(user, object : ResponseCallback {
-            override fun onSuccess(response: String) {}
-            override fun onFailure(statusCode: Int?, response: String?, throwable: Throwable?) {}
-        })
+        SUT.pushDeviceData()
+
+        // Then
+        verify(exactly = 0) { apiClient.post(any(), any(), any()) }
+        verify { PushOperationQueue.nextOperation() }
+
+    }
+
+    @Test
+    fun whenSendUsedData_thenCallUserToDbMapper() {
+        val user = getUser()
+
+        mockkStatic(User::toDb)
+        val deviceId = DeviceId(DEVICE_ID, EXTERNAL_DEVICE_ID)
+        every { configRepository.getDeviceId() } returns deviceId
+
+        SUT.saveUserData(user)
+
+        verify { user.toDb(deviceId) }
+
+        unmockkStatic(User::toDb)
+    }
+
+    @Test
+    fun whenSaveUserAttributes_thenInsertDbAndPush() {
+        // Given
+        val user = getUser()
+        every { configRepository.getDeviceId() } returns mockk(relaxed = true)
+        val userDb = user.toDb(mockk(relaxed = true))
+        every { retenoDatabaseManager.getUser(any()) } returnsMany listOf(
+            listOf(userDb),
+            emptyList()
+        )
+
+        // When
+        SUT.saveUserData(user)
 
         // Then
         verify(exactly = 1) { apiClient.post(any(), any(), any()) }
-
-        Assert.assertEquals(ApiContract.MobileApi.User.url, apiContractCaptured.captured.url)
-        Assert.assertEquals(expectedUserJson, jsonBodyCaptured.captured)
+        verify { retenoDatabaseManager.insertUser(userDb) }
     }
+
+    @Test
+    fun whenDbHasSavedUser_thenSendToApi() {
+        // Given
+        val expectedUserJson =
+            "{\"deviceId\":\"${DEVICE_ID}\",\"externalUserId\":\"${EXTERNAL_DEVICE_ID}\",\"userAttributes\":{\"phone\":\"${USER_ATTRS_PHONE}\",\"email\":\"${USER_ATTRS_EMAIL}\",\"firstName\":\"${USER_ATTRS_FIRST_NAME}\",\"lastName\":\"${USER_ATTRS_LAST_NAME}\",\"languageCode\":\"${USER_ATTRS_LANGUAGE_CODE}\",\"timeZone\":\"${USER_ATTRS_TIMEZONE}\",\"address\":{\"region\":\"${USER_ATTRS_ADDRESS_REGION}\",\"town\":\"${USER_ATTRS_ADDRESS_TOWN}\",\"address\":\"${USER_ATTRS_ADDRESS_ADDRESS}\",\"postcode\":\"${USER_ATTRS_ADDRESS_POSTCODE}\"},\"fields\":[{\"key\":\"${USER_ATTRS_FIELD_KEY_1}\",\"value\":\"${USER_ATTRS_FIELD_VALUE_1}\"},{\"key\":\"${USER_ATTRS_FIELD_KEY_2}\",\"value\":\"${USER_ATTRS_FIELD_VALUE_2}\"}]},\"subscriptionKeys\":${USER_SUBSCRIPTION_KEYS.toJson()},\"groupNamesInclude\":${USER_GROUP_NAMES_INCLUDE.toJson()},\"groupNamesExclude\":${USER_GROUP_NAMES_EXCLUDE.toJson()}}"
+        val deviceId = DeviceId(DEVICE_ID, EXTERNAL_DEVICE_ID)
+        every { configRepository.getDeviceId() } returns deviceId
+        val userDb = getUser().toDb(deviceId)
+        every { configRepository.getDeviceId() } returns DeviceId(DEVICE_ID, EXTERNAL_DEVICE_ID)
+        every { retenoDatabaseManager.getUser(any()) } returnsMany listOf(
+            listOf(userDb),
+            emptyList()
+        )
+
+        // When
+        SUT.pushUserData()
+
+        // Then
+        verify(exactly = 1) { apiClient.post(eq(ApiContract.MobileApi.User), eq(expectedUserJson), any()) }
+    }
+
+    @Test
+    fun whenUserPushSuccessful_thenTryPushNextUser() {
+        val userData = mockk<UserDb>(relaxed = true)
+        every { retenoDatabaseManager.getUser(any()) } returnsMany listOf(listOf(userData), listOf(userData), emptyList())
+        every { apiClient.post(url = any(), jsonBody = any(), responseHandler = any()) } answers {
+            val callback = thirdArg<ResponseCallback>()
+            callback.onSuccess("")
+        }
+
+        SUT.pushUserData()
+
+        verify(exactly = 2) { apiClient.post(any(), any(), any()) }
+        verify(exactly = 2) { retenoDatabaseManager.deleteUsers(1) }
+        verify(exactly = 1) { PushOperationQueue.nextOperation() }
+    }
+
+    @Test
+    fun whenUserPushFailedAndErrorIsRepeatable_cancelPushOperations() {
+        val userData = mockk<UserDb>(relaxed = true)
+        every { retenoDatabaseManager.getUser(any()) } returns listOf(userData)
+        every { apiClient.post(url = any(), jsonBody = any(), responseHandler = any()) } answers {
+            val callback = thirdArg<ResponseCallback>()
+            callback.onFailure(500, null, null)
+        }
+
+        SUT.pushUserData()
+
+        verify(exactly = 1) { apiClient.post(any(), any(), any()) }
+        verify(exactly = 1) { PushOperationQueue.removeAllOperations() }
+    }
+
+    @Test
+    fun whenUserPushFailedAndErrorIsNonRepeatable_thenTryPushNextUser() {
+        val userData = mockk<UserDb>(relaxed = true)
+        every { retenoDatabaseManager.getUser(any()) } returnsMany listOf(listOf(userData), listOf(userData), emptyList())
+        every { apiClient.post(url = any(), jsonBody = any(), responseHandler = any()) } answers {
+            val callback = thirdArg<ResponseCallback>()
+            callback.onFailure(400, null, null)
+        }
+
+        SUT.pushUserData()
+
+        verify(exactly = 2) { apiClient.post(any(), any(), any()) }
+        verify(exactly = 3) { retenoDatabaseManager.getUser(1) }
+        verify(exactly = 2) { retenoDatabaseManager.deleteUsers(1) }
+        verify(exactly = 1) { PushOperationQueue.nextOperation() }
+    }
+
+    @Test
+    fun givenNoUserInDb_whenUserPush_thenApiClientPutsDoesNotCalled() {
+        // Given
+        every { retenoDatabaseManager.getUser(any()) } returns emptyList()
+
+        // When
+        SUT.pushUserData()
+
+        // Then
+        verify(exactly = 0) { apiClient.post(any(), any(), any()) }
+        verify { PushOperationQueue.nextOperation() }
+
+    }
+
+    // region helper methods -----------------------------------------------------------------------
+    private fun getUser() = User(
+        userAttributes = UserAttributes(
+            phone = USER_ATTRS_PHONE,
+            email = USER_ATTRS_EMAIL,
+            firstName = USER_ATTRS_FIRST_NAME,
+            lastName = USER_ATTRS_LAST_NAME,
+            languageCode = USER_ATTRS_LANGUAGE_CODE,
+            timeZone = USER_ATTRS_TIMEZONE,
+            address = Address(
+                region = USER_ATTRS_ADDRESS_REGION,
+                town = USER_ATTRS_ADDRESS_TOWN,
+                address = USER_ATTRS_ADDRESS_ADDRESS,
+                postcode = USER_ATTRS_ADDRESS_POSTCODE
+            ),
+            fields = listOf(
+                UserCustomField(USER_ATTRS_FIELD_KEY_1, USER_ATTRS_FIELD_VALUE_1),
+                UserCustomField(USER_ATTRS_FIELD_KEY_2, USER_ATTRS_FIELD_VALUE_2)
+            )
+        ),
+        subscriptionKeys = USER_SUBSCRIPTION_KEYS,
+        groupNamesInclude = USER_GROUP_NAMES_INCLUDE,
+        groupNamesExclude = USER_GROUP_NAMES_EXCLUDE
+    )
+
+    private fun getDevice() = Device(
+        DEVICE_ID,
+        EXTERNAL_DEVICE_ID,
+        FCM_TOKEN_NEW,
+        DeviceCategory.MOBILE,
+        DeviceOS.ANDROID,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+    )
+
+    private fun getDeviceDb() = DeviceDb(
+        DEVICE_ID,
+        EXTERNAL_DEVICE_ID,
+        FCM_TOKEN_NEW,
+        DeviceCategoryDb.MOBILE,
+        DeviceOsDb.ANDROID,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+    )
+    // endregion helper methods --------------------------------------------------------------------
 }
