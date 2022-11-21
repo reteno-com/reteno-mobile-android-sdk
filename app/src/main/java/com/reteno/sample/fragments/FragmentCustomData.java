@@ -1,9 +1,5 @@
 package com.reteno.sample.fragments;
 
-import static android.content.Context.CLIPBOARD_SERVICE;
-
-import android.content.ClipData;
-import android.content.ClipboardManager;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
@@ -47,7 +43,6 @@ public class FragmentCustomData extends Fragment {
         super.onViewCreated(view, savedInstanceState);
         if (checkBundle(view)) {
             fillKeySet();
-            initListeners();
         }
     }
 
@@ -67,24 +62,10 @@ public class FragmentCustomData extends Fragment {
         adapter = new KeyAdapter(keySet, key -> {
             if (!TextUtils.isEmpty(key)) {
                 String value = bundle.getString(key);
-                binding.tvCustomDataValue.setText(value);
+                binding.tvCustomDataValue.setTextOrHide(value);
             }
         });
         binding.rvKeySet.setAdapter(adapter);
-    }
-
-    private void initListeners() {
-        binding.tvCustomDataValue.setOnClickListener(v -> {
-            copyToClipboard(binding.tvCustomDataValue.getText().toString());
-        });
-    }
-
-    private void copyToClipboard(String text) {
-        ClipboardManager clipboard = (ClipboardManager) getContext().getSystemService(CLIPBOARD_SERVICE);
-        ClipData clip = ClipData.newPlainText("Custom Data", text);
-        clipboard.setPrimaryClip(clip);
-
-        Toast.makeText(getContext(), "Copied to clipboard", Toast.LENGTH_SHORT).show();
     }
 
     //==============================================================================================

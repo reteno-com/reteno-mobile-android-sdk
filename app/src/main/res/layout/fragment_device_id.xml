@@ -69,11 +69,6 @@
                 android:textStyle="bold" />
         </LinearLayout>
 
-        <Spinner
-            android:id="@+id/spModesSelection"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
-
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/tilExternalId"
             android:layout_width="match_parent"

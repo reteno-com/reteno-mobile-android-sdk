@@ -5,7 +5,7 @@ import android.content.Context
 import android.os.Bundle
 import com.reteno.core.RetenoApplication
 import com.reteno.core.RetenoImpl
-import com.reteno.core.model.interaction.InteractionStatus
+import com.reteno.core.domain.model.interaction.InteractionStatus
 import com.reteno.core.util.Logger
 import com.reteno.push.Constants.KEY_ES_INTERACTION_ID
 import com.reteno.push.channel.RetenoNotificationChannel
@@ -18,6 +18,7 @@ class RetenoNotificationService {
     private val serviceLocator = reteno.serviceLocator
     private val contactController = serviceLocator.contactControllerProvider.get()
     private val interactionController = serviceLocator.interactionControllerProvider.get()
+    private val scheduleController = serviceLocator.scheduleControllerProvider.get()
 
     fun onNewToken(token: String) {
         /*@formatter:off*/ Logger.i(TAG, "onNewToken(): ", "token = [" , token , "]")
@@ -52,6 +53,7 @@ class RetenoNotificationService {
         if (channelEnabled && permissionsGranted) {
             data.getString(KEY_ES_INTERACTION_ID)?.let { interactionId ->
                 interactionController.onInteraction(interactionId, InteractionStatus.DELIVERED)
+                scheduleController.forcePush()
             }
         }
     }

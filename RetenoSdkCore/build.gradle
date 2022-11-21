@@ -6,10 +6,6 @@ plugins {
 apply from: file("$project.rootDir/config.gradle")
 apply from: "$project.rootDir/test_dependencies.gradle"
 
-def appPropsFile = file("$project.rootDir/local.properties")
-Properties appProps = new Properties()
-appProps.load(new FileInputStream(appPropsFile))
-
 def sdkPropsFile = file("$project.rootDir/RetenoSdkCore/keys.properties")
 Properties sdkProps = new Properties()
 sdkProps.load(new FileInputStream(sdkPropsFile))
@@ -26,7 +22,6 @@ android {
 
         consumerProguardFiles "consumer-rules.pro"
 
-        buildConfigField "String", "API_ACCESS_KEY", appProps['reteno.access-key']
         buildConfigField "String", "SQL_PASSWORD", sdkProps['sql.password']
         buildConfigField "String", "SDK_VERSION", "\"${project.VERSION_NAME}\""
     }
@@ -78,15 +73,19 @@ android {
 }
 
 dependencies {
-    implementation "io.sentry:sentry-android:6.4.2"
+    implementation "io.sentry:sentry-android:6.4.3"
 
     implementation 'com.google.android.gms:play-services-base:18.1.0'
     implementation "com.google.android.gms:play-services-appset:16.0.2"
 
     implementation "androidx.core:core-ktx:1.9.0"
-    implementation 'androidx.security:security-crypto-ktx:1.1.0-alpha03'
 
     api 'com.google.code.gson:gson:2.9.1'
+
+    implementation "net.zetetic:android-database-sqlcipher:4.5.2"
+    implementation "androidx.sqlite:sqlite:2.1.0"
+
+    implementation 'androidx.work:work-runtime-ktx:2.7.1'
 
     testDependencies()
 }
