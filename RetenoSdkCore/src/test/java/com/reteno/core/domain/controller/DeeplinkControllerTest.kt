@@ -9,6 +9,13 @@ import org.junit.Test
 
 class DeeplinkControllerTest : BaseUnitTest() {
 
+    // region constants ----------------------------------------------------------------------------
+    companion object {
+        private const val DEEPLINK_WRAPPED = "https://wrapped.com"
+        private const val DEEPLINK_UNWRAPPED = "https://unwrapped.com"
+    }
+    // endregion constants -------------------------------------------------------------------------
+
     // region helper fields ------------------------------------------------------------------------
     @RelaxedMockK
     private lateinit var deeplinkRepository: DeeplinkRepository
@@ -24,13 +31,11 @@ class DeeplinkControllerTest : BaseUnitTest() {
     @Test
     fun givenWrappedDeeplink_whenTriggerWrappedLink_thenWrappedDeeplinkClickedEventSentToRepository(){
         //Given
-        val deeplinkWrapped = "https://wrapped.com"
-        val deeplinkUnwrapped = "https://unwrapped.com"
 
         // When
-        deeplinkController.triggerDeeplinkClicked(deeplinkWrapped, deeplinkUnwrapped)
+        deeplinkController.triggerDeeplinkClicked(DEEPLINK_WRAPPED, DEEPLINK_UNWRAPPED)
 
         // Then
-        verify(exactly = 1) { deeplinkRepository.triggerWrappedLinkClicked(deeplinkWrapped) }
+        verify(exactly = 1) { deeplinkRepository.triggerWrappedLinkClicked(DEEPLINK_WRAPPED) }
     }
 }

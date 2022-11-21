@@ -1,19 +1,24 @@
 package com.reteno.core.data.repository
 
-import com.reteno.core.base.BaseUnitTest
+import com.reteno.core.base.robolectric.BaseRobolectricTest
+import com.reteno.core.data.local.database.RetenoDatabaseManager
+import com.reteno.core.data.local.mappers.toDb
+import com.reteno.core.data.local.model.interaction.InteractionDb
+import com.reteno.core.data.remote.PushOperationQueue
 import com.reteno.core.data.remote.api.ApiClient
 import com.reteno.core.data.remote.api.ApiContract
 import com.reteno.core.domain.ResponseCallback
-import com.reteno.core.model.interaction.Interaction
-import com.reteno.core.model.interaction.InteractionStatus
+import com.reteno.core.domain.model.interaction.Interaction
+import com.reteno.core.domain.model.interaction.InteractionStatus
+import com.reteno.core.util.Logger
 import io.mockk.*
 import io.mockk.impl.annotations.RelaxedMockK
-import org.junit.Assert.assertEquals
+import org.junit.Assert
 import org.junit.Before
 import org.junit.Test
+import java.time.ZonedDateTime
 
-
-class InteractionRepositoryTest : BaseUnitTest() {
+class InteractionRepositoryTest : BaseRobolectricTest() {
 
     // region constants ----------------------------------------------------------------------------
     companion object {
@@ -29,24 +34,45 @@ class InteractionRepositoryTest : BaseUnitTest() {
     }
     // endregion constants -------------------------------------------------------------------------
 
-
     // region helper fields ------------------------------------------------------------------------
     @RelaxedMockK
     private lateinit var apiClient: ApiClient
-    // endregion helper fields ---------------------------------------------------------------------
+    @RelaxedMockK
+    private lateinit var retenoDatabaseManager: RetenoDatabaseManager
 
     private lateinit var SUT: InteractionRepositoryImpl
+    // endregion helper fields ---------------------------------------------------------------------
 
     @Before
     override fun before() {
         super.before()
-        SUT = InteractionRepositoryImpl(apiClient)
+        mockkObject(PushOperationQueue)
+        SUT = InteractionRepositoryImpl(apiClient, retenoDatabaseManager)
+    }
+
+    override fun after() {
+        super.after()
+        unmockkObject(PushOperationQueue)
     }
 
     @Test
-    fun givenValidInteraction_whenInteractionSent_thenApiClientPutsInteractionWithCorrectParameters() {
+    fun givenValidInteraction_whenInteractionSent_thenSaveInteraction() {
         // Given
         val interaction = Interaction(INTERACTION_STATUS, CURRENT_TIMESTAMP, TOKEN)
+        val dbInteraction = interaction.toDb(INTERACTION_ID)
+
+        // When
+        SUT.saveInteraction(INTERACTION_ID, interaction)
+
+        // Then
+        verify(exactly = 1) { retenoDatabaseManager.insertInteraction(dbInteraction) }
+    }
+
+    @Test
+    fun givenValidInteraction_whenInteractionPush_thenApiClientPutsInteractionWithCorrectParameters() {
+        // Given
+        val interaction = Interaction(INTERACTION_STATUS, CURRENT_TIMESTAMP, TOKEN)
+        val dbInteraction = interaction.toDb(INTERACTION_ID)
         val expectedInteractionJson =
             "{\"status\":\"$INTERACTION_STATUS\",\"time\":\"$CURRENT_TIMESTAMP\",\"token\":\"$TOKEN\"}"
 
@@ -59,18 +85,101 @@ class InteractionRepositoryTest : BaseUnitTest() {
                 responseHandler = any()
             )
         } just runs
+        every { retenoDatabaseManager.getInteractions(any()) } returns listOf(dbInteraction) andThen emptyList<InteractionDb>()
 
         // When
-        SUT.sendInteraction(INTERACTION_ID, interaction, object : ResponseCallback {
-            override fun onSuccess(response: String) {}
-            override fun onFailure(statusCode: Int?, response: String?, throwable: Throwable?) {}
-        })
+        SUT.pushInteractions()
 
         // Then
         verify(exactly = 1) { apiClient.put(any(), any(), any()) }
+        verify(exactly = 0) { PushOperationQueue.nextOperation() }
 
-        assertEquals(EXPECTED_API_CONTRACT_URL, EXPECTED_URL)
-        assertEquals(EXPECTED_API_CONTRACT_URL, apiContractCaptured.captured.url)
-        assertEquals(expectedInteractionJson, jsonBodyCaptured.captured)
+        Assert.assertEquals(EXPECTED_API_CONTRACT_URL, EXPECTED_URL)
+        Assert.assertEquals(EXPECTED_API_CONTRACT_URL, apiContractCaptured.captured.url)
+        Assert.assertEquals(expectedInteractionJson, jsonBodyCaptured.captured)
+    }
+
+    @Test
+    fun givenValidInteraction_whenInteractionPushSuccessful_thenTryPushNextInteraction() {
+        val dbInteraction = mockk<InteractionDb>(relaxed = true)
+        every { retenoDatabaseManager.getInteractions(any()) } returnsMany listOf(listOf(dbInteraction), listOf(dbInteraction), emptyList())
+        every { apiClient.put(url = any(), jsonBody = any(), responseHandler = any()) } answers {
+            val callback = thirdArg<ResponseCallback>()
+            callback.onSuccess("")
+        }
+
+        SUT.pushInteractions()
+
+        verify(exactly = 2) { apiClient.put(any(), any(), any()) }
+        verify(exactly = 2) { retenoDatabaseManager.deleteInteractions(1) }
+        verify(exactly = 1) { PushOperationQueue.nextOperation() }
+    }
+
+    @Test
+    fun givenValidInteraction_whenInteractionPushFailedAndErrorIsRepeatable_cancelPushOperations() {
+        val dbInteraction = mockk<InteractionDb>(relaxed = true)
+        every { retenoDatabaseManager.getInteractions(any()) } returns listOf(dbInteraction)
+        every { apiClient.put(url = any(), jsonBody = any(), responseHandler = any()) } answers {
+            val callback = thirdArg<ResponseCallback>()
+            callback.onFailure(500, null, null)
+        }
+
+        SUT.pushInteractions()
+
+        verify(exactly = 1) { apiClient.put(any(), any(), any()) }
+        verify(exactly = 1) { PushOperationQueue.removeAllOperations() }
+    }
+
+    @Test
+    fun givenValidInteraction_whenInteractionPushFailedAndErrorIsNonRepeatable_thenTryPushNextInteraction() {
+        val dbInteraction = mockk<InteractionDb>(relaxed = true)
+        every { retenoDatabaseManager.getInteractions(any()) } returnsMany listOf(listOf(dbInteraction), listOf(dbInteraction), emptyList())
+        every { apiClient.put(url = any(), jsonBody = any(), responseHandler = any()) } answers {
+            val callback = thirdArg<ResponseCallback>()
+            callback.onFailure(400, null, null)
+        }
+
+        SUT.pushInteractions()
+
+        verify(exactly = 2) { apiClient.put(any(), any(), any()) }
+        verify(exactly = 3) { retenoDatabaseManager.getInteractions(1) }
+        verify(exactly = 2) { retenoDatabaseManager.deleteInteractions(1) }
+        verify(exactly = 1) { PushOperationQueue.nextOperation() }
+    }
+
+    @Test
+    fun givenNoInteractionInDb_whenInteractionPush_thenApiClientPutsDoesNotCalled() {
+        // Given
+        every { retenoDatabaseManager.getInteractions(any()) } returns emptyList()
+
+        // When
+        SUT.pushInteractions()
+
+        // Then
+        verify(exactly = 0) { apiClient.put(any(), any(), any()) }
+        verify { PushOperationQueue.nextOperation() }
+
+    }
+
+    @Test
+    fun noOutdatedInteraction_whenClearOldInteractions_thenSentNothing() {
+        every { retenoDatabaseManager.deleteInteractionByTime(any()) } returns 0
+
+        SUT.clearOldInteractions(ZonedDateTime.now())
+
+        verify(exactly = 1) { retenoDatabaseManager.deleteInteractionByTime(any()) }
+        verify(exactly = 0) { Logger.captureEvent(any()) }
+    }
+
+    @Test
+    fun thereAreOutdatedInteraction_whenClearOldInteractions_thenSentCountDeleted() {
+        val deletedInteractions = 2
+        every { retenoDatabaseManager.deleteInteractionByTime(any()) } returns deletedInteractions
+        val expectedMsg = "Outdated Interactions: - $deletedInteractions"
+
+        SUT.clearOldInteractions(ZonedDateTime.now())
+
+        verify(exactly = 1) { retenoDatabaseManager.deleteInteractionByTime(any()) }
+        verify(exactly = 1) { Logger.captureEvent(eq(expectedMsg)) }
     }
 }

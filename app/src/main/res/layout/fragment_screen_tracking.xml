@@ -1,0 +1,55 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="4dp"
+    tools:context=".fragments.FragmentForcePush">
+
+    <EditText
+        android:id="@+id/etScreenName"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Screen name" />
+
+    <Button
+        android:id="@+id/btnTrackScreen"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:text="Track screen view" />
+
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="32dp"
+        android:text="Auto tracking section" />
+
+    <CheckBox
+        android:id="@+id/cbEnableScreenTracking"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Enable auto tracking" />
+
+    <EditText
+        android:id="@+id/etExcludeScreens"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Exclude screens (comma separated list)" />
+
+    <Spinner
+        android:id="@+id/spnTrigger"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <Button
+        android:id="@+id/btnUpdateAutoScreenTrackingConfig"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="8dp"
+        android:text="Update auto screen tracking config" />
+
+</LinearLayout>

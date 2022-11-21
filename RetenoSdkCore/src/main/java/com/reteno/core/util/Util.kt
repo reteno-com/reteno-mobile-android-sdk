@@ -10,8 +10,14 @@ import com.google.android.gms.common.GoogleApiAvailability
 import com.reteno.core.RetenoImpl
 import java.io.*
 import java.time.Instant
+import java.time.ZoneId
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 
+fun <T : Any> allElementsNull(vararg elements: T?) = elements.all { it == null }
+
+fun <T : Any> allElementsNotNull(vararg elements: T?) = elements.all { it != null }
 
 internal fun isGooglePlayServicesAvailable(): Boolean {
     val context = RetenoImpl.application
@@ -67,7 +73,17 @@ fun Bundle?.toStringVerbose(): String {
     return stringBuilder.toString()
 }
 
+fun isRepeatableError(statusCode: Int?): Boolean {
+    return statusCode !in 400..499
+}
+
+fun isNonRepeatableError(statusCode: Int?) = !isRepeatableError(statusCode)
+
 object Util {
+
+    private val formatter = DateTimeFormatter
+        .ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'")
+        .withZone(ZoneId.of("UTC"))
 
     @JvmStatic
     fun readFromRaw(rawResourceId: Int): String? {
@@ -107,12 +123,15 @@ object Util {
      * To disable change system property to any other one
      * adb shell setprop debug.com.reteno.debug.view disable
      */
-    @JvmStatic
-    internal fun isDebugView() :Boolean {
+    internal fun isDebugView(): Boolean {
         val debugString = getSysProp(PROP_KEY_DEBUG_VIEW)
         /*@formatter:off*/ Logger.i(TAG, "isDebugView(): debugString = ", debugString)
         /*@formatter:on*/
         return debugString == PROP_VALUE_DEBUG_VIEW_ENABLE
+    }
+
+    fun ZonedDateTime.formatToRemote(): String {
+        return formatter.format(this)
     }
 
     private fun getSysProp(key: String): String {
@@ -120,11 +139,8 @@ object Util {
         var propvalue = ""
         try {
             process = ProcessBuilder("/system/bin/getprop", key).redirectErrorStream(true).start()
-            val br = BufferedReader(InputStreamReader(process.inputStream))
-            var line: String
-            while (br.readLine().also { line = it } != null) {
-                propvalue = line
-            }
+            val reader = BufferedReader(InputStreamReader(process.inputStream))
+            propvalue = reader.readLine()
             process.destroy()
         } catch (e: Exception) {
             Logger.i(TAG, "getSysProp($key): ", e.message)
@@ -137,3 +153,4 @@ object Util {
 const val TAG = "Util"
 const val PROP_KEY_DEBUG_VIEW = "debug.com.reteno.debug.view"
 const val PROP_VALUE_DEBUG_VIEW_ENABLE = "enable"
+const val THREAD_PREFIX_NAME = "Reteno_thread_"

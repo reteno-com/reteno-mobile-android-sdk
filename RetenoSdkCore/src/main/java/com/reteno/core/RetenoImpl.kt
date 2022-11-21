@@ -2,15 +2,16 @@ package com.reteno.core
 
 import android.app.Activity
 import android.app.Application
-import com.reteno.core.data.local.config.DeviceIdMode
 import com.reteno.core.di.ServiceLocator
+import com.reteno.core.domain.model.event.Event
+import com.reteno.core.domain.model.user.User
 import com.reteno.core.lifecycle.RetenoActivityHelper
 import com.reteno.core.lifecycle.RetenoLifecycleCallbacks
-import com.reteno.core.model.user.User
+import com.reteno.core.lifecycle.ScreenTrackingConfig
 import com.reteno.core.util.Logger
 
 
-class RetenoImpl(application: Application) : RetenoLifecycleCallbacks, Reteno {
+class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleCallbacks, Reteno {
 
     init {
         /*@formatter:off*/ Logger.i(TAG, "RetenoImpl(): ", "context = [" , application , "]")
@@ -18,11 +19,13 @@ class RetenoImpl(application: Application) : RetenoLifecycleCallbacks, Reteno {
         Companion.application = application
     }
 
-    val serviceLocator: ServiceLocator = ServiceLocator()
+    val serviceLocator: ServiceLocator = ServiceLocator(application, accessKey)
 
-    private val contactController = serviceLocator.contactControllerProvider.get()
-    private val activityHelper: RetenoActivityHelper =
-        serviceLocator.retenoActivityHelperProvider.get()
+    private val contactController by lazy { serviceLocator.contactControllerProvider.get() }
+    private val scheduleController by lazy { serviceLocator.scheduleControllerProvider.get() }
+    private val eventController by lazy { serviceLocator.eventsControllerProvider.get() }
+
+    private val activityHelper: RetenoActivityHelper by lazy { serviceLocator.retenoActivityHelperProvider.get() }
 
     init {
         try {
@@ -32,27 +35,19 @@ class RetenoImpl(application: Application) : RetenoLifecycleCallbacks, Reteno {
         }
     }
 
-    override fun resume(activity: Activity) {
+    override fun resume(activity: Activity?) {
         /*@formatter:off*/ Logger.i(TAG, "resume(): ", "activity = [" , activity , "]")
         /*@formatter:on*/
+        clearOldData()
+        startPushScheduler()
         // TODO: Application is in foreground
     }
 
-    override fun pause(activity: Activity) {
+    override fun pause(activity: Activity?) {
         /*@formatter:off*/ Logger.i(TAG, "pause(): ", "activity = [" , activity , "]")
         /*@formatter:on*/
+        stopPushScheduler()
         // TODO: Application is not in foreground
-    }
-
-    override fun setDeviceIdMode(deviceIdMode: DeviceIdMode, onDeviceIdChanged: () -> Unit) {
-        /*@formatter:off*/ Logger.i(TAG, "changeDeviceIdMode(): ", "deviceIdMode = [" , deviceIdMode , "]")
-        /*@formatter:on*/
-        try {
-            // TODO: Move this to background thread later
-            contactController.setDeviceIdMode(deviceIdMode, onDeviceIdChanged)
-        } catch (ex: Throwable) {
-            Logger.e(TAG, "setDeviceIdMode(): ", ex)
-        }
     }
 
     override fun setUserAttributes(externalUserId: String) {
@@ -67,21 +62,57 @@ class RetenoImpl(application: Application) : RetenoLifecycleCallbacks, Reteno {
         try {
             // TODO: Move this to background thread later
             contactController.setExternalUserId(externalUserId)
-            user?.let { setUserData(it) }
+            setUserData(user)
         } catch (ex: Throwable) {
             Logger.e(TAG, "setUserAttributes(): ", ex)
         }
     }
 
-    private fun setUserData(used: User) {
-        /*@formatter:off*/ Logger.i(TAG, "setUserData(): ", "used = [" , used , "]")
+    override fun logEvent(event: Event) {
+        /*@formatter:off*/ Logger.i(TAG, "logEvent(): ", "eventType = [" , event.eventTypeKey , "], date = [" , event.occurred , "], parameters = [" , event.params , "]")
+        /*@formatter:on*/
+        eventController.trackEvent(event)
+    }
+
+    override fun logScreenView(screenName: String) {
+        /*@formatter:off*/ Logger.i(TAG, "logScreenView(): ", "screenName = [" , screenName , "]")
+        /*@formatter:on*/
+        eventController.trackScreenViewEvent(screenName)
+    }
+
+    override fun autoScreenTracking(config: ScreenTrackingConfig) {
+        /*@formatter:off*/ Logger.i(TAG, "autoScreenTracking(): ", "config = [" , config , "]")
+        /*@formatter:on*/
+        activityHelper.autoScreenTracking(config)
+    }
+
+    override fun forcePushData() {
+        /*@formatter:off*/ Logger.i(TAG, "forcePushData(): ", "")
+        /*@formatter:on*/
+        scheduleController.forcePush()
+    }
+
+    private fun setUserData(user: User?) {
+        /*@formatter:off*/ Logger.i(TAG, "setUserData(): ", "used = [" , user , "]")
         /*@formatter:on*/
         try {
             // TODO: Move this to background thread later
-            contactController.setUserData(used)
+            user?.let(contactController::setUserData)
         } catch (ex: Throwable) {
             Logger.e(TAG, "setExternalDeviceId(): ", ex)
         }
+    }
+
+    private fun clearOldData() {
+        scheduleController.clearOldData()
+    }
+
+    private fun startPushScheduler() {
+        scheduleController.startScheduler()
+    }
+
+    private fun stopPushScheduler() {
+        scheduleController.stopScheduler()
     }
 
     /**

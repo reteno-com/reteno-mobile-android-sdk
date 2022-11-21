@@ -1,6 +1,5 @@
 package com.reteno.core.data.repository
 
-import android.util.Log
 import com.reteno.core.base.robolectric.BaseRobolectricTest
 import com.reteno.core.data.local.config.DeviceId
 import com.reteno.core.data.local.config.DeviceIdHelper
@@ -26,22 +25,20 @@ class ConfigRepositoryTest : BaseRobolectricTest() {
     }
     // endregion constants -------------------------------------------------------------------------
 
-
     // region helper fields ------------------------------------------------------------------------
     @MockK
     private lateinit var sharedPrefsManager: SharedPrefsManager
 
     private lateinit var restConfig: RestConfig
-    // endregion helper fields ---------------------------------------------------------------------
 
     private lateinit var SUT: ConfigRepositoryImpl
-
+    // endregion helper fields ---------------------------------------------------------------------
 
     override fun before() {
         super.before()
         MockKAnnotations.init(this)
 
-        restConfig = spyk(RestConfig(DeviceIdHelper(sharedPrefsManager)), recordPrivateCalls = true)
+        restConfig = spyk(RestConfig(DeviceIdHelper(sharedPrefsManager), ""), recordPrivateCalls = true)
         SUT = ConfigRepositoryImpl(sharedPrefsManager, restConfig)
     }
 
@@ -55,19 +52,6 @@ class ConfigRepositoryTest : BaseRobolectricTest() {
 
         // Then
         verify(exactly = 1) { restConfig["setExternalUserId"](EXTERNAL_DEVICE_ID) }
-    }
-
-    @Test
-    fun given_whnSetDeviceIdMode_thenDelegatedToRestConfig() {
-        // Given
-        val deviceIdMode = DeviceIdMode.RANDOM_UUID
-        every { restConfig["setDeviceIdMode"](ofType(DeviceIdMode::class), ofType(Function1::class)) } returns Unit
-
-        // When
-        SUT.setDeviceIdMode(deviceIdMode) {}
-
-        // Then
-        verify(exactly = 1) { restConfig["setDeviceIdMode"](DeviceIdMode.RANDOM_UUID, ofType(Function1::class)) }
     }
 
     @Test

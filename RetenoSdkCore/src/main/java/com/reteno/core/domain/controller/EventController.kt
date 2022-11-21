@@ -1,73 +1,48 @@
 package com.reteno.core.domain.controller
 
 import com.reteno.core.data.repository.EventsRepository
-import com.reteno.core.domain.ResponseCallback
-import com.reteno.core.model.EventBatch
-import com.reteno.core.model.Events
+import com.reteno.core.domain.model.event.Event
 import com.reteno.core.util.Logger
-import java.time.LocalDateTime
-import java.time.ZoneOffset
+import com.reteno.core.util.Util
+import java.time.ZonedDateTime
 
 class EventController(
     private val eventsRepository: EventsRepository
 ) {
 
-    /**
-     * Attempt to send saved events
-     */
+    fun trackEvent(event: Event) {
+        /*@formatter:off*/ Logger.i(TAG, "trackEvent(): ", "event = [" , event , "]")
+        /*@formatter:on*/
+        eventsRepository.saveEvent(event)
+    }
+
+    fun trackScreenViewEvent(screenName: String) {
+        /*@formatter:off*/ Logger.i(TAG, "trackScreenViewEvent(): ", "screenName = [" , screenName , "]")
+        /*@formatter:on*/
+        eventsRepository.saveEvent(Event.ScreenView(screenName))
+    }
+
     fun pushEvents() {
-        val events = getFaceEvents() /* DB.getEvents() */
-        eventsRepository.sendOutcomeEvent(events, object : ResponseCallback {
-
-            override fun onSuccess(response: String) {
-                val lastSentEventTime = events.events.last().occurred.toEpochSecond(ZoneOffset.UTC) // TODO temporary solution
-                clearEventsUntilDate(lastSentEventTime)
-            }
-
-            override fun onFailure(statusCode: Int?, response: String?, throwable: Throwable?) {
-                Logger.d("EventController", "pushEvents", statusCode, response, throwable)
-            }
-
-        })
+        /*@formatter:off*/ Logger.i(TAG, "pushEvents(): ", "")
+        /*@formatter:on*/
+        eventsRepository.pushEvents()
     }
 
-    /**
-     * Deletes events older than exceptionDate.
-     * @param expirationDate - the storage period of events in millis
-     */
-    fun clearOldEvents(expirationDate: Long) {
-        // TODO DB.clearOldest24Hours()
+    fun clearOldEvents() {
+        /*@formatter:off*/ Logger.i(TAG, "clearOldEvents(): ", "")
+        /*@formatter:on*/
+        val keepDataHours = if (Util.isDebugView()) {
+            KEEP_EVENT_HOURS_DEBUG
+        } else {
+            KEEP_EVENT_HOURS
+        }
+        val outdatedTime = ZonedDateTime.now().minusHours(keepDataHours)
+        eventsRepository.clearOldEvents(outdatedTime)
     }
 
-    /**
-     *  Clear all events
-     */
-    fun clearAllEvents() {
-        // TODO DB.clearAll()
+    companion object {
+        private val TAG: String = EventController::class.java.simpleName
+        private const val KEEP_EVENT_HOURS = 24L
+        private const val KEEP_EVENT_HOURS_DEBUG = 1L
     }
-
-    fun clearEventsUntilDate(lastSentEventTime: Long) {
-        // TODO DB.clearUntilDate(lastSentEventTime)
-    }
-
-
-    // ===== TODO only for test ======
-    private fun getFaceEvents(): Events {
-        return Events(
-            "deviceId",
-            "1",
-            events = listOf(
-                EventBatch(
-                    "Notify open",
-                    LocalDateTime.now(),
-                    params = mapOf(
-                        "param1" to 1,
-                        "param2" to false
-                    )
-                )
-            )
-        )
-    }
-
-
 }
