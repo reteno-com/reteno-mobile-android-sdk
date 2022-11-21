@@ -100,9 +100,6 @@ android {
 dependencies {
     implementation project(':RetenoSdkFcm')
 
-    implementation "net.zetetic:android-database-sqlcipher:4.5.2"
-    implementation "androidx.sqlite:sqlite:2.1.0"
-
     implementation platform('com.google.firebase:firebase-bom:30.4.1')
     implementation "com.google.firebase:firebase-messaging:23.0.8"
     implementation "com.google.firebase:firebase-messaging-ktx:23.0.8"
