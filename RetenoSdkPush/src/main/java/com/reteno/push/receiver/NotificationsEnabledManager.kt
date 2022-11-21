@@ -14,14 +14,13 @@ internal object NotificationsEnabledManager {
     internal fun onCheckState(context: Context) {
         /*@formatter:off*/ Logger.i(TAG, "onCheckState(): ", "context = [" , context , "]")
         /*@formatter:on*/
-        val permissionsGranted = RetenoNotificationChannel.isNotificationPermissionGranted(context)
         val notificationsEnabled = RetenoNotificationChannel.isNotificationsEnabled(context)
         val defaultChannelEnabled =
             RetenoNotificationChannel.isNotificationChannelEnabled(context, DEFAULT_CHANNEL_ID)
 
         val reteno = ((RetenoImpl.application as RetenoApplication).getRetenoInstance() as RetenoImpl)
         val contactController = reteno.serviceLocator.contactControllerProvider.get()
-        contactController.notificationsEnabled(permissionsGranted && notificationsEnabled && defaultChannelEnabled)
+        contactController.notificationsEnabled(notificationsEnabled && defaultChannelEnabled)
 
         val scheduleController = reteno.serviceLocator.scheduleControllerProvider.get()
         scheduleController.startScheduler()

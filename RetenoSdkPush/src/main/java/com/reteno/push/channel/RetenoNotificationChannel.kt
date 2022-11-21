@@ -3,7 +3,6 @@ package com.reteno.push.channel
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
-import android.os.Build
 import android.text.TextUtils
 import com.reteno.core.RetenoApplication
 import com.reteno.core.RetenoImpl
@@ -38,7 +37,7 @@ internal object RetenoNotificationChannel {
             val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             val channel = manager.getNotificationChannel(channelId)
             if (channel == null) {
-                createDefaultChannel()
+                createDefaultChannel(context)
                 true
             } else {
                 channel.importance != NotificationManager.IMPORTANCE_NONE
@@ -50,21 +49,7 @@ internal object RetenoNotificationChannel {
         return isEnabled
     }
 
-    internal fun isNotificationPermissionGranted(context: Context): Boolean {
-        val granted = if (Build.VERSION.SDK_INT < 33) {
-            true
-        } else {
-            val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            manager.areNotificationsEnabled()
-        }
-        /*@formatter:off*/ Logger.i(TAG, "isNotificationPermissionGranted(): ", granted)
-        /*@formatter:on*/
-
-        return granted
-    }
-
-    internal fun createDefaultChannel() {
-        val context = RetenoImpl.application.applicationContext
+    internal fun createDefaultChannel(context: Context) {
         /*@formatter:off*/ Logger.i(TAG, "createDefaultChannel(): ", "context = [" , context , "]")
         /*@formatter:on*/
 
@@ -98,7 +83,7 @@ internal object RetenoNotificationChannel {
      *
      * @param channel Default channel details.
      */
-    internal fun configureDefaultNotificationChannel(channel: String) {
+    private fun configureDefaultNotificationChannel(channel: String) {
         try {
             if (TextUtils.isEmpty(channel)) {
                 return

@@ -31,7 +31,7 @@ class RetenoNotificationService {
         /*@formatter:off*/ Logger.i(TAG, "showNotification(): ", "data = [" , data.toString() , "]")
         /*@formatter:on*/
         Util.tryToSendToCustomReceiverPushReceived(data)
-        RetenoNotificationChannel.createDefaultChannel()
+        RetenoNotificationChannel.createDefaultChannel(RetenoImpl.application)
         showNotification(data)
         handleInteractionStatus(data)
         NotificationsEnabledManager.onCheckState(RetenoImpl.application)
@@ -50,7 +50,7 @@ class RetenoNotificationService {
         val channelEnabled =
             RetenoNotificationChannel.isNotificationChannelEnabled(RetenoImpl.application, RetenoNotificationChannel.DEFAULT_CHANNEL_ID)
         val permissionsGranted =
-            RetenoNotificationChannel.isNotificationPermissionGranted(RetenoImpl.application)
+            RetenoNotificationChannel.isNotificationsEnabled(RetenoImpl.application)
 
         if (channelEnabled && permissionsGranted) {
             data.getString(KEY_ES_INTERACTION_ID)?.let { interactionId ->

@@ -1,5 +1,8 @@
 package com.reteno.core
 
+import android.content.*
+import android.content.pm.ActivityInfo
+import android.content.pm.ResolveInfo
 import android.app.Application
 import com.reteno.core.RetenoImpl.Companion.application
 import com.reteno.core.appinbox.AppInboxImpl
@@ -15,11 +18,17 @@ import com.reteno.core.domain.model.user.User
 import com.reteno.core.lifecycle.RetenoActivityHelper
 import com.reteno.core.lifecycle.ScreenTrackingConfig
 import com.reteno.core.lifecycle.ScreenTrackingTrigger
+import com.reteno.core.util.Constants
+import com.reteno.core.util.queryBroadcastReceivers
 import io.mockk.*
 import io.mockk.impl.annotations.RelaxedMockK
+import junit.framework.TestCase.assertNotNull
+import junit.framework.TestCase.assertTrue
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import org.robolectric.shadows.ShadowLooper.shadowMainLooper
 import java.time.ZonedDateTime
+
 
 class RetenoImplTest : BaseRobolectricTest() {
 
@@ -36,6 +45,8 @@ class RetenoImplTest : BaseRobolectricTest() {
         private const val EVENT_PARAMETER_VALUE_1 = "VALUE1"
 
         private const val TRACK_SCREEN_NAME = "ScreenNameHere"
+
+        private const val TRANSCRIPT_RESUME_RECEIVED = "ResumeReceived"
     }
     // endregion constants -------------------------------------------------------------------------
 
@@ -56,6 +67,10 @@ class RetenoImplTest : BaseRobolectricTest() {
     private lateinit var inbox: AppInboxImpl
 
     private val retenoImpl by lazy { RetenoImpl(application, "") }
+
+    private var contextWrapper: ContextWrapper? = null
+
+    private val transcript: MutableList<String> = mutableListOf()
     // endregion helper fields ---------------------------------------------------------------------
 
     override fun before() {
@@ -66,11 +81,17 @@ class RetenoImplTest : BaseRobolectricTest() {
         every { anyConstructed<ServiceLocator>().eventsControllerProvider.get() } returns eventController
         every { anyConstructed<ServiceLocator>().appInboxProvider.get() } returns inbox
         every { anyConstructed<ServiceLocator>().retenoActivityHelperProvider.get() } returns retenoActivityHelper
+
+        contextWrapper = ContextWrapper(application)
+        assertNotNull(contextWrapper)
+        transcript.clear()
     }
 
     override fun after() {
         super.after()
         unmockkConstructor(ServiceLocator::class)
+        contextWrapper = null
+        transcript.clear()
     }
 
     @Test
@@ -192,4 +213,45 @@ class RetenoImplTest : BaseRobolectricTest() {
         assertEquals(inbox, result)
     }
 
+    @Test
+    fun whenAppResume_thenBroadcastSent() {
+        // Given
+        val receiver =
+            object : BroadcastReceiver() {
+                override fun onReceive(context: Context?, intent: Intent?) {
+                    transcript.add(TRANSCRIPT_RESUME_RECEIVED)
+                }
+            }
+        contextWrapper!!.registerReceiver(
+            receiver,
+            IntentFilter(Constants.BROADCAST_ACTION_RETENO_APP_RESUME)
+        )
+        mockQueryBroadcastReceivers()
+
+        // When
+        retenoImpl.resume(mockk())
+
+        // Then
+        shadowMainLooper().idle()
+        assertTrue(transcript.contains(TRANSCRIPT_RESUME_RECEIVED))
+
+        unmockQueryBroadcastReceivers()
+    }
+
+    // region helper methods -----------------------------------------------------------------------
+    private fun mockQueryBroadcastReceivers() {
+        val mockResolveInfo = mockk<ResolveInfo>(relaxed = true).apply {
+            activityInfo = ActivityInfo().apply {
+                packageName = "packageName"
+                name = "name"
+            }
+        }
+        mockkStatic("com.reteno.core.util.UtilKt")
+        every { application.queryBroadcastReceivers(any()) } returns listOf(mockResolveInfo)
+    }
+
+    private fun unmockQueryBroadcastReceivers() {
+        unmockkStatic("com.reteno.core.util.UtilKt")
+    }
+    // endregion helper methods --------------------------------------------------------------------
 }
