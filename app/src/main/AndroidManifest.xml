@@ -64,6 +64,16 @@
             android:name="com.reteno.Receiver.NotificationClicked"
             android:value="com.reteno.sample.CustomReceiverNotificationClicked" />
 
+        <receiver
+            android:name="com.reteno.sample.CustomPushReceiver"
+            android:enabled="true"
+            android:exported="false" >
+
+            <intent-filter>
+                <action android:name="com.reteno.custom-push" />
+            </intent-filter>
+        </receiver>
+
 
         <!-- TODO add this to set up your notification icon -->
         <meta-data

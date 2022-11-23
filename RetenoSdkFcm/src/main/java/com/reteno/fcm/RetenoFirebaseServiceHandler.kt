@@ -3,13 +3,10 @@ package com.reteno.fcm
 import android.os.Bundle
 import com.google.firebase.messaging.RemoteMessage
 import com.reteno.core.RetenoImpl
-import com.reteno.push.Constants.KEY_ES_INTERACTION_ID
-import com.reteno.push.RetenoNotificationService
 import com.reteno.core.util.Logger
+import com.reteno.push.RetenoNotificationService
 
-class RetenoFirebaseServiceHandler {
-
-    private val pushService: RetenoNotificationService = RetenoNotificationService()
+class RetenoFirebaseServiceHandler(private val pushService: RetenoNotificationService) {
 
     /**
      * Call from your implementation of [com.google.firebase.messaging.FirebaseMessagingService.onCreate]
@@ -37,13 +34,7 @@ class RetenoFirebaseServiceHandler {
         val messageMap = remoteMessage.data
         /*@formatter:off*/ Logger.i(TAG, "onMessageReceived(): ", "messageMap = [" , messageMap , "]")
         /*@formatter:on*/
-
-        val hasInteractionId = messageMap.containsKey(KEY_ES_INTERACTION_ID)
-        if (hasInteractionId) {
-            pushService.handleRetenoNotification(getBundle(messageMap))
-        } else {
-            // TODO: SEND notification to broadcast receiver to be handled by application dev
-        }
+        pushService.handleNotification(getBundle(messageMap))
     }
 
     /**
