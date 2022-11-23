@@ -127,7 +127,7 @@ internal object RetenoNotificationChannel {
                 val jsonChannel = configRepository.getDefaultNotificationChannel()
                 jsonChannel.fromJsonOrNull()
             } catch (e: Exception) {
-                /*@formatter:off*/ Logger.e(TAG, "retrieveNotificationChannels(): ", e)
+                /*@formatter:off*/ Logger.e(TAG, "retrieveNotificationChannels(): Failed to read saved DefaultChannelId ", e)
                 /*@formatter:on*/
                 null
             }
@@ -139,7 +139,7 @@ internal object RetenoNotificationChannel {
             configureDefaultNotificationChannel(defaultJson)
             defaultJson.fromJson()
         } catch (e: Exception) {
-            /*@formatter:off*/ Logger.e(TAG, "retrieveNotificationChannels(): ", e)
+            /*@formatter:off*/ Logger.e(TAG, "retrieveNotificationChannels(): FALLBACK_MODE", e)
             /*@formatter:on*/
             NotificationChannelData(
                 DEFAULT_CHANNEL_ID,
