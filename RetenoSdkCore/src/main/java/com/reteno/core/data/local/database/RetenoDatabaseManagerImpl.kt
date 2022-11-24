@@ -467,7 +467,7 @@ class RetenoDatabaseManagerImpl(private val database: RetenoDatabase) : RetenoDa
                     inboxMessage.add(inbox)
                 } else {
                     val rowId =
-                        cursor.getLongOrNull(cursor.getColumnIndex(COLUMN_APP_INBOX_ID))
+                        cursor.getStringOrNull(cursor.getColumnIndex(COLUMN_APP_INBOX_ID))
                     val exception =
                         SQLException("Unable to read data from SQL database. timeStamp=$timestamp, inboxMessage=null. rowId = $rowId")
                     if (rowId == null) {

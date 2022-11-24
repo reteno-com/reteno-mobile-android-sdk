@@ -101,6 +101,7 @@ class RetenoNotificationServiceTest : BaseRobolectricTest() {
 
         // Then
         verify(exactly = 1) { interactionController.onInteraction(interactionId, InteractionStatus.DELIVERED) }
+        verify(exactly = 1) { scheduleController.forcePush() }
     }
 
     @Test
@@ -120,6 +121,7 @@ class RetenoNotificationServiceTest : BaseRobolectricTest() {
 
         // Then
         verify(exactly = 0) { interactionController.onInteraction(interactionId, InteractionStatus.DELIVERED) }
+        verify(exactly = 0) { scheduleController.forcePush() }
     }
 
     @Test
@@ -139,6 +141,7 @@ class RetenoNotificationServiceTest : BaseRobolectricTest() {
 
         // Then
         verify(exactly = 0) { interactionController.onInteraction(interactionId, InteractionStatus.DELIVERED) }
+        verify(exactly = 0) { scheduleController.forcePush() }
     }
 
     private fun buildBundle(interactionId: String): Bundle {

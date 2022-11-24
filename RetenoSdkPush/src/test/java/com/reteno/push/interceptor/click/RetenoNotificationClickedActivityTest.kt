@@ -77,6 +77,7 @@ class RetenoNotificationClickedActivityTest : BaseRobolectricTest() {
             .get()
 
         verify { interactionController.onInteraction(eq(interactionId), InteractionStatus.OPENED) }
+        verify(exactly = 1) { scheduleController.forcePush() }
         unmockkObject(RetenoImpl)
         assertTrue(activity.isFinishing)
     }

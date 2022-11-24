@@ -35,7 +35,7 @@ class AppInboxRepositoryImpl(
     private val configRepository: ConfigRepository
 ) : AppInboxRepository {
 
-    private val listeners: MutableMap<Int, RetenoResultCallback<Int>> =
+    private val listeners: MutableMap<RetenoResultCallback<Int>, RetenoResultCallback<Int>> =
         Collections.synchronizedMap(WeakHashMap())
 
     private var scheduler: ScheduledExecutorService? = null
@@ -203,8 +203,7 @@ class AppInboxRepositoryImpl(
         /*@formatter:off*/ Logger.i(TAG, "subscribeOnMessagesCountChanged(): ", "callback = [" , callback , "], listenerSet.size = [", listeners.size, "]")
         /*@formatter:on*/
         synchronized(listeners) {
-            listeners[callback.hashCode()] = callback
-            val x = WeakReference(callback)
+            listeners[callback] = callback // TODO need test new key
             startPolling()
         }
     }
@@ -213,7 +212,7 @@ class AppInboxRepositoryImpl(
         /*@formatter:off*/ Logger.i(TAG, "unsubscribeMessagesCountChanged(): ", "callback = [" , callback , "], listenerSet.size = [", listeners.size, "]")
         /*@formatter:on*/
         synchronized(listeners) {
-            listeners[callback.hashCode()]
+            listeners.remove(callback)
             if (listeners.isEmpty()) {
                 stopPolling()
             }
