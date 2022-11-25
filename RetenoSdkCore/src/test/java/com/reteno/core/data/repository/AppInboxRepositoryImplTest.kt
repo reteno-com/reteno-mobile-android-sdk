@@ -26,7 +26,6 @@ import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 
-// TODO work in progress. need finish test, research possibility test Map, check working new key in WeakHashMap
 class AppInboxRepositoryImplTest : BaseRobolectricTest() {
 
     companion object {
@@ -45,6 +44,7 @@ class AppInboxRepositoryImplTest : BaseRobolectricTest() {
         private const val INITIAL_DELAY = 0L
 
         private const val MESSAGES_COUNT = 7
+        private const val MESSAGES_COUNT_ZERO = 0
     }
 
     @RelaxedMockK
@@ -59,9 +59,6 @@ class AppInboxRepositoryImplTest : BaseRobolectricTest() {
     @RelaxedMockK
     private lateinit var scheduler: ScheduledExecutorService
 
-    @RelaxedMockK
-    private lateinit var listeners: MutableMap<RetenoResultCallback<Int>, RetenoResultCallback<Int>>
-
     private lateinit var inboxRepository: AppInboxRepositoryImpl
 
     override fun before() {
@@ -74,9 +71,6 @@ class AppInboxRepositoryImplTest : BaseRobolectricTest() {
             mockk()
         }
         every { Executors.newScheduledThreadPool(any(), any()) } returns scheduler
-/*        every {
-            Collections.synchronizedMap<RetenoResultCallback<Int>, RetenoResultCallback<Int>>(any())
-        } returns listeners*/
         inboxRepository = AppInboxRepositoryImpl(apiClient, retenoDatabaseManager, configRepository)
     }
 
@@ -134,6 +128,7 @@ class AppInboxRepositoryImplTest : BaseRobolectricTest() {
     @Test
     fun whenMessagesPushSuccessful_thenTryPushNextMessages() {
         val inboxStatus = getTestAppInboxDb()
+        val spyRepository = spyk(inboxRepository, recordPrivateCalls = true)
         every { retenoDatabaseManager.getAppInboxMessages(any()) } returnsMany listOf(
             listOf(
                 inboxStatus
@@ -144,11 +139,13 @@ class AppInboxRepositoryImplTest : BaseRobolectricTest() {
             callback.onSuccess("")
         }
 
-        inboxRepository.pushMessagesStatus()
+        spyRepository.pushMessagesStatus()
 
         verify(exactly = 2) { apiClient.post(any(), any(), any()) }
         verify(exactly = 2) { retenoDatabaseManager.deleteAppInboxMessages(1) }
         verify(exactly = 1) { PushOperationQueue.nextOperation() }
+
+        verify(exactly = 2) { spyRepository["fetchCount"]() }
     }
 
     @Test
@@ -226,13 +223,14 @@ class AppInboxRepositoryImplTest : BaseRobolectricTest() {
 
         val jsonString = "{}"
         val callback = spyk<RetenoResultCallback<Unit>>()
+        val spyRepository = spyk(inboxRepository, recordPrivateCalls = true)
 
         every { any<AppInboxMessagesStatusRemote>().toJson() } returns jsonString
         every { apiClient.post(any(), any(), any()) } answers {
             thirdArg<ResponseCallback>().onSuccess("")
         }
 
-        inboxRepository.setAllMessageOpened(callback)
+        spyRepository.setAllMessageOpened(callback)
 
         verify(exactly = 1) {
             apiClient.post(
@@ -244,6 +242,7 @@ class AppInboxRepositoryImplTest : BaseRobolectricTest() {
         verify(exactly = 1) { OperationQueue.addUiOperation(any()) }
         verify(exactly = 1) { callback.onSuccess(Unit) }
         verify(exactly = 1) { retenoDatabaseManager.deleteAllAppInboxMessages() }
+        verify(exactly = 1) { spyRepository["fetchCount"]() }
 
         unmockkStatic("com.reteno.core.data.remote.mapper.JsonMappersKt")
     }
@@ -409,7 +408,6 @@ class AppInboxRepositoryImplTest : BaseRobolectricTest() {
                 TimeUnit.MILLISECONDS
             )
         }
-        // listeners
     }
 
     @Test
@@ -425,7 +423,6 @@ class AppInboxRepositoryImplTest : BaseRobolectricTest() {
                 TimeUnit.MILLISECONDS
             )
         }
-        // listeners
     }
 
     @Test
@@ -455,7 +452,6 @@ class AppInboxRepositoryImplTest : BaseRobolectricTest() {
         inboxRepository.subscribeOnMessagesCountChanged(mockk())
         inboxRepository.unsubscribeAllMessagesCountChanged()
 
-        //verify(exactly = 1) { listeners.clear()} // TODO
         verify(exactly = 1) { scheduler.shutdownNow() }
     }
 
@@ -485,17 +481,42 @@ class AppInboxRepositoryImplTest : BaseRobolectricTest() {
 
     @Test
     fun givenPollingIsActiveAndHasValue_whenFetchCountAndValuesAreEquals_thenNotifySuccessWithoutCallback() {
+        val listener = spyk<RetenoResultCallback<Int>>()
+        mockkCountSuccessResponse()
+        val currentThreadExecutor = Executor(Runnable::run)
+        every { scheduler.scheduleAtFixedRate(any(), any(), any(), any()) } answers {
+            currentThreadExecutor.execute(firstArg())
+            currentThreadExecutor.execute(firstArg())
+            mockk()
+        }
 
+        inboxRepository.subscribeOnMessagesCountChanged(listener)
+
+        verify(exactly = 1) { listener.onSuccess(MESSAGES_COUNT) }
+    }
+
+    @Test
+    fun givenPollingIsActiveAndHasValue_whenFetchCountAndValuesAreNotEquals_thenNotifySuccessWithoutCallback() {
+        val listener = spyk<RetenoResultCallback<Int>>()
+        mockkCountSuccessResponseForTwoCalls()
+        val currentThreadExecutor = Executor(Runnable::run)
+        every { scheduler.scheduleAtFixedRate(any(), any(), any(), any()) } answers {
+            currentThreadExecutor.execute(firstArg())
+            currentThreadExecutor.execute(firstArg())
+            mockk()
+        }
+
+        inboxRepository.subscribeOnMessagesCountChanged(listener)
+
+        verify(exactly = 1) { listener.onSuccess(MESSAGES_COUNT_ZERO) }
+        verify(exactly = 1) { listener.onSuccess(MESSAGES_COUNT) }
     }
 
     @Test
     fun givenPollingIsActiveAndListenersAreEmpty_whenFetchCount_thenStopPoling() {
-
-    }
-
-    @Test
-    fun givenPollingIsInactive_whenFetchCount_thenStopPoling() {
-
+        val listener = spyk<RetenoResultCallback<Int>>()
+        inboxRepository.subscribeOnMessagesCountChanged(listener)
+        inboxRepository.unsubscribeAllMessagesCountChanged()
     }
 
     @Test
@@ -530,6 +551,28 @@ class AppInboxRepositoryImplTest : BaseRobolectricTest() {
         every { apiClient.get(any(), any(), any()) } answers {
             val callback = thirdArg<ResponseCallback>()
             callback.onSuccess(resultJson)
+        }
+    }
+
+    private fun mockkCountSuccessResponseForTwoCalls() {
+        val resultJsonFirst = """
+            {
+                "unreadCount": $MESSAGES_COUNT_ZERO
+            }
+        """.trimIndent()
+
+        val resultJsonSecond = """
+            {
+                "unreadCount": $MESSAGES_COUNT
+            }
+        """.trimIndent()
+
+        every { apiClient.get(any(), any(), any()) } answers {
+            val callback = thirdArg<ResponseCallback>()
+            callback.onSuccess(resultJsonFirst)
+        } andThenAnswer {
+            val callback = thirdArg<ResponseCallback>()
+            callback.onSuccess(resultJsonSecond)
         }
     }
 

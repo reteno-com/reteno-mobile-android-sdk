@@ -21,13 +21,11 @@ import com.reteno.core.util.Logger
 import com.reteno.core.util.RetenoThreadFactory
 import com.reteno.core.util.Util.formatToRemote
 import com.reteno.core.util.isNonRepeatableError
-import java.lang.ref.WeakReference
 import java.time.ZonedDateTime
 import java.util.*
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
-import kotlin.random.Random
 
 class AppInboxRepositoryImpl(
     private val apiClient: ApiClient,
@@ -203,7 +201,10 @@ class AppInboxRepositoryImpl(
         /*@formatter:off*/ Logger.i(TAG, "subscribeOnMessagesCountChanged(): ", "callback = [" , callback , "], listenerSet.size = [", listeners.size, "]")
         /*@formatter:on*/
         synchronized(listeners) {
-            listeners[callback] = callback // TODO need test new key
+            listeners[callback] = callback
+            lastCountValue?.let {
+                callback.onSuccess(it)
+            }
             startPolling()
         }
     }
