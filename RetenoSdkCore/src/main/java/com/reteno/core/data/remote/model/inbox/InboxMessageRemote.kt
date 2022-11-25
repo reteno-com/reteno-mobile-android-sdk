@@ -4,7 +4,7 @@ import com.google.gson.annotations.SerializedName
 
 data class InboxMessageRemote(
     @SerializedName("content")
-    val content: String,
+    val content: String?,
     @SerializedName("createDate")
     val createdDate: String,
     @SerializedName("id")
@@ -16,5 +16,7 @@ data class InboxMessageRemote(
     @SerializedName("newMessage")
     val isNewMessage: Boolean,
     @SerializedName("title")
-    val title: String
+    val title: String,
+    @SerializedName("category")
+    val category: String?,
 )

@@ -52,6 +52,7 @@ public class InboxMessageAdapter extends ListAdapter<AppInboxMessage, InboxMessa
         public void bind(AppInboxMessage inbox) {
             binding.tvTitle.setText(inbox.getTitle());
             binding.tvData.setText(inbox.getCreatedDate());
+            binding.tvCategory.setText(inbox.getCategory());
             binding.tvContent.setText(inbox.getContent());
             binding.btnMarkAsOpened.setOnClickListener(v -> {
                 itemClick.onOpenedClicked(inbox.getId());

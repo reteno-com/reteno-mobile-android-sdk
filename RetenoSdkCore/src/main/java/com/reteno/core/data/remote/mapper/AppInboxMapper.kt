@@ -20,6 +20,7 @@ fun InboxMessageRemote.toDomain(): AppInboxMessage {
         imageUrl = imageUrl,
         linkUrl = linkUrl,
         isNewMessage = isNewMessage,
-        title = title
+        title = title,
+        category = category
     )
 }
