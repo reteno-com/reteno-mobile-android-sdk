@@ -13,17 +13,17 @@ class SchedulerUtilsTest: BaseUnitTest() {
     fun whenGetOutdatedData_thenReturnDataMinusDay() {
         mockkStatic(ZonedDateTime::class)
         mockkObject(Util)
-        val mockData = mockk<ZonedDateTime>()
+        val mockDate = mockk<ZonedDateTime>()
         val mockOutDatedData = mockk<ZonedDateTime>()
         every { Util.isDebugView() } returns false
-        every { ZonedDateTime.now() } returns mockData
-        every { mockData.minusHours(any()) } returns mockOutDatedData
+        every { ZonedDateTime.now() } returns mockDate
+        every { mockDate.minusHours(any()) } returns mockOutDatedData
 
         val result = SchedulerUtils.getOutdatedTime()
 
         assertEquals(mockOutDatedData, result)
         verify(exactly = 1) { ZonedDateTime.now() }
-        verify(exactly = 1) { mockData.minusHours(24) }
+        verify(exactly = 1) { mockDate.minusHours(24) }
 
         unmockkStatic(ZonedDateTime::class)
         unmockkObject(Util)
@@ -34,14 +34,14 @@ class SchedulerUtilsTest: BaseUnitTest() {
         mockkStatic(ZonedDateTime::class)
         mockkObject(Util)
         val mockData = mockk<ZonedDateTime>()
-        val mockOutDatedData = mockk<ZonedDateTime>()
+        val mockOutDatedDate = mockk<ZonedDateTime>()
         every { Util.isDebugView() } returns true
         every { ZonedDateTime.now() } returns mockData
-        every { mockData.minusHours(any()) } returns mockOutDatedData
+        every { mockData.minusHours(any()) } returns mockOutDatedDate
 
         val result = SchedulerUtils.getOutdatedTime()
 
-        assertEquals(mockOutDatedData, result)
+        assertEquals(mockOutDatedDate, result)
         verify(exactly = 1) { ZonedDateTime.now() }
         verify(exactly = 1) { mockData.minusHours(1) }
 

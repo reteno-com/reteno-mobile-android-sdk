@@ -37,6 +37,7 @@ class AppInboxRepositoryImplTest : BaseRobolectricTest() {
         private const val PAGE_SIZE = 12
 
         private const val ERROR_CODE = 400
+        private const val ERROR_CODE_REPEATABLE = 500
         private const val ERROR_MSG = "error_msg"
         private val ERROR_EXCEPTION = MockKException(ERROR_MSG)
 
@@ -154,7 +155,7 @@ class AppInboxRepositoryImplTest : BaseRobolectricTest() {
         every { retenoDatabaseManager.getAppInboxMessages(any()) } returns listOf(inboxStatus)
         every { apiClient.post(any(), any(), any()) } answers {
             val callback = thirdArg<ResponseCallback>()
-            callback.onFailure(500, null, null)
+            callback.onFailure(ERROR_CODE_REPEATABLE, null, null)
         }
 
         inboxRepository.pushMessagesStatus()
@@ -173,7 +174,7 @@ class AppInboxRepositoryImplTest : BaseRobolectricTest() {
         )
         every { apiClient.post(any(), any(), any()) } answers {
             val callback = thirdArg<ResponseCallback>()
-            callback.onFailure(400, null, null)
+            callback.onFailure(ERROR_CODE, null, null)
         }
 
         inboxRepository.pushMessagesStatus()
@@ -510,13 +511,6 @@ class AppInboxRepositoryImplTest : BaseRobolectricTest() {
 
         verify(exactly = 1) { listener.onSuccess(MESSAGES_COUNT_ZERO) }
         verify(exactly = 1) { listener.onSuccess(MESSAGES_COUNT) }
-    }
-
-    @Test
-    fun givenPollingIsActiveAndListenersAreEmpty_whenFetchCount_thenStopPoling() {
-        val listener = spyk<RetenoResultCallback<Int>>()
-        inboxRepository.subscribeOnMessagesCountChanged(listener)
-        inboxRepository.unsubscribeAllMessagesCountChanged()
     }
 
     @Test
