@@ -4,13 +4,13 @@ import android.app.Activity
 import android.app.Application
 import android.content.ComponentName
 import android.content.Intent
-import com.reteno.core.data.local.config.DeviceIdMode
 import com.reteno.core.di.ServiceLocator
 import com.reteno.core.domain.model.event.Event
 import com.reteno.core.domain.model.user.User
 import com.reteno.core.lifecycle.RetenoActivityHelper
 import com.reteno.core.lifecycle.RetenoLifecycleCallbacks
 import com.reteno.core.lifecycle.ScreenTrackingConfig
+import com.reteno.core.recommendation.Recommendation
 import com.reteno.core.util.Constants.BROADCAST_ACTION_RETENO_APP_RESUME
 import com.reteno.core.util.Logger
 import com.reteno.core.util.queryBroadcastReceivers
@@ -31,6 +31,8 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
     private val eventController by lazy { serviceLocator.eventsControllerProvider.get() }
 
     override val appInbox by lazy { serviceLocator.appInboxProvider.get() }
+
+    private val recommendationInstance by lazy { serviceLocator.recommendationProvider.get() }
 
     private val activityHelper: RetenoActivityHelper by lazy { serviceLocator.retenoActivityHelperProvider.get() }
 
@@ -108,6 +110,8 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
         /*@formatter:on*/
         scheduleController.forcePush()
     }
+
+    override fun getRecommendation(): Recommendation = recommendationInstance
 
     private fun setUserData(user: User?) {
         /*@formatter:off*/ Logger.i(TAG, "setUserData(): ", "used = [" , user , "]")

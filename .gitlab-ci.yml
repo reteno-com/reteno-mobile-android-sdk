@@ -44,6 +44,7 @@ assembleDebug:
 
 # Run all tests, if any fails, interrupt the pipeline(fail it)
 debugTests:
+  parallel: 5
   stage: test
   interruptible: true
   before_script:

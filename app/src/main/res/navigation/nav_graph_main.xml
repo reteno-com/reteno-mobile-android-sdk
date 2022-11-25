@@ -45,6 +45,9 @@
         <action
             android:id="@+id/start_to_appInbox"
             app:destination="@id/fragmentAppInbox" />
+        <action
+            android:id="@+id/start_to_recommendationsGet"
+            app:destination="@id/fragmentScreenRecommendationsGet" />
     </fragment>
 
     <fragment
@@ -204,4 +207,10 @@
         android:name="com.reteno.sample.fragments.inbox.FragmentAppInbox"
         android:label="fragment_app_inbox"
         tools:layout="@layout/fragment_app_inbox" />
+
+    <fragment
+        android:id="@+id/fragmentScreenRecommendationsGet"
+        android:name="com.reteno.sample.fragments.FragmentRecommendationsGet"
+        android:label="fragment_recommendations_get"
+        tools:layout="@layout/fragment_recommendations_get" />
 </navigation>

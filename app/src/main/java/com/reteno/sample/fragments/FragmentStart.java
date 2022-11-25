@@ -71,6 +71,7 @@ public class FragmentStart extends BaseFragment {
         screens.add(new ScreenItem("Force push", FragmentStartDirections.startToForcePush()));
         screens.add(new ScreenItem("Screen tracking", FragmentStartDirections.startToScreenTracking()));
         screens.add(new ScreenItem("App Inbox", FragmentStartDirections.startToAppInbox()));
+        screens.add(new ScreenItem("Recommendations GET", FragmentStartDirections.startToRecommendationsGet()));
 
         return screens;
     }

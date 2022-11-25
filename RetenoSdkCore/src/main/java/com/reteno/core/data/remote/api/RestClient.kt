@@ -136,6 +136,11 @@ class RestClient(private val restConfig: RestConfig) {
                     setRequestProperty(HEADER_VERSION, BuildConfig.SDK_VERSION)
                     setRequestProperty(HEADER_DEVICE_ID, restConfig.deviceId.id)
                 }
+                is ApiContract.Recommendation.Get -> {
+                    setRequestProperty(HEADER_KEY, restConfig.accessKey)
+                    setRequestProperty(HEADER_VERSION, BuildConfig.SDK_VERSION)
+                    setRequestProperty(HEADER_DEVICE_ID, restConfig.deviceId.id)
+                }
                 else -> { /* NO-OP */ }
             }
             setRequestProperty(HEADER_ACCEPT, HEADER_ACCEPT_VALUE)

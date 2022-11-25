@@ -58,7 +58,20 @@ sealed interface ApiContract {
         object MessagesStatus : AppInbox() {
             override val url = "${BASE_URL}messages/status"
         }
+    }
 
+    sealed class Recommendation : ApiContract {
+        companion object {
+            private const val BASE_URL = "https://mobile-api.reteno.com/api/v1/recoms/"
+        }
+
+        class Get(recomVariantId: String) : Recommendation() {
+            override val url = "${BASE_URL}$recomVariantId/request"
+        }
+
+        class Send() : Recommendation() {
+            override val url = "${BASE_URL}/events"
+        }
     }
 
     data class Custom(override val url: String) : ApiContract
