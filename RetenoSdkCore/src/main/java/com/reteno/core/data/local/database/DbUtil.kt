@@ -2,9 +2,9 @@ package com.reteno.core.data.local.database
 
 import android.content.ContentValues
 import androidx.core.database.getStringOrNull
+import com.reteno.core.data.local.model.BooleanDb
 import com.reteno.core.data.local.model.appinbox.AppInboxMessageDb
 import com.reteno.core.data.local.model.appinbox.AppInboxMessageStatusDb
-import com.reteno.core.data.local.model.BooleanDb
 import com.reteno.core.data.local.model.device.DeviceCategoryDb
 import com.reteno.core.data.local.model.device.DeviceDb
 import com.reteno.core.data.local.model.device.DeviceOsDb
@@ -13,6 +13,8 @@ import com.reteno.core.data.local.model.event.EventsDb
 import com.reteno.core.data.local.model.event.ParameterDb
 import com.reteno.core.data.local.model.interaction.InteractionDb
 import com.reteno.core.data.local.model.interaction.InteractionStatusDb
+import com.reteno.core.data.local.model.recommendation.RecomEventDb
+import com.reteno.core.data.local.model.recommendation.RecomEventTypeDb
 import com.reteno.core.data.local.model.user.AddressDb
 import com.reteno.core.data.local.model.user.UserAttributesDb
 import com.reteno.core.data.local.model.user.UserCustomFieldDb
@@ -267,6 +269,44 @@ fun Cursor.getAppInbox(): AppInboxMessageDb? {
             deviceId = deviceId!!,
             occurredDate = time!!,
             status = AppInboxMessageStatusDb.fromString(status)
+        )
+    } else {
+        null
+    }
+}
+
+// --------------------- Recommendation ------------------------------------------------------------
+fun ContentValues.putRecomVariantId(recomVariantId: String) {
+    put(DbSchema.RecomEventsSchema.COLUMN_RECOM_VARIANT_ID, recomVariantId)
+}
+
+fun List<RecomEventDb>.toContentValuesList(recomVariantId: String, recomEventTypeDb: RecomEventTypeDb): List<ContentValues> {
+    val contentValues = mutableListOf<ContentValues>()
+
+    for (recomEvent in this) {
+        val singleContentValues = ContentValues().apply {
+            put(DbSchema.RecomEventsSchema.COLUMN_RECOM_VARIANT_ID, recomVariantId)
+            put(DbSchema.RecomEventSchema.COLUMN_RECOM_EVENT_TYPE, recomEventTypeDb.toString())
+            put(DbSchema.RecomEventSchema.COLUMN_RECOM_EVENT_PRODUCT_ID, recomEvent.productId)
+            put(DbSchema.RecomEventSchema.COLUMN_RECOM_EVENT_OCCURRED, recomEvent.occurred)
+        }
+        contentValues.add(singleContentValues)
+    }
+
+    return contentValues
+}
+
+fun Cursor.getRecomEvent(): RecomEventDb? {
+    val productId = getStringOrNull(getColumnIndex(DbSchema.RecomEventSchema.COLUMN_RECOM_EVENT_PRODUCT_ID))
+    val occurred = getStringOrNull(getColumnIndex(DbSchema.RecomEventSchema.COLUMN_RECOM_EVENT_OCCURRED))
+    val recomEventTypeString = getStringOrNull(getColumnIndex(DbSchema.RecomEventSchema.COLUMN_RECOM_EVENT_TYPE))
+    val recomEventType = RecomEventTypeDb.fromString(recomEventTypeString)
+
+    return if (allElementsNotNull(recomEventType, occurred, productId)) {
+        return RecomEventDb(
+            recomEventType = recomEventType!!,
+            occurred = occurred!!,
+            productId = productId!!
         )
     } else {
         null

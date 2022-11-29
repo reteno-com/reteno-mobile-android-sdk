@@ -34,6 +34,8 @@ class RetenoDatabaseImpl(context: Context) : RetenoDatabase,
         db.execSQL(DbSchema.EventsSchema.SQL_CREATE_TABLE)
         db.execSQL(DbSchema.EventSchema.SQL_CREATE_TABLE)
         db.execSQL(DbSchema.AppInboxSchema.SQL_CREATE_TABLE)
+        db.execSQL(DbSchema.RecomEventsSchema.SQL_CREATE_TABLE)
+        db.execSQL(DbSchema.RecomEventSchema.SQL_CREATE_TABLE)
     }
 
     override fun onUpgrade(db: SQLiteDatabase?, oldVersion: Int, newVersion: Int) {
@@ -294,11 +296,20 @@ class RetenoDatabaseImpl(context: Context) : RetenoDatabase,
     }
 
     /**
+     * Call this method each time you remove any record from Event table (Child table)
+     */
+    override fun cleanUnlinkedRecomEvents() {
+        val rawQuery = "DELETE FROM ${DbSchema.RecomEventsSchema.TABLE_NAME_RECOM_EVENTS} WHERE ${DbSchema.RecomEventsSchema.COLUMN_RECOM_VARIANT_ID} NOT IN " +
+                "(SELECT ${DbSchema.RecomEventsSchema.COLUMN_RECOM_VARIANT_ID} FROM ${DbSchema.RecomEventSchema.TABLE_NAME_RECOM_EVENT})"
+        getSQLiteDatabaseWithRetries().execSQL(rawQuery)
+    }
+
+    /**
      * Should be used in the event that we don't want to retry getting the a [SQLiteDatabase] instance
      * Replaced all [SQLiteOpenHelper.getReadableDatabase] with [SQLiteOpenHelper.getWritableDatabase]
      * as the internals call the same method and not much of a performance benefit between them
      * <br></br><br></br>
-     * [OneSignalDbHelper.getSQLiteDatabaseWithRetries] has similar logic and throws the same Exceptions
+     * [getSQLiteDatabaseWithRetries] has similar logic and throws the same Exceptions
      * <br></br><br></br>
      * @see [StackOverflow | What are best practices for SQLite on Android](https://stackoverflow.com/questions/2493331/what-are-the-best-practices-for-sqlite-on-android/3689883.3689883)
      */

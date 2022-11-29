@@ -19,6 +19,11 @@ import com.reteno.core.data.local.database.DbSchema.EventsSchema.TABLE_NAME_EVEN
 import com.reteno.core.data.local.database.DbSchema.InteractionSchema.COLUMN_INTERACTION_ROW_ID
 import com.reteno.core.data.local.database.DbSchema.InteractionSchema.COLUMN_INTERACTION_TIME
 import com.reteno.core.data.local.database.DbSchema.InteractionSchema.TABLE_NAME_INTERACTION
+import com.reteno.core.data.local.database.DbSchema.RecomEventSchema.COLUMN_RECOM_EVENT_OCCURRED
+import com.reteno.core.data.local.database.DbSchema.RecomEventSchema.COLUMN_RECOM_EVENT_ROW_ID
+import com.reteno.core.data.local.database.DbSchema.RecomEventSchema.TABLE_NAME_RECOM_EVENT
+import com.reteno.core.data.local.database.DbSchema.RecomEventsSchema.COLUMN_RECOM_VARIANT_ID
+import com.reteno.core.data.local.database.DbSchema.RecomEventsSchema.TABLE_NAME_RECOM_EVENTS
 import com.reteno.core.data.local.database.DbSchema.UserAddressSchema.COLUMN_ADDRESS
 import com.reteno.core.data.local.database.DbSchema.UserAddressSchema.COLUMN_POSTCODE
 import com.reteno.core.data.local.database.DbSchema.UserAddressSchema.COLUMN_REGION
@@ -44,6 +49,9 @@ import com.reteno.core.data.local.model.device.DeviceDb
 import com.reteno.core.data.local.model.event.EventDb
 import com.reteno.core.data.local.model.event.EventsDb
 import com.reteno.core.data.local.model.interaction.InteractionDb
+import com.reteno.core.data.local.model.recommendation.RecomEventDb
+import com.reteno.core.data.local.model.recommendation.RecomEventTypeDb
+import com.reteno.core.data.local.model.recommendation.RecomEventsDb
 import com.reteno.core.data.local.model.user.UserDb
 import com.reteno.core.util.Logger
 import com.reteno.core.util.allElementsNotNull
@@ -54,6 +62,26 @@ class RetenoDatabaseManagerImpl(private val database: RetenoDatabase) : RetenoDa
 
     private val contentValues = ContentValues()
 
+    //==============================================================================================
+    override fun isDatabaseEmpty(): Boolean {
+        val deviceCount = getDeviceCount()
+        val userCount = getUserCount()
+        val interactionCount = getInteractionCount()
+        val eventCount = getEventsCount()
+        val appInboxCount = getAppInboxMessagesCount()
+        val recomEventsCount = getRecomEventsCount()
+
+        val result = deviceCount == 0L
+                && userCount == 0L
+                && interactionCount == 0L
+                && eventCount == 0L
+                && appInboxCount == 0L
+                && recomEventsCount == 0L
+        /*@formatter:off*/ Logger.i(TAG, "isDatabaseEmpty(): ", "result = $result")
+        /*@formatter:on*/
+        return result
+    }
+    //==============================================================================================
 
     override fun insertDevice(device: DeviceDb) {
         contentValues.putDevice(device)
@@ -323,8 +351,7 @@ class RetenoDatabaseManagerImpl(private val database: RetenoDatabase) : RetenoDa
         try {
             cursor = database.query(
                 table = TABLE_NAME_EVENTS,
-                columns = DbSchema.EventsSchema.getAllColumns(),
-                limit = limit?.toString()
+                columns = DbSchema.EventsSchema.getAllColumns()
             )
             while (cursor.moveToNext()) {
                 val eventsId = cursor.getLongOrNull(cursor.getColumnIndex(DbSchema.EventsSchema.COLUMN_EVENTS_ID))
@@ -368,7 +395,8 @@ class RetenoDatabaseManagerImpl(private val database: RetenoDatabase) : RetenoDa
                     table = TABLE_NAME_EVENT,
                     columns = DbSchema.EventSchema.getAllColumns(),
                     selection = "$COLUMN_EVENTS_ID=?",
-                    selectionArgs = arrayOf(foreignKeyRowId)
+                    selectionArgs = arrayOf(foreignKeyRowId),
+                    limit = limit.toString()
                 )
 
                 while (cursorChild.moveToNext()) {
@@ -420,7 +448,7 @@ class RetenoDatabaseManagerImpl(private val database: RetenoDatabase) : RetenoDa
     override fun getEventsCount(): Long = database.getRowCount(TABLE_NAME_EVENT)
 
     /**
-     * Call [database.cleanUnlinkedEvents] each time you remove events from Event table (Child table)
+     * Call [com.reteno.core.data.local.database.RetenoDatabase.cleanUnlinkedEvents] each time you remove events from Event table (Child table)
      */
     override fun deleteEvents(count: Int, oldest: Boolean) {
         val order = if (oldest) "ASC" else "DESC"
@@ -441,6 +469,8 @@ class RetenoDatabaseManagerImpl(private val database: RetenoDatabase) : RetenoDa
         return count
     }
 
+
+    //==============================================================================================
     /** AppInbox **/
     override fun insertAppInboxMessage(message: AppInboxMessageDb) {
         contentValues.putAppInbox(message)
@@ -513,19 +543,204 @@ class RetenoDatabaseManagerImpl(private val database: RetenoDatabase) : RetenoDa
         )
     }
 
-    override fun isDatabaseEmpty(): Boolean {
-        val deviceCount = getDeviceCount()
-        val userCount = getUserCount()
-        val interactionCount = getInteractionCount()
-        val eventCount = getEventsCount()
+    //==============================================================================================
+    override fun insertRecomEvents(recomEvents: RecomEventsDb) {
+        if (recomEvents.impressions?.isEmpty() ?: true && recomEvents.clicks?.isEmpty() ?: true) {
+            /*@formatter:off*/ Logger.e(TAG, "insertRecomEvents(): ", Throwable("impressions = ${recomEvents.impressions}, clicks = ${recomEvents.clicks}"))
+            /*@formatter:on*/
+            return
+        }
 
-        val result = deviceCount == 0L
-                && userCount == 0L
-                && interactionCount == 0L
-                && eventCount == 0L
-        /*@formatter:off*/ Logger.i(TAG, "isDatabaseEmpty(): ", "result = $result")
-        /*@formatter:on*/
-        return result
+        val recomVariantId: String? =
+            if (isRecomVariantIdPresentInParentTable(recomEvents.recomVariantId)) {
+                recomEvents.recomVariantId
+            } else {
+                if (putRecomVariantIdToParentTable(recomEvents.recomVariantId)) {
+                    recomEvents.recomVariantId
+                } else {
+                    null
+                }
+            }
+
+        recomVariantId?.let { variantId ->
+            recomEvents.clicks?.let {
+                insertRecomEventList(variantId, RecomEventTypeDb.CLICKS, it)
+            }
+            recomEvents.impressions?.let {
+                insertRecomEventList(variantId, RecomEventTypeDb.IMPRESSIONS, it)
+            }
+        }
+    }
+
+    private fun isRecomVariantIdPresentInParentTable(recomVariantId: String): Boolean {
+        var cursor: Cursor? = null
+
+        try {
+            cursor = database.query(
+                table = TABLE_NAME_RECOM_EVENTS,
+                columns = DbSchema.RecomEventsSchema.getAllColumns(),
+                selection = "$COLUMN_RECOM_VARIANT_ID=?",
+                selectionArgs = arrayOf(recomVariantId)
+            )
+
+            if (cursor.moveToFirst()) {
+                return true
+            }
+        } catch (t: Throwable) {
+            handleSQLiteError("Unable to get recomEvents from the table.", t)
+        } finally {
+            cursor?.close()
+        }
+
+        return false
+    }
+
+    private fun putRecomVariantIdToParentTable(recomVariantId: String): Boolean {
+        contentValues.putRecomVariantId(recomVariantId)
+        val parentRowId = database.insert(table = TABLE_NAME_RECOM_EVENTS, contentValues = contentValues)
+        contentValues.clear()
+
+        return parentRowId != -1L
+    }
+
+    private fun insertRecomEventList(
+        variantId: String,
+        recomEventTypeDb: RecomEventTypeDb,
+        recomEventListDb: List<RecomEventDb>) {
+
+        val contentValues = recomEventListDb.toContentValuesList(
+            variantId,
+            recomEventTypeDb
+        )
+        database.insertMultiple(
+            table = TABLE_NAME_RECOM_EVENT,
+            contentValues = contentValues
+        )
+    }
+
+    override fun getRecomEvents(limit: Int?): List<RecomEventsDb> {
+        val recomVariantIds: MutableList<Long> = readRecomVariantIds()
+        val recomEventsResult: MutableList<RecomEventsDb> = readRecomEventList(recomVariantIds, limit)
+
+        database.cleanUnlinkedRecomEvents()
+
+        return recomEventsResult
+    }
+
+    private fun readRecomVariantIds(): MutableList<Long> {
+        val recomVariantIds: MutableList<Long> = mutableListOf()
+        var cursor: Cursor? = null
+        try {
+            cursor = database.query(
+                table = TABLE_NAME_RECOM_EVENTS,
+                columns = DbSchema.RecomEventsSchema.getAllColumns()
+            )
+            while (cursor.moveToNext()) {
+                val recomVariantId =
+                    cursor.getLongOrNull(cursor.getColumnIndex(COLUMN_RECOM_VARIANT_ID))
+
+                if (recomVariantId != null) {
+                    recomVariantIds.add(recomVariantId)
+                } else {
+                    val exception =
+                        SQLException("Unable to read data from SQL database. recomVariantId=null")
+                    /*@formatter:off*/ Logger.e(TAG, "Error reading database. recomVariantId=$recomVariantId", exception)
+                    /*@formatter:on*/
+                }
+            }
+        } catch (t: Throwable) {
+            handleSQLiteError("Unable to get recomEvents from the table.", t)
+        } finally {
+            cursor?.close()
+        }
+
+        return recomVariantIds
+    }
+
+    private fun readRecomEventList(recomVariantIds: MutableList<Long>, limit: Int?): MutableList<RecomEventsDb> {
+        val recomEventsResult: MutableList<RecomEventsDb> = mutableListOf()
+
+        for (recomVariantId in recomVariantIds) {
+            val clicks: MutableList<RecomEventDb> = mutableListOf()
+            val impressions: MutableList<RecomEventDb> = mutableListOf()
+
+            var cursorChild: Cursor? = null
+            try {
+                cursorChild = database.query(
+                    table = TABLE_NAME_RECOM_EVENT,
+                    columns = DbSchema.RecomEventSchema.getAllColumns(),
+                    selection = "$COLUMN_RECOM_VARIANT_ID=?",
+                    selectionArgs = arrayOf(recomVariantId.toString()),
+                    limit = limit.toString()
+                )
+
+                while (cursorChild.moveToNext()) {
+                    val recomEvent = cursorChild.getRecomEvent()
+
+                    if (recomEvent != null) {
+                        when (recomEvent.recomEventType) {
+                            RecomEventTypeDb.CLICKS -> clicks.add(recomEvent)
+                            RecomEventTypeDb.IMPRESSIONS -> impressions.add(recomEvent)
+                        }
+                    } else {
+                        val rowId = cursorChild.getLongOrNull(
+                            cursorChild.getColumnIndex(COLUMN_RECOM_EVENT_ROW_ID)
+                        )
+                        val exception =
+                            SQLException("Unable to read data from SQL database. recomEvent=$recomEvent")
+                        if (rowId == null) {
+                            /*@formatter:off*/ Logger.e(TAG, "getRecomEvents(). rowId is NULL ", exception)
+                            /*@formatter:on*/
+                        } else {
+                            database.delete(
+                                table = TABLE_NAME_RECOM_EVENT,
+                                whereClause = "$COLUMN_RECOM_EVENT_ROW_ID=?",
+                                whereArgs = arrayOf(rowId.toString())
+                            )
+                            /*@formatter:off*/ Logger.e(TAG, "getRecomEvents(). Removed invalid entry from database. recomEvent=$recomEvent ", exception)
+                            /*@formatter:on*/
+                        }
+                    }
+                }
+            } catch (t: Throwable) {
+                handleSQLiteError("Unable to get events from the table.", t)
+            } finally {
+                cursorChild?.close()
+            }
+
+            recomEventsResult.add(
+                RecomEventsDb(
+                    recomVariantId = recomVariantId.toString(),
+                    impressions = impressions,
+                    clicks = clicks
+                )
+            )
+        }
+        return recomEventsResult
+    }
+
+    override fun getRecomEventsCount(): Long = database.getRowCount(TABLE_NAME_RECOM_EVENT)
+
+    /**
+     * Call [com.reteno.core.data.local.database.RetenoDatabase.cleanUnlinkedRecomEvents] each time you remove events from RecomEvent table (Child table)
+     */
+    override fun deleteRecomEvents(count: Int, oldest: Boolean) {
+        val order = if (oldest) "ASC" else "DESC"
+        database.delete(
+            table = TABLE_NAME_RECOM_EVENT,
+            whereClause = "$COLUMN_RECOM_EVENT_ROW_ID in (select $COLUMN_RECOM_EVENT_ROW_ID from $TABLE_NAME_RECOM_EVENT ORDER BY $COLUMN_RECOM_EVENT_OCCURRED $order LIMIT $count)"
+        )
+
+        database.cleanUnlinkedRecomEvents()
+    }
+
+    override fun deleteRecomEventsByTime(outdatedTime: String): Int {
+        val count = database.delete(
+            table = TABLE_NAME_RECOM_EVENT,
+            whereClause = "$COLUMN_RECOM_EVENT_OCCURRED < '$outdatedTime'"
+        )
+        database.cleanUnlinkedRecomEvents()
+        return count
     }
 
     //==============================================================================================

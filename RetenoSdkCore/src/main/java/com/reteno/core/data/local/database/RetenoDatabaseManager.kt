@@ -4,9 +4,12 @@ import com.reteno.core.data.local.model.appinbox.AppInboxMessageDb
 import com.reteno.core.data.local.model.device.DeviceDb
 import com.reteno.core.data.local.model.event.EventsDb
 import com.reteno.core.data.local.model.interaction.InteractionDb
+import com.reteno.core.data.local.model.recommendation.RecomEventsDb
 import com.reteno.core.data.local.model.user.UserDb
 
 interface RetenoDatabaseManager {
+
+    fun isDatabaseEmpty(): Boolean
 
     fun insertDevice(device: DeviceDb)
     fun getDevices(limit: Int? = null): List<DeviceDb>
@@ -37,5 +40,9 @@ interface RetenoDatabaseManager {
     fun deleteAllAppInboxMessages()
     fun deleteAppInboxMessagesByTime(outdatedTime: String): Int
 
-    fun isDatabaseEmpty(): Boolean
+    fun insertRecomEvents(recomEvents: RecomEventsDb)
+    fun getRecomEvents(limit: Int? = null): List<RecomEventsDb>
+    fun getRecomEventsCount(): Long
+    fun deleteRecomEvents(count: Int, oldest: Boolean = true)
+    fun deleteRecomEventsByTime(outdatedTime: String): Int
 }

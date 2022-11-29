@@ -1,9 +1,5 @@
 package com.reteno.core.data.local.database
 
-import com.reteno.core.data.local.database.DbSchema.EventsSchema.COLUMN_EVENTS_ID
-import com.reteno.core.data.local.database.DbSchema.EventsSchema.TABLE_NAME_EVENTS
-import com.reteno.core.data.local.database.DbSchema.UserSchema.COLUMN_USER_ROW_ID
-import com.reteno.core.data.local.database.DbSchema.UserSchema.TABLE_NAME_USER
 
 internal object DbSchema {
     internal const val DATABASE_NAME = "reteno.db"
@@ -104,7 +100,7 @@ internal object DbSchema {
         internal const val SQL_CREATE_TABLE =
             "CREATE TABLE IF NOT EXISTS $TABLE_NAME_USER_ATTRIBUTES" +
                     "(" +
-                    "$COLUMN_USER_ROW_ID INTEGER NOT NULL, " +
+                    "${UserSchema.COLUMN_USER_ROW_ID} INTEGER NOT NULL, " +
                     "$COLUMN_PHONE TEXT, " +
                     "$COLUMN_EMAIL TEXT, " +
                     "$COLUMN_FIRST_NAME TEXT, " +
@@ -112,7 +108,7 @@ internal object DbSchema {
                     "$COLUMN_LANGUAGE_CODE TEXT, " +
                     "$COLUMN_TIME_ZONE TEXT, " +
                     "$COLUMN_CUSTOM_FIELDS TEXT, " +
-                    "FOREIGN KEY ($COLUMN_USER_ROW_ID) REFERENCES $TABLE_NAME_USER ($COLUMN_USER_ROW_ID) ON DELETE CASCADE" +
+                    "FOREIGN KEY (${UserSchema.COLUMN_USER_ROW_ID}) REFERENCES ${UserSchema.TABLE_NAME_USER} (${UserSchema.COLUMN_USER_ROW_ID}) ON DELETE CASCADE" +
                     ")"
     }
 
@@ -127,12 +123,12 @@ internal object DbSchema {
         internal const val SQL_CREATE_TABLE =
             "CREATE TABLE IF NOT EXISTS $TABLE_NAME_USER_ADDRESS" +
                     "(" +
-                    "$COLUMN_USER_ROW_ID INTEGER NOT NULL, " +
+                    "${UserSchema.COLUMN_USER_ROW_ID} INTEGER NOT NULL, " +
                     "$COLUMN_REGION TEXT, " +
                     "$COLUMN_TOWN TEXT, " +
                     "$COLUMN_ADDRESS TEXT, " +
                     "$COLUMN_POSTCODE TEXT, " +
-                    "FOREIGN KEY ($COLUMN_USER_ROW_ID) REFERENCES $TABLE_NAME_USER ($COLUMN_USER_ROW_ID) ON DELETE CASCADE" +
+                    "FOREIGN KEY (${UserSchema.COLUMN_USER_ROW_ID}) REFERENCES ${UserSchema.TABLE_NAME_USER} (${UserSchema.COLUMN_USER_ROW_ID}) ON DELETE CASCADE" +
                     ")"
     }
 
@@ -204,16 +200,16 @@ internal object DbSchema {
         internal const val SQL_CREATE_TABLE =
             "CREATE TABLE IF NOT EXISTS $TABLE_NAME_EVENT" +
                     "(" +
-                    "$COLUMN_EVENTS_ID INTEGER NOT NULL, " +
+                    "${EventsSchema.COLUMN_EVENTS_ID} INTEGER NOT NULL, " +
                     "$COLUMN_EVENT_ROW_ID INTEGER PRIMARY KEY, " +
                     "$COLUMN_EVENT_TYPE_KEY TEXT, " +
                     "$COLUMN_EVENT_OCCURRED TIMESTAMP, " +
                     "$COLUMN_EVENT_PARAMS TEXT, " +
-                    "FOREIGN KEY ($COLUMN_EVENTS_ID) REFERENCES $TABLE_NAME_EVENTS ($COLUMN_EVENTS_ID)" +
+                    "FOREIGN KEY (${EventsSchema.COLUMN_EVENTS_ID}) REFERENCES ${EventsSchema.TABLE_NAME_EVENTS} (${EventsSchema.COLUMN_EVENTS_ID})" +
                     ")"
 
         fun getAllColumns(): Array<String> = arrayOf(
-            COLUMN_EVENTS_ID,
+            EventsSchema.COLUMN_EVENTS_ID,
             COLUMN_EVENT_ROW_ID,
             COLUMN_EVENT_TYPE_KEY,
             COLUMN_EVENT_OCCURRED,
@@ -221,7 +217,7 @@ internal object DbSchema {
         )
     }
 
-    /** App Inbox **/
+    // --------------------- App Inbox -------------------------------------------------------------
     internal object AppInboxSchema {
         internal const val TABLE_NAME_APP_INBOX = "AppInbox"
 
@@ -244,6 +240,49 @@ internal object DbSchema {
             COLUMN_APP_INBOX_DEVICE_ID,
             COLUMN_APP_INBOX_STATUS,
             COLUMN_APP_INBOX_TIME
+        )
+    }
+
+    // --------------------- Recommendations -------------------------------------------------------
+    internal object RecomEventsSchema {
+        internal const val TABLE_NAME_RECOM_EVENTS = "RecomEvents"
+
+        internal const val COLUMN_RECOM_VARIANT_ID = "recomVariantId"
+
+        internal const val SQL_CREATE_TABLE =
+            "CREATE TABLE IF NOT EXISTS $TABLE_NAME_RECOM_EVENTS" +
+                    "($COLUMN_RECOM_VARIANT_ID TEXT PRIMARY KEY NOT NULL)"
+
+        fun getAllColumns(): Array<String> = arrayOf(
+            COLUMN_RECOM_VARIANT_ID
+        )
+    }
+
+    internal object RecomEventSchema {
+        internal const val TABLE_NAME_RECOM_EVENT = "RecomEvent"
+
+        internal const val COLUMN_RECOM_EVENT_ROW_ID = "rowId"
+        internal const val COLUMN_RECOM_EVENT_PRODUCT_ID = "productId"
+        internal const val COLUMN_RECOM_EVENT_OCCURRED = "occurred"
+        internal const val COLUMN_RECOM_EVENT_TYPE = "eventType"
+
+        internal const val SQL_CREATE_TABLE =
+            "CREATE TABLE IF NOT EXISTS $TABLE_NAME_RECOM_EVENT" +
+                    "(" +
+                    "${RecomEventsSchema.COLUMN_RECOM_VARIANT_ID} TEXT NOT NULL, " +
+                    "$COLUMN_RECOM_EVENT_ROW_ID INTEGER PRIMARY KEY, " +
+                    "$COLUMN_RECOM_EVENT_PRODUCT_ID TEXT, " +
+                    "$COLUMN_RECOM_EVENT_OCCURRED TIMESTAMP, " +
+                    "$COLUMN_RECOM_EVENT_TYPE TEXT, " +
+                    "FOREIGN KEY (${RecomEventsSchema.COLUMN_RECOM_VARIANT_ID}) REFERENCES ${RecomEventsSchema.TABLE_NAME_RECOM_EVENTS} (${RecomEventsSchema.COLUMN_RECOM_VARIANT_ID})" +
+                    ")"
+
+        fun getAllColumns(): Array<String> = arrayOf(
+            RecomEventsSchema.COLUMN_RECOM_VARIANT_ID,
+            COLUMN_RECOM_EVENT_ROW_ID,
+            COLUMN_RECOM_EVENT_PRODUCT_ID,
+            COLUMN_RECOM_EVENT_OCCURRED,
+            COLUMN_RECOM_EVENT_TYPE
         )
     }
 }
