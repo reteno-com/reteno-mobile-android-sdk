@@ -456,11 +456,11 @@ class RetenoDatabaseManagerImpl(private val database: RetenoDatabase) : RetenoDa
             cursor = database.query(
                 table = TABLE_NAME_APP_INBOX,
                 columns = DbSchema.AppInboxSchema.getAllColumns(),
-                orderBy = "$COLUMN_TIMESTAMP ASC",
+                orderBy = "$COLUMN_APP_INBOX_TIME ASC",
                 limit = limit?.toString()
             )
             while (cursor.moveToNext()) {
-                val timestamp = cursor.getStringOrNull(cursor.getColumnIndex(COLUMN_TIMESTAMP))
+                val timestamp = cursor.getStringOrNull(cursor.getColumnIndex(COLUMN_APP_INBOX_TIME))
                 val inbox = cursor.getAppInbox()
 
                 if (inbox != null) {
@@ -498,7 +498,7 @@ class RetenoDatabaseManagerImpl(private val database: RetenoDatabase) : RetenoDa
         val order = if (oldest) "ASC" else "DESC"
         database.delete(
             table = TABLE_NAME_APP_INBOX,
-            whereClause = "$COLUMN_APP_INBOX_ID in (select $COLUMN_APP_INBOX_ID from $TABLE_NAME_APP_INBOX ORDER BY $COLUMN_TIMESTAMP $order LIMIT $count)"
+            whereClause = "$COLUMN_APP_INBOX_ID in (select $COLUMN_APP_INBOX_ID from $TABLE_NAME_APP_INBOX ORDER BY $COLUMN_APP_INBOX_TIME $order LIMIT $count)"
         )
     }
 

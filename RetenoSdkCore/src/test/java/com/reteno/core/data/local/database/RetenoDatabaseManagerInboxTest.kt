@@ -21,7 +21,6 @@ class RetenoDatabaseManagerInboxTest : BaseRobolectricTest() {
 
     companion object {
         private const val ROW_ID_INSERTED = 1L
-        private const val TIMESTAMP = "2022-11-22T13:38:21Z"
 
         private const val INBOX_ID = "214-asf-42412-dgjh-24512-mcgsd"
         private const val INBOX_ID_CORRUPTED = "214-asf-42412-dgjh-24512-mcgsd_c"
@@ -42,7 +41,6 @@ class RetenoDatabaseManagerInboxTest : BaseRobolectricTest() {
             deviceId = INBOX_DEVICE_ID
         )
 
-        private const val COLUMN_INDEX_TIMESTAMP = 1
         private const val COLUMN_INDEX_INBOX_ID = 2
         private const val COLUMN_INDEX_INBOX_STATUS = 3
         private const val COLUMN_INDEX_INBOX_TIME = 4
@@ -62,7 +60,7 @@ class RetenoDatabaseManagerInboxTest : BaseRobolectricTest() {
         mockkStatic(Cursor::getAppInbox)
 
         mockColumnIndexes()
-        every { cursor.getStringOrNull(COLUMN_INDEX_TIMESTAMP) } returns TIMESTAMP
+        every { cursor.getStringOrNull(COLUMN_INDEX_INBOX_TIME) } returns INBOX_OCCURRED_TIME
         justRun { cursor.close() }
 
         SUT = RetenoDatabaseManagerImpl(database)
@@ -110,7 +108,7 @@ class RetenoDatabaseManagerInboxTest : BaseRobolectricTest() {
             database.query(
                 table = eq(DbSchema.AppInboxSchema.TABLE_NAME_APP_INBOX),
                 columns = eq(DbSchema.AppInboxSchema.getAllColumns()),
-                orderBy = eq("${DbSchema.COLUMN_TIMESTAMP} ASC"),
+                orderBy = eq("${DbSchema.AppInboxSchema.COLUMN_APP_INBOX_TIME} ASC"),
                 limit = null
             )
         }
@@ -132,7 +130,7 @@ class RetenoDatabaseManagerInboxTest : BaseRobolectricTest() {
             database.query(
                 table = eq(DbSchema.AppInboxSchema.TABLE_NAME_APP_INBOX),
                 columns = eq(DbSchema.AppInboxSchema.getAllColumns()),
-                orderBy = eq("${DbSchema.COLUMN_TIMESTAMP} ASC"),
+                orderBy = eq("${DbSchema.AppInboxSchema.COLUMN_APP_INBOX_TIME} ASC"),
                 limit = null
             )
         }
@@ -154,7 +152,7 @@ class RetenoDatabaseManagerInboxTest : BaseRobolectricTest() {
             database.query(
                 table = eq(DbSchema.AppInboxSchema.TABLE_NAME_APP_INBOX),
                 columns = eq(DbSchema.AppInboxSchema.getAllColumns()),
-                orderBy = eq("${DbSchema.COLUMN_TIMESTAMP} ASC"),
+                orderBy = eq("${DbSchema.AppInboxSchema.COLUMN_APP_INBOX_TIME} ASC"),
                 limit = null
             )
         }
@@ -182,7 +180,7 @@ class RetenoDatabaseManagerInboxTest : BaseRobolectricTest() {
             database.query(
                 table = eq(DbSchema.AppInboxSchema.TABLE_NAME_APP_INBOX),
                 columns = eq(DbSchema.AppInboxSchema.getAllColumns()),
-                orderBy = eq("${DbSchema.COLUMN_TIMESTAMP} ASC"),
+                orderBy = eq("${DbSchema.AppInboxSchema.COLUMN_APP_INBOX_TIME} ASC"),
                 limit = null
             )
         }
@@ -220,7 +218,7 @@ class RetenoDatabaseManagerInboxTest : BaseRobolectricTest() {
         val whereClauseExpected = "${DbSchema.AppInboxSchema.COLUMN_APP_INBOX_ID} " +
                 "in (select ${DbSchema.AppInboxSchema.COLUMN_APP_INBOX_ID} " +
                 "from ${DbSchema.AppInboxSchema.TABLE_NAME_APP_INBOX} " +
-                "ORDER BY ${DbSchema.COLUMN_TIMESTAMP} $order " +
+                "ORDER BY ${DbSchema.AppInboxSchema.COLUMN_APP_INBOX_TIME} $order " +
                 "LIMIT $count)"
 
         every { database.delete(any(), any(), any()) } returns 0
@@ -242,7 +240,7 @@ class RetenoDatabaseManagerInboxTest : BaseRobolectricTest() {
         val whereClauseExpected = "${DbSchema.AppInboxSchema.COLUMN_APP_INBOX_ID} " +
                 "in (select ${DbSchema.AppInboxSchema.COLUMN_APP_INBOX_ID} " +
                 "from ${DbSchema.AppInboxSchema.TABLE_NAME_APP_INBOX} " +
-                "ORDER BY ${DbSchema.COLUMN_TIMESTAMP} $order " +
+                "ORDER BY ${DbSchema.AppInboxSchema.COLUMN_APP_INBOX_TIME} $order " +
                 "LIMIT $count)"
 
         every { database.delete(any(), any(), any()) } returns 0
@@ -292,8 +290,6 @@ class RetenoDatabaseManagerInboxTest : BaseRobolectricTest() {
 
     private fun mockColumnIndexes() {
         every { cursor.isNull(any()) } returns false
-
-        every { cursor.getColumnIndex(DbSchema.COLUMN_TIMESTAMP) } returns COLUMN_INDEX_TIMESTAMP
         
         every { cursor.getColumnIndex(DbSchema.AppInboxSchema.COLUMN_APP_INBOX_ID) } returns COLUMN_INDEX_INBOX_ID
         every { cursor.getColumnIndex(DbSchema.AppInboxSchema.COLUMN_APP_INBOX_STATUS) } returns COLUMN_INDEX_INBOX_STATUS
