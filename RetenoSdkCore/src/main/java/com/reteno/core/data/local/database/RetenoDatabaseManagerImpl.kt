@@ -50,7 +50,6 @@ import com.reteno.core.data.local.model.event.EventDb
 import com.reteno.core.data.local.model.event.EventsDb
 import com.reteno.core.data.local.model.interaction.InteractionDb
 import com.reteno.core.data.local.model.recommendation.RecomEventDb
-import com.reteno.core.data.local.model.recommendation.RecomEventTypeDb
 import com.reteno.core.data.local.model.recommendation.RecomEventsDb
 import com.reteno.core.data.local.model.user.UserDb
 import com.reteno.core.util.Logger
@@ -396,7 +395,7 @@ class RetenoDatabaseManagerImpl(private val database: RetenoDatabase) : RetenoDa
                     columns = DbSchema.EventSchema.getAllColumns(),
                     selection = "$COLUMN_EVENTS_ID=?",
                     selectionArgs = arrayOf(foreignKeyRowId),
-                    limit = limit.toString()
+                    limit = limit?.toString()
                 )
 
                 while (cursorChild.moveToNext()) {
@@ -545,8 +544,8 @@ class RetenoDatabaseManagerImpl(private val database: RetenoDatabase) : RetenoDa
 
     //==============================================================================================
     override fun insertRecomEvents(recomEvents: RecomEventsDb) {
-        if (recomEvents.impressions?.isEmpty() ?: true && recomEvents.clicks?.isEmpty() ?: true) {
-            /*@formatter:off*/ Logger.e(TAG, "insertRecomEvents(): ", Throwable("impressions = ${recomEvents.impressions}, clicks = ${recomEvents.clicks}"))
+        if (recomEvents.recomEvents == null || recomEvents.recomEvents.isEmpty()) {
+            /*@formatter:off*/ Logger.e(TAG, "insertRecomEvents(): ", Throwable("recomEvents = $recomEvents"))
             /*@formatter:on*/
             return
         }
@@ -563,12 +562,7 @@ class RetenoDatabaseManagerImpl(private val database: RetenoDatabase) : RetenoDa
             }
 
         recomVariantId?.let { variantId ->
-            recomEvents.clicks?.let {
-                insertRecomEventList(variantId, RecomEventTypeDb.CLICKS, it)
-            }
-            recomEvents.impressions?.let {
-                insertRecomEventList(variantId, RecomEventTypeDb.IMPRESSIONS, it)
-            }
+            insertRecomEventList(variantId, recomEvents.recomEvents)
         }
     }
 
@@ -605,13 +599,9 @@ class RetenoDatabaseManagerImpl(private val database: RetenoDatabase) : RetenoDa
 
     private fun insertRecomEventList(
         variantId: String,
-        recomEventTypeDb: RecomEventTypeDb,
         recomEventListDb: List<RecomEventDb>) {
 
-        val contentValues = recomEventListDb.toContentValuesList(
-            variantId,
-            recomEventTypeDb
-        )
+        val contentValues = recomEventListDb.toContentValuesList(variantId)
         database.insertMultiple(
             table = TABLE_NAME_RECOM_EVENT,
             contentValues = contentValues
@@ -619,7 +609,7 @@ class RetenoDatabaseManagerImpl(private val database: RetenoDatabase) : RetenoDa
     }
 
     override fun getRecomEvents(limit: Int?): List<RecomEventsDb> {
-        val recomVariantIds: MutableList<Long> = readRecomVariantIds()
+        val recomVariantIds: MutableList<String> = readRecomVariantIds()
         val recomEventsResult: MutableList<RecomEventsDb> = readRecomEventList(recomVariantIds, limit)
 
         database.cleanUnlinkedRecomEvents()
@@ -627,8 +617,8 @@ class RetenoDatabaseManagerImpl(private val database: RetenoDatabase) : RetenoDa
         return recomEventsResult
     }
 
-    private fun readRecomVariantIds(): MutableList<Long> {
-        val recomVariantIds: MutableList<Long> = mutableListOf()
+    private fun readRecomVariantIds(): MutableList<String> {
+        val recomVariantIds: MutableList<String> = mutableListOf()
         var cursor: Cursor? = null
         try {
             cursor = database.query(
@@ -637,7 +627,7 @@ class RetenoDatabaseManagerImpl(private val database: RetenoDatabase) : RetenoDa
             )
             while (cursor.moveToNext()) {
                 val recomVariantId =
-                    cursor.getLongOrNull(cursor.getColumnIndex(COLUMN_RECOM_VARIANT_ID))
+                    cursor.getStringOrNull(cursor.getColumnIndex(COLUMN_RECOM_VARIANT_ID))
 
                 if (recomVariantId != null) {
                     recomVariantIds.add(recomVariantId)
@@ -657,12 +647,11 @@ class RetenoDatabaseManagerImpl(private val database: RetenoDatabase) : RetenoDa
         return recomVariantIds
     }
 
-    private fun readRecomEventList(recomVariantIds: MutableList<Long>, limit: Int?): MutableList<RecomEventsDb> {
+    private fun readRecomEventList(recomVariantIds: MutableList<String>, limit: Int?): MutableList<RecomEventsDb> {
         val recomEventsResult: MutableList<RecomEventsDb> = mutableListOf()
 
         for (recomVariantId in recomVariantIds) {
-            val clicks: MutableList<RecomEventDb> = mutableListOf()
-            val impressions: MutableList<RecomEventDb> = mutableListOf()
+            val recomEvents: MutableList<RecomEventDb> = mutableListOf()
 
             var cursorChild: Cursor? = null
             try {
@@ -670,18 +659,15 @@ class RetenoDatabaseManagerImpl(private val database: RetenoDatabase) : RetenoDa
                     table = TABLE_NAME_RECOM_EVENT,
                     columns = DbSchema.RecomEventSchema.getAllColumns(),
                     selection = "$COLUMN_RECOM_VARIANT_ID=?",
-                    selectionArgs = arrayOf(recomVariantId.toString()),
-                    limit = limit.toString()
+                    selectionArgs = arrayOf(recomVariantId),
+                    limit = limit?.toString()
                 )
 
                 while (cursorChild.moveToNext()) {
                     val recomEvent = cursorChild.getRecomEvent()
 
                     if (recomEvent != null) {
-                        when (recomEvent.recomEventType) {
-                            RecomEventTypeDb.CLICKS -> clicks.add(recomEvent)
-                            RecomEventTypeDb.IMPRESSIONS -> impressions.add(recomEvent)
-                        }
+                        recomEvents.add(recomEvent)
                     } else {
                         val rowId = cursorChild.getLongOrNull(
                             cursorChild.getColumnIndex(COLUMN_RECOM_EVENT_ROW_ID)
@@ -711,8 +697,7 @@ class RetenoDatabaseManagerImpl(private val database: RetenoDatabase) : RetenoDa
             recomEventsResult.add(
                 RecomEventsDb(
                     recomVariantId = recomVariantId.toString(),
-                    impressions = impressions,
-                    clicks = clicks
+                    recomEvents = recomEvents
                 )
             )
         }

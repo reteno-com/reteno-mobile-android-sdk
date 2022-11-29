@@ -1,0 +1,59 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:divider="@drawable/space_vertical"
+    android:orientation="vertical"
+    android:padding="8dp"
+    android:showDividers="middle"
+    tools:context=".fragments.FragmentRecommendationsPost">
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/tilRecomVariantId"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="RecomVariantId">
+
+        <EditText
+            android:id="@+id/etRecomVariantId"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="r1107v1482" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/tilProducts"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Product id">
+
+        <EditText
+            android:id="@+id/etProductId"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="24-WG080" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:divider="@drawable/space_horizontal"
+        android:orientation="horizontal"
+        android:showDividers="middle">
+
+        <Button
+            android:id="@+id/btnPostImpression"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:text="Post Impression" />
+
+        <Button
+            android:id="@+id/btnPostClick"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:text="Post Click" />
+    </LinearLayout>
+</LinearLayout>

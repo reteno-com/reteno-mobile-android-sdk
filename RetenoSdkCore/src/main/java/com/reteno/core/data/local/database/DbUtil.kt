@@ -280,13 +280,13 @@ fun ContentValues.putRecomVariantId(recomVariantId: String) {
     put(DbSchema.RecomEventsSchema.COLUMN_RECOM_VARIANT_ID, recomVariantId)
 }
 
-fun List<RecomEventDb>.toContentValuesList(recomVariantId: String, recomEventTypeDb: RecomEventTypeDb): List<ContentValues> {
+fun List<RecomEventDb>.toContentValuesList(recomVariantId: String): List<ContentValues> {
     val contentValues = mutableListOf<ContentValues>()
 
     for (recomEvent in this) {
         val singleContentValues = ContentValues().apply {
             put(DbSchema.RecomEventsSchema.COLUMN_RECOM_VARIANT_ID, recomVariantId)
-            put(DbSchema.RecomEventSchema.COLUMN_RECOM_EVENT_TYPE, recomEventTypeDb.toString())
+            put(DbSchema.RecomEventSchema.COLUMN_RECOM_EVENT_TYPE, recomEvent.recomEventType.toString())
             put(DbSchema.RecomEventSchema.COLUMN_RECOM_EVENT_PRODUCT_ID, recomEvent.productId)
             put(DbSchema.RecomEventSchema.COLUMN_RECOM_EVENT_OCCURRED, recomEvent.occurred)
         }

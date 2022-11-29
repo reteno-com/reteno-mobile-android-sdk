@@ -69,8 +69,8 @@ sealed interface ApiContract {
             override val url = "${BASE_URL}$recomVariantId/request"
         }
 
-        class Send() : Recommendation() {
-            override val url = "${BASE_URL}/events"
+        object Post : Recommendation() {
+            override val url = "${BASE_URL}events"
         }
     }
 

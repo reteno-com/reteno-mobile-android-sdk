@@ -17,6 +17,7 @@ class ScheduleController(
     private val interactionController: InteractionController,
     private val eventController: EventController,
     private val appInboxController: AppInboxController,
+    private val recommendationController: RecommendationController,
     private val workManager: WorkManager
 ) {
 
@@ -115,6 +116,10 @@ class ScheduleController(
             appInboxController::clearOldMessagesStatus,
             CLEAR_OLD_DATA_DELAY
         )
+        OperationQueue.addOperationAfterDelay(
+            recommendationController::clearOldEvents,
+            CLEAR_OLD_DATA_DELAY
+        )
     }
 
     private fun sendData() {
@@ -148,6 +153,12 @@ class ScheduleController(
             /*@formatter:off*/ Logger.i(TAG, "sendData(): ", "step: pushAppInboxStatuses")
             /*@formatter:on*/
             appInboxController.pushAppInboxMessagesStatus()
+        }
+
+        PushOperationQueue.addOperation {
+            /*@formatter:off*/ Logger.i(TAG, "sendData(): ", "step: pushRecommendations")
+            /*@formatter:on*/
+            recommendationController.pushRecommendations()
         }
 
         PushOperationQueue.nextOperation()

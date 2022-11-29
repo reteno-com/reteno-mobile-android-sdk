@@ -10,8 +10,7 @@ import com.reteno.core.util.Util.formatToRemote
 
 fun RecomEvents.toDb() = RecomEventsDb(
     recomVariantId = recomVariantId,
-    impressions = impressions?.map { it.toDb() },
-    clicks = clicks?.map { it.toDb() }
+    recomEvents = recomEvents?.map { it.toDb() }
 )
 
 fun RecomEvent.toDb() = RecomEventDb(

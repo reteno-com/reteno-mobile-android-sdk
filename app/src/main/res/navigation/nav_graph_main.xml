@@ -48,6 +48,9 @@
         <action
             android:id="@+id/start_to_recommendationsGet"
             app:destination="@id/fragmentScreenRecommendationsGet" />
+        <action
+            android:id="@+id/start_to_recommendationsPost"
+            app:destination="@id/fragmentScreenRecommendationsPost" />
     </fragment>
 
     <fragment
@@ -213,4 +216,10 @@
         android:name="com.reteno.sample.fragments.FragmentRecommendationsGet"
         android:label="fragment_recommendations_get"
         tools:layout="@layout/fragment_recommendations_get" />
+
+    <fragment
+        android:id="@+id/fragmentScreenRecommendationsPost"
+        android:name="com.reteno.sample.fragments.FragmentRecommendationsPost"
+        android:label="fragment_recommendations_post"
+        tools:layout="@layout/fragment_recommendations_post" />
 </navigation>

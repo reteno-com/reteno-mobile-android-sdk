@@ -1,6 +1,7 @@
 package com.reteno.core.data.remote.mapper
 
 import com.reteno.core.data.local.model.recommendation.RecomEventDb
+import com.reteno.core.data.local.model.recommendation.RecomEventTypeDb
 import com.reteno.core.data.local.model.recommendation.RecomEventsDb
 import com.reteno.core.data.remote.model.recommendation.get.RecomFilterRemote
 import com.reteno.core.data.remote.model.recommendation.get.RecomRequestRemote
@@ -30,8 +31,12 @@ fun List<RecomEventsDb>.toRemote() = RecomEventsRequestRemote(
 
 fun RecomEventsDb.toRemote() = RecomEventsRemote(
     recomVariantId = recomVariantId,
-    impressions = impressions?.map { it.toRemote() },
-    clicks = clicks?.map { it.toRemote() }
+    impressions = recomEvents
+        ?.filter { it.recomEventType == RecomEventTypeDb.IMPRESSIONS }
+        ?.map { it.toRemote() },
+    clicks = recomEvents
+        ?.filter { it.recomEventType == RecomEventTypeDb.CLICKS }
+        ?.map { it.toRemote() },
 )
 
 fun RecomEventDb.toRemote() = RecomEventRemote(
