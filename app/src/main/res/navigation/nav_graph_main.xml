@@ -42,6 +42,9 @@
         <action
             android:id="@+id/start_to_screenTracking"
             app:destination="@id/fragmentScreenTracking" />
+        <action
+            android:id="@+id/start_to_appInbox"
+            app:destination="@id/fragmentAppInbox" />
     </fragment>
 
     <fragment
@@ -109,6 +112,14 @@
         <action
             android:id="@+id/database_to_read_event"
             app:destination="@id/fragmentReadEvent" />
+
+        <action
+            android:id="@+id/database_to_read_inbox"
+            app:destination="@id/inboxReadDialogFragment" />
+
+        <action
+            android:id="@+id/database_to_write_inbox"
+            app:destination="@id/inboxWriteDialogFragment" />
     </fragment>
 
     <dialog
@@ -159,6 +170,18 @@
         android:label="fragmentReadEvent"
         tools:layout="@layout/dialog_db_read" />
 
+    <dialog
+        android:id="@+id/inboxReadDialogFragment"
+        android:name="com.reteno.sample.fragments.database.InboxReadDialogFragment"
+        android:label="InboxReadDialogFragment"
+        tools:layout="@layout/dialog_db_read" />
+
+    <dialog
+        android:id="@+id/inboxWriteDialogFragment"
+        android:name="com.reteno.sample.fragments.database.InboxWriteDialogFragment"
+        android:label="dialog_db_write_inbox"
+        tools:layout="@layout/dialog_db_write_inbox" />
+
     <fragment
         android:id="@+id/fragmentCustomEvent"
         android:name="com.reteno.sample.fragments.FragmentCustomEvent"
@@ -176,4 +199,9 @@
         android:name="com.reteno.sample.fragments.FragmentScreenTracking"
         android:label="fragment_screen_tracking"
         tools:layout="@layout/fragment_screen_tracking" />
+    <fragment
+        android:id="@+id/fragmentAppInbox"
+        android:name="com.reteno.sample.fragments.inbox.FragmentAppInbox"
+        android:label="fragment_app_inbox"
+        tools:layout="@layout/fragment_app_inbox" />
 </navigation>

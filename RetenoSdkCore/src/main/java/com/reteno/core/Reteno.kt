@@ -1,11 +1,17 @@
 package com.reteno.core
 
+import com.reteno.core.appinbox.AppInbox
 import com.reteno.core.domain.model.event.Event
 import com.reteno.core.domain.model.user.User
 import com.reteno.core.lifecycle.ScreenTrackingConfig
 
 
 interface Reteno {
+
+    /**
+     *  Get [AppInbox] instance.
+     */
+    val appInbox: AppInbox
 
     /**
      *  Set the user ID.

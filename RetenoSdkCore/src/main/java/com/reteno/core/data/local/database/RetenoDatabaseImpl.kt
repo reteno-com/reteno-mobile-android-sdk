@@ -33,6 +33,7 @@ class RetenoDatabaseImpl(context: Context) : RetenoDatabase,
         db.execSQL(DbSchema.InteractionSchema.SQL_CREATE_TABLE)
         db.execSQL(DbSchema.EventsSchema.SQL_CREATE_TABLE)
         db.execSQL(DbSchema.EventSchema.SQL_CREATE_TABLE)
+        db.execSQL(DbSchema.AppInboxSchema.SQL_CREATE_TABLE)
     }
 
     override fun onUpgrade(db: SQLiteDatabase?, oldVersion: Int, newVersion: Int) {

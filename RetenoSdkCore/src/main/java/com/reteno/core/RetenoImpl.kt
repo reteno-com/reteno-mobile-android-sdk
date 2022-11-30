@@ -25,6 +25,8 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
     private val scheduleController by lazy { serviceLocator.scheduleControllerProvider.get() }
     private val eventController by lazy { serviceLocator.eventsControllerProvider.get() }
 
+    override val appInbox by lazy { serviceLocator.appInboxProvider.get() }
+
     private val activityHelper: RetenoActivityHelper by lazy { serviceLocator.retenoActivityHelperProvider.get() }
 
     init {

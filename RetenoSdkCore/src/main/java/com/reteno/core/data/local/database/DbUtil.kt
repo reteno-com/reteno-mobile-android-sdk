@@ -2,6 +2,8 @@ package com.reteno.core.data.local.database
 
 import android.content.ContentValues
 import androidx.core.database.getStringOrNull
+import com.reteno.core.data.local.model.appinbox.AppInboxMessageDb
+import com.reteno.core.data.local.model.appinbox.AppInboxMessageStatusDb
 import com.reteno.core.data.local.model.device.DeviceCategoryDb
 import com.reteno.core.data.local.model.device.DeviceDb
 import com.reteno.core.data.local.model.device.DeviceOsDb
@@ -238,4 +240,30 @@ fun Cursor.getEvent(): EventDb? {
     }
 
     return result
+}
+
+// --------------------- AppInbox ----------------------------------------------------------------
+fun ContentValues.putAppInbox(inboxDb: AppInboxMessageDb) {
+    put(DbSchema.AppInboxSchema.COLUMN_APP_INBOX_ID, inboxDb.id)
+    put(DbSchema.AppInboxSchema.COLUMN_APP_INBOX_DEVICE_ID, inboxDb.deviceId)
+    put(DbSchema.AppInboxSchema.COLUMN_APP_INBOX_STATUS, inboxDb.status.toString())
+    put(DbSchema.AppInboxSchema.COLUMN_APP_INBOX_TIME, inboxDb.occurredDate)
+}
+
+fun Cursor.getAppInbox(): AppInboxMessageDb? {
+    val id = getStringOrNull(getColumnIndex(DbSchema.AppInboxSchema.COLUMN_APP_INBOX_ID))
+    val deviceId = getStringOrNull(getColumnIndex(DbSchema.AppInboxSchema.COLUMN_APP_INBOX_DEVICE_ID))
+    val time = getStringOrNull(getColumnIndex(DbSchema.AppInboxSchema.COLUMN_APP_INBOX_TIME))
+    val status = getStringOrNull(getColumnIndex(DbSchema.AppInboxSchema.COLUMN_APP_INBOX_STATUS))
+
+    return if (allElementsNotNull(id, deviceId, time, status)) {
+        AppInboxMessageDb(
+            id = id!!,
+            deviceId = deviceId!!,
+            occurredDate = time!!,
+            status = AppInboxMessageStatusDb.fromString(status)
+        )
+    } else {
+        null
+    }
 }

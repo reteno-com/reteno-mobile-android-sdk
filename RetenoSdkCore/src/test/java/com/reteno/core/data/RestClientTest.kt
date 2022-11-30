@@ -74,7 +74,7 @@ class RestClientTest : BaseUnitTest() {
     @Test
     fun appendedQueryParams_paramsNotNull() {
         val expectedUrl = "http://www.test.com?params1=false&params2=9"
-        val params = mapOf("params1" to false, "params2" to 9)
+        val params = mapOf("params1" to false.toString(), "params2" to "9")
 
         every { ConnectionManager.openConnection(any()) } returns httpURLConnection
         mockkStatic(Uri::class)
@@ -94,7 +94,7 @@ class RestClientTest : BaseUnitTest() {
 
     @Test
     fun appendedQueryParams_paramsAreEmpty() {
-        val params = emptyMap<String, Any>()
+        val params = emptyMap<String, String?>()
         val expectedUrl = "http://www.test.com"
 
         every { ConnectionManager.openConnection(any()) } returns httpURLConnection
@@ -311,7 +311,7 @@ class RestClientTest : BaseUnitTest() {
         method: HttpMethod = HttpMethod.POST,
         url: ApiContract = ApiContract.Custom(TEST_URL),
         body: String? = null,
-        queryParams: Map<String, Any>? = null,
+        queryParams: Map<String, String?>? = null,
         responseCallback: ResponseCallback = getCallback()
     ) {
         restClient.makeRequest(method, url, body, queryParams, responseCallback)

@@ -27,6 +27,9 @@ class ScheduleControllerTest : BaseRobolectricTest() {
     private lateinit var eventController: EventController
 
     @RelaxedMockK
+    private lateinit var appInboxController: AppInboxController
+
+    @RelaxedMockK
     private lateinit var scheduler: ScheduledExecutorService
     // endregion helper fields ---------------------------------------------------------------------
 
@@ -52,7 +55,7 @@ class ScheduleControllerTest : BaseRobolectricTest() {
     @Test
     fun firstCalled_scheduleNewFixRateTask() {
         val controller =
-            ScheduleController(contactController, interactionController, eventController, mockk(relaxed = true))
+            ScheduleController(contactController, interactionController, eventController, appInboxController, mockk(relaxed = true))
 
         controller.startScheduler()
 
@@ -62,7 +65,7 @@ class ScheduleControllerTest : BaseRobolectricTest() {
     @Test
     fun executionTask_addedPushOperation() {
         val controller =
-            ScheduleController(contactController, interactionController, eventController, mockk(relaxed = true))
+            ScheduleController(contactController, interactionController, eventController, appInboxController,mockk(relaxed = true))
 
         val currentThreadExecutor = Executor(Runnable::run)
         every { PushOperationQueue.addOperation(any()) } answers {
@@ -72,18 +75,19 @@ class ScheduleControllerTest : BaseRobolectricTest() {
 
         controller.startScheduler()
 
-        verify(exactly = 4) { PushOperationQueue.addOperation(any()) }
-        verify(exactly = 5) { PushOperationQueue.nextOperation() }
+        verify(exactly = 5) { PushOperationQueue.addOperation(any()) }
+        verify(exactly = 6) { PushOperationQueue.nextOperation() }
         verify { contactController.pushDeviceData() }
         verify { contactController.pushUserData() }
         verify { interactionController.pushInteractions() }
         verify { eventController.pushEvents() }
+        verify { appInboxController.pushAppInboxMessagesStatus() }
     }
 
     @Test
     fun stopSchedule() {
         val controller =
-            ScheduleController(contactController, interactionController, eventController, mockk(relaxed = true))
+            ScheduleController(contactController, interactionController, eventController, appInboxController, mockk(relaxed = true))
 
         controller.startScheduler()
         controller.stopScheduler()
@@ -94,36 +98,37 @@ class ScheduleControllerTest : BaseRobolectricTest() {
     @Test
     fun forcePush_addPushOperation() {
         val controller =
-            ScheduleController(contactController, interactionController, eventController, mockk(relaxed = true))
+            ScheduleController(contactController, interactionController, eventController, appInboxController, mockk(relaxed = true))
 
         controller.forcePush()
 
-        verify(exactly = 4) { PushOperationQueue.addOperation(any()) }
+        verify(exactly = 5) { PushOperationQueue.addOperation(any()) }
         verify(exactly = 1) { PushOperationQueue.nextOperation() }
     }
 
     @Test
     fun forcePushCalledTwiceOneSecond_doesNotAddPushOperationTwice() {
         val controller =
-            ScheduleController(contactController, interactionController, eventController, mockk(relaxed = true))
+            ScheduleController(contactController, interactionController, eventController, appInboxController, mockk(relaxed = true))
 
         controller.forcePush()
         controller.forcePush()
 
-        verify(exactly = 4) { PushOperationQueue.addOperation(any()) }
+        verify(exactly = 5) { PushOperationQueue.addOperation(any()) }
         verify(exactly = 1) { PushOperationQueue.nextOperation() }
     }
 
     @Test
     fun clearOldOperation_thenAddOperationToQueueWithDelay() {
         val controller =
-            ScheduleController(contactController, interactionController, eventController, mockk(relaxed = true))
+            ScheduleController(contactController, interactionController, eventController, appInboxController, mockk(relaxed = true))
 
         controller.clearOldData()
 
-        verify(exactly = 2) { OperationQueue.addOperationAfterDelay(any(), eq(CLEAR_OLD_DATA_DELAY)) }
+        verify(exactly = 3) { OperationQueue.addOperationAfterDelay(any(), eq(CLEAR_OLD_DATA_DELAY)) }
         verify { interactionController.clearOldInteractions() }
         verify { eventController.clearOldEvents() }
+        verify { appInboxController.clearOldMessagesStatus() }
     }
 
 }

@@ -7,6 +7,7 @@ class ScheduleControllerProvider(
     private val contactControllerProvider: ContactControllerProvider,
     private val interactionControllerProvider: InteractionControllerProvider,
     private val eventsControllerProvider: EventsControllerProvider,
+    private val appInboxControllerProvider: AppInboxControllerProvider,
     private val workManagerProvider: WorkManagerProvider
 ) : ProviderWeakReference<ScheduleController>() {
 
@@ -15,6 +16,7 @@ class ScheduleControllerProvider(
             contactControllerProvider.get(),
             interactionControllerProvider.get(),
             eventsControllerProvider.get(),
+            appInboxControllerProvider.get(),
             workManagerProvider.get()
         )
     }

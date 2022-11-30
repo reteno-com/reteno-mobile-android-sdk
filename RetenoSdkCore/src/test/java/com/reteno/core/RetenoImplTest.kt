@@ -1,6 +1,8 @@
 package com.reteno.core
 
 import android.app.Application
+import com.reteno.core.RetenoImpl.Companion.application
+import com.reteno.core.appinbox.AppInboxImpl
 import com.reteno.core.base.BaseUnitTest
 import com.reteno.core.di.ServiceLocator
 import com.reteno.core.domain.controller.ContactController
@@ -14,6 +16,7 @@ import com.reteno.core.lifecycle.ScreenTrackingConfig
 import com.reteno.core.lifecycle.ScreenTrackingTrigger
 import io.mockk.*
 import io.mockk.impl.annotations.RelaxedMockK
+import org.junit.Assert.assertEquals
 import org.junit.Test
 import java.time.ZonedDateTime
 
@@ -47,6 +50,9 @@ class RetenoImplTest : BaseUnitTest() {
 
     @RelaxedMockK
     private lateinit var retenoActivityHelper: RetenoActivityHelper
+
+    @RelaxedMockK
+    private lateinit var inbox: AppInboxImpl
     // endregion helper fields ---------------------------------------------------------------------
 
     override fun before() {
@@ -55,6 +61,7 @@ class RetenoImplTest : BaseUnitTest() {
         every { anyConstructed<ServiceLocator>().contactControllerProvider.get() } returns contactController
         every { anyConstructed<ServiceLocator>().scheduleControllerProvider.get() } returns scheduleController
         every { anyConstructed<ServiceLocator>().eventsControllerProvider.get() } returns eventController
+        every { anyConstructed<ServiceLocator>().appInboxProvider.get() } returns inbox
         every { anyConstructed<ServiceLocator>().retenoActivityHelperProvider.get() } returns retenoActivityHelper
     }
 
@@ -166,6 +173,14 @@ class RetenoImplTest : BaseUnitTest() {
         retenoImpl.resume(mockk())
 
         verify { scheduleController.clearOldData() }
+    }
+
+    @Test
+    fun getAppInbox() {
+        val retenoImpl = RetenoImpl(mockk(), "")
+
+        val result = retenoImpl.appInbox
+        assertEquals(inbox, result)
     }
 
 }
