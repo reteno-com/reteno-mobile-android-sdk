@@ -612,7 +612,7 @@ class RetenoDatabaseManagerImpl(private val database: RetenoDatabase) : RetenoDa
         val recomVariantIds: MutableList<String> = readRecomVariantIds()
         val recomEventsResult: MutableList<RecomEventsDb> = readRecomEventList(recomVariantIds, limit)
 
-        database.cleanUnlinkedRecomEvents()
+        database.cleanUnlinkedRecomVariantIds()
 
         return recomEventsResult
     }
@@ -694,12 +694,14 @@ class RetenoDatabaseManagerImpl(private val database: RetenoDatabase) : RetenoDa
                 cursorChild?.close()
             }
 
-            recomEventsResult.add(
-                RecomEventsDb(
-                    recomVariantId = recomVariantId.toString(),
-                    recomEvents = recomEvents
+            if (recomEvents.isNotEmpty()) {
+                recomEventsResult.add(
+                    RecomEventsDb(
+                        recomVariantId = recomVariantId,
+                        recomEvents = recomEvents
+                    )
                 )
-            )
+            }
         }
         return recomEventsResult
     }
@@ -707,7 +709,7 @@ class RetenoDatabaseManagerImpl(private val database: RetenoDatabase) : RetenoDa
     override fun getRecomEventsCount(): Long = database.getRowCount(TABLE_NAME_RECOM_EVENT)
 
     /**
-     * Call [com.reteno.core.data.local.database.RetenoDatabase.cleanUnlinkedRecomEvents] each time you remove events from RecomEvent table (Child table)
+     * Call [com.reteno.core.data.local.database.RetenoDatabase.cleanUnlinkedRecomVariantIds] each time you remove events from RecomEvent table (Child table)
      */
     override fun deleteRecomEvents(count: Int, oldest: Boolean) {
         val order = if (oldest) "ASC" else "DESC"
@@ -716,7 +718,7 @@ class RetenoDatabaseManagerImpl(private val database: RetenoDatabase) : RetenoDa
             whereClause = "$COLUMN_RECOM_EVENT_ROW_ID in (select $COLUMN_RECOM_EVENT_ROW_ID from $TABLE_NAME_RECOM_EVENT ORDER BY $COLUMN_RECOM_EVENT_OCCURRED $order LIMIT $count)"
         )
 
-        database.cleanUnlinkedRecomEvents()
+        database.cleanUnlinkedRecomVariantIds()
     }
 
     override fun deleteRecomEventsByTime(outdatedTime: String): Int {
@@ -724,7 +726,7 @@ class RetenoDatabaseManagerImpl(private val database: RetenoDatabase) : RetenoDa
             table = TABLE_NAME_RECOM_EVENT,
             whereClause = "$COLUMN_RECOM_EVENT_OCCURRED < '$outdatedTime'"
         )
-        database.cleanUnlinkedRecomEvents()
+        database.cleanUnlinkedRecomVariantIds()
         return count
     }
 

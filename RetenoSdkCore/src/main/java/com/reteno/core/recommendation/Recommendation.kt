@@ -25,7 +25,10 @@ interface Recommendation {
     )
 
     /**
-     * 
+     * Log recommendation events
+     * @param recomEvents - recommendation event to be logged
+     *
+     * @see [com.reteno.core.domain.model.recommendation.post.RecomEvents]
      */
     fun logRecommendations(recomEvents: RecomEvents)
 }

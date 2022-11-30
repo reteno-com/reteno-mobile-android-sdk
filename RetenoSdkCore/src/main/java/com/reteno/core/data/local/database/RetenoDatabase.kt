@@ -44,5 +44,5 @@ interface RetenoDatabase {
     /**
      * Call this method each time you remove any record from RecomEvent table (Child table)
      */
-    fun cleanUnlinkedRecomEvents()
+    fun cleanUnlinkedRecomVariantIds()
 }

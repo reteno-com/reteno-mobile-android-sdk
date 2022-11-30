@@ -1,6 +1,10 @@
 package com.reteno.core.data.repository
 
 import com.reteno.core.base.robolectric.BaseRobolectricTest
+import com.reteno.core.data.local.database.RetenoDatabaseManager
+import com.reteno.core.data.local.model.recommendation.RecomEventDb
+import com.reteno.core.data.local.model.recommendation.RecomEventTypeDb
+import com.reteno.core.data.local.model.recommendation.RecomEventsDb
 import com.reteno.core.data.remote.OperationQueue
 import com.reteno.core.data.remote.PushOperationQueue
 import com.reteno.core.data.remote.api.ApiClient
@@ -11,16 +15,22 @@ import com.reteno.core.data.remote.model.recommendation.get.RecomBase
 import com.reteno.core.data.remote.model.recommendation.get.Recoms
 import com.reteno.core.domain.ResponseCallback
 import com.reteno.core.domain.model.recommendation.get.RecomRequest
+import com.reteno.core.domain.model.recommendation.post.RecomEvent
+import com.reteno.core.domain.model.recommendation.post.RecomEventType
+import com.reteno.core.domain.model.recommendation.post.RecomEvents
 import com.reteno.core.recommendation.GetRecommendationResponseCallback
+import com.reteno.core.util.Logger
+import com.reteno.core.util.Util.formatToRemote
 import io.mockk.*
 import io.mockk.impl.annotations.RelaxedMockK
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import java.time.ZonedDateTime
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 
 
-class RecommendationRepositoryImplTest : BaseRobolectricTest() {
+class RecommendationRepositoryTest : BaseRobolectricTest() {
 
     // region constants ----------------------------------------------------------------------------
     companion object {
@@ -29,8 +39,12 @@ class RecommendationRepositoryImplTest : BaseRobolectricTest() {
         private const val RECOM_CATEGORY: String = "category1"
         private val RECOM_FIELDS: List<String> = listOf("field1", "field2", "field3")
 
+        private const val PRODUCT_ID = "w12345s1345"
+        private val RECOM_EVENT_TYPE = RecomEventType.CLICKS
+        private val RECOM_EVENT_TYPE_DB = RecomEventTypeDb.CLICKS
 
-        private const val ERROR_CODE = 400
+        private const val ERROR_CODE_NON_REPEATABLE = 400
+        private const val ERROR_CODE_REPEATABLE = 500
         private const val ERROR_MSG = "error_msg"
         private val ERROR_EXCEPTION = MockKException(ERROR_MSG)
     }
@@ -38,6 +52,9 @@ class RecommendationRepositoryImplTest : BaseRobolectricTest() {
 
 
     // region helper fields ------------------------------------------------------------------------
+    @RelaxedMockK
+    private lateinit var databaseManager: RetenoDatabaseManager
+
     @RelaxedMockK
     private lateinit var apiClient: ApiClient
 
@@ -53,7 +70,7 @@ class RecommendationRepositoryImplTest : BaseRobolectricTest() {
         mockkObject(PushOperationQueue)
         every { Executors.newScheduledThreadPool(any(), any()) } returns scheduler
 
-        SUT = RecommendationRepositoryImpl(apiClient)
+        SUT = RecommendationRepositoryImpl(databaseManager, apiClient)
     }
 
     override fun after() {
@@ -173,7 +190,7 @@ class RecommendationRepositoryImplTest : BaseRobolectricTest() {
             )
         } answers {
             val callback = thirdArg<ResponseCallback>()
-            callback.onFailure(ERROR_CODE, ERROR_MSG, ERROR_EXCEPTION)
+            callback.onFailure(ERROR_CODE_NON_REPEATABLE, ERROR_MSG, ERROR_EXCEPTION)
         }
 
         // When
@@ -198,13 +215,145 @@ class RecommendationRepositoryImplTest : BaseRobolectricTest() {
         verify(exactly = 0) { responseCallback.onSuccessFallbackToJson(any()) }
         verify(exactly = 1) {
             responseCallback.onFailure(
-                eq(ERROR_CODE),
+                eq(ERROR_CODE_NON_REPEATABLE),
                 eq(ERROR_MSG),
                 eq(ERROR_EXCEPTION)
             )
         }
 
         verify(exactly = 1) { OperationQueue.addUiOperation(any()) }
+    }
+
+    @Test
+    fun givenValidEvents_whenEventsSent_thenSaveEvents() {
+        // Given
+        val recomEvents = getRecomEvents()
+        val recomEventsDb = getRecomEventsDb()
+
+        // When
+        SUT.saveRecommendations(recomEvents)
+
+        // Then
+        verify(exactly = 1) { OperationQueue.addOperation(any()) }
+        verify(exactly = 1) { databaseManager.insertRecomEvents(recomEventsDb) }
+    }
+
+    @Test
+    fun givenValidRecomEvents_whenRecomEventsPush_thenApiClientRecomEventsWithCorrectParameters() {
+        // Given
+        val recomEvents = getRecomEvents()
+        val recomEventsDb = getRecomEventsDb()
+
+        every { databaseManager.getRecomEvents(any()) } returns listOf(recomEventsDb) andThen emptyList()
+
+        SUT.pushRecommendations()
+
+        verify(exactly = 1) { apiClient.post(eq(ApiContract.Recommendation.Post), eq(listOf(recomEventsDb).toRemote().toJson()), any()) }
+        verify(exactly = 0) { PushOperationQueue.nextOperation() }
+    }
+
+    @Test
+    fun givenValidRecomEvents_whenRecomEventsPushSuccessful_thenTryPushNextRecomEvents() {
+        // Given
+        val recomEvents = getRecomEvents()
+        val recomEventsDb = getRecomEventsDb()
+        every { databaseManager.getRecomEvents(any()) } returnsMany listOf(
+            listOf(recomEventsDb),
+            listOf(recomEventsDb),
+            emptyList()
+        )
+        every { apiClient.post(url = any(), jsonBody = any(), responseHandler = any()) } answers {
+            val callback = thirdArg<ResponseCallback>()
+            callback.onSuccess("")
+        }
+
+        // When
+        SUT.pushRecommendations()
+
+        // Then
+        verify(exactly = 2) { apiClient.post(any(), any(), any()) }
+        verify(exactly = 2) { databaseManager.deleteRecomEvents(1) }
+        verify(exactly = 1) { PushOperationQueue.nextOperation() }
+    }
+
+    @Test
+    fun givenValidRecomEvents_whenRecomEventsPushFailedAndErrorIsRepeatable_cancelPushOperations() {
+        val recomEventDb = getRecomEventsDb()
+        every { databaseManager.getRecomEvents(any()) } returns listOf(recomEventDb)
+        every { apiClient.post(url = any(), jsonBody = any(), responseHandler = any()) } answers {
+            val callback = thirdArg<ResponseCallback>()
+            callback.onFailure(ERROR_CODE_REPEATABLE, null, null)
+        }
+
+        SUT.pushRecommendations()
+
+        verify(exactly = 1) { apiClient.post(any(), any(), any()) }
+        verify(exactly = 1) { PushOperationQueue.removeAllOperations() }
+    }
+
+    @Test
+    fun givenValidRecomEvents_whenRecomEventsPushFailedAndErrorIsNonRepeatable_thenTryPushNextRecomEvents() {
+        // Given
+        val recomEventsDb = getRecomEventsDb()
+        every { databaseManager.getRecomEvents(any()) } returnsMany listOf(
+            listOf(recomEventsDb),
+            listOf(recomEventsDb),
+            emptyList()
+        )
+        every { apiClient.post(url = any(), jsonBody = any(), responseHandler = any()) } answers {
+            val callback = thirdArg<ResponseCallback>()
+            callback.onFailure(ERROR_CODE_NON_REPEATABLE, null, null)
+        }
+
+        // When
+        SUT.pushRecommendations()
+
+        // Then
+        verify(exactly = 2) { apiClient.post(any(), any(), any()) }
+        verify(exactly = 3) { databaseManager.getRecomEvents() }
+        verify(exactly = 2) { databaseManager.deleteRecomEvents(1) }
+        verify(exactly = 1) { PushOperationQueue.nextOperation() }
+    }
+
+    @Test
+    fun givenNoRecomEventsInDb_whenRecomEventsPush_thenApiClientIsNotCalled() {
+        // Given
+        every { databaseManager.getRecomEvents(any()) } returns emptyList()
+
+        // When
+        SUT.pushRecommendations()
+
+        // Then
+        verify(exactly = 0) { apiClient.post(any(), any(), any()) }
+        verify { PushOperationQueue.nextOperation() }
+    }
+
+    @Test
+    fun noOutdatedRecomEvent_whenClearOldRecommendations_thenSentNothing() {
+        // Given
+        every { databaseManager.deleteRecomEventsByTime(any()) } returns 0
+
+        // When
+        SUT.clearOldRecommendations(ZonedDateTime.now())
+
+        // Then
+        verify(exactly = 1) { databaseManager.deleteRecomEventsByTime(any()) }
+        verify(exactly = 0) { Logger.captureEvent(any()) }
+    }
+
+    @Test
+    fun thereAreOutdatedInteraction_whenClearOldInteractions_thenSentCountDeleted() {
+        // Given
+        val deletedEvents = 2
+        every { databaseManager.deleteRecomEventsByTime(any()) } returns deletedEvents
+        val expectedMsg = "Outdated Events: - $deletedEvents"
+
+        // When
+        SUT.clearOldRecommendations(ZonedDateTime.now())
+
+        // Then
+        verify(exactly = 1) { databaseManager.deleteRecomEventsByTime(any()) }
+        verify(exactly = 1) { Logger.captureEvent(eq(expectedMsg)) }
     }
 
     // region helper methods -----------------------------------------------------------------------
@@ -280,6 +429,28 @@ class RecommendationRepositoryImplTest : BaseRobolectricTest() {
         tags_rating = "4",
         tags_sale = "0",
         url = "https://recom.devel.ardas.dp.ua/affirm-water-bottle.html?sc_content=24913_1"
+    )
+
+    private fun getRecomEvents() = RecomEvents(
+        recomVariantId = RECOM_VARIANT_ID,
+        recomEvents = listOf(
+            RecomEvent(
+                recomEventType = RECOM_EVENT_TYPE,
+                occurred = ZonedDateTime.now(),
+                productId = PRODUCT_ID
+            )
+        )
+    )
+
+    private fun getRecomEventsDb() = RecomEventsDb(
+        recomVariantId = RECOM_VARIANT_ID,
+        recomEvents = listOf(
+            RecomEventDb(
+                recomEventType = RECOM_EVENT_TYPE_DB,
+                occurred = ZonedDateTime.now().formatToRemote(),
+                productId = PRODUCT_ID
+            )
+        )
     )
     // endregion helper methods --------------------------------------------------------------------
 

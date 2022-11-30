@@ -298,7 +298,7 @@ class RetenoDatabaseImpl(context: Context) : RetenoDatabase,
     /**
      * Call this method each time you remove any record from Event table (Child table)
      */
-    override fun cleanUnlinkedRecomEvents() {
+    override fun cleanUnlinkedRecomVariantIds() {
         val rawQuery = "DELETE FROM ${DbSchema.RecomEventsSchema.TABLE_NAME_RECOM_EVENTS} WHERE ${DbSchema.RecomEventsSchema.COLUMN_RECOM_VARIANT_ID} NOT IN " +
                 "(SELECT ${DbSchema.RecomEventsSchema.COLUMN_RECOM_VARIANT_ID} FROM ${DbSchema.RecomEventSchema.TABLE_NAME_RECOM_EVENT})"
         getSQLiteDatabaseWithRetries().execSQL(rawQuery)

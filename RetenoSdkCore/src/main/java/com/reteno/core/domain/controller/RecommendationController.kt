@@ -38,8 +38,8 @@ class RecommendationController(private val recommendationRepository: Recommendat
         recommendationRepository.pushRecommendations()
     }
 
-    internal fun clearOldEvents() {
-        /*@formatter:off*/ Logger.i(TAG, "clearOldEvents(): ", "")
+    internal fun clearOldRecommendations() {
+        /*@formatter:off*/ Logger.i(TAG, "clearOldRecommendations(): ", "")
         /*@formatter:on*/
         val outdatedTime = SchedulerUtils.getOutdatedTime()
         recommendationRepository.clearOldRecommendations(outdatedTime)

@@ -117,7 +117,7 @@ class ScheduleController(
             CLEAR_OLD_DATA_DELAY
         )
         OperationQueue.addOperationAfterDelay(
-            recommendationController::clearOldEvents,
+            recommendationController::clearOldRecommendations,
             CLEAR_OLD_DATA_DELAY
         )
     }
