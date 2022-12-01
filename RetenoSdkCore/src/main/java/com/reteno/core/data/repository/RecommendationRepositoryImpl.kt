@@ -2,7 +2,7 @@ package com.reteno.core.data.repository
 
 import com.google.gson.Gson
 import com.google.gson.JsonObject
-import com.reteno.core.data.local.database.RetenoDatabaseManager
+import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerRecomEvents
 import com.reteno.core.data.local.mappers.toDb
 import com.reteno.core.data.local.model.recommendation.RecomEventsDb
 import com.reteno.core.data.remote.OperationQueue
@@ -25,7 +25,7 @@ import java.time.ZonedDateTime
 
 
 class RecommendationRepositoryImpl(
-    private val databaseManager: RetenoDatabaseManager,
+    private val databaseManager: RetenoDatabaseManagerRecomEvents,
     private val apiClient: ApiClient
 ) : RecommendationRepository {
 

@@ -1,6 +1,6 @@
 package com.reteno.core.data.repository
 
-import com.reteno.core.data.local.database.RetenoDatabaseManager
+import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerAppInbox
 import com.reteno.core.data.local.model.appinbox.AppInboxMessageDb
 import com.reteno.core.data.remote.OperationQueue
 import com.reteno.core.data.remote.PushOperationQueue
@@ -29,7 +29,7 @@ import java.util.concurrent.TimeUnit
 
 class AppInboxRepositoryImpl(
     private val apiClient: ApiClient,
-    private val databaseManager: RetenoDatabaseManager,
+    private val databaseManager: RetenoDatabaseManagerAppInbox,
     private val configRepository: ConfigRepository
 ) : AppInboxRepository {
 

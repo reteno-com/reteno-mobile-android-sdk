@@ -1,7 +1,7 @@
 package com.reteno.core.data.repository
 
 import com.reteno.core.base.robolectric.BaseRobolectricTest
-import com.reteno.core.data.local.database.RetenoDatabaseManager
+import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerInteraction
 import com.reteno.core.data.local.mappers.toDb
 import com.reteno.core.data.local.model.interaction.InteractionDb
 import com.reteno.core.data.remote.PushOperationQueue
@@ -38,7 +38,7 @@ class InteractionRepositoryTest : BaseRobolectricTest() {
     @RelaxedMockK
     private lateinit var apiClient: ApiClient
     @RelaxedMockK
-    private lateinit var retenoDatabaseManager: RetenoDatabaseManager
+    private lateinit var databaseManagerInteraction: RetenoDatabaseManagerInteraction
 
     private lateinit var SUT: InteractionRepositoryImpl
     // endregion helper fields ---------------------------------------------------------------------
@@ -47,7 +47,7 @@ class InteractionRepositoryTest : BaseRobolectricTest() {
     override fun before() {
         super.before()
         mockkObject(PushOperationQueue)
-        SUT = InteractionRepositoryImpl(apiClient, retenoDatabaseManager)
+        SUT = InteractionRepositoryImpl(apiClient, databaseManagerInteraction)
     }
 
     override fun after() {
@@ -65,7 +65,7 @@ class InteractionRepositoryTest : BaseRobolectricTest() {
         SUT.saveInteraction(INTERACTION_ID, interaction)
 
         // Then
-        verify(exactly = 1) { retenoDatabaseManager.insertInteraction(dbInteraction) }
+        verify(exactly = 1) { databaseManagerInteraction.insertInteraction(dbInteraction) }
     }
 
     @Test
@@ -85,7 +85,7 @@ class InteractionRepositoryTest : BaseRobolectricTest() {
                 responseHandler = any()
             )
         } just runs
-        every { retenoDatabaseManager.getInteractions(any()) } returns listOf(dbInteraction) andThen emptyList<InteractionDb>()
+        every { databaseManagerInteraction.getInteractions(any()) } returns listOf(dbInteraction) andThen emptyList<InteractionDb>()
 
         // When
         SUT.pushInteractions()
@@ -102,7 +102,7 @@ class InteractionRepositoryTest : BaseRobolectricTest() {
     @Test
     fun givenValidInteraction_whenInteractionPushSuccessful_thenTryPushNextInteraction() {
         val dbInteraction = mockk<InteractionDb>(relaxed = true)
-        every { retenoDatabaseManager.getInteractions(any()) } returnsMany listOf(listOf(dbInteraction), listOf(dbInteraction), emptyList())
+        every { databaseManagerInteraction.getInteractions(any()) } returnsMany listOf(listOf(dbInteraction), listOf(dbInteraction), emptyList())
         every { apiClient.put(url = any(), jsonBody = any(), responseHandler = any()) } answers {
             val callback = thirdArg<ResponseCallback>()
             callback.onSuccess("")
@@ -111,14 +111,14 @@ class InteractionRepositoryTest : BaseRobolectricTest() {
         SUT.pushInteractions()
 
         verify(exactly = 2) { apiClient.put(any(), any(), any()) }
-        verify(exactly = 2) { retenoDatabaseManager.deleteInteractions(1) }
+        verify(exactly = 2) { databaseManagerInteraction.deleteInteractions(1) }
         verify(exactly = 1) { PushOperationQueue.nextOperation() }
     }
 
     @Test
     fun givenValidInteraction_whenInteractionPushFailedAndErrorIsRepeatable_cancelPushOperations() {
         val dbInteraction = mockk<InteractionDb>(relaxed = true)
-        every { retenoDatabaseManager.getInteractions(any()) } returns listOf(dbInteraction)
+        every { databaseManagerInteraction.getInteractions(any()) } returns listOf(dbInteraction)
         every { apiClient.put(url = any(), jsonBody = any(), responseHandler = any()) } answers {
             val callback = thirdArg<ResponseCallback>()
             callback.onFailure(500, null, null)
@@ -133,7 +133,7 @@ class InteractionRepositoryTest : BaseRobolectricTest() {
     @Test
     fun givenValidInteraction_whenInteractionPushFailedAndErrorIsNonRepeatable_thenTryPushNextInteraction() {
         val dbInteraction = mockk<InteractionDb>(relaxed = true)
-        every { retenoDatabaseManager.getInteractions(any()) } returnsMany listOf(listOf(dbInteraction), listOf(dbInteraction), emptyList())
+        every { databaseManagerInteraction.getInteractions(any()) } returnsMany listOf(listOf(dbInteraction), listOf(dbInteraction), emptyList())
         every { apiClient.put(url = any(), jsonBody = any(), responseHandler = any()) } answers {
             val callback = thirdArg<ResponseCallback>()
             callback.onFailure(400, null, null)
@@ -142,15 +142,15 @@ class InteractionRepositoryTest : BaseRobolectricTest() {
         SUT.pushInteractions()
 
         verify(exactly = 2) { apiClient.put(any(), any(), any()) }
-        verify(exactly = 3) { retenoDatabaseManager.getInteractions(1) }
-        verify(exactly = 2) { retenoDatabaseManager.deleteInteractions(1) }
+        verify(exactly = 3) { databaseManagerInteraction.getInteractions(1) }
+        verify(exactly = 2) { databaseManagerInteraction.deleteInteractions(1) }
         verify(exactly = 1) { PushOperationQueue.nextOperation() }
     }
 
     @Test
     fun givenNoInteractionInDb_whenInteractionPush_thenApiClientPutsDoesNotCalled() {
         // Given
-        every { retenoDatabaseManager.getInteractions(any()) } returns emptyList()
+        every { databaseManagerInteraction.getInteractions(any()) } returns emptyList()
 
         // When
         SUT.pushInteractions()
@@ -163,23 +163,23 @@ class InteractionRepositoryTest : BaseRobolectricTest() {
 
     @Test
     fun noOutdatedInteraction_whenClearOldInteractions_thenSentNothing() {
-        every { retenoDatabaseManager.deleteInteractionByTime(any()) } returns 0
+        every { databaseManagerInteraction.deleteInteractionByTime(any()) } returns 0
 
         SUT.clearOldInteractions(ZonedDateTime.now())
 
-        verify(exactly = 1) { retenoDatabaseManager.deleteInteractionByTime(any()) }
+        verify(exactly = 1) { databaseManagerInteraction.deleteInteractionByTime(any()) }
         verify(exactly = 0) { Logger.captureEvent(any()) }
     }
 
     @Test
     fun thereAreOutdatedInteraction_whenClearOldInteractions_thenSentCountDeleted() {
         val deletedInteractions = 2
-        every { retenoDatabaseManager.deleteInteractionByTime(any()) } returns deletedInteractions
+        every { databaseManagerInteraction.deleteInteractionByTime(any()) } returns deletedInteractions
         val expectedMsg = "Outdated Interactions: - $deletedInteractions"
 
         SUT.clearOldInteractions(ZonedDateTime.now())
 
-        verify(exactly = 1) { retenoDatabaseManager.deleteInteractionByTime(any()) }
+        verify(exactly = 1) { databaseManagerInteraction.deleteInteractionByTime(any()) }
         verify(exactly = 1) { Logger.captureEvent(eq(expectedMsg)) }
     }
 }

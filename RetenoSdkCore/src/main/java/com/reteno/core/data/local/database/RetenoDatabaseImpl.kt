@@ -6,8 +6,9 @@ import android.database.sqlite.SQLiteCantOpenDatabaseException
 import android.database.sqlite.SQLiteDatabaseLockedException
 import android.os.SystemClock
 import com.reteno.core.BuildConfig
-import com.reteno.core.data.local.database.DbSchema.DATABASE_NAME
-import com.reteno.core.data.local.database.DbSchema.DATABASE_VERSION
+import com.reteno.core.data.local.database.schema.*
+import com.reteno.core.data.local.database.schema.DbSchema.DATABASE_NAME
+import com.reteno.core.data.local.database.schema.DbSchema.DATABASE_VERSION
 import com.reteno.core.util.Logger
 import net.sqlcipher.Cursor
 import net.sqlcipher.DatabaseUtils
@@ -26,16 +27,16 @@ class RetenoDatabaseImpl(context: Context) : RetenoDatabase,
     }
 
     override fun onCreate(db: SQLiteDatabase) {
-        db.execSQL(DbSchema.DeviceSchema.SQL_CREATE_TABLE)
-        db.execSQL(DbSchema.UserSchema.SQL_CREATE_TABLE)
-        db.execSQL(DbSchema.UserAttributesSchema.SQL_CREATE_TABLE)
-        db.execSQL(DbSchema.UserAddressSchema.SQL_CREATE_TABLE)
-        db.execSQL(DbSchema.InteractionSchema.SQL_CREATE_TABLE)
-        db.execSQL(DbSchema.EventsSchema.SQL_CREATE_TABLE)
-        db.execSQL(DbSchema.EventSchema.SQL_CREATE_TABLE)
-        db.execSQL(DbSchema.AppInboxSchema.SQL_CREATE_TABLE)
-        db.execSQL(DbSchema.RecomEventsSchema.SQL_CREATE_TABLE)
-        db.execSQL(DbSchema.RecomEventSchema.SQL_CREATE_TABLE)
+        db.execSQL(DeviceSchema.SQL_CREATE_TABLE)
+        db.execSQL(UserSchema.SQL_CREATE_TABLE)
+        db.execSQL(UserSchema.UserAttributesSchema.SQL_CREATE_TABLE)
+        db.execSQL(UserSchema.UserAddressSchema.SQL_CREATE_TABLE)
+        db.execSQL(InteractionSchema.SQL_CREATE_TABLE)
+        db.execSQL(EventsSchema.SQL_CREATE_TABLE)
+        db.execSQL(EventsSchema.EventSchema.SQL_CREATE_TABLE)
+        db.execSQL(AppInboxSchema.SQL_CREATE_TABLE)
+        db.execSQL(RecomEventsSchema.SQL_CREATE_TABLE)
+        db.execSQL(RecomEventsSchema.RecomEventSchema.SQL_CREATE_TABLE)
     }
 
     override fun onUpgrade(db: SQLiteDatabase?, oldVersion: Int, newVersion: Int) {
@@ -290,8 +291,8 @@ class RetenoDatabaseImpl(context: Context) : RetenoDatabase,
      * Call this method each time you remove any record from Event table (Child table)
      */
     override fun cleanUnlinkedEvents() {
-        val rawQuery = "DELETE FROM ${DbSchema.EventsSchema.TABLE_NAME_EVENTS} WHERE ${DbSchema.EventsSchema.COLUMN_EVENTS_ID} NOT IN " +
-                "(SELECT ${DbSchema.EventsSchema.COLUMN_EVENTS_ID} FROM ${DbSchema.EventSchema.TABLE_NAME_EVENT})"
+        val rawQuery = "DELETE FROM ${EventsSchema.TABLE_NAME_EVENTS} WHERE ${EventsSchema.COLUMN_EVENTS_ID} NOT IN " +
+                "(SELECT ${EventsSchema.COLUMN_EVENTS_ID} FROM ${EventsSchema.EventSchema.TABLE_NAME_EVENT})"
         getSQLiteDatabaseWithRetries().execSQL(rawQuery)
     }
 
@@ -299,8 +300,8 @@ class RetenoDatabaseImpl(context: Context) : RetenoDatabase,
      * Call this method each time you remove any record from Event table (Child table)
      */
     override fun cleanUnlinkedRecomVariantIds() {
-        val rawQuery = "DELETE FROM ${DbSchema.RecomEventsSchema.TABLE_NAME_RECOM_EVENTS} WHERE ${DbSchema.RecomEventsSchema.COLUMN_RECOM_VARIANT_ID} NOT IN " +
-                "(SELECT ${DbSchema.RecomEventsSchema.COLUMN_RECOM_VARIANT_ID} FROM ${DbSchema.RecomEventSchema.TABLE_NAME_RECOM_EVENT})"
+        val rawQuery = "DELETE FROM ${RecomEventsSchema.TABLE_NAME_RECOM_EVENTS} WHERE ${RecomEventsSchema.COLUMN_RECOM_VARIANT_ID} NOT IN " +
+                "(SELECT ${RecomEventsSchema.COLUMN_RECOM_VARIANT_ID} FROM ${RecomEventsSchema.RecomEventSchema.TABLE_NAME_RECOM_EVENT})"
         getSQLiteDatabaseWithRetries().execSQL(rawQuery)
     }
 

@@ -2,7 +2,7 @@ package com.reteno.core.data.repository
 
 import com.reteno.core.base.robolectric.BaseRobolectricTest
 import com.reteno.core.data.local.config.DeviceId
-import com.reteno.core.data.local.database.RetenoDatabaseManager
+import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerEvents
 import com.reteno.core.data.local.mappers.toDb
 import com.reteno.core.data.local.model.event.EventDb
 import com.reteno.core.data.local.model.event.EventsDb
@@ -42,7 +42,7 @@ class EventsRepositoryTest : BaseRobolectricTest() {
     private lateinit var apiClient: ApiClient
 
     @RelaxedMockK
-    private lateinit var retenoDatabaseManager: RetenoDatabaseManager
+    private lateinit var databaseManagerEvents: RetenoDatabaseManagerEvents
 
     @RelaxedMockK
     private lateinit var configRepository: ConfigRepository
@@ -55,7 +55,7 @@ class EventsRepositoryTest : BaseRobolectricTest() {
         super.before()
         mockkObject(PushOperationQueue)
         every { configRepository.getDeviceId() } returns DeviceId(DEVICE_ID, EXTERNAL_DEVICE_ID)
-        SUT = EventsRepositoryImpl(apiClient, retenoDatabaseManager, configRepository)
+        SUT = EventsRepositoryImpl(apiClient, databaseManagerEvents, configRepository)
     }
 
     override fun after() {
@@ -74,14 +74,14 @@ class EventsRepositoryTest : BaseRobolectricTest() {
 
         SUT.saveEvent(event)
 
-        verify(exactly = 1) { retenoDatabaseManager.insertEvents(events) }
+        verify(exactly = 1) { databaseManagerEvents.insertEvents(events) }
     }
 
     @Test
     fun givenValidEvents_whenEventsPush_thenApiClientEventsWithCorrectParameters() {
         val eventDb = getEvents()
 
-        every { retenoDatabaseManager.getEvents(any()) } returns listOf(eventDb) andThen emptyList()
+        every { databaseManagerEvents.getEvents(any()) } returns listOf(eventDb) andThen emptyList()
 
         SUT.pushEvents()
 
@@ -92,7 +92,7 @@ class EventsRepositoryTest : BaseRobolectricTest() {
     @Test
     fun givenValidEvents_whenEventsPushSuccessful_thenTryPushNextEvents() {
         val eventDb = getEvents()
-        every { retenoDatabaseManager.getEvents(any()) } returnsMany listOf(
+        every { databaseManagerEvents.getEvents(any()) } returnsMany listOf(
             listOf(eventDb),
             listOf(eventDb),
             emptyList()
@@ -105,14 +105,14 @@ class EventsRepositoryTest : BaseRobolectricTest() {
         SUT.pushEvents()
 
         verify(exactly = 2) { apiClient.post(any(), any(), any()) }
-        verify(exactly = 2) { retenoDatabaseManager.deleteEvents(1) }
+        verify(exactly = 2) { databaseManagerEvents.deleteEvents(1) }
         verify(exactly = 1) { PushOperationQueue.nextOperation() }
     }
 
     @Test
     fun givenValidEvents_whenEventsPushFailedAndErrorIsRepeatable_cancelPushOperations() {
         val eventDb = getEvents()
-        every { retenoDatabaseManager.getEvents(any()) } returns listOf(eventDb)
+        every { databaseManagerEvents.getEvents(any()) } returns listOf(eventDb)
         every { apiClient.post(url = any(), jsonBody = any(), responseHandler = any()) } answers {
             val callback = thirdArg<ResponseCallback>()
             callback.onFailure(500, null, null)
@@ -127,7 +127,7 @@ class EventsRepositoryTest : BaseRobolectricTest() {
     @Test
     fun givenValidEvents_whenEventsPushFailedAndErrorIsNonRepeatable_thenTryPushNextEvents() {
         val eventDb = getEvents()
-        every { retenoDatabaseManager.getEvents(any()) } returnsMany listOf(
+        every { databaseManagerEvents.getEvents(any()) } returnsMany listOf(
             listOf(eventDb),
             listOf(eventDb),
             emptyList()
@@ -140,15 +140,15 @@ class EventsRepositoryTest : BaseRobolectricTest() {
         SUT.pushEvents()
 
         verify(exactly = 2) { apiClient.post(any(), any(), any()) }
-        verify(exactly = 3) { retenoDatabaseManager.getEvents(1) }
-        verify(exactly = 2) { retenoDatabaseManager.deleteEvents(1) }
+        verify(exactly = 3) { databaseManagerEvents.getEvents(1) }
+        verify(exactly = 2) { databaseManagerEvents.deleteEvents(1) }
         verify(exactly = 1) { PushOperationQueue.nextOperation() }
     }
 
     @Test
     fun givenNoEventsInDb_whenEventsPush_thenApiClientDoesNotCalled() {
         // Given
-        every { retenoDatabaseManager.getEvents(any()) } returns emptyList()
+        every { databaseManagerEvents.getEvents(any()) } returns emptyList()
 
         // When
         SUT.pushEvents()
@@ -160,23 +160,23 @@ class EventsRepositoryTest : BaseRobolectricTest() {
 
     @Test
     fun noOutdatedInteraction_whenClearOldInteractions_thenSentNothing() {
-        every { retenoDatabaseManager.deleteEventsByTime(any()) } returns 0
+        every { databaseManagerEvents.deleteEventsByTime(any()) } returns 0
 
         SUT.clearOldEvents(ZonedDateTime.now())
 
-        verify(exactly = 1) { retenoDatabaseManager.deleteEventsByTime(any()) }
+        verify(exactly = 1) { databaseManagerEvents.deleteEventsByTime(any()) }
         verify(exactly = 0) { Logger.captureEvent(any()) }
     }
 
     @Test
     fun thereAreOutdatedInteraction_whenClearOldInteractions_thenSentCountDeleted() {
         val deletedEvents = 2
-        every { retenoDatabaseManager.deleteEventsByTime(any()) } returns deletedEvents
+        every { databaseManagerEvents.deleteEventsByTime(any()) } returns deletedEvents
         val expectedMsg = "Outdated Events: - $deletedEvents"
 
         SUT.clearOldEvents(ZonedDateTime.now())
 
-        verify(exactly = 1) { retenoDatabaseManager.deleteEventsByTime(any()) }
+        verify(exactly = 1) { databaseManagerEvents.deleteEventsByTime(any()) }
         verify(exactly = 1) { Logger.captureEvent(eq(expectedMsg)) }
     }
 

@@ -1,6 +1,6 @@
 package com.reteno.core.data.repository
 
-import com.reteno.core.data.local.database.RetenoDatabaseManager
+import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerEvents
 import com.reteno.core.data.local.mappers.toDb
 import com.reteno.core.data.local.model.event.EventsDb
 import com.reteno.core.data.remote.OperationQueue
@@ -18,7 +18,7 @@ import java.time.ZonedDateTime
 
 class EventsRepositoryImpl(
     private val apiClient: ApiClient,
-    private val databaseManager: RetenoDatabaseManager,
+    private val databaseManager: RetenoDatabaseManagerEvents,
     private val configRepository: ConfigRepository
 ) : EventsRepository {
 

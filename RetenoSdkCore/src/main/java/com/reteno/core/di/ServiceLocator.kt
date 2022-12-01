@@ -2,6 +2,13 @@ package com.reteno.core.di
 
 import android.content.Context
 import com.reteno.core.di.provider.*
+import com.reteno.core.di.provider.controller.*
+import com.reteno.core.di.provider.database.*
+import com.reteno.core.di.provider.features.AppInboxProvider
+import com.reteno.core.di.provider.features.RecommendationProvider
+import com.reteno.core.di.provider.network.ApiClientProvider
+import com.reteno.core.di.provider.network.RestClientProvider
+import com.reteno.core.di.provider.repository.*
 
 class ServiceLocator(context: Context, accessKey: String) {
 
@@ -16,7 +23,28 @@ class ServiceLocator(context: Context, accessKey: String) {
 
     private val apiClientProvider: ApiClientProvider = ApiClientProvider(restClientProvider)
     private val databaseProvider: DatabaseProvider = DatabaseProvider(context)
-    val databaseManagerProvider: DatabaseManagerProvider = DatabaseManagerProvider(databaseProvider)
+
+    val retenoDatabaseManagerDeviceProvider =
+        RetenoDatabaseManagerDeviceProvider(databaseProvider)
+    val retenoDatabaseManagerUserProvider =
+        RetenoDatabaseManagerUserProvider(databaseProvider)
+    val retenoDatabaseManagerInteractionProvider =
+        RetenoDatabaseManagerInteractionProvider(databaseProvider)
+    val retenoDatabaseManagerEventsProvider =
+        RetenoDatabaseManagerEventsProvider(databaseProvider)
+    val retenoDatabaseManagerAppInboxProvider =
+        RetenoDatabaseManagerAppInboxProvider(databaseProvider)
+    val retenoDatabaseManagerRecomEventsProvider =
+        RetenoDatabaseManagerRecomEventsProvider(databaseProvider)
+
+    val retenoDatabaseManagerProvider = RetenoDatabaseManagerProvider(
+        retenoDatabaseManagerDeviceProvider,
+        retenoDatabaseManagerUserProvider,
+        retenoDatabaseManagerInteractionProvider,
+        retenoDatabaseManagerEventsProvider,
+        retenoDatabaseManagerAppInboxProvider,
+        retenoDatabaseManagerRecomEventsProvider
+    )
 
     /** Repository **/
     val configRepositoryProvider: ConfigRepositoryProvider =
@@ -27,7 +55,7 @@ class ServiceLocator(context: Context, accessKey: String) {
     private val eventsRepositoryProvider: EventsRepositoryProvider =
         EventsRepositoryProvider(
             apiClientProvider,
-            databaseManagerProvider,
+            retenoDatabaseManagerEventsProvider,
             configRepositoryProvider
         )
 
@@ -35,11 +63,12 @@ class ServiceLocator(context: Context, accessKey: String) {
         ContactRepositoryProvider(
             apiClientProvider,
             configRepositoryProvider,
-            databaseManagerProvider
+            retenoDatabaseManagerDeviceProvider,
+            retenoDatabaseManagerUserProvider
         )
 
     private val interactionRepositoryProvider: InteractionRepositoryProvider =
-        InteractionRepositoryProvider(apiClientProvider, databaseManagerProvider)
+        InteractionRepositoryProvider(apiClientProvider, retenoDatabaseManagerInteractionProvider)
     val interactionControllerProvider: InteractionControllerProvider =
         InteractionControllerProvider(configRepositoryProvider, interactionRepositoryProvider)
 
@@ -49,12 +78,12 @@ class ServiceLocator(context: Context, accessKey: String) {
     private val appInboxRepositoryProvider: AppInboxRepositoryProvider =
         AppInboxRepositoryProvider(
             apiClientProvider,
-            databaseManagerProvider,
+            retenoDatabaseManagerAppInboxProvider,
             configRepositoryProvider
         )
 
     private val recommendationRepositoryProvider: RecommendationRepositoryProvider =
-        RecommendationRepositoryProvider(databaseManagerProvider, apiClientProvider)
+        RecommendationRepositoryProvider(retenoDatabaseManagerRecomEventsProvider, apiClientProvider)
 
     /** Controller **/
     val deeplinkControllerProvider: DeeplinkControllerProvider =

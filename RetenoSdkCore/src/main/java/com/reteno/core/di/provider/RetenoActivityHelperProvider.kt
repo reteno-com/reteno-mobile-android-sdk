@@ -1,6 +1,7 @@
 package com.reteno.core.di.provider
 
 import com.reteno.core.di.base.ProviderWeakReference
+import com.reteno.core.di.provider.controller.EventsControllerProvider
 import com.reteno.core.lifecycle.RetenoActivityHelper
 
 class RetenoActivityHelperProvider(

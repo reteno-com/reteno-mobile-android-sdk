@@ -6,7 +6,7 @@ import com.reteno.core.RetenoApplication
 import com.reteno.core.RetenoImpl
 import com.reteno.core.util.Logger
 import com.reteno.core.util.Util
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.TimeUnit
 
 class PushDataWorker(context: Context, params: WorkerParameters) : Worker(context, params) {
@@ -26,7 +26,7 @@ class PushDataWorker(context: Context, params: WorkerParameters) : Worker(contex
         } else {
             /*@formatter:off*/ Logger.i(TAG, "doWork(): ", "App is in background")
             /*@formatter:on*/
-            val databaseManager = serviceLocator.databaseManagerProvider.get()
+            val databaseManager = serviceLocator.retenoDatabaseManagerProvider.get()
             if (databaseManager.isDatabaseEmpty()) {
                 /*@formatter:off*/ Logger.i(TAG, "doWork(): ", "Database is empty, nothing to do, cancelling periodic work")
                 /*@formatter:on*/

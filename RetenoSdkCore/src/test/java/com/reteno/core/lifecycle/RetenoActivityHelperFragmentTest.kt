@@ -8,7 +8,6 @@ import com.reteno.core.base.robolectric.BaseRobolectricTest
 import com.reteno.core.domain.controller.EventController
 import io.mockk.impl.annotations.RelaxedMockK
 import io.mockk.verify
-import junit.framework.TestCase.assertNotNull
 import org.junit.Test
 import org.robolectric.Robolectric
 import org.robolectric.android.controller.ActivityController
@@ -33,7 +32,6 @@ class RetenoActivityHelperFragmentTest : BaseRobolectricTest() {
     override fun before() {
         super.before()
         SUT = RetenoActivityHelper(eventController)
-        assertNotNull(SUT)
         activityController = Robolectric.buildActivity(Activity::class.java).setup()
         SUT.enableLifecycleCallbacks(retenoLifecycleCallbacks)
 

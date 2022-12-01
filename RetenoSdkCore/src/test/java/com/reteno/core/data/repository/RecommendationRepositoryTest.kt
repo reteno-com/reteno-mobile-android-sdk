@@ -1,7 +1,7 @@
 package com.reteno.core.data.repository
 
 import com.reteno.core.base.robolectric.BaseRobolectricTest
-import com.reteno.core.data.local.database.RetenoDatabaseManager
+import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerRecomEvents
 import com.reteno.core.data.local.model.recommendation.RecomEventDb
 import com.reteno.core.data.local.model.recommendation.RecomEventTypeDb
 import com.reteno.core.data.local.model.recommendation.RecomEventsDb
@@ -53,7 +53,7 @@ class RecommendationRepositoryTest : BaseRobolectricTest() {
 
     // region helper fields ------------------------------------------------------------------------
     @RelaxedMockK
-    private lateinit var databaseManager: RetenoDatabaseManager
+    private lateinit var databaseManagerRecomEvents: RetenoDatabaseManagerRecomEvents
 
     @RelaxedMockK
     private lateinit var apiClient: ApiClient
@@ -70,7 +70,7 @@ class RecommendationRepositoryTest : BaseRobolectricTest() {
         mockkObject(PushOperationQueue)
         every { Executors.newScheduledThreadPool(any(), any()) } returns scheduler
 
-        SUT = RecommendationRepositoryImpl(databaseManager, apiClient)
+        SUT = RecommendationRepositoryImpl(databaseManagerRecomEvents, apiClient)
     }
 
     override fun after() {
@@ -235,7 +235,7 @@ class RecommendationRepositoryTest : BaseRobolectricTest() {
 
         // Then
         verify(exactly = 1) { OperationQueue.addOperation(any()) }
-        verify(exactly = 1) { databaseManager.insertRecomEvents(recomEventsDb) }
+        verify(exactly = 1) { databaseManagerRecomEvents.insertRecomEvents(recomEventsDb) }
     }
 
     @Test
@@ -244,7 +244,7 @@ class RecommendationRepositoryTest : BaseRobolectricTest() {
         val recomEvents = getRecomEvents()
         val recomEventsDb = getRecomEventsDb()
 
-        every { databaseManager.getRecomEvents(any()) } returns listOf(recomEventsDb) andThen emptyList()
+        every { databaseManagerRecomEvents.getRecomEvents(any()) } returns listOf(recomEventsDb) andThen emptyList()
 
         SUT.pushRecommendations()
 
@@ -257,7 +257,7 @@ class RecommendationRepositoryTest : BaseRobolectricTest() {
         // Given
         val recomEvents = getRecomEvents()
         val recomEventsDb = getRecomEventsDb()
-        every { databaseManager.getRecomEvents(any()) } returnsMany listOf(
+        every { databaseManagerRecomEvents.getRecomEvents(any()) } returnsMany listOf(
             listOf(recomEventsDb),
             listOf(recomEventsDb),
             emptyList()
@@ -272,14 +272,14 @@ class RecommendationRepositoryTest : BaseRobolectricTest() {
 
         // Then
         verify(exactly = 2) { apiClient.post(any(), any(), any()) }
-        verify(exactly = 2) { databaseManager.deleteRecomEvents(1) }
+        verify(exactly = 2) { databaseManagerRecomEvents.deleteRecomEvents(1) }
         verify(exactly = 1) { PushOperationQueue.nextOperation() }
     }
 
     @Test
     fun givenValidRecomEvents_whenRecomEventsPushFailedAndErrorIsRepeatable_cancelPushOperations() {
         val recomEventDb = getRecomEventsDb()
-        every { databaseManager.getRecomEvents(any()) } returns listOf(recomEventDb)
+        every { databaseManagerRecomEvents.getRecomEvents(any()) } returns listOf(recomEventDb)
         every { apiClient.post(url = any(), jsonBody = any(), responseHandler = any()) } answers {
             val callback = thirdArg<ResponseCallback>()
             callback.onFailure(ERROR_CODE_REPEATABLE, null, null)
@@ -295,7 +295,7 @@ class RecommendationRepositoryTest : BaseRobolectricTest() {
     fun givenValidRecomEvents_whenRecomEventsPushFailedAndErrorIsNonRepeatable_thenTryPushNextRecomEvents() {
         // Given
         val recomEventsDb = getRecomEventsDb()
-        every { databaseManager.getRecomEvents(any()) } returnsMany listOf(
+        every { databaseManagerRecomEvents.getRecomEvents(any()) } returnsMany listOf(
             listOf(recomEventsDb),
             listOf(recomEventsDb),
             emptyList()
@@ -310,15 +310,15 @@ class RecommendationRepositoryTest : BaseRobolectricTest() {
 
         // Then
         verify(exactly = 2) { apiClient.post(any(), any(), any()) }
-        verify(exactly = 3) { databaseManager.getRecomEvents() }
-        verify(exactly = 2) { databaseManager.deleteRecomEvents(1) }
+        verify(exactly = 3) { databaseManagerRecomEvents.getRecomEvents() }
+        verify(exactly = 2) { databaseManagerRecomEvents.deleteRecomEvents(1) }
         verify(exactly = 1) { PushOperationQueue.nextOperation() }
     }
 
     @Test
     fun givenNoRecomEventsInDb_whenRecomEventsPush_thenApiClientIsNotCalled() {
         // Given
-        every { databaseManager.getRecomEvents(any()) } returns emptyList()
+        every { databaseManagerRecomEvents.getRecomEvents(any()) } returns emptyList()
 
         // When
         SUT.pushRecommendations()
@@ -331,13 +331,13 @@ class RecommendationRepositoryTest : BaseRobolectricTest() {
     @Test
     fun noOutdatedRecomEvent_whenClearOldRecommendations_thenSentNothing() {
         // Given
-        every { databaseManager.deleteRecomEventsByTime(any()) } returns 0
+        every { databaseManagerRecomEvents.deleteRecomEventsByTime(any()) } returns 0
 
         // When
         SUT.clearOldRecommendations(ZonedDateTime.now())
 
         // Then
-        verify(exactly = 1) { databaseManager.deleteRecomEventsByTime(any()) }
+        verify(exactly = 1) { databaseManagerRecomEvents.deleteRecomEventsByTime(any()) }
         verify(exactly = 0) { Logger.captureEvent(any()) }
     }
 
@@ -345,14 +345,14 @@ class RecommendationRepositoryTest : BaseRobolectricTest() {
     fun thereAreOutdatedInteraction_whenClearOldInteractions_thenSentCountDeleted() {
         // Given
         val deletedEvents = 2
-        every { databaseManager.deleteRecomEventsByTime(any()) } returns deletedEvents
+        every { databaseManagerRecomEvents.deleteRecomEventsByTime(any()) } returns deletedEvents
         val expectedMsg = "Outdated Events: - $deletedEvents"
 
         // When
         SUT.clearOldRecommendations(ZonedDateTime.now())
 
         // Then
-        verify(exactly = 1) { databaseManager.deleteRecomEventsByTime(any()) }
+        verify(exactly = 1) { databaseManagerRecomEvents.deleteRecomEventsByTime(any()) }
         verify(exactly = 1) { Logger.captureEvent(eq(expectedMsg)) }
     }
 

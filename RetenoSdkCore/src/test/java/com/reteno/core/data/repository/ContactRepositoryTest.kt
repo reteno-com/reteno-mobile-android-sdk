@@ -2,7 +2,8 @@ package com.reteno.core.data.repository
 
 import com.reteno.core.base.robolectric.BaseRobolectricTest
 import com.reteno.core.data.local.config.DeviceId
-import com.reteno.core.data.local.database.RetenoDatabaseManager
+import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerDevice
+import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerUser
 import com.reteno.core.data.local.mappers.toDb
 import com.reteno.core.data.local.model.device.DeviceCategoryDb
 import com.reteno.core.data.local.model.device.DeviceDb
@@ -60,7 +61,9 @@ class ContactRepositoryTest : BaseRobolectricTest() {
     @RelaxedMockK
     private lateinit var configRepository: ConfigRepository
     @RelaxedMockK
-    private lateinit var retenoDatabaseManager: RetenoDatabaseManager
+    private lateinit var databaseManagerDevice: RetenoDatabaseManagerDevice
+    @RelaxedMockK
+    private lateinit var databaseManagerUser: RetenoDatabaseManagerUser
 
     private lateinit var SUT: ContactRepositoryImpl
     // endregion helper fields ---------------------------------------------------------------------
@@ -68,7 +71,7 @@ class ContactRepositoryTest : BaseRobolectricTest() {
     override fun before() {
         super.before()
         mockkObject(PushOperationQueue)
-        SUT = ContactRepositoryImpl(apiClient, configRepository, retenoDatabaseManager)
+        SUT = ContactRepositoryImpl(apiClient, configRepository, databaseManagerDevice, databaseManagerUser)
     }
 
     override fun after() {
@@ -81,7 +84,7 @@ class ContactRepositoryTest : BaseRobolectricTest() {
         // Given
         val device = getDevice()
         val deviceDb = getDeviceDb()
-        every { retenoDatabaseManager.getDevices(any()) } returnsMany listOf(
+        every { databaseManagerDevice.getDevices(any()) } returnsMany listOf(
             listOf(deviceDb),
             emptyList()
         )
@@ -91,7 +94,7 @@ class ContactRepositoryTest : BaseRobolectricTest() {
 
         // Then
         verify(exactly = 1) { apiClient.post(any(), any(), any()) }
-        verify { retenoDatabaseManager.insertDevice(deviceDb) }
+        verify { databaseManagerDevice.insertDevice(deviceDb) }
     }
 
     @Test
@@ -101,7 +104,7 @@ class ContactRepositoryTest : BaseRobolectricTest() {
         val expectedDeviceJson =
             "{\"deviceId\":\"${DEVICE_ID}\",\"externalUserId\":\"${EXTERNAL_DEVICE_ID}\",\"pushToken\":\"${FCM_TOKEN_NEW}\",\"category\":\"${CATEGORY}\",\"osType\":\"${OS_TYPE}\"}"
 
-        every { retenoDatabaseManager.getDevices(any()) } returnsMany listOf(
+        every { databaseManagerDevice.getDevices(any()) } returnsMany listOf(
             listOf(device),
             emptyList()
         )
@@ -116,7 +119,7 @@ class ContactRepositoryTest : BaseRobolectricTest() {
     @Test
     fun whenDevicePushSuccessful_thenTryPushNextDevice() {
         val deviceDataDb = mockk<DeviceDb>(relaxed = true)
-        every { retenoDatabaseManager.getDevices(any()) } returnsMany listOf(listOf(deviceDataDb), listOf(deviceDataDb), emptyList())
+        every { databaseManagerDevice.getDevices(any()) } returnsMany listOf(listOf(deviceDataDb), listOf(deviceDataDb), emptyList())
         every { apiClient.post(url = any(), jsonBody = any(), responseHandler = any()) } answers {
             val callback = thirdArg<ResponseCallback>()
             callback.onSuccess("")
@@ -125,14 +128,14 @@ class ContactRepositoryTest : BaseRobolectricTest() {
         SUT.pushDeviceData()
 
         verify(exactly = 2) { apiClient.post(any(), any(), any()) }
-        verify(exactly = 2) { retenoDatabaseManager.deleteDevices(1) }
+        verify(exactly = 2) { databaseManagerDevice.deleteDevices(1) }
         verify(exactly = 1) { PushOperationQueue.nextOperation() }
     }
 
     @Test
     fun whenDevicePushFailedAndErrorIsRepeatable_cancelPushOperations() {
         val deviceDataDb = mockk<DeviceDb>(relaxed = true)
-        every { retenoDatabaseManager.getDevices(any()) } returns listOf(deviceDataDb)
+        every { databaseManagerDevice.getDevices(any()) } returns listOf(deviceDataDb)
         every { apiClient.post(url = any(), jsonBody = any(), responseHandler = any()) } answers {
             val callback = thirdArg<ResponseCallback>()
             callback.onFailure(500, null, null)
@@ -147,7 +150,7 @@ class ContactRepositoryTest : BaseRobolectricTest() {
     @Test
     fun whenDevicePushFailedAndErrorIsNonRepeatable_thenTryPushNextDevice() {
         val deviceDataDb = mockk<DeviceDb>(relaxed = true)
-        every { retenoDatabaseManager.getDevices(any()) } returnsMany listOf(listOf(deviceDataDb), listOf(deviceDataDb), emptyList())
+        every { databaseManagerDevice.getDevices(any()) } returnsMany listOf(listOf(deviceDataDb), listOf(deviceDataDb), emptyList())
         every { apiClient.post(url = any(), jsonBody = any(), responseHandler = any()) } answers {
             val callback = thirdArg<ResponseCallback>()
             callback.onFailure(400, null, null)
@@ -156,15 +159,15 @@ class ContactRepositoryTest : BaseRobolectricTest() {
         SUT.pushDeviceData()
 
         verify(exactly = 2) { apiClient.post(any(), any(), any()) }
-        verify(exactly = 3) { retenoDatabaseManager.getDevices(1) }
-        verify(exactly = 2) { retenoDatabaseManager.deleteDevices(1) }
+        verify(exactly = 3) { databaseManagerDevice.getDevices(1) }
+        verify(exactly = 2) { databaseManagerDevice.deleteDevices(1) }
         verify(exactly = 1) { PushOperationQueue.nextOperation() }
     }
 
     @Test
     fun givenNoDeviceInDb_whenDevicePush_thenApiClientPutsDoesNotCalled() {
         // Given
-        every { retenoDatabaseManager.getDevices(any()) } returns emptyList()
+        every { databaseManagerDevice.getDevices(any()) } returns emptyList()
 
         // When
         SUT.pushDeviceData()
@@ -196,7 +199,7 @@ class ContactRepositoryTest : BaseRobolectricTest() {
         val user = getUser()
         every { configRepository.getDeviceId() } returns mockk(relaxed = true)
         val userDb = user.toDb(mockk(relaxed = true))
-        every { retenoDatabaseManager.getUser(any()) } returnsMany listOf(
+        every { databaseManagerUser.getUser(any()) } returnsMany listOf(
             listOf(userDb),
             emptyList()
         )
@@ -206,7 +209,7 @@ class ContactRepositoryTest : BaseRobolectricTest() {
 
         // Then
         verify(exactly = 1) { apiClient.post(any(), any(), any()) }
-        verify { retenoDatabaseManager.insertUser(userDb) }
+        verify { databaseManagerUser.insertUser(userDb) }
     }
 
     @Test
@@ -218,7 +221,7 @@ class ContactRepositoryTest : BaseRobolectricTest() {
         every { configRepository.getDeviceId() } returns deviceId
         val userDb = getUser().toDb(deviceId)
         every { configRepository.getDeviceId() } returns DeviceId(DEVICE_ID, EXTERNAL_DEVICE_ID)
-        every { retenoDatabaseManager.getUser(any()) } returnsMany listOf(
+        every { databaseManagerUser.getUser(any()) } returnsMany listOf(
             listOf(userDb),
             emptyList()
         )
@@ -233,7 +236,7 @@ class ContactRepositoryTest : BaseRobolectricTest() {
     @Test
     fun whenUserPushSuccessful_thenTryPushNextUser() {
         val userData = mockk<UserDb>(relaxed = true)
-        every { retenoDatabaseManager.getUser(any()) } returnsMany listOf(listOf(userData), listOf(userData), emptyList())
+        every { databaseManagerUser.getUser(any()) } returnsMany listOf(listOf(userData), listOf(userData), emptyList())
         every { apiClient.post(url = any(), jsonBody = any(), responseHandler = any()) } answers {
             val callback = thirdArg<ResponseCallback>()
             callback.onSuccess("")
@@ -242,14 +245,14 @@ class ContactRepositoryTest : BaseRobolectricTest() {
         SUT.pushUserData()
 
         verify(exactly = 2) { apiClient.post(any(), any(), any()) }
-        verify(exactly = 2) { retenoDatabaseManager.deleteUsers(1) }
+        verify(exactly = 2) { databaseManagerUser.deleteUsers(1) }
         verify(exactly = 1) { PushOperationQueue.nextOperation() }
     }
 
     @Test
     fun whenUserPushFailedAndErrorIsRepeatable_cancelPushOperations() {
         val userData = mockk<UserDb>(relaxed = true)
-        every { retenoDatabaseManager.getUser(any()) } returns listOf(userData)
+        every { databaseManagerUser.getUser(any()) } returns listOf(userData)
         every { apiClient.post(url = any(), jsonBody = any(), responseHandler = any()) } answers {
             val callback = thirdArg<ResponseCallback>()
             callback.onFailure(500, null, null)
@@ -264,7 +267,7 @@ class ContactRepositoryTest : BaseRobolectricTest() {
     @Test
     fun whenUserPushFailedAndErrorIsNonRepeatable_thenTryPushNextUser() {
         val userData = mockk<UserDb>(relaxed = true)
-        every { retenoDatabaseManager.getUser(any()) } returnsMany listOf(listOf(userData), listOf(userData), emptyList())
+        every { databaseManagerUser.getUser(any()) } returnsMany listOf(listOf(userData), listOf(userData), emptyList())
         every { apiClient.post(url = any(), jsonBody = any(), responseHandler = any()) } answers {
             val callback = thirdArg<ResponseCallback>()
             callback.onFailure(400, null, null)
@@ -273,15 +276,15 @@ class ContactRepositoryTest : BaseRobolectricTest() {
         SUT.pushUserData()
 
         verify(exactly = 2) { apiClient.post(any(), any(), any()) }
-        verify(exactly = 3) { retenoDatabaseManager.getUser(1) }
-        verify(exactly = 2) { retenoDatabaseManager.deleteUsers(1) }
+        verify(exactly = 3) { databaseManagerUser.getUser(1) }
+        verify(exactly = 2) { databaseManagerUser.deleteUsers(1) }
         verify(exactly = 1) { PushOperationQueue.nextOperation() }
     }
 
     @Test
     fun givenNoUserInDb_whenUserPush_thenApiClientPutsDoesNotCalled() {
         // Given
-        every { retenoDatabaseManager.getUser(any()) } returns emptyList()
+        every { databaseManagerUser.getUser(any()) } returns emptyList()
 
         // When
         SUT.pushUserData()

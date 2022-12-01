@@ -1,13 +1,16 @@
 package com.reteno.sample.fragments.database;
 
+import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.transition.AutoTransition;
 import androidx.transition.TransitionManager;
 
+import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerUser;
 import com.reteno.core.data.local.model.user.AddressDb;
 import com.reteno.core.data.local.model.user.UserAttributesDb;
 import com.reteno.core.data.local.model.user.UserCustomFieldDb;
@@ -22,6 +25,20 @@ import java.util.Locale;
 
 
 public class UserReadDialogFragment extends BaseReadDialogFragment<UserDb, ItemDbUserBinding, UserReadDialogFragment.UserViewHolder, UserReadDialogFragment.UserAdapter> {
+
+    private RetenoDatabaseManagerUser databaseManager;
+
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        databaseManager = serviceLocator.getRetenoDatabaseManagerUserProvider().get();
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        databaseManager = null;
+    }
 
     @Override
     protected void initAdapter() {

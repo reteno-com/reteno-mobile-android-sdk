@@ -1,6 +1,6 @@
 package com.reteno.core.data.repository
 
-import com.reteno.core.data.local.database.RetenoDatabaseManager
+import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerInteraction
 import com.reteno.core.data.local.mappers.toDb
 import com.reteno.core.data.remote.OperationQueue
 import com.reteno.core.data.remote.PushOperationQueue
@@ -17,7 +17,7 @@ import java.time.ZonedDateTime
 
 class InteractionRepositoryImpl(
     private val apiClient: ApiClient,
-    private val databaseManager: RetenoDatabaseManager
+    private val databaseManager: RetenoDatabaseManagerInteraction
 ) : InteractionRepository {
 
     override fun saveInteraction(interactionId: String, interaction: Interaction) {

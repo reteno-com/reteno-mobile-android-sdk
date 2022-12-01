@@ -16,6 +16,7 @@ import com.reteno.core.Reteno;
 import com.reteno.core.RetenoImpl;
 import com.reteno.core._interop.DeviceIdInternal;
 import com.reteno.core.data.local.config.DeviceId;
+import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerEvents;
 import com.reteno.core.data.local.mappers.EventMapperKt;
 import com.reteno.core.data.local.model.event.EventsDb;
 import com.reteno.core.domain.model.event.Event;
@@ -35,6 +36,13 @@ import java.util.List;
 public class EventWriteDialogFragment extends BaseDatabaseDialogFragment {
 
     private DialogDbWriteEventBinding binding;
+    private RetenoDatabaseManagerEvents databaseManager;
+
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        databaseManager = serviceLocator.getRetenoDatabaseManagerEventsProvider().get();
+    }
 
     @NonNull
     @Override
@@ -49,6 +57,7 @@ public class EventWriteDialogFragment extends BaseDatabaseDialogFragment {
     public void onDestroyView() {
         super.onDestroyView();
         binding = null;
+        databaseManager = null;
     }
 
     @Override
