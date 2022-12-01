@@ -1,9 +1,12 @@
 package com.reteno.core.data.local.model.device
 
+import com.reteno.core.data.local.model.BooleanDb
+
 data class DeviceDb(
     val deviceId: String,
     val externalUserId: String?,
     val pushToken: String?,
+    val pushSubscribed: BooleanDb?,
     val category: DeviceCategoryDb,
     val osType: DeviceOsDb = DeviceOsDb.ANDROID,
     val osVersion: String?,

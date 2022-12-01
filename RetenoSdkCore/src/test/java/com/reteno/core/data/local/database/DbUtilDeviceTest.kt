@@ -4,6 +4,7 @@ import android.content.ContentValues
 import androidx.core.database.getStringOrNull
 import com.reteno.core.base.robolectric.BaseRobolectricTest
 import com.reteno.core.data.local.mappers.toDb
+import com.reteno.core.data.local.model.BooleanDb
 import com.reteno.core.data.local.model.device.DeviceCategoryDb
 import com.reteno.core.data.local.model.device.DeviceDb
 import com.reteno.core.data.local.model.device.DeviceOsDb
@@ -25,6 +26,7 @@ class DbUtilDeviceTest : BaseRobolectricTest() {
         private const val EXTERNAL_USER_ID = "valueExternalUserId"
 
         private const val PUSH_TOKEN = "valuePushToken"
+        private val PUSH_SUBSCRIBED = BooleanDb.TRUE
         private val CATEGORY = DeviceCategoryDb.TABLET
         private val OS_TYPE = DeviceOsDb.ANDROID
         private const val OS_VERSION = "valueOsVersion"
@@ -37,14 +39,15 @@ class DbUtilDeviceTest : BaseRobolectricTest() {
         private const val COLUMN_INDEX_DEVICE_ID = 1
         private const val COLUMN_INDEX_EXTERNAL_USER_ID = 2
         private const val COLUMN_INDEX_PUSH_TOKEN = 3
-        private const val COLUMN_INDEX_CATEGORY = 4
-        private const val COLUMN_INDEX_OS_TYPE = 5
-        private const val COLUMN_INDEX_OS_VERSION = 6
-        private const val COLUMN_INDEX_DEVICE_MODEL = 7
-        private const val COLUMN_INDEX_APP_VERSION = 8
-        private const val COLUMN_INDEX_LANGUAGE_CODE = 9
-        private const val COLUMN_INDEX_TIME_ZONE = 10
-        private const val COLUMN_INDEX_ADVERTISING_ID = 11
+        private const val COLUMN_INDEX_PUSH_SUBSCRIBED = 4
+        private const val COLUMN_INDEX_CATEGORY = 5
+        private const val COLUMN_INDEX_OS_TYPE = 6
+        private const val COLUMN_INDEX_OS_VERSION = 7
+        private const val COLUMN_INDEX_DEVICE_MODEL = 8
+        private const val COLUMN_INDEX_APP_VERSION = 9
+        private const val COLUMN_INDEX_LANGUAGE_CODE = 10
+        private const val COLUMN_INDEX_TIME_ZONE = 12
+        private const val COLUMN_INDEX_ADVERTISING_ID = 13
     }
     // endregion constants -------------------------------------------------------------------------
 
@@ -74,6 +77,7 @@ class DbUtilDeviceTest : BaseRobolectricTest() {
             deviceId = DEVICE_ID,
             externalUserId = EXTERNAL_USER_ID,
             pushToken = PUSH_TOKEN,
+            pushSubscribed = PUSH_SUBSCRIBED,
             category = CATEGORY,
             osType = OS_TYPE,
             osVersion = OS_VERSION,
@@ -87,6 +91,7 @@ class DbUtilDeviceTest : BaseRobolectricTest() {
             DbSchema.DeviceSchema.COLUMN_DEVICE_ID,
             DbSchema.DeviceSchema.COLUMN_EXTERNAL_USER_ID,
             DbSchema.DeviceSchema.COLUMN_PUSH_TOKEN,
+            DbSchema.DeviceSchema.COLUMN_PUSH_SUBSCRIBED,
             DbSchema.DeviceSchema.COLUMN_CATEGORY,
             DbSchema.DeviceSchema.COLUMN_OS_TYPE,
             DbSchema.DeviceSchema.COLUMN_OS_VERSION,
@@ -125,6 +130,7 @@ class DbUtilDeviceTest : BaseRobolectricTest() {
             deviceId = DEVICE_ID,
             externalUserId = EXTERNAL_USER_ID,
             pushToken = PUSH_TOKEN,
+            pushSubscribed = PUSH_SUBSCRIBED,
             category = CATEGORY,
             osType = OS_TYPE,
             osVersion = OS_VERSION,
@@ -151,6 +157,7 @@ class DbUtilDeviceTest : BaseRobolectricTest() {
             deviceId = DEVICE_ID,
             externalUserId = null,
             pushToken = null,
+            pushSubscribed = null,
             category = Device.fetchDeviceCategory(),
             osType = DeviceOS.ANDROID,
             osVersion = Device.fetchOsVersion(),
@@ -175,6 +182,7 @@ class DbUtilDeviceTest : BaseRobolectricTest() {
         every { cursor.getStringOrNull(COLUMN_INDEX_DEVICE_ID) } returns DEVICE_ID
         every { cursor.getStringOrNull(COLUMN_INDEX_EXTERNAL_USER_ID) } returns EXTERNAL_USER_ID
         every { cursor.getStringOrNull(COLUMN_INDEX_PUSH_TOKEN) } returns PUSH_TOKEN
+        every { cursor.getStringOrNull(COLUMN_INDEX_PUSH_SUBSCRIBED) } returns PUSH_SUBSCRIBED.toString()
         every { cursor.getStringOrNull(COLUMN_INDEX_CATEGORY) } returns CATEGORY.toString()
         every { cursor.getStringOrNull(COLUMN_INDEX_OS_TYPE) } returns OS_TYPE.toString()
         every { cursor.getStringOrNull(COLUMN_INDEX_OS_VERSION) } returns OS_VERSION
@@ -191,6 +199,8 @@ class DbUtilDeviceTest : BaseRobolectricTest() {
         every { cursor.getStringOrNull(COLUMN_INDEX_DEVICE_ID) } returns DEVICE_ID
         every { cursor.getStringOrNull(COLUMN_INDEX_EXTERNAL_USER_ID) } returns null
         every { cursor.getStringOrNull(COLUMN_INDEX_PUSH_TOKEN) } returns null
+        every { cursor.getStringOrNull(COLUMN_INDEX_PUSH_SUBSCRIBED) } returns null
+        every { cursor.getStringOrNull(COLUMN_INDEX_PUSH_SUBSCRIBED) } returns null
         every { cursor.getStringOrNull(COLUMN_INDEX_CATEGORY) } returns null
         every { cursor.getStringOrNull(COLUMN_INDEX_OS_TYPE) } returns null
         every { cursor.getStringOrNull(COLUMN_INDEX_OS_VERSION) } returns null
@@ -205,6 +215,7 @@ class DbUtilDeviceTest : BaseRobolectricTest() {
         every { cursor.getColumnIndex(DbSchema.DeviceSchema.COLUMN_DEVICE_ID) } returns COLUMN_INDEX_DEVICE_ID
         every { cursor.getColumnIndex(DbSchema.DeviceSchema.COLUMN_EXTERNAL_USER_ID) } returns COLUMN_INDEX_EXTERNAL_USER_ID
         every { cursor.getColumnIndex(DbSchema.DeviceSchema.COLUMN_PUSH_TOKEN) } returns COLUMN_INDEX_PUSH_TOKEN
+        every { cursor.getColumnIndex(DbSchema.DeviceSchema.COLUMN_PUSH_SUBSCRIBED) } returns COLUMN_INDEX_PUSH_SUBSCRIBED
         every { cursor.getColumnIndex(DbSchema.DeviceSchema.COLUMN_CATEGORY) } returns COLUMN_INDEX_CATEGORY
         every { cursor.getColumnIndex(DbSchema.DeviceSchema.COLUMN_OS_TYPE) } returns COLUMN_INDEX_OS_TYPE
         every { cursor.getColumnIndex(DbSchema.DeviceSchema.COLUMN_OS_VERSION) } returns COLUMN_INDEX_OS_VERSION

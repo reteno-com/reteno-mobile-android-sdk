@@ -12,6 +12,7 @@ import com.reteno.core.Reteno;
 import com.reteno.core.RetenoImpl;
 import com.reteno.core._interop.DeviceIdInternal;
 import com.reteno.core.data.local.config.DeviceId;
+import com.reteno.core.data.local.model.BooleanDb;
 import com.reteno.core.data.local.model.device.DeviceCategoryDb;
 import com.reteno.core.data.local.model.device.DeviceDb;
 import com.reteno.core.data.local.model.device.DeviceOsDb;
@@ -54,6 +55,7 @@ public class DeviceWriteDialogFragment extends BaseDatabaseDialogFragment {
         Device device = Device.createDevice(DeviceIdInternal.INSTANCE.getIdInternal(deviceId),
                 DeviceIdInternal.INSTANCE.getExternalIdInternal(deviceId),
                 pushToken,
+                null,
                 null
         );
 
@@ -72,10 +74,25 @@ public class DeviceWriteDialogFragment extends BaseDatabaseDialogFragment {
 
     private void initListeners() {
         binding.btnSubmit.setOnClickListener(v -> {
+            String pushSubscribedString = binding.etPushSubscribed.getText().toString();
+            BooleanDb pushSubscribed = null;
+            switch (pushSubscribedString) {
+                case "TRUE":
+                case "true":
+                    pushSubscribed = BooleanDb.TRUE;
+                    break;
+                case "FALSE":
+                case "false":
+                    pushSubscribed = BooleanDb.FALSE;
+                    break;
+            }
+            BooleanDb finalPushSubscribed = pushSubscribed;
+
             DeviceDb device = new DeviceDb(
                     binding.etDeviceId.getText().toString(),
                     Util.getTextOrNull(binding.etExternalUserId),
                     Util.getTextOrNull(binding.etPushToken),
+                    finalPushSubscribed,
                     DeviceCategoryDb.Companion.fromString(Util.getTextOrNull(binding.etCategory)),
                     DeviceOsDb.Companion.fromString(Util.getTextOrNull(binding.etOsType)),
                     Util.getTextOrNull(binding.etOsVersion),

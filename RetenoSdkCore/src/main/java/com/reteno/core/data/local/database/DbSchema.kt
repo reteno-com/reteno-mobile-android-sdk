@@ -19,6 +19,7 @@ internal object DbSchema {
         internal const val COLUMN_DEVICE_ID = "deviceId"
         internal const val COLUMN_EXTERNAL_USER_ID = "externalUserId"
         internal const val COLUMN_PUSH_TOKEN = "pushToken"
+        internal const val COLUMN_PUSH_SUBSCRIBED = "pushSubscribed"
         internal const val COLUMN_CATEGORY = "category"
         internal const val COLUMN_OS_TYPE = "osType"
         internal const val COLUMN_OS_VERSION = "osVersion"
@@ -36,6 +37,7 @@ internal object DbSchema {
                     "$COLUMN_DEVICE_ID TEXT NOT NULL, " +
                     "$COLUMN_EXTERNAL_USER_ID TEXT, " +
                     "$COLUMN_PUSH_TOKEN TEXT, " +
+                    "$COLUMN_PUSH_SUBSCRIBED TEXT, " +
                     "$COLUMN_CATEGORY TEXT NOT NULL, " +
                     "$COLUMN_OS_TYPE TEXT NOT NULL, " +
                     "$COLUMN_OS_VERSION TEXT, " +
@@ -52,6 +54,7 @@ internal object DbSchema {
             COLUMN_DEVICE_ID,
             COLUMN_EXTERNAL_USER_ID,
             COLUMN_PUSH_TOKEN,
+            COLUMN_PUSH_SUBSCRIBED,
             COLUMN_CATEGORY,
             COLUMN_OS_TYPE,
             COLUMN_OS_VERSION,

@@ -11,6 +11,7 @@ fun DeviceDb.toRemote() = DeviceRemote(
     deviceId = deviceId,
     externalUserId = externalUserId,
     pushToken = pushToken,
+    pushSubscribed = pushSubscribed?.toRemote(),
     category = category.toRemote(),
     osType = osType.toRemote(),
     osVersion = osVersion,

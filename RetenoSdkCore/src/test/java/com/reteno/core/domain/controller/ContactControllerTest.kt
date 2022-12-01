@@ -149,6 +149,7 @@ class ContactControllerTest : BaseUnitTest() {
 
     @Test
     fun whenSetUserData_thenInteractWithContactRepository() {
+        // Given
         val user = User(
             userAttributes = null,
             subscriptionKeys = USER_SUBSCRIPTION_KEYS,
@@ -156,21 +157,101 @@ class ContactControllerTest : BaseUnitTest() {
             groupNamesExclude = USER_GROUP_NAMES_EXCLUDE
         )
 
+        // When
         SUT.setUserData(user)
 
+        // Then
         verify { contactRepository.saveUserData(user) }
     }
 
     @Test
     fun whenPushDeviceData_thenInteractWithContactRepository() {
+        // When
         SUT.pushDeviceData()
+
+        // Then
         verify { contactRepository.pushDeviceData() }
     }
 
     @Test
     fun whenPushUserData_thenInteractWithContactRepository() {
+        // When
         SUT.pushUserData()
+
+        // Then
         verify { contactRepository.pushUserData() }
+    }
+
+    @Test
+    fun givenNotificationsDisabled_whenEnableNotifications_thenDeviceSaved() {
+        // Given
+        val pushSubscribed = true
+        every { configRepository.getNotificationsEnabled() } returns false
+        every { configRepository.getFcmToken() } returns FCM_TOKEN_NEW
+        every { configRepository.getDeviceId() } returns DeviceId(
+            DEVICE_ID_ANDROID,
+            EXTERNAL_DEVICE_ID
+        )
+
+        val expectedDevice =
+            createDevice(DEVICE_ID_ANDROID, EXTERNAL_DEVICE_ID, FCM_TOKEN_NEW, pushSubscribed)
+
+        // When
+        SUT.notificationsEnabled(pushSubscribed)
+
+        // Then
+        verify(exactly = 1) { configRepository.saveNotificationsEnabled(pushSubscribed) }
+        verify(exactly = 1) { contactRepository.saveDeviceData(expectedDevice) }
+    }
+
+    @Test
+    fun givenNotificationsDisabled_whenDisableNotifications_thenNothingChanged() {
+        // Given
+        val pushSubscribed = false
+        every { configRepository.getNotificationsEnabled() } returns false
+
+        // When
+        SUT.notificationsEnabled(pushSubscribed)
+
+        // Then
+        verify(exactly = 0) { configRepository.saveNotificationsEnabled(any()) }
+        verify(exactly = 0) { contactRepository.saveDeviceData(any()) }
+    }
+
+    @Test
+    fun givenNotificationsEnabled_whenEnableNotifications_thenNothingChanged() {
+        // Given
+        val pushSubscribed = true
+        every { configRepository.getNotificationsEnabled() } returns true
+
+        // When
+        SUT.notificationsEnabled(pushSubscribed)
+
+        // Then
+        verify(exactly = 0) { configRepository.saveNotificationsEnabled(any()) }
+        verify(exactly = 0) { contactRepository.saveDeviceData(any()) }
+    }
+
+    @Test
+    fun givenNotificationsEnabled_whenDisableNotifications_thenDeviceSaved() {
+        // Given
+        val pushSubscribed = false
+        every { configRepository.getNotificationsEnabled() } returns true
+        every { configRepository.getFcmToken() } returns FCM_TOKEN_NEW
+        every { configRepository.getDeviceId() } returns DeviceId(
+            DEVICE_ID_ANDROID,
+            EXTERNAL_DEVICE_ID
+        )
+
+        val expectedDevice =
+            createDevice(DEVICE_ID_ANDROID, EXTERNAL_DEVICE_ID, FCM_TOKEN_NEW, pushSubscribed)
+
+        // When
+        SUT.notificationsEnabled(pushSubscribed)
+
+        // Then
+        verify(exactly = 1) { configRepository.saveNotificationsEnabled(pushSubscribed) }
+        verify(exactly = 1) { contactRepository.saveDeviceData(expectedDevice) }
     }
 
     // region helper methods -----------------------------------------------------------------------
@@ -183,23 +264,34 @@ class ContactControllerTest : BaseUnitTest() {
                 any()
             )
         } answers {
-            val deviceId = firstArg<String>()
-            val externalUserId = secondArg<String?>()
-            val pushToken = thirdArg<String?>()
-            Device(
-                deviceId = deviceId,
-                externalUserId = externalUserId,
-                pushToken = pushToken,
-                category = DeviceCategory.MOBILE,
-                osType = DeviceOS.ANDROID,
-                osVersion = null,
-                deviceModel = null,
-                appVersion = null,
-                languageCode = null,
-                timeZone = null,
-                advertisingId = null
+            createDevice(
+                deviceId = firstArg(),
+                externalUserId = secondArg(),
+                pushToken = thirdArg(),
+                pushSubscribed = args[3] as Boolean?
             )
         }
     }
+
+    private fun createDevice(
+        deviceId: String,
+        externalUserId: String?,
+        pushToken: String?,
+        pushSubscribed: Boolean?
+    ) = Device(
+        deviceId = deviceId,
+        externalUserId = externalUserId,
+        pushToken = pushToken,
+        pushSubscribed = pushSubscribed,
+        category = DeviceCategory.MOBILE,
+        osType = DeviceOS.ANDROID,
+        osVersion = null,
+        deviceModel = null,
+        appVersion = null,
+        languageCode = null,
+        timeZone = null,
+        advertisingId = null
+    )
+
     // endregion helper methods --------------------------------------------------------------------
 }

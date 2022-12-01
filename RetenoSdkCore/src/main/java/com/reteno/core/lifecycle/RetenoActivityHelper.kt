@@ -14,12 +14,13 @@ import com.reteno.core.util.BuildUtil
 import com.reteno.core.util.Logger
 import com.reteno.core.util.getAppName
 import java.util.*
-import java.util.concurrent.ConcurrentHashMap
+import kotlin.collections.HashMap
+
 
 class RetenoActivityHelper(private val eventController: EventController) {
 
-    private val retenoLifecycleCallbacks =
-        ConcurrentHashMap<String, RetenoLifecycleCallbacks>()
+    private val retenoLifecycleCallbacks: MutableMap<String, RetenoLifecycleCallbacks> =
+        Collections.synchronizedMap(HashMap())
 
     /**
      * Retrieves if the activity is paused.
@@ -34,8 +35,6 @@ class RetenoActivityHelper(private val eventController: EventController) {
 
     // keeps the last activity while app is in background, onDestroy will clear it
     private var lastForegroundActivity: Activity? = null
-
-    private val pendingActions: Queue<Runnable> = LinkedList()
 
     private var screenTrackingConfig = ScreenTrackingConfig(true)
 
@@ -85,23 +84,35 @@ class RetenoActivityHelper(private val eventController: EventController) {
     }
 
     fun autoScreenTracking(config: ScreenTrackingConfig) {
+        /*@formatter:off*/ Logger.i(TAG, "autoScreenTracking(): ", "config = [" , config , "]")
+        /*@formatter:on*/
         screenTrackingConfig = config
     }
 
-    private fun registerActivityLifecycleCallbacks(
+    fun registerActivityLifecycleCallbacks(
         key: String,
         callbacks: RetenoLifecycleCallbacks
     ) {
-        retenoLifecycleCallbacks[key] = callbacks
+        /*@formatter:off*/ Logger.i(TAG, "registerActivityLifecycleCallbacks(): ", "key = [" , key , "], callbacks = [" , callbacks , "]")
+        /*@formatter:on*/
+        synchronized(retenoLifecycleCallbacks) {
+            retenoLifecycleCallbacks[key] = callbacks
+        }
         currentActivity?.let(callbacks::resume)
     }
 
     fun unregisterActivityLifecycleCallbacks(key: String) {
-        retenoLifecycleCallbacks.remove(key)
+        /*@formatter:off*/ Logger.i(TAG, "unregisterActivityLifecycleCallbacks(): ", "key = [" , key , "]")
+        /*@formatter:on*/
+        synchronized(retenoLifecycleCallbacks) {
+            retenoLifecycleCallbacks.remove(key);
+        }
     }
 
 
     private fun onStart(activity: Activity) {
+        /*@formatter:off*/ Logger.i(TAG, "onStart(): ", "activity = [" , activity , "]")
+        /*@formatter:on*/
         (activity as? FragmentActivity)?.supportFragmentManager?.registerFragmentLifecycleCallbacks(
             fragmentLifecycleCallbacks,
             true
@@ -113,8 +124,16 @@ class RetenoActivityHelper(private val eventController: EventController) {
         /*@formatter:on*/
         isActivityPaused = false
         currentActivity = activity
-        for ((_, value) in retenoLifecycleCallbacks.entries) {
-            value.resume(activity)
+        notifyLifecycleCallbacksResumed(activity)
+    }
+
+    private fun notifyLifecycleCallbacksResumed(activity: Activity) {
+        /*@formatter:off*/ Logger.i(TAG, "notifyLifecycleCallbacksResumed(): ", "callbacks.size = [" , retenoLifecycleCallbacks.size , "]")
+        /*@formatter:on*/
+        synchronized(retenoLifecycleCallbacks) {
+            for ((_, value) in retenoLifecycleCallbacks.entries) {
+                value.resume(activity)
+            }
         }
     }
 
@@ -135,9 +154,7 @@ class RetenoActivityHelper(private val eventController: EventController) {
         //
         // Thus, we can call pause from here, only if all activities are paused.
         if (isActivityPaused) {
-            for ((_, value) in retenoLifecycleCallbacks.entries) {
-                value.pause(activity)
-            }
+            notifyLifecycleCallbacksPaused(activity)
         }
         if (currentActivity != null && currentActivity == activity) {
             lastForegroundActivity = currentActivity
@@ -148,6 +165,16 @@ class RetenoActivityHelper(private val eventController: EventController) {
         (activity as? FragmentActivity)?.supportFragmentManager?.unregisterFragmentLifecycleCallbacks(
             fragmentLifecycleCallbacks
         )
+    }
+
+    private fun notifyLifecycleCallbacksPaused(activity: Activity) {
+        /*@formatter:off*/ Logger.i(TAG, "notifyLifecycleCallbacksPaused(): ", "callbacks.size = [" , retenoLifecycleCallbacks.size , "]")
+        /*@formatter:on*/
+        synchronized(retenoLifecycleCallbacks) {
+            for ((_, value) in retenoLifecycleCallbacks.entries) {
+                value.pause(activity)
+            }
+        }
     }
 
     private fun onDestroy(activity: Activity) {
@@ -163,46 +190,10 @@ class RetenoActivityHelper(private val eventController: EventController) {
     }
 
     /**
-     * Enqueues a callback to invoke when an activity reaches in the foreground.
-     */
-    internal fun queueActionUponActive(action: Runnable) {
-        try {
-            if (canPresentMessages()) {
-                action.run()
-            } else {
-                synchronized(pendingActions) {
-                    pendingActions.add(action)
-                }
-            }
-        } catch (t: Throwable) {
-            Logger.captureException(t)
-        }
-    }
-
-    /**
      * Checks whether activity is in foreground.
      */
     internal fun canPresentMessages(): Boolean =
         currentActivity != null && !currentActivity!!.isFinishing && !isActivityPaused
-
-
-    /**
-     * Runs any pending actions that have been queued.
-     */
-    private fun runPendingActions() {
-        if (isActivityPaused || currentActivity == null) {
-            // Trying to run pending actions, but no activity is resumed. Skip.
-            return
-        }
-        var runningActions: Queue<Runnable>
-        synchronized(pendingActions) {
-            runningActions = LinkedList(pendingActions)
-            pendingActions.clear()
-        }
-        for (action in runningActions) {
-            action.run()
-        }
-    }
 
     /**
      * Class provides additional functionality to handle payloads of push notifications built to

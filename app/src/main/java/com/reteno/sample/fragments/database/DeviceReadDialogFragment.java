@@ -84,6 +84,11 @@ public class DeviceReadDialogFragment extends BaseReadDialogFragment<DeviceDb, I
             bindingHolder.tvDeviceId.setTextOrHide(device.getDeviceId());
             bindingHolder.tvExternalUserId.setTextOrHide(device.getExternalUserId());
             bindingHolder.tvPushToken.setTextOrHide(device.getPushToken());
+            String pushSubscribed = null;
+            if (device.getPushSubscribed() != null) {
+                pushSubscribed = device.getPushSubscribed().toString();
+            }
+            bindingHolder.tvPushSubscribed.setTextOrHide(pushSubscribed);
             bindingHolder.tvCategory.setTextOrHide(device.getCategory().toString());
             bindingHolder.tvOsType.setTextOrHide(device.getOsType().toString());
             bindingHolder.tvOsVersion.setTextOrHide(device.getOsVersion());

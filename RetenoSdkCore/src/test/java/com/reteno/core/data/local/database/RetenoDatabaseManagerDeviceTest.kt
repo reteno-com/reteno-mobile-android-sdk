@@ -4,6 +4,7 @@ import android.content.ContentValues
 import androidx.core.database.getLongOrNull
 import androidx.core.database.getStringOrNull
 import com.reteno.core.base.robolectric.BaseRobolectricTest
+import com.reteno.core.data.local.model.BooleanDb
 import com.reteno.core.data.local.model.device.DeviceCategoryDb
 import com.reteno.core.data.local.model.device.DeviceDb
 import com.reteno.core.data.local.model.device.DeviceOsDb
@@ -29,6 +30,7 @@ class RetenoDatabaseManagerDeviceTest : BaseRobolectricTest() {
         private const val DEVICE_ID = "valueDeviceId"
         private const val EXTERNAL_USER_ID = "valueExternalUserId"
         private const val PUSH_TOKEN = "valuePushToken"
+        private val PUSH_SUBSCRIBED = BooleanDb.TRUE
         private val CATEGORY = DeviceCategoryDb.TABLET
         private val OS_TYPE = DeviceOsDb.ANDROID
         private const val OS_VERSION = "valueOsVersion"
@@ -57,6 +59,7 @@ class RetenoDatabaseManagerDeviceTest : BaseRobolectricTest() {
             deviceId = DEVICE_ID,
             externalUserId = null,
             pushToken = PUSH_TOKEN,
+            pushSubscribed = PUSH_SUBSCRIBED,
             category = CATEGORY,
             osType = OS_TYPE,
             osVersion = null,
@@ -71,6 +74,7 @@ class RetenoDatabaseManagerDeviceTest : BaseRobolectricTest() {
             deviceId = DEVICE_ID,
             externalUserId = EXTERNAL_USER_ID,
             pushToken = PUSH_TOKEN,
+            pushSubscribed = PUSH_SUBSCRIBED,
             category = CATEGORY,
             osType = OS_TYPE,
             osVersion = OS_VERSION,
