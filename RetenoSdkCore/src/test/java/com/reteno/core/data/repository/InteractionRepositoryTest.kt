@@ -1,9 +1,10 @@
 package com.reteno.core.data.repository
 
-import com.reteno.core.base.robolectric.BaseRobolectricTest
+import com.reteno.core.base.BaseUnitTest
 import com.reteno.core.data.local.database.RetenoDatabaseManager
 import com.reteno.core.data.local.mappers.toDb
 import com.reteno.core.data.local.model.interaction.InteractionDb
+import com.reteno.core.data.remote.OperationQueue
 import com.reteno.core.data.remote.PushOperationQueue
 import com.reteno.core.data.remote.api.ApiClient
 import com.reteno.core.data.remote.api.ApiContract
@@ -18,7 +19,7 @@ import org.junit.Before
 import org.junit.Test
 import java.time.ZonedDateTime
 
-class InteractionRepositoryTest : BaseRobolectricTest() {
+class InteractionRepositoryTest : BaseUnitTest() {
 
     // region constants ----------------------------------------------------------------------------
     companion object {
@@ -46,12 +47,14 @@ class InteractionRepositoryTest : BaseRobolectricTest() {
     @Before
     override fun before() {
         super.before()
+        mockOperationQueue()
         mockkObject(PushOperationQueue)
         SUT = InteractionRepositoryImpl(apiClient, retenoDatabaseManager)
     }
 
     override fun after() {
         super.after()
+        unMockOperationQueue()
         unmockkObject(PushOperationQueue)
     }
 

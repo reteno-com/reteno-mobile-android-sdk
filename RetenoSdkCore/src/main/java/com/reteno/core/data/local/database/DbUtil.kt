@@ -49,11 +49,11 @@ fun Cursor.getDevice(): DeviceDb? {
     val pushSubscribed: BooleanDb? = BooleanDb.fromString(pushSubscribedString)
     val category = DeviceCategoryDb.fromString(getStringOrNull(getColumnIndex(DbSchema.DeviceSchema.COLUMN_CATEGORY)))
     val osType = DeviceOsDb.fromString(getStringOrNull(getColumnIndex(DbSchema.DeviceSchema.COLUMN_OS_TYPE)))
-    val osVersion = getStringOrNull(getColumnIndex(DbSchema.DeviceSchema.COLUMN_OS_VERSION)) ?: Device.fetchOsVersion()
-    val deviceModel = getStringOrNull(getColumnIndex(DbSchema.DeviceSchema.COLUMN_DEVICE_MODEL)) ?: Device.fetchDeviceModel()
-    val appVersion = getStringOrNull(getColumnIndex(DbSchema.DeviceSchema.COLUMN_APP_VERSION)) ?: Device.fetchAppVersion()
-    val languageCode = getStringOrNull(getColumnIndex(DbSchema.DeviceSchema.COLUMN_LANGUAGE_CODE)) ?: Device.fetchLanguageCode()
-    val timeZone = getStringOrNull(getColumnIndex(DbSchema.DeviceSchema.COLUMN_TIMEZONE)) ?: Device.fetchTimeZone()
+    val osVersion = getStringOrNull(getColumnIndex(DbSchema.DeviceSchema.COLUMN_OS_VERSION))
+    val deviceModel = getStringOrNull(getColumnIndex(DbSchema.DeviceSchema.COLUMN_DEVICE_MODEL))
+    val appVersion = getStringOrNull(getColumnIndex(DbSchema.DeviceSchema.COLUMN_APP_VERSION))
+    val languageCode = getStringOrNull(getColumnIndex(DbSchema.DeviceSchema.COLUMN_LANGUAGE_CODE))
+    val timeZone = getStringOrNull(getColumnIndex(DbSchema.DeviceSchema.COLUMN_TIMEZONE))
     val advertisingId = getStringOrNull(getColumnIndex(DbSchema.DeviceSchema.COLUMN_ADVERTISING_ID))
 
     return if (deviceId == null) {

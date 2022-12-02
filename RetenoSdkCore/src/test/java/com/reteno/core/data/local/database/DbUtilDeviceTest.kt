@@ -160,11 +160,11 @@ class DbUtilDeviceTest : BaseRobolectricTest() {
             pushSubscribed = null,
             category = Device.fetchDeviceCategory(),
             osType = DeviceOS.ANDROID,
-            osVersion = Device.fetchOsVersion(),
-            deviceModel = Device.fetchDeviceModel(),
-            appVersion = Device.fetchAppVersion(),
-            languageCode = Device.fetchLanguageCode(),
-            timeZone = Device.fetchTimeZone(),
+            osVersion = null,
+            deviceModel = null,
+            appVersion = null,
+            languageCode = null,
+            timeZone = null,
             advertisingId = null
         ).toDb()
 

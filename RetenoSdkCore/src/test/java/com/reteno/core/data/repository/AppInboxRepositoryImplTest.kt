@@ -1,6 +1,6 @@
 package com.reteno.core.data.repository
 
-import com.reteno.core.base.robolectric.BaseRobolectricTest
+import com.reteno.core.base.BaseUnitTest
 import com.reteno.core.data.local.database.RetenoDatabaseManager
 import com.reteno.core.data.local.model.appinbox.AppInboxMessageDb
 import com.reteno.core.data.local.model.appinbox.AppInboxMessageStatusDb
@@ -26,7 +26,7 @@ import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 
-class AppInboxRepositoryImplTest : BaseRobolectricTest() {
+class AppInboxRepositoryImplTest : BaseUnitTest() {
 
     companion object {
         private const val INBOX_ID = "ehc3-5hdh4-fde4yh-3d5g"
@@ -64,6 +64,7 @@ class AppInboxRepositoryImplTest : BaseRobolectricTest() {
 
     override fun before() {
         super.before()
+        mockOperationQueue()
         mockkStatic(Executors::class)
         mockkObject(PushOperationQueue)
         val currentThreadExecutor = Executor(Runnable::run)
@@ -77,6 +78,7 @@ class AppInboxRepositoryImplTest : BaseRobolectricTest() {
 
     override fun after() {
         super.after()
+        unMockOperationQueue()
         unmockkObject(PushOperationQueue)
         unmockkStatic(Executors::class)
     }

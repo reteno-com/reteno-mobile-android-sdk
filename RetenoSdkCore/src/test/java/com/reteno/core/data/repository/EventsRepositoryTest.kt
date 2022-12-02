@@ -1,6 +1,6 @@
 package com.reteno.core.data.repository
 
-import com.reteno.core.base.robolectric.BaseRobolectricTest
+import com.reteno.core.base.BaseUnitTest
 import com.reteno.core.data.local.config.DeviceId
 import com.reteno.core.data.local.database.RetenoDatabaseManager
 import com.reteno.core.data.local.mappers.toDb
@@ -25,7 +25,7 @@ import org.junit.Before
 import org.junit.Test
 import java.time.ZonedDateTime
 
-class EventsRepositoryTest : BaseRobolectricTest() {
+class EventsRepositoryTest : BaseUnitTest() {
 
     // region constants ----------------------------------------------------------------------------
     companion object {
@@ -53,6 +53,7 @@ class EventsRepositoryTest : BaseRobolectricTest() {
     @Before
     override fun before() {
         super.before()
+        mockOperationQueue()
         mockkObject(PushOperationQueue)
         every { configRepository.getDeviceId() } returns DeviceId(DEVICE_ID, EXTERNAL_DEVICE_ID)
         SUT = EventsRepositoryImpl(apiClient, retenoDatabaseManager, configRepository)
@@ -60,6 +61,7 @@ class EventsRepositoryTest : BaseRobolectricTest() {
 
     override fun after() {
         super.after()
+        unMockOperationQueue()
         unmockkObject(PushOperationQueue)
     }
 

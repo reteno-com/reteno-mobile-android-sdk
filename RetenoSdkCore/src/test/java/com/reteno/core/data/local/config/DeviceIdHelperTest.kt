@@ -1,14 +1,11 @@
 package com.reteno.core.data.local.config
 
-import android.util.Log
 import com.reteno.core.base.robolectric.BaseRobolectricTest
 import com.reteno.core.base.robolectric.Constants.DEVICE_ID_ANDROID
 import com.reteno.core.data.local.sharedpref.SharedPrefsManager
 import io.mockk.MockKAnnotations
 import io.mockk.every
 import io.mockk.impl.annotations.RelaxedMockK
-import io.mockk.mockkStatic
-import io.mockk.unmockkStatic
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Test

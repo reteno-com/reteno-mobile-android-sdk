@@ -1,6 +1,6 @@
 package com.reteno.core.data.repository
 
-import com.reteno.core.base.robolectric.BaseRobolectricTest
+import com.reteno.core.base.BaseUnitTest
 import com.reteno.core.data.remote.api.ApiClient
 import com.reteno.core.data.remote.api.ApiContract
 import io.mockk.impl.annotations.RelaxedMockK
@@ -8,7 +8,7 @@ import io.mockk.verify
 import org.junit.Test
 
 
-class DeeplinkRepositoryTest : BaseRobolectricTest() {
+class DeeplinkRepositoryTest : BaseUnitTest() {
 
     // region helper fields ------------------------------------------------------------------------
     @RelaxedMockK
@@ -19,7 +19,13 @@ class DeeplinkRepositoryTest : BaseRobolectricTest() {
 
     override fun before() {
         super.before()
+        mockOperationQueue()
         deeplinkRepository = DeeplinkRepositoryImpl(apiClient)
+    }
+
+    override fun after() {
+        super.after()
+        unMockOperationQueue()
     }
 
     @Test
