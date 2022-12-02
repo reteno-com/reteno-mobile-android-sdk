@@ -5,14 +5,14 @@ import com.reteno.core.data.remote.model.inbox.InboxMessagesRemote
 import com.reteno.core.domain.model.appinbox.AppInboxMessage
 import com.reteno.core.domain.model.appinbox.AppInboxMessages
 
-fun InboxMessagesRemote.toDomain(): AppInboxMessages {
+internal fun InboxMessagesRemote.toDomain(): AppInboxMessages {
     return AppInboxMessages(
         messages = messages.map { it.toDomain() },
         totalPages = totalPages ?: 1
     )
 }
 
-fun InboxMessageRemote.toDomain(): AppInboxMessage {
+internal fun InboxMessageRemote.toDomain(): AppInboxMessage {
     return AppInboxMessage(
         content = content,
         createdDate = createdDate,

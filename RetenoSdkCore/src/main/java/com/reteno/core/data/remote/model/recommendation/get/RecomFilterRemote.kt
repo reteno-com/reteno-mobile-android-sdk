@@ -2,7 +2,7 @@ package com.reteno.core.data.remote.model.recommendation.get
 
 import com.google.gson.annotations.SerializedName
 
-data class RecomFilterRemote(
+internal data class RecomFilterRemote(
     @SerializedName("name")
     val name: String,
     @SerializedName("values")

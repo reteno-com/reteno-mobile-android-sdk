@@ -2,7 +2,7 @@ package com.reteno.core.data.remote.model.recommendation.get
 
 import com.google.gson.annotations.SerializedName
 
-data class RecomRequestRemote @JvmOverloads constructor(
+internal data class RecomRequestRemote @JvmOverloads constructor(
     @SerializedName("products")
     val products: List<String>?,
     @SerializedName("category")

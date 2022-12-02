@@ -4,7 +4,7 @@ import com.reteno.core.data.local.database.manager.RetenoDatabaseManager
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerImpl
 import com.reteno.core.di.base.ProviderWeakReference
 
-class RetenoDatabaseManagerProvider(
+internal class RetenoDatabaseManagerProvider(
     private val retenoDatabaseManagerDeviceProvider: RetenoDatabaseManagerDeviceProvider,
     private val retenoDatabaseManagerUserProvider: RetenoDatabaseManagerUserProvider,
     private val retenoDatabaseManagerInteractionProvider: RetenoDatabaseManagerInteractionProvider,

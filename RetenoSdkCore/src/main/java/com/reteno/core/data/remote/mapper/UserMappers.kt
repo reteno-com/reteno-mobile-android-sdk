@@ -9,7 +9,7 @@ import com.reteno.core.data.remote.model.user.UserAttributesRemote
 import com.reteno.core.data.remote.model.user.UserCustomFieldRemote
 import com.reteno.core.data.remote.model.user.UserRemote
 
-fun UserDb.toRemote() = UserRemote(
+internal fun UserDb.toRemote() = UserRemote(
     deviceId = deviceId,
     externalUserId = externalUserId,
     userAttributes = userAttributes?.toRemote(),
@@ -18,7 +18,7 @@ fun UserDb.toRemote() = UserRemote(
     groupNamesExclude = groupNamesExclude
 )
 
-fun UserAttributesDb.toRemote() = UserAttributesRemote(
+internal fun UserAttributesDb.toRemote() = UserAttributesRemote(
     phone = phone,
     email = email,
     firstName = firstName,
@@ -29,12 +29,12 @@ fun UserAttributesDb.toRemote() = UserAttributesRemote(
     fields = fields?.map { it.toRemote() }
 )
 
-fun UserCustomFieldDb.toRemote() = UserCustomFieldRemote(
+internal fun UserCustomFieldDb.toRemote() = UserCustomFieldRemote(
     key = key,
     value = value
 )
 
-fun AddressDb.toRemote() = AddressRemote(
+internal fun AddressDb.toRemote() = AddressRemote(
     region = region,
     town = town,
     address = address,

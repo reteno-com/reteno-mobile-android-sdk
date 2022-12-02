@@ -6,7 +6,7 @@ import com.reteno.core.data.local.config.RestConfig
 import com.reteno.core.data.remote.api.ApiContract
 import com.reteno.core.data.remote.api.ConnectionManager
 import com.reteno.core.data.remote.api.HttpMethod
-import com.reteno.core.data.remote.api.RestClient
+import com.reteno.core.data.remote.api.RestClientImpl
 import com.reteno.core.domain.ResponseCallback
 import io.mockk.*
 import io.mockk.impl.annotations.RelaxedMockK
@@ -23,7 +23,7 @@ import java.net.HttpURLConnection
 import javax.net.ssl.HttpsURLConnection
 
 @RunWith(JUnit4::class)
-class RestClientTest : BaseUnitTest() {
+class RestClientImplTest : BaseUnitTest() {
 
     // region constants ----------------------------------------------------------------------------
     companion object {
@@ -45,9 +45,9 @@ class RestClientTest : BaseUnitTest() {
 
         private fun <T> getField(fieldName: String): T {
             return Whitebox.getField(
-                RestClient::class.java,
+                RestClientImpl::class.java,
                 fieldName
-            )[RestClient::class.java] as T
+            )[RestClientImpl::class.java] as T
         }
     }
     // endregion constants -------------------------------------------------------------------------
@@ -55,14 +55,14 @@ class RestClientTest : BaseUnitTest() {
     // region helper fields ------------------------------------------------------------------------
     @RelaxedMockK
     private lateinit var httpURLConnection: HttpURLConnection
-    private lateinit var restClient: RestClient
+    private lateinit var restClient: RestClientImpl
     // endregion helper fields ---------------------------------------------------------------------
 
     @Before
     override fun before() {
         super.before()
         mockkObject(ConnectionManager)
-        restClient = RestClient(RestConfig(mockk(relaxed = true), ""))
+        restClient = RestClientImpl(RestConfig(mockk(relaxed = true), ""))
     }
 
     @After

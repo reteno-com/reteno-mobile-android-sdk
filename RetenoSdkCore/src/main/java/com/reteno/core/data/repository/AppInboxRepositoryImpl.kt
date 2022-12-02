@@ -27,7 +27,7 @@ import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 
-class AppInboxRepositoryImpl(
+internal class AppInboxRepositoryImpl(
     private val apiClient: ApiClient,
     private val databaseManager: RetenoDatabaseManagerAppInbox,
     private val configRepository: ConfigRepository

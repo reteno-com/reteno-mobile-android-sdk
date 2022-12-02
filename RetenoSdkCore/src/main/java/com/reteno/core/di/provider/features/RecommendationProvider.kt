@@ -5,7 +5,7 @@ import com.reteno.core.di.provider.controller.RecommendationControllerProvider
 import com.reteno.core.recommendation.Recommendation
 import com.reteno.core.recommendation.RecommendationImpl
 
-class RecommendationProvider(
+internal class RecommendationProvider(
     private val recommendationControllerProvider: RecommendationControllerProvider
 ) :
     ProviderWeakReference<Recommendation>() {

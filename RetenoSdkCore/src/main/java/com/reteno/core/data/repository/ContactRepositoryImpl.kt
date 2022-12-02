@@ -15,7 +15,7 @@ import com.reteno.core.domain.model.user.User
 import com.reteno.core.util.Logger
 import com.reteno.core.util.isNonRepeatableError
 
-class ContactRepositoryImpl(
+internal class ContactRepositoryImpl(
     private val apiClient: ApiClient,
     private val configRepository: ConfigRepository,
     private val databaseManagerDevice: RetenoDatabaseManagerDevice,

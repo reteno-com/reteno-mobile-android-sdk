@@ -5,7 +5,7 @@ import com.reteno.core.di.provider.repository.ConfigRepositoryProvider
 import com.reteno.core.di.provider.repository.ContactRepositoryProvider
 import com.reteno.core.domain.controller.ContactController
 
-class ContactControllerProvider(
+internal class ContactControllerProvider(
     private val contactRepositoryProvider: ContactRepositoryProvider,
     private val configRepositoryProvider: ConfigRepositoryProvider
 ) :

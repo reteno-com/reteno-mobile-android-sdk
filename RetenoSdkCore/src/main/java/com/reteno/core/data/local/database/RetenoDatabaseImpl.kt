@@ -16,7 +16,7 @@ import net.sqlcipher.database.SQLiteDatabase
 import net.sqlcipher.database.SQLiteException
 import net.sqlcipher.database.SQLiteOpenHelper
 
-class RetenoDatabaseImpl(context: Context) : RetenoDatabase,
+internal class RetenoDatabaseImpl(context: Context) : RetenoDatabase,
     SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
 
     private val writableDatabase = getWritableDatabase(BuildConfig.SQL_PASSWORD)

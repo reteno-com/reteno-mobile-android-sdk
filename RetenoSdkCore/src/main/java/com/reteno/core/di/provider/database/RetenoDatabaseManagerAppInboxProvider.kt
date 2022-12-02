@@ -4,7 +4,7 @@ import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerAppInbox
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerAppInboxImpl
 import com.reteno.core.di.base.ProviderWeakReference
 
-class RetenoDatabaseManagerAppInboxProvider(private val retenoDatabaseProvider: DatabaseProvider) :
+internal class RetenoDatabaseManagerAppInboxProvider(private val retenoDatabaseProvider: DatabaseProvider) :
     ProviderWeakReference<RetenoDatabaseManagerAppInbox>() {
 
     override fun create(): RetenoDatabaseManagerAppInbox {

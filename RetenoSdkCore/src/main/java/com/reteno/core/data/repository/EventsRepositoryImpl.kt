@@ -16,7 +16,7 @@ import com.reteno.core.util.Util.formatToRemote
 import com.reteno.core.util.isNonRepeatableError
 import java.time.ZonedDateTime
 
-class EventsRepositoryImpl(
+internal class EventsRepositoryImpl(
     private val apiClient: ApiClient,
     private val databaseManager: RetenoDatabaseManagerEvents,
     private val configRepository: ConfigRepository

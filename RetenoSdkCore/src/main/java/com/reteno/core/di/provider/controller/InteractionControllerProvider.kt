@@ -5,7 +5,7 @@ import com.reteno.core.di.provider.repository.ConfigRepositoryProvider
 import com.reteno.core.di.provider.repository.InteractionRepositoryProvider
 import com.reteno.core.domain.controller.InteractionController
 
-class InteractionControllerProvider(
+internal class InteractionControllerProvider(
     private val configRepositoryProvider: ConfigRepositoryProvider,
     private val interactionRepositoryProvider: InteractionRepositoryProvider
 ) :

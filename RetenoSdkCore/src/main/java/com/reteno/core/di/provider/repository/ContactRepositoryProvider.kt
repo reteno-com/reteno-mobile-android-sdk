@@ -7,7 +7,7 @@ import com.reteno.core.di.provider.database.RetenoDatabaseManagerDeviceProvider
 import com.reteno.core.di.provider.database.RetenoDatabaseManagerUserProvider
 import com.reteno.core.di.provider.network.ApiClientProvider
 
-class ContactRepositoryProvider(
+internal class ContactRepositoryProvider(
     private val apiClientProvider: ApiClientProvider,
     private val configRepositoryProvider: ConfigRepositoryProvider,
     private val retenoDatabaseManagerDeviceProvider: RetenoDatabaseManagerDeviceProvider,

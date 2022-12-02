@@ -1,6 +1,6 @@
 package com.reteno.core.data.remote.api
 
-sealed interface ApiContract {
+internal sealed interface ApiContract {
 
     val url: String
 

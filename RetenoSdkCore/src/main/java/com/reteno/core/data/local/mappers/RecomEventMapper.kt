@@ -8,18 +8,18 @@ import com.reteno.core.domain.model.recommendation.post.RecomEventType
 import com.reteno.core.domain.model.recommendation.post.RecomEvents
 import com.reteno.core.util.Util.formatToRemote
 
-fun RecomEvents.toDb() = RecomEventsDb(
+internal fun RecomEvents.toDb() = RecomEventsDb(
     recomVariantId = recomVariantId,
     recomEvents = recomEvents?.map { it.toDb() }
 )
 
-fun RecomEvent.toDb() = RecomEventDb(
+internal fun RecomEvent.toDb() = RecomEventDb(
     recomEventType = recomEventType.toDb(),
     occurred = occurred.formatToRemote(),
     productId = productId
 )
 
-fun RecomEventType.toDb() =
+internal fun RecomEventType.toDb() =
     when (this) {
         RecomEventType.CLICKS -> RecomEventTypeDb.CLICKS
         RecomEventType.IMPRESSIONS -> RecomEventTypeDb.IMPRESSIONS

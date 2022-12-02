@@ -6,7 +6,7 @@ import com.reteno.core.di.base.ProviderWeakReference
 import com.reteno.core.di.provider.database.RetenoDatabaseManagerEventsProvider
 import com.reteno.core.di.provider.network.ApiClientProvider
 
-class EventsRepositoryProvider(
+internal class EventsRepositoryProvider(
     private val apiClientProvider: ApiClientProvider,
     private val retenoDatabaseManagerEventsProvider: RetenoDatabaseManagerEventsProvider,
     private val configRepositoryProvider: ConfigRepositoryProvider

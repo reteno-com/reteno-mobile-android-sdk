@@ -2,7 +2,7 @@ package com.reteno.core.data.remote.model.user
 
 import com.google.gson.annotations.SerializedName
 
-data class UserRemote(
+internal data class UserRemote(
     @SerializedName("deviceId")
     val deviceId: String,
     @SerializedName("externalUserId")

@@ -2,7 +2,7 @@ package com.reteno.core.data.remote.api
 
 import com.reteno.core.domain.ResponseCallback
 
-interface ApiClient {
+internal interface ApiClient {
 
     fun put(url: ApiContract, jsonBody: String, responseHandler: ResponseCallback)
     fun putSync(url: ApiContract, jsonBody: String, responseHandler: ResponseCallback)

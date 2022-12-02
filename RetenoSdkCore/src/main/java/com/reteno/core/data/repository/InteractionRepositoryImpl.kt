@@ -15,7 +15,7 @@ import com.reteno.core.util.Util.formatToRemote
 import com.reteno.core.util.isNonRepeatableError
 import java.time.ZonedDateTime
 
-class InteractionRepositoryImpl(
+internal class InteractionRepositoryImpl(
     private val apiClient: ApiClient,
     private val databaseManager: RetenoDatabaseManagerInteraction
 ) : InteractionRepository {

@@ -8,7 +8,7 @@ import com.reteno.core.domain.model.recommendation.post.RecomEvents
 import com.reteno.core.recommendation.GetRecommendationResponseCallback
 import com.reteno.core.util.Logger
 
-class RecommendationController(private val recommendationRepository: RecommendationRepository) {
+internal class RecommendationController(private val recommendationRepository: RecommendationRepository) {
 
     fun <T : RecomBase> getRecommendation(
         recomVariantId: String,

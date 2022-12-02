@@ -50,7 +50,7 @@ class ScheduleControllerTest : BaseRobolectricTest() {
         }
         every { Executors.newScheduledThreadPool(any(), any()) } returns scheduler
 
-        SUT = ScheduleController(contactController, interactionController, eventController, appInboxController, recommendationController, mockk(relaxed = true))
+        SUT = ScheduleControllerImpl(contactController, interactionController, eventController, appInboxController, recommendationController, mockk(relaxed = true))
     }
 
     override fun after() {

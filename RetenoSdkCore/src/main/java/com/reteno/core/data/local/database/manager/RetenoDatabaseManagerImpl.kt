@@ -2,7 +2,7 @@ package com.reteno.core.data.local.database.manager
 
 import com.reteno.core.util.Logger
 
-class RetenoDatabaseManagerImpl(
+internal class RetenoDatabaseManagerImpl(
     private val deviceManager: RetenoDatabaseManagerDevice,
     private val userManager: RetenoDatabaseManagerUser,
     private val interactionManager: RetenoDatabaseManagerInteraction,

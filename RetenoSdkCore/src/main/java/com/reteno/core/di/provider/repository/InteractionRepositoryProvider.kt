@@ -6,7 +6,7 @@ import com.reteno.core.di.base.ProviderWeakReference
 import com.reteno.core.di.provider.database.RetenoDatabaseManagerInteractionProvider
 import com.reteno.core.di.provider.network.ApiClientProvider
 
-class InteractionRepositoryProvider(
+internal class InteractionRepositoryProvider(
     private val apiClientProvider: ApiClientProvider,
     private val retenoDatabaseManagerInteractionProvider: RetenoDatabaseManagerInteractionProvider
 ) : ProviderWeakReference<InteractionRepository>() {

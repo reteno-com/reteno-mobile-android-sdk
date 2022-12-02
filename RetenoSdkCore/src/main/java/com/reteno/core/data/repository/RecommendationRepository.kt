@@ -6,7 +6,7 @@ import com.reteno.core.domain.model.recommendation.post.RecomEvents
 import com.reteno.core.recommendation.GetRecommendationResponseCallback
 import java.time.ZonedDateTime
 
-interface RecommendationRepository {
+internal interface RecommendationRepository {
 
     fun <T : RecomBase> getRecommendation(
         recomVariantId: String,

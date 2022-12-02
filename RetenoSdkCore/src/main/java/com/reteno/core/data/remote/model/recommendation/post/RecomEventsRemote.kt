@@ -2,7 +2,7 @@ package com.reteno.core.data.remote.model.recommendation.post
 
 import com.google.gson.annotations.SerializedName
 
-data class RecomEventsRemote(
+internal data class RecomEventsRemote(
     @SerializedName("recomVariantId")
     val recomVariantId: String,
     @SerializedName("impressions")

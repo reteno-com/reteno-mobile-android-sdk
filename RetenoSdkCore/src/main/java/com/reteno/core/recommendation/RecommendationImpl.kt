@@ -1,13 +1,12 @@
 package com.reteno.core.recommendation
 
-import com.reteno.core.RetenoImpl
 import com.reteno.core.data.remote.model.recommendation.get.RecomBase
 import com.reteno.core.domain.controller.RecommendationController
 import com.reteno.core.domain.model.recommendation.get.RecomRequest
 import com.reteno.core.domain.model.recommendation.post.RecomEvents
 import com.reteno.core.util.Logger
 
-class RecommendationImpl(private val recommendationController: RecommendationController) :
+internal class RecommendationImpl(private val recommendationController: RecommendationController) :
     Recommendation {
 
     override fun <T : RecomBase> fetchRecommendation(

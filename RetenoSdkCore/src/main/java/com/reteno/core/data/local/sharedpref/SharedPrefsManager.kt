@@ -7,7 +7,7 @@ import com.reteno.core.util.Logger
 import java.util.*
 
 
-class SharedPrefsManager {
+internal class SharedPrefsManager {
 
     private val context = RetenoImpl.application
 

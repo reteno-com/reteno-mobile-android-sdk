@@ -6,7 +6,7 @@ import com.reteno.core.di.base.ProviderWeakReference
 import com.reteno.core.di.provider.database.RetenoDatabaseManagerAppInboxProvider
 import com.reteno.core.di.provider.network.ApiClientProvider
 
-class AppInboxRepositoryProvider(
+internal class AppInboxRepositoryProvider(
     private val apiClientProvider: ApiClientProvider,
     private val retenoDatabaseManagerAppInboxProvider: RetenoDatabaseManagerAppInboxProvider,
     private val configRepositoryProvider: ConfigRepositoryProvider

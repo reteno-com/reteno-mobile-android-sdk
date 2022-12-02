@@ -3,8 +3,9 @@ package com.reteno.core.di.provider.controller
 import com.reteno.core.di.base.ProviderWeakReference
 import com.reteno.core.di.provider.WorkManagerProvider
 import com.reteno.core.domain.controller.ScheduleController
+import com.reteno.core.domain.controller.ScheduleControllerImpl
 
-class ScheduleControllerProvider(
+internal class ScheduleControllerProvider(
     private val contactControllerProvider: ContactControllerProvider,
     private val interactionControllerProvider: InteractionControllerProvider,
     private val eventsControllerProvider: EventsControllerProvider,
@@ -14,7 +15,7 @@ class ScheduleControllerProvider(
 ) : ProviderWeakReference<ScheduleController>() {
 
     override fun create(): ScheduleController {
-        return ScheduleController(
+        return ScheduleControllerImpl(
             contactControllerProvider.get(),
             interactionControllerProvider.get(),
             eventsControllerProvider.get(),

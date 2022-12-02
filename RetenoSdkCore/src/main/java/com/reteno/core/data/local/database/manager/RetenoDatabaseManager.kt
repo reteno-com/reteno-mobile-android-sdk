@@ -1,5 +1,5 @@
 package com.reteno.core.data.local.database.manager
 
-interface RetenoDatabaseManager {
+internal interface RetenoDatabaseManager {
     fun isDatabaseEmpty(): Boolean
 }

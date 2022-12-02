@@ -4,7 +4,7 @@ import android.content.ContentValues
 import net.sqlcipher.Cursor
 import net.sqlcipher.SQLException
 
-interface RetenoDatabase {
+internal interface RetenoDatabase {
 
     fun query(
         table: String, columns: Array<String>, selection: String? = null,

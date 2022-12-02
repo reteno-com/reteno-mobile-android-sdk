@@ -6,7 +6,7 @@ import com.reteno.core.di.base.ProviderWeakReference
 import com.reteno.core.di.provider.RestConfigProvider
 import com.reteno.core.di.provider.SharedPrefsManagerProvider
 
-class ConfigRepositoryProvider(
+internal class ConfigRepositoryProvider(
     private val sharedPrefsManagerProvider: SharedPrefsManagerProvider,
     private val restConfigProvider: RestConfigProvider
 ) :

@@ -9,7 +9,7 @@ import com.reteno.core.util.Util
 import java.util.*
 import java.util.concurrent.TimeUnit
 
-class PushDataWorker(context: Context, params: WorkerParameters) : Worker(context, params) {
+internal class PushDataWorker(context: Context, params: WorkerParameters) : Worker(context, params) {
 
     override fun doWork(): Result {
         /*@formatter:off*/ Logger.i(TAG, "doWork(): ", "")

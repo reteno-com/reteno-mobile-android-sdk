@@ -5,7 +5,7 @@ import com.reteno.core.domain.controller.AppInboxController
 import com.reteno.core.domain.model.appinbox.AppInboxMessages
 import com.reteno.core.util.Logger
 
-class AppInboxImpl(
+internal class AppInboxImpl(
     private val appInboxController: AppInboxController
 ) : AppInbox {
 

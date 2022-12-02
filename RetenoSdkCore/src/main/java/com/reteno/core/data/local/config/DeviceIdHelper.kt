@@ -3,10 +3,10 @@ package com.reteno.core.data.local.config
 import android.provider.Settings
 import com.google.android.gms.appset.AppSet
 import com.reteno.core.RetenoImpl
-import com.reteno.core.util.Logger
 import com.reteno.core.data.local.sharedpref.SharedPrefsManager
+import com.reteno.core.util.Logger
 
-class DeviceIdHelper(private val sharedPrefsManager: SharedPrefsManager) {
+internal class DeviceIdHelper(private val sharedPrefsManager: SharedPrefsManager) {
 
     internal fun withDeviceIdMode(
         currentDeviceId: DeviceId,

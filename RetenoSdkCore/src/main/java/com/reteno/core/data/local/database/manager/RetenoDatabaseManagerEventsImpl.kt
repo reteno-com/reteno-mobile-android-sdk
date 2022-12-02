@@ -15,7 +15,7 @@ import com.reteno.core.util.allElementsNotNull
 import net.sqlcipher.Cursor
 import net.sqlcipher.SQLException
 
-class RetenoDatabaseManagerEventsImpl(private val database: RetenoDatabase) :
+internal class RetenoDatabaseManagerEventsImpl(private val database: RetenoDatabase) :
     RetenoDatabaseManagerEvents {
 
     private val contentValues = ContentValues()

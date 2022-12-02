@@ -5,7 +5,7 @@ import com.reteno.core.appinbox.AppInboxImpl
 import com.reteno.core.di.base.ProviderWeakReference
 import com.reteno.core.di.provider.controller.AppInboxControllerProvider
 
-class AppInboxProvider(
+internal class AppInboxProvider(
     private val appInboxControllerProvider: AppInboxControllerProvider
 ) : ProviderWeakReference<AppInbox>() {
 

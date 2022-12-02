@@ -14,7 +14,7 @@ import com.reteno.core.util.Logger
 import net.sqlcipher.Cursor
 import net.sqlcipher.SQLException
 
-class RetenoDatabaseManagerRecomEventsImpl(private val database: RetenoDatabase) :
+internal class RetenoDatabaseManagerRecomEventsImpl(private val database: RetenoDatabase) :
     RetenoDatabaseManagerRecomEvents {
 
     private val contentValues = ContentValues()

@@ -21,7 +21,7 @@ import com.reteno.core.util.isNonRepeatableError
 import java.time.ZonedDateTime
 
 
-class RecommendationRepositoryImpl(
+internal class RecommendationRepositoryImpl(
     private val databaseManager: RetenoDatabaseManagerRecomEvents,
     private val apiClient: ApiClient
 ) : RecommendationRepository {

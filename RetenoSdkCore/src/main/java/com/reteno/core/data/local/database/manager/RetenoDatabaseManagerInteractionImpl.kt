@@ -13,7 +13,7 @@ import com.reteno.core.util.Logger
 import net.sqlcipher.Cursor
 import net.sqlcipher.SQLException
 
-class RetenoDatabaseManagerInteractionImpl(private val database: RetenoDatabase) :
+internal class RetenoDatabaseManagerInteractionImpl(private val database: RetenoDatabase) :
     RetenoDatabaseManagerInteraction {
 
     private val contentValues = ContentValues()
