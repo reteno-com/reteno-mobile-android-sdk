@@ -18,10 +18,10 @@ import com.reteno.core.domain.model.event.Events
 import com.reteno.core.util.Logger
 import io.mockk.every
 import io.mockk.impl.annotations.RelaxedMockK
-import io.mockk.mockkObject
-import io.mockk.unmockkObject
 import io.mockk.verify
+import org.junit.AfterClass
 import org.junit.Before
+import org.junit.BeforeClass
 import org.junit.Test
 import java.time.ZonedDateTime
 
@@ -33,6 +33,20 @@ class EventsRepositoryImplTest : BaseUnitTest() {
         private const val EXTERNAL_DEVICE_ID = "external_device_id"
         private const val EVENT_TYPE_KEY = "event_type_key"
         private const val OCCURRED = "2022-11-11T20:22:21Z"
+
+        @JvmStatic
+        @BeforeClass
+        fun beforeClass() {
+            mockObjectOperationQueue()
+            mockObjectPushOperationQueue()
+        }
+
+        @JvmStatic
+        @AfterClass
+        fun afterClass() {
+            unMockObjectOperationQueue()
+            unMockObjectPushOperationQueue()
+        }
 
     }
     // endregion constants -------------------------------------------------------------------------
@@ -53,16 +67,8 @@ class EventsRepositoryImplTest : BaseUnitTest() {
     @Before
     override fun before() {
         super.before()
-        mockOperationQueue()
-        mockkObject(PushOperationQueue)
         every { configRepository.getDeviceId() } returns DeviceId(DEVICE_ID, EXTERNAL_DEVICE_ID)
         SUT = EventsRepositoryImpl(apiClient, databaseManagerEvents, configRepository)
-    }
-
-    override fun after() {
-        super.after()
-        unMockOperationQueue()
-        unmockkObject(PushOperationQueue)
     }
 
     @Test

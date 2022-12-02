@@ -1,19 +1,46 @@
 package com.reteno.core.domain.controller
 
-import com.reteno.core.base.robolectric.BaseRobolectricTest
+import com.reteno.core.base.BaseUnitTest
 import com.reteno.core.data.remote.OperationQueue
 import com.reteno.core.data.remote.PushOperationQueue
-import io.mockk.*
+import io.mockk.every
 import io.mockk.impl.annotations.RelaxedMockK
+import io.mockk.mockk
+import io.mockk.verify
+import org.junit.AfterClass
+import org.junit.BeforeClass
 import org.junit.Test
 import java.util.concurrent.Executor
-import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 
-class ScheduleControllerTest : BaseRobolectricTest() {
+class ScheduleControllerImplTest : BaseUnitTest() {
 
     companion object {
         private const val CLEAR_OLD_DATA_DELAY = 3000L
+
+        private lateinit var scheduler: ScheduledExecutorService
+
+        @JvmStatic
+        @BeforeClass
+        fun beforeClass() {
+            mockStaticLog()
+            mockObjectOperationQueue()
+            mockObjectPushOperationQueue()
+
+            scheduler = mockStaticScheduler()
+            mockObjectPushDataWorker()
+        }
+
+        @JvmStatic
+        @AfterClass
+        fun afterClass() {
+            unMockStaticLog()
+            unMockObjectOperationQueue()
+            unMockObjectPushOperationQueue()
+
+            unMockStaticScheduler()
+            unMockObjectPushDataWorker()
+        }
     }
 
     // region helper fields ------------------------------------------------------------------------
@@ -32,31 +59,14 @@ class ScheduleControllerTest : BaseRobolectricTest() {
     @RelaxedMockK
     private lateinit var recommendationController: RecommendationController
 
-    @RelaxedMockK
-    private lateinit var scheduler: ScheduledExecutorService
+
 
     private lateinit var SUT: ScheduleController
     // endregion helper fields ---------------------------------------------------------------------
 
     override fun before() {
         super.before()
-
-        mockkStatic(Executors::class)
-        mockkObject(PushOperationQueue)
-        val currentThreadExecutor = Executor(Runnable::run)
-        every { scheduler.scheduleAtFixedRate(any(), any(), any(), any()) } answers {
-            currentThreadExecutor.execute(firstArg())
-            mockk()
-        }
-        every { Executors.newScheduledThreadPool(any(), any()) } returns scheduler
-
         SUT = ScheduleControllerImpl(contactController, interactionController, eventController, appInboxController, recommendationController, mockk(relaxed = true))
-    }
-
-    override fun after() {
-        super.after()
-        unmockkObject(PushOperationQueue)
-        unmockkStatic(Executors::class)
     }
 
     @Test

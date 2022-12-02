@@ -20,10 +20,11 @@ import com.reteno.core.util.Logger
 import com.reteno.core.util.Util
 import io.mockk.*
 import io.mockk.impl.annotations.RelaxedMockK
+import org.junit.AfterClass
+import org.junit.BeforeClass
 import org.junit.Test
 import java.time.ZonedDateTime
 import java.util.concurrent.Executor
-import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 
@@ -47,6 +48,38 @@ class AppInboxRepositoryImplTest : BaseUnitTest() {
 
         private const val MESSAGES_COUNT = 7
         private const val MESSAGES_COUNT_ZERO = 0
+
+        private lateinit var scheduler: ScheduledExecutorService
+
+        @BeforeClass
+        @JvmStatic
+        fun beforeClass() {
+            mockObjectOperationQueue()
+            mockObjectPushOperationQueue()
+            scheduler = mockStaticScheduler()
+            mockStaticJsonMappers()
+            mockObjectUtil()
+        }
+
+        @AfterClass
+        @JvmStatic
+        fun afterClass() {
+            unMockObjectOperationQueue()
+            unMockObjectPushOperationQueue()
+            unMockStaticScheduler()
+            unMockStaticJsonMappers()
+            unMockObjectUtil()
+        }
+
+        private fun mockStaticJsonMappers() {
+            mockkStatic("com.reteno.core.data.remote.mapper.JsonMappersKt")
+            mockkStatic("com.reteno.core.data.remote.mapper.AppInboxMapperKt")
+        }
+
+        private fun unMockStaticJsonMappers() {
+            unmockkStatic("com.reteno.core.data.remote.mapper.JsonMappersKt")
+            unmockkStatic("com.reteno.core.data.remote.mapper.AppInboxMapperKt")
+        }
     }
 
     @RelaxedMockK
@@ -61,37 +94,15 @@ class AppInboxRepositoryImplTest : BaseUnitTest() {
     @RelaxedMockK
     private lateinit var databaseManagerDevice: RetenoDatabaseManagerDevice
 
-    @RelaxedMockK
-    private lateinit var scheduler: ScheduledExecutorService
-
     private lateinit var inboxRepository: AppInboxRepositoryImpl
 
     override fun before() {
         super.before()
-        mockOperationQueue()
-        mockkStatic(Executors::class)
-        mockkObject(PushOperationQueue)
-        val currentThreadExecutor = Executor(Runnable::run)
-        every { scheduler.scheduleAtFixedRate(any(), any(), any(), any()) } answers {
-            currentThreadExecutor.execute(firstArg())
-            mockk()
-        }
-        every { Executors.newScheduledThreadPool(any(), any()) } returns scheduler
         inboxRepository = AppInboxRepositoryImpl(apiClient, databaseManagerAppInbox, configRepository)
     }
 
-    override fun after() {
-        super.after()
-        unMockOperationQueue()
-        unmockkObject(PushOperationQueue)
-        unmockkStatic(Executors::class)
-    }
-
-
     @Test
     fun whenMessageOpened_thenInsertDbAndPush() {
-        mockkStatic(Util::class)
-
         val inboxStatus = getTestAppInboxDb()
         every { Util.getCurrentTimeStamp() } returns INBOX_OCCURRED_TIME
         every { configRepository.getDeviceId().id } returns INBOX_DEVICE_ID
@@ -104,13 +115,10 @@ class AppInboxRepositoryImplTest : BaseUnitTest() {
 
         verify(exactly = 1) { apiClient.post(any(), any(), any()) }
         verify(exactly = 1) { databaseManagerAppInbox.insertAppInboxMessage(inboxStatus) }
-
-        unmockkStatic(Util::class)
     }
 
     @Test
     fun whenDbHasSavedMessage_thenSendToApi() {
-        mockkStatic("com.reteno.core.data.remote.mapper.JsonMappersKt")
         val inboxStatus = getTestAppInboxDb()
         val resultJson = "result_json"
 
@@ -129,7 +137,6 @@ class AppInboxRepositoryImplTest : BaseUnitTest() {
                 any()
             )
         }
-        unmockkStatic("com.reteno.core.data.remote.mapper.JsonMappersKt")
     }
 
     @Test
@@ -226,8 +233,6 @@ class AppInboxRepositoryImplTest : BaseUnitTest() {
 
     @Test
     fun whenSetAllMessagesOpened_thenReturnSuccessCallback() {
-        mockkStatic("com.reteno.core.data.remote.mapper.JsonMappersKt")
-
         val jsonString = "{}"
         val callback = spyk<RetenoResultCallback<Unit>>()
         val spyRepository = spyk(inboxRepository, recordPrivateCalls = true)
@@ -250,14 +255,10 @@ class AppInboxRepositoryImplTest : BaseUnitTest() {
         verify(exactly = 1) { callback.onSuccess(Unit) }
         verify(exactly = 1) { databaseManagerAppInbox.deleteAllAppInboxMessages() }
         verify(exactly = 1) { spyRepository["fetchCount"]() }
-
-        unmockkStatic("com.reteno.core.data.remote.mapper.JsonMappersKt")
     }
 
     @Test
     fun whenSetAllMessagesOpened_thenReturnErrorCallback() {
-        mockkStatic("com.reteno.core.data.remote.mapper.JsonMappersKt")
-
         val jsonString = "{}"
         val callback = spyk<RetenoResultCallback<Unit>>()
 
@@ -278,14 +279,10 @@ class AppInboxRepositoryImplTest : BaseUnitTest() {
         verify(exactly = 1) { OperationQueue.addUiOperation(any()) }
         verify(exactly = 1) { callback.onFailure(ERROR_CODE, eq(ERROR_MSG), ERROR_EXCEPTION) }
         verify(exactly = 0) { databaseManagerAppInbox.deleteAllAppInboxMessages() }
-
-        unmockkStatic("com.reteno.core.data.remote.mapper.JsonMappersKt")
     }
 
     @Test
     fun whenGetMessagesWithParams_thenResultSuccess() {
-        mockkStatic("com.reteno.core.data.remote.mapper.AppInboxMapperKt")
-
         val inboxMessages = mockk<AppInboxMessages>()
         val retenoCallback = mockk<RetenoResultCallback<AppInboxMessages>>(relaxed = true)
         val resultJson = "{}"
@@ -312,14 +309,10 @@ class AppInboxRepositoryImplTest : BaseUnitTest() {
                 any()
             )
         }
-
-        unmockkStatic("com.reteno.core.data.remote.mapper.AppInboxMapperKt")
     }
 
     @Test
     fun whenGetMessagesWithoutParams_thenResultSuccess() {
-        mockkStatic("com.reteno.core.data.remote.mapper.AppInboxMapperKt")
-
         val inboxMessages = mockk<AppInboxMessages>()
         val retenoCallback = mockk<RetenoResultCallback<AppInboxMessages>>(relaxed = true)
         val resultJson = "{}"
@@ -346,8 +339,6 @@ class AppInboxRepositoryImplTest : BaseUnitTest() {
                 any()
             )
         }
-
-        unmockkStatic("com.reteno.core.data.remote.mapper.AppInboxMapperKt")
     }
 
     @Test

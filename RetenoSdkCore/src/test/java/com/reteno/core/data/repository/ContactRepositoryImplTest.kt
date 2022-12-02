@@ -23,6 +23,8 @@ import com.reteno.core.domain.model.user.UserAttributes
 import com.reteno.core.domain.model.user.UserCustomField
 import io.mockk.*
 import io.mockk.impl.annotations.RelaxedMockK
+import org.junit.AfterClass
+import org.junit.BeforeClass
 import org.junit.Test
 
 class ContactRepositoryImplTest : BaseUnitTest() {
@@ -52,6 +54,22 @@ class ContactRepositoryImplTest : BaseUnitTest() {
         private val USER_SUBSCRIPTION_KEYS = listOf("key1", "key2")
         private val USER_GROUP_NAMES_INCLUDE = listOf("add1")
         private val USER_GROUP_NAMES_EXCLUDE = listOf("remove1")
+
+        @JvmStatic
+        @BeforeClass
+        fun beforeClass() {
+            mockObjectOperationQueue()
+            mockObjectPushOperationQueue()
+            mockkStatic(User::toDb)
+        }
+
+        @JvmStatic
+        @AfterClass
+        fun afterClass() {
+            unMockObjectOperationQueue()
+            unMockObjectPushOperationQueue()
+            unmockkStatic(User::toDb)
+        }
     }
     // endregion constants -------------------------------------------------------------------------
 
@@ -70,15 +88,7 @@ class ContactRepositoryImplTest : BaseUnitTest() {
 
     override fun before() {
         super.before()
-        mockOperationQueue()
-        mockkObject(PushOperationQueue)
         SUT = ContactRepositoryImpl(apiClient, configRepository, databaseManagerDevice, databaseManagerUser)
-    }
-
-    override fun after() {
-        super.after()
-        unmockkObject(PushOperationQueue)
-        unMockOperationQueue()
     }
 
     @Test
@@ -184,15 +194,12 @@ class ContactRepositoryImplTest : BaseUnitTest() {
     fun whenSendUsedData_thenCallUserToDbMapper() {
         val user = getUser()
 
-        mockkStatic(User::toDb)
         val deviceId = DeviceId(DEVICE_ID, EXTERNAL_DEVICE_ID)
         every { configRepository.getDeviceId() } returns deviceId
 
         SUT.saveUserData(user)
 
         verify { user.toDb(deviceId) }
-
-        unmockkStatic(User::toDb)
     }
 
     @Test

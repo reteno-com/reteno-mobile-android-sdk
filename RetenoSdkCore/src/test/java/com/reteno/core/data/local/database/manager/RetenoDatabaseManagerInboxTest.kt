@@ -16,7 +16,9 @@ import io.mockk.impl.annotations.MockK
 import io.mockk.impl.annotations.RelaxedMockK
 import junit.framework.TestCase.assertTrue
 import net.sqlcipher.Cursor
+import org.junit.AfterClass
 import org.junit.Assert.assertEquals
+import org.junit.BeforeClass
 import org.junit.Test
 import java.time.ZonedDateTime
 
@@ -49,6 +51,18 @@ class RetenoDatabaseManagerInboxTest : BaseRobolectricTest() {
         private const val COLUMN_INDEX_INBOX_STATUS = 3
         private const val COLUMN_INDEX_INBOX_TIME = 4
         private const val COLUMN_INDEX_INBOX_DEVICE_ID = 5
+
+        @JvmStatic
+        @BeforeClass
+        fun beforeClass() {
+            mockkStatic(Cursor::getAppInbox)
+        }
+
+        @JvmStatic
+        @AfterClass
+        fun afterClass() {
+            unmockkStatic(Cursor::getAppInbox)
+        }
     }
 
     @RelaxedMockK
@@ -61,7 +75,6 @@ class RetenoDatabaseManagerInboxTest : BaseRobolectricTest() {
 
     override fun before() {
         super.before()
-        mockkStatic(Cursor::getAppInbox)
 
         mockColumnIndexes()
         every { cursor.getStringOrNull(COLUMN_INDEX_INBOX_TIME) } returns INBOX_OCCURRED_TIME
@@ -73,7 +86,6 @@ class RetenoDatabaseManagerInboxTest : BaseRobolectricTest() {
     override fun after() {
         super.after()
         clearMocks(cursor)
-        unmockkStatic(Cursor::getAppInbox)
     }
 
     @Test

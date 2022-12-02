@@ -10,8 +10,12 @@ import com.reteno.core.domain.model.recommendation.post.RecomEvent
 import com.reteno.core.domain.model.recommendation.post.RecomEventType
 import com.reteno.core.domain.model.recommendation.post.RecomEvents
 import com.reteno.core.recommendation.GetRecommendationResponseCallback
-import io.mockk.*
+import io.mockk.every
 import io.mockk.impl.annotations.RelaxedMockK
+import io.mockk.mockk
+import io.mockk.verify
+import org.junit.AfterClass
+import org.junit.BeforeClass
 import org.junit.Test
 import java.time.ZonedDateTime
 
@@ -25,6 +29,18 @@ class RecommendationControllerTest : BaseUnitTest() {
         private const val PRODUCT_ID = "w12345s1345"
         private const val CATEGORY = "category_here"
         private val FIELDS = listOf<String>("field1", "field2", "field3")
+
+        @JvmStatic
+        @BeforeClass
+        fun beforeClass() {
+            mockObjectSchedulerUtils()
+        }
+
+        @JvmStatic
+        @AfterClass
+        fun afterClass() {
+            unMockObjectSchedulerUtils()
+        }
     }
     // endregion constants -------------------------------------------------------------------------
 
@@ -94,7 +110,6 @@ class RecommendationControllerTest : BaseUnitTest() {
 
     @Test
     fun whenClearOldRecommendations_thenClearOldRecommendationsCalledOnRepository() {
-        mockkObject(SchedulerUtils)
         val mockData = mockk<ZonedDateTime>()
         every { SchedulerUtils.getOutdatedTime() } returns mockData
 
@@ -104,8 +119,6 @@ class RecommendationControllerTest : BaseUnitTest() {
         // Then
         verify(exactly = 1) { recommendationRepository.clearOldRecommendations(mockData) }
         verify(exactly = 1) { SchedulerUtils.getOutdatedTime() }
-
-        unmockkObject(SchedulerUtils)
     }
 
     // region helper classes -----------------------------------------------------------------------

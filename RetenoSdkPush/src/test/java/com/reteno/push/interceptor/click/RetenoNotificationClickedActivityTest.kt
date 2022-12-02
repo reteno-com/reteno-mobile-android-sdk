@@ -15,11 +15,11 @@ import com.reteno.push.base.robolectric.BaseRobolectricTest
 import io.mockk.*
 import io.mockk.impl.annotations.RelaxedMockK
 import junit.framework.Assert.assertNotNull
-import org.junit.After
+import org.junit.AfterClass
 import org.junit.Assert
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
-import org.junit.Before
+import org.junit.BeforeClass
 import org.junit.Test
 import org.robolectric.Robolectric.buildActivity
 import org.robolectric.Shadows.shadowOf
@@ -32,6 +32,20 @@ class RetenoNotificationClickedActivityTest : BaseRobolectricTest() {
     companion object {
         private const val DEEPLINK_WRAPPED = "https://wrapped.com"
         private const val DEEPLINK_UNWRAPPED = "https://unwrapped.com"
+
+        @JvmStatic
+        @BeforeClass
+        fun beforeClass() {
+            mockObjectUtil()
+            mockObjectAppLaunchIntent()
+        }
+
+        @JvmStatic
+        @AfterClass
+        fun afterClass() {
+            unMockObjectUtil()
+            unMockObjectAppLaunchIntent()
+        }
     }
     // endregion constants -------------------------------------------------------------------------
 
@@ -40,18 +54,9 @@ class RetenoNotificationClickedActivityTest : BaseRobolectricTest() {
     private lateinit var context: Context
     // endregion helper fields ---------------------------------------------------------------------
 
-    @Before
-    fun setUp() {
-        mockkObject(Util)
-    }
-
-    @After
-    fun tearDown() {
-        unmockkObject(Util)
-    }
-
     @Test
     fun saveInteraction_extrasIsNotNull() {
+        mockkObject(RetenoImpl)
         val interactionId = "interaction_id"
 
         val extra = Bundle().apply {
@@ -60,7 +65,6 @@ class RetenoNotificationClickedActivityTest : BaseRobolectricTest() {
         val intent = Intent()
         intent.putExtras(extra)
 
-        mockkObject(RetenoImpl)
         val application = mockk<Application>(moreInterfaces = arrayOf(RetenoApplication::class))
         val reteno = mockk<RetenoImpl>()
         val interactionController = mockk<InteractionController>()
@@ -78,8 +82,9 @@ class RetenoNotificationClickedActivityTest : BaseRobolectricTest() {
 
         verify { interactionController.onInteraction(eq(interactionId), InteractionStatus.OPENED) }
         verify(exactly = 1) { scheduleController.forcePush() }
-        unmockkObject(RetenoImpl)
         assertTrue(activity.isFinishing)
+
+        unmockkObject(RetenoImpl)
     }
 
     @Test
@@ -98,7 +103,6 @@ class RetenoNotificationClickedActivityTest : BaseRobolectricTest() {
 
     @Test
     fun launchApp_doNotHaveDeepLinkAndExtrasIsNull() {
-        mockkObject(IntentHandler.AppLaunchIntent)
         every { IntentHandler.AppLaunchIntent.getAppLaunchIntent(any()) } returns Intent()
 
         val extra = Bundle().apply { putString("key", "value") }
@@ -114,8 +118,6 @@ class RetenoNotificationClickedActivityTest : BaseRobolectricTest() {
 
         assertNotNull(shadowIntent)
         assertTrue(activity.isFinishing)
-
-        unmockkObject(IntentHandler.AppLaunchIntent)
     }
 
     @Test
@@ -141,7 +143,6 @@ class RetenoNotificationClickedActivityTest : BaseRobolectricTest() {
 
     @Test
     fun launchApp_extrasIsNull() {
-        mockkObject(IntentHandler.AppLaunchIntent)
         every { IntentHandler.AppLaunchIntent.getAppLaunchIntent(any()) } returns Intent()
 
         val activity = buildActivity(RetenoNotificationClickedActivity::class.java).create().get()
@@ -151,14 +152,11 @@ class RetenoNotificationClickedActivityTest : BaseRobolectricTest() {
 
         assertNotNull(intent)
         assertTrue(activity.isFinishing)
-
-        unmockkObject(IntentHandler.AppLaunchIntent)
     }
 
     @Test
     fun givenPushWithCustomDataNoDeeplinkReceived_whenNotificationClicked_thenCustomDataDeliveredToLaunchActivity() {
         // Given
-        mockkObject(IntentHandler.AppLaunchIntent)
         every { IntentHandler.AppLaunchIntent.getAppLaunchIntent(any()) } returns Intent()
 
         val customDataKey = "customDataKey"
@@ -179,8 +177,6 @@ class RetenoNotificationClickedActivityTest : BaseRobolectricTest() {
         assertNotNull(appLaunchIntent.extras)
         assertTrue(appLaunchIntent.hasExtra(customDataKey))
         assertEquals(customDataValue, appLaunchIntent.getStringExtra(customDataKey))
-
-        unmockkObject(IntentHandler.AppLaunchIntent)
     }
 
     @Test

@@ -10,6 +10,8 @@ import com.reteno.core.domain.model.device.DeviceOS
 import com.reteno.core.domain.model.user.User
 import io.mockk.*
 import io.mockk.impl.annotations.RelaxedMockK
+import org.junit.AfterClass
+import org.junit.BeforeClass
 import org.junit.Test
 
 class ContactControllerTest : BaseUnitTest() {
@@ -28,6 +30,57 @@ class ContactControllerTest : BaseUnitTest() {
         private val USER_SUBSCRIPTION_KEYS = listOf("SUBSCRIPTION_KEYS")
         private val USER_GROUP_NAMES_INCLUDE = listOf("GROUP_NAMES_INCLUDE")
         private val USER_GROUP_NAMES_EXCLUDE = listOf("GROUP_NAMES_EXCLUDE")
+
+        @JvmStatic
+        @BeforeClass
+        fun beforeClass() {
+            mockkObject(Device.Companion)
+            mockDevice()
+        }
+
+        @JvmStatic
+        @AfterClass
+        fun afterClass() {
+            unmockkObject(Device.Companion)
+        }
+
+        private fun mockDevice() {
+            every {
+                Device.createDevice(
+                    any(),
+                    any(),
+                    any(),
+                    any()
+                )
+            } answers {
+                createDevice(
+                    deviceId = firstArg(),
+                    externalUserId = secondArg(),
+                    pushToken = thirdArg(),
+                    pushSubscribed = args[3] as Boolean?
+                )
+            }
+        }
+
+        private fun createDevice(
+            deviceId: String,
+            externalUserId: String?,
+            pushToken: String?,
+            pushSubscribed: Boolean?
+        ) = Device(
+            deviceId = deviceId,
+            externalUserId = externalUserId,
+            pushToken = pushToken,
+            pushSubscribed = pushSubscribed,
+            category = DeviceCategory.MOBILE,
+            osType = DeviceOS.ANDROID,
+            osVersion = null,
+            deviceModel = null,
+            appVersion = null,
+            languageCode = null,
+            timeZone = null,
+            advertisingId = null
+        )
     }
     // endregion constants -------------------------------------------------------------------------
 
@@ -44,15 +97,7 @@ class ContactControllerTest : BaseUnitTest() {
 
     override fun before() {
         super.before()
-        mockkObject(Device.Companion)
-        mockDevice()
         SUT = ContactController(contactRepository, configRepository)
-    }
-
-
-    override fun after() {
-        super.after()
-        unmockkObject(Device.Companion)
     }
 
     @Test
@@ -253,45 +298,4 @@ class ContactControllerTest : BaseUnitTest() {
         verify(exactly = 1) { configRepository.saveNotificationsEnabled(pushSubscribed) }
         verify(exactly = 1) { contactRepository.saveDeviceData(expectedDevice) }
     }
-
-    // region helper methods -----------------------------------------------------------------------
-    private fun mockDevice() {
-        every {
-            Device.createDevice(
-                any(),
-                any(),
-                any(),
-                any()
-            )
-        } answers {
-            createDevice(
-                deviceId = firstArg(),
-                externalUserId = secondArg(),
-                pushToken = thirdArg(),
-                pushSubscribed = args[3] as Boolean?
-            )
-        }
-    }
-
-    private fun createDevice(
-        deviceId: String,
-        externalUserId: String?,
-        pushToken: String?,
-        pushSubscribed: Boolean?
-    ) = Device(
-        deviceId = deviceId,
-        externalUserId = externalUserId,
-        pushToken = pushToken,
-        pushSubscribed = pushSubscribed,
-        category = DeviceCategory.MOBILE,
-        osType = DeviceOS.ANDROID,
-        osVersion = null,
-        deviceModel = null,
-        appVersion = null,
-        languageCode = null,
-        timeZone = null,
-        advertisingId = null
-    )
-
-    // endregion helper methods --------------------------------------------------------------------
 }

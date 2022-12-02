@@ -28,6 +28,20 @@ class RetenoNotificationChannelTest : BaseRobolectricTest() {
             RetenoNotificationChannel::class.java,
             "FALLBACK_DEFAULT_CHANNEL_DESCRIPTION"
         ).get(RetenoNotificationChannel::class.java) as String
+
+        @JvmStatic
+        @BeforeClass
+        fun beforeClass() {
+            mockkObject(BuildUtil)
+            mockkStatic(Util::class)
+        }
+
+        @JvmStatic
+        @AfterClass
+        fun afterClass() {
+            unmockkObject(BuildUtil)
+            unmockkStatic(Util::class)
+        }
     }
     // endregion constants -------------------------------------------------------------------------
 
@@ -42,8 +56,6 @@ class RetenoNotificationChannelTest : BaseRobolectricTest() {
     @Before
     override fun before() {
         super.before()
-        mockkObject(BuildUtil)
-        mockkStatic(Util::class)
         every { BuildUtil.getTargetSdkVersion() } returns 26
 
         contextMock = mockk<Context>()
@@ -55,8 +67,6 @@ class RetenoNotificationChannelTest : BaseRobolectricTest() {
     @After
     override fun after() {
         super.after()
-        unmockkObject(BuildUtil)
-        unmockkStatic(Util::class)
 
         contextMock = null
         notificationManager = null

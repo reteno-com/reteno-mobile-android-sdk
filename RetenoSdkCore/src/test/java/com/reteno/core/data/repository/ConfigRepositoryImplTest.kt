@@ -1,8 +1,7 @@
 package com.reteno.core.data.repository
 
-import com.google.firebase.messaging.FirebaseMessaging
-import com.reteno.core.base.robolectric.BaseRobolectricTest
 import android.text.TextUtils
+import com.google.firebase.messaging.FirebaseMessaging
 import com.reteno.core.base.BaseUnitTest
 import com.reteno.core.data.local.config.DeviceId
 import com.reteno.core.data.local.config.DeviceIdMode
@@ -11,7 +10,9 @@ import com.reteno.core.data.local.sharedpref.SharedPrefsManager
 import io.mockk.*
 import io.mockk.impl.annotations.MockK
 import io.mockk.impl.annotations.RelaxedMockK
+import org.junit.AfterClass
 import org.junit.Assert.assertEquals
+import org.junit.BeforeClass
 import org.junit.Test
 import org.mockito.Matchers.anyString
 
@@ -23,6 +24,20 @@ class ConfigRepositoryImplTest : BaseUnitTest() {
         private const val EXTERNAL_DEVICE_ID = "External_device_ID"
         private const val FCM_TOKEN = "FCM_Token"
         private const val DEFAULT_NOTIFICATION_CHANNEL = "default_notification_channel_ID"
+
+        @JvmStatic
+        @BeforeClass
+        fun beforeClass() {
+            mockStaticTextUtil()
+            mockkStatic(FirebaseMessaging::class)
+        }
+
+        @JvmStatic
+        @AfterClass
+        fun afterClass() {
+            unMockStaticTextUtil()
+            unmockkStatic(FirebaseMessaging::class)
+        }
     }
     // endregion constants -------------------------------------------------------------------------
 
@@ -38,13 +53,7 @@ class ConfigRepositoryImplTest : BaseUnitTest() {
 
     override fun before() {
         super.before()
-        mockOperationQueue()
         SUT = ConfigRepositoryImpl(sharedPrefsManager, restConfig)
-    }
-
-    override fun after() {
-        super.after()
-        unMockOperationQueue()
     }
 
     @Test
@@ -88,7 +97,6 @@ class ConfigRepositoryImplTest : BaseUnitTest() {
     @Test
     fun given_whenGetFcmToken_thenDelegatedToSharedPrefsManager() {
         // Given
-        mockkStatic(TextUtils::class)
         every { TextUtils.isEmpty(any()) } returns false
         every { sharedPrefsManager.getFcmToken() } returns FCM_TOKEN
 
@@ -98,16 +106,13 @@ class ConfigRepositoryImplTest : BaseUnitTest() {
         // Then
         verify(exactly = 1) { sharedPrefsManager.getFcmToken() }
         assertEquals(FCM_TOKEN, result)
-        unmockkStatic(TextUtils::class)
     }
 
     @Test
     fun givenFcmTokenAbsent_whenGetFcmToken_thenGetAndSaveFreshFcmTokenCalled() {
         // Given
-        mockkStatic(TextUtils::class)
         every { TextUtils.isEmpty(any()) } returns true
         val firebaseMockk = mockk<FirebaseMessaging>(relaxed = true)
-        mockkStatic(FirebaseMessaging::class)
         every { FirebaseMessaging.getInstance() } returns firebaseMockk
 
         every { sharedPrefsManager.getFcmToken() } returns ""
@@ -119,9 +124,6 @@ class ConfigRepositoryImplTest : BaseUnitTest() {
         // Then
         verify(exactly = 1) { sharedPrefsManager.getFcmToken() }
         verify(exactly = 1) { configRepositorySpy["getAndSaveFreshFcmToken"]() }
-
-        unmockkStatic(FirebaseMessaging::class)
-        unmockkStatic(TextUtils::class)
     }
 
     @Test
@@ -133,7 +135,11 @@ class ConfigRepositoryImplTest : BaseUnitTest() {
         SUT.saveDefaultNotificationChannel(DEFAULT_NOTIFICATION_CHANNEL)
 
         // Then
-        verify(exactly = 1) { sharedPrefsManager.saveDefaultNotificationChannel(DEFAULT_NOTIFICATION_CHANNEL) }
+        verify(exactly = 1) {
+            sharedPrefsManager.saveDefaultNotificationChannel(
+                DEFAULT_NOTIFICATION_CHANNEL
+            )
+        }
     }
 
     @Test

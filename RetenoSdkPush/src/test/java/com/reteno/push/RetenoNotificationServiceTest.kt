@@ -10,6 +10,7 @@ import com.reteno.core.domain.controller.InteractionController
 import com.reteno.core.domain.controller.ScheduleController
 import com.reteno.core.domain.model.interaction.InteractionStatus
 import com.reteno.core.lifecycle.RetenoActivityHelper
+import com.reteno.core.util.getApplicationMetaData
 import com.reteno.core.util.queryBroadcastReceivers
 import com.reteno.push.Constants.KEY_ES_CONTENT
 import com.reteno.push.Constants.KEY_ES_INTERACTION_ID
@@ -22,6 +23,8 @@ import io.mockk.*
 import io.mockk.impl.annotations.RelaxedMockK
 import junit.framework.TestCase
 import junit.framework.TestCase.assertEquals
+import org.junit.AfterClass
+import org.junit.BeforeClass
 import org.junit.Test
 import org.robolectric.Shadows
 import org.robolectric.annotation.Config
@@ -37,6 +40,26 @@ class RetenoNotificationServiceTest : BaseRobolectricTest() {
         private const val TOKEN: String = "4bf5c8e5-72d5-4b3c-81d6-85128928e296"
 
         private const val TRANSCRIPT_CUSTOM_PUSH = "TRANSCRIPT_CUSTOM_PUSH"
+
+        @JvmStatic
+        @BeforeClass
+        fun beforeClass() {
+            mockObjectUtil()
+
+            mockObjectRetenoNotificationsChannel()
+            mockObjectNotificationsEnabledManager()
+
+            mockkStatic("com.reteno.core.util.UtilKt")
+        }
+
+        @JvmStatic
+        @AfterClass
+        fun afterClass() {
+            unMockObjectUtil()
+            unMockObjectRetenoNotificationsChannel()
+            unMockObjectNotificationsEnabledManager()
+            unmockkStatic("com.reteno.core.util.UtilKt")
+        }
     }
     // endregion constants -------------------------------------------------------------------------
 
@@ -66,11 +89,8 @@ class RetenoNotificationServiceTest : BaseRobolectricTest() {
 
         pushService = RetenoNotificationService()
 
-        mockkObject(Util)
         justRun { Util.tryToSendToCustomReceiverPushReceived(any()) }
         justRun { Util.tryToSendToCustomReceiverNotificationClicked(any()) }
-        mockkObject(RetenoNotificationChannel)
-        mockkObject(NotificationsEnabledManager)
         justRun { NotificationsEnabledManager.onCheckState(any()) }
 
         contextWrapper = ContextWrapper(application)
@@ -81,10 +101,6 @@ class RetenoNotificationServiceTest : BaseRobolectricTest() {
     override fun after() {
         super.after()
         pushService = null
-
-        unmockkObject(Util)
-        unmockkObject(RetenoNotificationChannel)
-        unmockkObject(NotificationsEnabledManager)
 
         contextWrapper = null
         transcript.clear()
@@ -203,7 +219,7 @@ class RetenoNotificationServiceTest : BaseRobolectricTest() {
         // Given
         val bundle = buildBundle(INTERACTION_ID)
         justRun { pushService!!.handleNotification(bundle) }
-
+        every { application.getApplicationMetaData().getInt(any()) } returns 0
         // When
         val pushServiceSpy = spyk<RetenoNotificationService>(recordPrivateCalls = true)
         pushServiceSpy.handleNotification(bundle)
@@ -235,8 +251,6 @@ class RetenoNotificationServiceTest : BaseRobolectricTest() {
         // Then
         ShadowLooper.shadowMainLooper().idle()
         TestCase.assertTrue(transcript.contains(TRANSCRIPT_CUSTOM_PUSH))
-
-        unmockQueryBroadcastReceivers()
     }
 
     // region helper methods -----------------------------------------------------------------------
@@ -260,12 +274,7 @@ class RetenoNotificationServiceTest : BaseRobolectricTest() {
                 name = "name"
             }
         }
-        mockkStatic("com.reteno.core.util.UtilKt")
         every { application.queryBroadcastReceivers(any()) } returns listOf(mockResolveInfo)
-    }
-
-    private fun unmockQueryBroadcastReceivers() {
-        unmockkStatic("com.reteno.core.util.UtilKt")
     }
     // endregion helper methods --------------------------------------------------------------------
 }

@@ -7,16 +7,12 @@ def dependencyGroup(Closure closure) {
 ext.testDependencies = dependencyGroup {
     junit()
     mockk()
-    mockito()
     powermock()
     robolectric()
 
     androidx()
-    bouncycastle()
-    dexmaker()
-
+    json()
     sqlCipher()
-
     workManager()
 
     testImplementation 'com.google.firebase:firebase-messaging-ktx:23.1.0'
@@ -31,10 +27,6 @@ ext.junit = dependencyGroup {
 
 ext.mockk = dependencyGroup {
     testImplementation "io.mockk:mockk:1.13.2"
-}
-
-ext.mockito = dependencyGroup {
-    androidTestImplementation 'org.mockito:mockito-core:1.10.19'
 }
 
 ext.powermock = dependencyGroup {
@@ -59,20 +51,10 @@ ext.robolectric = dependencyGroup {
 ext.androidx = dependencyGroup {
     testImplementation 'androidx.test:core:1.4.0'
     testImplementation 'androidx.arch.core:core-testing:2.1.0'
-    androidTestImplementation 'androidx.test.ext:junit:1.1.1'
-    androidTestImplementation 'androidx.test:runner:1.2.0'
-    androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
-    androidTestImplementation 'androidx.test:rules:1.2.0'
 }
 
-ext.bouncycastle = dependencyGroup {
-    testImplementation 'org.bouncycastle:bcmail-jdk15on:1.65'
-}
-
-ext.dexmaker = dependencyGroup {
-    androidTestImplementation "com.crittercism.dexmaker:dexmaker:1.4"
-    androidTestImplementation "com.crittercism.dexmaker:dexmaker-mockito:1.4"
-    androidTestImplementation "com.crittercism.dexmaker:dexmaker-dx:1.4"
+ext.json = dependencyGroup {
+    testImplementation 'org.json:json:20180813'
 }
 
 ext.sqlCipher = dependencyGroup {

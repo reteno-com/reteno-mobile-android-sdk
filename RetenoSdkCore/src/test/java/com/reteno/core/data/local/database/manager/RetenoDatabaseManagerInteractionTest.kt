@@ -18,7 +18,9 @@ import io.mockk.impl.annotations.MockK
 import io.mockk.impl.annotations.RelaxedMockK
 import junit.framework.TestCase.assertTrue
 import net.sqlcipher.Cursor
+import org.junit.AfterClass
 import org.junit.Assert.assertEquals
+import org.junit.BeforeClass
 import org.junit.Test
 import java.time.ZonedDateTime
 
@@ -56,6 +58,18 @@ class RetenoDatabaseManagerInteractionTest : BaseRobolectricTest() {
         private const val COLUMN_INDEX_INTERACTION_STATUS = 4
         private const val COLUMN_INDEX_INTERACTION_TIME = 5
         private const val COLUMN_INDEX_INTERACTION_TOKEN = 6
+
+        @JvmStatic
+        @BeforeClass
+        fun beforeClass() {
+            mockkStatic(Cursor::getInteraction)
+        }
+
+        @JvmStatic
+        @AfterClass
+        fun afterClass() {
+            unmockkStatic(Cursor::getInteraction)
+        }
     }
     // endregion constants -------------------------------------------------------------------------
 
@@ -71,7 +85,6 @@ class RetenoDatabaseManagerInteractionTest : BaseRobolectricTest() {
 
     override fun before() {
         super.before()
-        mockkStatic(Cursor::getInteraction)
 
         mockColumnIndexes()
         every { cursor.getStringOrNull(COLUMN_INDEX_TIMESTAMP) } returns TIMESTAMP
@@ -83,7 +96,6 @@ class RetenoDatabaseManagerInteractionTest : BaseRobolectricTest() {
     override fun after() {
         super.after()
         clearMocks(cursor)
-        unmockkStatic(Cursor::getInteraction)
     }
 
     @Test

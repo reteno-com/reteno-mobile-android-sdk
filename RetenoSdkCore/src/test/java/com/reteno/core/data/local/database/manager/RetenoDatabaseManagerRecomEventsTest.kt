@@ -6,7 +6,6 @@ import androidx.core.database.getStringOrNull
 import com.reteno.core.base.robolectric.BaseRobolectricTest
 import com.reteno.core.data.local.database.RetenoDatabase
 import com.reteno.core.data.local.database.schema.RecomEventsSchema
-import com.reteno.core.data.local.database.util.getEvent
 import com.reteno.core.data.local.database.util.getRecomEvent
 import com.reteno.core.data.local.database.util.putRecomVariantId
 import com.reteno.core.data.local.database.util.toContentValuesList
@@ -21,6 +20,8 @@ import io.mockk.impl.annotations.RelaxedMockK
 import junit.framework.TestCase.assertEquals
 import junit.framework.TestCase.assertTrue
 import net.sqlcipher.Cursor
+import org.junit.AfterClass
+import org.junit.BeforeClass
 import org.junit.Test
 import java.time.ZonedDateTime
 
@@ -58,6 +59,18 @@ class RetenoDatabaseManagerRecomEventsTest : BaseRobolectricTest() {
         private const val COLUMN_INDEX_RECOM_EVENT_PRODUCT_ID = 3
         private const val COLUMN_INDEX_RECOM_EVENT_OCCURRED = 4
         private const val COLUMN_INDEX_RECOM_EVENT_TYPE = 5
+
+        @JvmStatic
+        @BeforeClass
+        fun beforeClass() {
+            mockkStatic(Cursor::getRecomEvent)
+        }
+
+        @JvmStatic
+        @AfterClass
+        fun afterClass() {
+            unmockkStatic(Cursor::getRecomEvent)
+        }
     }
     // endregion constants -------------------------------------------------------------------------
 
@@ -75,7 +88,6 @@ class RetenoDatabaseManagerRecomEventsTest : BaseRobolectricTest() {
 
     override fun before() {
         super.before()
-        mockkStatic(Cursor::getRecomEvent)
 
         mockColumnIndexes()
         justRun { cursor.close() }
@@ -88,7 +100,6 @@ class RetenoDatabaseManagerRecomEventsTest : BaseRobolectricTest() {
         super.after()
         clearMocks(cursor)
         clearMocks(cursorChild)
-        unmockkStatic(Cursor::getEvent)
     }
 
     @Test

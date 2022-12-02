@@ -21,7 +21,9 @@ import io.mockk.impl.annotations.MockK
 import io.mockk.impl.annotations.RelaxedMockK
 import junit.framework.TestCase.assertTrue
 import net.sqlcipher.Cursor
+import org.junit.AfterClass
 import org.junit.Assert.assertEquals
+import org.junit.BeforeClass
 import org.junit.Test
 
 
@@ -108,6 +110,18 @@ class RetenoDatabaseManagerUserTest : BaseRobolectricTest() {
         private const val COLUMN_INDEX_TOWN = 16
         private const val COLUMN_INDEX_ADDRESS = 17
         private const val COLUMN_INDEX_POSTCODE = 18
+
+        @JvmStatic
+        @BeforeClass
+        fun beforeClass() {
+            mockkStatic(Cursor::getUser)
+        }
+
+        @JvmStatic
+        @AfterClass
+        fun afterClass() {
+            unmockkStatic(Cursor::getUser)
+        }
     }
     // endregion constants -------------------------------------------------------------------------
 
@@ -123,7 +137,6 @@ class RetenoDatabaseManagerUserTest : BaseRobolectricTest() {
 
     override fun before() {
         super.before()
-        mockkStatic(Cursor::getUser)
 
         mockColumnIndexes()
         every { cursor.getStringOrNull(COLUMN_INDEX_TIMESTAMP) } returns TIMESTAMP
@@ -135,7 +148,6 @@ class RetenoDatabaseManagerUserTest : BaseRobolectricTest() {
     override fun after() {
         super.after()
         clearMocks(cursor)
-        unmockkStatic(Cursor::getUser)
     }
 
     @Test

@@ -1,10 +1,9 @@
 package com.reteno.core.data.repository
 
-import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerInteraction
 import com.reteno.core.base.BaseUnitTest
+import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerInteraction
 import com.reteno.core.data.local.mappers.toDb
 import com.reteno.core.data.local.model.interaction.InteractionDb
-import com.reteno.core.data.remote.OperationQueue
 import com.reteno.core.data.remote.PushOperationQueue
 import com.reteno.core.data.remote.api.ApiClient
 import com.reteno.core.data.remote.api.ApiContract
@@ -14,9 +13,7 @@ import com.reteno.core.domain.model.interaction.InteractionStatus
 import com.reteno.core.util.Logger
 import io.mockk.*
 import io.mockk.impl.annotations.RelaxedMockK
-import org.junit.Assert
-import org.junit.Before
-import org.junit.Test
+import org.junit.*
 import java.time.ZonedDateTime
 
 class InteractionRepositoryImplTest : BaseUnitTest() {
@@ -32,6 +29,20 @@ class InteractionRepositoryImplTest : BaseUnitTest() {
             ApiContract.RetenoApi.InteractionStatus(INTERACTION_ID).url
         private const val EXPECTED_URL =
             "https://api.reteno.com/api/v1/interactions/$INTERACTION_ID/status"
+
+        @JvmStatic
+        @BeforeClass
+        fun beforeClass() {
+            mockObjectOperationQueue()
+            mockObjectPushOperationQueue()
+        }
+
+        @JvmStatic
+        @AfterClass
+        fun afterClass() {
+            unMockObjectOperationQueue()
+            unMockObjectPushOperationQueue()
+        }
     }
     // endregion constants -------------------------------------------------------------------------
 
@@ -47,15 +58,7 @@ class InteractionRepositoryImplTest : BaseUnitTest() {
     @Before
     override fun before() {
         super.before()
-        mockOperationQueue()
-        mockkObject(PushOperationQueue)
         SUT = InteractionRepositoryImpl(apiClient, databaseManagerInteraction)
-    }
-
-    override fun after() {
-        super.after()
-        unMockOperationQueue()
-        unmockkObject(PushOperationQueue)
     }
 
     @Test

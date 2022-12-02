@@ -10,10 +10,8 @@ import com.reteno.core.data.remote.api.RestClientImpl
 import com.reteno.core.domain.ResponseCallback
 import io.mockk.*
 import io.mockk.impl.annotations.RelaxedMockK
-import org.junit.After
+import org.junit.*
 import org.junit.Assert.assertEquals
-import org.junit.Before
-import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 import org.powermock.reflect.Whitebox
@@ -49,6 +47,20 @@ class RestClientImplTest : BaseUnitTest() {
                 fieldName
             )[RestClientImpl::class.java] as T
         }
+
+        @JvmStatic
+        @BeforeClass
+        fun beforeClass() {
+            mockkObject(ConnectionManager)
+            mockkStatic(Uri::class)
+        }
+
+        @JvmStatic
+        @AfterClass
+        fun afterClass() {
+            unmockkObject(ConnectionManager)
+            unmockkStatic(Uri::class)
+        }
     }
     // endregion constants -------------------------------------------------------------------------
 
@@ -61,14 +73,7 @@ class RestClientImplTest : BaseUnitTest() {
     @Before
     override fun before() {
         super.before()
-        mockkObject(ConnectionManager)
         restClient = RestClientImpl(RestConfig(mockk(relaxed = true), ""))
-    }
-
-    @After
-    override fun after() {
-        super.after()
-        unmockkObject(ConnectionManager)
     }
 
     @Test
@@ -77,7 +82,6 @@ class RestClientImplTest : BaseUnitTest() {
         val params = mapOf("params1" to false.toString(), "params2" to "9")
 
         every { ConnectionManager.openConnection(any()) } returns httpURLConnection
-        mockkStatic(Uri::class)
         val mockUri = mockk<Uri>()
         val mockBuilder = mockk<Uri.Builder>()
         every { Uri.parse(any()) } returns mockUri
@@ -98,7 +102,6 @@ class RestClientImplTest : BaseUnitTest() {
         val expectedUrl = "http://www.test.com"
 
         every { ConnectionManager.openConnection(any()) } returns httpURLConnection
-        mockkStatic(Uri::class)
 
         makeRequest(HttpMethod.GET, queryParams = params)
 

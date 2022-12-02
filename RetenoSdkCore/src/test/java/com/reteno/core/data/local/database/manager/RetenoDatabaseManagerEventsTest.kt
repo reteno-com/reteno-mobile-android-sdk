@@ -20,6 +20,8 @@ import io.mockk.impl.annotations.RelaxedMockK
 import junit.framework.TestCase.assertEquals
 import junit.framework.TestCase.assertTrue
 import net.sqlcipher.Cursor
+import org.junit.AfterClass
+import org.junit.BeforeClass
 import org.junit.Test
 import java.time.ZonedDateTime
 
@@ -64,6 +66,18 @@ class RetenoDatabaseManagerEventsTest : BaseRobolectricTest() {
         private const val COLUMN_INDEX_EVENT_TYPE_KEY = 5
         private const val COLUMN_INDEX_EVENT_OCCURRED = 6
         private const val COLUMN_INDEX_EVENT_PARAMS = 7
+
+        @JvmStatic
+        @BeforeClass
+        fun beforeClass() {
+            mockkStatic(Cursor::getEvent)
+        }
+
+        @JvmStatic
+        @AfterClass
+        fun afterClass() {
+            unmockkStatic(Cursor::getEvent)
+        }
     }
     // endregion constants -------------------------------------------------------------------------
 
@@ -81,7 +95,6 @@ class RetenoDatabaseManagerEventsTest : BaseRobolectricTest() {
 
     override fun before() {
         super.before()
-        mockkStatic(Cursor::getEvent)
 
         mockColumnIndexes()
         justRun { cursor.close() }
@@ -94,7 +107,6 @@ class RetenoDatabaseManagerEventsTest : BaseRobolectricTest() {
         super.after()
         clearMocks(cursor)
         clearMocks(cursorChild)
-        unmockkStatic(Cursor::getEvent)
     }
 
     @Test

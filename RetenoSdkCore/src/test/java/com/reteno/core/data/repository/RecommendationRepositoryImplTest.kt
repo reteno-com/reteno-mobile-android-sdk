@@ -1,6 +1,6 @@
 package com.reteno.core.data.repository
 
-import com.reteno.core.base.robolectric.BaseRobolectricTest
+import com.reteno.core.base.BaseUnitTest
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerRecomEvents
 import com.reteno.core.data.local.model.recommendation.RecomEventDb
 import com.reteno.core.data.local.model.recommendation.RecomEventTypeDb
@@ -23,14 +23,14 @@ import com.reteno.core.util.Logger
 import com.reteno.core.util.Util.formatToRemote
 import io.mockk.*
 import io.mockk.impl.annotations.RelaxedMockK
+import org.junit.AfterClass
 import org.junit.Assert.assertEquals
+import org.junit.BeforeClass
 import org.junit.Test
 import java.time.ZonedDateTime
-import java.util.concurrent.Executors
-import java.util.concurrent.ScheduledExecutorService
 
 
-class RecommendationRepositoryImplTest : BaseRobolectricTest() {
+class RecommendationRepositoryImplTest : BaseUnitTest() {
 
     // region constants ----------------------------------------------------------------------------
     companion object {
@@ -47,6 +47,20 @@ class RecommendationRepositoryImplTest : BaseRobolectricTest() {
         private const val ERROR_CODE_REPEATABLE = 500
         private const val ERROR_MSG = "error_msg"
         private val ERROR_EXCEPTION = MockKException(ERROR_MSG)
+
+        @JvmStatic
+        @BeforeClass
+        fun beforeClass() {
+            mockObjectOperationQueue()
+            mockObjectPushOperationQueue()
+        }
+
+        @JvmStatic
+        @AfterClass
+        fun afterClass() {
+            unMockObjectOperationQueue()
+            unMockObjectPushOperationQueue()
+        }
     }
     // endregion constants -------------------------------------------------------------------------
 
@@ -58,27 +72,13 @@ class RecommendationRepositoryImplTest : BaseRobolectricTest() {
     @RelaxedMockK
     private lateinit var apiClient: ApiClient
 
-    @RelaxedMockK
-    private lateinit var scheduler: ScheduledExecutorService
-
     private lateinit var SUT: RecommendationRepositoryImpl
     // endregion helper fields ---------------------------------------------------------------------
 
     override fun before() {
         super.before()
-        mockkStatic(Executors::class)
-        mockkObject(PushOperationQueue)
-        every { Executors.newScheduledThreadPool(any(), any()) } returns scheduler
-
         SUT = RecommendationRepositoryImpl(databaseManagerRecomEvents, apiClient)
     }
-
-    override fun after() {
-        super.after()
-        unmockkObject(PushOperationQueue)
-        unmockkStatic(Executors::class)
-    }
-
 
     @Test
     fun givenHandleResponseJsonFail_whenGetRecommendations_thenOnSuccessFallbackToJson() {

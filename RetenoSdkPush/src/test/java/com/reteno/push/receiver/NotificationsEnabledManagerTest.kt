@@ -4,12 +4,32 @@ import com.reteno.core.domain.controller.ContactController
 import com.reteno.core.domain.controller.ScheduleController
 import com.reteno.push.base.robolectric.BaseRobolectricTest
 import com.reteno.push.channel.RetenoNotificationChannel
-import io.mockk.*
+import io.mockk.every
 import io.mockk.impl.annotations.RelaxedMockK
+import io.mockk.justRun
+import io.mockk.verify
+import org.junit.AfterClass
+import org.junit.BeforeClass
 import org.junit.Test
 
 
 class NotificationsEnabledManagerTest : BaseRobolectricTest() {
+
+    // region constants ----------------------------------------------------------------------------
+    companion object {
+        @JvmStatic
+        @BeforeClass
+        fun beforeClass() {
+            mockObjectRetenoNotificationsChannel()
+        }
+
+        @JvmStatic
+        @AfterClass
+        fun afterClass() {
+            unMockObjectRetenoNotificationsChannel()
+        }
+    }
+    // endregion constants -------------------------------------------------------------------------
 
     // region helper fields ------------------------------------------------------------------------
     @RelaxedMockK
@@ -27,14 +47,6 @@ class NotificationsEnabledManagerTest : BaseRobolectricTest() {
 
         every { reteno.serviceLocator.contactControllerProvider.get() } returns contactController
         every { reteno.serviceLocator.scheduleControllerProvider.get() } returns scheduleController
-
-        mockkObject(RetenoNotificationChannel)
-    }
-
-    override fun after() {
-        super.after()
-
-        unmockkObject(RetenoNotificationChannel)
     }
 
     @Test

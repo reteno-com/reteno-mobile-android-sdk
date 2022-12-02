@@ -5,10 +5,26 @@ import com.reteno.core.data.remote.api.ApiClient
 import com.reteno.core.data.remote.api.ApiContract
 import io.mockk.impl.annotations.RelaxedMockK
 import io.mockk.verify
+import org.junit.AfterClass
+import org.junit.BeforeClass
 import org.junit.Test
 
 
 class DeeplinkRepositoryImplTest : BaseUnitTest() {
+
+    companion object {
+        @JvmStatic
+        @BeforeClass
+        fun beforeClass() {
+            mockObjectOperationQueue()
+        }
+
+        @JvmStatic
+        @AfterClass
+        fun afterClass() {
+            unMockObjectOperationQueue()
+        }
+    }
 
     // region helper fields ------------------------------------------------------------------------
     @RelaxedMockK
@@ -19,13 +35,7 @@ class DeeplinkRepositoryImplTest : BaseUnitTest() {
 
     override fun before() {
         super.before()
-        mockOperationQueue()
         deeplinkRepository = DeeplinkRepositoryImpl(apiClient)
-    }
-
-    override fun after() {
-        super.after()
-        unMockOperationQueue()
     }
 
     @Test
