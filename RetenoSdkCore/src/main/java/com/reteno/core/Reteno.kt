@@ -15,6 +15,11 @@ interface Reteno {
     val appInbox: AppInbox
 
     /**
+     *  Get [Recommendation] instance.
+     */
+    val recommendation: Recommendation
+
+    /**
      *  Set the user ID.
      */
     fun setUserAttributes(externalUserId: String)
@@ -54,11 +59,6 @@ interface Reteno {
      *  But not more often than [com.reteno.core.domain.controller.ScheduleController.Companion.FORCE_PUSH_MIN_DELAY] millis.
      */
     fun forcePushData()
-
-    /**
-     *  Get [com.reteno.core.recommendation.Recommendation] instance.
-     */
-    fun getRecommendation(): Recommendation
 
     companion object {
         val TAG: String = Reteno::class.java.simpleName

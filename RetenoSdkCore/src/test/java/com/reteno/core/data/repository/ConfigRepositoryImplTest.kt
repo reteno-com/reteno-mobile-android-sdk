@@ -1,5 +1,7 @@
 package com.reteno.core.data.repository
 
+import android.text.TextUtils
+import com.google.firebase.messaging.FirebaseMessaging
 import com.reteno.core.base.robolectric.BaseRobolectricTest
 import com.reteno.core.data.local.config.DeviceId
 import com.reteno.core.data.local.config.DeviceIdHelper
@@ -14,7 +16,7 @@ import org.mockito.Matchers.anyString
 import org.robolectric.annotation.Config
 
 @Config(sdk = [26])
-class ConfigRepositoryTest : BaseRobolectricTest() {
+class ConfigRepositoryImplTest : BaseRobolectricTest() {
 
     // region constants ----------------------------------------------------------------------------
     companion object {
@@ -31,7 +33,7 @@ class ConfigRepositoryTest : BaseRobolectricTest() {
 
     private lateinit var restConfig: RestConfig
 
-    private lateinit var SUT: ConfigRepositoryImpl
+    private lateinit var SUT: ConfigRepository
     // endregion helper fields ---------------------------------------------------------------------
 
     override fun before() {
@@ -91,6 +93,29 @@ class ConfigRepositoryTest : BaseRobolectricTest() {
         // Then
         verify(exactly = 1) { sharedPrefsManager.getFcmToken() }
         assertEquals(FCM_TOKEN, result)
+    }
+
+    @Test
+    fun givenFcmTokenAbsent_whenGetFcmToken_thenGetAndSaveFreshFcmTokenCalled() {
+        // Given
+        mockkStatic(TextUtils::class)
+        every { TextUtils.isEmpty(any()) } returns true
+        val firebaseMockk = mockk<FirebaseMessaging>(relaxed = true)
+        mockkStatic(FirebaseMessaging::class)
+        every { FirebaseMessaging.getInstance() } returns firebaseMockk
+
+        every { sharedPrefsManager.getFcmToken() } returns ""
+
+        // When
+        val configRepositorySpy = spyk(SUT, recordPrivateCalls = true)
+        configRepositorySpy.getFcmToken()
+
+        // Then
+        verify(exactly = 1) { sharedPrefsManager.getFcmToken() }
+        verify(exactly = 1) { configRepositorySpy["getAndSaveFreshFcmToken"]() }
+
+        unmockkStatic(FirebaseMessaging::class)
+        unmockkStatic(TextUtils::class)
     }
 
     @Test

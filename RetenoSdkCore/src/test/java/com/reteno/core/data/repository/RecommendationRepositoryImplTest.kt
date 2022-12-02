@@ -30,7 +30,7 @@ import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 
 
-class RecommendationRepositoryTest : BaseRobolectricTest() {
+class RecommendationRepositoryImplTest : BaseRobolectricTest() {
 
     // region constants ----------------------------------------------------------------------------
     companion object {
@@ -88,7 +88,7 @@ class RecommendationRepositoryTest : BaseRobolectricTest() {
             mockk<GetRecommendationResponseCallback<RecommendationResponseFull>>(relaxed = true)
         val resultJson = "{}"
 
-        val expectedApiContract = ApiContract.Recommendation.Get(RECOM_VARIANT_ID)
+        val expectedApiContract = ApiContract.Recommendation.GetRecoms(RECOM_VARIANT_ID)
         val apiContractCaptured = slot<ApiContract>()
         every {
             apiClient.post(
@@ -135,7 +135,7 @@ class RecommendationRepositoryTest : BaseRobolectricTest() {
         val result =
             Recoms(listOf(getRecommendationResponseFull_1(), getRecommendationResponseFull_2()))
 
-        val expectedApiContract = ApiContract.Recommendation.Get(RECOM_VARIANT_ID)
+        val expectedApiContract = ApiContract.Recommendation.GetRecoms(RECOM_VARIANT_ID)
         val apiContractCaptured = slot<ApiContract>()
         every {
             apiClient.post(
@@ -180,7 +180,7 @@ class RecommendationRepositoryTest : BaseRobolectricTest() {
         val responseCallback =
             mockk<GetRecommendationResponseCallback<RecommendationResponseFull>>(relaxed = true)
 
-        val expectedApiContract = ApiContract.Recommendation.Get(RECOM_VARIANT_ID)
+        val expectedApiContract = ApiContract.Recommendation.GetRecoms(RECOM_VARIANT_ID)
         val apiContractCaptured = slot<ApiContract>()
         every {
             apiClient.post(
@@ -248,7 +248,7 @@ class RecommendationRepositoryTest : BaseRobolectricTest() {
 
         SUT.pushRecommendations()
 
-        verify(exactly = 1) { apiClient.post(eq(ApiContract.Recommendation.Post), eq(listOf(recomEventsDb).toRemote().toJson()), any()) }
+        verify(exactly = 1) { apiClient.post(eq(ApiContract.Recommendation.PostRecoms), eq(listOf(recomEventsDb).toRemote().toJson()), any()) }
         verify(exactly = 0) { PushOperationQueue.nextOperation() }
     }
 
@@ -346,7 +346,7 @@ class RecommendationRepositoryTest : BaseRobolectricTest() {
         // Given
         val deletedEvents = 2
         every { databaseManagerRecomEvents.deleteRecomEventsByTime(any()) } returns deletedEvents
-        val expectedMsg = "Outdated Events: - $deletedEvents"
+        val expectedMsg = "Outdated Recommendation Events: - $deletedEvents"
 
         // When
         SUT.clearOldRecommendations(ZonedDateTime.now())

@@ -132,8 +132,7 @@ class RestClient(private val restConfig: RestConfig) {
                     setRequestProperty(HEADER_VERSION, BuildConfig.SDK_VERSION)
                 }
                 is ApiContract.AppInbox,
-                is ApiContract.Recommendation.Get,
-                is ApiContract.Recommendation.Post -> {
+                is ApiContract.Recommendation -> {
                     setRequestProperty(HEADER_KEY, restConfig.accessKey)
                     setRequestProperty(HEADER_VERSION, BuildConfig.SDK_VERSION)
                     setRequestProperty(HEADER_DEVICE_ID, restConfig.deviceId.id)

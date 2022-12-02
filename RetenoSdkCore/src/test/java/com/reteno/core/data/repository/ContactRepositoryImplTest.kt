@@ -25,7 +25,7 @@ import io.mockk.*
 import io.mockk.impl.annotations.RelaxedMockK
 import org.junit.Test
 
-class ContactRepositoryTest : BaseRobolectricTest() {
+class ContactRepositoryImplTest : BaseRobolectricTest() {
 
     // region constants ----------------------------------------------------------------------------
     companion object {

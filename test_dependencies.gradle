@@ -18,6 +18,8 @@ ext.testDependencies = dependencyGroup {
     sqlCipher()
 
     workManager()
+
+    testImplementation 'com.google.firebase:firebase-messaging-ktx:23.1.0'
 }
 
 /******* Dependency groups *******/

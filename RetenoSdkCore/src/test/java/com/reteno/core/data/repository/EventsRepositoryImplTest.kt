@@ -25,7 +25,7 @@ import org.junit.Before
 import org.junit.Test
 import java.time.ZonedDateTime
 
-class EventsRepositoryTest : BaseRobolectricTest() {
+class EventsRepositoryImplTest : BaseRobolectricTest() {
 
     // region constants ----------------------------------------------------------------------------
     companion object {

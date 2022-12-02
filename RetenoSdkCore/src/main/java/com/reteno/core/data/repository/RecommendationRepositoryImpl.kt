@@ -1,7 +1,5 @@
 package com.reteno.core.data.repository
 
-import com.google.gson.Gson
-import com.google.gson.JsonObject
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerRecomEvents
 import com.reteno.core.data.local.mappers.toDb
 import com.reteno.core.data.local.model.recommendation.RecomEventsDb
@@ -9,11 +7,10 @@ import com.reteno.core.data.remote.OperationQueue
 import com.reteno.core.data.remote.PushOperationQueue
 import com.reteno.core.data.remote.api.ApiClient
 import com.reteno.core.data.remote.api.ApiContract
-import com.reteno.core.data.remote.mapper.fromJson
+import com.reteno.core.data.remote.mapper.convertRecoms
 import com.reteno.core.data.remote.mapper.toJson
 import com.reteno.core.data.remote.mapper.toRemote
 import com.reteno.core.data.remote.model.recommendation.get.RecomBase
-import com.reteno.core.data.remote.model.recommendation.get.Recoms
 import com.reteno.core.domain.ResponseCallback
 import com.reteno.core.domain.model.recommendation.get.RecomRequest
 import com.reteno.core.domain.model.recommendation.post.RecomEvents
@@ -38,22 +35,12 @@ class RecommendationRepositoryImpl(
         /*@formatter:off*/ Logger.i(TAG, "getRecommendation(): ", "recomVariantId = [" , recomVariantId , "], recomRequest = [" , recomRequest , "], responseClass = [" , responseClass , "]")
         /*@formatter:on*/
         apiClient.post(
-            ApiContract.Recommendation.Get(recomVariantId),
+            ApiContract.Recommendation.GetRecoms(recomVariantId),
             recomRequest.toRemote().toJson(),
             object : ResponseCallback {
                 override fun onSuccess(response: String) {
                     try {
-                        val recomList = mutableListOf<T>()
-
-                        val jsonObjectRoot = Gson().fromJson(response, JsonObject::class.java)
-                        val recomsJsonArray =
-                            jsonObjectRoot.get(Recoms.FIELD_NAME_RECOMS).asJsonArray
-                        for (jsonObj in recomsJsonArray) {
-                            val singleRecom: T = jsonObj.fromJson(responseClass)
-                            recomList.add(singleRecom)
-                        }
-
-                        val result = Recoms(recomList)
+                        val result = response.convertRecoms(responseClass)
                         OperationQueue.addUiOperation {
                             responseCallback.onSuccess(result)
                         }
@@ -103,7 +90,7 @@ class RecommendationRepositoryImpl(
 
         val recomEventsListSize = recomEventsList.sumOf { it.recomEvents?.size ?: 0 }
         apiClient.post(
-            ApiContract.Recommendation.Post,
+            ApiContract.Recommendation.PostRecoms,
             recomEventsList.toRemote().toJson(),
             object : ResponseCallback {
 
@@ -135,7 +122,7 @@ class RecommendationRepositoryImpl(
             /*@formatter:off*/ Logger.i(TAG, "clearOldRecommendations(): ", "removedRecomEventsCount = [" , removedRecomEventsCount , "]")
             /*@formatter:on*/
             if (removedRecomEventsCount > 0) {
-                val msg = "Outdated Events: - $removedRecomEventsCount"
+                val msg = "Outdated Recommendation Events: - $removedRecomEventsCount"
                 Logger.captureEvent(msg)
             }
         }

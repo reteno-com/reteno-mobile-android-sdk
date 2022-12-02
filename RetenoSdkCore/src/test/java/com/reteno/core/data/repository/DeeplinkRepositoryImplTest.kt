@@ -8,7 +8,7 @@ import io.mockk.verify
 import org.junit.Test
 
 
-class DeeplinkRepositoryTest : BaseRobolectricTest() {
+class DeeplinkRepositoryImplTest : BaseRobolectricTest() {
 
     // region helper fields ------------------------------------------------------------------------
     @RelaxedMockK

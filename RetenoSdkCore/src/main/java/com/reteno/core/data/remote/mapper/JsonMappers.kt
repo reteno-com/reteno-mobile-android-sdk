@@ -1,8 +1,10 @@
 package com.reteno.core.data.remote.mapper
 
 import com.google.gson.Gson
-import com.google.gson.JsonElement
 import com.google.gson.reflect.TypeToken
+import com.reteno.core.data.remote.model.recommendation.get.RecomBase
+import com.reteno.core.data.remote.model.recommendation.get.Recoms
+import org.json.JSONObject
 import java.lang.reflect.Type
 
 
@@ -13,7 +15,7 @@ fun Any?.toJsonOrNull(): String? = this?.let(Gson()::toJson)
 inline fun <reified T> String.fromJson(): T =
     Gson().fromJson(this, T::class.java)
 
-inline fun <T> JsonElement.fromJson(classOfT: Class<T>):T =
+fun <T> String.fromJson(classOfT: Class<T>):T =
     Gson().fromJson(this, classOfT)
 
 inline fun <reified T> String.listFromJson(): List<T> {
@@ -35,3 +37,14 @@ inline fun <reified T> String.fromJsonOrNull(): T? =
     } else {
         Gson().fromJson(this, T::class.java)
     }
+
+fun <T : RecomBase> String.convertRecoms(responseClass: Class<T>): Recoms<T> {
+    val recomList = mutableListOf<T>()
+    val jsonObjectRoot = JSONObject(this)
+    val recomsJsonArray = jsonObjectRoot.getJSONArray(Recoms.FIELD_NAME_RECOMS)
+    for (i in 0 until recomsJsonArray.length()) {
+        val singleRecom = recomsJsonArray.getJSONObject(i).toString().fromJson(responseClass)
+        recomList.add(singleRecom)
+    }
+    return Recoms(recomList)
+}

@@ -65,11 +65,11 @@ sealed interface ApiContract {
             private const val BASE_URL = "https://mobile-api.reteno.com/api/v1/recoms/"
         }
 
-        class Get(recomVariantId: String) : Recommendation() {
+        class GetRecoms(recomVariantId: String) : Recommendation() {
             override val url = "${BASE_URL}$recomVariantId/request"
         }
 
-        object Post : Recommendation() {
+        object PostRecoms : Recommendation() {
             override val url = "${BASE_URL}events"
         }
     }

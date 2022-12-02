@@ -291,18 +291,18 @@ class RetenoDatabaseImpl(context: Context) : RetenoDatabase,
      * Call this method each time you remove any record from Event table (Child table)
      */
     override fun cleanUnlinkedEvents() {
-        val rawQuery = "DELETE FROM ${EventsSchema.TABLE_NAME_EVENTS} WHERE ${EventsSchema.COLUMN_EVENTS_ID} NOT IN " +
+        val sqlQuery = "DELETE FROM ${EventsSchema.TABLE_NAME_EVENTS} WHERE ${EventsSchema.COLUMN_EVENTS_ID} NOT IN " +
                 "(SELECT ${EventsSchema.COLUMN_EVENTS_ID} FROM ${EventsSchema.EventSchema.TABLE_NAME_EVENT})"
-        getSQLiteDatabaseWithRetries().execSQL(rawQuery)
+        getSQLiteDatabaseWithRetries().execSQL(sqlQuery)
     }
 
     /**
      * Call this method each time you remove any record from Event table (Child table)
      */
     override fun cleanUnlinkedRecomVariantIds() {
-        val rawQuery = "DELETE FROM ${RecomEventsSchema.TABLE_NAME_RECOM_EVENTS} WHERE ${RecomEventsSchema.COLUMN_RECOM_VARIANT_ID} NOT IN " +
+        val sqlQuery = "DELETE FROM ${RecomEventsSchema.TABLE_NAME_RECOM_EVENTS} WHERE ${RecomEventsSchema.COLUMN_RECOM_VARIANT_ID} NOT IN " +
                 "(SELECT ${RecomEventsSchema.COLUMN_RECOM_VARIANT_ID} FROM ${RecomEventsSchema.RecomEventSchema.TABLE_NAME_RECOM_EVENT})"
-        getSQLiteDatabaseWithRetries().execSQL(rawQuery)
+        getSQLiteDatabaseWithRetries().execSQL(sqlQuery)
     }
 
     /**
