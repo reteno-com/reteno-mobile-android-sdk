@@ -26,6 +26,6 @@ internal class RestConfig(private val deviceIdHelper: DeviceIdHelper, internal v
     }
 
     companion object {
-        val TAG: String = RestConfig::class.java.simpleName
+        private val TAG: String = RestConfig::class.java.simpleName
     }
 }

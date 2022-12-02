@@ -87,6 +87,6 @@ internal class RetenoDatabaseManagerInteractionImpl(private val database: Reteno
     }
 
     companion object {
-        val TAG: String = RetenoDatabaseManagerInteractionImpl::class.java.simpleName
+        private val TAG: String = RetenoDatabaseManagerInteractionImpl::class.java.simpleName
     }
 }

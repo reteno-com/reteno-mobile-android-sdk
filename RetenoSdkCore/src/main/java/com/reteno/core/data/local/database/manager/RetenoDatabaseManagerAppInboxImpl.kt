@@ -89,6 +89,6 @@ internal class RetenoDatabaseManagerAppInboxImpl(private val database: RetenoDat
     }
 
     companion object {
-        val TAG: String = RetenoDatabaseManagerAppInboxImpl::class.java.simpleName
+        private val TAG: String = RetenoDatabaseManagerAppInboxImpl::class.java.simpleName
     }
 }

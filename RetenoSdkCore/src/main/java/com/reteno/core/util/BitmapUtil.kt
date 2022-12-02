@@ -13,7 +13,7 @@ import kotlin.math.min
 import kotlin.math.roundToInt
 
 object BitmapUtil {
-    val TAG: String = BitmapUtil::class.java.simpleName
+    private val TAG: String = BitmapUtil::class.java.simpleName
 
     // Layout_height for imageView is 192dp
     // https://android.googlesource.com/platform/frameworks/base

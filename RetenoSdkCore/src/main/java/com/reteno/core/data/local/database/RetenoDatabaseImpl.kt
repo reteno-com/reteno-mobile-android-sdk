@@ -341,6 +341,6 @@ internal class RetenoDatabaseImpl(context: Context) : RetenoDatabase,
         private const val DB_OPEN_RETRY_MAX = 5
         private const val DB_OPEN_RETRY_BACKOFF = 400
 
-        val TAG: String = RetenoDatabaseImpl::class.java.simpleName
+        private val TAG: String = RetenoDatabaseImpl::class.java.simpleName
     }
 }

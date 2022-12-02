@@ -129,6 +129,6 @@ internal class RecommendationRepositoryImpl(
     }
 
     companion object {
-        val TAG: String = RecommendationRepositoryImpl::class.java.simpleName
+        private val TAG: String = RecommendationRepositoryImpl::class.java.simpleName
     }
 }

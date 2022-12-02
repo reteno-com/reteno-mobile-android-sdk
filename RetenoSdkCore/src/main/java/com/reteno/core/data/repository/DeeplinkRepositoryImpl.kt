@@ -39,6 +39,6 @@ internal class DeeplinkRepositoryImpl(private val apiClient: ApiClient) :
     }
 
     companion object {
-        val TAG: String = DeeplinkRepositoryImpl::class.java.simpleName
+        private val TAG: String = DeeplinkRepositoryImpl::class.java.simpleName
     }
 }

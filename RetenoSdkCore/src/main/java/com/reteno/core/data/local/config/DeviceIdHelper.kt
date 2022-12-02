@@ -70,6 +70,6 @@ internal class DeviceIdHelper(private val sharedPrefsManager: SharedPrefsManager
     }
 
     companion object {
-        val TAG: String = DeviceIdHelper::class.java.simpleName
+        private val TAG: String = DeviceIdHelper::class.java.simpleName
     }
 }

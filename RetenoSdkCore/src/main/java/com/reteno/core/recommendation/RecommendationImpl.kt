@@ -40,6 +40,6 @@ internal class RecommendationImpl(private val recommendationController: Recommen
     }
 
     companion object {
-        val TAG: String = RecommendationImpl::class.java.simpleName
+        private val TAG: String = RecommendationImpl::class.java.simpleName
     }
 }

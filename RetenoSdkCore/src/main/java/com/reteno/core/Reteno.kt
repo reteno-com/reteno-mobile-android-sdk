@@ -61,6 +61,6 @@ interface Reteno {
     fun forcePushData()
 
     companion object {
-        val TAG: String = Reteno::class.java.simpleName
+        private val TAG: String = Reteno::class.java.simpleName
     }
 }

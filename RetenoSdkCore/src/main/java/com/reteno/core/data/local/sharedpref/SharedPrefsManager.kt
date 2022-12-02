@@ -70,7 +70,7 @@ internal class SharedPrefsManager {
     }
 
     companion object {
-        val TAG: String = SharedPrefsManager::class.java.simpleName
+        private val TAG: String = SharedPrefsManager::class.java.simpleName
 
         private const val SHARED_PREF_NAME = "reteno_shared_prefs"
         private const val PREF_KEY_DEVICE_ID = "device_id"

@@ -191,6 +191,6 @@ internal class RetenoDatabaseManagerEventsImpl(private val database: RetenoDatab
     }
 
     companion object {
-        val TAG: String = RetenoDatabaseManagerEventsImpl::class.java.simpleName
+        private val TAG: String = RetenoDatabaseManagerEventsImpl::class.java.simpleName
     }
 }

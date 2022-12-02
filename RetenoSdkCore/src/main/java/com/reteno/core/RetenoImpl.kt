@@ -174,7 +174,7 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
     }
 
     companion object {
-        val TAG: String = RetenoImpl::class.java.simpleName
+        private val TAG: String = RetenoImpl::class.java.simpleName
 
         lateinit var application: Application
             private set

@@ -70,6 +70,6 @@ internal class AppInboxImpl(
     }
 
     companion object {
-        val TAG: String = AppInboxImpl::class.java.simpleName
+        private val TAG: String = AppInboxImpl::class.java.simpleName
     }
 }

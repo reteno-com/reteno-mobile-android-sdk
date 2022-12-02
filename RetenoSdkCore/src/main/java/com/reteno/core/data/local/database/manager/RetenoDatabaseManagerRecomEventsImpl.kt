@@ -219,6 +219,6 @@ internal class RetenoDatabaseManagerRecomEventsImpl(private val database: Reteno
     }
 
     companion object {
-        val TAG: String = RetenoDatabaseManagerRecomEventsImpl::class.java.simpleName
+        private val TAG: String = RetenoDatabaseManagerRecomEventsImpl::class.java.simpleName
     }
 }
