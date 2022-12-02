@@ -1,6 +1,6 @@
 package com.reteno.core.data.repository
 
-import com.reteno.core.base.robolectric.BaseRobolectricTest
+import com.reteno.core.base.BaseUnitTest
 import com.reteno.core.data.local.config.DeviceId
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerDevice
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerUser
@@ -25,7 +25,7 @@ import io.mockk.*
 import io.mockk.impl.annotations.RelaxedMockK
 import org.junit.Test
 
-class ContactRepositoryImplTest : BaseRobolectricTest() {
+class ContactRepositoryImplTest : BaseUnitTest() {
 
     // region constants ----------------------------------------------------------------------------
     companion object {
@@ -70,6 +70,7 @@ class ContactRepositoryImplTest : BaseRobolectricTest() {
 
     override fun before() {
         super.before()
+        mockOperationQueue()
         mockkObject(PushOperationQueue)
         SUT = ContactRepositoryImpl(apiClient, configRepository, databaseManagerDevice, databaseManagerUser)
     }
@@ -77,6 +78,7 @@ class ContactRepositoryImplTest : BaseRobolectricTest() {
     override fun after() {
         super.after()
         unmockkObject(PushOperationQueue)
+        unMockOperationQueue()
     }
 
     @Test

@@ -1,22 +1,21 @@
 package com.reteno.core.data.repository
 
-import android.text.TextUtils
 import com.google.firebase.messaging.FirebaseMessaging
 import com.reteno.core.base.robolectric.BaseRobolectricTest
+import android.text.TextUtils
+import com.reteno.core.base.BaseUnitTest
 import com.reteno.core.data.local.config.DeviceId
-import com.reteno.core.data.local.config.DeviceIdHelper
 import com.reteno.core.data.local.config.DeviceIdMode
 import com.reteno.core.data.local.config.RestConfig
 import com.reteno.core.data.local.sharedpref.SharedPrefsManager
 import io.mockk.*
 import io.mockk.impl.annotations.MockK
+import io.mockk.impl.annotations.RelaxedMockK
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.mockito.Matchers.anyString
-import org.robolectric.annotation.Config
 
-@Config(sdk = [26])
-class ConfigRepositoryImplTest : BaseRobolectricTest() {
+class ConfigRepositoryImplTest : BaseUnitTest() {
 
     // region constants ----------------------------------------------------------------------------
     companion object {
@@ -31,6 +30,7 @@ class ConfigRepositoryImplTest : BaseRobolectricTest() {
     @MockK
     private lateinit var sharedPrefsManager: SharedPrefsManager
 
+    @RelaxedMockK
     private lateinit var restConfig: RestConfig
 
     private lateinit var SUT: ConfigRepository
@@ -38,10 +38,13 @@ class ConfigRepositoryImplTest : BaseRobolectricTest() {
 
     override fun before() {
         super.before()
-        MockKAnnotations.init(this)
-
-        restConfig = spyk(RestConfig(DeviceIdHelper(sharedPrefsManager), ""), recordPrivateCalls = true)
+        mockOperationQueue()
         SUT = ConfigRepositoryImpl(sharedPrefsManager, restConfig)
+    }
+
+    override fun after() {
+        super.after()
+        unMockOperationQueue()
     }
 
     @Test
@@ -85,6 +88,8 @@ class ConfigRepositoryImplTest : BaseRobolectricTest() {
     @Test
     fun given_whenGetFcmToken_thenDelegatedToSharedPrefsManager() {
         // Given
+        mockkStatic(TextUtils::class)
+        every { TextUtils.isEmpty(any()) } returns false
         every { sharedPrefsManager.getFcmToken() } returns FCM_TOKEN
 
         // When
@@ -93,6 +98,7 @@ class ConfigRepositoryImplTest : BaseRobolectricTest() {
         // Then
         verify(exactly = 1) { sharedPrefsManager.getFcmToken() }
         assertEquals(FCM_TOKEN, result)
+        unmockkStatic(TextUtils::class)
     }
 
     @Test
