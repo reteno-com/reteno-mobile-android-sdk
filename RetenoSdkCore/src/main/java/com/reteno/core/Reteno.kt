@@ -1,6 +1,7 @@
 package com.reteno.core
 
 import com.reteno.core.appinbox.AppInbox
+import com.reteno.core.domain.model.ecom.EcomEvent
 import com.reteno.core.domain.model.event.Event
 import com.reteno.core.domain.model.user.User
 import com.reteno.core.lifecycle.ScreenTrackingConfig
@@ -39,6 +40,13 @@ interface Reteno {
      *  @param event model to track
      */
     fun logEvent(event: Event)
+
+    /**
+     *  Tracking e-commerce events.
+     *
+     *  @param ecomEvent model to track.
+     */
+    fun logEcommerceEvent(ecomEvent: EcomEvent)
 
     /**
      *  Tracking screen view events.

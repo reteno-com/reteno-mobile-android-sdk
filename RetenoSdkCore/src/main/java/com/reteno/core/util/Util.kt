@@ -9,6 +9,7 @@ import android.os.Bundle
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GoogleApiAvailability
 import com.reteno.core.RetenoImpl
+import org.json.JSONObject
 import java.io.*
 import java.time.Instant
 import java.time.ZoneId
@@ -90,6 +91,11 @@ fun isRepeatableError(statusCode: Int?): Boolean {
 }
 
 fun isNonRepeatableError(statusCode: Int?) = !isRepeatableError(statusCode)
+
+// TODO implement
+internal fun String.escape(): String {
+    return this
+}
 
 object Util {
 

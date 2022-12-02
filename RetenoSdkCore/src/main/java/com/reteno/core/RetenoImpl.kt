@@ -5,6 +5,7 @@ import android.app.Application
 import android.content.ComponentName
 import android.content.Intent
 import com.reteno.core.di.ServiceLocator
+import com.reteno.core.domain.model.ecom.EcomEvent
 import com.reteno.core.domain.model.event.Event
 import com.reteno.core.domain.model.user.User
 import com.reteno.core.lifecycle.RetenoActivityHelper
@@ -121,6 +122,12 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
         } catch (ex: Throwable) {
             Logger.e(TAG, "logEvent(): ", ex)
         }
+    }
+
+    override fun logEcommerceEvent(ecomEvent: EcomEvent) {
+        /*@formatter:off*/ Logger.i(TAG, "logEcommerceEvent(): ", "ecomEvent = [" , ecomEvent , "]")
+        /*@formatter:on*/
+        eventController.trackEcomEvent(ecomEvent)
     }
 
     override fun logScreenView(screenName: String) {

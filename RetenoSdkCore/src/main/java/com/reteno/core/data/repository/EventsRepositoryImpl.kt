@@ -10,6 +10,7 @@ import com.reteno.core.data.remote.api.ApiContract
 import com.reteno.core.data.remote.mapper.toJson
 import com.reteno.core.data.remote.mapper.toRemote
 import com.reteno.core.domain.ResponseCallback
+import com.reteno.core.domain.model.ecom.EcomEvent
 import com.reteno.core.domain.model.event.Event
 import com.reteno.core.util.Logger
 import com.reteno.core.util.Util.formatToRemote
@@ -36,6 +37,25 @@ internal class EventsRepositoryImpl(
                 databaseManager.insertEvents(events)
             } catch (e: Exception) {
                 Logger.e(TAG, "saveEvent()", e)
+            }
+        }
+    }
+
+    override fun saveEcomEvent(ecomEvent: EcomEvent) {
+        /*@formatter:off*/ Logger.i(TAG, "saveEcomEvent(): ", "ecomEvent = [" , ecomEvent , "]")
+        /*@formatter:on*/
+
+        val deviceId = configRepository.getDeviceId()
+        val events = EventsDb(
+            deviceId = deviceId.id,
+            externalUserId = deviceId.externalId,
+            eventList = listOf(ecomEvent.toDb())
+        )
+        OperationQueue.addOperation {
+            try {
+                databaseManager.insertEvents(events)
+            } catch (e: Exception) {
+                Logger.e(TAG, "saveEcomEvent()", e)
             }
         }
     }
