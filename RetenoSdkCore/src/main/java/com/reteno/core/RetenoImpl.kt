@@ -45,9 +45,13 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
     override fun resume(activity: Activity?) {
         /*@formatter:off*/ Logger.i(TAG, "resume(): ", "activity = [" , activity , "]")
         /*@formatter:on*/
-        clearOldData()
-        startPushScheduler()
-        sendAppResumeBroadcast()
+        try {
+            clearOldData()
+            startPushScheduler()
+            sendAppResumeBroadcast()
+        } catch (ex: Throwable) {
+            Logger.e(TAG, "resume(): ", ex)
+        }
     }
 
     private fun sendAppResumeBroadcast() {
@@ -64,13 +68,21 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
     override fun pause(activity: Activity?) {
         /*@formatter:off*/ Logger.i(TAG, "pause(): ", "activity = [" , activity , "]")
         /*@formatter:on*/
-        stopPushScheduler()
+        try {
+            stopPushScheduler()
+        } catch (ex: Throwable) {
+            Logger.e(TAG, "pause(): ", ex)
+        }
     }
 
     override fun setUserAttributes(externalUserId: String) {
         /*@formatter:off*/ Logger.i(TAG, "setUserAttributes(): ", "externalUserId = [" , externalUserId , "]")
         /*@formatter:on*/
-        setUserAttributes(externalUserId, null)
+        try {
+            setUserAttributes(externalUserId, null)
+        } catch (ex: Throwable) {
+            Logger.e(TAG, "setUserAttributes(): ", ex)
+        }
     }
 
     override fun setUserAttributes(externalUserId: String, user: User?) {
@@ -88,25 +100,41 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
     override fun logEvent(event: Event) {
         /*@formatter:off*/ Logger.i(TAG, "logEvent(): ", "eventType = [" , event.eventTypeKey , "], date = [" , event.occurred , "], parameters = [" , event.params , "]")
         /*@formatter:on*/
-        eventController.trackEvent(event)
+        try {
+            eventController.trackEvent(event)
+        } catch (ex: Throwable) {
+            Logger.e(TAG, "logEvent(): ", ex)
+        }
     }
 
     override fun logScreenView(screenName: String) {
         /*@formatter:off*/ Logger.i(TAG, "logScreenView(): ", "screenName = [" , screenName , "]")
         /*@formatter:on*/
-        eventController.trackScreenViewEvent(screenName)
+        try {
+            eventController.trackScreenViewEvent(screenName)
+        } catch (ex: Throwable) {
+            Logger.e(TAG, "logScreenView(): ", ex)
+        }
     }
 
     override fun autoScreenTracking(config: ScreenTrackingConfig) {
         /*@formatter:off*/ Logger.i(TAG, "autoScreenTracking(): ", "config = [" , config , "]")
         /*@formatter:on*/
-        activityHelper.autoScreenTracking(config)
+        try {
+            activityHelper.autoScreenTracking(config)
+        } catch (ex: Throwable) {
+            Logger.e(TAG, "autoScreenTracking(): ", ex)
+        }
     }
 
     override fun forcePushData() {
         /*@formatter:off*/ Logger.i(TAG, "forcePushData(): ", "")
         /*@formatter:on*/
-        scheduleController.forcePush()
+        try {
+            scheduleController.forcePush()
+        } catch (ex: Throwable) {
+            Logger.e(TAG, "forcePushData(): ", ex)
+        }
     }
 
     private fun setUserData(user: User?) {
@@ -116,7 +144,7 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
             // TODO: Move this to background thread later
             user?.let(contactController::setUserData)
         } catch (ex: Throwable) {
-            Logger.e(TAG, "setExternalDeviceId(): ", ex)
+            Logger.e(TAG, "setUserData(): ", ex)
         }
     }
 
