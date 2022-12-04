@@ -11,7 +11,9 @@ import com.reteno.core.domain.model.interaction.InteractionStatus
 import com.reteno.core.util.Constants
 import com.reteno.core.util.Logger
 import com.reteno.core.util.queryBroadcastReceivers
+import com.reteno.core.util.toStringVerbose
 import com.reteno.push.Constants.KEY_ES_INTERACTION_ID
+import com.reteno.push.Constants.KEY_NOTIFICATION_ID
 import com.reteno.push.channel.RetenoNotificationChannel
 import com.reteno.push.receiver.NotificationsEnabledManager
 
@@ -70,10 +72,14 @@ class RetenoNotificationService {
     }
 
     private fun showNotification(data: Bundle) {
-        /*@formatter:off*/ Logger.i(TAG, "showNotification(): ", "data = [" , data , "]")
+        /*@formatter:off*/ Logger.i(TAG, "showNotification(): ", "data = [" , data.toStringVerbose() , "]")
         /*@formatter:on*/
         val context = RetenoImpl.application
         val id = RetenoNotificationHelper.getNotificationId(data)
+
+        // Pass the Id for closing notifications after clicking on action buttons
+        data.putInt(KEY_NOTIFICATION_ID, id)
+
         val builder = RetenoNotificationHelper.getNotificationBuilderCompat(data)
         val notificationManager =
             context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
