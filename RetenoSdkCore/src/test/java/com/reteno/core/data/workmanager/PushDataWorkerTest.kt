@@ -17,6 +17,7 @@ import junit.framework.TestCase.assertEquals
 import junit.framework.TestCase.assertNotNull
 import org.hamcrest.CoreMatchers.`is`
 import org.hamcrest.MatcherAssert.assertThat
+import org.junit.Ignore
 import org.junit.Test
 import java.util.*
 import java.util.concurrent.Executor
@@ -152,7 +153,7 @@ class PushDataWorkerTest : BaseRobolectricTest() {
 
         // Then
         val workInfo = workManager.getWorkInfoById(request.id).get()
-        assertEquals(workInfo.state, WorkInfo.State.ENQUEUED)
+        assertEquals(WorkInfo.State.ENQUEUED, workInfo.state)
     }
 
     // region helper methods -----------------------------------------------------------------------

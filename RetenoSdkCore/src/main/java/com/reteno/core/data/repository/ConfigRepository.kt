@@ -9,4 +9,7 @@ interface ConfigRepository {
     fun getFcmToken(): String
     fun saveDefaultNotificationChannel(channel: String)
     fun getDefaultNotificationChannel(): String
+
+    fun saveNotificationsEnabled(enabled: Boolean)
+    fun getNotificationsEnabled(): Boolean
 }

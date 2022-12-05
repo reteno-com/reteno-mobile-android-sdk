@@ -2,13 +2,18 @@ package com.reteno.core
 
 import android.app.Activity
 import android.app.Application
+import android.content.ComponentName
+import android.content.Intent
+import com.reteno.core.data.local.config.DeviceIdMode
 import com.reteno.core.di.ServiceLocator
 import com.reteno.core.domain.model.event.Event
 import com.reteno.core.domain.model.user.User
 import com.reteno.core.lifecycle.RetenoActivityHelper
 import com.reteno.core.lifecycle.RetenoLifecycleCallbacks
 import com.reteno.core.lifecycle.ScreenTrackingConfig
+import com.reteno.core.util.Constants.BROADCAST_ACTION_RETENO_APP_RESUME
 import com.reteno.core.util.Logger
+import com.reteno.core.util.queryBroadcastReceivers
 
 
 class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleCallbacks, Reteno {
@@ -25,6 +30,8 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
     private val scheduleController by lazy { serviceLocator.scheduleControllerProvider.get() }
     private val eventController by lazy { serviceLocator.eventsControllerProvider.get() }
 
+    override val appInbox by lazy { serviceLocator.appInboxProvider.get() }
+
     private val activityHelper: RetenoActivityHelper by lazy { serviceLocator.retenoActivityHelperProvider.get() }
 
     init {
@@ -40,14 +47,24 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
         /*@formatter:on*/
         clearOldData()
         startPushScheduler()
-        // TODO: Application is in foreground
+        sendAppResumeBroadcast()
+    }
+
+    private fun sendAppResumeBroadcast() {
+        val intent = Intent(BROADCAST_ACTION_RETENO_APP_RESUME).setFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES)
+        val infoList = application.queryBroadcastReceivers(intent)
+        for (info in infoList) {
+            info?.activityInfo?.let {
+                intent.component = ComponentName(it.packageName, it.name)
+                application.sendBroadcast(intent)
+            }
+        }
     }
 
     override fun pause(activity: Activity?) {
         /*@formatter:off*/ Logger.i(TAG, "pause(): ", "activity = [" , activity , "]")
         /*@formatter:on*/
         stopPushScheduler()
-        // TODO: Application is not in foreground
     }
 
     override fun setUserAttributes(externalUserId: String) {

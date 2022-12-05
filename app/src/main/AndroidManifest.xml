@@ -7,7 +7,7 @@
 
     <application
         android:name=".SampleApp"
-        android:allowBackup="true"
+        android:allowBackup="false"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
@@ -63,6 +63,16 @@
         <meta-data
             android:name="com.reteno.Receiver.NotificationClicked"
             android:value="com.reteno.sample.CustomReceiverNotificationClicked" />
+
+        <receiver
+            android:name="com.reteno.sample.CustomPushReceiver"
+            android:enabled="true"
+            android:exported="false" >
+
+            <intent-filter>
+                <action android:name="com.reteno.custom-push" />
+            </intent-filter>
+        </receiver>
 
 
         <!-- TODO add this to set up your notification icon -->

@@ -3,6 +3,7 @@ package com.reteno.core.util
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.content.pm.ResolveInfo
 import android.os.Build
 import android.os.Bundle
 import com.google.android.gms.common.ConnectionResult
@@ -48,7 +49,7 @@ fun Context.getApplicationMetaData(): Bundle =
         packageManager.getApplicationInfo(packageName, PackageManager.GET_META_DATA).metaData
     }
 
-fun Context.getResolveInfoList(intent: Intent) =
+fun Context.getResolveInfoList(intent: Intent): List<ResolveInfo?> =
     if (Build.VERSION.SDK_INT >= 33) {
         packageManager.queryIntentActivities(
             intent,
@@ -57,6 +58,17 @@ fun Context.getResolveInfoList(intent: Intent) =
     } else {
         packageManager.queryIntentActivities(intent, 0)
     }
+
+fun Context.queryBroadcastReceivers(intent: Intent): List<ResolveInfo?> =
+    if (Build.VERSION.SDK_INT >= 33) {
+        packageManager.queryBroadcastReceivers(
+            intent,
+            PackageManager.ResolveInfoFlags.of(0)
+        )
+    } else {
+        packageManager.queryBroadcastReceivers(intent, 0)
+    }
+
 
 fun Bundle?.toStringVerbose(): String {
     if (this == null) {

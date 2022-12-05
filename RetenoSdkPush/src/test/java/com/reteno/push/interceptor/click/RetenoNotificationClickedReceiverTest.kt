@@ -152,6 +152,7 @@ class RetenoNotificationClickedReceiverTest : BaseRobolectricTest() {
         receiver!!.onReceive(context, intent)
 
         verify { interactionController.onInteraction(eq(interactionId), InteractionStatus.OPENED) }
+        verify(exactly = 1) { scheduleController.forcePush() }
         unmockkObject(RetenoImpl)
     }
 

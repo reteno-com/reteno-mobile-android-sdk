@@ -69,10 +69,8 @@ debugTests:
 deployQaToFirebase:
   stage: deploy
   before_script:
-    - export VERSION_NAME_APP=$(grep -E "versionName" config.gradle | cut -d "\"" -f2)
-    - export VERSION_SDK_CORE=$(grep -E "VERSION_NAME" RetenoSdkCore/gradle.properties | cut -d "=" -f2)
-    - export VERSION_SDK_FCM=$(grep -E "VERSION_NAME" RetenoSdkFcm/gradle.properties | cut -d "=" -f2)
-    - export VERSION_SDK_PUSH=$(grep -E "VERSION_NAME" RetenoSdkPush/gradle.properties | cut -d "=" -f2)
+    - export VERSION_NAME_APP=$(grep -E "VERSION_NAME" gradle.properties | cut -d "=" -f2)
+    - export VERSION_SDK=$(grep -E "VERSION_NAME" gradle.properties | cut -d "=" -f2)
     - export AUTHOR_NAME=$(git log -1 --pretty=format:'%an')
     - export AUTHOR_EMAIL=$(git log -1 --pretty=format:'%ae')
     - mkdir keystore
@@ -98,9 +96,7 @@ deployQaToFirebase:
     - echo "" > release-notes.txt
     - sed -i 's|^|Environment - Qa\n|' release-notes.txt
     - git rev-parse --short HEAD> last-build-hash
-    - sed -i '1s|^|Version Sdk Push - '"$VERSION_SDK_PUSH"'\n|' release-notes.txt
-    - sed -i '1s|^|Version Sdk FCM - '"$VERSION_SDK_FCM"'\n|' release-notes.txt
-    - sed -i '1s|^|Version Sdk Core - '"$VERSION_SDK_CORE"'\n|' release-notes.txt
+    - sed -i '1s|^|Version Sdk - '"$VERSION_SDK"'\n|' release-notes.txt
     - sed -i '1s|^|Author - '"$AUTHOR_NAME($AUTHOR_EMAIL)"'\n|' release-notes.txt
     - sed -i '1s|^|Version App - '"$VERSION_NAME_APP ($BUILD_NUMBER)"'\n|' release-notes.txt
     - sed -i '1s|^|Branch - '"$CI_COMMIT_REF_NAME"'\n|' release-notes.txt

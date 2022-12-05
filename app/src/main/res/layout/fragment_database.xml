@@ -108,4 +108,29 @@
             android:text="read event"
             android:textAllCaps="false" />
     </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:divider="@drawable/space_horizontal"
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:showDividers="middle">
+
+        <Button
+            android:id="@+id/btnWriteInbox"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:text="write inbox"
+            android:textAllCaps="false" />
+
+        <Button
+            android:id="@+id/btnReadInbox"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:text="read inbox"
+            android:textAllCaps="false" />
+    </LinearLayout>
 </LinearLayout>

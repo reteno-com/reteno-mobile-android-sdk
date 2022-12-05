@@ -3,11 +3,14 @@ package com.reteno.fcm
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import com.reteno.core.util.Logger
+import com.reteno.push.RetenoNotificationService
 
 open class RetenoFirebaseMessagingService : FirebaseMessagingService() {
 
+    // TODO move to serviceProvider if number of object allocations grow
+    private val pushService: RetenoNotificationService = RetenoNotificationService()
     private val handler: RetenoFirebaseServiceHandler by lazy {
-        RetenoFirebaseServiceHandler()
+        RetenoFirebaseServiceHandler(pushService)
     }
 
     override fun onCreate() {

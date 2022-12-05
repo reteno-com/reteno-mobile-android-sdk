@@ -2,11 +2,11 @@ package com.reteno.core.domain.controller
 
 import com.reteno.core.data.repository.ConfigRepository
 import com.reteno.core.data.repository.InteractionRepository
+import com.reteno.core.domain.SchedulerUtils
 import com.reteno.core.domain.model.interaction.Interaction
 import com.reteno.core.domain.model.interaction.InteractionStatus
 import com.reteno.core.util.Logger
 import com.reteno.core.util.Util
-import java.time.ZonedDateTime
 
 class InteractionController(private val configRepository: ConfigRepository, private val interactionRepository: InteractionRepository) {
 
@@ -37,18 +37,11 @@ class InteractionController(private val configRepository: ConfigRepository, priv
     fun clearOldInteractions() {
         /*@formatter:off*/ Logger.i(TAG, "clearOldInteractions(): ", "")
         /*@formatter:on*/
-        val keepDataHours = if (Util.isDebugView()) {
-            KEEP_INTERACTION_HOURS_DEBUG
-        } else {
-            KEEP_INTERACTION_HOURS
-        }
-        val outdatedTime = ZonedDateTime.now().minusHours(keepDataHours)
+        val outdatedTime = SchedulerUtils.getOutdatedTime()
         interactionRepository.clearOldInteractions(outdatedTime)
     }
 
     companion object {
         private val TAG: String = InteractionController::class.java.simpleName
-        private const val KEEP_INTERACTION_HOURS = 24L
-        private const val KEEP_INTERACTION_HOURS_DEBUG = 1L
     }
 }

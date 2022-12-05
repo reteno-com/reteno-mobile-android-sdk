@@ -19,6 +19,7 @@ internal object DbSchema {
         internal const val COLUMN_DEVICE_ID = "deviceId"
         internal const val COLUMN_EXTERNAL_USER_ID = "externalUserId"
         internal const val COLUMN_PUSH_TOKEN = "pushToken"
+        internal const val COLUMN_PUSH_SUBSCRIBED = "pushSubscribed"
         internal const val COLUMN_CATEGORY = "category"
         internal const val COLUMN_OS_TYPE = "osType"
         internal const val COLUMN_OS_VERSION = "osVersion"
@@ -36,6 +37,7 @@ internal object DbSchema {
                     "$COLUMN_DEVICE_ID TEXT NOT NULL, " +
                     "$COLUMN_EXTERNAL_USER_ID TEXT, " +
                     "$COLUMN_PUSH_TOKEN TEXT, " +
+                    "$COLUMN_PUSH_SUBSCRIBED TEXT, " +
                     "$COLUMN_CATEGORY TEXT NOT NULL, " +
                     "$COLUMN_OS_TYPE TEXT NOT NULL, " +
                     "$COLUMN_OS_VERSION TEXT, " +
@@ -52,6 +54,7 @@ internal object DbSchema {
             COLUMN_DEVICE_ID,
             COLUMN_EXTERNAL_USER_ID,
             COLUMN_PUSH_TOKEN,
+            COLUMN_PUSH_SUBSCRIBED,
             COLUMN_CATEGORY,
             COLUMN_OS_TYPE,
             COLUMN_OS_VERSION,
@@ -215,6 +218,32 @@ internal object DbSchema {
             COLUMN_EVENT_TYPE_KEY,
             COLUMN_EVENT_OCCURRED,
             COLUMN_EVENT_PARAMS
+        )
+    }
+
+    /** App Inbox **/
+    internal object AppInboxSchema {
+        internal const val TABLE_NAME_APP_INBOX = "AppInbox"
+
+        internal const val COLUMN_APP_INBOX_ID = "messageId"
+        internal const val COLUMN_APP_INBOX_DEVICE_ID = "deviceId"
+        internal const val COLUMN_APP_INBOX_STATUS = "status"
+        internal const val COLUMN_APP_INBOX_TIME = "time"
+
+        internal const val SQL_CREATE_TABLE =
+            "CREATE TABLE IF NOT EXISTS $TABLE_NAME_APP_INBOX" +
+                    "(" +
+                    "$COLUMN_APP_INBOX_ID TEXT PRIMARY KEY, " +
+                    "$COLUMN_APP_INBOX_DEVICE_ID TEXT, " +
+                    "$COLUMN_APP_INBOX_STATUS TEXT, " +
+                    "$COLUMN_APP_INBOX_TIME TEXT" +
+                    ")"
+
+        fun getAllColumns(): Array<String> = arrayOf(
+            COLUMN_APP_INBOX_ID,
+            COLUMN_APP_INBOX_DEVICE_ID,
+            COLUMN_APP_INBOX_STATUS,
+            COLUMN_APP_INBOX_TIME
         )
     }
 }
