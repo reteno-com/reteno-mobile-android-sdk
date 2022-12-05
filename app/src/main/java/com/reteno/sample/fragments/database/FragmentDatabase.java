@@ -43,6 +43,8 @@ public class FragmentDatabase extends Fragment {
         binding.btnReadInteraction.setOnClickListener(v -> showDialogReadInteraction());
         binding.btnWriteEvent.setOnClickListener(v -> showDialogWriteEvent());
         binding.btnReadEvent.setOnClickListener(v -> showDialogReadEvent());
+        binding.btnWriteInbox.setOnClickListener(v -> showDialogWriteInbox());
+        binding.btnReadInbox.setOnClickListener(v -> showDialogReadInbox());
     }
 
     private void showDialogWriteDevice() {
@@ -75,5 +77,13 @@ public class FragmentDatabase extends Fragment {
 
     private void showDialogReadEvent() {
         NavHostFragment.findNavController(this).navigate(FragmentDatabaseDirections.databaseToReadEvent());
+    }
+
+    private void showDialogWriteInbox() {
+        NavHostFragment.findNavController(this).navigate(FragmentDatabaseDirections.databaseToWriteInbox());
+    }
+
+    private void showDialogReadInbox() {
+        NavHostFragment.findNavController(this).navigate(FragmentDatabaseDirections.databaseToReadInbox());
     }
 }

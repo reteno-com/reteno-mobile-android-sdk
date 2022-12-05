@@ -96,6 +96,9 @@ abstract class BaseRobolectricTest {
             currentThreadExecutor.execute(firstArg())
             true
         }
+        every { OperationQueue.addUiOperation(any()) } answers {
+            currentThreadExecutor.execute(firstArg())
+        }
 
         MockKAnnotations.init(this)
     }

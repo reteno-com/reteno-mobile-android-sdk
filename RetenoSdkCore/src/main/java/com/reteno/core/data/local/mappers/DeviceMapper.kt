@@ -11,6 +11,7 @@ fun Device.toDb() = DeviceDb(
     deviceId = deviceId,
     externalUserId = externalUserId,
     pushToken = pushToken,
+    pushSubscribed = pushSubscribed?.toDb(),
     category = category.toDb(),
     osType = osType.toDb(),
     osVersion = osVersion,

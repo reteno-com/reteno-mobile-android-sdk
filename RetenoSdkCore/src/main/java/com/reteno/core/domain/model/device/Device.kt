@@ -15,6 +15,7 @@ data class Device(
     val deviceId: String,
     val externalUserId: String?,
     val pushToken: String?,
+    val pushSubscribed: Boolean?,
     val category: DeviceCategory,
     val osType: DeviceOS = DeviceOS.ANDROID,
     val osVersion: String?,
@@ -32,12 +33,14 @@ data class Device(
             deviceId: String,
             externalUserId: String? = null,
             pushToken: String? = null,
+            pushSubscribed: Boolean? = null,
             advertisingId: String? = null
         ): Device {
             val device = Device(
                 deviceId = deviceId,
                 externalUserId = externalUserId,
                 pushToken = pushToken,
+                pushSubscribed = pushSubscribed,
                 category = fetchDeviceCategory(),
                 osType = DeviceOS.ANDROID,
                 osVersion = fetchOsVersion(),

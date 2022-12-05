@@ -56,6 +56,19 @@ class SharedPrefsManager {
         return defaultChannel
     }
 
+    fun saveNotificationsEnabled(enabled: Boolean) {
+        /*@formatter:off*/ Logger.i(TAG, "saveNotificationsEnabled(): ", "boolean = [" , enabled , "]")
+        /*@formatter:on*/
+        sharedPreferences.edit()?.putBoolean(PREF_KEY_NOTIFICATIONS_ENABLED, enabled)?.apply()
+    }
+
+    fun getNotificationsEnabled(): Boolean {
+        val result = sharedPreferences.getBoolean(PREF_KEY_NOTIFICATIONS_ENABLED, false)
+        /*@formatter:off*/ Logger.i(TAG, "getNotificationsEnabled(): ", result)
+        /*@formatter:on*/
+        return result
+    }
+
     companion object {
         val TAG: String = SharedPrefsManager::class.java.simpleName
 
@@ -63,5 +76,6 @@ class SharedPrefsManager {
         private const val PREF_KEY_DEVICE_ID = "device_id"
         private const val PREF_KEY_FCM_TOKEN = "fcm_token"
         private const val PREF_KEY_NOTIFICATION_CHANNEL_DEFAULT = "notification_channel_default"
+        private const val PREF_KEY_NOTIFICATIONS_ENABLED = "notifications_enabled"
     }
 }

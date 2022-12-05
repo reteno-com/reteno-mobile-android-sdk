@@ -2,6 +2,9 @@ package com.reteno.core.data.local.database
 
 import android.content.ContentValues
 import androidx.core.database.getStringOrNull
+import com.reteno.core.data.local.model.appinbox.AppInboxMessageDb
+import com.reteno.core.data.local.model.appinbox.AppInboxMessageStatusDb
+import com.reteno.core.data.local.model.BooleanDb
 import com.reteno.core.data.local.model.device.DeviceCategoryDb
 import com.reteno.core.data.local.model.device.DeviceDb
 import com.reteno.core.data.local.model.device.DeviceOsDb
@@ -27,6 +30,7 @@ fun ContentValues.putDevice(device: DeviceDb) {
     put(DbSchema.DeviceSchema.COLUMN_DEVICE_ID, device.deviceId)
     put(DbSchema.DeviceSchema.COLUMN_EXTERNAL_USER_ID, device.externalUserId)
     put(DbSchema.DeviceSchema.COLUMN_PUSH_TOKEN, device.pushToken)
+    put(DbSchema.DeviceSchema.COLUMN_PUSH_SUBSCRIBED, device.pushSubscribed?.toString())
     put(DbSchema.DeviceSchema.COLUMN_CATEGORY, device.category.toString())
     put(DbSchema.DeviceSchema.COLUMN_OS_TYPE, device.osType.toString())
     put(DbSchema.DeviceSchema.COLUMN_OS_VERSION, device.osVersion)
@@ -41,6 +45,8 @@ fun Cursor.getDevice(): DeviceDb? {
     val deviceId = getStringOrNull(getColumnIndex(DbSchema.DeviceSchema.COLUMN_DEVICE_ID))
     val externalUserId = getStringOrNull(getColumnIndex(DbSchema.DeviceSchema.COLUMN_EXTERNAL_USER_ID))
     val pushToken = getStringOrNull(getColumnIndex(DbSchema.DeviceSchema.COLUMN_PUSH_TOKEN))
+    val pushSubscribedString = getStringOrNull(getColumnIndex(DbSchema.DeviceSchema.COLUMN_PUSH_SUBSCRIBED))
+    val pushSubscribed: BooleanDb? = BooleanDb.fromString(pushSubscribedString)
     val category = DeviceCategoryDb.fromString(getStringOrNull(getColumnIndex(DbSchema.DeviceSchema.COLUMN_CATEGORY)))
     val osType = DeviceOsDb.fromString(getStringOrNull(getColumnIndex(DbSchema.DeviceSchema.COLUMN_OS_TYPE)))
     val osVersion = getStringOrNull(getColumnIndex(DbSchema.DeviceSchema.COLUMN_OS_VERSION)) ?: Device.fetchOsVersion()
@@ -57,6 +63,7 @@ fun Cursor.getDevice(): DeviceDb? {
             deviceId = deviceId,
             externalUserId = externalUserId,
             pushToken = pushToken,
+            pushSubscribed = pushSubscribed,
             category = category,
             osType = osType,
             osVersion = osVersion,
@@ -238,4 +245,30 @@ fun Cursor.getEvent(): EventDb? {
     }
 
     return result
+}
+
+// --------------------- AppInbox ----------------------------------------------------------------
+fun ContentValues.putAppInbox(inboxDb: AppInboxMessageDb) {
+    put(DbSchema.AppInboxSchema.COLUMN_APP_INBOX_ID, inboxDb.id)
+    put(DbSchema.AppInboxSchema.COLUMN_APP_INBOX_DEVICE_ID, inboxDb.deviceId)
+    put(DbSchema.AppInboxSchema.COLUMN_APP_INBOX_STATUS, inboxDb.status.toString())
+    put(DbSchema.AppInboxSchema.COLUMN_APP_INBOX_TIME, inboxDb.occurredDate)
+}
+
+fun Cursor.getAppInbox(): AppInboxMessageDb? {
+    val id = getStringOrNull(getColumnIndex(DbSchema.AppInboxSchema.COLUMN_APP_INBOX_ID))
+    val deviceId = getStringOrNull(getColumnIndex(DbSchema.AppInboxSchema.COLUMN_APP_INBOX_DEVICE_ID))
+    val time = getStringOrNull(getColumnIndex(DbSchema.AppInboxSchema.COLUMN_APP_INBOX_TIME))
+    val status = getStringOrNull(getColumnIndex(DbSchema.AppInboxSchema.COLUMN_APP_INBOX_STATUS))
+
+    return if (allElementsNotNull(id, deviceId, time, status)) {
+        AppInboxMessageDb(
+            id = id!!,
+            deviceId = deviceId!!,
+            occurredDate = time!!,
+            status = AppInboxMessageStatusDb.fromString(status)
+        )
+    } else {
+        null
+    }
 }

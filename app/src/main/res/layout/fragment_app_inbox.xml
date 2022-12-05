@@ -1,0 +1,84 @@
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="8dp"
+    tools:context=".fragments.inbox.FragmentAppInbox">
+
+    <TextView
+        android:id="@+id/textView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text="AppInbox messages count: 0"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvInboxMessages"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+        app:layout_constraintBottom_toTopOf="@+id/btnMarkAllAsOpened"
+        app:layout_constraintTop_toBottomOf="@+id/textView"
+        tools:layout_editor_absoluteX="8dp"
+        tools:listitem="@layout/item_appinbox" />
+
+    <Button
+        android:id="@+id/btnMarkAllAsOpened"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Mark all as opened"
+        app:layout_constraintBottom_toTopOf="@+id/btnObserveCount"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <Button
+        android:id="@+id/btnObserveCount"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Observe Messages Count"
+        app:layout_constraintBottom_toTopOf="@+id/tvPageHint"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <TextView
+        android:id="@+id/tvPageHint"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text="Leave blank to download all messages.\nPage = 1 for first"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintBottom_toTopOf="@+id/etPage" />
+
+    <EditText
+        android:id="@+id/etPage"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:hint="Page"
+        app:layout_constraintBottom_toTopOf="@+id/btnGetMessage"
+        app:layout_constraintEnd_toStartOf="@+id/etPageSize"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <EditText
+        android:id="@+id/etPageSize"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:hint="Page size"
+        app:layout_constraintBottom_toTopOf="@+id/btnGetMessage"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/etPage" />
+
+    <Button
+        android:id="@+id/btnGetMessage"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Get AppInbox message"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

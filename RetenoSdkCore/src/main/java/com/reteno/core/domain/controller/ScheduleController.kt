@@ -16,6 +16,7 @@ class ScheduleController(
     private val contactController: ContactController,
     private val interactionController: InteractionController,
     private val eventController: EventController,
+    private val appInboxController: AppInboxController,
     private val workManager: WorkManager
 ) {
 
@@ -97,8 +98,7 @@ class ScheduleController(
      *  Deletes [com.reteno.core.model.event.Event] and [com.reteno.core.model.interaction.Interaction]
      *  older than 24 hours from the database
      *
-     *  @see InteractionController.KEEP_INTERACTION_HOURS
-     *  @see EventController.KEEP_EVENT_HOURS
+     *  @see com.reteno.core.domain.SchedulerUtils
      */
     fun clearOldData() {
         /*@formatter:off*/ Logger.i(TAG, "clearOldData(): ", "")
@@ -109,6 +109,10 @@ class ScheduleController(
         )
         OperationQueue.addOperationAfterDelay(
             eventController::clearOldEvents,
+            CLEAR_OLD_DATA_DELAY
+        )
+        OperationQueue.addOperationAfterDelay(
+            appInboxController::clearOldMessagesStatus,
             CLEAR_OLD_DATA_DELAY
         )
     }
@@ -138,6 +142,12 @@ class ScheduleController(
             /*@formatter:off*/ Logger.i(TAG, "sendData(): ", "step: pushEvents")
             /*@formatter:on*/
             eventController.pushEvents()
+        }
+
+        PushOperationQueue.addOperation {
+            /*@formatter:off*/ Logger.i(TAG, "sendData(): ", "step: pushAppInboxStatuses")
+            /*@formatter:on*/
+            appInboxController.pushAppInboxMessagesStatus()
         }
 
         PushOperationQueue.nextOperation()
