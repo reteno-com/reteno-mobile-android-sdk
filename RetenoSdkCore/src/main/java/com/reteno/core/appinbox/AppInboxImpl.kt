@@ -3,8 +3,9 @@ package com.reteno.core.appinbox
 import com.reteno.core.domain.callback.appinbox.RetenoResultCallback
 import com.reteno.core.domain.controller.AppInboxController
 import com.reteno.core.domain.model.appinbox.AppInboxMessages
+import com.reteno.core.util.Logger
 
-class AppInboxImpl(
+internal class AppInboxImpl(
     private val appInboxController: AppInboxController
 ) : AppInbox {
 
@@ -13,30 +14,62 @@ class AppInboxImpl(
         pageSize: Int?,
         callback: RetenoResultCallback<AppInboxMessages>
     ) {
-        appInboxController.getAppInboxMessages(page, pageSize, callback)
+        try {
+            appInboxController.getAppInboxMessages(page, pageSize, callback)
+        } catch (ex: Throwable) {
+            Logger.e(TAG, "getAppInboxMessages(): ", ex)
+        }
     }
 
     override fun getAppInboxMessagesCount(callback: RetenoResultCallback<Int>) {
-        appInboxController.getMessagesCount(callback)
+        try {
+            appInboxController.getMessagesCount(callback)
+        } catch (ex: Throwable) {
+            Logger.e(TAG, "getAppInboxMessagesCount(): ", ex)
+        }
     }
 
     override fun subscribeOnMessagesCountChanged(callback: RetenoResultCallback<Int>) {
-        appInboxController.subscribeCountChanges(callback)
+        try {
+            appInboxController.subscribeCountChanges(callback)
+        } catch (ex: Throwable) {
+            Logger.e(TAG, "subscribeOnMessagesCountChanged(): ", ex)
+        }
     }
 
     override fun unsubscribeMessagesCountChanged(callback: RetenoResultCallback<Int>) {
-        appInboxController.unsubscribeCountChanges(callback)
+        try {
+            appInboxController.unsubscribeCountChanges(callback)
+        } catch (ex: Throwable) {
+            Logger.e(TAG, "unsubscribeMessagesCountChanged(): ", ex)
+        }
     }
 
     override fun unsubscribeAllMessagesCountChanged() {
-        appInboxController.unsubscribeAllCountChanges()
+        try {
+            appInboxController.unsubscribeAllCountChanges()
+        } catch (ex: Throwable) {
+            Logger.e(TAG, "unsubscribeAllMessagesCountChanged(): ", ex)
+        }
     }
 
     override fun markAsOpened(messageId: String) {
-        appInboxController.markAsOpened(messageId)
+        try {
+            appInboxController.markAsOpened(messageId)
+        } catch (ex: Throwable) {
+            Logger.e(TAG, "markAsOpened(): ", ex)
+        }
     }
 
     override fun markAllMessagesAsOpened(callback: RetenoResultCallback<Unit>) {
-        appInboxController.markAllMessagesAsOpened(callback)
+        try {
+            appInboxController.markAllMessagesAsOpened(callback)
+        } catch (ex: Throwable) {
+            Logger.e(TAG, "markAllMessagesAsOpened(): ", ex)
+        }
+    }
+
+    companion object {
+        private val TAG: String = AppInboxImpl::class.java.simpleName
     }
 }

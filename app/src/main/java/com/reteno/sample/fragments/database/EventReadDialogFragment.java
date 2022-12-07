@@ -1,13 +1,16 @@
 package com.reteno.sample.fragments.database;
 
+import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.transition.AutoTransition;
 import androidx.transition.TransitionManager;
 
+import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerEvents;
 import com.reteno.core.data.local.model.event.EventDb;
 import com.reteno.core.data.local.model.event.EventsDb;
 import com.reteno.core.data.local.model.event.ParameterDb;
@@ -20,6 +23,20 @@ import java.util.Locale;
 
 
 public class EventReadDialogFragment extends BaseReadDialogFragment<EventsDb, ItemDbEventBinding, EventReadDialogFragment.EventsViewHolder, EventReadDialogFragment.EventsAdapter> {
+
+    private RetenoDatabaseManagerEvents databaseManager;
+
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        databaseManager = serviceLocator.getRetenoDatabaseManagerEventsProvider().get();
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        databaseManager = null;
+    }
 
     @Override
     protected void initAdapter() {

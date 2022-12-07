@@ -11,7 +11,6 @@ import androidx.fragment.app.DialogFragment;
 
 import com.reteno.core.Reteno;
 import com.reteno.core.RetenoImpl;
-import com.reteno.core.data.local.database.RetenoDatabaseManager;
 import com.reteno.core.di.ServiceLocator;
 import com.reteno.sample.SampleApp;
 
@@ -19,8 +18,7 @@ import java.lang.reflect.Field;
 
 public class BaseDatabaseDialogFragment extends DialogFragment {
 
-    private ServiceLocator serviceLocator;
-    protected RetenoDatabaseManager databaseManager;
+    protected ServiceLocator serviceLocator;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -40,20 +38,17 @@ public class BaseDatabaseDialogFragment extends DialogFragment {
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        databaseManager = serviceLocator.getDatabaseManagerProvider().get();
         return super.onCreateView(inflater, container, savedInstanceState);
     }
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
-        databaseManager = serviceLocator.getDatabaseManagerProvider().get();
         super.onViewCreated(view, savedInstanceState);
     }
 
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        databaseManager = null;
     }
 
     private Reteno getReteno() {

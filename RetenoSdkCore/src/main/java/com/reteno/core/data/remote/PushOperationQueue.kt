@@ -1,6 +1,6 @@
 package com.reteno.core.data.remote
 
-object PushOperationQueue {
+internal object PushOperationQueue {
 
     private val operationQueue = ArrayDeque<Runnable>()
 

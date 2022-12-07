@@ -3,6 +3,7 @@ package com.reteno.sample.fragments.database;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -12,6 +13,7 @@ import com.reteno.core.Reteno;
 import com.reteno.core.RetenoImpl;
 import com.reteno.core._interop.DeviceIdInternal;
 import com.reteno.core.data.local.config.DeviceId;
+import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerAppInbox;
 import com.reteno.core.data.local.model.appinbox.AppInboxMessageDb;
 import com.reteno.core.data.local.model.appinbox.AppInboxMessageStatusDb;
 import com.reteno.sample.SampleApp;
@@ -21,6 +23,13 @@ import com.reteno.sample.util.Util;
 public class InboxWriteDialogFragment extends BaseDatabaseDialogFragment {
 
     private DialogDbWriteInboxBinding binding;
+    private RetenoDatabaseManagerAppInbox databaseManager;
+
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        databaseManager = serviceLocator.getRetenoDatabaseManagerAppInboxProvider().get();
+    }
 
     @NonNull
     @Override
@@ -35,6 +44,7 @@ public class InboxWriteDialogFragment extends BaseDatabaseDialogFragment {
     public void onDestroyView() {
         super.onDestroyView();
         binding = null;
+        databaseManager = null;
     }
 
     @Override

@@ -36,6 +36,8 @@ internal class ConfigRepositoryImpl(
     }
 
     private fun getAndSaveFreshFcmToken() {
+        /*@formatter:off*/ Logger.i(TAG, "getAndSaveFreshFcmToken(): ", "")
+        /*@formatter:on*/
         FirebaseMessaging.getInstance().token.addOnCompleteListener(OnCompleteListener { task ->
             if (!task.isSuccessful) {
                 Logger.e(
@@ -66,7 +68,7 @@ internal class ConfigRepositoryImpl(
         sharedPrefsManager.getNotificationsEnabled()
 
     companion object {
-        val TAG: String = ConfigRepositoryImpl::class.java.simpleName
+        private val TAG: String = ConfigRepositoryImpl::class.java.simpleName
     }
 }
 

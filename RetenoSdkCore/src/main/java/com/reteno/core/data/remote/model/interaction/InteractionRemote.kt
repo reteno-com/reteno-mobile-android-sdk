@@ -2,7 +2,7 @@ package com.reteno.core.data.remote.model.interaction
 
 import com.google.gson.annotations.SerializedName
 
-data class InteractionRemote(
+internal data class InteractionRemote(
     @SerializedName("status")
     val status: InteractionStatusRemote,
     @SerializedName("time")

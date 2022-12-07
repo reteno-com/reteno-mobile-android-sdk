@@ -3,7 +3,7 @@ package com.reteno.core.data.remote.model.device
 import com.google.gson.annotations.SerializedName
 
 
-data class DeviceRemote(
+internal data class DeviceRemote(
     @SerializedName("deviceId")
     val deviceId: String,
     @SerializedName("externalUserId")

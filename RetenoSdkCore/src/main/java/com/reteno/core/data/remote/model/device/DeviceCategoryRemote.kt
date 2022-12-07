@@ -1,6 +1,6 @@
 package com.reteno.core.data.remote.model.device
 
-enum class DeviceCategoryRemote {
+internal enum class DeviceCategoryRemote {
     MOBILE,
     TABLET
 }

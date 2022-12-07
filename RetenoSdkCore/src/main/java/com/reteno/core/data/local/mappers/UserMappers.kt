@@ -10,7 +10,7 @@ import com.reteno.core.domain.model.user.User
 import com.reteno.core.domain.model.user.UserAttributes
 import com.reteno.core.domain.model.user.UserCustomField
 
-fun User.toDb(deviceId: DeviceId) = UserDb(
+internal fun User.toDb(deviceId: DeviceId) = UserDb(
     deviceId = deviceId.id,
     externalUserId = deviceId.externalId
         ?: throw IllegalStateException("External ID is null, but required non null"),
@@ -20,7 +20,7 @@ fun User.toDb(deviceId: DeviceId) = UserDb(
     groupNamesExclude = groupNamesExclude
 )
 
-fun UserAttributes.toDb() = UserAttributesDb(
+internal fun UserAttributes.toDb() = UserAttributesDb(
     phone = phone,
     email = email,
     firstName = firstName,
@@ -31,12 +31,12 @@ fun UserAttributes.toDb() = UserAttributesDb(
     fields = fields?.map { it.toDb() }
 )
 
-fun UserCustomField.toDb() = UserCustomFieldDb(
+internal fun UserCustomField.toDb() = UserCustomFieldDb(
     key = key,
     value = value
 )
 
-fun Address.toDb() = AddressDb(
+internal fun Address.toDb() = AddressDb(
     region = region,
     town = town,
     address = address,

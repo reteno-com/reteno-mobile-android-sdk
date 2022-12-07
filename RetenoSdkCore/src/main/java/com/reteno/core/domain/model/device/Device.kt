@@ -26,7 +26,7 @@ data class Device(
     val advertisingId: String?
 ) {
     companion object {
-        val TAG: String = Device::class.java.simpleName
+        private val TAG: String = Device::class.java.simpleName
 
         @JvmStatic
         fun createDevice(

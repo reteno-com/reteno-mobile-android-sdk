@@ -1,0 +1,40 @@
+package com.reteno.sample.model
+
+import com.reteno.core.data.remote.model.recommendation.get.RecomBase
+
+data class RecommendationResponseFull(
+    override val productId: String,
+    val category: List<String>?,
+    val categoryAncestor: List<String>?,
+    val categoryLayout: List<String>?,
+    val categoryParent: List<String>?,
+    val date_created_as: String?,
+    val date_created_es: String?,
+    val date_modified_as: String?,
+    val descr: String?,
+    val imageUrl: String?,
+    val item_group: String?,
+    val name: String?,
+    val name_keyword: String?,
+    val price: Double?,
+    val product_id: String?,
+    val tags_all_category_names: String?,
+    val tags_bestseller: String?,
+    val tags_cashback: String?,
+    val tags_category_bestseller: String?,
+    val tags_credit: String?,
+    val tags_delivery: String?,
+    val tags_description_price_range: String?,
+    val tags_discount: String?,
+    val tags_has_purchases_21_days: String?,
+    val tags_is_bestseller: String?,
+    val tags_is_bestseller_by_categories: String?,
+    val tags_item_group_id: String?,
+    val tags_num_purchases_21_days: String?,
+    val tags_old_price: String?,
+    val tags_oldprice: String?,
+    val tags_price_range: String?,
+    val tags_rating: String?,
+    val tags_sale: String?,
+    val url: String?
+) : RecomBase

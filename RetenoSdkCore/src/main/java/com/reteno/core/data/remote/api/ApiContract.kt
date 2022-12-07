@@ -1,6 +1,6 @@
 package com.reteno.core.data.remote.api
 
-sealed interface ApiContract {
+internal sealed interface ApiContract {
 
     val url: String
 
@@ -58,7 +58,20 @@ sealed interface ApiContract {
         object MessagesStatus : AppInbox() {
             override val url = "${BASE_URL}messages/status"
         }
+    }
 
+    sealed class Recommendation : ApiContract {
+        companion object {
+            private const val BASE_URL = "https://mobile-api.reteno.com/api/v1/recoms/"
+        }
+
+        class GetRecoms(recomVariantId: String) : Recommendation() {
+            override val url = "${BASE_URL}$recomVariantId/request"
+        }
+
+        object PostRecoms : Recommendation() {
+            override val url = "${BASE_URL}events"
+        }
     }
 
     data class Custom(override val url: String) : ApiContract

@@ -4,7 +4,7 @@ import com.reteno.core.domain.callback.appinbox.RetenoResultCallback
 import com.reteno.core.domain.model.appinbox.AppInboxMessages
 import java.time.ZonedDateTime
 
-interface AppInboxRepository {
+internal interface AppInboxRepository {
 
     fun saveMessageOpened(messageId: String)
     fun setAllMessageOpened(callback: RetenoResultCallback<Unit>)

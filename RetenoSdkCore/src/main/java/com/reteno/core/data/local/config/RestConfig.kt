@@ -2,7 +2,7 @@ package com.reteno.core.data.local.config
 
 import com.reteno.core.util.Logger
 
-class RestConfig(private val deviceIdHelper: DeviceIdHelper, internal val accessKey: String) {
+internal class RestConfig(private val deviceIdHelper: DeviceIdHelper, internal val accessKey: String) {
 
     internal var deviceId: DeviceId = DeviceId("")
         private set
@@ -26,6 +26,6 @@ class RestConfig(private val deviceIdHelper: DeviceIdHelper, internal val access
     }
 
     companion object {
-        val TAG: String = RestConfig::class.java.simpleName
+        private val TAG: String = RestConfig::class.java.simpleName
     }
 }

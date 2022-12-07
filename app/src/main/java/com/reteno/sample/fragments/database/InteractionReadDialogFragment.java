@@ -1,13 +1,16 @@
 package com.reteno.sample.fragments.database;
 
+import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.transition.AutoTransition;
 import androidx.transition.TransitionManager;
 
+import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerInteraction;
 import com.reteno.core.data.local.model.interaction.InteractionDb;
 import com.reteno.sample.R;
 import com.reteno.sample.databinding.ItemDbInteractionBinding;
@@ -17,6 +20,20 @@ import java.util.Locale;
 
 
 public class InteractionReadDialogFragment extends BaseReadDialogFragment<InteractionDb, ItemDbInteractionBinding, InteractionReadDialogFragment.InteractionViewHolder, InteractionReadDialogFragment.InteractionAdapter> {
+
+    private RetenoDatabaseManagerInteraction databaseManager;
+
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        databaseManager = serviceLocator.getRetenoDatabaseManagerInteractionProvider().get();
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        databaseManager = null;
+    }
 
     @Override
     protected void initAdapter() {
