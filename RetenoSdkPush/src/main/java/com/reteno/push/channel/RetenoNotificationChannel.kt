@@ -14,7 +14,8 @@ import com.reteno.push.R
 
 internal object RetenoNotificationChannel {
 
-    internal val TAG: String = RetenoNotificationChannel::class.java.simpleName
+    private val TAG: String = RetenoNotificationChannel::class.java.simpleName
+
     internal var DEFAULT_CHANNEL_ID: String = "DEFAULT_CHANNEL_ID"
         private set
 

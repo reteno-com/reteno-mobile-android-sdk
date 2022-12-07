@@ -20,7 +20,7 @@ import java.util.*
 
 internal object RetenoNotificationHelper {
 
-    val TAG: String = RetenoNotificationHelper::class.java.simpleName
+    private val TAG: String = RetenoNotificationHelper::class.java.simpleName
 
     private const val RETENO_DEFAULT_PUSH_ICON = "reteno_default_push_icon"
 
