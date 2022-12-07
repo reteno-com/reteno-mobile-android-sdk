@@ -13,8 +13,11 @@ import com.reteno.push.base.robolectric.BaseRobolectricTest
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
+import io.mockk.unmockkStatic
 import junit.framework.TestCase
 import junit.framework.TestCase.*
+import org.junit.AfterClass
+import org.junit.BeforeClass
 import org.junit.Test
 import org.robolectric.Shadows
 import org.robolectric.annotation.Config
@@ -26,6 +29,18 @@ class IntentHandlerTest : BaseRobolectricTest() {
     companion object {
         private const val DEEPLINK_WRAPPED = "https://wrapped.com"
         private const val DEEPLINK_UNWRAPPED = "https://unwrapped.com"
+
+        @JvmStatic
+        @BeforeClass
+        fun beforeClass() {
+            mockkStatic(Context::getResolveInfoList)
+        }
+
+        @JvmStatic
+        @AfterClass
+        fun afterClass() {
+            unmockkStatic(Context::getResolveInfoList)
+        }
     }
     // endregion constants -------------------------------------------------------------------------
 
@@ -97,7 +112,6 @@ class IntentHandlerTest : BaseRobolectricTest() {
         resolveInfo.activityInfo = activityInfo
 
         val resolveInfoList = listOf(resolveInfo)
-        mockkStatic(Context::getResolveInfoList)
         every { application.getResolveInfoList(any()) } returns resolveInfoList
 
         // When

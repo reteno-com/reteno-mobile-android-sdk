@@ -6,7 +6,7 @@ import com.reteno.core.data.remote.api.ApiContract
 import com.reteno.core.domain.ResponseCallback
 import com.reteno.core.util.Logger
 
-class DeeplinkRepositoryImpl(private val apiClient: ApiClient) :
+internal class DeeplinkRepositoryImpl(private val apiClient: ApiClient) :
     DeeplinkRepository {
 
     override fun triggerWrappedLinkClicked(wrappedLink: String) {
@@ -39,6 +39,6 @@ class DeeplinkRepositoryImpl(private val apiClient: ApiClient) :
     }
 
     companion object {
-        val TAG: String = DeeplinkRepositoryImpl::class.java.simpleName
+        private val TAG: String = DeeplinkRepositoryImpl::class.java.simpleName
     }
 }

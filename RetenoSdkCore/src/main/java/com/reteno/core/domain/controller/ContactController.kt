@@ -24,13 +24,10 @@ class ContactController(
     }
 
     fun onNewFcmToken(token: String) {
-        val oldToken = configRepository.getFcmToken()
-        /*@formatter:off*/ Logger.i(TAG, "onNewFcmToken(): ", "oldToken = [" , oldToken , "], newToken = [" , token , "]")
+        /*@formatter:off*/ Logger.i(TAG, "onNewFcmToken(): ", "newToken = [" , token , "]")
         /*@formatter:on*/
-        if (token != oldToken) {
-            configRepository.saveFcmToken(token)
-            onNewContact()
-        }
+        configRepository.saveFcmToken(token)
+        onNewContact()
     }
 
     fun setUserData(user: User) {
@@ -39,10 +36,6 @@ class ContactController(
 
         val validUser = Validator.validateUser(user)
         validUser?.let(contactRepository::saveUserData) ?: Logger.e(TAG, "setUserData(): user = [$user]")
-    }
-
-    private fun onNewContact() {
-        onNewContactInternal()
     }
 
     fun pushDeviceData() {
@@ -63,11 +56,11 @@ class ContactController(
         val currentState = configRepository.getNotificationsEnabled()
         if (enabled != currentState) {
             configRepository.saveNotificationsEnabled(enabled)
-            onNewContactInternal(enabled)
+            onNewContact(enabled)
         }
     }
 
-    private fun onNewContactInternal(enabled: Boolean? = null) {
+    private fun onNewContact(enabled: Boolean? = null) {
         val token = configRepository.getFcmToken()
         if (token.isNotBlank()) {
             val deviceId = configRepository.getDeviceId()

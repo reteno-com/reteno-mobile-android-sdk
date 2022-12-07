@@ -7,7 +7,7 @@ import com.reteno.core.data.remote.model.device.DeviceCategoryRemote
 import com.reteno.core.data.remote.model.device.DeviceOsRemote
 import com.reteno.core.data.remote.model.device.DeviceRemote
 
-fun DeviceDb.toRemote() = DeviceRemote(
+internal fun DeviceDb.toRemote() = DeviceRemote(
     deviceId = deviceId,
     externalUserId = externalUserId,
     pushToken = pushToken,
@@ -22,13 +22,13 @@ fun DeviceDb.toRemote() = DeviceRemote(
     advertisingId = advertisingId
 )
 
-fun DeviceOsDb.toRemote(): DeviceOsRemote =
+internal fun DeviceOsDb.toRemote(): DeviceOsRemote =
     when (this) {
         DeviceOsDb.ANDROID -> DeviceOsRemote.ANDROID
         DeviceOsDb.IOS -> DeviceOsRemote.IOS
     }
 
-fun DeviceCategoryDb.toRemote(): DeviceCategoryRemote =
+internal fun DeviceCategoryDb.toRemote(): DeviceCategoryRemote =
     when (this) {
         DeviceCategoryDb.MOBILE -> DeviceCategoryRemote.MOBILE
         DeviceCategoryDb.TABLET -> DeviceCategoryRemote.TABLET

@@ -6,11 +6,12 @@ import com.reteno.core.domain.SchedulerUtils
 import com.reteno.core.domain.model.event.Event
 import com.reteno.core.domain.model.event.Event.Companion.SCREEN_VIEW_EVENT_TYPE_KEY
 import com.reteno.core.domain.model.event.Event.Companion.SCREEN_VIEW_PARAM_NAME
-import com.reteno.core.util.Util
 import io.mockk.*
 import io.mockk.impl.annotations.RelaxedMockK
 import junit.framework.TestCase.assertEquals
+import org.junit.AfterClass
 import org.junit.Before
+import org.junit.BeforeClass
 import org.junit.Test
 import java.time.ZonedDateTime
 
@@ -22,6 +23,18 @@ class EventControllerTest : BaseUnitTest() {
         private const val EVENT_TYPE_KEY = "key"
 
         private const val SCREEN_NAME = "CustomScreenName"
+
+        @JvmStatic
+        @BeforeClass
+        fun beforeClass() {
+            mockObjectSchedulerUtils()
+        }
+
+        @JvmStatic
+        @AfterClass
+        fun afterClass() {
+            unMockObjectSchedulerUtils()
+        }
     }
     // endregion constants -------------------------------------------------------------------------
 
@@ -73,7 +86,6 @@ class EventControllerTest : BaseUnitTest() {
 
     @Test
     fun whenClearOldInteractions_thenRepositoryInteractionPushCalledWithOutdatedDate() {
-        mockkObject(SchedulerUtils)
         val mockData = mockk<ZonedDateTime>()
         every { SchedulerUtils.getOutdatedTime() } returns mockData
 
@@ -81,8 +93,6 @@ class EventControllerTest : BaseUnitTest() {
 
         verify(exactly = 1) { eventsRepository.clearOldEvents(mockData) }
         verify(exactly = 1) { SchedulerUtils.getOutdatedTime() }
-
-        unmockkObject(SchedulerUtils)
     }
 
 }

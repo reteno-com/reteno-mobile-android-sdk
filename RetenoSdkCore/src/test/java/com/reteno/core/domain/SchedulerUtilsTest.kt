@@ -2,17 +2,36 @@ package com.reteno.core.domain
 
 import com.reteno.core.base.BaseUnitTest
 import com.reteno.core.util.Util
-import io.mockk.*
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.verify
 import junit.framework.Assert.assertEquals
+import org.junit.AfterClass
+import org.junit.BeforeClass
 import org.junit.Test
 import java.time.ZonedDateTime
 
 class SchedulerUtilsTest: BaseUnitTest() {
 
+    companion object {
+
+        @JvmStatic
+        @BeforeClass
+        fun beforeClass() {
+            mockStaticZoneDateTime()
+            mockObjectUtil()
+        }
+
+        @JvmStatic
+        @AfterClass
+        fun afterClass() {
+            unMockStaticZoneDateTime()
+            unMockObjectUtil()
+        }
+    }
+
     @Test
     fun whenGetOutdatedData_thenReturnDataMinusDay() {
-        mockkStatic(ZonedDateTime::class)
-        mockkObject(Util)
         val mockDate = mockk<ZonedDateTime>()
         val mockOutDatedData = mockk<ZonedDateTime>()
         every { Util.isDebugView() } returns false
@@ -24,15 +43,10 @@ class SchedulerUtilsTest: BaseUnitTest() {
         assertEquals(mockOutDatedData, result)
         verify(exactly = 1) { ZonedDateTime.now() }
         verify(exactly = 1) { mockDate.minusHours(24) }
-
-        unmockkStatic(ZonedDateTime::class)
-        unmockkObject(Util)
     }
 
     @Test
     fun givenDebugMode_whenGetOutdatedData_thenReturnDataMinusOneHour() {
-        mockkStatic(ZonedDateTime::class)
-        mockkObject(Util)
         val mockData = mockk<ZonedDateTime>()
         val mockOutDatedDate = mockk<ZonedDateTime>()
         every { Util.isDebugView() } returns true
@@ -44,9 +58,6 @@ class SchedulerUtilsTest: BaseUnitTest() {
         assertEquals(mockOutDatedDate, result)
         verify(exactly = 1) { ZonedDateTime.now() }
         verify(exactly = 1) { mockData.minusHours(1) }
-
-        unmockkStatic(ZonedDateTime::class)
-        unmockkObject(Util)
     }
 
 }

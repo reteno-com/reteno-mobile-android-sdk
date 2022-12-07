@@ -6,15 +6,32 @@ import com.reteno.core.util.Constants.BROADCAST_ACTION_RETENO_APP_PAUSE
 import com.reteno.core.util.Constants.BROADCAST_ACTION_RETENO_APP_RESUME
 import com.reteno.push.base.robolectric.BaseRobolectricTest
 import io.mockk.justRun
-import io.mockk.mockkObject
-import io.mockk.unmockkObject
 import io.mockk.verify
 import junit.framework.TestCase.assertNotNull
+import org.junit.AfterClass
+import org.junit.BeforeClass
 import org.junit.Test
 import org.robolectric.shadows.ShadowLooper
 
 
 class AppResumeReceiverTest : BaseRobolectricTest() {
+
+    // region constants ----------------------------------------------------------------------------
+    companion object {
+
+        @JvmStatic
+        @BeforeClass
+        fun beforeClass() {
+            mockObjectNotificationsEnabledManager()
+        }
+
+        @JvmStatic
+        @AfterClass
+        fun afterClass() {
+            unMockObjectNotificationsEnabledManager()
+        }
+    }
+    // endregion constants -------------------------------------------------------------------------
 
     // region helper fields ------------------------------------------------------------------------
     private var contextWrapper: ContextWrapper? = null
@@ -30,15 +47,12 @@ class AppResumeReceiverTest : BaseRobolectricTest() {
         contextWrapper = ContextWrapper(application)
         assertNotNull(contextWrapper)
 
-        mockkObject(NotificationsEnabledManager)
         justRun { NotificationsEnabledManager.onCheckState(any()) }
     }
 
     override fun after() {
         super.after()
         contextWrapper = null
-
-        unmockkObject(NotificationsEnabledManager)
     }
 
     @Test

@@ -15,6 +15,7 @@ import com.reteno.core.Reteno;
 import com.reteno.core.RetenoImpl;
 import com.reteno.core._interop.DeviceIdInternal;
 import com.reteno.core.data.local.config.DeviceId;
+import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerUser;
 import com.reteno.core.data.local.mappers.UserMappersKt;
 import com.reteno.core.data.local.model.user.UserDb;
 import com.reteno.core.domain.model.user.Address;
@@ -32,7 +33,8 @@ import java.util.List;
 
 public class UserWriteFragment extends BaseDatabaseDialogFragment {
 
-    protected FragmentUserDataBinding binding;
+    private FragmentUserDataBinding binding;
+    private RetenoDatabaseManagerUser databaseManager;
 
     @Nullable
     @Override
@@ -44,7 +46,14 @@ public class UserWriteFragment extends BaseDatabaseDialogFragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+        databaseManager = serviceLocator.getRetenoDatabaseManagerUserProvider().get();
         setListeners();
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        databaseManager = null;
     }
 
     private void setListeners() {

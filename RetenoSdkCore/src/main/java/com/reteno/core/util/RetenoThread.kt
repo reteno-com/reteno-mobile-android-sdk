@@ -3,7 +3,7 @@ package com.reteno.core.util
 import android.os.Process
 import java.util.concurrent.atomic.AtomicInteger
 
-class RetenoThread(
+internal class RetenoThread(
     runnable: Runnable
 ) : Thread(runnable, THREAD_PREFIX_NAME + SEQUENCE_GENERATOR.getAndIncrement()) {
 

@@ -4,7 +4,7 @@ import android.content.Context
 import androidx.work.WorkManager
 import com.reteno.core.di.base.ProviderWeakReference
 
-class WorkManagerProvider(
+internal class WorkManagerProvider(
     private val context: Context
 ) : ProviderWeakReference<WorkManager>() {
 

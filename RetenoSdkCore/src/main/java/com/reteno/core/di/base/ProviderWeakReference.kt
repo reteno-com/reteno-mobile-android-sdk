@@ -13,8 +13,12 @@ abstract class ProviderWeakReference<T> : Provider<T>() {
             instance = create()
             reference = WeakReference(instance)
         }
-        /*@formatter:off*/ Logger.i(ProviderNewInstance.TAG, "get(): ", javaClass.simpleName, "instance = ", instance)
+        /*@formatter:off*/ Logger.i(TAG, "get(): ", javaClass.simpleName, "instance = ", instance)
         /*@formatter:on*/
         return instance!!
+    }
+
+    companion object {
+        private val TAG: String = ProviderWeakReference::class.java.simpleName
     }
 }

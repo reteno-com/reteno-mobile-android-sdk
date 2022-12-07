@@ -3,10 +3,7 @@ package com.reteno.core
 import android.content.*
 import android.content.pm.ActivityInfo
 import android.content.pm.ResolveInfo
-import android.app.Application
-import com.reteno.core.RetenoImpl.Companion.application
 import com.reteno.core.appinbox.AppInboxImpl
-import com.reteno.core.base.BaseUnitTest
 import com.reteno.core.base.robolectric.BaseRobolectricTest
 import com.reteno.core.di.ServiceLocator
 import com.reteno.core.domain.controller.ContactController
@@ -24,7 +21,9 @@ import io.mockk.*
 import io.mockk.impl.annotations.RelaxedMockK
 import junit.framework.TestCase.assertNotNull
 import junit.framework.TestCase.assertTrue
+import org.junit.AfterClass
 import org.junit.Assert.assertEquals
+import org.junit.BeforeClass
 import org.junit.Test
 import org.robolectric.shadows.ShadowLooper.shadowMainLooper
 import java.time.ZonedDateTime
@@ -47,6 +46,26 @@ class RetenoImplTest : BaseRobolectricTest() {
         private const val TRACK_SCREEN_NAME = "ScreenNameHere"
 
         private const val TRANSCRIPT_RESUME_RECEIVED = "ResumeReceived"
+
+        @JvmStatic
+        @BeforeClass
+        fun beforeClass() {
+            mockUtilKt()
+        }
+
+        @JvmStatic
+        @AfterClass
+        fun afterClass() {
+            unMockUtilKt()
+        }
+
+        private fun mockUtilKt() {
+            mockkStatic("com.reteno.core.util.UtilKt")
+        }
+
+        private fun unMockUtilKt() {
+            unmockkStatic("com.reteno.core.util.UtilKt")
+        }
     }
     // endregion constants -------------------------------------------------------------------------
 
@@ -234,8 +253,6 @@ class RetenoImplTest : BaseRobolectricTest() {
         // Then
         shadowMainLooper().idle()
         assertTrue(transcript.contains(TRANSCRIPT_RESUME_RECEIVED))
-
-        unmockQueryBroadcastReceivers()
     }
 
     // region helper methods -----------------------------------------------------------------------
@@ -246,12 +263,8 @@ class RetenoImplTest : BaseRobolectricTest() {
                 name = "name"
             }
         }
-        mockkStatic("com.reteno.core.util.UtilKt")
         every { application.queryBroadcastReceivers(any()) } returns listOf(mockResolveInfo)
     }
 
-    private fun unmockQueryBroadcastReceivers() {
-        unmockkStatic("com.reteno.core.util.UtilKt")
-    }
     // endregion helper methods --------------------------------------------------------------------
 }

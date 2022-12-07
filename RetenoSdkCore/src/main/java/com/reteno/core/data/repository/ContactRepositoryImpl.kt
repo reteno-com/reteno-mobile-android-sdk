@@ -1,6 +1,7 @@
 package com.reteno.core.data.repository
 
-import com.reteno.core.data.local.database.RetenoDatabaseManager
+import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerDevice
+import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerUser
 import com.reteno.core.data.local.mappers.toDb
 import com.reteno.core.data.remote.OperationQueue
 import com.reteno.core.data.remote.PushOperationQueue
@@ -14,17 +15,18 @@ import com.reteno.core.domain.model.user.User
 import com.reteno.core.util.Logger
 import com.reteno.core.util.isNonRepeatableError
 
-class ContactRepositoryImpl(
+internal class ContactRepositoryImpl(
     private val apiClient: ApiClient,
     private val configRepository: ConfigRepository,
-    private val databaseManager: RetenoDatabaseManager
+    private val databaseManagerDevice: RetenoDatabaseManagerDevice,
+    private val databaseManagerUser: RetenoDatabaseManagerUser
 ) : ContactRepository {
 
     override fun saveDeviceData(device: Device) {
         /*@formatter:off*/ Logger.i(TAG, "saveDeviceData(): ", "device = [" , device , "]")
         /*@formatter:on*/
         OperationQueue.addOperation {
-            databaseManager.insertDevice(device.toDb())
+            databaseManagerDevice.insertDevice(device.toDb())
             pushDeviceData()
         }
     }
@@ -33,13 +35,13 @@ class ContactRepositoryImpl(
         /*@formatter:off*/ Logger.i(TAG, "saveUserData(): ", "user = [" , user , "]")
         /*@formatter:on*/
         OperationQueue.addOperation {
-            databaseManager.insertUser(user.toDb(configRepository.getDeviceId()))
+            databaseManagerUser.insertUser(user.toDb(configRepository.getDeviceId()))
             pushUserData()
         }
     }
 
     override fun pushDeviceData() {
-        val device = databaseManager.getDevices(1).firstOrNull() ?: kotlin.run {
+        val device = databaseManagerDevice.getDevices(1).firstOrNull() ?: kotlin.run {
             PushOperationQueue.nextOperation()
             return
         }
@@ -52,7 +54,7 @@ class ContactRepositoryImpl(
                 override fun onSuccess(response: String) {
                     /*@formatter:off*/ Logger.i(TAG, "onSuccess(): ", "response = [" , response , "]")
                     /*@formatter:on*/
-                    databaseManager.deleteDevices(1)
+                    databaseManagerDevice.deleteDevices(1)
                     pushDeviceData()
                 }
 
@@ -60,7 +62,7 @@ class ContactRepositoryImpl(
                     /*@formatter:off*/ Logger.i(TAG, "onFailure(): ", "statusCode = [" , statusCode , "], response = [" , response , "], throwable = [" , throwable , "]")
                     /*@formatter:on*/
                     if (isNonRepeatableError(statusCode)) {
-                        databaseManager.deleteDevices(1)
+                        databaseManagerDevice.deleteDevices(1)
                         pushDeviceData()
                     }
                     PushOperationQueue.removeAllOperations()
@@ -70,7 +72,7 @@ class ContactRepositoryImpl(
     }
 
     override fun pushUserData() {
-        val user = databaseManager.getUser(1).firstOrNull() ?: kotlin.run {
+        val user = databaseManagerUser.getUser(1).firstOrNull() ?: kotlin.run {
             PushOperationQueue.nextOperation()
             return
         }
@@ -83,7 +85,7 @@ class ContactRepositoryImpl(
                 override fun onSuccess(response: String) {
                     /*@formatter:off*/ Logger.i(TAG, "onSuccess(): ", "response = [" , response , "]")
                     /*@formatter:on*/
-                    databaseManager.deleteUsers(1)
+                    databaseManagerUser.deleteUsers(1)
                     pushUserData()
                 }
 
@@ -91,7 +93,7 @@ class ContactRepositoryImpl(
                     /*@formatter:off*/ Logger.i(TAG, "onFailure(): ", "statusCode = [" , statusCode , "], response = [" , response , "], throwable = [" , throwable , "]")
                     /*@formatter:on*/
                     if (isNonRepeatableError(statusCode)) {
-                        databaseManager.deleteUsers(1)
+                        databaseManagerUser.deleteUsers(1)
                         pushUserData()
                     }
                     PushOperationQueue.removeAllOperations()
