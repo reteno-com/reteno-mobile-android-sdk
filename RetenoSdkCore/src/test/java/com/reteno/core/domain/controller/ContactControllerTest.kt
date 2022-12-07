@@ -8,8 +8,11 @@ import com.reteno.core.domain.model.device.Device
 import com.reteno.core.domain.model.device.DeviceCategory
 import com.reteno.core.domain.model.device.DeviceOS
 import com.reteno.core.domain.model.user.User
-import io.mockk.*
+import io.mockk.every
 import io.mockk.impl.annotations.RelaxedMockK
+import io.mockk.mockkObject
+import io.mockk.unmockkObject
+import io.mockk.verify
 import org.junit.AfterClass
 import org.junit.BeforeClass
 import org.junit.Test
@@ -149,39 +152,10 @@ class ContactControllerTest : BaseUnitTest() {
     }
 
     @Test
-    fun givenTokenAlreadySaved_whenOnNewFcmToken_thenNothingHappens() {
+    fun whenOnNewFcmToken_thenTokenSavedDeviceUpdated() {
         // Given
         every { configRepository.getFcmToken() } returns FCM_TOKEN_NEW
-
-        // When
-        SUT.onNewFcmToken(FCM_TOKEN_NEW)
-
-        // Then
-        verify(exactly = 0) { configRepository.saveFcmToken(any()) }
-        verify(exactly = 0) { contactRepository.saveDeviceData(any()) }
-    }
-
-    @Test
-    fun givenTokenAbsent_whenOnNewFcmToken_thenTokenSavedDeviceUpdated() {
-        // Given
-        every { configRepository.getFcmToken() } returns "" andThen FCM_TOKEN_NEW
         every { configRepository.getDeviceId() } returns DeviceId(DEVICE_ID_ANDROID, null)
-
-        // When
-        SUT.onNewFcmToken(FCM_TOKEN_NEW)
-
-        // Then
-        verify(exactly = 1) { configRepository.saveFcmToken(FCM_TOKEN_NEW) }
-        val expectedDevice = Device.createDevice(DEVICE_ID_ANDROID, null, FCM_TOKEN_NEW)
-        verify(exactly = 1) { contactRepository.saveDeviceData(expectedDevice) }
-    }
-
-    @Test
-    fun givenTokenAvailable_whenOnNewFcmToken_thenTokenUpdatedDeviceUpdated() {
-        // Given
-        every { configRepository.getFcmToken() } returns FCM_TOKEN_OLD andThen FCM_TOKEN_NEW
-        every { configRepository.getDeviceId() } returns DeviceId(DEVICE_ID_ANDROID, null)
-        every { contactRepository.saveDeviceData(any()) } just runs
 
         // When
         SUT.onNewFcmToken(FCM_TOKEN_NEW)
