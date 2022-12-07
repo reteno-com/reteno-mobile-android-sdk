@@ -7,7 +7,7 @@ import androidx.work.ListenableWorker.Result
 import androidx.work.testing.TestWorkerBuilder
 import androidx.work.testing.WorkManagerTestInitHelper
 import com.reteno.core.base.robolectric.BaseRobolectricTest
-import com.reteno.core.data.local.database.RetenoDatabaseManager
+import com.reteno.core.data.local.database.manager.RetenoDatabaseManager
 import com.reteno.core.domain.controller.ScheduleController
 import com.reteno.core.lifecycle.RetenoActivityHelper
 import io.mockk.every
@@ -17,7 +17,6 @@ import junit.framework.TestCase.assertEquals
 import junit.framework.TestCase.assertNotNull
 import org.hamcrest.CoreMatchers.`is`
 import org.hamcrest.MatcherAssert.assertThat
-import org.junit.Ignore
 import org.junit.Test
 import java.util.*
 import java.util.concurrent.Executor
@@ -47,7 +46,7 @@ class PushDataWorkerTest : BaseRobolectricTest() {
         super.before()
         every { reteno.serviceLocator.scheduleControllerProvider.get() } returns scheduleController
         every { reteno.serviceLocator.retenoActivityHelperProvider.get() } returns retenoActivityHelper
-        every { reteno.serviceLocator.databaseManagerProvider.get() } returns databaseManager
+        every { reteno.serviceLocator.retenoDatabaseManagerProvider.get() } returns databaseManager
 
         executor = Executors.newSingleThreadExecutor()
         assertNotNull(executor)

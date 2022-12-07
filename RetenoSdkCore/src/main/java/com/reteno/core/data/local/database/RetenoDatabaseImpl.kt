@@ -6,8 +6,9 @@ import android.database.sqlite.SQLiteCantOpenDatabaseException
 import android.database.sqlite.SQLiteDatabaseLockedException
 import android.os.SystemClock
 import com.reteno.core.BuildConfig
-import com.reteno.core.data.local.database.DbSchema.DATABASE_NAME
-import com.reteno.core.data.local.database.DbSchema.DATABASE_VERSION
+import com.reteno.core.data.local.database.schema.*
+import com.reteno.core.data.local.database.schema.DbSchema.DATABASE_NAME
+import com.reteno.core.data.local.database.schema.DbSchema.DATABASE_VERSION
 import com.reteno.core.util.Logger
 import net.sqlcipher.Cursor
 import net.sqlcipher.DatabaseUtils
@@ -15,7 +16,7 @@ import net.sqlcipher.database.SQLiteDatabase
 import net.sqlcipher.database.SQLiteException
 import net.sqlcipher.database.SQLiteOpenHelper
 
-class RetenoDatabaseImpl(context: Context) : RetenoDatabase,
+internal class RetenoDatabaseImpl(context: Context) : RetenoDatabase,
     SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
 
     private val writableDatabase = getWritableDatabase(BuildConfig.SQL_PASSWORD)
@@ -26,14 +27,16 @@ class RetenoDatabaseImpl(context: Context) : RetenoDatabase,
     }
 
     override fun onCreate(db: SQLiteDatabase) {
-        db.execSQL(DbSchema.DeviceSchema.SQL_CREATE_TABLE)
-        db.execSQL(DbSchema.UserSchema.SQL_CREATE_TABLE)
-        db.execSQL(DbSchema.UserAttributesSchema.SQL_CREATE_TABLE)
-        db.execSQL(DbSchema.UserAddressSchema.SQL_CREATE_TABLE)
-        db.execSQL(DbSchema.InteractionSchema.SQL_CREATE_TABLE)
-        db.execSQL(DbSchema.EventsSchema.SQL_CREATE_TABLE)
-        db.execSQL(DbSchema.EventSchema.SQL_CREATE_TABLE)
-        db.execSQL(DbSchema.AppInboxSchema.SQL_CREATE_TABLE)
+        db.execSQL(DeviceSchema.SQL_CREATE_TABLE)
+        db.execSQL(UserSchema.SQL_CREATE_TABLE)
+        db.execSQL(UserSchema.UserAttributesSchema.SQL_CREATE_TABLE)
+        db.execSQL(UserSchema.UserAddressSchema.SQL_CREATE_TABLE)
+        db.execSQL(InteractionSchema.SQL_CREATE_TABLE)
+        db.execSQL(EventsSchema.SQL_CREATE_TABLE)
+        db.execSQL(EventsSchema.EventSchema.SQL_CREATE_TABLE)
+        db.execSQL(AppInboxSchema.SQL_CREATE_TABLE)
+        db.execSQL(RecomEventsSchema.SQL_CREATE_TABLE)
+        db.execSQL(RecomEventsSchema.RecomEventSchema.SQL_CREATE_TABLE)
     }
 
     override fun onUpgrade(db: SQLiteDatabase?, oldVersion: Int, newVersion: Int) {
@@ -288,9 +291,18 @@ class RetenoDatabaseImpl(context: Context) : RetenoDatabase,
      * Call this method each time you remove any record from Event table (Child table)
      */
     override fun cleanUnlinkedEvents() {
-        val rawQuery = "DELETE FROM ${DbSchema.EventsSchema.TABLE_NAME_EVENTS} WHERE ${DbSchema.EventsSchema.COLUMN_EVENTS_ID} NOT IN " +
-                "(SELECT ${DbSchema.EventsSchema.COLUMN_EVENTS_ID} FROM ${DbSchema.EventSchema.TABLE_NAME_EVENT})"
-        getSQLiteDatabaseWithRetries().execSQL(rawQuery)
+        val sqlQuery = "DELETE FROM ${EventsSchema.TABLE_NAME_EVENTS} WHERE ${EventsSchema.COLUMN_EVENTS_ID} NOT IN " +
+                "(SELECT ${EventsSchema.COLUMN_EVENTS_ID} FROM ${EventsSchema.EventSchema.TABLE_NAME_EVENT})"
+        getSQLiteDatabaseWithRetries().execSQL(sqlQuery)
+    }
+
+    /**
+     * Call this method each time you remove any record from Event table (Child table)
+     */
+    override fun cleanUnlinkedRecomVariantIds() {
+        val sqlQuery = "DELETE FROM ${RecomEventsSchema.TABLE_NAME_RECOM_EVENTS} WHERE ${RecomEventsSchema.COLUMN_RECOM_VARIANT_ID} NOT IN " +
+                "(SELECT ${RecomEventsSchema.COLUMN_RECOM_VARIANT_ID} FROM ${RecomEventsSchema.RecomEventSchema.TABLE_NAME_RECOM_EVENT})"
+        getSQLiteDatabaseWithRetries().execSQL(sqlQuery)
     }
 
     /**
@@ -298,7 +310,7 @@ class RetenoDatabaseImpl(context: Context) : RetenoDatabase,
      * Replaced all [SQLiteOpenHelper.getReadableDatabase] with [SQLiteOpenHelper.getWritableDatabase]
      * as the internals call the same method and not much of a performance benefit between them
      * <br></br><br></br>
-     * [OneSignalDbHelper.getSQLiteDatabaseWithRetries] has similar logic and throws the same Exceptions
+     * [getSQLiteDatabaseWithRetries] has similar logic and throws the same Exceptions
      * <br></br><br></br>
      * @see [StackOverflow | What are best practices for SQLite on Android](https://stackoverflow.com/questions/2493331/what-are-the-best-practices-for-sqlite-on-android/3689883.3689883)
      */
@@ -329,6 +341,6 @@ class RetenoDatabaseImpl(context: Context) : RetenoDatabase,
         private const val DB_OPEN_RETRY_MAX = 5
         private const val DB_OPEN_RETRY_BACKOFF = 400
 
-        val TAG: String = RetenoDatabaseImpl::class.java.simpleName
+        private val TAG: String = RetenoDatabaseImpl::class.java.simpleName
     }
 }

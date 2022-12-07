@@ -1,14 +1,16 @@
 package com.reteno.core.di.provider
 
 import com.reteno.core.di.base.ProviderWeakReference
+import com.reteno.core.di.provider.controller.EventsControllerProvider
 import com.reteno.core.lifecycle.RetenoActivityHelper
+import com.reteno.core.lifecycle.RetenoActivityHelperImpl
 
-class RetenoActivityHelperProvider(
+internal class RetenoActivityHelperProvider(
     private val eventControllerProvider: EventsControllerProvider
 ) :
     ProviderWeakReference<RetenoActivityHelper>() {
 
     override fun create(): RetenoActivityHelper {
-        return RetenoActivityHelper(eventControllerProvider.get())
+        return RetenoActivityHelperImpl(eventControllerProvider.get())
     }
 }

@@ -2,7 +2,7 @@ package com.reteno.core.data.remote.model.inbox
 
 import com.google.gson.annotations.SerializedName
 
-data class InboxMessageRemote(
+internal data class InboxMessageRemote(
     @SerializedName("content")
     val content: String?,
     @SerializedName("createDate")

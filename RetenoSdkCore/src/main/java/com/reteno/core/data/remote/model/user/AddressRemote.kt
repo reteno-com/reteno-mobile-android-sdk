@@ -2,7 +2,7 @@ package com.reteno.core.data.remote.model.user
 
 import com.google.gson.annotations.SerializedName
 
-data class AddressRemote(
+internal data class AddressRemote(
     @SerializedName("region")
     val region: String? = null,
     @SerializedName("town")

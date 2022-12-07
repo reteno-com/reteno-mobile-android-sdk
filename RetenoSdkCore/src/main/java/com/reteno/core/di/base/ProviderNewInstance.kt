@@ -12,6 +12,6 @@ abstract class ProviderNewInstance<T> : Provider<T>() {
     }
 
     companion object {
-        val TAG: String = ProviderNewInstance::class.java.simpleName
+        private val TAG: String = ProviderNewInstance::class.java.simpleName
     }
 }

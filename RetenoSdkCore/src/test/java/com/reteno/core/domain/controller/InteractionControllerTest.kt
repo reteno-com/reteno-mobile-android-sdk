@@ -7,11 +7,14 @@ import com.reteno.core.domain.SchedulerUtils
 import com.reteno.core.domain.model.interaction.Interaction
 import com.reteno.core.domain.model.interaction.InteractionStatus
 import com.reteno.core.util.Util
-import io.mockk.*
+import io.mockk.every
 import io.mockk.impl.annotations.MockK
 import io.mockk.impl.annotations.RelaxedMockK
-import org.junit.After
+import io.mockk.mockk
+import io.mockk.verify
+import org.junit.AfterClass
 import org.junit.Before
+import org.junit.BeforeClass
 import org.junit.Test
 import java.time.ZonedDateTime
 
@@ -22,6 +25,20 @@ class InteractionControllerTest : BaseUnitTest() {
         const val TOKEN = "some_token"
         const val INTERACTION_ID = "interaction_id"
         const val CURRENT_TIMESTAMP = "2022-11-22T11:11:11Z"
+
+        @JvmStatic
+        @BeforeClass
+        fun beforeClass() {
+            mockObjectUtil()
+            mockObjectSchedulerUtils()
+        }
+
+        @JvmStatic
+        @AfterClass
+        fun afterClass() {
+            unMockObjectUtil()
+            unMockObjectSchedulerUtils()
+        }
     }
     // endregion constants -------------------------------------------------------------------------
 
@@ -40,16 +57,9 @@ class InteractionControllerTest : BaseUnitTest() {
     override fun before() {
         super.before()
 
-        mockkStatic(Util::class)
         every { Util.getCurrentTimeStamp() } returns CURRENT_TIMESTAMP
 
         SUT = InteractionController(configRepository, interactionsRepository)
-    }
-
-    @After
-    override fun after() {
-        super.after()
-        unmockkStatic(Util::class)
     }
 
     @Test
@@ -108,7 +118,6 @@ class InteractionControllerTest : BaseUnitTest() {
 
     @Test
     fun whenClearOldInteractions_thenRepositoryInteractionPushCalledWithOutdatedDate() {
-        mockkObject(SchedulerUtils)
         val mockData = mockk<ZonedDateTime>()
         every { SchedulerUtils.getOutdatedTime() } returns mockData
 
@@ -116,8 +125,6 @@ class InteractionControllerTest : BaseUnitTest() {
 
         verify(exactly = 1) { interactionsRepository.clearOldInteractions(mockData) }
         verify(exactly = 1) { SchedulerUtils.getOutdatedTime() }
-
-        unmockkObject(SchedulerUtils)
     }
 
 }

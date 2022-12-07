@@ -5,8 +5,12 @@ import com.reteno.core.data.repository.AppInboxRepository
 import com.reteno.core.domain.SchedulerUtils
 import com.reteno.core.domain.callback.appinbox.RetenoResultCallback
 import com.reteno.core.domain.model.appinbox.AppInboxMessages
-import io.mockk.*
+import io.mockk.every
 import io.mockk.impl.annotations.RelaxedMockK
+import io.mockk.mockk
+import io.mockk.verify
+import org.junit.AfterClass
+import org.junit.BeforeClass
 import org.junit.Test
 import java.time.ZonedDateTime
 
@@ -16,6 +20,18 @@ class AppInboxControllerTest : BaseUnitTest() {
         private const val PAGE = 2
         private const val PAGE_SIZE = 12
         private const val MESSAGE_ID = "dsdg-4352-sdgsdg-3525-sdggse"
+
+        @JvmStatic
+        @BeforeClass
+        fun beforeClass() {
+            mockObjectSchedulerUtils()
+        }
+
+        @JvmStatic
+        @AfterClass
+        fun afterClass() {
+            unMockObjectSchedulerUtils()
+        }
     }
 
     @RelaxedMockK
@@ -131,7 +147,6 @@ class AppInboxControllerTest : BaseUnitTest() {
 
     @Test
     fun whenClearOldMessagesStatus_thenRepositoryCalledWithOutdatedDate() {
-        mockkObject(SchedulerUtils)
         val mockData = mockk<ZonedDateTime>()
         every { SchedulerUtils.getOutdatedTime() } returns mockData
 
@@ -139,7 +154,5 @@ class AppInboxControllerTest : BaseUnitTest() {
 
         verify(exactly = 1) { appInboxRepository.clearOldMessages(mockData) }
         verify(exactly = 1) { SchedulerUtils.getOutdatedTime() }
-
-        unmockkObject(SchedulerUtils)
     }
 }

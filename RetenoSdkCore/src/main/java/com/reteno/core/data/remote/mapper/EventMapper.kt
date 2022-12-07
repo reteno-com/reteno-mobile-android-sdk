@@ -7,20 +7,20 @@ import com.reteno.core.data.remote.model.event.EventRemote
 import com.reteno.core.data.remote.model.event.EventsRemote
 import com.reteno.core.data.remote.model.event.ParameterRemote
 
-fun EventsDb.toRemote() = EventsRemote(
+internal fun EventsDb.toRemote() = EventsRemote(
     deviceId = deviceId,
     externalUserId = externalUserId,
     eventList = eventList.map { it.toRemote() }
 )
 
-fun EventDb.toRemote() = EventRemote(
+internal fun EventDb.toRemote() = EventRemote(
     eventTypeKey = eventTypeKey,
     occurred = occurred,
     params = params?.map { it.toRemote() }
 )
 
 
-fun ParameterDb.toRemote() = ParameterRemote(
+internal fun ParameterDb.toRemote() = ParameterRemote(
     name = name,
     value = value
 )

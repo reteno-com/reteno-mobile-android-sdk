@@ -4,7 +4,7 @@ import android.content.ContentValues
 import net.sqlcipher.Cursor
 import net.sqlcipher.SQLException
 
-interface RetenoDatabase {
+internal interface RetenoDatabase {
 
     fun query(
         table: String, columns: Array<String>, selection: String? = null,
@@ -40,4 +40,9 @@ interface RetenoDatabase {
      * Call this method each time you remove any record from Event table (Child table)
      */
     fun cleanUnlinkedEvents()
+
+    /**
+     * Call this method each time you remove any record from RecomEvent table (Child table)
+     */
+    fun cleanUnlinkedRecomVariantIds()
 }

@@ -3,7 +3,7 @@ package com.reteno.core.di.provider
 import com.reteno.core.data.local.config.RestConfig
 import com.reteno.core.di.base.ProviderWeakReference
 
-class RestConfigProvider(
+internal class RestConfigProvider(
     private val deviceIdHelperProvider: DeviceIdHelperProvider,
     private val accessKey: String
 ) : ProviderWeakReference<RestConfig>() {

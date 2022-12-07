@@ -9,9 +9,13 @@ abstract class ProviderStrongReference<T> : Provider<T>() {
     override fun get(): T {
         if (instance == null) {
             instance = create()
-            /*@formatter:off*/ Logger.i(ProviderNewInstance.TAG, "get(): ", javaClass.simpleName, "instance = ", instance)
+            /*@formatter:off*/ Logger.i(TAG, "get(): ", javaClass.simpleName, "instance = ", instance)
             /*@formatter:on*/
         }
         return instance!!
+    }
+
+    companion object {
+        private val TAG: String = ProviderStrongReference::class.java.simpleName
     }
 }

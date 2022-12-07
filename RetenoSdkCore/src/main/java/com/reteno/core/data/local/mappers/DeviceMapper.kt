@@ -7,7 +7,7 @@ import com.reteno.core.domain.model.device.Device
 import com.reteno.core.domain.model.device.DeviceCategory
 import com.reteno.core.domain.model.device.DeviceOS
 
-fun Device.toDb() = DeviceDb(
+internal fun Device.toDb() = DeviceDb(
     deviceId = deviceId,
     externalUserId = externalUserId,
     pushToken = pushToken,
@@ -22,13 +22,13 @@ fun Device.toDb() = DeviceDb(
     advertisingId = advertisingId
 )
 
-fun DeviceOS.toDb(): DeviceOsDb =
+internal fun DeviceOS.toDb(): DeviceOsDb =
     when (this) {
         DeviceOS.ANDROID -> DeviceOsDb.ANDROID
         DeviceOS.IOS -> DeviceOsDb.IOS
     }
 
-fun DeviceCategory.toDb(): DeviceCategoryDb =
+internal fun DeviceCategory.toDb(): DeviceCategoryDb =
     when (this) {
         DeviceCategory.MOBILE -> DeviceCategoryDb.MOBILE
         DeviceCategory.TABLET -> DeviceCategoryDb.TABLET

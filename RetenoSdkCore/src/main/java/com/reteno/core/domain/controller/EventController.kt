@@ -5,7 +5,7 @@ import com.reteno.core.domain.SchedulerUtils
 import com.reteno.core.domain.model.event.Event
 import com.reteno.core.util.Logger
 
-class EventController(
+internal class EventController(
     private val eventsRepository: EventsRepository
 ) {
 

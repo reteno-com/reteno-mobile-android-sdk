@@ -4,6 +4,7 @@ import com.reteno.core.appinbox.AppInbox
 import com.reteno.core.domain.model.event.Event
 import com.reteno.core.domain.model.user.User
 import com.reteno.core.lifecycle.ScreenTrackingConfig
+import com.reteno.core.recommendation.Recommendation
 
 
 interface Reteno {
@@ -12,6 +13,11 @@ interface Reteno {
      *  Get [AppInbox] instance.
      */
     val appInbox: AppInbox
+
+    /**
+     *  Get [Recommendation] instance.
+     */
+    val recommendation: Recommendation
 
     /**
      *  Set the user ID.
@@ -55,6 +61,6 @@ interface Reteno {
     fun forcePushData()
 
     companion object {
-        val TAG: String = Reteno::class.java.simpleName
+        private val TAG: String = Reteno::class.java.simpleName
     }
 }

@@ -66,7 +66,7 @@ internal class ConfigRepositoryImpl(
         sharedPrefsManager.getNotificationsEnabled()
 
     companion object {
-        val TAG: String = ConfigRepositoryImpl::class.java.simpleName
+        private val TAG: String = ConfigRepositoryImpl::class.java.simpleName
     }
 }
 

@@ -6,7 +6,7 @@ import com.reteno.core.domain.callback.appinbox.RetenoResultCallback
 import com.reteno.core.domain.model.appinbox.AppInboxMessages
 import com.reteno.core.util.Logger
 
-class AppInboxController(private val appInboxRepository: AppInboxRepository) {
+internal class AppInboxController(private val appInboxRepository: AppInboxRepository) {
 
     fun getAppInboxMessages(
         page: Int? = null,

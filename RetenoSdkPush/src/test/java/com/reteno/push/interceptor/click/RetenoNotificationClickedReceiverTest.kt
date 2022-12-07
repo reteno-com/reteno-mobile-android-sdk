@@ -16,10 +16,10 @@ import com.reteno.push.Util
 import com.reteno.push.base.robolectric.BaseRobolectricTest
 import io.mockk.*
 import io.mockk.impl.annotations.RelaxedMockK
-import org.junit.After
+import org.junit.AfterClass
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
-import org.junit.Before
+import org.junit.BeforeClass
 import org.junit.Test
 import org.robolectric.annotation.Config
 
@@ -30,6 +30,20 @@ class RetenoNotificationClickedReceiverTest : BaseRobolectricTest() {
     companion object {
         private const val DEEPLINK_WRAPPED = "https://wrapped.com"
         private const val DEEPLINK_UNWRAPPED = "https://unwrapped.com"
+
+        @JvmStatic
+        @BeforeClass
+        fun beforeClass() {
+            mockObjectUtil()
+            mockObjectAppLaunchIntent()
+        }
+
+        @JvmStatic
+        @AfterClass
+        fun afterClass() {
+            unMockObjectUtil()
+            unMockObjectAppLaunchIntent()
+        }
     }
     // endregion constants -------------------------------------------------------------------------
 
@@ -40,15 +54,13 @@ class RetenoNotificationClickedReceiverTest : BaseRobolectricTest() {
     private lateinit var context: Context
     // endregion helper fields ---------------------------------------------------------------------
 
-    @Before
-    fun setUp() {
+    override fun before() {
+        super.before()
         receiver = RetenoNotificationClickedReceiver()
-        mockkObject(Util)
     }
 
-    @After
-    fun tearDown() {
-        unmockkObject(Util)
+    override fun after() {
+        super.after()
         receiver = null
     }
 
@@ -132,12 +144,13 @@ class RetenoNotificationClickedReceiverTest : BaseRobolectricTest() {
 
     @Test
     fun saveInteraction() {
+        mockkObject(RetenoImpl)
+
         val interactionId = "interaction_id"
         val extra = Bundle().apply { putString(Constants.KEY_ES_INTERACTION_ID, interactionId) }
         val intent = Intent()
         intent.putExtras(extra)
 
-        mockkObject(RetenoImpl)
         val application = mockk<Application>(moreInterfaces = arrayOf(RetenoApplication::class))
         val reteno = mockk<RetenoImpl>()
         val interactionController = mockk<InteractionController>()
@@ -153,6 +166,7 @@ class RetenoNotificationClickedReceiverTest : BaseRobolectricTest() {
 
         verify { interactionController.onInteraction(eq(interactionId), InteractionStatus.OPENED) }
         verify(exactly = 1) { scheduleController.forcePush() }
+
         unmockkObject(RetenoImpl)
     }
 
@@ -160,6 +174,7 @@ class RetenoNotificationClickedReceiverTest : BaseRobolectricTest() {
     fun givenPushWithCustomDataNoDeeplinkReceived_whenNotificationClicked_thenCustomDataDeliveredToLaunchActivity() {
         // Given
         mockkObject(IntentHandler.AppLaunchIntent)
+
         every { IntentHandler.AppLaunchIntent.getAppLaunchIntent(any()) } returns Intent()
 
         val intentSlot = slot<Intent>()

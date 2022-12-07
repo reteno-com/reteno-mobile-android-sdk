@@ -1,0 +1,279 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="4dp"
+    android:background="@android:color/darker_gray"
+    app:cardCornerRadius="8dp">
+
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="8dp"
+        android:orientation="vertical">
+
+        <com.google.android.material.imageview.ShapeableImageView
+            android:id="@+id/ivExpand"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end"
+            android:background="@android:color/holo_blue_light"
+            app:shapeAppearanceOverlay="@style/shapeable_circle"
+            app:srcCompat="@drawable/ic_expand_more" />
+
+        <com.reteno.sample.view.RetenoView
+            android:id="@+id/tvProductId"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:retenoHint="ProductId"
+            tools:retenoText="ProductId" />
+
+        <LinearLayout
+            android:id="@+id/llContent"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <com.reteno.sample.view.RetenoView
+                android:id="@+id/tvCategory"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:retenoHint="Category"
+                tools:retenoText="Category" />
+
+            <com.reteno.sample.view.RetenoView
+                android:id="@+id/tvCategoryAncestor"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:retenoHint="CategoryAncestor"
+                tools:retenoText="CategoryAncestor" />
+
+            <com.reteno.sample.view.RetenoView
+                android:id="@+id/tvCategoryLayout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:retenoHint="CategoryLayout"
+                tools:retenoText="CategoryLayout" />
+
+            <com.reteno.sample.view.RetenoView
+                android:id="@+id/tvCategoryParent"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:retenoHint="CategoryParent"
+                tools:retenoText="CategoryParent" />
+
+            <com.reteno.sample.view.RetenoView
+                android:id="@+id/tvDateCreatedAs"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:retenoHint="DateCreatedAs"
+                tools:retenoText="DateCreatedAs" />
+
+            <com.reteno.sample.view.RetenoView
+                android:id="@+id/tvDateCreatedEs"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:retenoHint="DateCreatedEs"
+                tools:retenoText="DateCreatedEs" />
+
+            <com.reteno.sample.view.RetenoView
+                android:id="@+id/tvDateModifiedAs"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:retenoHint="DateModifiedAs"
+                tools:retenoText="DateModifiedAs" />
+
+            <com.reteno.sample.view.RetenoView
+                android:id="@+id/tvDescr"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:retenoHint="Descr"
+                tools:retenoText="Descr" />
+
+            <com.reteno.sample.view.RetenoView
+                android:id="@+id/tvImageUrl"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:retenoHint="ImageUrl"
+                tools:retenoText="ImageUrl" />
+
+            <com.reteno.sample.view.RetenoView
+                android:id="@+id/tvItemGroup"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:retenoHint="ItemGroup"
+                tools:retenoText="ItemGroup" />
+
+            <com.reteno.sample.view.RetenoView
+                android:id="@+id/tvName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:retenoHint="Name"
+                tools:retenoText="Name" />
+
+            <com.reteno.sample.view.RetenoView
+                android:id="@+id/tvNameKeyword"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:retenoHint="NameKeyword"
+                tools:retenoText="NameKeyword" />
+
+            <com.reteno.sample.view.RetenoView
+                android:id="@+id/tvPrice"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:retenoHint="Price"
+                tools:retenoText="Price" />
+
+            <com.reteno.sample.view.RetenoView
+                android:id="@+id/tvProductId2"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:retenoHint="Product_id"
+                tools:retenoText="Product_id" />
+
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:text="Tags" />
+
+            <com.reteno.sample.view.RetenoView
+                android:id="@+id/tvTagsAllCategoryNames"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:retenoHint="AllCategoryNames"
+                tools:retenoText="AllCategoryNames" />
+
+            <com.reteno.sample.view.RetenoView
+                android:id="@+id/tvTagsBestseller"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:retenoHint="Bestseller"
+                tools:retenoText="Bestseller" />
+
+            <com.reteno.sample.view.RetenoView
+                android:id="@+id/tvTagsCashback"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:retenoHint="Cashback"
+                tools:retenoText="Cashback" />
+
+            <com.reteno.sample.view.RetenoView
+                android:id="@+id/tvTagsCategoryBestseller"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:retenoHint="CategoryBestseller"
+                tools:retenoText="CategoryBestseller" />
+
+            <com.reteno.sample.view.RetenoView
+                android:id="@+id/tvTagsCredit"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:retenoHint="Credit"
+                tools:retenoText="Credit" />
+
+            <com.reteno.sample.view.RetenoView
+                android:id="@+id/tvTagsDelivery"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:retenoHint="Delivery"
+                tools:retenoText="Delivery" />
+
+            <com.reteno.sample.view.RetenoView
+                android:id="@+id/tvTagsDescriptionPriceRange"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:retenoHint="DescriptionPriceRange"
+                tools:retenoText="DescriptionPriceRange" />
+
+            <com.reteno.sample.view.RetenoView
+                android:id="@+id/tvTagsDiscount"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:retenoHint="Discount"
+                tools:retenoText="Discount" />
+
+            <com.reteno.sample.view.RetenoView
+                android:id="@+id/tvTagsHasPurchases21Days"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:retenoHint="HasPurchases21Days"
+                tools:retenoText="HasPurchases21Days" />
+
+            <com.reteno.sample.view.RetenoView
+                android:id="@+id/tvTagsIsBestseller"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:retenoHint="IsBestseller"
+                tools:retenoText="IsBestseller" />
+
+            <com.reteno.sample.view.RetenoView
+                android:id="@+id/tvTagsIsBestsellerByCategories"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:retenoHint="IsBestsellerByCategories"
+                tools:retenoText="IsBestsellerByCategories" />
+
+            <com.reteno.sample.view.RetenoView
+                android:id="@+id/tvTagsItemGroupId"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:retenoHint="ItemGroupId"
+                tools:retenoText="ItemGroupId" />
+
+            <com.reteno.sample.view.RetenoView
+                android:id="@+id/tvTagsNumPurchases21Days"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:retenoHint="NumPurchases21Days"
+                tools:retenoText="NumPurchases21Days" />
+
+            <com.reteno.sample.view.RetenoView
+                android:id="@+id/tvTagsOldPrice"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:retenoHint="Old_Price"
+                tools:retenoText="Old_Price" />
+
+            <com.reteno.sample.view.RetenoView
+                android:id="@+id/tvTagsOldPrice2"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:retenoHint="OldPrice"
+                tools:retenoText="OldPrice" />
+
+            <com.reteno.sample.view.RetenoView
+                android:id="@+id/tvTagsPriceRange"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:retenoHint="PriceRange"
+                tools:retenoText="PriceRange" />
+
+            <com.reteno.sample.view.RetenoView
+                android:id="@+id/tvTagsRating"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:retenoHint="Rating"
+                tools:retenoText="Rating" />
+
+            <com.reteno.sample.view.RetenoView
+                android:id="@+id/tvTagsSale"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:retenoHint="Sale"
+                tools:retenoText="Sale" />
+
+            <com.reteno.sample.view.RetenoView
+                android:id="@+id/tvUrl"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:retenoHint="Url"
+                tools:retenoText="Url" />
+        </LinearLayout>
+    </LinearLayout>
+</androidx.cardview.widget.CardView>
