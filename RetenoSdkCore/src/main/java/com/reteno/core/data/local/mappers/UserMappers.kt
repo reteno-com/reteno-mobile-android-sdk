@@ -12,8 +12,7 @@ import com.reteno.core.domain.model.user.UserCustomField
 
 internal fun User.toDb(deviceId: DeviceId) = UserDb(
     deviceId = deviceId.id,
-    externalUserId = deviceId.externalId
-        ?: throw IllegalStateException("External ID is null, but required non null"),
+    externalUserId = deviceId.externalId,
     userAttributes = userAttributes?.toDb(),
     subscriptionKeys = subscriptionKeys,
     groupNamesInclude = groupNamesInclude,

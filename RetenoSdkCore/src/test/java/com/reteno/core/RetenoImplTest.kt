@@ -116,21 +116,21 @@ class RetenoImplTest : BaseRobolectricTest() {
     @Test
     fun externalId_whenSetUserAttributes_thenInteractWithController() {
         // When
-        retenoImpl.setUserAttributes(EXTERNAL_USER_ID)
+        retenoImpl.setUserAttributes(externalUserId = EXTERNAL_USER_ID)
 
         // Then
-        verify { contactController.setExternalUserId(eq(EXTERNAL_USER_ID)) }
-        verify(exactly = 0) { contactController.setUserData(any()) }
+        verify(exactly = 1) { contactController.setExternalUserId(eq(EXTERNAL_USER_ID)) }
+        verify(exactly = 1) { contactController.setUserData(null) }
     }
 
     @Test
-    fun externalIdAndUserNull_whenSetUserAttributesWithUser_thenInteractWithController() {
+    fun givenExternalIdNotNullAndUserNull_whenSetUserAttributes_thenInteractWithController() {
         // When
         retenoImpl.setUserAttributes(EXTERNAL_USER_ID, null)
 
         // Then
-        verify { contactController.setExternalUserId(eq(EXTERNAL_USER_ID)) }
-        verify(exactly = 0) { contactController.setUserData(any()) }
+        verify(exactly = 1) { contactController.setExternalUserId(eq(EXTERNAL_USER_ID)) }
+        verify(exactly = 1) { contactController.setUserData(null) }
     }
 
     @Test
