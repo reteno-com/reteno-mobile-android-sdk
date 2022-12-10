@@ -1,6 +1,7 @@
 package com.reteno.push.interceptor.click
 
 import android.app.Activity
+import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.os.Bundle
 import com.reteno.core.RetenoApplication
@@ -59,14 +60,19 @@ class RetenoNotificationClickedActivity : Activity() {
                 } ?: launchApp(intent)
             } ?: launchApp(intent)
         } catch (t: Throwable) {
-            /*@formatter:off*/ Logger.e(RetenoNotificationClickedReceiver.TAG, "handleIntent() ", t)
+            /*@formatter:off*/ Logger.e(TAG, "handleIntent() ", t)
             /*@formatter:on*/
         }
     }
 
     private fun launchDeeplink(deeplinkIntent: Intent) {
-        IntentHandler.resolveIntentActivity(this, deeplinkIntent)
-        this.startActivity(deeplinkIntent)
+        try {
+            startActivity(deeplinkIntent)
+        } catch (ex: ActivityNotFoundException) {
+            /*@formatter:off*/ Logger.i(TAG, "launchDeeplink(): ", "deeplinkIntent = [" , deeplinkIntent , "], exception = [", ex.message, "]")
+            /*@formatter:on*/
+            launchApp(deeplinkIntent)
+        }
         finish()
     }
 
@@ -82,6 +88,6 @@ class RetenoNotificationClickedActivity : Activity() {
     }
 
     companion object {
-        val TAG: String = RetenoNotificationClickedActivity::class.java.simpleName
+        private val TAG: String = RetenoNotificationClickedActivity::class.java.simpleName
     }
 }

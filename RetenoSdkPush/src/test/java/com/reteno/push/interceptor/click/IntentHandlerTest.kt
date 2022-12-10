@@ -98,31 +98,6 @@ class IntentHandlerTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun givenDeeplinkIntent_whenResolveIntentActivity_thenSetPackageToDeeplinkIntent() {
-        // Given
-        val expectedPackageName = application.packageName
-        val expectedActivityName = "${expectedPackageName}.MockMainActivity"
-
-        val activityInfo = mockk<ActivityInfo>().apply {
-            name = expectedActivityName
-            packageName = expectedPackageName
-        }
-
-        val resolveInfo = mockk<ResolveInfo>()
-        resolveInfo.activityInfo = activityInfo
-
-        val resolveInfoList = listOf(resolveInfo)
-        every { application.getResolveInfoList(any()) } returns resolveInfoList
-
-        // When
-        val intent = Intent()
-        IntentHandler.resolveIntentActivity(application, intent)
-
-        // Then
-        assertEquals(expectedPackageName, intent.`package`)
-    }
-
-    @Test
     fun givenAppInstalled_whenResolveAppLaunchIntent_thenAppLaunchIntentStartsApplication() {
         // Given
         val injectedIntent = injectAppLaunchIntent()

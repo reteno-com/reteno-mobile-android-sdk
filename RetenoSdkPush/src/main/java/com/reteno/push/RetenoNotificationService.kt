@@ -100,6 +100,6 @@ class RetenoNotificationService {
     }
 
     companion object {
-        val TAG: String = RetenoNotificationService::class.java.simpleName
+        private val TAG: String = RetenoNotificationService::class.java.simpleName
     }
 }

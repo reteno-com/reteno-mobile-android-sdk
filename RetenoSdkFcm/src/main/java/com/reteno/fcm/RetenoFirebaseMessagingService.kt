@@ -43,6 +43,6 @@ open class RetenoFirebaseMessagingService : FirebaseMessagingService() {
     }
 
     companion object {
-        val TAG: String = RetenoFirebaseMessagingService::class.java.simpleName
+        private val TAG: String = RetenoFirebaseMessagingService::class.java.simpleName
     }
 }
