@@ -1,0 +1,65 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:divider="@drawable/space_vertical"
+    android:gravity="center"
+    android:orientation="vertical"
+    android:padding="8dp"
+    android:showDividers="middle"
+    tools:context=".fragments.ecomevents.FragmentEcomEvents">
+
+    <Button
+        android:id="@+id/btnProductViewed"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Product Viewed" />
+
+    <Button
+        android:id="@+id/btnProductCategoryViewed"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Product Category Viewed" />
+
+    <Button
+        android:id="@+id/btnProductAddedToWishlist"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Product Added to Wishlist" />
+
+    <Button
+        android:id="@+id/btnCartUpdated"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Cart Updated" />
+
+    <Button
+        android:id="@+id/btnOrderCreated"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Order Created" />
+
+    <Button
+        android:id="@+id/btnOrderUpdated"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Order Updated" />
+
+    <Button
+        android:id="@+id/btnOrderDelivered"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Order Delivered" />
+
+    <Button
+        android:id="@+id/btnOrderCancelled"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Order Cancelled" />
+
+    <Button
+        android:id="@+id/btnSearchRequest"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Search Request" />
+</LinearLayout>

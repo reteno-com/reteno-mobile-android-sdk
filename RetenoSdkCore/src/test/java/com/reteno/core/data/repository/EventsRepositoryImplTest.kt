@@ -148,8 +148,8 @@ class EventsRepositoryImplTest : BaseUnitTest() {
         SUT.pushEvents()
 
         verify(exactly = 2) { apiClient.post(any(), any(), any()) }
-        verify(exactly = 3) { databaseManagerEvents.getEvents(1) }
-        verify(exactly = 2) { databaseManagerEvents.deleteEvents(1) }
+        verify(exactly = 3) { databaseManagerEvents.getEvents(null) }
+        verify(exactly = 2) { databaseManagerEvents.deleteEvents(eventDb.eventList.size) }
         verify(exactly = 1) { PushOperationQueue.nextOperation() }
     }
 

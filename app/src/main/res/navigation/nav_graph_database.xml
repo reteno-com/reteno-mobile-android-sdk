@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/app_navigation_database"
+    app:startDestination="@id/fragmentDatabase">
+
+    <fragment
+        android:id="@+id/fragmentDatabase"
+        android:name="com.reteno.sample.fragments.database.FragmentDatabase"
+        android:label="fragmentDatabase"
+        tools:layout="@layout/fragment_database">
+
+        <action
+            android:id="@+id/database_to_write_device"
+            app:destination="@id/dialogWriteDevice" />
+        <action
+            android:id="@+id/database_to_read_device"
+            app:destination="@id/dialogReadDevice" />
+        <action
+            android:id="@+id/database_to_write_user"
+            app:destination="@id/fragmentWriteUser" />
+        <action
+            android:id="@+id/database_to_read_user"
+            app:destination="@id/fragmentReadUser" />
+        <action
+            android:id="@+id/database_to_write_interaction"
+            app:destination="@id/fragmentWriteInteraction" />
+        <action
+            android:id="@+id/database_to_read_interaction"
+            app:destination="@id/fragmentReadInteraction" />
+        <action
+            android:id="@+id/database_to_write_event"
+            app:destination="@id/fragmentWriteEvent" />
+        <action
+            android:id="@+id/database_to_read_event"
+            app:destination="@id/fragmentReadEvent" />
+        <action
+            android:id="@+id/database_to_read_inbox"
+            app:destination="@id/inboxReadDialogFragment" />
+        <action
+            android:id="@+id/database_to_write_inbox"
+            app:destination="@id/inboxWriteDialogFragment" />
+    </fragment>
+
+    <dialog
+        android:id="@+id/dialogWriteDevice"
+        android:name="com.reteno.sample.fragments.database.DeviceWriteDialogFragment"
+        android:label="dialogWriteDevice"
+        tools:layout="@layout/dialog_db_write_device" />
+
+    <dialog
+        android:id="@+id/dialogReadDevice"
+        android:name="com.reteno.sample.fragments.database.DeviceReadDialogFragment"
+        android:label="dialogReadDevice"
+        tools:layout="@layout/dialog_db_read" />
+
+    <fragment
+        android:id="@+id/fragmentWriteUser"
+        android:name="com.reteno.sample.fragments.database.UserWriteFragment"
+        android:label="fragmentWriteUser"
+        tools:layout="@layout/fragment_user_data" />
+
+    <dialog
+        android:id="@+id/fragmentReadUser"
+        android:name="com.reteno.sample.fragments.database.UserReadDialogFragment"
+        android:label="fragmentReadUser"
+        tools:layout="@layout/dialog_db_read" />
+
+    <dialog
+        android:id="@+id/fragmentWriteInteraction"
+        android:name="com.reteno.sample.fragments.database.InteractionWriteDialogFragment"
+        android:label="fragmentWriteInteraction"
+        tools:layout="@layout/dialog_db_write_interaction" />
+
+    <dialog
+        android:id="@+id/fragmentReadInteraction"
+        android:name="com.reteno.sample.fragments.database.InteractionReadDialogFragment"
+        android:label="fragmentReadInteraction"
+        tools:layout="@layout/dialog_db_read" />
+
+    <dialog
+        android:id="@+id/fragmentWriteEvent"
+        android:name="com.reteno.sample.fragments.database.EventWriteDialogFragment"
+        android:label="fragmentWriteEvent"
+        tools:layout="@layout/dialog_db_write_event" />
+
+    <dialog
+        android:id="@+id/fragmentReadEvent"
+        android:name="com.reteno.sample.fragments.database.EventReadDialogFragment"
+        android:label="fragmentReadEvent"
+        tools:layout="@layout/dialog_db_read" />
+
+    <dialog
+        android:id="@+id/inboxReadDialogFragment"
+        android:name="com.reteno.sample.fragments.database.InboxReadDialogFragment"
+        android:label="InboxReadDialogFragment"
+        tools:layout="@layout/dialog_db_read" />
+
+    <dialog
+        android:id="@+id/inboxWriteDialogFragment"
+        android:name="com.reteno.sample.fragments.database.InboxWriteDialogFragment"
+        android:label="dialog_db_write_inbox"
+        tools:layout="@layout/dialog_db_write_inbox" />
+
+</navigation>

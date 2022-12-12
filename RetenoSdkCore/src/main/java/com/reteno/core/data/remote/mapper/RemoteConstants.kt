@@ -12,8 +12,8 @@ object RemoteConstants {
         const val EVENT_TYPE_ORDER_CREATED = "orderCreated"
         const val EVENT_TYPE_ORDER_UPDATED = "orderUpdated"
         const val EVENT_TYPE_ORDER_DELIVERED = "orderDelivered"
-        const val EVENT_TYPE_ORDER_CANCELLED = "productViewed"
-        const val EVENT_TYPE_SEARCH_REQUEST = "productViewed"
+        const val EVENT_TYPE_ORDER_CANCELLED = "orderCancelled"
+        const val EVENT_TYPE_SEARCH_REQUEST = "searchRequest"
 
         /** General **/
         const val CURRENCY_CODE = "currencyCode"
@@ -37,9 +37,26 @@ object RemoteConstants {
         const val DISCOUNT = "discount"
 
         /** OrderCreated **/
+        const val EXTERNAL_CUSTOMER_ID = "externalCustomerId"
         const val TOTAL_COST = "totalCost"
         const val STATUS = "status"
         const val DATE = "date"
+        const val CURRENCY = "currency"
+        const val EMAIL = "email"
+        const val PHONE = "phone"
+        const val FIRST_NAME = "firstName"
+        const val LAST_NAME = "lastName"
+        const val SHIPPING = "shipping"
+        const val ORDER_DISCOUNT = "discount"
+        const val TAXES = "taxes"
+        const val RESTORE_URL = "restoreUrl"
+        const val STATUS_DESCRIPTION = "statusDescription"
+        const val STORE_ID = "storeId"
+        const val SOURCE = "source"
+        const val DELIVERY_METHOD = "deliveryMethod"
+        const val PAYMENT_METHOD = "paymentMethod"
+        const val DELIVERY_ADDRESS = "deliveryAddress"
+        const val ITEMS = "items"
 
         /** SearchRequest **/
         const val SEARCH = "search"

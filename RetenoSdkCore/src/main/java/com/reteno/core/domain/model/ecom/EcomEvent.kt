@@ -9,8 +9,10 @@ sealed class EcomEvent(open val occurred: ZonedDateTime) {
      *
      * @param product that has been viewed.
      * @param currencyCode if is not set then org's default is used.
+     *
+     * @see com.reteno.core.domain.model.ecom.ProductView
      */
-    data class ProductViewed(
+    data class ProductViewed @JvmOverloads constructor(
         val product: ProductView,
         val currencyCode: String? = null,
         override val occurred: ZonedDateTime = ZonedDateTime.now()
@@ -19,9 +21,11 @@ sealed class EcomEvent(open val occurred: ZonedDateTime) {
     /**
      * Track a product category a user is viewing for triggers like Website visit with a category view and Website visit without a category view.
      *
-     * @param category
+     * @param category ProductCategoryView model
+     *
+     * @see com.reteno.core.domain.model.ecom.ProductCategoryView
      */
-    data class ProductCategoryViewed(
+    data class ProductCategoryViewed @JvmOverloads constructor(
         val category: ProductCategoryView,
         override val occurred: ZonedDateTime = ZonedDateTime.now()
     ) : EcomEvent(occurred)
@@ -31,8 +35,10 @@ sealed class EcomEvent(open val occurred: ZonedDateTime) {
      *
      * @param product that have been added to wishlist.
      * @param currencyCode If is not set then org's default is used.
+     *
+     * @see com.reteno.core.domain.model.ecom.ProductView
      */
-    data class ProductAddedToWishlist(
+    data class ProductAddedToWishlist @JvmOverloads constructor(
         val product: ProductView,
         val currencyCode: String? = null,
         override val occurred: ZonedDateTime = ZonedDateTime.now()
@@ -41,13 +47,15 @@ sealed class EcomEvent(open val occurred: ZonedDateTime) {
     /**
      * Track updating a shopping cart for triggers.
      *
-     * @param cardId Shopping cart ID.
+     * @param cartId Shopping cart ID.
      * @param products
      * @param currencyCode If is not set then org's default is used.
+     *
+     * @see com.reteno.core.domain.model.ecom.ProductInCart
      */
-    data class CartUpdated(
-        val cardId: String,
-        val products: List<ProductInCard>,
+    data class CartUpdated @JvmOverloads constructor(
+        val cartId: String,
+        val products: List<ProductInCart>,
         val currencyCode: String? = null,
         override val occurred: ZonedDateTime = ZonedDateTime.now()
     ) : EcomEvent(occurred)
@@ -56,41 +64,35 @@ sealed class EcomEvent(open val occurred: ZonedDateTime) {
      * Create an order.
      *
      * Requirements:
-     *  - Name standard order parameters exactly as they are named in the Public API POST /v1/order method.
      *  - Fill the order required parameters. The system ignores an event if any of required parameters is missed.
      *  - Extend event parameters with non-standard order attributes using `attributes` field if necessary.
      *
-     *  @param externalOrderId Order ID in external system.
-     *  @param totalCost Total cost of order.
-     *  @param status Order status.
-     *  @param data Status changing date and time.
-     *  @param cartId Shopping cart ID. Allows to match an order with shopping cart actions. *Important optional parameter*
+     *  @param order OrderModel.
      *  @param currencyCode If is not set then org's default is used.
-     *  @param attributes Extended order fields.
+     *
+     *  @see com.reteno.core.domain.model.ecom.Order
      */
-    data class OrderCreated(
-        val externalOrderId: String,
-        val totalCost: Double,
-        val status: OrderStatus,
-        val data: ZonedDateTime,
-        val cartId: String?,
+    data class OrderCreated @JvmOverloads constructor(
+        val order: Order,
         val currencyCode: String? = null,
-        val attributes: List<Attributes>? = null,
         override val occurred: ZonedDateTime = ZonedDateTime.now()
     ) : EcomEvent(occurred)
 
     /**
-     * Update an order with the specified [externalOrderId] value.
+     * Update an order with the specified [Order.externalOrderId] value.
      * If an order does not exist then the system creates it.
      * If an order must be created then requirements to orderCreated are applied.
      *
-     * Requirements:
-     * - Name order parameters exactly as in the Public API POST /v1/order method.
+     *  @param order OrderModel.
+     *  @param currencyCode If is not set then org's default is used.
+     *  @param attributes Extended order fields.
      *
-     * @param externalOrderId Order ID in external system.
+     *  @see com.reteno.core.domain.model.ecom.Order
      */
-    data class OrderUpdated(
-        val externalOrderId: String,
+    data class OrderUpdated @JvmOverloads constructor(
+        val order: Order,
+        val currencyCode: String? = null,
+        val attributes: List<Attributes>? = null,
         override val occurred: ZonedDateTime = ZonedDateTime.now()
     ) : EcomEvent(occurred)
 
@@ -100,7 +102,7 @@ sealed class EcomEvent(open val occurred: ZonedDateTime) {
      *
      * @param externalOrderId Order ID in external system.
      */
-    data class OrderDelivered(
+    data class OrderDelivered @JvmOverloads constructor(
         val externalOrderId: String,
         override val occurred: ZonedDateTime = ZonedDateTime.now()
     ) : EcomEvent(occurred)
@@ -110,7 +112,7 @@ sealed class EcomEvent(open val occurred: ZonedDateTime) {
      *
      * @param externalOrderId Order ID in external system.
      */
-    data class OrderCancelled(
+    data class OrderCancelled @JvmOverloads constructor(
         val externalOrderId: String,
         override val occurred: ZonedDateTime = ZonedDateTime.now()
     ) : EcomEvent(occurred)
@@ -121,8 +123,9 @@ sealed class EcomEvent(open val occurred: ZonedDateTime) {
      * @param search Value from the search string. What we are looking for on the site.
      * @param isFound true is search returned results. False by default.
      */
-    data class SearchRequest(
-        val search: String, val isFound: Boolean = false,
+    data class SearchRequest @JvmOverloads constructor(
+        val search: String,
+        val isFound: Boolean = false,
         override val occurred: ZonedDateTime = ZonedDateTime.now()
     ) : EcomEvent(occurred)
 

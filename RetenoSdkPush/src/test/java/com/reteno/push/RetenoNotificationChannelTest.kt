@@ -58,8 +58,8 @@ class RetenoNotificationChannelTest : BaseRobolectricTest() {
         super.before()
         every { BuildUtil.getTargetSdkVersion() } returns 26
 
-        contextMock = mockk<Context>()
-        notificationManager = mockk<NotificationManager>()
+        contextMock = mockk()
+        notificationManager = mockk()
         every { contextMock!!.getSystemService(Context.NOTIFICATION_SERVICE) } returns notificationManager
         justRun { notificationManager!!.createNotificationChannel(any()) }
     }

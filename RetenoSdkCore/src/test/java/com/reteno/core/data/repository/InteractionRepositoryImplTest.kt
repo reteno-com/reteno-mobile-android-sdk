@@ -91,7 +91,7 @@ class InteractionRepositoryImplTest : BaseUnitTest() {
                 responseHandler = any()
             )
         } just runs
-        every { databaseManagerInteraction.getInteractions(any()) } returns listOf(dbInteraction) andThen emptyList<InteractionDb>()
+        every { databaseManagerInteraction.getInteractions(any()) } returns listOf(dbInteraction) andThen emptyList()
 
         // When
         SUT.pushInteractions()

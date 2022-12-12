@@ -8,7 +8,7 @@ internal interface EventsRepository {
 
     fun saveEvent(event: Event)
     fun saveEcomEvent(ecomEvent: EcomEvent)
-    fun pushEvents()
+    fun pushEvents(limit: Int? = null)
     fun clearOldEvents(outdatedTime: ZonedDateTime)
 
 }

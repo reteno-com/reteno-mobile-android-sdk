@@ -2,6 +2,7 @@ package com.reteno.sample.fragments;
 
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -13,6 +14,7 @@ import androidx.fragment.app.Fragment;
 import androidx.navigation.Navigation;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.reteno.core.util.UtilKt;
 import com.reteno.sample.databinding.FragmentCustomDataBinding;
 import com.reteno.sample.databinding.ItemCustomDataKeyBinding;
 
@@ -21,6 +23,8 @@ import java.util.List;
 import java.util.Set;
 
 public class FragmentCustomData extends Fragment {
+
+    private static final String TAG = FragmentCustomData.class.getSimpleName();
 
     private FragmentCustomDataBinding binding;
 
@@ -58,6 +62,7 @@ public class FragmentCustomData extends Fragment {
     }
 
     private void fillKeySet() {
+        Log.i(TAG, "Custom data = " + UtilKt.toStringVerbose(bundle));
         Set<String> keySet = bundle.keySet();
         adapter = new KeyAdapter(keySet, key -> {
             if (!TextUtils.isEmpty(key)) {

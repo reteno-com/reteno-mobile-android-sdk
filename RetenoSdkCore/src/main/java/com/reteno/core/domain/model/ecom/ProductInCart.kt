@@ -1,19 +1,19 @@
 package com.reteno.core.domain.model.ecom
 
-data class ProductInCard(
+data class ProductInCart(
 
     /**
-     * ID of the product.
+     * ID of the product (required).
      */
     val productId: String,
 
     /**
-     * Quantity of items.
+     * Quantity of items (required).
      */
     val quantity: Int,
 
     /**
-     * Price per item.
+     * Price per item (required).
      */
     val price: Double,
 

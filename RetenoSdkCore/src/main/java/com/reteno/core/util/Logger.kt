@@ -2,6 +2,7 @@ package com.reteno.core.util
 
 import android.util.Log
 import com.reteno.core.BuildConfig
+import com.reteno.core.BuildConfig.SDK_VERSION
 import com.reteno.core.RetenoApplication
 import com.reteno.core.RetenoImpl
 import io.sentry.Breadcrumb
@@ -81,6 +82,7 @@ object Logger {
     private fun captureException(tag: String, methodName: String, e: Throwable) {
         val mainHub = Sentry.getCurrentHub().clone()
         val retenoHub = Hub(mainHub.options.apply {
+            release = SDK_VERSION
             dsn = SENTRY_DSN
         })
 

@@ -60,8 +60,8 @@ internal class EventsRepositoryImpl(
         }
     }
 
-    override fun pushEvents() {
-        val events: EventsDb = databaseManager.getEvents(1).firstOrNull() ?: kotlin.run {
+    override fun pushEvents(limit: Int?) {
+        val events: EventsDb = databaseManager.getEvents(limit).firstOrNull() ?: kotlin.run {
             PushOperationQueue.nextOperation()
             return
         }

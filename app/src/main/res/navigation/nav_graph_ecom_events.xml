@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/app_navigation_ecom_events"
+    app:startDestination="@id/fragmentEcomEvents">
+
+    <fragment
+        android:id="@+id/fragmentEcomEvents"
+        android:name="com.reteno.sample.fragments.ecomevents.FragmentEcomEvents"
+        android:label="fragment_ecom_events"
+        tools:layout="@layout/fragment_ecom_events">
+
+        <action
+            android:id="@+id/ecomEvents_to_ProductViewed"
+            app:destination="@id/fragmentEcomEventsProductViewed" />
+        <action
+            android:id="@+id/ecomEvents_to_ProductCategoryViewed"
+            app:destination="@id/fragmentEcomEventsProductCategoryViewed" />
+        <action
+            android:id="@+id/ecomEvents_to_ProductAddedToWishlist"
+            app:destination="@id/fragmentEcomEventsProductAddedToWishlist" />
+        <action
+            android:id="@+id/ecomEvents_to_CartUpdated"
+            app:destination="@id/fragmentEcomEventsCartUpdated" />
+        <action
+            android:id="@+id/ecomEvents_to_OrderCreated"
+            app:destination="@id/fragmentEcomEventsOrderCreated" />
+        <action
+            android:id="@+id/ecomEvents_to_OrderUpdated"
+            app:destination="@id/fragmentEcomEventsOrderUpdated" />
+        <action
+            android:id="@+id/ecomEvents_to_OrderDelivered"
+            app:destination="@id/fragmentEcomEventsOrderDelivered" />
+        <action
+            android:id="@+id/ecomEvents_to_OrderCancelled"
+            app:destination="@id/fragmentEcomEventsOrderCancelled" />
+        <action
+            android:id="@+id/ecomEvents_to_SearchRequest"
+            app:destination="@id/fragmentEcomEventsSearchRequest" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/fragmentEcomEventsProductViewed"
+        android:name="com.reteno.sample.fragments.ecomevents.FragmentEcomEventsProductViewed"
+        android:label="fragment_ecom_events_product_viewed"
+        tools:layout="@layout/fragment_ecom_events_product_viewed" />
+
+    <fragment
+        android:id="@+id/fragmentEcomEventsProductCategoryViewed"
+        android:name="com.reteno.sample.fragments.ecomevents.FragmentEcomEventsProductCategoryViewed"
+        android:label="fragment_ecom_events_product_category_viewed"
+        tools:layout="@layout/fragment_ecom_events_product_category_viewed" />
+
+    <fragment
+        android:id="@+id/fragmentEcomEventsProductAddedToWishlist"
+        android:name="com.reteno.sample.fragments.ecomevents.FragmentEcomEventsProductAddedToWishlist"
+        android:label="fragment_ecom_events_product_added_to_wishtlist"
+        tools:layout="@layout/fragment_ecom_events_product_added_to_wishlist" />
+
+    <fragment
+        android:id="@+id/fragmentEcomEventsCartUpdated"
+        android:name="com.reteno.sample.fragments.ecomevents.FragmentEcomEventsCartUpdated"
+        android:label="fragment_ecom_events_cart_updated"
+        tools:layout="@layout/fragment_ecom_events_cart_updated" />
+
+    <fragment
+        android:id="@+id/fragmentEcomEventsOrderCreated"
+        android:name="com.reteno.sample.fragments.ecomevents.FragmentEcomEventsOrderCreated"
+        android:label="fragment_ecom_events_order_created"
+        tools:layout="@layout/fragment_ecom_events_order_upsert" />
+
+    <fragment
+        android:id="@+id/fragmentEcomEventsOrderUpdated"
+        android:name="com.reteno.sample.fragments.ecomevents.FragmentEcomEventsOrderUpdated"
+        android:label="fragment_ecom_events_order_updated"
+        tools:layout="@layout/fragment_ecom_events_order_upsert" />
+
+    <fragment
+        android:id="@+id/fragmentEcomEventsOrderDelivered"
+        android:name="com.reteno.sample.fragments.ecomevents.FragmentEcomEventsOrderDelivered"
+        android:label="fragment_ecom_events_order_delivered"
+        tools:layout="@layout/fragment_ecom_events_order_delivered" />
+
+    <fragment
+        android:id="@+id/fragmentEcomEventsOrderCancelled"
+        android:name="com.reteno.sample.fragments.ecomevents.FragmentEcomEventsOrderCancelled"
+        android:label="fragment_ecom_events_order_cancelled"
+        tools:layout="@layout/fragment_ecom_events_order_cancelled" />
+
+    <fragment
+        android:id="@+id/fragmentEcomEventsSearchRequest"
+        android:name="com.reteno.sample.fragments.ecomevents.FragmentEcomEventsSearchRequest"
+        android:label="fragment_ecom_events_search_request"
+        tools:layout="@layout/fragment_ecom_events_search_request" />
+
+</navigation>

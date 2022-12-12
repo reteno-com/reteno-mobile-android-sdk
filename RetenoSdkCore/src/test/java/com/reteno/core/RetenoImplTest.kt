@@ -114,7 +114,7 @@ class RetenoImplTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun externalId_whenSetUserAttributes_thenInteractWithController() {
+    fun givenExternalIdValid_whenSetUserAttributes_thenInteractWithController() {
         // When
         retenoImpl.setUserAttributes(externalUserId = EXTERNAL_USER_ID)
 
@@ -134,7 +134,7 @@ class RetenoImplTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun externalIdAndUser_whenSetUserAttributesWithUser_thenInteractWithController() {
+    fun givenExternalIdAndUserProvided_whenSetUserAttributesWithUser_thenInteractWithController() {
         // Given
         val userFull = User(
             userAttributes = null,
@@ -149,6 +149,24 @@ class RetenoImplTest : BaseRobolectricTest() {
         // Then
         verify { contactController.setExternalUserId(eq(EXTERNAL_USER_ID)) }
         verify { contactController.setUserData(userFull) }
+    }
+
+    @Test
+    fun givenExternalIdBlank_whenSetUserAttributesWithUser_thenThrowException() {
+        // Given
+        val expectedException = java.lang.IllegalArgumentException("externalUserId should not be null or blank")
+
+        // When
+        val actualException = try {
+            retenoImpl.setUserAttributes(" ")
+            null
+        } catch (e: java.lang.Exception) {
+            e
+        }
+
+        // Then
+        assertTrue(actualException is java.lang.IllegalArgumentException)
+        assertEquals(expectedException.message, actualException?.message)
     }
 
     @Test
@@ -198,6 +216,15 @@ class RetenoImplTest : BaseRobolectricTest() {
     }
 
     @Test
+    fun whenResumeApp_thenCalledClearOleEvents() {
+        // When
+        retenoImpl.resume(mockk())
+
+        // Then
+        verify(exactly = 1) { scheduleController.clearOldData() }
+    }
+
+    @Test
     fun whenPauseApp_thenStopScheduler() {
         // When
         retenoImpl.pause(mockk())
@@ -213,15 +240,6 @@ class RetenoImplTest : BaseRobolectricTest() {
 
         // Then
         verify(exactly = 1) { scheduleController.forcePush() }
-    }
-
-    @Test
-    fun whenResumeApp_thenStartScheduler_thenCalledClearOleEvents() {
-        // When
-        retenoImpl.resume(mockk())
-
-        // Then
-        verify { scheduleController.clearOldData() }
     }
 
     @Test

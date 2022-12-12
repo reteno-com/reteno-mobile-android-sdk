@@ -28,7 +28,7 @@ class RecommendationControllerTest : BaseUnitTest() {
 
         private const val PRODUCT_ID = "w12345s1345"
         private const val CATEGORY = "category_here"
-        private val FIELDS = listOf<String>("field1", "field2", "field3")
+        private val FIELDS = listOf("field1", "field2", "field3")
 
         @JvmStatic
         @BeforeClass
