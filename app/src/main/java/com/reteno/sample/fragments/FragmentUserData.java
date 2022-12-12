@@ -73,7 +73,10 @@ public class FragmentUserData extends BaseFragment {
     }
 
     private void getUserData() {
-        String externalId = Util.getTextOrNull(binding.etExternalId);
+        String externalId = binding.etExternalId.getText().toString();
+        if (externalId.contains("null")) {
+            externalId = null;
+        }
 
         List<UserCustomField> userCustomData = getUserCustomData();
 

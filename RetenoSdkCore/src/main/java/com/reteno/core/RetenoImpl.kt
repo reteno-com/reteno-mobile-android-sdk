@@ -75,9 +75,17 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
         }
     }
 
+    @Throws(java.lang.IllegalArgumentException::class)
     override fun setUserAttributes(externalUserId: String) {
         /*@formatter:off*/ Logger.i(TAG, "setUserAttributes(): ", "externalUserId = [" , externalUserId , "]")
         /*@formatter:on*/
+        if (externalUserId.isBlank()) {
+            val exception = java.lang.IllegalArgumentException("externalUserId should not be null or blank")
+            /*@formatter:off*/ Logger.e(TAG, "setUserAttributes(): ", exception)
+            /*@formatter:on*/
+            throw exception
+        }
+
         try {
             setUserAttributes(externalUserId, null)
         } catch (ex: Throwable) {
@@ -85,13 +93,21 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
         }
     }
 
+    @Throws(java.lang.IllegalArgumentException::class)
     override fun setUserAttributes(externalUserId: String, user: User?) {
         /*@formatter:off*/ Logger.i(TAG, "setUserAttributes(): ", "externalUserId = [" , externalUserId , "], used = [" , user , "]")
         /*@formatter:on*/
+        if (externalUserId.isBlank()) {
+            val exception = java.lang.IllegalArgumentException("externalUserId should not be null or blank")
+            /*@formatter:off*/ Logger.e(TAG, "setUserAttributes(): ", exception)
+            /*@formatter:on*/
+            throw exception
+        }
+
         try {
             // TODO: Move this to background thread later
             contactController.setExternalUserId(externalUserId)
-            setUserData(user)
+            contactController.setUserData(user)
         } catch (ex: Throwable) {
             Logger.e(TAG, "setUserAttributes(): ", ex)
         }
@@ -134,17 +150,6 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
             scheduleController.forcePush()
         } catch (ex: Throwable) {
             Logger.e(TAG, "forcePushData(): ", ex)
-        }
-    }
-
-    private fun setUserData(user: User?) {
-        /*@formatter:off*/ Logger.i(TAG, "setUserData(): ", "used = [" , user , "]")
-        /*@formatter:on*/
-        try {
-            // TODO: Move this to background thread later
-            user?.let(contactController::setUserData)
-        } catch (ex: Throwable) {
-            Logger.e(TAG, "setUserData(): ", ex)
         }
     }
 

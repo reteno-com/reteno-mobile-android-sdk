@@ -65,7 +65,7 @@ internal class DeviceIdHelper(private val sharedPrefsManager: SharedPrefsManager
     ): DeviceId {
         /*@formatter:off*/ Logger.i(TAG, "withExternalUserId(): ", "currentDeviceId = [" , currentDeviceId , "], externalUserId = [" , externalUserId , "]") 
         /*@formatter:on*/
-        val externalId = externalUserId?.ifBlank { null }
+        val externalId = externalUserId?.ifBlank { "" }
         return currentDeviceId.copy(externalId = externalId)
     }
 

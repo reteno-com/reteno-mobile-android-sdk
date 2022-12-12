@@ -20,15 +20,18 @@ interface Reteno {
     val recommendation: Recommendation
 
     /**
-     *  Set the user ID.
+     *  Set the user ID (Note: id should not be null or empty, or IllegalArgumentException will be thrown)
      */
+    @Throws(java.lang.IllegalArgumentException::class)
     fun setUserAttributes(externalUserId: String)
 
     /**
-     * Set the user ID and add or modify user attributes.
+     * Set the user ID (Note: id should not be null or empty, or IllegalArgumentException will be thrown)
+     * and add or modify user attributes.
      *
      * @see com.reteno.core.domain.model.user
      */
+    @Throws(java.lang.IllegalArgumentException::class)
     fun setUserAttributes(externalUserId: String, user: User?)
 
     /**

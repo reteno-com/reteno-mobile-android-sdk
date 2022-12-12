@@ -29,14 +29,14 @@ public class UserReadDialogFragment extends BaseReadDialogFragment<UserDb, ItemD
     private RetenoDatabaseManagerUser databaseManager;
 
     @Override
-    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
-        super.onViewCreated(view, savedInstanceState);
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
         databaseManager = serviceLocator.getRetenoDatabaseManagerUserProvider().get();
     }
 
     @Override
-    public void onDestroyView() {
-        super.onDestroyView();
+    public void onDestroy() {
+        super.onDestroy();
         databaseManager = null;
     }
 
