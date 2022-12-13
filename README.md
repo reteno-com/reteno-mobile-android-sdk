@@ -1,5 +1,7 @@
 # Android
 
+[GitHub - reteno-com/reteno-mobile-android-sdk](https://github.com/reteno-com/reteno-mobile-android-sdk)
+
 The Reteno Android SDK for Mobile Customer Engagement and Analytics solutions.
 
 ---
@@ -31,7 +33,7 @@ buildscript {
 
 ```groovy
 dependencies {
-    implementation 'core.reteno:fcm:(latest_version_here)'
+    implementation 'com.reteno:fcm:(latest_version_here)'
     ...
     implementation "com.google.firebase:firebase-messaging:23.1.0"
     implementation "com.google.firebase:firebase-messaging-ktx:23.1.0"
@@ -40,13 +42,13 @@ dependencies {
 
 | **Library**                     | **Description**                                                       |
 | ------------------------------- | --------------------------------------------------------------------- |
-| core.reteno:fcm                 | FCM enables push notifications through SDK and all core functionality |
+| com.reteno:fcm                  | FCM enables push notifications through SDK and all core functionality |
 | firebase:firebase-messaging     | Firebase cloud messaging                                              |
 | firebase:firebase-messaging-ktx | Firebase cloud messaging Kotlin extensions                            |
 
 ###### License​ :
 
-`Reteno Android SDK` is released under the MIT license. See [LICENSE](https://github.com/reteno-com/reteno-mobile-android-sdk/blob/main/LICENSE) for details.
+`Reteno Android SDK` is released under the MIT license. See [LICENSE](https://docs.reteno.com/reference/android-sdk-setup) for details.
 
 ## 
 
@@ -54,18 +56,14 @@ dependencies {
 
 Follow our setup guide to integrate the Reteno SDK with your app.
 
-1. Add reteno.access-key into your local.properties file in root directory of the project:
-
-`reteno.access-key = "********-****-***-****-************"`
-
-2. Make sure to enable androidx in your gradle.properties file
+### ### Step1: Enable androidx in your gradle.properties file
 
 ```groovy
 android.useAndroidX=true
 android.enableJetifier=true
 ```
 
-3. Make sure to add `core.reteno:fcm` and firebase dependencies in build.gradle
+### Step2: Add `com.reteno:fcm` and firebase dependencies in build.gradle
 
 > Note:
 > 
@@ -80,8 +78,9 @@ android {
 }
 ```
 
-4. Edit your custom Application class.
-   Below is sample code you can add to your application class which gets you started with `RetenoSDK`. You may need to create a new class that extends the `Application` on this step. Don't forget to edit your manifest file to use the custom Application class:
+### Step3: Edit your custom Application class and provider API Access-Key at SDK initialization.
+
+Below is sample code you can add to your application class which gets you started with `RetenoSDK`. You may need to create a new class that extends the `Application` on this step. Don't forget to edit your manifest file to use the custom Application class. Also make sure to provide the **access-key** in the constructor. You may store Reteno access key the way you wish based on your preferences:
 
 ```java
 package [com.YOUR_PACKAGE];
@@ -101,7 +100,7 @@ public class CustomApplication extends Application implements RetenoApplication 
     @Override
     public void onCreate() {
         super.onCreate();
-        retenoInstance = new RetenoImpl(this);
+        retenoInstance = new RetenoImpl(this, "your_access_key_here");
     }
 
     @NonNull
@@ -126,7 +125,7 @@ class CustomApplication: Application(), RetenoApplication {
 
     override fun onCreate() {
         super.onCreate()
-        retenoInstance = RetenoImpl(this)
+        retenoInstance = RetenoImpl(this, "your_access_key_here")
     }
 
     override fun getRetenoInstance(): Reteno {
@@ -146,7 +145,9 @@ class CustomApplication: Application(), RetenoApplication {
 </application>
 ```
 
-5. Make sure to use SDK via `Reteno` interface, not `RetenoImpl` implementation. You may now access Reteno SDK across your application via your app instance. E.g. in Activity:
+### Step4: Use SDK via `Reteno` interface.
+
+Not `RetenoImpl` implementation. You may now access Reteno SDK across your application via your app instance. E.g. in Activity:
 
 ```java
 Reteno reteno = ((CustomApplication)getApplication()).getRetenoInstance();
@@ -175,22 +176,71 @@ val reteno = (application as CustomApplication).getRetenoInstance()
 
 > **Note:** If your app is running on Android 13 or later make sure to handle [Notification runtime permissions](https://developer.android.com/develop/ui/views/notifications/notification-permission)
 
-6. Final step: make sure to set up your Firebase application for Firebase Cloud Messaging:
-   
-   - Verify that your Gradle files include the correct FCM and [Reteno libraries](https://docs.reteno.com/reference/android-sdk-setup#getting-started-with-reteno-sdk-for-android) 
-   
-   - Download your `google-services.json` config file (see how [here](https://support.google.com/firebase/answer/7015592?hl=en)).
-   
-   - Add the above file to your root `app/` folder.
-   
-       ![google-services-json](assets/google-services-json.png)
-   
-   - Copy your FCM Server Key. In the [Firebase console](https://console.firebase.google.com/), click the gear icon next to Overview, then click Project Settings->Cloud Messaging -> Manage Service Accounts. Go to Service accounts to download FirebaseAdminSdk account's json key.
-   ![FirebaseConsole](assets/FirebaseConsole.png)
-   
-   ![CloudConsole1](assets/CloudConsole1.png)
-   
-   ![CloudConsole2](assets/CloudConsole2.png)
+### Step5: Set up your Firebase application for Firebase Cloud Messaging:
+
+- Download your `google-services.json` config file (see how [here](https://support.google.com/firebase/answer/7015592?hl=en)).
+
+- Add the above file to your root `app/` folder.
+
+    ![](assets/google-services-json.png)
+
+- Copy your FCM Server Key. In the [Firebase console](https://console.firebase.google.com/), click the gear icon next to Overview, then click Project Settings->Cloud Messaging -> Manage Service Accounts. Go to Service accounts to download FirebaseAdminSdk account's json key.
+  ![](assets/FirebaseConsole.png)
+
+![](assets/CloudConsole1.png)
+
+![](assets/CloudConsole2.png)
+
 - Follow this manual to [set up Reteno admin panel](https://docs.reteno.com/docs/connect-your-mobile-app) with your Firebase key.
 
-##### Now you are ready to run your app and send a marketing push notification to your application.
+### 6. If you use custom FCM Service extended from `FirebaseMessagingService`
+
+If you use your custom FCM service extended from `FirebaseMessagingService` don't extend it directly. Extend `RetenoFirebaseMessagingService` instead and call super methods for `onCreate`, `onNewToken`, `onMessageReceived`. 
+E.g.:
+
+```java
+public class CustomFcmService extends RetenoFirebaseMessagingService {
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        // Your code here
+    }
+
+    @Override
+    public void onNewToken(@NonNull String token) {
+        super.onNewToken(token);
+        // Your code here
+    }
+
+    @Override
+    public void onMessageReceived(@NonNull RemoteMessage message) {
+        super.onMessageReceived(message);
+        // Your code here
+    }
+}
+```
+
+```kotlin
+class CustomFcmService: RetenoFirebaseMessagingService() {
+
+    override fun onCreate() {
+        super.onCreate()
+        // Your code here
+    }
+
+    override fun onNewToken(token: String) {
+        super.onNewToken(token)
+        // Your code here
+    }
+
+    override fun onMessageReceived(message: RemoteMessage) {
+        super.onMessageReceived(message)
+        // Your code here
+    }
+}
+```
+
+Now you are ready to run your app and send a marketing push notification to your application.
+
+Run your app on a physical Android device to make sure it builds correctlas
