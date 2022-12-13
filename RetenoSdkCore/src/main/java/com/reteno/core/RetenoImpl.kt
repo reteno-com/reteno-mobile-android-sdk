@@ -47,8 +47,8 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
         /*@formatter:on*/
         try {
             clearOldData()
-            startPushScheduler()
             sendAppResumeBroadcast()
+            startPushScheduler()
         } catch (ex: Throwable) {
             Logger.e(TAG, "resume(): ", ex)
         }

@@ -10,8 +10,17 @@ import com.reteno.push.Constants
 internal object IntentHandler {
 
     internal fun getDeepLinkIntent(bundle: Bundle): Intent? {
-        val esLink = bundle.getString(Constants.KEY_ES_LINK_UNWRAPPED)
-            ?: bundle.getString(Constants.KEY_ES_LINK_WRAPPED) ?: return null
+        val esLink = if (bundle.getBoolean(Constants.KEY_ACTION_BUTTON, false)) {
+            bundle.getString(Constants.KEY_BTN_ACTION_LINK_UNWRAPPED)
+                ?: bundle.getString(Constants.KEY_BTN_ACTION_LINK_WRAPPED)
+                ?: bundle.getString(Constants.KEY_ES_LINK_UNWRAPPED)
+                ?: bundle.getString(Constants.KEY_ES_LINK_WRAPPED)
+                ?: return null
+        } else {
+            bundle.getString(Constants.KEY_ES_LINK_UNWRAPPED)
+                ?: bundle.getString(Constants.KEY_ES_LINK_WRAPPED)
+                ?: return null
+        }
 
         val deepLinkIntent = Intent(Intent.ACTION_VIEW, Uri.parse(esLink))
         deepLinkIntent.putExtras(bundle)

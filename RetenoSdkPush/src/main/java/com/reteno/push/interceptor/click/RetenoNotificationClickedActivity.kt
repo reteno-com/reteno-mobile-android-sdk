@@ -10,9 +10,9 @@ import com.reteno.core.domain.model.interaction.InteractionStatus
 import com.reteno.core.util.Logger
 import com.reteno.core.util.toStringVerbose
 import com.reteno.push.Constants
-import com.reteno.push.Constants.KEY_ES_LINK_UNWRAPPED
-import com.reteno.push.Constants.KEY_ES_LINK_WRAPPED
+import com.reteno.push.Constants.KEY_ACTION_BUTTON
 import com.reteno.push.Util
+import com.reteno.push.Util.closeNotification
 
 class RetenoNotificationClickedActivity : Activity() {
 
@@ -50,11 +50,16 @@ class RetenoNotificationClickedActivity : Activity() {
     private fun handleIntent(intent: Intent?) {
         try {
             intent?.extras?.let { bundle ->
+                if (bundle.getBoolean(KEY_ACTION_BUTTON, false)) {
+                    val notificationId = bundle.getInt(Constants.KEY_NOTIFICATION_ID, -1)
+                    closeNotification(this, notificationId)
+                }
+                bundle.remove(Constants.KEY_NOTIFICATION_ID)
+
                 Util.tryToSendToCustomReceiverNotificationClicked(bundle)
 
                 IntentHandler.getDeepLinkIntent(bundle)?.let { deeplinkIntent ->
-                    val linkWrapped = deeplinkIntent.getStringExtra(KEY_ES_LINK_WRAPPED).orEmpty()
-                    val linkUnwrapped = deeplinkIntent.getStringExtra(KEY_ES_LINK_UNWRAPPED).orEmpty()
+                    val (linkWrapped, linkUnwrapped) = Util.getLinkFromBundle(bundle)
                     deeplinkController.triggerDeeplinkClicked(linkWrapped, linkUnwrapped)
                     launchDeeplink(deeplinkIntent)
                 } ?: launchApp(intent)
