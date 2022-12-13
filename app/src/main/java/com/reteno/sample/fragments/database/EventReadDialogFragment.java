@@ -27,14 +27,14 @@ public class EventReadDialogFragment extends BaseReadDialogFragment<EventsDb, It
     private RetenoDatabaseManagerEvents databaseManager;
 
     @Override
-    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
-        super.onViewCreated(view, savedInstanceState);
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
         databaseManager = serviceLocator.getRetenoDatabaseManagerEventsProvider().get();
     }
 
     @Override
-    public void onDestroyView() {
-        super.onDestroyView();
+    public void onDestroy() {
+        super.onDestroy();
         databaseManager = null;
     }
 

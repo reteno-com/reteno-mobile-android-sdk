@@ -3,7 +3,6 @@ package com.reteno.sample.fragments.database;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.os.Bundle;
-import android.view.View;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -29,9 +28,15 @@ public class DeviceWriteDialogFragment extends BaseDatabaseDialogFragment {
     private RetenoDatabaseManagerDevice databaseManager;
 
     @Override
-    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
-        super.onViewCreated(view, savedInstanceState);
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
         databaseManager = serviceLocator.getRetenoDatabaseManagerDeviceProvider().get();
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        databaseManager = null;
     }
 
     @NonNull
@@ -47,7 +52,6 @@ public class DeviceWriteDialogFragment extends BaseDatabaseDialogFragment {
     public void onDestroyView() {
         super.onDestroyView();
         binding = null;
-        databaseManager = null;
     }
 
     @Override

@@ -81,7 +81,7 @@ class DeviceIdHelperTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun givenExternalDeviceIdSaved_whenWithNullExternalDeviceId_thenExternalDeviceIdErased() {
+    fun givenExternalDeviceIdSaved_whenWithNullExternalDeviceId_thenExternalDeviceIdIsNull() {
         // Given
         val oldDeviceId = DeviceId(DEVICE_ID_UUID, EXTERNAL_DEVICE_ID)
 
@@ -94,7 +94,7 @@ class DeviceIdHelperTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun givenExternalDeviceIdSaved_whenWithEmptyExternalDeviceId_thenExternalDeviceIdErased() {
+    fun givenExternalDeviceIdSaved_whenWithEmptyExternalDeviceId_thenExternalDeviceIdIsEmpty() {
         // Given
         val oldDeviceId = DeviceId(DEVICE_ID_UUID, EXTERNAL_DEVICE_ID)
 
@@ -102,7 +102,7 @@ class DeviceIdHelperTest : BaseRobolectricTest() {
         val newDeviceId = SUT.withExternalUserId(oldDeviceId, "")
 
         // Then
-        val expectedDeviceId = DeviceId(DEVICE_ID_UUID, null)
+        val expectedDeviceId = DeviceId(DEVICE_ID_UUID, "")
         assertEquals(expectedDeviceId, newDeviceId)
     }
 

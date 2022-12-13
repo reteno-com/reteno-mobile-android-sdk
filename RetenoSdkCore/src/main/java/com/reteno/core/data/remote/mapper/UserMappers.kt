@@ -11,7 +11,7 @@ import com.reteno.core.data.remote.model.user.UserRemote
 
 internal fun UserDb.toRemote() = UserRemote(
     deviceId = deviceId,
-    externalUserId = externalUserId,
+    externalUserId = externalUserId ?: "",
     userAttributes = userAttributes?.toRemote(),
     subscriptionKeys = subscriptionKeys,
     groupNamesInclude = groupNamesInclude,

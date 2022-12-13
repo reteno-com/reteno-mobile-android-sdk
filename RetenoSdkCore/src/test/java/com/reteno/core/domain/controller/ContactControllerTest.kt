@@ -4,6 +4,7 @@ import com.reteno.core.base.BaseUnitTest
 import com.reteno.core.data.local.config.DeviceId
 import com.reteno.core.data.repository.ConfigRepository
 import com.reteno.core.data.repository.ContactRepository
+import com.reteno.core.domain.Validator
 import com.reteno.core.domain.model.device.Device
 import com.reteno.core.domain.model.device.DeviceCategory
 import com.reteno.core.domain.model.device.DeviceOS
@@ -39,12 +40,14 @@ class ContactControllerTest : BaseUnitTest() {
         fun beforeClass() {
             mockkObject(Device.Companion)
             mockDevice()
+            mockkObject(Validator)
         }
 
         @JvmStatic
         @AfterClass
         fun afterClass() {
             unmockkObject(Device.Companion)
+            unmockkObject(Validator)
         }
 
         private fun mockDevice() {
@@ -167,7 +170,7 @@ class ContactControllerTest : BaseUnitTest() {
     }
 
     @Test
-    fun whenSetUserData_thenInteractWithContactRepository() {
+    fun givenUserFull_whenSetUserData_thenInteractWithContactRepository() {
         // Given
         val user = User(
             userAttributes = null,
@@ -175,12 +178,40 @@ class ContactControllerTest : BaseUnitTest() {
             groupNamesInclude = USER_GROUP_NAMES_INCLUDE,
             groupNamesExclude = USER_GROUP_NAMES_EXCLUDE
         )
+        every { Validator.validateUser(user) } returns user
 
         // When
         SUT.setUserData(user)
 
         // Then
-        verify { contactRepository.saveUserData(user) }
+        verify(exactly = 1) { contactRepository.saveUserData(eq(user)) }
+    }
+
+    @Test
+    fun givenUserNull_whenSetUserData_thenNoInteracttionWithContactRepository() {
+        // When
+        SUT.setUserData(null)
+
+        // Then
+        verify(exactly = 0) { contactRepository.saveUserData(any()) }
+    }
+
+    @Test
+    fun givenUserValidationReturnsNull_whenSetUserData_thenNoInteracttionWithContactRepository() {
+        // Given
+        val user = User(
+            userAttributes = null,
+            subscriptionKeys = USER_SUBSCRIPTION_KEYS,
+            groupNamesInclude = USER_GROUP_NAMES_INCLUDE,
+            groupNamesExclude = USER_GROUP_NAMES_EXCLUDE
+        )
+        every { Validator.validateUser(any()) } returns null
+
+        // When
+        SUT.setUserData(user)
+
+        // Then
+        verify(exactly = 0) { contactRepository.saveUserData(any()) }
     }
 
     @Test

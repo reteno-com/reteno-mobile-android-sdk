@@ -29,7 +29,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_margin="2dp"
-            android:hint="External ID (Required)">
+            android:hint="External ID (Required). To put null, type [null] here">
 
             <EditText
                 android:id="@+id/etExternalId"

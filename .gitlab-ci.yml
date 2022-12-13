@@ -46,8 +46,28 @@ assembleDebug:
   tags:
     - docker
 
+assembleQa:
+  stage: build
+  interruptible: true
+  before_script:
+    - mkdir keystore
+    - base64 -d $DEBUG_KEYSTORE > keystore/debug.keystore
+    - base64 -d $KEYSTORE_CONFIG_GRADLE > keystore/keystore_config.gradle
+    - base64 -d $FIREBASE_JSON > keystore/firebase_app_distribution.json
+    - base64 -d $RELEASE_KEYSTORE > keystore/release.keystore
+    - base64 -d $LOCAL_PROPERTIES > local.properties
+    - base64 -d $KEYS_PROPERTIES > RetenoSdkCore/keys.properties
+    - chmod +x ./gradlew
+  script:
+    - ./gradlew assembleQa
+  artifacts:
+    paths:
+      - app/build/outputs/
+  tags:
+    - docker
+
 # Run all tests, if any fails, interrupt the pipeline(fail it)
-debugTests:
+testsDebug:
   stage: test
   interruptible: true
   before_script:
@@ -60,10 +80,11 @@ debugTests:
     - base64 -d $KEYS_PROPERTIES > RetenoSdkCore/keys.properties
     - chmod +x ./gradlew
   script:
-    - ./gradlew --no-daemon -q -s testDebug
+    - ./gradlew --no-daemon -s testDebugAll
   artifacts:
     paths:
       - ./RetenoSdkCore/build/reports/tests/testDebugUnitTest
+      - ./RetenoSdkFcm/build/reports/tests/testDebugUnitTest
       - ./RetenoSdkPush/build/reports/tests/testDebugUnitTest
     when: always
     expire_in: 2 week
@@ -105,7 +126,7 @@ deployQaToFirebase:
     - sed -i '1s|^|Author - '"$AUTHOR_NAME($AUTHOR_EMAIL)"'\n|' release-notes.txt
     - sed -i '1s|^|Version App - '"$VERSION_NAME_APP ($BUILD_NUMBER)"'\n|' release-notes.txt
     - sed -i '1s|^|Branch - '"$CI_COMMIT_REF_NAME"'\n|' release-notes.txt
-    - ./gradlew assembleQa appDistributionUploadQa --artifactType="APK"
+    - ./gradlew appDistributionUploadQa --artifactType="APK"
     - RELEASE_NOTES=$(<release-notes.txt)
     - echo "$RELEASE_NOTES"
     - ./notify-slack.sh "$RELEASE_NOTES"

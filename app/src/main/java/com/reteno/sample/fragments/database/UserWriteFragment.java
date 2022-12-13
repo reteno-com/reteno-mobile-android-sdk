@@ -36,6 +36,18 @@ public class UserWriteFragment extends BaseDatabaseDialogFragment {
     private FragmentUserDataBinding binding;
     private RetenoDatabaseManagerUser databaseManager;
 
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        databaseManager = serviceLocator.getRetenoDatabaseManagerUserProvider().get();
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        databaseManager = null;
+    }
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -46,14 +58,7 @@ public class UserWriteFragment extends BaseDatabaseDialogFragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        databaseManager = serviceLocator.getRetenoDatabaseManagerUserProvider().get();
         setListeners();
-    }
-
-    @Override
-    public void onDestroyView() {
-        super.onDestroyView();
-        databaseManager = null;
     }
 
     private void setListeners() {

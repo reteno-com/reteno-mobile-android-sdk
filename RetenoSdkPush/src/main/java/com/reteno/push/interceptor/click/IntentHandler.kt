@@ -9,30 +9,23 @@ import com.reteno.push.Constants
 
 internal object IntentHandler {
 
-    val TAG: String = IntentHandler::class.java.simpleName
-
     internal fun getDeepLinkIntent(bundle: Bundle): Intent? {
-        val esLink = bundle.getString(Constants.KEY_ES_LINK_UNWRAPPED)
-            ?: bundle.getString(Constants.KEY_ES_LINK_WRAPPED) ?: return null
+        val esLink = if (bundle.getBoolean(Constants.KEY_ACTION_BUTTON, false)) {
+            bundle.getString(Constants.KEY_BTN_ACTION_LINK_UNWRAPPED)
+                ?: bundle.getString(Constants.KEY_BTN_ACTION_LINK_WRAPPED)
+                ?: bundle.getString(Constants.KEY_ES_LINK_UNWRAPPED)
+                ?: bundle.getString(Constants.KEY_ES_LINK_WRAPPED)
+                ?: return null
+        } else {
+            bundle.getString(Constants.KEY_ES_LINK_UNWRAPPED)
+                ?: bundle.getString(Constants.KEY_ES_LINK_WRAPPED)
+                ?: return null
+        }
 
         val deepLinkIntent = Intent(Intent.ACTION_VIEW, Uri.parse(esLink))
         deepLinkIntent.putExtras(bundle)
         deepLinkIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
         return deepLinkIntent
-    }
-
-    internal fun resolveIntentActivity(context: Context, deepLinkIntent: Intent) {
-        val resolveInfoList = context.getResolveInfoList(deepLinkIntent)
-        if (resolveInfoList.isNotEmpty()) {
-            for (resolveInfo in resolveInfoList) {
-                if (resolveInfo?.activityInfo != null && resolveInfo.activityInfo.name != null) {
-                    if (resolveInfo.activityInfo.name.contains(context.packageName)) {
-                        deepLinkIntent.setPackage(resolveInfo.activityInfo.packageName)
-                    }
-                    return
-                }
-            }
-        }
     }
 
     object AppLaunchIntent {
