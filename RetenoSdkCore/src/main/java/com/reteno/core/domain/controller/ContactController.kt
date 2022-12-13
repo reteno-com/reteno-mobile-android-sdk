@@ -13,13 +13,24 @@ class ContactController(
     private val configRepository: ConfigRepository
 ) {
 
-    fun setExternalUserId(id: String) {
+    fun setExternalUserId(id: String?) {
         /*@formatter:off*/ Logger.i(TAG, "setExternalUserId(): ", "id = [" , id , "]")
         /*@formatter:on*/
+
         val oldDeviceId = configRepository.getDeviceId()
         if (oldDeviceId.externalId != id) {
             configRepository.setExternalUserId(id)
             onNewContact()
+        }
+    }
+
+    fun setUserData(user: User?) {
+        /*@formatter:off*/ Logger.i(TAG, "setUserData(): ", "user = [" , user , "]")
+        /*@formatter:on*/
+
+        user?.let {
+            val validUser = Validator.validateUser(it)
+            validUser?.let(contactRepository::saveUserData) ?: Logger.e(TAG, "setUserData(): user = [$it]")
         }
     }
 
@@ -28,14 +39,6 @@ class ContactController(
         /*@formatter:on*/
         configRepository.saveFcmToken(token)
         onNewContact()
-    }
-
-    fun setUserData(user: User) {
-        /*@formatter:off*/ Logger.i(TAG, "setUserData(): ", "user = [" , user , "]")
-        /*@formatter:on*/
-
-        val validUser = Validator.validateUser(user)
-        validUser?.let(contactRepository::saveUserData) ?: Logger.e(TAG, "setUserData(): user = [$user]")
     }
 
     fun pushDeviceData() {

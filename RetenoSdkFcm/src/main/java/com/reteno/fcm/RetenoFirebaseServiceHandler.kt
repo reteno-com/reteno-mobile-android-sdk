@@ -51,6 +51,6 @@ class RetenoFirebaseServiceHandler(private val pushService: RetenoNotificationSe
     }
 
     companion object {
-        val TAG: String = RetenoFirebaseServiceHandler::class.java.simpleName
+        private val TAG: String = RetenoFirebaseServiceHandler::class.java.simpleName
     }
 }

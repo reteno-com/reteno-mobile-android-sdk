@@ -102,7 +102,7 @@ fun Cursor.getUser(): UserDb? {
     val groupNamesInclude = getStringOrNull(getColumnIndex(UserSchema.COLUMN_GROUP_NAMES_INCLUDE))?.fromJson<List<String>>()
     val groupNamesExclude = getStringOrNull(getColumnIndex(UserSchema.COLUMN_GROUP_NAMES_EXCLUDE))?.fromJson<List<String>>()
 
-    return if (deviceId == null || externalUserId == null) {
+    return if (deviceId == null || externalUserId == null || externalUserId.isEmpty()) {
         null
     } else {
         UserDb(

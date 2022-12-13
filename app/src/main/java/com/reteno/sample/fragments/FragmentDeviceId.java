@@ -1,6 +1,7 @@
 package com.reteno.sample.fragments;
 
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -57,14 +58,26 @@ public class FragmentDeviceId extends BaseFragment {
         super.onViewCreated(view, savedInstanceState);
 
         initExternalDeviceId(view);
-        initListeners(view);
-
         refreshUi();
+
+        initListeners(view);
     }
 
     private void initExternalDeviceId(@NonNull View view) {
         String externalSavedId = AppSharedPreferencesManager.getExternalId(view.getContext());
-        getReteno().setUserAttributes(externalSavedId);
+        if (!TextUtils.isEmpty(externalSavedId)) {
+            getReteno().setUserAttributes(externalSavedId);
+        }
+    }
+
+    private void refreshUi() {
+        String id = DeviceIdInternal.INSTANCE.getIdInternal(configRepository.getDeviceId());
+        String externalId = DeviceIdInternal.INSTANCE.getExternalIdInternal(configRepository.getDeviceId());
+        DeviceIdMode mode = DeviceIdInternal.INSTANCE.getModeInternal(configRepository.getDeviceId());
+        binding.tvCurrentDeviceIdMode.setText(mode.toString());
+        binding.tvCurrentDeviceId.setText(id);
+        binding.tvExternalId.setText(externalId);
+        binding.etFcmToken.setText(configRepository.getFcmToken());
     }
 
     private void initListeners(@NonNull View view) {
@@ -84,15 +97,5 @@ public class FragmentDeviceId extends BaseFragment {
             binding.etExternalId.setText("");
             refreshUi();
         });
-    }
-
-    private void refreshUi() {
-        String id = DeviceIdInternal.INSTANCE.getIdInternal(configRepository.getDeviceId());
-        String externalId = DeviceIdInternal.INSTANCE.getExternalIdInternal(configRepository.getDeviceId());
-        DeviceIdMode mode = DeviceIdInternal.INSTANCE.getModeInternal(configRepository.getDeviceId());
-        binding.tvCurrentDeviceIdMode.setText(mode.toString());
-        binding.tvCurrentDeviceId.setText(id);
-        binding.tvExternalId.setText(externalId);
-        binding.etFcmToken.setText(configRepository.getFcmToken());
     }
 }

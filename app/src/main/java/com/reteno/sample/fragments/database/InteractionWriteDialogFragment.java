@@ -22,8 +22,14 @@ public class InteractionWriteDialogFragment extends BaseDatabaseDialogFragment {
     private RetenoDatabaseManagerInteraction databaseManager;
 
     @Override
-    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
-        super.onViewCreated(view, savedInstanceState);
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        databaseManager = serviceLocator.getRetenoDatabaseManagerInteractionProvider().get();
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
         databaseManager = serviceLocator.getRetenoDatabaseManagerInteractionProvider().get();
     }
 
@@ -40,7 +46,6 @@ public class InteractionWriteDialogFragment extends BaseDatabaseDialogFragment {
     public void onDestroyView() {
         super.onDestroyView();
         binding = null;
-        databaseManager = null;
     }
 
     @Override

@@ -24,8 +24,8 @@ public class InboxReadDialogFragment extends BaseReadDialogFragment<AppInboxMess
     private RetenoDatabaseManagerAppInbox databaseManager;
 
     @Override
-    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
-        super.onViewCreated(view, savedInstanceState);
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
         databaseManager = serviceLocator.getRetenoDatabaseManagerAppInboxProvider().get();
     }
 

@@ -14,7 +14,7 @@ internal class ConfigRepositoryImpl(
     private val restConfig: RestConfig
 ) : ConfigRepository {
 
-    override fun setExternalUserId(externalId: String) {
+    override fun setExternalUserId(externalId: String?) {
         restConfig.setExternalUserId(externalId)
     }
 

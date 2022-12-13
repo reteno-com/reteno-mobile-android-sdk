@@ -24,7 +24,10 @@ plugins {
     id 'com.android.application' version '7.3.0' apply false
     id 'com.android.library' version '7.3.0' apply false
     id 'org.jetbrains.kotlin.android' version '1.7.10' apply false
+    // https://github.com/radarsh/gradle-test-logger-plugin
+    id 'com.adarshr.test-logger' version '3.2.0'
 }
+subprojects { apply plugin: 'com.adarshr.test-logger' }
 
 apply from: 'config.gradle'
 apply plugin: "com.vanniktech.maven.publish"
@@ -33,4 +36,13 @@ tasks.register('printVersionName') {
     doLast {
         println versionName
     }
+}
+
+task testDebugAll(type: GradleBuild) {
+    tasks = ['clean',
+             'RetenoSdkCore:testDebugUnitTest',
+             'RetenoSdkFcm:testDebugUnitTest',
+             'RetenoSdkPush:testDebugUnitTest']
+    group = 'custom_tasks'
+    description = "Run all UnitTests"
 }

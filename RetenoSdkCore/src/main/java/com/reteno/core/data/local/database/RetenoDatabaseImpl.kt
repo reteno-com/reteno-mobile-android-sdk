@@ -22,11 +22,28 @@ internal class RetenoDatabaseImpl(context: Context) : RetenoDatabase,
     private val writableDatabase = getWritableDatabase(BuildConfig.SQL_PASSWORD)
 
     override fun onOpen(db: SQLiteDatabase?) {
+        /*@formatter:off*/ Logger.i(TAG, "onOpen(): ", "db = [" , db , "]")
+        /*@formatter:on*/
         super.onOpen(db)
         db?.execSQL("PRAGMA foreign_keys=ON");
     }
 
     override fun onCreate(db: SQLiteDatabase) {
+        /*@formatter:off*/ Logger.i(TAG, "onCreate(): ", "db = [" , db , "]")
+        /*@formatter:on*/
+        createTables(db)
+    }
+
+    override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
+        /*@formatter:off*/ Logger.i(TAG, "onUpgrade(): ", "db = [" , db , "], oldVersion = [" , oldVersion , "], newVersion = [" , newVersion , "]")
+        /*@formatter:on*/
+        createTables(db)
+        if (oldVersion == 1 && newVersion == 2) {
+            db.execSQL(DeviceSchema.SQL_UPGRADE_TABLE_VERSION_2)
+        }
+    }
+
+    private fun createTables(db: SQLiteDatabase) {
         db.execSQL(DeviceSchema.SQL_CREATE_TABLE)
         db.execSQL(UserSchema.SQL_CREATE_TABLE)
         db.execSQL(UserSchema.UserAttributesSchema.SQL_CREATE_TABLE)
@@ -37,10 +54,6 @@ internal class RetenoDatabaseImpl(context: Context) : RetenoDatabase,
         db.execSQL(AppInboxSchema.SQL_CREATE_TABLE)
         db.execSQL(RecomEventsSchema.SQL_CREATE_TABLE)
         db.execSQL(RecomEventsSchema.RecomEventSchema.SQL_CREATE_TABLE)
-    }
-
-    override fun onUpgrade(db: SQLiteDatabase?, oldVersion: Int, newVersion: Int) {
-        // Not used for now
     }
 
     override fun query(

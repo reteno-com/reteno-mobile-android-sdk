@@ -26,9 +26,15 @@ public class InboxWriteDialogFragment extends BaseDatabaseDialogFragment {
     private RetenoDatabaseManagerAppInbox databaseManager;
 
     @Override
-    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
-        super.onViewCreated(view, savedInstanceState);
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
         databaseManager = serviceLocator.getRetenoDatabaseManagerAppInboxProvider().get();
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        databaseManager = null;
     }
 
     @NonNull
@@ -44,7 +50,6 @@ public class InboxWriteDialogFragment extends BaseDatabaseDialogFragment {
     public void onDestroyView() {
         super.onDestroyView();
         binding = null;
-        databaseManager = null;
     }
 
     @Override

@@ -36,6 +36,9 @@ internal object DeviceSchema {
                 "$COLUMN_ADVERTISING_ID TEXT" +
                 ")"
 
+    internal const val SQL_UPGRADE_TABLE_VERSION_2 =
+        "ALTER TABLE $TABLE_NAME_DEVICE ADD COLUMN $COLUMN_PUSH_SUBSCRIBED TEXT"
+
     fun getAllColumns(): Array<String> = arrayOf(
         COLUMN_DEVICE_ROW_ID,
         DbSchema.COLUMN_TIMESTAMP,
