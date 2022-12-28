@@ -73,7 +73,6 @@ class ValidatorTest : BaseUnitTest() {
     private var SUT = Validator
     // endregion helper fields ---------------------------------------------------------------------
 
-    // region helper methods -----------------------------------------------------------------------
     @Test
     fun givenAllAddressFieldsNull_whenValidateUser_thenAddressIsNull() {
         // Given
@@ -232,5 +231,4 @@ class ValidatorTest : BaseUnitTest() {
         // Then
         assertNull(userValidated)
     }
-    // endregion helper methods --------------------------------------------------------------------
 }

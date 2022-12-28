@@ -15,7 +15,8 @@ import org.junit.Test
 import java.time.ZonedDateTime
 
 class AppInboxControllerTest : BaseUnitTest() {
-    
+
+    // region constants ----------------------------------------------------------------------------
     private companion object {
         private const val PAGE = 2
         private const val PAGE_SIZE = 12
@@ -33,11 +34,14 @@ class AppInboxControllerTest : BaseUnitTest() {
             unMockObjectSchedulerUtils()
         }
     }
+    // endregion constants -------------------------------------------------------------------------
 
+    // region helper fields ------------------------------------------------------------------------
     @RelaxedMockK
     private lateinit var appInboxRepository: AppInboxRepository
 
     private lateinit var inbox: AppInboxController
+    // endregion helper fields ---------------------------------------------------------------------
 
     override fun before() {
         super.before()
@@ -46,10 +50,13 @@ class AppInboxControllerTest : BaseUnitTest() {
 
     @Test
     fun whenGetAppInboxMessages_thenCallAppInboxRepository() {
+        // Given
         val callback = mockk<RetenoResultCallback<AppInboxMessages>>()
 
+        // When
         inbox.getAppInboxMessages(PAGE, PAGE_SIZE, callback)
 
+        // Then
         verify(exactly = 1) {
             appInboxRepository.getMessages(
                 eq(PAGE),
@@ -61,10 +68,13 @@ class AppInboxControllerTest : BaseUnitTest() {
 
     @Test
     fun givenPageAndSizeAreNull_whenGetAppInboxMessages_thenCallAppInboxRepository() {
+        // Given
         val callback = mockk<RetenoResultCallback<AppInboxMessages>>()
 
+        // When
         inbox.getAppInboxMessages(null, null, callback)
 
+        // Then
         verify(exactly = 1) {
             appInboxRepository.getMessages(
                 null,
@@ -76,10 +86,13 @@ class AppInboxControllerTest : BaseUnitTest() {
 
     @Test
     fun whenGetAppInboxMessagesCount_thenCallAppInboxRepository() {
+        // Given
         val callback = mockk<RetenoResultCallback<Int>>()
 
+        // When
         inbox.getMessagesCount(callback)
 
+        // Then
         verify(exactly = 1) {
             appInboxRepository.getMessagesCount(callback)
         }
@@ -87,10 +100,13 @@ class AppInboxControllerTest : BaseUnitTest() {
 
     @Test
     fun whenSubscribeOnMessagesCountChanged_thenCallAppInboxRepository() {
+        // Given
         val callback = mockk<RetenoResultCallback<Int>>()
 
+        // When
         inbox.subscribeCountChanges(callback)
 
+        // Then
         verify(exactly = 1) {
             appInboxRepository.subscribeOnMessagesCountChanged(callback)
         }
@@ -98,10 +114,13 @@ class AppInboxControllerTest : BaseUnitTest() {
 
     @Test
     fun whenUnsubscribeMessagesCountChanged_thenCallAppInboxRepository() {
+        // Given
         val callback = mockk<RetenoResultCallback<Int>>()
 
+        // When
         inbox.unsubscribeCountChanges(callback)
 
+        // Then
         verify(exactly = 1) {
             appInboxRepository.unsubscribeMessagesCountChanged(callback)
         }
@@ -109,8 +128,10 @@ class AppInboxControllerTest : BaseUnitTest() {
 
     @Test
     fun whenUnsubscribeAllMessagesCountChanged_thenCallAppInboxRepository() {
+        // When
         inbox.unsubscribeAllCountChanges()
 
+        // Then
         verify(exactly = 1) {
             appInboxRepository.unsubscribeAllMessagesCountChanged()
         }
@@ -118,8 +139,10 @@ class AppInboxControllerTest : BaseUnitTest() {
 
     @Test
     fun whenMarkAsOpened_thenCallAppInboxRepository() {
+        // When
         inbox.markAsOpened(MESSAGE_ID)
 
+        // Then
         verify(exactly = 1) {
             appInboxRepository.saveMessageOpened(eq(MESSAGE_ID))
         }
@@ -127,10 +150,13 @@ class AppInboxControllerTest : BaseUnitTest() {
 
     @Test
     fun whenMarkAllMessagesAsOpened_thenCallAppInboxRepository() {
+        // Given
         val callback = mockk<RetenoResultCallback<Unit>>()
 
+        // When
         inbox.markAllMessagesAsOpened(callback)
 
+        // Then
         verify(exactly = 1) {
             appInboxRepository.setAllMessageOpened(callback)
         }
@@ -138,8 +164,10 @@ class AppInboxControllerTest : BaseUnitTest() {
 
     @Test
     fun whenPushAppInboxMessagesStatus_thenCallAppInboxRepository() {
+        // When
         inbox.pushAppInboxMessagesStatus()
 
+        // Then
         verify(exactly = 1) {
             appInboxRepository.pushMessagesStatus()
         }
@@ -147,11 +175,14 @@ class AppInboxControllerTest : BaseUnitTest() {
 
     @Test
     fun whenClearOldMessagesStatus_thenRepositoryCalledWithOutdatedDate() {
+        // Given
         val mockData = mockk<ZonedDateTime>()
         every { SchedulerUtils.getOutdatedTime() } returns mockData
 
+        // When
         inbox.clearOldMessagesStatus()
 
+        // Then
         verify(exactly = 1) { appInboxRepository.clearOldMessages(mockData) }
         verify(exactly = 1) { SchedulerUtils.getOutdatedTime() }
     }

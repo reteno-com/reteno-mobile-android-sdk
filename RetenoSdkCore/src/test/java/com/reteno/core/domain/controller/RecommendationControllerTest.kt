@@ -110,6 +110,7 @@ class RecommendationControllerTest : BaseUnitTest() {
 
     @Test
     fun whenClearOldRecommendations_thenClearOldRecommendationsCalledOnRepository() {
+        // Given
         val mockData = mockk<ZonedDateTime>()
         every { SchedulerUtils.getOutdatedTime() } returns mockData
 

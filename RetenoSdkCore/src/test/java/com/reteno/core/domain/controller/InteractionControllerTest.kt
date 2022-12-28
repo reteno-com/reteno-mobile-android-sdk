@@ -112,17 +112,23 @@ class InteractionControllerTest : BaseUnitTest() {
 
     @Test
     fun whenPushInteraction_thenRepositoryInteractionPushCalled() {
+        // When
         SUT.pushInteractions()
+
+        // Then
         verify(exactly = 1) { interactionsRepository.pushInteractions() }
     }
 
     @Test
     fun whenClearOldInteractions_thenRepositoryInteractionPushCalledWithOutdatedDate() {
+        // Given
         val mockData = mockk<ZonedDateTime>()
         every { SchedulerUtils.getOutdatedTime() } returns mockData
 
+        // When
         SUT.clearOldInteractions()
 
+        // Then
         verify(exactly = 1) { interactionsRepository.clearOldInteractions(mockData) }
         verify(exactly = 1) { SchedulerUtils.getOutdatedTime() }
     }

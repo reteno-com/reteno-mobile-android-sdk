@@ -246,8 +246,10 @@ class RecommendationRepositoryImplTest : BaseUnitTest() {
 
         every { databaseManagerRecomEvents.getRecomEvents(any()) } returns listOf(recomEventsDb) andThen emptyList()
 
+        // When
         SUT.pushRecommendations()
 
+        // Then
         verify(exactly = 1) { apiClient.post(eq(ApiContract.Recommendation.PostRecoms), eq(listOf(recomEventsDb).toRemote().toJson()), any()) }
         verify(exactly = 0) { PushOperationQueue.nextOperation() }
     }
@@ -278,6 +280,7 @@ class RecommendationRepositoryImplTest : BaseUnitTest() {
 
     @Test
     fun givenValidRecomEvents_whenRecomEventsPushFailedAndErrorIsRepeatable_cancelPushOperations() {
+        // Given
         val recomEventDb = getRecomEventsDb()
         every { databaseManagerRecomEvents.getRecomEvents(any()) } returns listOf(recomEventDb)
         every { apiClient.post(url = any(), jsonBody = any(), responseHandler = any()) } answers {
@@ -285,8 +288,10 @@ class RecommendationRepositoryImplTest : BaseUnitTest() {
             callback.onFailure(ERROR_CODE_REPEATABLE, null, null)
         }
 
+        // When
         SUT.pushRecommendations()
 
+        // Then
         verify(exactly = 1) { apiClient.post(any(), any(), any()) }
         verify(exactly = 1) { PushOperationQueue.removeAllOperations() }
     }
@@ -329,7 +334,7 @@ class RecommendationRepositoryImplTest : BaseUnitTest() {
     }
 
     @Test
-    fun noOutdatedRecomEvent_whenClearOldRecommendations_thenSentNothing() {
+    fun givenNoOutdatedRecomEvent_whenClearOldRecommendations_thenSentNothing() {
         // Given
         every { databaseManagerRecomEvents.deleteRecomEventsByTime(any()) } returns 0
 
@@ -342,7 +347,7 @@ class RecommendationRepositoryImplTest : BaseUnitTest() {
     }
 
     @Test
-    fun thereAreOutdatedInteraction_whenClearOldInteractions_thenSentCountDeleted() {
+    fun givenOutdatedRecomEvent_whenClearOldRecomEvent_thenSentCountDeleted() {
         // Given
         val deletedEvents = 2
         every { databaseManagerRecomEvents.deleteRecomEventsByTime(any()) } returns deletedEvents

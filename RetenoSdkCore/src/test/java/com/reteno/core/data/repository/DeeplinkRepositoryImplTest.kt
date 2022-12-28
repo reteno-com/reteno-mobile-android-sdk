@@ -12,7 +12,10 @@ import org.junit.Test
 
 class DeeplinkRepositoryImplTest : BaseUnitTest() {
 
+    // region constants ----------------------------------------------------------------------------
     companion object {
+        const val DEEPLINK_WRAPPED = "https://wrapped.com"
+
         @JvmStatic
         @BeforeClass
         fun beforeClass() {
@@ -25,6 +28,7 @@ class DeeplinkRepositoryImplTest : BaseUnitTest() {
             unMockObjectOperationQueue()
         }
     }
+    // endregion constants -------------------------------------------------------------------------
 
     // region helper fields ------------------------------------------------------------------------
     @RelaxedMockK
@@ -40,15 +44,12 @@ class DeeplinkRepositoryImplTest : BaseUnitTest() {
 
     @Test
     fun givenWrappedDeeplink_whenTriggerWrappedLink_thenWrappedDeeplinkClickedEventSentToBackend() {
-        // Given
-        val deeplinkWrapped = "https://wrapped.com"
-
         // When
-        deeplinkRepository.triggerWrappedLinkClicked(deeplinkWrapped)
+        deeplinkRepository.triggerWrappedLinkClicked(DEEPLINK_WRAPPED)
 
         // Then
         verify(exactly = 1) {
-            apiClient.get(ApiContract.Custom(deeplinkWrapped), null, any())
+            apiClient.get(ApiContract.Custom(DEEPLINK_WRAPPED), null, any())
         }
     }
 }

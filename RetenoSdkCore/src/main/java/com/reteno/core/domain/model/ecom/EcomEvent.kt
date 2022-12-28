@@ -85,14 +85,12 @@ sealed class EcomEvent(open val occurred: ZonedDateTime) {
      *
      *  @param order OrderModel.
      *  @param currencyCode If is not set then org's default is used.
-     *  @param attributes Extended order fields.
      *
      *  @see com.reteno.core.domain.model.ecom.Order
      */
     data class OrderUpdated @JvmOverloads constructor(
         val order: Order,
         val currencyCode: String? = null,
-        val attributes: List<Attributes>? = null,
         override val occurred: ZonedDateTime = ZonedDateTime.now()
     ) : EcomEvent(occurred)
 

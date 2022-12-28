@@ -316,6 +316,7 @@ class RetenoDatabaseManagerEventsTest : BaseRobolectricTest() {
 
     @Test
     fun givenEventsCorruptedInDatabaseAndRowIdNotDetected_whenGetEvents_thenExceptionIsLogged() {
+        // Given
         mockCursorRecordsNumber(cursor, 1)
         mockCursorRecordsNumber(cursorChild, 0)
         mockDatabaseQueryParent()

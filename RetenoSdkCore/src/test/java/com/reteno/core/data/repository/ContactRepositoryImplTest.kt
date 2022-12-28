@@ -130,6 +130,7 @@ class ContactRepositoryImplTest : BaseUnitTest() {
 
     @Test
     fun whenDevicePushSuccessful_thenTryPushNextDevice() {
+        // Given
         val deviceDataDb = mockk<DeviceDb>(relaxed = true)
         every { databaseManagerDevice.getDevices(any()) } returnsMany listOf(listOf(deviceDataDb), listOf(deviceDataDb), emptyList())
         every { apiClient.post(url = any(), jsonBody = any(), responseHandler = any()) } answers {
@@ -137,8 +138,10 @@ class ContactRepositoryImplTest : BaseUnitTest() {
             callback.onSuccess("")
         }
 
+        // When
         SUT.pushDeviceData()
 
+        // Then
         verify(exactly = 2) { apiClient.post(any(), any(), any()) }
         verify(exactly = 2) { databaseManagerDevice.deleteDevices(1) }
         verify(exactly = 1) { PushOperationQueue.nextOperation() }
@@ -146,6 +149,7 @@ class ContactRepositoryImplTest : BaseUnitTest() {
 
     @Test
     fun whenDevicePushFailedAndErrorIsRepeatable_cancelPushOperations() {
+        // Given
         val deviceDataDb = mockk<DeviceDb>(relaxed = true)
         every { databaseManagerDevice.getDevices(any()) } returns listOf(deviceDataDb)
         every { apiClient.post(url = any(), jsonBody = any(), responseHandler = any()) } answers {
@@ -153,14 +157,17 @@ class ContactRepositoryImplTest : BaseUnitTest() {
             callback.onFailure(500, null, null)
         }
 
+        // When
         SUT.pushDeviceData()
 
+        // Then
         verify(exactly = 1) { apiClient.post(any(), any(), any()) }
         verify(exactly = 1) { PushOperationQueue.removeAllOperations() }
     }
 
     @Test
     fun whenDevicePushFailedAndErrorIsNonRepeatable_thenTryPushNextDevice() {
+        // Given
         val deviceDataDb = mockk<DeviceDb>(relaxed = true)
         every { databaseManagerDevice.getDevices(any()) } returnsMany listOf(listOf(deviceDataDb), listOf(deviceDataDb), emptyList())
         every { apiClient.post(url = any(), jsonBody = any(), responseHandler = any()) } answers {
@@ -168,8 +175,10 @@ class ContactRepositoryImplTest : BaseUnitTest() {
             callback.onFailure(400, null, null)
         }
 
+        // When
         SUT.pushDeviceData()
 
+        // Then
         verify(exactly = 2) { apiClient.post(any(), any(), any()) }
         verify(exactly = 3) { databaseManagerDevice.getDevices(1) }
         verify(exactly = 2) { databaseManagerDevice.deleteDevices(1) }
@@ -192,13 +201,16 @@ class ContactRepositoryImplTest : BaseUnitTest() {
 
     @Test
     fun whenSendUsedData_thenCallUserToDbMapper() {
+        // Given
         val user = getUser()
 
         val deviceId = DeviceId(DEVICE_ID, EXTERNAL_DEVICE_ID)
         every { configRepository.getDeviceId() } returns deviceId
 
+        // When
         SUT.saveUserData(user)
 
+        // Then
         verify { user.toDb(deviceId) }
     }
 
@@ -244,6 +256,7 @@ class ContactRepositoryImplTest : BaseUnitTest() {
 
     @Test
     fun whenUserPushSuccessful_thenTryPushNextUser() {
+        // Given
         val userData = mockk<UserDb>(relaxed = true)
         every { databaseManagerUser.getUser(any()) } returnsMany listOf(listOf(userData), listOf(userData), emptyList())
         every { apiClient.post(url = any(), jsonBody = any(), responseHandler = any()) } answers {
@@ -251,8 +264,10 @@ class ContactRepositoryImplTest : BaseUnitTest() {
             callback.onSuccess("")
         }
 
+        // When
         SUT.pushUserData()
 
+        // Then
         verify(exactly = 2) { apiClient.post(any(), any(), any()) }
         verify(exactly = 2) { databaseManagerUser.deleteUsers(1) }
         verify(exactly = 1) { PushOperationQueue.nextOperation() }
@@ -260,6 +275,7 @@ class ContactRepositoryImplTest : BaseUnitTest() {
 
     @Test
     fun whenUserPushFailedAndErrorIsRepeatable_cancelPushOperations() {
+        // Given
         val userData = mockk<UserDb>(relaxed = true)
         every { databaseManagerUser.getUser(any()) } returns listOf(userData)
         every { apiClient.post(url = any(), jsonBody = any(), responseHandler = any()) } answers {
@@ -267,14 +283,17 @@ class ContactRepositoryImplTest : BaseUnitTest() {
             callback.onFailure(500, null, null)
         }
 
+        // When
         SUT.pushUserData()
 
+        // Then
         verify(exactly = 1) { apiClient.post(any(), any(), any()) }
         verify(exactly = 1) { PushOperationQueue.removeAllOperations() }
     }
 
     @Test
     fun whenUserPushFailedAndErrorIsNonRepeatable_thenTryPushNextUser() {
+        // Given
         val userData = mockk<UserDb>(relaxed = true)
         every { databaseManagerUser.getUser(any()) } returnsMany listOf(listOf(userData), listOf(userData), emptyList())
         every { apiClient.post(url = any(), jsonBody = any(), responseHandler = any()) } answers {
@@ -282,8 +301,10 @@ class ContactRepositoryImplTest : BaseUnitTest() {
             callback.onFailure(400, null, null)
         }
 
+        // When
         SUT.pushUserData()
 
+        // Then
         verify(exactly = 2) { apiClient.post(any(), any(), any()) }
         verify(exactly = 3) { databaseManagerUser.getUser(1) }
         verify(exactly = 2) { databaseManagerUser.deleteUsers(1) }

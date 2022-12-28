@@ -26,6 +26,7 @@ internal class EventsRepositoryImpl(
     override fun saveEvent(event: Event) {
         /*@formatter:off*/ Logger.i(TAG, "saveEvent(): ", "event = [" , event , "]")
         /*@formatter:on*/
+
         val deviceId = configRepository.getDeviceId()
         val events = EventsDb(
             deviceId = deviceId.id,
@@ -61,6 +62,9 @@ internal class EventsRepositoryImpl(
     }
 
     override fun pushEvents(limit: Int?) {
+        /*@formatter:off*/ Logger.i(TAG, "pushEvents(): ", "limit = [", limit, "]")
+        /*@formatter:on*/
+
         val events: EventsDb = databaseManager.getEvents(limit).firstOrNull() ?: kotlin.run {
             PushOperationQueue.nextOperation()
             return

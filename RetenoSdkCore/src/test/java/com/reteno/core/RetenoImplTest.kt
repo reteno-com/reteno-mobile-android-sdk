@@ -9,6 +9,8 @@ import com.reteno.core.di.ServiceLocator
 import com.reteno.core.domain.controller.ContactController
 import com.reteno.core.domain.controller.EventController
 import com.reteno.core.domain.controller.ScheduleController
+import com.reteno.core.domain.model.ecom.EcomEvent
+import com.reteno.core.domain.model.ecom.RemoteConstants
 import com.reteno.core.domain.model.event.Event
 import com.reteno.core.domain.model.event.Parameter
 import com.reteno.core.domain.model.user.User
@@ -44,6 +46,8 @@ class RetenoImplTest : BaseRobolectricTest() {
         private const val EVENT_PARAMETER_VALUE_1 = "VALUE1"
 
         private const val TRACK_SCREEN_NAME = "ScreenNameHere"
+
+        private const val ECOM_EVENT_EXTERNAL_ORDER_ID = "external_order_id"
 
         private const val TRANSCRIPT_RESUME_RECEIVED = "ResumeReceived"
 
@@ -195,6 +199,21 @@ class RetenoImplTest : BaseRobolectricTest() {
     }
 
     @Test
+    fun whenLogEcomEvent_thenInteractWithEventController() {
+        // Given
+        val ecomEvent = EcomEvent.OrderCancelled(
+            ECOM_EVENT_EXTERNAL_ORDER_ID,
+            ZonedDateTime.now()
+        )
+
+        // When
+        retenoImpl.logEcommerceEvent(ecomEvent)
+
+        // Then
+        verify { eventController.trackEcomEvent(ecomEvent) }
+    }
+
+    @Test
     fun whenAutoScreenTracking_thenInteractWithActivityHelper() {
         // Given
         val config = ScreenTrackingConfig(true, listOf(), ScreenTrackingTrigger.ON_RESUME)
@@ -283,6 +302,5 @@ class RetenoImplTest : BaseRobolectricTest() {
         }
         every { application.queryBroadcastReceivers(any()) } returns listOf(mockResolveInfo)
     }
-
     // endregion helper methods --------------------------------------------------------------------
 }

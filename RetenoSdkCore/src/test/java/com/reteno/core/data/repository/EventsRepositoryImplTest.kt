@@ -13,8 +13,11 @@ import com.reteno.core.data.remote.api.ApiContract
 import com.reteno.core.data.remote.mapper.toJson
 import com.reteno.core.data.remote.mapper.toRemote
 import com.reteno.core.domain.ResponseCallback
+import com.reteno.core.domain.model.ecom.EcomEvent
+import com.reteno.core.domain.model.ecom.RemoteConstants
 import com.reteno.core.domain.model.event.Event
 import com.reteno.core.domain.model.event.Events
+import com.reteno.core.domain.model.event.Parameter
 import com.reteno.core.util.Logger
 import io.mockk.every
 import io.mockk.impl.annotations.RelaxedMockK
@@ -33,6 +36,8 @@ class EventsRepositoryImplTest : BaseUnitTest() {
         private const val EXTERNAL_DEVICE_ID = "external_device_id"
         private const val EVENT_TYPE_KEY = "event_type_key"
         private const val OCCURRED = "2022-11-11T20:22:21Z"
+        private const val ECOM_EVENT_KEY = RemoteConstants.EcomEvent.EXTERNAL_ORDER_ID
+        private const val ECOM_EVENT_EXTERNAL_ORDER_ID = "external_order_id"
 
         @JvmStatic
         @BeforeClass
@@ -73,6 +78,7 @@ class EventsRepositoryImplTest : BaseUnitTest() {
 
     @Test
     fun givenValidEvents_whenEventsSent_thenSaveEvents() {
+        // Given
         val event = Event.Custom(EVENT_TYPE_KEY, ZonedDateTime.now())
         val events = Events(
             deviceId = DEVICE_ID,
@@ -80,26 +86,56 @@ class EventsRepositoryImplTest : BaseUnitTest() {
             eventList = listOf(event)
         ).toDb()
 
+        // When
         SUT.saveEvent(event)
 
+        // Then
+        verify(exactly = 1) { databaseManagerEvents.insertEvents(events) }
+    }
+
+    @Test
+    fun givenValidEcomEvents_whenEventsSent_thenSaveEvents() {
+        // Given
+        val occurred = ZonedDateTime.now()
+        val ecomEvent = EcomEvent.OrderCancelled(ECOM_EVENT_EXTERNAL_ORDER_ID, occurred)
+
+        val event = Event.Custom(
+            RemoteConstants.EcomEvent.EVENT_TYPE_ORDER_CANCELLED,
+            occurred,
+            listOf<Parameter>(Parameter(ECOM_EVENT_KEY, ECOM_EVENT_EXTERNAL_ORDER_ID))
+        )
+        val events = Events(
+            deviceId = DEVICE_ID,
+            externalUserId = EXTERNAL_DEVICE_ID,
+            eventList = listOf(event)
+        ).toDb()
+
+        // When
+        SUT.saveEcomEvent(ecomEvent)
+
+        // Then
         verify(exactly = 1) { databaseManagerEvents.insertEvents(events) }
     }
 
     @Test
     fun givenValidEvents_whenEventsPush_thenApiClientEventsWithCorrectParameters() {
-        val eventDb = getEvents()
+        // Given
+        val eventDb = getEventsDb()
 
         every { databaseManagerEvents.getEvents(any()) } returns listOf(eventDb) andThen emptyList()
 
+        // When
         SUT.pushEvents()
 
+        // Then
         verify(exactly = 1) { apiClient.post(eq(ApiContract.MobileApi.Events), eq(eventDb.toRemote().toJson()), any()) }
         verify(exactly = 0) { PushOperationQueue.nextOperation() }
     }
 
     @Test
     fun givenValidEvents_whenEventsPushSuccessful_thenTryPushNextEvents() {
-        val eventDb = getEvents()
+        // Given
+        val eventDb = getEventsDb()
         every { databaseManagerEvents.getEvents(any()) } returnsMany listOf(
             listOf(eventDb),
             listOf(eventDb),
@@ -110,8 +146,10 @@ class EventsRepositoryImplTest : BaseUnitTest() {
             callback.onSuccess("")
         }
 
+        // When
         SUT.pushEvents()
 
+        // Then
         verify(exactly = 2) { apiClient.post(any(), any(), any()) }
         verify(exactly = 2) { databaseManagerEvents.deleteEvents(1) }
         verify(exactly = 1) { PushOperationQueue.nextOperation() }
@@ -119,22 +157,26 @@ class EventsRepositoryImplTest : BaseUnitTest() {
 
     @Test
     fun givenValidEvents_whenEventsPushFailedAndErrorIsRepeatable_cancelPushOperations() {
-        val eventDb = getEvents()
+        // Given
+        val eventDb = getEventsDb()
         every { databaseManagerEvents.getEvents(any()) } returns listOf(eventDb)
         every { apiClient.post(url = any(), jsonBody = any(), responseHandler = any()) } answers {
             val callback = thirdArg<ResponseCallback>()
             callback.onFailure(500, null, null)
         }
 
+        // When
         SUT.pushEvents()
 
+        // Then
         verify(exactly = 1) { apiClient.post(any(), any(), any()) }
         verify(exactly = 1) { PushOperationQueue.removeAllOperations() }
     }
 
     @Test
     fun givenValidEvents_whenEventsPushFailedAndErrorIsNonRepeatable_thenTryPushNextEvents() {
-        val eventDb = getEvents()
+        // Given
+        val eventDb = getEventsDb()
         every { databaseManagerEvents.getEvents(any()) } returnsMany listOf(
             listOf(eventDb),
             listOf(eventDb),
@@ -145,8 +187,10 @@ class EventsRepositoryImplTest : BaseUnitTest() {
             callback.onFailure(400, null, null)
         }
 
+        // When
         SUT.pushEvents()
 
+        // Then
         verify(exactly = 2) { apiClient.post(any(), any(), any()) }
         verify(exactly = 3) { databaseManagerEvents.getEvents(null) }
         verify(exactly = 2) { databaseManagerEvents.deleteEvents(eventDb.eventList.size) }
@@ -167,28 +211,35 @@ class EventsRepositoryImplTest : BaseUnitTest() {
     }
 
     @Test
-    fun noOutdatedInteraction_whenClearOldInteractions_thenSentNothing() {
+    fun noOutdatedInteraction_whenClearOldEvents_thenSentNothing() {
+        // Given
         every { databaseManagerEvents.deleteEventsByTime(any()) } returns 0
 
+        // When
         SUT.clearOldEvents(ZonedDateTime.now())
 
+        // Then
         verify(exactly = 1) { databaseManagerEvents.deleteEventsByTime(any()) }
         verify(exactly = 0) { Logger.captureEvent(any()) }
     }
 
     @Test
-    fun thereAreOutdatedInteraction_whenClearOldInteractions_thenSentCountDeleted() {
+    fun thereAreOutdatedInteraction_whenClearOldEvents_thenSentCountDeleted() {
+        // Given
         val deletedEvents = 2
         every { databaseManagerEvents.deleteEventsByTime(any()) } returns deletedEvents
         val expectedMsg = "Outdated Events: - $deletedEvents"
 
+        // When
         SUT.clearOldEvents(ZonedDateTime.now())
 
+        // Then
         verify(exactly = 1) { databaseManagerEvents.deleteEventsByTime(any()) }
         verify(exactly = 1) { Logger.captureEvent(eq(expectedMsg)) }
     }
 
-    private fun getEvents() = EventsDb(
+    // region helper methods -----------------------------------------------------------------------
+    private fun getEventsDb() = EventsDb(
         deviceId = DEVICE_ID,
         externalUserId = EXTERNAL_DEVICE_ID,
         eventList = listOf(

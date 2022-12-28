@@ -1,9 +1,9 @@
-package com.reteno.core.data.remote.mapper
+package com.reteno.core.domain.model.ecom
 
 
-object RemoteConstants {
+internal object RemoteConstants {
 
-    object EcomEvent {
+    internal object EcomEvent {
         /** eventTypeKeys **/
         const val EVENT_TYPE_PRODUCT_VIEWED = "productViewed"
         const val EVENT_TYPE_PRODUCT_CATEGORY_VIEWED = "productCategoryViewed"
@@ -21,6 +21,7 @@ object RemoteConstants {
         const val CATEGORY = "category"
         const val EXTERNAL_ORDER_ID = "externalOrderId"
         const val CART_ID = "cartId"
+        const val ATTRIBUTES = "attributes"
 
         /** ProductViewed  **/
         const val PRODUCT = "product"
@@ -35,6 +36,8 @@ object RemoteConstants {
         const val PRODUCTS = "products"
         const val QUANTITY = "quantity"
         const val DISCOUNT = "discount"
+        const val PRODUCT_NAME = "name"
+        const val PRODUCT_CATEGORY = "category"
 
         /** OrderCreated **/
         const val EXTERNAL_CUSTOMER_ID = "externalCustomerId"
@@ -57,6 +60,15 @@ object RemoteConstants {
         const val PAYMENT_METHOD = "paymentMethod"
         const val DELIVERY_ADDRESS = "deliveryAddress"
         const val ITEMS = "items"
+
+        const val ORDER_ITEM_EXTERNAL_ITEM_ID = "externalItemId"
+        const val ORDER_ITEM_NAME = "name"
+        const val ORDER_ITEM_CATEGORY = "category"
+        const val ORDER_ITEM_QUANTITY = "quantity"
+        const val ORDER_ITEM_COST = "cost"
+        const val ORDER_ITEM_URL = "url"
+        const val ORDER_ITEM_IMAGE_URL = "imageUrl"
+        const val ORDER_ITEM_DESCRIPTION = "description"
 
         /** SearchRequest **/
         const val SEARCH = "search"

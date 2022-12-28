@@ -56,11 +56,11 @@ interface Reteno {
     fun logScreenView(screenName: String)
 
     /**
-     * Enables automatic screen tracking. Screen view event happens on Fragment's onStart() by default
-     * lifecycle callback.
+     * Enable/disable automatic screen tracking.
+     * Screen view event happens on Fragment's onStart() by default lifecycle callback.
      * @see com.reteno.core.lifecycle.ScreenTrackingConfig for additional configuration
      *
-     * @param config - parameters for auto screen tracking
+     * @param config parameters for auto screen tracking
      */
     fun autoScreenTracking(config: ScreenTrackingConfig)
 

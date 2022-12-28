@@ -30,6 +30,7 @@ import java.util.concurrent.TimeUnit
 
 class AppInboxRepositoryImplTest : BaseUnitTest() {
 
+    // region constants ----------------------------------------------------------------------------
     companion object {
         private const val INBOX_ID = "ehc3-5hdh4-fde4yh-3d5g"
         private const val INBOX_OCCURRED_TIME = "2022-11-22T13:38:01Z"
@@ -81,7 +82,9 @@ class AppInboxRepositoryImplTest : BaseUnitTest() {
             unmockkStatic("com.reteno.core.data.remote.mapper.AppInboxMapperKt")
         }
     }
+    // endregion constants -------------------------------------------------------------------------
 
+    // region helper fields ------------------------------------------------------------------------
     @RelaxedMockK
     private lateinit var apiClient: ApiClient
 
@@ -95,6 +98,7 @@ class AppInboxRepositoryImplTest : BaseUnitTest() {
     private lateinit var databaseManagerDevice: RetenoDatabaseManagerDevice
 
     private lateinit var inboxRepository: AppInboxRepositoryImpl
+    // endregion helper fields ---------------------------------------------------------------------
 
     override fun before() {
         super.before()
@@ -103,6 +107,7 @@ class AppInboxRepositoryImplTest : BaseUnitTest() {
 
     @Test
     fun whenMessageOpened_thenInsertDbAndPush() {
+        // Given
         val inboxStatus = getTestAppInboxDb()
         every { Util.getCurrentTimeStamp() } returns INBOX_OCCURRED_TIME
         every { configRepository.getDeviceId().id } returns INBOX_DEVICE_ID
@@ -111,14 +116,17 @@ class AppInboxRepositoryImplTest : BaseUnitTest() {
             emptyList()
         )
 
+        // When
         inboxRepository.saveMessageOpened(INBOX_ID)
 
+        // Then
         verify(exactly = 1) { apiClient.post(any(), any(), any()) }
         verify(exactly = 1) { databaseManagerAppInbox.insertAppInboxMessage(inboxStatus) }
     }
 
     @Test
     fun whenDbHasSavedMessage_thenSendToApi() {
+        // Given
         val inboxStatus = getTestAppInboxDb()
         val resultJson = "result_json"
 
@@ -127,8 +135,11 @@ class AppInboxRepositoryImplTest : BaseUnitTest() {
             listOf(inboxStatus),
             emptyList()
         )
+
+        // When
         inboxRepository.pushMessagesStatus()
 
+        // Then
         verify(exactly = 1) { any<AppInboxMessagesStatusRemote>().toJson() }
         verify(exactly = 1) {
             apiClient.post(
@@ -141,6 +152,7 @@ class AppInboxRepositoryImplTest : BaseUnitTest() {
 
     @Test
     fun whenMessagesPushSuccessful_thenTryPushNextMessages() {
+        // Given
         val inboxStatus = getTestAppInboxDb()
         val spyRepository = spyk(inboxRepository, recordPrivateCalls = true)
         every { databaseManagerAppInbox.getAppInboxMessages(any()) } returnsMany listOf(
@@ -153,8 +165,10 @@ class AppInboxRepositoryImplTest : BaseUnitTest() {
             callback.onSuccess("")
         }
 
+        // When
         spyRepository.pushMessagesStatus()
 
+        // Then
         verify(exactly = 2) { apiClient.post(any(), any(), any()) }
         verify(exactly = 2) { databaseManagerAppInbox.deleteAppInboxMessages(1) }
         verify(exactly = 1) { PushOperationQueue.nextOperation() }
@@ -164,6 +178,7 @@ class AppInboxRepositoryImplTest : BaseUnitTest() {
 
     @Test
     fun whenMessagesPushFailedAndErrorIsRepeatable_cancelPushOperations() {
+        // Given
         val inboxStatus = getTestAppInboxDb()
         every { databaseManagerAppInbox.getAppInboxMessages(any()) } returns listOf(inboxStatus)
         every { apiClient.post(any(), any(), any()) } answers {
@@ -171,14 +186,17 @@ class AppInboxRepositoryImplTest : BaseUnitTest() {
             callback.onFailure(ERROR_CODE_REPEATABLE, null, null)
         }
 
+        // When
         inboxRepository.pushMessagesStatus()
 
+        // Then
         verify(exactly = 1) { apiClient.post(any(), any(), any()) }
         verify(exactly = 1) { PushOperationQueue.removeAllOperations() }
     }
 
     @Test
     fun whenMessagesPushFailedAndErrorIsNonRepeatable_thenTryPushNextMessages() {
+        // Given
         val inboxStatus = getTestAppInboxDb()
         every { databaseManagerAppInbox.getAppInboxMessages(any()) } returnsMany listOf(
             listOf(
@@ -190,8 +208,10 @@ class AppInboxRepositoryImplTest : BaseUnitTest() {
             callback.onFailure(ERROR_CODE, null, null)
         }
 
+        // When
         inboxRepository.pushMessagesStatus()
 
+        // Then
         verify(exactly = 2) { apiClient.post(any(), any(), any()) }
         verify(exactly = 3) { databaseManagerAppInbox.getAppInboxMessages() }
         verify(exactly = 2) { databaseManagerAppInbox.deleteAppInboxMessages(1) }
@@ -200,39 +220,48 @@ class AppInboxRepositoryImplTest : BaseUnitTest() {
 
     @Test
     fun givenNoMessagesInDb_whenDevicePush_thenApiClientPutsDoesNotCalled() {
+        // Given
         every { databaseManagerDevice.getDevices(any()) } returns emptyList()
 
+        // When
         inboxRepository.pushMessagesStatus()
 
+        // Then
         verify(exactly = 0) { apiClient.post(any(), any(), any()) }
         verify { PushOperationQueue.nextOperation() }
-
     }
 
     @Test
-    fun noOutdatedInteraction_whenClearOldInteractions_thenSentNothing() {
+    fun givenNoOutdatedAppInbox_whenClearOldAppInbox_thenSentNothing() {
+        // Given
         every { databaseManagerAppInbox.deleteAppInboxMessagesByTime(any()) } returns 0
 
+        // When
         inboxRepository.clearOldMessages(ZonedDateTime.now())
 
+        // Then
         verify(exactly = 1) { databaseManagerAppInbox.deleteAppInboxMessagesByTime(any()) }
         verify(exactly = 0) { Logger.captureEvent(any()) }
     }
 
     @Test
-    fun thereAreOutdatedInteraction_whenClearOldInteractions_thenSentCountDeleted() {
+    fun givenAreOutdatedAppInbox_whenClearOldAppInbox_thenSentCountDeleted() {
+        // Given
         val deletedInbox = 2
         every { databaseManagerAppInbox.deleteAppInboxMessagesByTime(any()) } returns deletedInbox
         val expectedMsg = "Outdated Inbox: - $deletedInbox"
 
+        // When
         inboxRepository.clearOldMessages(ZonedDateTime.now())
 
+        // Then
         verify(exactly = 1) { databaseManagerAppInbox.deleteAppInboxMessagesByTime(any()) }
         verify(exactly = 1) { Logger.captureEvent(eq(expectedMsg)) }
     }
 
     @Test
     fun whenSetAllMessagesOpened_thenReturnSuccessCallback() {
+        // Given
         val jsonString = "{}"
         val callback = spyk<RetenoResultCallback<Unit>>()
         val spyRepository = spyk(inboxRepository, recordPrivateCalls = true)
@@ -242,8 +271,10 @@ class AppInboxRepositoryImplTest : BaseUnitTest() {
             thirdArg<ResponseCallback>().onSuccess("")
         }
 
+        // When
         spyRepository.setAllMessageOpened(callback)
 
+        // Then
         verify(exactly = 1) {
             apiClient.post(
                 ApiContract.AppInbox.MessagesStatus,
@@ -259,6 +290,7 @@ class AppInboxRepositoryImplTest : BaseUnitTest() {
 
     @Test
     fun whenSetAllMessagesOpened_thenReturnErrorCallback() {
+        // Given
         val jsonString = "{}"
         val callback = spyk<RetenoResultCallback<Unit>>()
 
@@ -267,8 +299,10 @@ class AppInboxRepositoryImplTest : BaseUnitTest() {
             thirdArg<ResponseCallback>().onFailure(ERROR_CODE, ERROR_MSG, ERROR_EXCEPTION)
         }
 
+        // When
         inboxRepository.setAllMessageOpened(callback)
 
+        // Then
         verify(exactly = 1) {
             apiClient.post(
                 ApiContract.AppInbox.MessagesStatus,
@@ -283,6 +317,7 @@ class AppInboxRepositoryImplTest : BaseUnitTest() {
 
     @Test
     fun whenGetMessagesWithParams_thenResultSuccess() {
+        // Given
         val inboxMessages = mockk<AppInboxMessages>()
         val retenoCallback = mockk<RetenoResultCallback<AppInboxMessages>>(relaxed = true)
         val resultJson = "{}"
@@ -297,8 +332,10 @@ class AppInboxRepositoryImplTest : BaseUnitTest() {
         }
         every { any<InboxMessagesRemote>().toDomain() } returns inboxMessages
 
+        // When
         inboxRepository.getMessages(PAGE, PAGE_SIZE, retenoCallback)
 
+        // Then
         verify(exactly = 1) { OperationQueue.addUiOperation(any()) }
         verify(exactly = 1) { retenoCallback.onSuccess(inboxMessages) }
         verify(exactly = 1) { any<InboxMessagesRemote>().toDomain() }
@@ -313,6 +350,7 @@ class AppInboxRepositoryImplTest : BaseUnitTest() {
 
     @Test
     fun whenGetMessagesWithoutParams_thenResultSuccess() {
+        // Given
         val inboxMessages = mockk<AppInboxMessages>()
         val retenoCallback = mockk<RetenoResultCallback<AppInboxMessages>>(relaxed = true)
         val resultJson = "{}"
@@ -327,8 +365,10 @@ class AppInboxRepositoryImplTest : BaseUnitTest() {
         }
         every { any<InboxMessagesRemote>().toDomain() } returns inboxMessages
 
+        // When
         inboxRepository.getMessages(null, null, retenoCallback)
 
+        // Then
         verify(exactly = 1) { OperationQueue.addUiOperation(any()) }
         verify(exactly = 1) { retenoCallback.onSuccess(inboxMessages) }
         verify(exactly = 1) { any<InboxMessagesRemote>().toDomain() }
@@ -343,6 +383,7 @@ class AppInboxRepositoryImplTest : BaseUnitTest() {
 
     @Test
     fun givenSomeError_whenGetMessages_thenResultFailure() {
+        // Given
         val retenoCallback = mockk<RetenoResultCallback<AppInboxMessages>>(relaxed = true)
         val queryParams = mapOf(
             ApiContract.AppInbox.QUERY_PAGE to null,
@@ -354,8 +395,10 @@ class AppInboxRepositoryImplTest : BaseUnitTest() {
             callback.onFailure(ERROR_CODE, ERROR_MSG, ERROR_EXCEPTION)
         }
 
+        // When
         inboxRepository.getMessages(null, null, retenoCallback)
 
+        // Then
         verify(exactly = 1) { OperationQueue.addUiOperation(any()) }
         verify(exactly = 1) { retenoCallback.onFailure(ERROR_CODE, ERROR_MSG, ERROR_EXCEPTION) }
         verify(exactly = 1) {
@@ -369,11 +412,14 @@ class AppInboxRepositoryImplTest : BaseUnitTest() {
 
     @Test
     fun whenGetMessagesCount_thenResultSuccess() {
+        // Given
         val retenoCallback = mockk<RetenoResultCallback<Int>>(relaxed = true)
         mockkCountSuccessResponse()
 
+        // When
         inboxRepository.getMessagesCount(retenoCallback)
 
+        // Then
         verify(exactly = 1) { OperationQueue.addUiOperation(any()) }
         verify(exactly = 1) { retenoCallback.onSuccess(MESSAGES_COUNT) }
         verify(exactly = 1) { apiClient.get(eq(ApiContract.AppInbox.MessagesCount), null, any()) }
@@ -381,14 +427,17 @@ class AppInboxRepositoryImplTest : BaseUnitTest() {
 
     @Test
     fun givenSomeError_whenGetMessagesCount_thenResultFailure() {
+        // Given
         val retenoCallback = mockk<RetenoResultCallback<Int>>(relaxed = true)
         every { apiClient.get(any(), any(), any()) } answers {
             val callback = thirdArg<ResponseCallback>()
             callback.onFailure(ERROR_CODE, ERROR_MSG, ERROR_EXCEPTION)
         }
 
+        // When
         inboxRepository.getMessagesCount(retenoCallback)
 
+        // Then
         verify(exactly = 1) { OperationQueue.addUiOperation(any()) }
         verify(exactly = 1) { retenoCallback.onFailure(ERROR_CODE, eq(ERROR_MSG), ERROR_EXCEPTION) }
         verify(exactly = 1) { apiClient.get(eq(ApiContract.AppInbox.MessagesCount), null, any()) }
@@ -396,8 +445,10 @@ class AppInboxRepositoryImplTest : BaseUnitTest() {
 
     @Test
     fun givenPollingIsInactive_whenSubscribeCountChanges_thenStartPolling() {
+        // When
         inboxRepository.subscribeOnMessagesCountChanged(mockk())
 
+        // Then
         verify(exactly = 1) {
             scheduler.scheduleAtFixedRate(
                 any(),
@@ -410,9 +461,11 @@ class AppInboxRepositoryImplTest : BaseUnitTest() {
 
     @Test
     fun givenPollingIsActive_whenSubscribeCountChanges_thenPollingDoesNotChange() {
+        // When
         inboxRepository.subscribeOnMessagesCountChanged(mockk())
         inboxRepository.subscribeOnMessagesCountChanged(mockk())
 
+        // Then
         verify(exactly = 1) {
             scheduler.scheduleAtFixedRate(
                 any(),
@@ -425,60 +478,75 @@ class AppInboxRepositoryImplTest : BaseUnitTest() {
 
     @Test
     fun givenListenersHaveMoreThanOneItem_whenUnsubscribeCountChanges_thenDoesNotStopPolling() {
+        // Given
         val listenerOne = mockk<RetenoResultCallback<Int>>()
         val listenerTwo = mockk<RetenoResultCallback<Int>>()
+
+        // When
         inboxRepository.subscribeOnMessagesCountChanged(listenerOne)
         inboxRepository.subscribeOnMessagesCountChanged(listenerTwo)
-
         inboxRepository.unsubscribeMessagesCountChanged(listenerOne)
 
+        // Then
         verify(exactly = 0) { scheduler.shutdownNow() }
     }
 
     @Test
     fun givenListenersHaveOneItem_whenUnsubscribeCountChanges_thenStopPolling() {
+        // Given
         val listener = mockk<RetenoResultCallback<Int>>()
-        inboxRepository.subscribeOnMessagesCountChanged(listener)
 
+        // When
+        inboxRepository.subscribeOnMessagesCountChanged(listener)
         inboxRepository.unsubscribeMessagesCountChanged(listener)
 
+        // Then
         verify(exactly = 1) { scheduler.shutdownNow() }
     }
 
     @Test
     fun whenUnsubscribeAll_thenStopPolling() {
+        // When
         inboxRepository.subscribeOnMessagesCountChanged(mockk())
         inboxRepository.unsubscribeAllMessagesCountChanged()
 
+        // Then
         verify(exactly = 1) { scheduler.shutdownNow() }
     }
 
     @Test
     fun givenPollingIsActive_whenFetchCount_thenNotifySuccess() {
+        // Given
         val listener = spyk<RetenoResultCallback<Int>>()
         mockkCountSuccessResponse()
 
+        // When
         inboxRepository.subscribeOnMessagesCountChanged(listener)
 
+        // Then
         verify(exactly = 1) { listener.onSuccess(MESSAGES_COUNT) }
     }
 
     @Test
     fun givenPollingIsActiveWithSeveralListeners_whenFetchCount_thenNotifySuccessToAllListeners() {
+        // Given
         val listenerOne = spyk<RetenoResultCallback<Int>>()
         val listenerTwo = spyk<RetenoResultCallback<Int>>()
 
         mockkCountSuccessResponse()
 
+        // When
         inboxRepository.subscribeOnMessagesCountChanged(listenerOne)
         inboxRepository.subscribeOnMessagesCountChanged(listenerTwo)
 
+        // Then
         verify(exactly = 1) { listenerOne.onSuccess(MESSAGES_COUNT) }
         verify(exactly = 1) { listenerTwo.onSuccess(MESSAGES_COUNT) }
     }
 
     @Test
     fun givenPollingIsActiveAndHasValue_whenFetchCountAndValuesAreEquals_thenNotifySuccessWithoutCallback() {
+        // Given
         val listener = spyk<RetenoResultCallback<Int>>()
         mockkCountSuccessResponse()
         val currentThreadExecutor = Executor(Runnable::run)
@@ -488,13 +556,16 @@ class AppInboxRepositoryImplTest : BaseUnitTest() {
             mockk()
         }
 
+        // When
         inboxRepository.subscribeOnMessagesCountChanged(listener)
 
+        // Then
         verify(exactly = 1) { listener.onSuccess(MESSAGES_COUNT) }
     }
 
     @Test
     fun givenPollingIsActiveAndHasValue_whenFetchCountAndValuesAreNotEquals_thenNotifySuccessWithoutCallback() {
+        // Given
         val listener = spyk<RetenoResultCallback<Int>>()
         mockkCountSuccessResponseForTwoCalls()
         val currentThreadExecutor = Executor(Runnable::run)
@@ -504,25 +575,31 @@ class AppInboxRepositoryImplTest : BaseUnitTest() {
             mockk()
         }
 
+        // When
         inboxRepository.subscribeOnMessagesCountChanged(listener)
 
+        // Then
         verify(exactly = 1) { listener.onSuccess(MESSAGES_COUNT_ZERO) }
         verify(exactly = 1) { listener.onSuccess(MESSAGES_COUNT) }
     }
 
     @Test
     fun givenPollingIsActiveAndSomeError_whenFetchCount_thenNotifyFailure() {
+        // Given
         val listener = spyk<RetenoResultCallback<Int>>()
         every { apiClient.get(any(), any(), any()) } answers {
             val callback = thirdArg<ResponseCallback>()
             callback.onFailure(ERROR_CODE, ERROR_MSG, ERROR_EXCEPTION)
         }
 
+        // When
         inboxRepository.subscribeOnMessagesCountChanged(listener)
 
+        // Then
         verify(exactly = 1) { listener.onFailure(ERROR_CODE, eq(ERROR_MSG), ERROR_EXCEPTION) }
     }
 
+    // region helper methods -----------------------------------------------------------------------
     private fun getTestAppInboxDb(): AppInboxMessageDb {
         return AppInboxMessageDb(
             id = INBOX_ID,
@@ -566,5 +643,5 @@ class AppInboxRepositoryImplTest : BaseUnitTest() {
             callback.onSuccess(resultJsonSecond)
         }
     }
-
+    // endregion helper methods --------------------------------------------------------------------
 }
