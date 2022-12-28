@@ -1,45 +1,24 @@
 package com.reteno.core.domain.controller
 
-import com.reteno.core.base.BaseUnitTest
+import com.reteno.core.base.robolectric.BaseRobolectricTest
 import com.reteno.core.data.remote.OperationQueue
 import com.reteno.core.data.remote.PushOperationQueue
-import io.mockk.*
+import io.mockk.clearMocks
+import io.mockk.every
 import io.mockk.impl.annotations.RelaxedMockK
-import org.junit.AfterClass
-import org.junit.BeforeClass
+import io.mockk.mockk
+import io.mockk.verify
 import org.junit.Test
 import java.util.concurrent.Executor
 import java.util.concurrent.ScheduledExecutorService
 
-class ScheduleControllerImplTest : BaseUnitTest() {
+class ScheduleControllerImplTest : BaseRobolectricTest() {
 
     // region constants ----------------------------------------------------------------------------
     companion object {
         private const val CLEAR_OLD_DATA_DELAY = 3000L
 
         private lateinit var scheduler: ScheduledExecutorService
-
-        @JvmStatic
-        @BeforeClass
-        fun beforeClass() {
-            mockStaticLog()
-            mockObjectOperationQueue()
-            mockObjectPushOperationQueue()
-
-            scheduler = mockStaticScheduler()
-            mockObjectPushDataWorker()
-        }
-
-        @JvmStatic
-        @AfterClass
-        fun afterClass() {
-            unMockStaticLog()
-            unMockObjectOperationQueue()
-            unMockObjectPushOperationQueue()
-
-            unMockStaticScheduler()
-            unMockObjectPushDataWorker()
-        }
     }
     // endregion constants -------------------------------------------------------------------------
 
@@ -67,6 +46,7 @@ class ScheduleControllerImplTest : BaseUnitTest() {
     override fun before() {
         super.before()
         SUT = ScheduleControllerImpl(contactController, interactionController, eventController, appInboxController, recommendationController, mockk(relaxed = true))
+        scheduler = application.scheduler
     }
 
     override fun after() {

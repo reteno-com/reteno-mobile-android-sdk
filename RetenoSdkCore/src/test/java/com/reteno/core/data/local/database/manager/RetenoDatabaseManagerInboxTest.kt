@@ -11,14 +11,15 @@ import com.reteno.core.data.local.model.appinbox.AppInboxMessageDb
 import com.reteno.core.data.local.model.appinbox.AppInboxMessageStatusDb
 import com.reteno.core.util.Logger
 import com.reteno.core.util.Util.formatToRemote
-import io.mockk.*
+import io.mockk.clearMocks
+import io.mockk.every
 import io.mockk.impl.annotations.MockK
 import io.mockk.impl.annotations.RelaxedMockK
+import io.mockk.justRun
+import io.mockk.verify
 import junit.framework.TestCase.assertTrue
 import net.sqlcipher.Cursor
-import org.junit.AfterClass
 import org.junit.Assert.assertEquals
-import org.junit.BeforeClass
 import org.junit.Test
 import java.time.ZonedDateTime
 
@@ -52,18 +53,6 @@ class RetenoDatabaseManagerInboxTest : BaseRobolectricTest() {
         private const val COLUMN_INDEX_INBOX_STATUS = 3
         private const val COLUMN_INDEX_INBOX_TIME = 4
         private const val COLUMN_INDEX_INBOX_DEVICE_ID = 5
-
-        @JvmStatic
-        @BeforeClass
-        fun beforeClass() {
-            mockkStatic(Cursor::getAppInbox)
-        }
-
-        @JvmStatic
-        @AfterClass
-        fun afterClass() {
-            unmockkStatic(Cursor::getAppInbox)
-        }
     }
     // endregion constants -------------------------------------------------------------------------
 

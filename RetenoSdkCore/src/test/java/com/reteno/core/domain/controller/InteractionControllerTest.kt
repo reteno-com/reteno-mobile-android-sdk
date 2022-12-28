@@ -1,6 +1,6 @@
 package com.reteno.core.domain.controller
 
-import com.reteno.core.base.BaseUnitTest
+import com.reteno.core.base.robolectric.BaseRobolectricTest
 import com.reteno.core.data.repository.ConfigRepository
 import com.reteno.core.data.repository.InteractionRepository
 import com.reteno.core.domain.SchedulerUtils
@@ -12,33 +12,17 @@ import io.mockk.impl.annotations.MockK
 import io.mockk.impl.annotations.RelaxedMockK
 import io.mockk.mockk
 import io.mockk.verify
-import org.junit.AfterClass
 import org.junit.Before
-import org.junit.BeforeClass
 import org.junit.Test
 import java.time.ZonedDateTime
 
-class InteractionControllerTest : BaseUnitTest() {
+class InteractionControllerTest : BaseRobolectricTest() {
 
     // region constants ----------------------------------------------------------------------------
     companion object {
         const val TOKEN = "some_token"
         const val INTERACTION_ID = "interaction_id"
         const val CURRENT_TIMESTAMP = "2022-11-22T11:11:11Z"
-
-        @JvmStatic
-        @BeforeClass
-        fun beforeClass() {
-            mockObjectUtil()
-            mockObjectSchedulerUtils()
-        }
-
-        @JvmStatic
-        @AfterClass
-        fun afterClass() {
-            unMockObjectUtil()
-            unMockObjectSchedulerUtils()
-        }
     }
     // endregion constants -------------------------------------------------------------------------
 

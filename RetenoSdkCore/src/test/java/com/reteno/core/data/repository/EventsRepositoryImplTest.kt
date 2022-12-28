@@ -1,6 +1,6 @@
 package com.reteno.core.data.repository
 
-import com.reteno.core.base.BaseUnitTest
+import com.reteno.core.base.robolectric.BaseRobolectricTest
 import com.reteno.core.data.local.config.DeviceId
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerEvents
 import com.reteno.core.data.local.mappers.toDb
@@ -22,13 +22,11 @@ import com.reteno.core.util.Logger
 import io.mockk.every
 import io.mockk.impl.annotations.RelaxedMockK
 import io.mockk.verify
-import org.junit.AfterClass
 import org.junit.Before
-import org.junit.BeforeClass
 import org.junit.Test
 import java.time.ZonedDateTime
 
-class EventsRepositoryImplTest : BaseUnitTest() {
+class EventsRepositoryImplTest : BaseRobolectricTest() {
 
     // region constants ----------------------------------------------------------------------------
     companion object {
@@ -38,21 +36,6 @@ class EventsRepositoryImplTest : BaseUnitTest() {
         private const val OCCURRED = "2022-11-11T20:22:21Z"
         private const val ECOM_EVENT_KEY = RemoteConstants.EcomEvent.EXTERNAL_ORDER_ID
         private const val ECOM_EVENT_EXTERNAL_ORDER_ID = "external_order_id"
-
-        @JvmStatic
-        @BeforeClass
-        fun beforeClass() {
-            mockObjectOperationQueue()
-            mockObjectPushOperationQueue()
-        }
-
-        @JvmStatic
-        @AfterClass
-        fun afterClass() {
-            unMockObjectOperationQueue()
-            unMockObjectPushOperationQueue()
-        }
-
     }
     // endregion constants -------------------------------------------------------------------------
 

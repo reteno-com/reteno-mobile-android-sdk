@@ -1,6 +1,6 @@
 package com.reteno.core.data.repository
 
-import com.reteno.core.base.BaseUnitTest
+import com.reteno.core.base.robolectric.BaseRobolectricTest
 import com.reteno.core.data.local.config.DeviceId
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerDevice
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerUser
@@ -27,7 +27,7 @@ import org.junit.AfterClass
 import org.junit.BeforeClass
 import org.junit.Test
 
-class ContactRepositoryImplTest : BaseUnitTest() {
+class ContactRepositoryImplTest : BaseRobolectricTest() {
 
     // region constants ----------------------------------------------------------------------------
     companion object {
@@ -58,16 +58,12 @@ class ContactRepositoryImplTest : BaseUnitTest() {
         @JvmStatic
         @BeforeClass
         fun beforeClass() {
-            mockObjectOperationQueue()
-            mockObjectPushOperationQueue()
             mockkStatic(User::toDb)
         }
 
         @JvmStatic
         @AfterClass
         fun afterClass() {
-            unMockObjectOperationQueue()
-            unMockObjectPushOperationQueue()
             unmockkStatic(User::toDb)
         }
     }

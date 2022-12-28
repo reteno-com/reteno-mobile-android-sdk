@@ -1,13 +1,14 @@
 package com.reteno.core.lifecycle
 
 import android.app.Activity
-import android.os.Bundle
 import androidx.fragment.app.testing.FragmentScenario
+import androidx.fragment.app.testing.launchFragmentInContainer
 import androidx.lifecycle.Lifecycle
 import com.reteno.core.base.robolectric.BaseRobolectricTest
 import com.reteno.core.domain.controller.EventController
 import io.mockk.impl.annotations.RelaxedMockK
 import io.mockk.verify
+import org.junit.Ignore
 import org.junit.Test
 import org.robolectric.Robolectric
 import org.robolectric.android.controller.ActivityController
@@ -38,7 +39,7 @@ class RetenoActivityHelperFragmentTest : BaseRobolectricTest() {
         // Disable screenTracking to prevent eventController calls for the first Fragment start
         SUT.autoScreenTracking(ScreenTrackingConfig(false))
         // First fragment start
-        fragmentScenario = FragmentScenario.launch(TestFragment::class.java, Bundle.EMPTY)
+        fragmentScenario = launchFragmentInContainer(initialState = Lifecycle.State.INITIALIZED)
     }
 
     @Test

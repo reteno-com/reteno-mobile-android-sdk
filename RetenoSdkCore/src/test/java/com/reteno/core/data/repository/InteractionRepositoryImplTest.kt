@@ -1,6 +1,6 @@
 package com.reteno.core.data.repository
 
-import com.reteno.core.base.BaseUnitTest
+import com.reteno.core.base.robolectric.BaseRobolectricTest
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerInteraction
 import com.reteno.core.data.local.mappers.toDb
 import com.reteno.core.data.local.model.interaction.InteractionDb
@@ -13,10 +13,12 @@ import com.reteno.core.domain.model.interaction.InteractionStatus
 import com.reteno.core.util.Logger
 import io.mockk.*
 import io.mockk.impl.annotations.RelaxedMockK
-import org.junit.*
+import org.junit.Assert
+import org.junit.Before
+import org.junit.Test
 import java.time.ZonedDateTime
 
-class InteractionRepositoryImplTest : BaseUnitTest() {
+class InteractionRepositoryImplTest : BaseRobolectricTest() {
 
     // region constants ----------------------------------------------------------------------------
     companion object {
@@ -29,20 +31,6 @@ class InteractionRepositoryImplTest : BaseUnitTest() {
             ApiContract.RetenoApi.InteractionStatus(INTERACTION_ID).url
         private const val EXPECTED_URL =
             "https://api.reteno.com/api/v1/interactions/$INTERACTION_ID/status"
-
-        @JvmStatic
-        @BeforeClass
-        fun beforeClass() {
-            mockObjectOperationQueue()
-            mockObjectPushOperationQueue()
-        }
-
-        @JvmStatic
-        @AfterClass
-        fun afterClass() {
-            unMockObjectOperationQueue()
-            unMockObjectPushOperationQueue()
-        }
     }
     // endregion constants -------------------------------------------------------------------------
 

@@ -13,14 +13,15 @@ import com.reteno.core.data.local.model.interaction.InteractionDb
 import com.reteno.core.data.local.model.interaction.InteractionStatusDb
 import com.reteno.core.util.Logger
 import com.reteno.core.util.Util.formatToRemote
-import io.mockk.*
+import io.mockk.clearMocks
+import io.mockk.every
 import io.mockk.impl.annotations.MockK
 import io.mockk.impl.annotations.RelaxedMockK
+import io.mockk.justRun
+import io.mockk.verify
 import junit.framework.TestCase.assertTrue
 import net.sqlcipher.Cursor
-import org.junit.AfterClass
 import org.junit.Assert.assertEquals
-import org.junit.BeforeClass
 import org.junit.Test
 import java.time.ZonedDateTime
 
@@ -58,18 +59,6 @@ class RetenoDatabaseManagerInteractionTest : BaseRobolectricTest() {
         private const val COLUMN_INDEX_INTERACTION_STATUS = 4
         private const val COLUMN_INDEX_INTERACTION_TIME = 5
         private const val COLUMN_INDEX_INTERACTION_TOKEN = 6
-
-        @JvmStatic
-        @BeforeClass
-        fun beforeClass() {
-            mockkStatic(Cursor::getInteraction)
-        }
-
-        @JvmStatic
-        @AfterClass
-        fun afterClass() {
-            unmockkStatic(Cursor::getInteraction)
-        }
     }
     // endregion constants -------------------------------------------------------------------------
 

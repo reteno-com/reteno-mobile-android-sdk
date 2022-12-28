@@ -1,43 +1,27 @@
 package com.reteno.core.domain.controller
 
-import com.reteno.core.base.BaseUnitTest
+import com.reteno.core.base.robolectric.BaseRobolectricTest
 import com.reteno.core.data.repository.EventsRepository
-import com.reteno.core.data.repository.EventsRepositoryImplTest
 import com.reteno.core.domain.SchedulerUtils
 import com.reteno.core.domain.model.ecom.EcomEvent
-import com.reteno.core.domain.model.ecom.RemoteConstants
 import com.reteno.core.domain.model.event.Event
 import com.reteno.core.domain.model.event.Event.Companion.SCREEN_VIEW_EVENT_TYPE_KEY
 import com.reteno.core.domain.model.event.Event.Companion.SCREEN_VIEW_PARAM_NAME
-import com.reteno.core.domain.model.event.Parameter
 import io.mockk.*
 import io.mockk.impl.annotations.RelaxedMockK
 import junit.framework.TestCase.assertEquals
-import org.junit.AfterClass
 import org.junit.Before
-import org.junit.BeforeClass
 import org.junit.Test
 import java.time.ZonedDateTime
 
 
-class EventControllerTest : BaseUnitTest() {
+class EventControllerTest : BaseRobolectricTest() {
 
     // region constants ----------------------------------------------------------------------------
     companion object {
         private const val EVENT_TYPE_KEY = "key"
         private const val SCREEN_NAME = "CustomScreenName"
         private const val ECOM_EVENT_EXTERNAL_ORDER_ID = "external_order_id"
-        @JvmStatic
-        @BeforeClass
-        fun beforeClass() {
-            mockObjectSchedulerUtils()
-        }
-
-        @JvmStatic
-        @AfterClass
-        fun afterClass() {
-            unMockObjectSchedulerUtils()
-        }
     }
     // endregion constants -------------------------------------------------------------------------
 

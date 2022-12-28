@@ -1,6 +1,6 @@
 package com.reteno.core.domain.controller
 
-import com.reteno.core.base.BaseUnitTest
+import com.reteno.core.base.robolectric.BaseRobolectricTest
 import com.reteno.core.data.repository.AppInboxRepository
 import com.reteno.core.domain.SchedulerUtils
 import com.reteno.core.domain.callback.appinbox.RetenoResultCallback
@@ -9,30 +9,16 @@ import io.mockk.every
 import io.mockk.impl.annotations.RelaxedMockK
 import io.mockk.mockk
 import io.mockk.verify
-import org.junit.AfterClass
-import org.junit.BeforeClass
 import org.junit.Test
 import java.time.ZonedDateTime
 
-class AppInboxControllerTest : BaseUnitTest() {
+class AppInboxControllerTest : BaseRobolectricTest() {
 
     // region constants ----------------------------------------------------------------------------
     private companion object {
         private const val PAGE = 2
         private const val PAGE_SIZE = 12
         private const val MESSAGE_ID = "dsdg-4352-sdgsdg-3525-sdggse"
-
-        @JvmStatic
-        @BeforeClass
-        fun beforeClass() {
-            mockObjectSchedulerUtils()
-        }
-
-        @JvmStatic
-        @AfterClass
-        fun afterClass() {
-            unMockObjectSchedulerUtils()
-        }
     }
     // endregion constants -------------------------------------------------------------------------
 

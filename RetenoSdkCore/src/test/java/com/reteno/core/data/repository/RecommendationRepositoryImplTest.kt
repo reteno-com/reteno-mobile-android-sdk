@@ -1,6 +1,6 @@
 package com.reteno.core.data.repository
 
-import com.reteno.core.base.BaseUnitTest
+import com.reteno.core.base.robolectric.BaseRobolectricTest
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerRecomEvents
 import com.reteno.core.data.local.model.recommendation.RecomEventDb
 import com.reteno.core.data.local.model.recommendation.RecomEventTypeDb
@@ -23,14 +23,12 @@ import com.reteno.core.util.Logger
 import com.reteno.core.util.Util.formatToRemote
 import io.mockk.*
 import io.mockk.impl.annotations.RelaxedMockK
-import org.junit.AfterClass
 import org.junit.Assert.assertEquals
-import org.junit.BeforeClass
 import org.junit.Test
 import java.time.ZonedDateTime
 
 
-class RecommendationRepositoryImplTest : BaseUnitTest() {
+class RecommendationRepositoryImplTest : BaseRobolectricTest() {
 
     // region constants ----------------------------------------------------------------------------
     companion object {
@@ -47,20 +45,6 @@ class RecommendationRepositoryImplTest : BaseUnitTest() {
         private const val ERROR_CODE_REPEATABLE = 500
         private const val ERROR_MSG = "error_msg"
         private val ERROR_EXCEPTION = MockKException(ERROR_MSG)
-
-        @JvmStatic
-        @BeforeClass
-        fun beforeClass() {
-            mockObjectOperationQueue()
-            mockObjectPushOperationQueue()
-        }
-
-        @JvmStatic
-        @AfterClass
-        fun afterClass() {
-            unMockObjectOperationQueue()
-            unMockObjectPushOperationQueue()
-        }
     }
     // endregion constants -------------------------------------------------------------------------
 

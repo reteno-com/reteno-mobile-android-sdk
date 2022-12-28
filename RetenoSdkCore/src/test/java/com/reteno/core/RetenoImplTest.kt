@@ -10,7 +10,6 @@ import com.reteno.core.domain.controller.ContactController
 import com.reteno.core.domain.controller.EventController
 import com.reteno.core.domain.controller.ScheduleController
 import com.reteno.core.domain.model.ecom.EcomEvent
-import com.reteno.core.domain.model.ecom.RemoteConstants
 import com.reteno.core.domain.model.event.Event
 import com.reteno.core.domain.model.event.Parameter
 import com.reteno.core.domain.model.user.User
@@ -23,9 +22,7 @@ import io.mockk.*
 import io.mockk.impl.annotations.RelaxedMockK
 import junit.framework.TestCase.assertNotNull
 import junit.framework.TestCase.assertTrue
-import org.junit.AfterClass
 import org.junit.Assert.assertEquals
-import org.junit.BeforeClass
 import org.junit.Test
 import org.robolectric.shadows.ShadowLooper.shadowMainLooper
 import java.time.ZonedDateTime
@@ -50,26 +47,6 @@ class RetenoImplTest : BaseRobolectricTest() {
         private const val ECOM_EVENT_EXTERNAL_ORDER_ID = "external_order_id"
 
         private const val TRANSCRIPT_RESUME_RECEIVED = "ResumeReceived"
-
-        @JvmStatic
-        @BeforeClass
-        fun beforeClass() {
-            mockUtilKt()
-        }
-
-        @JvmStatic
-        @AfterClass
-        fun afterClass() {
-            unMockUtilKt()
-        }
-
-        private fun mockUtilKt() {
-            mockkStatic("com.reteno.core.util.UtilKt")
-        }
-
-        private fun unMockUtilKt() {
-            unmockkStatic("com.reteno.core.util.UtilKt")
-        }
     }
     // endregion constants -------------------------------------------------------------------------
 

@@ -1,32 +1,18 @@
 package com.reteno.core.data.repository
 
-import com.reteno.core.base.BaseUnitTest
+import com.reteno.core.base.robolectric.BaseRobolectricTest
 import com.reteno.core.data.remote.api.ApiClient
 import com.reteno.core.data.remote.api.ApiContract
 import io.mockk.impl.annotations.RelaxedMockK
 import io.mockk.verify
-import org.junit.AfterClass
-import org.junit.BeforeClass
 import org.junit.Test
 
 
-class DeeplinkRepositoryImplTest : BaseUnitTest() {
+class DeeplinkRepositoryImplTest : BaseRobolectricTest() {
 
     // region constants ----------------------------------------------------------------------------
     companion object {
         const val DEEPLINK_WRAPPED = "https://wrapped.com"
-
-        @JvmStatic
-        @BeforeClass
-        fun beforeClass() {
-            mockObjectOperationQueue()
-        }
-
-        @JvmStatic
-        @AfterClass
-        fun afterClass() {
-            unMockObjectOperationQueue()
-        }
     }
     // endregion constants -------------------------------------------------------------------------
 

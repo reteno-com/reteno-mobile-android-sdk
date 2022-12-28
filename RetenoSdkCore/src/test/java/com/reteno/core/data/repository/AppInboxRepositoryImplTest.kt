@@ -1,6 +1,6 @@
 package com.reteno.core.data.repository
 
-import com.reteno.core.base.BaseUnitTest
+import com.reteno.core.base.robolectric.BaseRobolectricTest
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerAppInbox
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerDevice
 import com.reteno.core.data.local.model.appinbox.AppInboxMessageDb
@@ -28,7 +28,7 @@ import java.util.concurrent.Executor
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 
-class AppInboxRepositoryImplTest : BaseUnitTest() {
+class AppInboxRepositoryImplTest : BaseRobolectricTest() {
 
     // region constants ----------------------------------------------------------------------------
     companion object {
@@ -55,21 +55,13 @@ class AppInboxRepositoryImplTest : BaseUnitTest() {
         @BeforeClass
         @JvmStatic
         fun beforeClass() {
-            mockObjectOperationQueue()
-            mockObjectPushOperationQueue()
-            scheduler = mockStaticScheduler()
             mockStaticJsonMappers()
-            mockObjectUtil()
         }
 
         @AfterClass
         @JvmStatic
         fun afterClass() {
-            unMockObjectOperationQueue()
-            unMockObjectPushOperationQueue()
-            unMockStaticScheduler()
             unMockStaticJsonMappers()
-            unMockObjectUtil()
         }
 
         private fun mockStaticJsonMappers() {
@@ -102,6 +94,7 @@ class AppInboxRepositoryImplTest : BaseUnitTest() {
 
     override fun before() {
         super.before()
+        scheduler = application.scheduler
         inboxRepository = AppInboxRepositoryImpl(apiClient, databaseManagerAppInbox, configRepository)
     }
 
