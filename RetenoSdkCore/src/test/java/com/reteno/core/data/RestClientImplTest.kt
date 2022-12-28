@@ -66,7 +66,7 @@ class RestClientImplTest : BaseUnitTest() {
 
     // region helper fields ------------------------------------------------------------------------
     @RelaxedMockK
-    private lateinit var httpURLConnection: HttpURLConnection
+    private lateinit var httpURLConnection: HttpsURLConnection
     private lateinit var restClient: RestClientImpl
     // endregion helper fields ---------------------------------------------------------------------
 

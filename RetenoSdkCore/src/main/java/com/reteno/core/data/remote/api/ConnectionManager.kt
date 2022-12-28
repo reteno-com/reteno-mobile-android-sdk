@@ -1,13 +1,13 @@
 package com.reteno.core.data.remote.api
 
-import java.net.HttpURLConnection
+import javax.net.ssl.HttpsURLConnection
 import java.net.URL
 
 internal object ConnectionManager {
 
-    fun openConnection(url: String): HttpURLConnection {
+    fun openConnection(url: String): HttpsURLConnection {
         val urlPath = URL(url)
-        return urlPath.openConnection() as HttpURLConnection
+        return urlPath.openConnection() as HttpsURLConnection
     }
 
 }
