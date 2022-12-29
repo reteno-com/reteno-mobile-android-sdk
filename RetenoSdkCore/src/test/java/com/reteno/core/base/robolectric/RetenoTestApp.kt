@@ -36,19 +36,11 @@ class RetenoTestApp : Application(), RetenoApplication {
 
     override fun onCreate() {
         super.onCreate()
-
-        Settings.Secure.putString(
-            contentResolver,
-            Settings.Secure.ANDROID_ID,
-            Constants.DEVICE_ID_ANDROID
-        )
+        Settings.Secure.putString(contentResolver, Settings.Secure.ANDROID_ID, Constants.DEVICE_ID_ANDROID)
 
         retenoInstance = spyk(RetenoImpl(this, ""))
         every { retenoInstance.getProperty("serviceLocator") } returns spyk(
-            ServiceLocator(
-                this,
-                ""
-            )
+            ServiceLocator(this, "")
         )
     }
 
@@ -72,9 +64,7 @@ class RetenoTestApp : Application(), RetenoApplication {
         mockkObject(OperationQueue)
         val currentThreadExecutor = Executor(Runnable::run)
         every { OperationQueue.addParallelOperation(any()) } answers {
-            currentThreadExecutor.execute(
-                firstArg()
-            )
+            currentThreadExecutor.execute(firstArg())
         }
         every { OperationQueue.addOperation(any()) } answers {
             currentThreadExecutor.execute(firstArg())

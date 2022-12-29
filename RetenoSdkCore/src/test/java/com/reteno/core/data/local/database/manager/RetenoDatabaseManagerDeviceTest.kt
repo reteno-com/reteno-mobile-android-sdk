@@ -29,7 +29,7 @@ import org.junit.Test
 class RetenoDatabaseManagerDeviceTest : BaseRobolectricTest() {
 
     // region constants ----------------------------------------------------------------------------
-    companion object Constants {
+    companion object {
         private const val ROW_ID_CORRUPTED = 101L
 
         private const val ROW_ID_INSERTED = 1L

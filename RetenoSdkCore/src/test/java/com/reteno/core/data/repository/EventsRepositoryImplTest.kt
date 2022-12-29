@@ -15,6 +15,7 @@ import com.reteno.core.data.remote.mapper.toRemote
 import com.reteno.core.domain.ResponseCallback
 import com.reteno.core.domain.model.ecom.EcomEvent
 import com.reteno.core.domain.model.ecom.RemoteConstants
+import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.EVENT_TYPE_ORDER_CANCELLED
 import com.reteno.core.domain.model.event.Event
 import com.reteno.core.domain.model.event.Events
 import com.reteno.core.domain.model.event.Parameter
@@ -83,7 +84,7 @@ class EventsRepositoryImplTest : BaseRobolectricTest() {
         val ecomEvent = EcomEvent.OrderCancelled(ECOM_EVENT_EXTERNAL_ORDER_ID, occurred)
 
         val event = Event.Custom(
-            RemoteConstants.EcomEvent.EVENT_TYPE_ORDER_CANCELLED,
+            EVENT_TYPE_ORDER_CANCELLED,
             occurred,
             listOf<Parameter>(Parameter(ECOM_EVENT_KEY, ECOM_EVENT_EXTERNAL_ORDER_ID))
         )

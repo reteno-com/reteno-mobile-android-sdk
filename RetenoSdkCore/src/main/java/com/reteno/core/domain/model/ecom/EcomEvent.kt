@@ -48,7 +48,7 @@ sealed class EcomEvent(open val occurred: ZonedDateTime) {
      * Track updating a shopping cart for triggers.
      *
      * @param cartId Shopping cart ID.
-     * @param products
+     * @param products list of products in cart
      * @param currencyCode If is not set then org's default is used.
      *
      * @see com.reteno.core.domain.model.ecom.ProductInCart
@@ -119,7 +119,7 @@ sealed class EcomEvent(open val occurred: ZonedDateTime) {
      * Track search requests for triggers like Abandoned search.
      *
      * @param search Value from the search string. What we are looking for on the site.
-     * @param isFound true is search returned results. False by default.
+     * @param isFound true if search returned results. False by default.
      */
     data class SearchRequest @JvmOverloads constructor(
         val search: String,

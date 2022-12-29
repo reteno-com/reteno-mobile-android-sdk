@@ -1,36 +1,15 @@
 package com.reteno.core.domain
 
-import com.reteno.core.base.BaseUnitTest
+import com.reteno.core.base.robolectric.BaseRobolectricTest
 import com.reteno.core.util.Util
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import junit.framework.Assert.assertEquals
-import org.junit.AfterClass
-import org.junit.BeforeClass
 import org.junit.Test
 import java.time.ZonedDateTime
 
-class SchedulerUtilsTest: BaseUnitTest() {
-
-    // region constants ----------------------------------------------------------------------------
-    companion object {
-
-        @JvmStatic
-        @BeforeClass
-        fun beforeClass() {
-            mockStaticZoneDateTime()
-            mockObjectUtil()
-        }
-
-        @JvmStatic
-        @AfterClass
-        fun afterClass() {
-            unMockStaticZoneDateTime()
-            unMockObjectUtil()
-        }
-    }
-    // endregion constants -------------------------------------------------------------------------
+class SchedulerUtilsTest: BaseRobolectricTest() {
 
     @Test
     fun whenGetOutdatedData_thenReturnDataMinusDay() {

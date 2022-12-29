@@ -9,6 +9,60 @@ import org.junit.Test
 import java.time.ZoneId
 import java.time.ZonedDateTime
 
+import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.CART_ID
+import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.CATEGORY
+import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.CURRENCY
+import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.CURRENCY_CODE
+import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.DATE
+import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.DELIVERY_ADDRESS
+import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.DELIVERY_METHOD
+import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.DISCOUNT
+import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.EMAIL
+import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.EVENT_TYPE_PRODUCT_VIEWED
+import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.EVENT_TYPE_CART_UPDATED
+import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.EVENT_TYPE_ORDER_CANCELLED
+import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.EVENT_TYPE_ORDER_CREATED
+import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.EVENT_TYPE_ORDER_DELIVERED
+import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.EVENT_TYPE_ORDER_UPDATED
+import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.EVENT_TYPE_PRODUCT_ADDED_TO_WISHLIST
+import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.EVENT_TYPE_PRODUCT_CATEGORY_VIEWED
+import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.EVENT_TYPE_SEARCH_REQUEST
+import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.EXTERNAL_CUSTOMER_ID
+import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.EXTERNAL_ORDER_ID
+import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.FIRST_NAME
+import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.IS_FOUND
+import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.ITEMS
+import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.LAST_NAME
+import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.ORDER_DISCOUNT
+import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.ORDER_ITEM_CATEGORY
+import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.ORDER_ITEM_COST
+import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.ORDER_ITEM_DESCRIPTION
+import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.ORDER_ITEM_EXTERNAL_ITEM_ID
+import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.ORDER_ITEM_IMAGE_URL
+import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.ORDER_ITEM_NAME
+import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.ORDER_ITEM_QUANTITY
+import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.ORDER_ITEM_URL
+import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.PAYMENT_METHOD
+import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.PHONE
+import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.PRICE as KEY_PRICE
+import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.IS_IN_STOCK as KEY_IS_IN_STOCK
+import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.PRODUCT
+import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.PRODUCTS
+import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.PRODUCT_CATEGORY
+import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.PRODUCT_CATEGORY_ID
+import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.PRODUCT_ID
+import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.PRODUCT_NAME
+import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.QUANTITY
+import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.RESTORE_URL
+import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.SEARCH
+import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.SHIPPING
+import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.SOURCE
+import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.STATUS
+import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.STATUS_DESCRIPTION
+import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.STORE_ID
+import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.TAXES
+import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.TOTAL_COST
+
 
 class EcomEventMapperKtTest : BaseUnitTest() {
 
@@ -45,9 +99,9 @@ class EcomEventMapperKtTest : BaseUnitTest() {
         const val IS_IN_STOCK = true
         const val IS_IN_STOCK_EXPECTED = "1"
         val PARAMS_EXPECTED = listOf<String>(
-            "\"${RemoteConstants.EcomEvent.PRODUCT_ID}\":$ID_EXPECTED",
-            "\"${RemoteConstants.EcomEvent.PRICE}\":$PRICE_EXPECTED",
-            "\"${RemoteConstants.EcomEvent.IS_IN_STOCK}\":$IS_IN_STOCK_EXPECTED",
+            "\"${PRODUCT_ID}\":$ID_EXPECTED",
+            "\"${KEY_PRICE}\":$PRICE_EXPECTED",
+            "\"${KEY_IS_IN_STOCK}\":$IS_IN_STOCK_EXPECTED",
         )
 
     }
@@ -56,7 +110,7 @@ class EcomEventMapperKtTest : BaseUnitTest() {
         const val ID = "product_category_id_here"
         const val ID_EXPECTED = "\"product_category_id_here\""
         val PARAMS_EXPECTED = listOf<String>(
-            "\"${RemoteConstants.EcomEvent.PRODUCT_CATEGORY_ID}\":$ID_EXPECTED"
+            "\"${PRODUCT_CATEGORY_ID}\":$ID_EXPECTED"
         )
     }
 
@@ -92,22 +146,22 @@ class EcomEventMapperKtTest : BaseUnitTest() {
         val PRODUCT_1_EXPECTED = listOf<String>(
             General.ATTRIBUTE_1_EXPECTED,
             General.ATTRIBUTE_2_EXPECTED,
-            "\"${RemoteConstants.EcomEvent.QUANTITY}\":$PRODUCT_1_QUANTITY_EXPECTED",
-            "\"${RemoteConstants.EcomEvent.PRODUCT_ID}\":$PRODUCT_1_ID_EXPECTED",
-            "\"${RemoteConstants.EcomEvent.PRICE}\":$PRODUCT_1_PRICE_EXPECTED",
-            "\"${RemoteConstants.EcomEvent.PRODUCT_NAME}\":$PRODUCT_1_NAME_EXPECTED",
-            "\"${RemoteConstants.EcomEvent.DISCOUNT}\":$PRODUCT_1_DISCOUNT_EXPECTED",
-            "\"${RemoteConstants.EcomEvent.PRODUCT_CATEGORY}\":$PRODUCT_1_CATEGORY_EXPECTED"
+            "\"${QUANTITY}\":$PRODUCT_1_QUANTITY_EXPECTED",
+            "\"${PRODUCT_ID}\":$PRODUCT_1_ID_EXPECTED",
+            "\"${KEY_PRICE}\":$PRODUCT_1_PRICE_EXPECTED",
+            "\"${PRODUCT_NAME}\":$PRODUCT_1_NAME_EXPECTED",
+            "\"${DISCOUNT}\":$PRODUCT_1_DISCOUNT_EXPECTED",
+            "\"${PRODUCT_CATEGORY}\":$PRODUCT_1_CATEGORY_EXPECTED"
         )
         val PRODUCT_2_EXPECTED = listOf<String>(
             General.ATTRIBUTE_1_EXPECTED,
             General.ATTRIBUTE_2_EXPECTED,
-            "\"${RemoteConstants.EcomEvent.QUANTITY}\":$PRODUCT_2_QUANTITY_EXPECTED",
-            "\"${RemoteConstants.EcomEvent.PRODUCT_ID}\":$PRODUCT_2_ID_EXPECTED",
-            "\"${RemoteConstants.EcomEvent.PRICE}\":$PRODUCT_2_PRICE_EXPECTED",
-            "\"${RemoteConstants.EcomEvent.PRODUCT_NAME}\":$PRODUCT_2_NAME_EXPECTED",
-            "\"${RemoteConstants.EcomEvent.DISCOUNT}\":$PRODUCT_2_DISCOUNT_EXPECTED",
-            "\"${RemoteConstants.EcomEvent.PRODUCT_CATEGORY}\":$PRODUCT_2_CATEGORY_EXPECTED"
+            "\"${QUANTITY}\":$PRODUCT_2_QUANTITY_EXPECTED",
+            "\"${PRODUCT_ID}\":$PRODUCT_2_ID_EXPECTED",
+            "\"${KEY_PRICE}\":$PRODUCT_2_PRICE_EXPECTED",
+            "\"${PRODUCT_NAME}\":$PRODUCT_2_NAME_EXPECTED",
+            "\"${DISCOUNT}\":$PRODUCT_2_DISCOUNT_EXPECTED",
+            "\"${PRODUCT_CATEGORY}\":$PRODUCT_2_CATEGORY_EXPECTED"
         )
     }
 
@@ -129,14 +183,14 @@ class EcomEventMapperKtTest : BaseUnitTest() {
         const val ITEM_1_DESCRIPTION = "description"
         const val ITEM_1_DESCRIPTION_EXPECTED = "\"description\""
         val ITEM_1_EXPECTED = listOf<String>(
-            "\"${RemoteConstants.EcomEvent.ORDER_ITEM_EXTERNAL_ITEM_ID}\":${ITEM_1_EXTERNAL_ITEM_ID_EXPECTED}",
-            "\"${RemoteConstants.EcomEvent.ORDER_ITEM_NAME}\":${ITEM_1_NAME_EXPECTED}",
-            "\"${RemoteConstants.EcomEvent.ORDER_ITEM_CATEGORY}\":${ITEM_1_CATEGORY_EXPECTED}",
-            "\"${RemoteConstants.EcomEvent.ORDER_ITEM_QUANTITY}\":${ITEM_1_QUANTITY_EXPECTED}",
-            "\"${RemoteConstants.EcomEvent.ORDER_ITEM_COST}\":${ITEM_1_COST_EXPECTED}",
-            "\"${RemoteConstants.EcomEvent.ORDER_ITEM_URL}\":${ITEM_1_URL_EXPECTED}",
-            "\"${RemoteConstants.EcomEvent.ORDER_ITEM_IMAGE_URL}\":${ITEM_1_IMAGE_URL_EXPECTED}",
-            "\"${RemoteConstants.EcomEvent.ORDER_ITEM_DESCRIPTION}\":${ITEM_1_DESCRIPTION_EXPECTED}"
+            "\"${ORDER_ITEM_EXTERNAL_ITEM_ID}\":${ITEM_1_EXTERNAL_ITEM_ID_EXPECTED}",
+            "\"${ORDER_ITEM_NAME}\":${ITEM_1_NAME_EXPECTED}",
+            "\"${ORDER_ITEM_CATEGORY}\":${ITEM_1_CATEGORY_EXPECTED}",
+            "\"${ORDER_ITEM_QUANTITY}\":${ITEM_1_QUANTITY_EXPECTED}",
+            "\"${ORDER_ITEM_COST}\":${ITEM_1_COST_EXPECTED}",
+            "\"${ORDER_ITEM_URL}\":${ITEM_1_URL_EXPECTED}",
+            "\"${ORDER_ITEM_IMAGE_URL}\":${ITEM_1_IMAGE_URL_EXPECTED}",
+            "\"${ORDER_ITEM_DESCRIPTION}\":${ITEM_1_DESCRIPTION_EXPECTED}"
         )
 
 
@@ -157,14 +211,14 @@ class EcomEventMapperKtTest : BaseUnitTest() {
         const val ITEM_2_DESCRIPTION = "description_222"
         const val ITEM_2_DESCRIPTION_EXPECTED = "\"description_222\""
         val ITEM_2_EXPECTED = listOf<String>(
-            "\"${RemoteConstants.EcomEvent.ORDER_ITEM_EXTERNAL_ITEM_ID}\":${ITEM_2_EXTERNAL_ITEM_ID_EXPECTED}",
-            "\"${RemoteConstants.EcomEvent.ORDER_ITEM_NAME}\":${ITEM_2_NAME_EXPECTED}",
-            "\"${RemoteConstants.EcomEvent.ORDER_ITEM_CATEGORY}\":${ITEM_2_CATEGORY_EXPECTED}",
-            "\"${RemoteConstants.EcomEvent.ORDER_ITEM_QUANTITY}\":${ITEM_2_QUANTITY_EXPECTED}",
-            "\"${RemoteConstants.EcomEvent.ORDER_ITEM_COST}\":${ITEM_2_COST_EXPECTED}",
-            "\"${RemoteConstants.EcomEvent.ORDER_ITEM_URL}\":${ITEM_2_URL_EXPECTED}",
-            "\"${RemoteConstants.EcomEvent.ORDER_ITEM_IMAGE_URL}\":${ITEM_2_IMAGE_URL_EXPECTED}",
-            "\"${RemoteConstants.EcomEvent.ORDER_ITEM_DESCRIPTION}\":${ITEM_2_DESCRIPTION_EXPECTED}"
+            "\"${ORDER_ITEM_EXTERNAL_ITEM_ID}\":${ITEM_2_EXTERNAL_ITEM_ID_EXPECTED}",
+            "\"${ORDER_ITEM_NAME}\":${ITEM_2_NAME_EXPECTED}",
+            "\"${ORDER_ITEM_CATEGORY}\":${ITEM_2_CATEGORY_EXPECTED}",
+            "\"${ORDER_ITEM_QUANTITY}\":${ITEM_2_QUANTITY_EXPECTED}",
+            "\"${ORDER_ITEM_COST}\":${ITEM_2_COST_EXPECTED}",
+            "\"${ORDER_ITEM_URL}\":${ITEM_2_URL_EXPECTED}",
+            "\"${ORDER_ITEM_IMAGE_URL}\":${ITEM_2_IMAGE_URL_EXPECTED}",
+            "\"${ORDER_ITEM_DESCRIPTION}\":${ITEM_2_DESCRIPTION_EXPECTED}"
         )
 
         const val EXTERNAL_ORDER_ID = "externalOrderId"
@@ -222,7 +276,7 @@ class EcomEventMapperKtTest : BaseUnitTest() {
             ProductView(Product.ID, Product.PRICE, Product.IS_IN_STOCK, General.ATTRIBUTES_EXPECTED)
         val input = EcomEvent.ProductViewed(productView, General.CURRENCY_CODE, General.OCCURRED)
         val expected = EventDb(
-            eventTypeKey = RemoteConstants.EcomEvent.EVENT_TYPE_PRODUCT_VIEWED,
+            eventTypeKey = EVENT_TYPE_PRODUCT_VIEWED,
             occurred = General.OCCURRED_EXPECTED,
             params = getExpectedProductParams()
         )
@@ -241,7 +295,7 @@ class EcomEventMapperKtTest : BaseUnitTest() {
             ProductCategoryView(ProductCategoryViewed.ID, General.ATTRIBUTES_EXPECTED)
         val input = EcomEvent.ProductCategoryViewed(productCategoryView, General.OCCURRED)
         val expected = EventDb(
-            eventTypeKey = RemoteConstants.EcomEvent.EVENT_TYPE_PRODUCT_CATEGORY_VIEWED,
+            eventTypeKey = EVENT_TYPE_PRODUCT_CATEGORY_VIEWED,
             occurred = General.OCCURRED_EXPECTED,
             params = getExpectedProductCategoryViewedParams()
         )
@@ -264,7 +318,7 @@ class EcomEventMapperKtTest : BaseUnitTest() {
             General.OCCURRED
         )
         val expected = EventDb(
-            eventTypeKey = RemoteConstants.EcomEvent.EVENT_TYPE_PRODUCT_ADDED_TO_WISHLIST,
+            eventTypeKey = EVENT_TYPE_PRODUCT_ADDED_TO_WISHLIST,
             occurred = General.OCCURRED_EXPECTED,
             params = getExpectedProductParams()
         )
@@ -298,13 +352,13 @@ class EcomEventMapperKtTest : BaseUnitTest() {
             attributes = General.ATTRIBUTES_EXPECTED
         )
         val input = EcomEvent.CartUpdated(
-            Cart.ID,
-            listOf(productInCart1, productInCart2),
-            General.CURRENCY_CODE,
-            General.OCCURRED
+            cartId = Cart.ID,
+            products = listOf(productInCart1, productInCart2),
+            currencyCode = General.CURRENCY_CODE,
+            occurred = General.OCCURRED
         )
         val expected = EventDb(
-            eventTypeKey = RemoteConstants.EcomEvent.EVENT_TYPE_CART_UPDATED,
+            eventTypeKey = EVENT_TYPE_CART_UPDATED,
             occurred = General.OCCURRED_EXPECTED,
             params = getExpectedProductInCartParams()
         )
@@ -321,7 +375,7 @@ class EcomEventMapperKtTest : BaseUnitTest() {
         // Given
         val input = EcomEvent.OrderCreated(getOrder(), General.CURRENCY_CODE, General.OCCURRED)
         val expected = EventDb(
-            eventTypeKey = RemoteConstants.EcomEvent.EVENT_TYPE_ORDER_CREATED,
+            eventTypeKey = EVENT_TYPE_ORDER_CREATED,
             occurred = General.OCCURRED_EXPECTED,
             params = getExpectedOrderParams()
         )
@@ -338,7 +392,7 @@ class EcomEventMapperKtTest : BaseUnitTest() {
         // Given
         val input = EcomEvent.OrderUpdated(getOrder(), General.CURRENCY_CODE, General.OCCURRED)
         val expected = EventDb(
-            eventTypeKey = RemoteConstants.EcomEvent.EVENT_TYPE_ORDER_UPDATED,
+            eventTypeKey = EVENT_TYPE_ORDER_UPDATED,
             occurred = General.OCCURRED_EXPECTED,
             params = getExpectedOrderParams()
         )
@@ -355,10 +409,10 @@ class EcomEventMapperKtTest : BaseUnitTest() {
         // Given
         val input = EcomEvent.OrderDelivered(Order.EXTERNAL_ORDER_ID, General.OCCURRED)
         val expected = EventDb(
-            eventTypeKey = RemoteConstants.EcomEvent.EVENT_TYPE_ORDER_DELIVERED,
+            eventTypeKey = EVENT_TYPE_ORDER_DELIVERED,
             occurred = General.OCCURRED_EXPECTED,
             params = listOf(
-                ParameterDb(RemoteConstants.EcomEvent.EXTERNAL_ORDER_ID, Order.EXTERNAL_ORDER_ID_EXPECTED)
+                ParameterDb(EXTERNAL_ORDER_ID, Order.EXTERNAL_ORDER_ID_EXPECTED)
             )
         )
 
@@ -374,10 +428,10 @@ class EcomEventMapperKtTest : BaseUnitTest() {
         // Given
         val input = EcomEvent.OrderCancelled(Order.EXTERNAL_ORDER_ID, General.OCCURRED)
         val expected = EventDb(
-            eventTypeKey = RemoteConstants.EcomEvent.EVENT_TYPE_ORDER_CANCELLED,
+            eventTypeKey = EVENT_TYPE_ORDER_CANCELLED,
             occurred = General.OCCURRED_EXPECTED,
             params = listOf(
-                ParameterDb(RemoteConstants.EcomEvent.EXTERNAL_ORDER_ID, Order.EXTERNAL_ORDER_ID_EXPECTED)
+                ParameterDb(EXTERNAL_ORDER_ID, Order.EXTERNAL_ORDER_ID_EXPECTED)
             )
         )
 
@@ -393,11 +447,11 @@ class EcomEventMapperKtTest : BaseUnitTest() {
         // Given
         val input = EcomEvent.SearchRequest(Search.CRITERIA, Search.IS_FOUND, General.OCCURRED)
         val expected = EventDb(
-            eventTypeKey = RemoteConstants.EcomEvent.EVENT_TYPE_SEARCH_REQUEST,
+            eventTypeKey = EVENT_TYPE_SEARCH_REQUEST,
             occurred = General.OCCURRED_EXPECTED,
             params = listOf(
-                ParameterDb(RemoteConstants.EcomEvent.SEARCH, Search.CRITERIA_EXPECTED),
-                ParameterDb(RemoteConstants.EcomEvent.IS_FOUND, Search.IS_FOUND_EXPECTED)
+                ParameterDb(SEARCH, Search.CRITERIA_EXPECTED),
+                ParameterDb(IS_FOUND, Search.IS_FOUND_EXPECTED)
             )
         )
 
@@ -419,8 +473,8 @@ class EcomEventMapperKtTest : BaseUnitTest() {
         val productParams =
             productParamsList.joinToString(separator = ",", prefix = "{", postfix = "}")
         return listOf<ParameterDb>(
-            ParameterDb(RemoteConstants.EcomEvent.PRODUCT, productParams),
-            ParameterDb(RemoteConstants.EcomEvent.CURRENCY_CODE, General.CURRENCY_CODE_EXPECTED)
+            ParameterDb(PRODUCT, productParams),
+            ParameterDb(CURRENCY_CODE, General.CURRENCY_CODE_EXPECTED)
         )
     }
 
@@ -434,7 +488,7 @@ class EcomEventMapperKtTest : BaseUnitTest() {
 
         val productParams =
             productParamsList.joinToString(separator = ",", prefix = "{", postfix = "}")
-        return listOf(ParameterDb(RemoteConstants.EcomEvent.CATEGORY, productParams))
+        return listOf(ParameterDb(CATEGORY, productParams))
     }
 
     private fun getExpectedProductInCartParams(): List<ParameterDb> {
@@ -448,9 +502,9 @@ class EcomEventMapperKtTest : BaseUnitTest() {
             postfix = "]"
         )
         return listOf(
-            ParameterDb(RemoteConstants.EcomEvent.CART_ID, Cart.ID_EXPECTED),
-            ParameterDb(RemoteConstants.EcomEvent.PRODUCTS, productParams),
-            ParameterDb(RemoteConstants.EcomEvent.CURRENCY_CODE, General.CURRENCY_CODE_EXPECTED)
+            ParameterDb(CART_ID, Cart.ID_EXPECTED),
+            ParameterDb(PRODUCTS, productParams),
+            ParameterDb(CURRENCY_CODE, General.CURRENCY_CODE_EXPECTED)
         )
     }
 
@@ -513,41 +567,29 @@ class EcomEventMapperKtTest : BaseUnitTest() {
         )
 
         return listOf(
-            ParameterDb(
-                RemoteConstants.EcomEvent.EXTERNAL_ORDER_ID,
-                Order.EXTERNAL_ORDER_ID_EXPECTED
-            ),
-            ParameterDb(
-                RemoteConstants.EcomEvent.EXTERNAL_CUSTOMER_ID,
-                Order.EXTERNAL_CUSTOMER_ID_EXPECTED
-            ),
-            ParameterDb(RemoteConstants.EcomEvent.TOTAL_COST, Order.TOTAL_COST_EXPECTED),
-            ParameterDb(RemoteConstants.EcomEvent.STATUS, Order.STATUS_EXPECTED),
-            ParameterDb(RemoteConstants.EcomEvent.DATE, General.OCCURRED_EXPECTED),
-            ParameterDb(RemoteConstants.EcomEvent.CART_ID, Order.CART_ID_EXPECTED),
-            ParameterDb(RemoteConstants.EcomEvent.CURRENCY_CODE, General.CURRENCY_CODE_EXPECTED),
-            ParameterDb(RemoteConstants.EcomEvent.CURRENCY, General.CURRENCY_CODE_EXPECTED),
-            ParameterDb(RemoteConstants.EcomEvent.EMAIL, Order.EMAIL_EXPECTED),
-            ParameterDb(RemoteConstants.EcomEvent.PHONE, Order.PHONE_EXPECTED),
-            ParameterDb(RemoteConstants.EcomEvent.FIRST_NAME, Order.FIRST_NAME_EXPECTED),
-            ParameterDb(RemoteConstants.EcomEvent.LAST_NAME, Order.LAST_NAME_EXPECTED),
-            ParameterDb(RemoteConstants.EcomEvent.SHIPPING, Order.SHIPPING_EXPECTED),
-            ParameterDb(RemoteConstants.EcomEvent.ORDER_DISCOUNT, Order.DISCOUNT_EXPECTED),
-            ParameterDb(RemoteConstants.EcomEvent.TAXES, Order.TAXES_EXPECTED),
-            ParameterDb(RemoteConstants.EcomEvent.RESTORE_URL, Order.RESTORE_URL_EXPECTED),
-            ParameterDb(
-                RemoteConstants.EcomEvent.STATUS_DESCRIPTION,
-                Order.STATUS_DESCRIPTION_EXPECTED
-            ),
-            ParameterDb(RemoteConstants.EcomEvent.STORE_ID, Order.STORE_ID_EXPECTED),
-            ParameterDb(RemoteConstants.EcomEvent.SOURCE, Order.SOURCE_EXPECTED),
-            ParameterDb(RemoteConstants.EcomEvent.DELIVERY_METHOD, Order.DELIVERY_METHOD_EXPECTED),
-            ParameterDb(RemoteConstants.EcomEvent.PAYMENT_METHOD, Order.PAYMENT_METHOD_EXPECTED),
-            ParameterDb(
-                RemoteConstants.EcomEvent.DELIVERY_ADDRESS,
-                Order.DELIVERY_ADDRESS_EXPECTED
-            ),
-            ParameterDb(RemoteConstants.EcomEvent.ITEMS, itemsParams),
+            ParameterDb(EXTERNAL_ORDER_ID, Order.EXTERNAL_ORDER_ID_EXPECTED),
+            ParameterDb(EXTERNAL_CUSTOMER_ID, Order.EXTERNAL_CUSTOMER_ID_EXPECTED),
+            ParameterDb(TOTAL_COST, Order.TOTAL_COST_EXPECTED),
+            ParameterDb(STATUS, Order.STATUS_EXPECTED),
+            ParameterDb(DATE, General.OCCURRED_EXPECTED),
+            ParameterDb(CART_ID, Order.CART_ID_EXPECTED),
+            ParameterDb(CURRENCY_CODE, General.CURRENCY_CODE_EXPECTED),
+            ParameterDb(CURRENCY, General.CURRENCY_CODE_EXPECTED),
+            ParameterDb(EMAIL, Order.EMAIL_EXPECTED),
+            ParameterDb(PHONE, Order.PHONE_EXPECTED),
+            ParameterDb(FIRST_NAME, Order.FIRST_NAME_EXPECTED),
+            ParameterDb(LAST_NAME, Order.LAST_NAME_EXPECTED),
+            ParameterDb(SHIPPING, Order.SHIPPING_EXPECTED),
+            ParameterDb(ORDER_DISCOUNT, Order.DISCOUNT_EXPECTED),
+            ParameterDb(TAXES, Order.TAXES_EXPECTED),
+            ParameterDb(RESTORE_URL, Order.RESTORE_URL_EXPECTED),
+            ParameterDb(STATUS_DESCRIPTION, Order.STATUS_DESCRIPTION_EXPECTED),
+            ParameterDb(STORE_ID, Order.STORE_ID_EXPECTED),
+            ParameterDb(SOURCE, Order.SOURCE_EXPECTED),
+            ParameterDb(DELIVERY_METHOD, Order.DELIVERY_METHOD_EXPECTED),
+            ParameterDb(PAYMENT_METHOD, Order.PAYMENT_METHOD_EXPECTED),
+            ParameterDb(DELIVERY_ADDRESS, Order.DELIVERY_ADDRESS_EXPECTED),
+            ParameterDb(ITEMS, itemsParams),
             ParameterDb(General.ATTRIBUTE_1.name, General.ATTRIBUTE_1_VALUE_EXPECTED),
             ParameterDb(General.ATTRIBUTE_2.name, General.ATTRIBUTE_2_VALUE_EXPECTED)
         )
