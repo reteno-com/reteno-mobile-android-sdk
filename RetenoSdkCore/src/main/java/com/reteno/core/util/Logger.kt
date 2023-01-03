@@ -99,6 +99,7 @@ object Logger {
         })
 
         addBreadcrumbs(tag, methodName, retenoHub)
+        addBreadcrumbs(tag, "Google Play Services installed = ${isGooglePlayServicesAvailable()}", retenoHub)
         retenoHub.captureException(e)
     }
 
