@@ -10,6 +10,7 @@ object Constants {
     const val KEY_ES_NOTIFICATION_IMAGE = "es_notification_image"
     const val KEY_ES_LINK_WRAPPED = "es_link"
     const val KEY_ES_LINK_UNWRAPPED = "es_link_raw"
+    const val KEY_ES_BADGE_COUNT = "es_badge_count"
 
     const val KEY_ES_BUTTONS = "es_buttons"
     const val KEY_ES_BUTTON_ACTION_ID = "action_id"

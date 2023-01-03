@@ -16,7 +16,7 @@ import net.sqlcipher.database.SQLiteDatabase
 import net.sqlcipher.database.SQLiteException
 import net.sqlcipher.database.SQLiteOpenHelper
 
-internal class RetenoDatabaseImpl(context: Context) : RetenoDatabase,
+internal class RetenoDatabaseImpl(private val context: Context) : RetenoDatabase,
     SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
 
     private val writableDatabase = getWritableDatabase(BuildConfig.SQL_PASSWORD)
@@ -41,6 +41,14 @@ internal class RetenoDatabaseImpl(context: Context) : RetenoDatabase,
         if (oldVersion == 1 && newVersion == 2) {
             db.execSQL(DeviceSchema.SQL_UPGRADE_TABLE_VERSION_2)
         }
+    }
+
+    override fun onDowngrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
+        /*@formatter:off*/ Logger.i(TAG, "onDowngrade(): ", "db = [", db, "], oldVersion = [", oldVersion, "], newVersion = [", newVersion, "]")
+        /*@formatter:on*/
+        super.onDowngrade(db, oldVersion, newVersion)
+        context.deleteDatabase(DATABASE_NAME)
+        createTables(db)
     }
 
     private fun createTables(db: SQLiteDatabase) {
