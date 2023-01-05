@@ -10,34 +10,46 @@
         android:id="@+id/etProductId"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:maxLines="1"
+        android:inputType="text"
         android:hint="productId (string, required)" />
 
     <EditText
         android:id="@+id/etQuantity"
+        android:maxLines="1"
+        android:inputType="numberSigned"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:hint="quantity (int, required)" />
 
     <EditText
         android:id="@+id/etPrice"
+        android:maxLines="1"
+        android:inputType="numberDecimal"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:hint="price (double, required)" />
 
     <EditText
         android:id="@+id/etDiscount"
+        android:maxLines="1"
+        android:inputType="numberDecimal"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:hint="discount (double)" />
 
     <EditText
         android:id="@+id/etName"
+        android:maxLines="1"
+        android:inputType="text"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:hint="name" />
 
     <EditText
         android:id="@+id/etCategory"
+        android:maxLines="1"
+        android:inputType="text"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:hint="category" />

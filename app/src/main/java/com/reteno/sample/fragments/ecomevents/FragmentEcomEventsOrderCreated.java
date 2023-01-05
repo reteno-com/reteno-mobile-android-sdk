@@ -15,7 +15,6 @@ import androidx.viewbinding.ViewBinding;
 
 import com.reteno.core.domain.model.ecom.EcomEvent;
 import com.reteno.core.domain.model.ecom.Order;
-import com.reteno.core.domain.model.ecom.OrderBuilder;
 import com.reteno.core.domain.model.ecom.OrderItem;
 import com.reteno.core.domain.model.ecom.OrderStatus;
 import com.reteno.sample.R;
@@ -85,7 +84,7 @@ public class FragmentEcomEventsOrderCreated extends BaseEcomEventsFragment {
             }
 
             List<OrderItem> orderItems = getOrderItems(binding.llOrderItems);
-            OrderBuilder orderBuilder = new OrderBuilder(
+            Order.Builder orderBuilder = new Order.Builder(
                     externalOrderId,
                     Util.getTextOrNull(binding.etExternalCustomerId),
                     Double.valueOf(totalCost),
@@ -97,7 +96,6 @@ public class FragmentEcomEventsOrderCreated extends BaseEcomEventsFragment {
             orderBuilder.setPhone(Util.getTextOrNull(binding.etPhone));
             orderBuilder.setFirstName(Util.getTextOrNull(binding.etFirstName));
             orderBuilder.setLastName(Util.getTextOrNull(binding.etLastName));
-            orderBuilder.setShipping(shipping);
             orderBuilder.setShipping(shipping);
             orderBuilder.setDiscount(discount);
             orderBuilder.setTaxes(taxes);

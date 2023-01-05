@@ -9,48 +9,64 @@
         android:id="@+id/etExternalOrderId"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:maxLines="1"
+        android:inputType="text"
         android:hint="externalItemId (required)" />
 
     <EditText
         android:id="@+id/etName"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:maxLines="1"
+        android:inputType="text"
         android:hint="name (required)" />
 
     <EditText
         android:id="@+id/etCategory"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:maxLines="1"
+        android:inputType="text"
         android:hint="category (required)" />
 
     <EditText
         android:id="@+id/etQuantity"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:maxLines="1"
+        android:inputType="numberSigned"
         android:hint="quantity (required)" />
 
     <EditText
         android:id="@+id/etCost"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:maxLines="1"
+        android:inputType="numberDecimal"
         android:hint="cost (required)" />
 
     <EditText
         android:id="@+id/etUrl"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:maxLines="1"
+        android:inputType="textUri"
         android:hint="url (required)" />
 
     <EditText
         android:id="@+id/etImageUrl"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:maxLines="1"
+        android:inputType="textUri"
         android:hint="imageUrl" />
 
     <EditText
         android:id="@+id/etDescription"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:maxLines="1"
+        android:inputType="text"
         android:hint="description" />
 
     <View

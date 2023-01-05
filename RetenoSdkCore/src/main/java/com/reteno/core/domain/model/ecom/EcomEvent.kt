@@ -8,7 +8,8 @@ sealed class EcomEvent(open val occurred: ZonedDateTime) {
      * Track a product card a user is viewing to rank items / categories and send triggers for abandoned browses.
      *
      * @param product that has been viewed.
-     * @param currencyCode if is not set then org's default is used.
+     * @param currencyCode Currency in [ISO 4217](https://en.wikipedia.org/wiki/ISO_4217) format.
+     * Supported currencies: USD, EUR, UAH. If is not set then org's default is used
      *
      * @see com.reteno.core.domain.model.ecom.ProductView
      */
@@ -34,7 +35,8 @@ sealed class EcomEvent(open val occurred: ZonedDateTime) {
      * Track adding product to a wishlist to calculate and display recoms and send triggers related to a wishlist.
      *
      * @param product that have been added to wishlist.
-     * @param currencyCode If is not set then org's default is used.
+     * @param currencyCode Currency in [ISO 4217](https://en.wikipedia.org/wiki/ISO_4217) format.
+     * Supported currencies: USD, EUR, UAH. If is not set then org's default is used
      *
      * @see com.reteno.core.domain.model.ecom.ProductView
      */
@@ -49,7 +51,8 @@ sealed class EcomEvent(open val occurred: ZonedDateTime) {
      *
      * @param cartId Shopping cart ID.
      * @param products list of products in cart
-     * @param currencyCode If is not set then org's default is used.
+     * @param currencyCode Currency in [ISO 4217](https://en.wikipedia.org/wiki/ISO_4217) format.
+     * Supported currencies: USD, EUR, UAH. If is not set then org's default is used
      *
      * @see com.reteno.core.domain.model.ecom.ProductInCart
      */
@@ -67,10 +70,11 @@ sealed class EcomEvent(open val occurred: ZonedDateTime) {
      *  - Fill the order required parameters. The system ignores an event if any of required parameters is missed.
      *  - Extend event parameters with non-standard order attributes using `attributes` field if necessary.
      *
-     *  @param order OrderModel.
-     *  @param currencyCode If is not set then org's default is used.
+     * @param order OrderModel.
+     * @param currencyCode Currency in [ISO 4217](https://en.wikipedia.org/wiki/ISO_4217) format.
+     * Supported currencies: USD, EUR, UAH. If is not set then org's default is used
      *
-     *  @see com.reteno.core.domain.model.ecom.Order
+     * @see com.reteno.core.domain.model.ecom.Order
      */
     data class OrderCreated @JvmOverloads constructor(
         val order: Order,
@@ -83,10 +87,11 @@ sealed class EcomEvent(open val occurred: ZonedDateTime) {
      * If an order does not exist then the system creates it.
      * If an order must be created then requirements to orderCreated are applied.
      *
-     *  @param order OrderModel.
-     *  @param currencyCode If is not set then org's default is used.
+     * @param order OrderModel.
+     * @param currencyCode Currency in [ISO 4217](https://en.wikipedia.org/wiki/ISO_4217) format.
+     * Supported currencies: USD, EUR, UAH. If is not set then org's default is used
      *
-     *  @see com.reteno.core.domain.model.ecom.Order
+     * @see com.reteno.core.domain.model.ecom.Order
      */
     data class OrderUpdated @JvmOverloads constructor(
         val order: Order,

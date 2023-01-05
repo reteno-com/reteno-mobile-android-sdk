@@ -9,11 +9,15 @@
         android:id="@+id/etKey"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:maxLines="1"
+        android:inputType="text"
         android:hint="Key" />
 
     <EditText
         android:id="@+id/etValue"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:maxLines="1"
+        android:inputType="text"
         android:hint="Value" />
 </LinearLayout>

@@ -44,7 +44,6 @@ internal object RemoteConstants {
         const val TOTAL_COST = "totalCost"
         const val STATUS = "status"
         const val DATE = "date"
-        const val CURRENCY = "currency"
         const val EMAIL = "email"
         const val PHONE = "phone"
         const val FIRST_NAME = "firstName"

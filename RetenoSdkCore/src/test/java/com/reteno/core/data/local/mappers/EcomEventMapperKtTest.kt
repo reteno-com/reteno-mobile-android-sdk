@@ -3,22 +3,22 @@ package com.reteno.core.data.local.mappers
 import com.reteno.core.base.BaseUnitTest
 import com.reteno.core.data.local.model.event.EventDb
 import com.reteno.core.data.local.model.event.ParameterDb
-import com.reteno.core.domain.model.ecom.*
-import org.junit.Assert.assertEquals
-import org.junit.Test
-import java.time.ZoneId
-import java.time.ZonedDateTime
-
+import com.reteno.core.domain.model.ecom.Attributes
+import com.reteno.core.domain.model.ecom.EcomEvent
+import com.reteno.core.domain.model.ecom.Order
+import com.reteno.core.domain.model.ecom.OrderItem
+import com.reteno.core.domain.model.ecom.OrderStatus
+import com.reteno.core.domain.model.ecom.ProductCategoryView
+import com.reteno.core.domain.model.ecom.ProductInCart
+import com.reteno.core.domain.model.ecom.ProductView
 import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.CART_ID
 import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.CATEGORY
-import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.CURRENCY
 import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.CURRENCY_CODE
 import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.DATE
 import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.DELIVERY_ADDRESS
 import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.DELIVERY_METHOD
 import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.DISCOUNT
 import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.EMAIL
-import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.EVENT_TYPE_PRODUCT_VIEWED
 import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.EVENT_TYPE_CART_UPDATED
 import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.EVENT_TYPE_ORDER_CANCELLED
 import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.EVENT_TYPE_ORDER_CREATED
@@ -26,6 +26,7 @@ import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.EVENT_TYPE_OR
 import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.EVENT_TYPE_ORDER_UPDATED
 import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.EVENT_TYPE_PRODUCT_ADDED_TO_WISHLIST
 import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.EVENT_TYPE_PRODUCT_CATEGORY_VIEWED
+import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.EVENT_TYPE_PRODUCT_VIEWED
 import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.EVENT_TYPE_SEARCH_REQUEST
 import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.EXTERNAL_CUSTOMER_ID
 import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.EXTERNAL_ORDER_ID
@@ -44,8 +45,6 @@ import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.ORDER_ITEM_QU
 import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.ORDER_ITEM_URL
 import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.PAYMENT_METHOD
 import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.PHONE
-import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.PRICE as KEY_PRICE
-import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.IS_IN_STOCK as KEY_IS_IN_STOCK
 import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.PRODUCT
 import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.PRODUCTS
 import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.PRODUCT_CATEGORY
@@ -62,6 +61,12 @@ import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.STATUS_DESCRI
 import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.STORE_ID
 import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.TAXES
 import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.TOTAL_COST
+import org.junit.Assert.assertEquals
+import org.junit.Test
+import java.time.ZoneId
+import java.time.ZonedDateTime
+import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.IS_IN_STOCK as KEY_IS_IN_STOCK
+import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.PRICE as KEY_PRICE
 
 
 class EcomEventMapperKtTest : BaseUnitTest() {
@@ -120,11 +125,11 @@ class EcomEventMapperKtTest : BaseUnitTest() {
         const val PRODUCT_1_ID = "product_id_1"
         const val PRODUCT_1_ID_EXPECTED = "\"product_id_1\""
         const val PRODUCT_1_QUANTITY = 15
-        const val PRODUCT_1_QUANTITY_EXPECTED = "\"15\""
+        const val PRODUCT_1_QUANTITY_EXPECTED = "15"
         const val PRODUCT_1_PRICE = 1325.1
         const val PRODUCT_1_PRICE_EXPECTED = "1325.1"
         const val PRODUCT_1_DISCOUNT = 0.12
-        const val PRODUCT_1_DISCOUNT_EXPECTED = "\"0.12\""
+        const val PRODUCT_1_DISCOUNT_EXPECTED = "0.12"
         const val PRODUCT_1_NAME = "product_1_name"
         const val PRODUCT_1_NAME_EXPECTED = "\"product_1_name\""
         const val PRODUCT_1_CATEGORY = "product_1_category"
@@ -133,11 +138,11 @@ class EcomEventMapperKtTest : BaseUnitTest() {
         const val PRODUCT_2_ID = "product_id_2"
         const val PRODUCT_2_ID_EXPECTED = "\"product_id_2\""
         const val PRODUCT_2_QUANTITY = 32
-        const val PRODUCT_2_QUANTITY_EXPECTED = "\"32\""
+        const val PRODUCT_2_QUANTITY_EXPECTED = "32"
         const val PRODUCT_2_PRICE = 15.5
         const val PRODUCT_2_PRICE_EXPECTED = "15.5"
         const val PRODUCT_2_DISCOUNT = 0.08
-        const val PRODUCT_2_DISCOUNT_EXPECTED = "\"0.08\""
+        const val PRODUCT_2_DISCOUNT_EXPECTED = "0.08"
         const val PRODUCT_2_NAME = "product_2_name"
         const val PRODUCT_2_NAME_EXPECTED = "\"product_2_name\""
         const val PRODUCT_2_CATEGORY = "product_2_category"
@@ -574,7 +579,6 @@ class EcomEventMapperKtTest : BaseUnitTest() {
             ParameterDb(DATE, General.OCCURRED_EXPECTED),
             ParameterDb(CART_ID, Order.CART_ID_EXPECTED),
             ParameterDb(CURRENCY_CODE, General.CURRENCY_CODE_EXPECTED),
-            ParameterDb(CURRENCY, General.CURRENCY_CODE_EXPECTED),
             ParameterDb(EMAIL, Order.EMAIL_EXPECTED),
             ParameterDb(PHONE, Order.PHONE_EXPECTED),
             ParameterDb(FIRST_NAME, Order.FIRST_NAME_EXPECTED),

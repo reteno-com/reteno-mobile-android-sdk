@@ -10,7 +10,6 @@ import org.json.JSONObject
 import com.reteno.core.domain.model.ecom.*
 import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.CART_ID
 import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.CATEGORY
-import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.CURRENCY
 import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.CURRENCY_CODE
 import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.DATE
 import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.DELIVERY_ADDRESS
@@ -150,11 +149,11 @@ private fun EcomEvent.CartUpdated.formatToEventParams(): List<ParameterDb> {
     fun ProductInCart.formatToValue(): JSONObject {
         val jsonObject = JSONObject().apply {
             put(PRODUCT_ID, productId)
-            put(QUANTITY, quantity.toString())
+            put(QUANTITY, quantity)
             put(PRICE, price)
             name?.let { put(PRODUCT_NAME, it) }
             category?.let { put(PRODUCT_CATEGORY, it) }
-            discount?.let { put(DISCOUNT, it.toString()) }
+            discount?.let { put(DISCOUNT, it) }
             attributes?.forEach(::putAttributes)
         }
         return jsonObject
@@ -179,10 +178,7 @@ private fun EcomEvent.OrderCreated.formatToEventParams(): List<ParameterDb> {
         add(ParameterDb(DATE, event.order.date.formatToRemote()))
 
         event.order.cartId?.let { add(ParameterDb(CART_ID, it)) }
-        event.currencyCode?.let {
-            add(ParameterDb(CURRENCY_CODE, it))
-            add(ParameterDb(CURRENCY, it))
-        }
+        event.currencyCode?.let { add(ParameterDb(CURRENCY_CODE, it)) }
         event.order.email?.let { add(ParameterDb(EMAIL, it)) }
         event.order.phone?.let { add(ParameterDb(PHONE, it)) }
         event.order.firstName?.let { add(ParameterDb(FIRST_NAME, it)) }
@@ -213,10 +209,7 @@ private fun EcomEvent.OrderUpdated.formatToEventParams(): List<ParameterDb> {
         add(ParameterDb(DATE, event.order.date.formatToRemote()))
 
         event.order.cartId?.let { add(ParameterDb(CART_ID, it)) }
-        event.currencyCode?.let {
-            add(ParameterDb(CURRENCY_CODE, it))
-            add(ParameterDb(CURRENCY, it))
-        }
+        event.currencyCode?.let { add(ParameterDb(CURRENCY_CODE, it)) }
         event.order.email?.let { add(ParameterDb(EMAIL, it)) }
         event.order.phone?.let { add(ParameterDb(PHONE, it)) }
         event.order.firstName?.let { add(ParameterDb(FIRST_NAME, it)) }
