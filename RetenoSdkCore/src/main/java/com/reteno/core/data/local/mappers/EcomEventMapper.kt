@@ -96,10 +96,7 @@ private fun EcomEvent.ProductViewed.formatToEventParams(): List<ParameterDb> {
             put(PRODUCT_ID, productId)
             put(PRICE, price)
             put(IS_IN_STOCK, isInStock.toIntValue())
-
-            attributes?.forEach {
-                put(it.name, it.value)
-            }
+            attributes?.forEach(::putAttributes)
         }
 
         return jsonObject.toString()
