@@ -40,7 +40,7 @@ internal class ConfigRepositoryImpl(
         /*@formatter:on*/
         FirebaseMessaging.getInstance().token.addOnCompleteListener(OnCompleteListener { task ->
             if (!task.isSuccessful) {
-                Logger.e(
+                Logger.d(
                     TAG,
                     "Fetching FCM registration token failed",
                     task.exception ?: Throwable("")

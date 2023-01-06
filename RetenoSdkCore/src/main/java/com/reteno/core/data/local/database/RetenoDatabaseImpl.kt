@@ -38,7 +38,7 @@ internal class RetenoDatabaseImpl(private val context: Context) : RetenoDatabase
         /*@formatter:off*/ Logger.i(TAG, "onUpgrade(): ", "db = [" , db , "], oldVersion = [" , oldVersion , "], newVersion = [" , newVersion , "]")
         /*@formatter:on*/
         createTables(db)
-        if (oldVersion == 1 && newVersion == 2) {
+        if (oldVersion == 1 && newVersion > 1) {
             db.execSQL(DeviceSchema.SQL_UPGRADE_TABLE_VERSION_2)
         }
     }
@@ -73,20 +73,34 @@ internal class RetenoDatabaseImpl(private val context: Context) : RetenoDatabase
         having: String?,
         orderBy: String?,
         limit: String?
-    ): Cursor =
-        getSQLiteDatabaseWithRetries().query(
-            table,
-            columns,
-            selection,
-            selectionArgs,
-            groupBy,
-            having,
-            orderBy,
-            limit
-        )
+    ): Cursor {
+        try {
+            return getSQLiteDatabaseWithRetries().query(
+                table,
+                columns,
+                selection,
+                selectionArgs,
+                groupBy,
+                having,
+                orderBy,
+                limit
+            )
+        } catch (ex: SQLiteException) {
+            attemptToMitigateSqlException(ex)
+            throw ex
+        }
+    }
 
-    override fun rawQuery(rawQuery: String, selectionArgs: Array<out String>?): Cursor =
-        getSQLiteDatabaseWithRetries().rawQuery(rawQuery, selectionArgs)
+
+    override fun rawQuery(rawQuery: String, selectionArgs: Array<out String>?): Cursor {
+        try {
+            return getSQLiteDatabaseWithRetries().rawQuery(rawQuery, selectionArgs)
+        } catch (ex: SQLiteException) {
+            attemptToMitigateSqlException(ex)
+            throw ex
+        }
+    }
+
 
     override fun insert(
         table: String,
@@ -105,6 +119,7 @@ internal class RetenoDatabaseImpl(private val context: Context) : RetenoDatabase
             } catch (e: SQLiteException) {
                 /*@formatter:off*/ Logger.e(TAG, "insert(): Error inserting on table: $table with nullColumnHack: $nullColumnHack and values: $contentValues", e)
                 /*@formatter:on*/
+                attemptToMitigateSqlException(e)
             } catch (e: IllegalStateException) {
                 /*@formatter:off*/ Logger.e(TAG, "insert(): Error under inserting transaction under table: $table with nullColumnHack: $nullColumnHack and values: $contentValues", e)
                 /*@formatter:on*/
@@ -117,6 +132,7 @@ internal class RetenoDatabaseImpl(private val context: Context) : RetenoDatabase
                 } catch (e: SQLiteException) {
                     /*@formatter:off*/ Logger.e(TAG, "insert(): Error closing transaction! ", e)
                     /*@formatter:on*/
+                    attemptToMitigateSqlException(e)
                 }
             }
         }
@@ -146,6 +162,7 @@ internal class RetenoDatabaseImpl(private val context: Context) : RetenoDatabase
             } catch (e: SQLiteException) {
                 /*@formatter:off*/ Logger.e(TAG, "insert(): Error inserting on table: $table with nullColumnHack: $nullColumnHack and values: $contentValues", e)
                 /*@formatter:on*/
+                attemptToMitigateSqlException(e)
             } catch (e: IllegalStateException) {
                 /*@formatter:off*/ Logger.e(TAG, "insert(): Error under inserting transaction under table: $table with nullColumnHack: $nullColumnHack and values: $contentValues", e)
                 /*@formatter:on*/
@@ -158,6 +175,7 @@ internal class RetenoDatabaseImpl(private val context: Context) : RetenoDatabase
                 } catch (e: SQLiteException) {
                     /*@formatter:off*/ Logger.e(TAG, "insert(): Error closing transaction! ", e)
                     /*@formatter:on*/
+                    attemptToMitigateSqlException(e)
                 }
             }
         }
@@ -181,6 +199,7 @@ internal class RetenoDatabaseImpl(private val context: Context) : RetenoDatabase
             } catch (e: SQLiteException) {
                 /*@formatter:off*/ Logger.e(TAG, "insertOrThrow(): Error inserting or throw on table: $table with nullColumnHack: $nullColumnHack and values: $contentValues", e)
                 /*@formatter:on*/
+                attemptToMitigateSqlException(e)
             } catch (e: IllegalStateException) {
                 /*@formatter:off*/ Logger.e(TAG, "insertOrThrow(): Error under inserting or throw transaction under table: $table with nullColumnHack: $nullColumnHack and values: $contentValues", e)
                 /*@formatter:on*/
@@ -193,6 +212,7 @@ internal class RetenoDatabaseImpl(private val context: Context) : RetenoDatabase
                 } catch (e: SQLiteException) {
                     /*@formatter:off*/ Logger.e(TAG, "insertOrThrow(): Error closing transaction! ", e)
                     /*@formatter:on*/
+                    attemptToMitigateSqlException(e)
                 }
             }
         }
@@ -218,6 +238,7 @@ internal class RetenoDatabaseImpl(private val context: Context) : RetenoDatabase
             } catch (e: SQLiteException) {
                 /*@formatter:off*/ Logger.e(TAG, "update(): Error updating on table: $table with whereClause: $whereClause and whereArgs: $whereArgs", e)
                 /*@formatter:on*/
+                attemptToMitigateSqlException(e)
             } catch (e: IllegalStateException) {
                 /*@formatter:off*/ Logger.e(TAG, "update(): \"Error under update transaction under table: $table with whereClause: $whereClause and whereArgs: $whereArgs", e)
                 /*@formatter:on*/
@@ -230,13 +251,14 @@ internal class RetenoDatabaseImpl(private val context: Context) : RetenoDatabase
                 } catch (e: SQLiteException) {
                     /*@formatter:off*/ Logger.e(TAG, "update(): Error closing transaction! ", e)
                     /*@formatter:on*/
+                    attemptToMitigateSqlException(e)
                 }
             }
         }
         return result
     }
 
-    override fun delete(table: String, whereClause: String?, whereArgs: Array<String?>?) : Int {
+    override fun delete(table: String, whereClause: String?, whereArgs: Array<String?>?): Int {
         val writableDb = getSQLiteDatabaseWithRetries()
 
         var count = 0
@@ -249,6 +271,7 @@ internal class RetenoDatabaseImpl(private val context: Context) : RetenoDatabase
             } catch (e: SQLiteException) {
                 /*@formatter:off*/ Logger.e(TAG, "delete(): Error deleting on table: $table with whereClause: $whereClause and whereArgs: $whereArgs", e)
                 /*@formatter:on*/
+                attemptToMitigateSqlException(e)
             } catch (e: IllegalStateException) {
                 /*@formatter:off*/ Logger.e(TAG, "delete(): Error under delete transaction under table: $table with whereClause: $whereClause and whereArgs: $whereArgs", e)
                 /*@formatter:on*/
@@ -261,6 +284,7 @@ internal class RetenoDatabaseImpl(private val context: Context) : RetenoDatabase
                 } catch (e: SQLiteException) {
                     /*@formatter:off*/ Logger.i(TAG, "delete(): Error closing transaction! ", e)
                     /*@formatter:on*/
+                    attemptToMitigateSqlException(e)
                 }
             }
         }
@@ -272,8 +296,13 @@ internal class RetenoDatabaseImpl(private val context: Context) : RetenoDatabase
 
         try {
             count = DatabaseUtils.queryNumEntries(getSQLiteDatabaseWithRetries(), tableName)
+        } catch (ex: SQLiteException) {
+            /*@formatter:off*/ Logger.e(TAG, "getRowCount(): ", ex)
+            /*@formatter:on*/
+            attemptToMitigateSqlException(ex)
         } catch (t: Throwable) {
-            handleSQLiteError("Unable to get a number of rows in the table.", t)
+            /*@formatter:off*/ Logger.e(TAG, "getRowCount(): ", t)
+            /*@formatter:on*/
         }
         return count
     }
@@ -312,18 +341,28 @@ internal class RetenoDatabaseImpl(private val context: Context) : RetenoDatabase
      * Call this method each time you remove any record from Event table (Child table)
      */
     override fun cleanUnlinkedEvents() {
-        val sqlQuery = "DELETE FROM ${EventsSchema.TABLE_NAME_EVENTS} WHERE ${EventsSchema.COLUMN_EVENTS_ID} NOT IN " +
-                "(SELECT ${EventsSchema.COLUMN_EVENTS_ID} FROM ${EventsSchema.EventSchema.TABLE_NAME_EVENT})"
-        getSQLiteDatabaseWithRetries().execSQL(sqlQuery)
+        try {
+            val sqlQuery =
+                "DELETE FROM ${EventsSchema.TABLE_NAME_EVENTS} WHERE ${EventsSchema.COLUMN_EVENTS_ID} NOT IN " +
+                        "(SELECT ${EventsSchema.COLUMN_EVENTS_ID} FROM ${EventsSchema.EventSchema.TABLE_NAME_EVENT})"
+            getSQLiteDatabaseWithRetries().execSQL(sqlQuery)
+        } catch (ex: SQLiteException) {
+            attemptToMitigateSqlException(ex)
+        }
     }
 
     /**
      * Call this method each time you remove any record from Event table (Child table)
      */
     override fun cleanUnlinkedRecomVariantIds() {
-        val sqlQuery = "DELETE FROM ${RecomEventsSchema.TABLE_NAME_RECOM_EVENTS} WHERE ${RecomEventsSchema.COLUMN_RECOM_VARIANT_ID} NOT IN " +
-                "(SELECT ${RecomEventsSchema.COLUMN_RECOM_VARIANT_ID} FROM ${RecomEventsSchema.RecomEventSchema.TABLE_NAME_RECOM_EVENT})"
-        getSQLiteDatabaseWithRetries().execSQL(sqlQuery)
+        try {
+            val sqlQuery =
+                "DELETE FROM ${RecomEventsSchema.TABLE_NAME_RECOM_EVENTS} WHERE ${RecomEventsSchema.COLUMN_RECOM_VARIANT_ID} NOT IN " +
+                        "(SELECT ${RecomEventsSchema.COLUMN_RECOM_VARIANT_ID} FROM ${RecomEventsSchema.RecomEventSchema.TABLE_NAME_RECOM_EVENT})"
+            getSQLiteDatabaseWithRetries().execSQL(sqlQuery)
+        } catch (ex: SQLiteException) {
+            attemptToMitigateSqlException(ex)
+        }
     }
 
     /**
@@ -351,9 +390,16 @@ internal class RetenoDatabaseImpl(private val context: Context) : RetenoDatabase
         }
     }
 
-    private fun handleSQLiteError(log: String, t: Throwable) {
-        /*@formatter:off*/ Logger.e(TAG, "handleSQLiteError(): $log", t)
-        /*@formatter:on*/
+    private fun attemptToMitigateSqlException(ex: SQLiteException) {
+        if (ex.message?.contains("no such table") == true) {
+            createTables(getSQLiteDatabase())
+            /*@formatter:off*/ Logger.e(TAG, "attemptToMitigateSqlException(): Create tables SUCCESS", ex)
+            /*@formatter:on*/
+        } else if (ex.message?.contains("no such column") == true) {
+            onUpgrade(getSQLiteDatabase(), 1, Integer.MAX_VALUE)
+            /*@formatter:off*/ Logger.e(TAG, "attemptToMitigateSqlException(): Upgrade database SUCCESS", ex)
+            /*@formatter:on*/
+        }
     }
 
     companion object {
