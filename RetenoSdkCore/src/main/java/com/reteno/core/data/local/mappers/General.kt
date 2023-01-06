@@ -8,3 +8,8 @@ internal fun Boolean.toDb(): BooleanDb =
     } else {
         BooleanDb.FALSE
     }
+
+// for some boolean values we have to send the value in int format
+fun Boolean.toIntValue(): Int {
+    return if (this) 1 else 0
+}

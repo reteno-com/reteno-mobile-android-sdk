@@ -11,20 +11,22 @@ import com.reteno.core.data.local.model.appinbox.AppInboxMessageDb
 import com.reteno.core.data.local.model.appinbox.AppInboxMessageStatusDb
 import com.reteno.core.util.Logger
 import com.reteno.core.util.Util.formatToRemote
-import io.mockk.*
+import io.mockk.clearMocks
+import io.mockk.every
 import io.mockk.impl.annotations.MockK
 import io.mockk.impl.annotations.RelaxedMockK
+import io.mockk.justRun
+import io.mockk.verify
 import junit.framework.TestCase.assertTrue
 import net.sqlcipher.Cursor
-import org.junit.AfterClass
 import org.junit.Assert.assertEquals
-import org.junit.BeforeClass
 import org.junit.Test
 import java.time.ZonedDateTime
 
 
 class RetenoDatabaseManagerInboxTest : BaseRobolectricTest() {
 
+    // region constants ----------------------------------------------------------------------------
     companion object {
         private const val ROW_ID_INSERTED = 1L
 
@@ -51,20 +53,10 @@ class RetenoDatabaseManagerInboxTest : BaseRobolectricTest() {
         private const val COLUMN_INDEX_INBOX_STATUS = 3
         private const val COLUMN_INDEX_INBOX_TIME = 4
         private const val COLUMN_INDEX_INBOX_DEVICE_ID = 5
-
-        @JvmStatic
-        @BeforeClass
-        fun beforeClass() {
-            mockkStatic(Cursor::getAppInbox)
-        }
-
-        @JvmStatic
-        @AfterClass
-        fun afterClass() {
-            unmockkStatic(Cursor::getAppInbox)
-        }
     }
+    // endregion constants -------------------------------------------------------------------------
 
+    // region helper fields ------------------------------------------------------------------------
     @RelaxedMockK
     private lateinit var database: RetenoDatabase
 
@@ -72,6 +64,7 @@ class RetenoDatabaseManagerInboxTest : BaseRobolectricTest() {
     private lateinit var cursor: Cursor
 
     private lateinit var SUT: RetenoDatabaseManagerAppInbox
+    // endregion helper fields ---------------------------------------------------------------------
 
     override fun before() {
         super.before()
@@ -90,6 +83,7 @@ class RetenoDatabaseManagerInboxTest : BaseRobolectricTest() {
 
     @Test
     fun givenValidInboxProvided_whenInsertInbox_thenInboxIsSavedToDb() {
+        // Given
         val expectedContentValues = ContentValues().apply {
             putAppInbox(inbox1)
         }
@@ -100,8 +94,10 @@ class RetenoDatabaseManagerInboxTest : BaseRobolectricTest() {
             ROW_ID_INSERTED
         }
 
+        // When
         SUT.insertAppInboxMessage(inbox1)
 
+        // Then
         verify(exactly = 1) {
             database.insert(
                 table = eq(AppInboxSchema.TABLE_NAME_APP_INBOX),
@@ -113,13 +109,16 @@ class RetenoDatabaseManagerInboxTest : BaseRobolectricTest() {
 
     @Test
     fun givenInboxesAvailableInDatabase_whenGetAppInbox_thenInboxesReturned() {
+        // Given
         mockCursorRecordsNumber(2)
         mockDatabaseQuery()
 
         every { cursor.getAppInbox() } returns inbox1 andThen inbox2
 
+        // When
         val interactions = SUT.getAppInboxMessages(null)
 
+        // Then
         verify(exactly = 1) {
             database.query(
                 table = eq(AppInboxSchema.TABLE_NAME_APP_INBOX),
@@ -137,11 +136,14 @@ class RetenoDatabaseManagerInboxTest : BaseRobolectricTest() {
 
     @Test
     fun givenInboxNotAvailableInDatabase_whenGetAppInbox_thenEmptyListReturned() {
+        // Given
         mockCursorRecordsNumber(0)
         mockDatabaseQuery()
 
+        // When
         val interactions = SUT.getAppInboxMessages(null)
 
+        // Then
         verify(exactly = 1) {
             database.query(
                 table = eq(AppInboxSchema.TABLE_NAME_APP_INBOX),
@@ -151,19 +153,21 @@ class RetenoDatabaseManagerInboxTest : BaseRobolectricTest() {
             )
         }
         verify(exactly = 1) { cursor.close() }
-
         assertTrue(interactions.isEmpty())
     }
 
     @Test
     fun givenInboxCorruptedInDatabaseAndRowIdDetected_whenGetAppInbox_thenCorruptedRowRemoved() {
+        // Given
         mockCursorRecordsNumber(1)
         mockDatabaseQuery()
         every { cursor.getAppInbox() } returns null
         every { cursor.getStringOrNull(COLUMN_INDEX_INBOX_ID) } returns INBOX_ID_CORRUPTED
 
+        // When
         val interactions = SUT.getAppInboxMessages(null)
 
+        // Then
         verify(exactly = 1) {
             database.query(
                 table = eq(AppInboxSchema.TABLE_NAME_APP_INBOX),
@@ -180,18 +184,20 @@ class RetenoDatabaseManagerInboxTest : BaseRobolectricTest() {
             )
         }
         verify(exactly = 1) { cursor.close() }
-
         assertTrue(interactions.isEmpty())
     }
 
     @Test
     fun givenInboxCorruptedInDatabaseAndRowIdNotDetected_whenGetAppInbox_thenExceptionIsLogged() {
+        // Given
         mockCursorRecordsNumber(1)
         mockDatabaseQuery()
         every { cursor.getAppInbox() } returns null
 
+        // When
         val interactions = SUT.getAppInboxMessages(null)
 
+        // Then
         verify(exactly = 1) {
             database.query(
                 table = eq(AppInboxSchema.TABLE_NAME_APP_INBOX),
@@ -209,26 +215,33 @@ class RetenoDatabaseManagerInboxTest : BaseRobolectricTest() {
 
     @Test
     fun givenInboxCountEmpty_whenGetAppInboxCount_thenZeroReturned() {
+        // Given
         val recordsCount = 0L
         every { database.getRowCount(AppInboxSchema.TABLE_NAME_APP_INBOX) } returns recordsCount
 
+        // When
         val count = SUT.getAppInboxMessagesCount()
 
+        // Then
         assertEquals(recordsCount, count)
     }
 
     @Test
     fun givenInboxCountNonEmpty_whenGetAppInboxCount_thenCountReturned() {
+        // Given
         val recordsCount = 5L
         every { database.getRowCount(AppInboxSchema.TABLE_NAME_APP_INBOX) } returns recordsCount
 
+        // When
         val count = SUT.getAppInboxMessagesCount()
 
+        // Then
         assertEquals(recordsCount, count)
     }
 
     @Test
     fun given_whenDeleteInboxesOldest_thenInboxesDeleted() {
+        // Given
         val order = "ASC"
         val count = 2
         val whereClauseExpected = "${AppInboxSchema.COLUMN_APP_INBOX_ID} " +
@@ -236,11 +249,12 @@ class RetenoDatabaseManagerInboxTest : BaseRobolectricTest() {
                 "from ${AppInboxSchema.TABLE_NAME_APP_INBOX} " +
                 "ORDER BY ${AppInboxSchema.COLUMN_APP_INBOX_TIME} $order " +
                 "LIMIT $count)"
-
         every { database.delete(any(), any(), any()) } returns 0
 
+        // When
         SUT.deleteAppInboxMessages(count, true)
 
+        // Then
         verify(exactly = 1) {
             database.delete(
                 AppInboxSchema.TABLE_NAME_APP_INBOX,
@@ -251,6 +265,7 @@ class RetenoDatabaseManagerInboxTest : BaseRobolectricTest() {
 
     @Test
     fun given_whenDeleteInboxesNewest_thenInboxesDeleted() {
+        // Given
         val order = "DESC"
         val count = 4
         val whereClauseExpected = "${AppInboxSchema.COLUMN_APP_INBOX_ID} " +
@@ -258,11 +273,12 @@ class RetenoDatabaseManagerInboxTest : BaseRobolectricTest() {
                 "from ${AppInboxSchema.TABLE_NAME_APP_INBOX} " +
                 "ORDER BY ${AppInboxSchema.COLUMN_APP_INBOX_TIME} $order " +
                 "LIMIT $count)"
-
         every { database.delete(any(), any(), any()) } returns 0
 
+        // When
         SUT.deleteAppInboxMessages(count, false)
 
+        // Then
         verify(exactly = 1) {
             database.delete(
                 AppInboxSchema.TABLE_NAME_APP_INBOX,
@@ -273,15 +289,17 @@ class RetenoDatabaseManagerInboxTest : BaseRobolectricTest() {
 
     @Test
     fun whenDeleteInboxesByTime_thenInboxesDeleted() {
+        // Given
         val outdatedTime = ZonedDateTime.now().formatToRemote()
         val countExpected = 2
         val whereClauseExpected =
             "${AppInboxSchema.COLUMN_APP_INBOX_TIME} < '$outdatedTime'"
-
         every { database.delete(any(), any(), any()) } returns countExpected
 
+        // When
         SUT.deleteAppInboxMessagesByTime(outdatedTime)
 
+        // Then
         verify(exactly = 1) {
             database.delete(
                 AppInboxSchema.TABLE_NAME_APP_INBOX,
@@ -292,18 +310,20 @@ class RetenoDatabaseManagerInboxTest : BaseRobolectricTest() {
 
     @Test
     fun whenDeleteAllInboxes_thenInboxesDeleteAllInboxes_thenInboxesDeleted() {
+        // Given
         val countExpected = 2
-
         every { database.delete(any(), any(), any()) } returns countExpected
 
+        // When
         SUT.deleteAllAppInboxMessages()
 
+        // Then
         verify(exactly = 1) {
             database.delete(AppInboxSchema.TABLE_NAME_APP_INBOX)
         }
     }
 
-
+    // region helper methods -----------------------------------------------------------------------
     private fun mockColumnIndexes() {
         every { cursor.isNull(any()) } returns false
         
@@ -331,4 +351,5 @@ class RetenoDatabaseManagerInboxTest : BaseRobolectricTest() {
             )
         } returns cursor
     }
+    // endregion helper methods --------------------------------------------------------------------
 }

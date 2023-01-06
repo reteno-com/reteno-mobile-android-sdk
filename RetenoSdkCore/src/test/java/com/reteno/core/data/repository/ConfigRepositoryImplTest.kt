@@ -28,14 +28,14 @@ class ConfigRepositoryImplTest : BaseUnitTest() {
         @JvmStatic
         @BeforeClass
         fun beforeClass() {
-            mockStaticTextUtil()
+            mockkStatic(TextUtils::class)
             mockkStatic(FirebaseMessaging::class)
         }
 
         @JvmStatic
         @AfterClass
         fun afterClass() {
-            unMockStaticTextUtil()
+            unmockkStatic(TextUtils::class)
             unmockkStatic(FirebaseMessaging::class)
         }
     }

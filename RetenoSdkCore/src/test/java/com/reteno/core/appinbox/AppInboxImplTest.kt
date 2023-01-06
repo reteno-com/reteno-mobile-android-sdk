@@ -16,17 +16,21 @@ import org.junit.runners.JUnit4
 @RunWith(JUnit4::class)
 class AppInboxImplTest {
 
+    // region constants ----------------------------------------------------------------------------
     private companion object {
         private const val PAGE = 2
         private const val PAGE_SIZE = 12
         private const val MESSAGE_ID = "dsdg-4352-sdgsdg-3525-sdggse"
     }
+    // endregion constants -------------------------------------------------------------------------
 
+    // region helper fields ------------------------------------------------------------------------
     @RelaxedMockK
     private lateinit var appInboxController: AppInboxController
 
 
     private lateinit var inbox: AppInboxImpl
+    // endregion helper fields ---------------------------------------------------------------------
 
     @Before
     fun setUp() {
@@ -36,10 +40,13 @@ class AppInboxImplTest {
 
     @Test
     fun whenGetAppInboxMessages_thenCallAppInboxController() {
+        // Given
         val callback = mockk<RetenoResultCallback<AppInboxMessages>>()
 
+        // When
         inbox.getAppInboxMessages(PAGE, PAGE_SIZE, callback)
 
+        // Then
         verify(exactly = 1) {
             appInboxController.getAppInboxMessages(
                 eq(PAGE),
@@ -51,10 +58,13 @@ class AppInboxImplTest {
 
     @Test
     fun givenPageAndSizeAreNull_whenGetAppInboxMessages_thenCallAppInboxController() {
+        // Given
         val callback = mockk<RetenoResultCallback<AppInboxMessages>>()
 
+        // When
         inbox.getAppInboxMessages(null, null, callback)
 
+        // Then
         verify(exactly = 1) {
             appInboxController.getAppInboxMessages(
                 null,
@@ -66,10 +76,13 @@ class AppInboxImplTest {
 
     @Test
     fun whenGetAppInboxMessagesCount_thenCallAppInboxController() {
+        // Given
         val callback = mockk<RetenoResultCallback<Int>>()
 
+        // When
         inbox.getAppInboxMessagesCount(callback)
 
+        // Then
         verify(exactly = 1) {
             appInboxController.getMessagesCount(callback)
         }
@@ -77,10 +90,13 @@ class AppInboxImplTest {
 
     @Test
     fun whenSubscribeOnMessagesCountChanged_thenCallAppInboxController() {
+        // Given
         val callback = mockk<RetenoResultCallback<Int>>()
 
+        // When
         inbox.subscribeOnMessagesCountChanged(callback)
 
+        // Then
         verify(exactly = 1) {
             appInboxController.subscribeCountChanges(callback)
         }
@@ -88,10 +104,13 @@ class AppInboxImplTest {
 
     @Test
     fun whenUnsubscribeMessagesCountChanged_thenCallAppInboxController() {
+        // Given
         val callback = mockk<RetenoResultCallback<Int>>()
 
+        // When
         inbox.unsubscribeMessagesCountChanged(callback)
 
+        // Then
         verify(exactly = 1) {
             appInboxController.unsubscribeCountChanges(callback)
         }
@@ -99,8 +118,10 @@ class AppInboxImplTest {
 
     @Test
     fun whenUnsubscribeAllMessagesCountChanged_thenCallAppInboxController() {
+        // When
         inbox.unsubscribeAllMessagesCountChanged()
 
+        // Then
         verify(exactly = 1) {
             appInboxController.unsubscribeAllCountChanges()
         }
@@ -108,8 +129,10 @@ class AppInboxImplTest {
 
     @Test
     fun whenMarkAsOpened_thenCallAppInboxController() {
+        // When
         inbox.markAsOpened(MESSAGE_ID)
 
+        // Then
         verify(exactly = 1) {
             appInboxController.markAsOpened(eq(MESSAGE_ID))
         }
@@ -117,10 +140,13 @@ class AppInboxImplTest {
 
     @Test
     fun whenMarkAllMessagesAsOpened_thenCallAppInboxController() {
+        // Given
         val callback = mockk<RetenoResultCallback<Unit>>()
 
+        // When
         inbox.markAllMessagesAsOpened(callback)
 
+        // Then
         verify(exactly = 1) {
             appInboxController.markAllMessagesAsOpened(callback)
         }

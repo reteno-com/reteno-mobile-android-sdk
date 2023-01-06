@@ -2,6 +2,7 @@ package com.reteno.core.util
 
 import android.util.Log
 import com.reteno.core.BuildConfig
+import com.reteno.core.BuildConfig.SDK_VERSION
 import com.reteno.core.RetenoApplication
 import com.reteno.core.RetenoImpl
 import io.sentry.Breadcrumb
@@ -37,36 +38,48 @@ object Logger {
     @JvmStatic
     fun v(tag: String, methodName: String, vararg arguments: Any?) {
         val message = buildMessage(methodName, arguments)
-        Log.v(tag, message)
+        if (BuildConfig.DEBUG) {
+            Log.v(tag, message)
+        }
     }
 
     @JvmStatic
     fun d(tag: String, methodName: String, vararg arguments: Any?) {
         val message = buildMessage(methodName, arguments)
-        Log.d(tag, message)
+        if (BuildConfig.DEBUG) {
+            Log.d(tag, message)
+        }
     }
 
     @JvmStatic
     fun i(tag: String, methodName: String, vararg arguments: Any?) {
         val message = buildMessage(methodName, arguments)
-        Log.i(tag, message)
+        if (BuildConfig.DEBUG) {
+            Log.i(tag, message)
+        }
     }
 
     @JvmStatic
     fun w(tag: String, methodName: String, vararg arguments: Any?) {
         val message = buildMessage(methodName, arguments)
-        Log.w(tag, message)
+        if (BuildConfig.DEBUG) {
+            Log.w(tag, message)
+        }
     }
 
     @JvmStatic
     fun e(tag: String, message: String) {
-        Log.e(tag, message)
+        if (BuildConfig.DEBUG) {
+            Log.e(tag, message)
+        }
         captureEvent(message)
     }
 
     @JvmStatic
     fun e(tag: String, methodName: String, tr: Throwable) {
-        Log.e(tag, methodName, tr)
+        if (BuildConfig.DEBUG) {
+            Log.e(tag, methodName, tr)
+        }
         captureException(tag, methodName, tr)
     }
 
@@ -81,6 +94,7 @@ object Logger {
     private fun captureException(tag: String, methodName: String, e: Throwable) {
         val mainHub = Sentry.getCurrentHub().clone()
         val retenoHub = Hub(mainHub.options.apply {
+            release = SDK_VERSION
             dsn = SENTRY_DSN
         })
 

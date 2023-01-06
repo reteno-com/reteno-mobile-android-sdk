@@ -44,20 +44,12 @@ class RetenoNotificationServiceTest : BaseRobolectricTest() {
         @JvmStatic
         @BeforeClass
         fun beforeClass() {
-            mockObjectUtil()
-
-            mockObjectRetenoNotificationsChannel()
-            mockObjectNotificationsEnabledManager()
-
             mockkStatic("com.reteno.core.util.UtilKt")
         }
 
         @JvmStatic
         @AfterClass
         fun afterClass() {
-            unMockObjectUtil()
-            unMockObjectRetenoNotificationsChannel()
-            unMockObjectNotificationsEnabledManager()
             unmockkStatic("com.reteno.core.util.UtilKt")
         }
     }

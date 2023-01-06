@@ -9,6 +9,7 @@ import com.reteno.core.di.ServiceLocator
 import com.reteno.core.domain.controller.ContactController
 import com.reteno.core.domain.controller.EventController
 import com.reteno.core.domain.controller.ScheduleController
+import com.reteno.core.domain.model.ecom.EcomEvent
 import com.reteno.core.domain.model.event.Event
 import com.reteno.core.domain.model.event.Parameter
 import com.reteno.core.domain.model.user.User
@@ -21,9 +22,7 @@ import io.mockk.*
 import io.mockk.impl.annotations.RelaxedMockK
 import junit.framework.TestCase.assertNotNull
 import junit.framework.TestCase.assertTrue
-import org.junit.AfterClass
 import org.junit.Assert.assertEquals
-import org.junit.BeforeClass
 import org.junit.Test
 import org.robolectric.shadows.ShadowLooper.shadowMainLooper
 import java.time.ZonedDateTime
@@ -45,27 +44,9 @@ class RetenoImplTest : BaseRobolectricTest() {
 
         private const val TRACK_SCREEN_NAME = "ScreenNameHere"
 
+        private const val ECOM_EVENT_EXTERNAL_ORDER_ID = "external_order_id"
+
         private const val TRANSCRIPT_RESUME_RECEIVED = "ResumeReceived"
-
-        @JvmStatic
-        @BeforeClass
-        fun beforeClass() {
-            mockUtilKt()
-        }
-
-        @JvmStatic
-        @AfterClass
-        fun afterClass() {
-            unMockUtilKt()
-        }
-
-        private fun mockUtilKt() {
-            mockkStatic("com.reteno.core.util.UtilKt")
-        }
-
-        private fun unMockUtilKt() {
-            unmockkStatic("com.reteno.core.util.UtilKt")
-        }
     }
     // endregion constants -------------------------------------------------------------------------
 
@@ -114,7 +95,7 @@ class RetenoImplTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun externalId_whenSetUserAttributes_thenInteractWithController() {
+    fun givenExternalIdValid_whenSetUserAttributes_thenInteractWithController() {
         // When
         retenoImpl.setUserAttributes(externalUserId = EXTERNAL_USER_ID)
 
@@ -134,7 +115,7 @@ class RetenoImplTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun externalIdAndUser_whenSetUserAttributesWithUser_thenInteractWithController() {
+    fun givenExternalIdAndUserProvided_whenSetUserAttributesWithUser_thenInteractWithController() {
         // Given
         val userFull = User(
             userAttributes = null,
@@ -149,6 +130,24 @@ class RetenoImplTest : BaseRobolectricTest() {
         // Then
         verify { contactController.setExternalUserId(eq(EXTERNAL_USER_ID)) }
         verify { contactController.setUserData(userFull) }
+    }
+
+    @Test
+    fun givenExternalIdBlank_whenSetUserAttributesWithUser_thenThrowException() {
+        // Given
+        val expectedException = java.lang.IllegalArgumentException("externalUserId should not be null or blank")
+
+        // When
+        val actualException = try {
+            retenoImpl.setUserAttributes(" ")
+            null
+        } catch (e: java.lang.Exception) {
+            e
+        }
+
+        // Then
+        assertTrue(actualException is java.lang.IllegalArgumentException)
+        assertEquals(expectedException.message, actualException?.message)
     }
 
     @Test
@@ -177,6 +176,21 @@ class RetenoImplTest : BaseRobolectricTest() {
     }
 
     @Test
+    fun whenLogEcomEvent_thenInteractWithEventController() {
+        // Given
+        val ecomEvent = EcomEvent.OrderCancelled(
+            ECOM_EVENT_EXTERNAL_ORDER_ID,
+            ZonedDateTime.now()
+        )
+
+        // When
+        retenoImpl.logEcommerceEvent(ecomEvent)
+
+        // Then
+        verify { eventController.trackEcomEvent(ecomEvent) }
+    }
+
+    @Test
     fun whenAutoScreenTracking_thenInteractWithActivityHelper() {
         // Given
         val config = ScreenTrackingConfig(true, listOf(), ScreenTrackingTrigger.ON_RESUME)
@@ -198,6 +212,15 @@ class RetenoImplTest : BaseRobolectricTest() {
     }
 
     @Test
+    fun whenResumeApp_thenCalledClearOleEvents() {
+        // When
+        retenoImpl.resume(mockk())
+
+        // Then
+        verify(exactly = 1) { scheduleController.clearOldData() }
+    }
+
+    @Test
     fun whenPauseApp_thenStopScheduler() {
         // When
         retenoImpl.pause(mockk())
@@ -213,15 +236,6 @@ class RetenoImplTest : BaseRobolectricTest() {
 
         // Then
         verify(exactly = 1) { scheduleController.forcePush() }
-    }
-
-    @Test
-    fun whenResumeApp_thenStartScheduler_thenCalledClearOleEvents() {
-        // When
-        retenoImpl.resume(mockk())
-
-        // Then
-        verify { scheduleController.clearOldData() }
     }
 
     @Test
@@ -265,6 +279,5 @@ class RetenoImplTest : BaseRobolectricTest() {
         }
         every { application.queryBroadcastReceivers(any()) } returns listOf(mockResolveInfo)
     }
-
     // endregion helper methods --------------------------------------------------------------------
 }
