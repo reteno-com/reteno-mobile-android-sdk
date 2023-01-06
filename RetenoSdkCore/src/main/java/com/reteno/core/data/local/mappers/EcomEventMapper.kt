@@ -172,7 +172,7 @@ private fun EcomEvent.OrderCreated.formatToEventParams(): List<ParameterDb> {
 
     return buildList {
         add(ParameterDb(EXTERNAL_ORDER_ID, event.order.externalOrderId))
-        add(ParameterDb(EXTERNAL_CUSTOMER_ID, event.order.externalCustomerId))
+        event.order.externalCustomerId?.let { add(ParameterDb(EXTERNAL_CUSTOMER_ID, it)) }
         add(ParameterDb(TOTAL_COST, event.order.totalCost.toString()))
         add(ParameterDb(STATUS, event.order.status.name))
         add(ParameterDb(DATE, event.order.date.formatToRemote()))
@@ -203,7 +203,7 @@ private fun EcomEvent.OrderUpdated.formatToEventParams(): List<ParameterDb> {
 
     return buildList {
         add(ParameterDb(EXTERNAL_ORDER_ID, event.order.externalOrderId))
-        add(ParameterDb(EXTERNAL_CUSTOMER_ID, event.order.externalCustomerId))
+        event.order.externalCustomerId?.let { add(ParameterDb(EXTERNAL_CUSTOMER_ID, it)) }
         add(ParameterDb(TOTAL_COST, event.order.totalCost.toString()))
         add(ParameterDb(STATUS, event.order.status.name))
         add(ParameterDb(DATE, event.order.date.formatToRemote()))
