@@ -3,7 +3,7 @@
 	"name":"name",
 	"description":"description",
 	"groupId":"groupId",
-	"importance":3,
+	"importance":4,
 	"enable_lights":false,
 	"light_color":0,
 	"enable_vibration":false,

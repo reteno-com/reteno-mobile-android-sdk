@@ -1,9 +1,10 @@
 package com.reteno.sample.util;
 
-import android.util.Log;
 import android.widget.EditText;
 
 import androidx.annotation.Nullable;
+
+import com.reteno.core.util.Logger;
 
 import java.util.Arrays;
 import java.util.List;
@@ -28,7 +29,7 @@ public class Util {
         try {
             result = Integer.parseInt(text);
         } catch (Exception e) {
-            Log.d("saveParseInt", e.getMessage());
+            Logger.d("saveParseInt", e.getMessage());
         }
         return result;
     }
