@@ -21,6 +21,8 @@ internal class RetenoDatabaseManagerEventsImpl(private val database: RetenoDatab
     private val contentValues = ContentValues()
 
     override fun insertEvents(events: EventsDb) {
+        /*@formatter:off*/ Logger.i(TAG, "insertEvents(): ", "events = [", events, "]")
+        /*@formatter:on*/
         var parentRowId: Long = -1L
 
         var cursor: Cursor? = null
@@ -64,6 +66,8 @@ internal class RetenoDatabaseManagerEventsImpl(private val database: RetenoDatab
     }
 
     override fun getEvents(limit: Int?): List<EventsDb> {
+        /*@formatter:off*/ Logger.i(TAG, "getEvents(): ", "limit = [", limit, "]")
+        /*@formatter:on*/
         var cursor: Cursor? = null
 
         val eventsParentTableList: MutableMap<String, EventsDb> = mutableMapOf()
@@ -172,6 +176,8 @@ internal class RetenoDatabaseManagerEventsImpl(private val database: RetenoDatab
      * Call [com.reteno.core.data.local.database.RetenoDatabase.cleanUnlinkedEvents] each time you remove events from Event table (Child table)
      */
     override fun deleteEvents(count: Int, oldest: Boolean) {
+        /*@formatter:off*/ Logger.i(TAG, "deleteEvents(): ", "count = [", count, "], oldest = [", oldest, "]")
+        /*@formatter:on*/
         val order = if (oldest) "ASC" else "DESC"
         database.delete(
             table = EventsSchema.EventSchema.TABLE_NAME_EVENT,
@@ -182,6 +188,8 @@ internal class RetenoDatabaseManagerEventsImpl(private val database: RetenoDatab
     }
 
     override fun deleteEventsByTime(outdatedTime: String): Int {
+        /*@formatter:off*/ Logger.i(TAG, "deleteEventsByTime(): ", "outdatedTime = [", outdatedTime, "]")
+        /*@formatter:on*/
         val count = database.delete(
             table = EventsSchema.EventSchema.TABLE_NAME_EVENT,
             whereClause = "${EventsSchema.EventSchema.COLUMN_EVENT_OCCURRED} < '$outdatedTime'"

@@ -1,7 +1,6 @@
 package com.reteno.sample.fragments;
 
 import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -15,6 +14,7 @@ import androidx.navigation.fragment.NavHostFragment;
 
 import com.reteno.core.domain.model.event.Event;
 import com.reteno.core.domain.model.event.Parameter;
+import com.reteno.core.util.Logger;
 import com.reteno.sample.BaseFragment;
 import com.reteno.sample.R;
 import com.reteno.sample.databinding.FragmentCustomEventBinding;
@@ -54,7 +54,7 @@ public class FragmentCustomEvent extends BaseFragment {
                 NavHostFragment.findNavController(this).popBackStack();
             } catch (Exception e) {
                 Toast.makeText(this.getContext(), e.getMessage(), Toast.LENGTH_LONG).show();
-                Log.e("FragmentCustomEvent", e.getMessage());
+                Logger.e("FragmentCustomEvent", e.getMessage());
             }
         });
 

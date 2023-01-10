@@ -16,14 +16,15 @@ import com.reteno.core.data.local.model.user.UserAttributesDb
 import com.reteno.core.data.local.model.user.UserCustomFieldDb
 import com.reteno.core.data.local.model.user.UserDb
 import com.reteno.core.util.Logger
-import io.mockk.*
+import io.mockk.clearMocks
+import io.mockk.every
 import io.mockk.impl.annotations.MockK
 import io.mockk.impl.annotations.RelaxedMockK
+import io.mockk.justRun
+import io.mockk.verify
 import junit.framework.TestCase.assertTrue
 import net.sqlcipher.Cursor
-import org.junit.AfterClass
 import org.junit.Assert.assertEquals
-import org.junit.BeforeClass
 import org.junit.Test
 
 
@@ -110,18 +111,6 @@ class RetenoDatabaseManagerUserTest : BaseRobolectricTest() {
         private const val COLUMN_INDEX_TOWN = 16
         private const val COLUMN_INDEX_ADDRESS = 17
         private const val COLUMN_INDEX_POSTCODE = 18
-
-        @JvmStatic
-        @BeforeClass
-        fun beforeClass() {
-            mockkStatic(Cursor::getUser)
-        }
-
-        @JvmStatic
-        @AfterClass
-        fun afterClass() {
-            unmockkStatic(Cursor::getUser)
-        }
     }
     // endregion constants -------------------------------------------------------------------------
 

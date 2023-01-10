@@ -66,7 +66,7 @@ class RestClientImplTest : BaseUnitTest() {
 
     // region helper fields ------------------------------------------------------------------------
     @RelaxedMockK
-    private lateinit var httpURLConnection: HttpURLConnection
+    private lateinit var httpURLConnection: HttpsURLConnection
     private lateinit var restClient: RestClientImpl
     // endregion helper fields ---------------------------------------------------------------------
 
@@ -78,6 +78,7 @@ class RestClientImplTest : BaseUnitTest() {
 
     @Test
     fun appendedQueryParams_paramsNotNull() {
+        // Given
         val expectedUrl = "http://www.test.com?params1=false&params2=9"
         val params = mapOf("params1" to false.toString(), "params2" to "9")
 
@@ -90,32 +91,40 @@ class RestClientImplTest : BaseUnitTest() {
         every { mockBuilder.appendQueryParameter(any(), any()) } returns mockBuilder
         every { mockBuilder.build() } returns mockUri
 
+        // When
         makeRequest(HttpMethod.GET, queryParams = params)
 
+        // Then
         verify { mockBuilder.appendQueryParameter(any(), any()) }
         verify { ConnectionManager.openConnection(eq(expectedUrl)) }
     }
 
     @Test
     fun appendedQueryParams_paramsAreEmpty() {
+        // Given
         val params = emptyMap<String, String?>()
         val expectedUrl = "http://www.test.com"
 
         every { ConnectionManager.openConnection(any()) } returns httpURLConnection
 
+        // When
         makeRequest(HttpMethod.GET, queryParams = params)
 
+        // Then
         verify(inverse = true) { Uri.parse(any()) }
         verify { ConnectionManager.openConnection(eq(expectedUrl)) }
     }
 
     @Test
     fun addedAuthorizationHeaders_callMobileApi() {
+        // Given
         val url = ApiContract.MobileApi.Events
         every { ConnectionManager.openConnection(any()) } returns httpURLConnection
 
+        // When
         makeRequest(url = url)
 
+        // Then
         verify { httpURLConnection.setRequestProperty(eq(HEADER_KEY), any()) }
         verify {
             httpURLConnection.setRequestProperty(
@@ -127,11 +136,14 @@ class RestClientImplTest : BaseUnitTest() {
 
     @Test
     fun didntAddedAuthorizationHeaders_callIsNotMobileApi() {
+        // Given
         val url = ApiContract.RetenoApi.InteractionStatus("")
         every { ConnectionManager.openConnection(any()) } returns httpURLConnection
 
+        // When
         makeRequest(url = url)
 
+        // Then
         verify(inverse = true) {
             httpURLConnection.setRequestProperty(
                 eq(HEADER_KEY),
@@ -148,11 +160,14 @@ class RestClientImplTest : BaseUnitTest() {
 
     @Test
     fun addedPersistentHeaders() {
+        // Given
         every { ConnectionManager.openConnection(any()) } returns httpURLConnection
         val method = HttpMethod.GET
 
+        // When
         makeRequest(method)
 
+        // Then
         verify {
             httpURLConnection.setRequestProperty(
                 eq(HEADER_ACCEPT),
@@ -168,21 +183,28 @@ class RestClientImplTest : BaseUnitTest() {
 
     @Test
     fun addedSslFactory_httpsRequest() {
+        // Given
         val httpsURLConnection = mockk<HttpsURLConnection>(relaxed = true)
 
         every { ConnectionManager.openConnection(any()) } returns httpsURLConnection
         val url = ApiContract.MobileApi.Events
+
+        // When
         makeRequest(url = url)
 
+        // Then
         verify { httpsURLConnection.sslSocketFactory = any() }
     }
 
     @Test
     fun addedHeadersSpecificForPostAndPutMethods() {
+        // Given
         every { ConnectionManager.openConnection(any()) } returns httpURLConnection
 
+        // When
         makeRequest()
 
+        // Then
         verify {
             httpURLConnection.setRequestProperty(
                 eq(HEADER_CONTENT),
@@ -201,6 +223,7 @@ class RestClientImplTest : BaseUnitTest() {
 
     @Test
     fun attachedBody() {
+        // Given
         val body = "some body"
         val outputStream = mockk<OutputStream>(relaxed = true)
 
@@ -208,23 +231,27 @@ class RestClientImplTest : BaseUnitTest() {
         every { httpURLConnection.outputStream } returns outputStream
         every { ConnectionManager.openConnection(any()) } returns httpURLConnection
 
+        // When
         makeRequest(body = body)
 
+        // Then
         verify { outputStream.close() }
     }
 
     @Test
     fun success_makeRequest_httpOk() {
-        val inputStream =
-            ByteArrayInputStream(TEST_RESPONSE.toByteArray())
+        // Given
+        val inputStream = ByteArrayInputStream(TEST_RESPONSE.toByteArray())
         val spyCallback = spyk<ResponseCallback>()
 
         every { httpURLConnection.responseCode } returns HttpURLConnection.HTTP_OK
         every { httpURLConnection.inputStream } returns inputStream
         every { ConnectionManager.openConnection(any()) } returns httpURLConnection
 
+        // When
         makeRequest(responseCallback = spyCallback)
 
+        // Then
         verify { httpURLConnection.connect() }
         assertEquals(HttpURLConnection.HTTP_OK, httpURLConnection.responseCode)
         verify { httpURLConnection.inputStream }
@@ -236,16 +263,18 @@ class RestClientImplTest : BaseUnitTest() {
 
     @Test
     fun success_makeRequest_httpMovedPermanently() {
-        val inputStream =
-            ByteArrayInputStream(TEST_RESPONSE.toByteArray())
+        // Given
+        val inputStream = ByteArrayInputStream(TEST_RESPONSE.toByteArray())
         val spyCallback = spyk<ResponseCallback>()
 
         every { httpURLConnection.responseCode } returns HttpURLConnection.HTTP_MOVED_PERM
         every { httpURLConnection.inputStream } returns inputStream
         every { ConnectionManager.openConnection(any()) } returns httpURLConnection
 
+        // When
         makeRequest(responseCallback = spyCallback)
 
+        // Then
         verify { httpURLConnection.connect() }
         assertEquals(HttpURLConnection.HTTP_MOVED_PERM, httpURLConnection.responseCode)
         verify { httpURLConnection.inputStream }
@@ -257,16 +286,18 @@ class RestClientImplTest : BaseUnitTest() {
 
     @Test
     fun error_makeRequest_httpError() {
-        val errorStream =
-            ByteArrayInputStream(TEST_ERROR_RESPONSE.toByteArray())
+        // Given
+        val errorStream = ByteArrayInputStream(TEST_ERROR_RESPONSE.toByteArray())
         val spyCallback = spyk<ResponseCallback>()
 
         every { httpURLConnection.responseCode } returns HttpURLConnection.HTTP_BAD_REQUEST
         every { httpURLConnection.errorStream } returns errorStream
         every { ConnectionManager.openConnection(any()) } returns httpURLConnection
 
+        // When
         makeRequest(responseCallback = spyCallback)
 
+        // Then
         verify { httpURLConnection.connect() }
         assertEquals(HttpURLConnection.HTTP_BAD_REQUEST, httpURLConnection.responseCode)
         verify { httpURLConnection.errorStream }
@@ -283,18 +314,22 @@ class RestClientImplTest : BaseUnitTest() {
 
     @Test
     fun exception_makeRequest_duringInitialisationHttpConnection() {
+        // Given
         val exceptionMessage = "test exception"
         val spyCallback = spyk<ResponseCallback>()
         every { ConnectionManager.openConnection(any()) } throws MockKException(exceptionMessage)
 
+        // When
         makeRequest(responseCallback = spyCallback)
 
+        // Then
         verify { spyCallback.onFailure(null, null, any<MockKException>()) }
         verify(inverse = true) { spyCallback.onSuccess(any()) }
     }
 
     @Test
     fun exception_makeRequest_attachBody() {
+        // Given
         val exceptionMessage = "test exception"
         val spyCallback = spyk<ResponseCallback>()
 
@@ -302,8 +337,10 @@ class RestClientImplTest : BaseUnitTest() {
         every { httpURLConnection.getRequestProperty(eq(HEADER_CONTENT_ENCODING)) } returns ""
         every { httpURLConnection.outputStream } throws MockKException(exceptionMessage)
 
+        // When
         makeRequest(responseCallback = spyCallback)
 
+        // Then
         verify { spyCallback.onFailure(null, null, any<MockKException>()) }
         verify { httpURLConnection.disconnect() }
         verify(inverse = true) { spyCallback.onSuccess(any()) }

@@ -73,6 +73,7 @@ public class FragmentStart extends BaseFragment {
         screens.add(new ScreenItem("App Inbox", FragmentStartDirections.startToAppInbox()));
         screens.add(new ScreenItem("Recommendations GET", FragmentStartDirections.startToRecommendationsGet()));
         screens.add(new ScreenItem("Recommendations POST", FragmentStartDirections.startToRecommendationsPost()));
+        screens.add(new ScreenItem("Ecom Events", FragmentStartDirections.startToEcomEvents()));
 
         return screens;
     }

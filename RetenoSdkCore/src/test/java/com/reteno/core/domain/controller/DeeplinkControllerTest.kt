@@ -29,9 +29,7 @@ class DeeplinkControllerTest : BaseUnitTest() {
     }
 
     @Test
-    fun givenWrappedDeeplink_whenTriggerWrappedLink_thenWrappedDeeplinkClickedEventSentToRepository(){
-        //Given
-
+    fun givenWrappedDeeplink_whenTriggerWrappedLink_thenWrappedDeeplinkClickedEventSentToRepository() {
         // When
         deeplinkController.triggerDeeplinkClicked(DEEPLINK_WRAPPED, DEEPLINK_UNWRAPPED)
 

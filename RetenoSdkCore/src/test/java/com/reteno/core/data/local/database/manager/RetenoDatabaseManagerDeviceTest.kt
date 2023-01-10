@@ -14,21 +14,22 @@ import com.reteno.core.data.local.model.device.DeviceCategoryDb
 import com.reteno.core.data.local.model.device.DeviceDb
 import com.reteno.core.data.local.model.device.DeviceOsDb
 import com.reteno.core.util.Logger
-import io.mockk.*
+import io.mockk.clearMocks
+import io.mockk.every
 import io.mockk.impl.annotations.MockK
 import io.mockk.impl.annotations.RelaxedMockK
+import io.mockk.justRun
+import io.mockk.verify
 import junit.framework.TestCase.assertTrue
 import net.sqlcipher.Cursor
-import org.junit.AfterClass
 import org.junit.Assert.assertEquals
-import org.junit.BeforeClass
 import org.junit.Test
 
 
 class RetenoDatabaseManagerDeviceTest : BaseRobolectricTest() {
 
     // region constants ----------------------------------------------------------------------------
-    companion object Constants {
+    companion object {
         private const val ROW_ID_CORRUPTED = 101L
 
         private const val ROW_ID_INSERTED = 1L
@@ -91,18 +92,6 @@ class RetenoDatabaseManagerDeviceTest : BaseRobolectricTest() {
             timeZone = TIME_ZONE,
             advertisingId = ADVERTISING_ID
         )
-
-        @JvmStatic
-        @BeforeClass
-        fun beforeClass() {
-            mockkStatic(Cursor::getDevice)
-        }
-
-        @JvmStatic
-        @AfterClass
-        fun afterClass() {
-            unmockkStatic(Cursor::getDevice)
-        }
     }
     // endregion constants -------------------------------------------------------------------------
 

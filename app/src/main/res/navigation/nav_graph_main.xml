@@ -14,25 +14,21 @@
         <action
             android:id="@+id/start_to_deviceId"
             app:destination="@id/fragmentDeviceId" />
-
         <action
             android:id="@+id/start_to_sentry"
             app:destination="@id/fragmentSentry" />
-
         <action
             android:id="@+id/start_to_activity_second"
             app:destination="@id/activitySecond" />
         <action
             android:id="@+id/start_to_userData"
             app:destination="@id/fragmentUserData" />
-
         <action
             android:id="@+id/start_to_custom_data"
             app:destination="@id/fragmentCustomData" />
-
         <action
             android:id="@+id/start_to_database"
-            app:destination="@id/fragmentDatabase" />
+            app:destination="@id/app_navigation_database" />
         <action
             android:id="@+id/start_to_customEvent"
             app:destination="@id/fragmentCustomEvent" />
@@ -47,10 +43,13 @@
             app:destination="@id/fragmentAppInbox" />
         <action
             android:id="@+id/start_to_recommendationsGet"
-            app:destination="@id/fragmentScreenRecommendationsGet" />
+            app:destination="@id/fragmentRecommendationsGet" />
         <action
             android:id="@+id/start_to_recommendationsPost"
-            app:destination="@id/fragmentScreenRecommendationsPost" />
+            app:destination="@id/fragmentRecommendationsPost" />
+        <action
+            android:id="@+id/start_to_ecomEvents"
+            app:destination="@id/app_navigation_ecom_events" />
     </fragment>
 
     <fragment
@@ -83,112 +82,6 @@
         tools:layout="@layout/fragment_custom_data" />
 
     <fragment
-        android:id="@+id/fragmentDatabase"
-        android:name="com.reteno.sample.fragments.database.FragmentDatabase"
-        android:label="fragmentDatabase"
-        tools:layout="@layout/fragment_database">
-
-        <action
-            android:id="@+id/database_to_write_device"
-            app:destination="@id/dialogWriteDevice" />
-        <action
-            android:id="@+id/database_to_read_device"
-            app:destination="@id/dialogReadDevice" />
-
-        <action
-            android:id="@+id/database_to_write_user"
-            app:destination="@id/fragmentWriteUser" />
-
-        <action
-            android:id="@+id/database_to_read_user"
-            app:destination="@id/fragmentReadUser" />
-
-        <action
-            android:id="@+id/database_to_write_interaction"
-            app:destination="@id/fragmentWriteInteraction" />
-
-        <action
-            android:id="@+id/database_to_read_interaction"
-            app:destination="@id/fragmentReadInteraction" />
-
-        <action
-            android:id="@+id/database_to_write_event"
-            app:destination="@id/fragmentWriteEvent" />
-
-        <action
-            android:id="@+id/database_to_read_event"
-            app:destination="@id/fragmentReadEvent" />
-
-        <action
-            android:id="@+id/database_to_read_inbox"
-            app:destination="@id/inboxReadDialogFragment" />
-
-        <action
-            android:id="@+id/database_to_write_inbox"
-            app:destination="@id/inboxWriteDialogFragment" />
-    </fragment>
-
-    <dialog
-        android:id="@+id/dialogWriteDevice"
-        android:name="com.reteno.sample.fragments.database.DeviceWriteDialogFragment"
-        android:label="dialogWriteDevice"
-        tools:layout="@layout/dialog_db_write_device" />
-
-    <dialog
-        android:id="@+id/dialogReadDevice"
-        android:name="com.reteno.sample.fragments.database.DeviceReadDialogFragment"
-        android:label="dialogReadDevice"
-        tools:layout="@layout/dialog_db_read" />
-
-    <fragment
-        android:id="@+id/fragmentWriteUser"
-        android:name="com.reteno.sample.fragments.database.UserWriteFragment"
-        android:label="fragmentWriteUser"
-        tools:layout="@layout/fragment_user_data" />
-
-    <dialog
-        android:id="@+id/fragmentReadUser"
-        android:name="com.reteno.sample.fragments.database.UserReadDialogFragment"
-        android:label="fragmentReadUser"
-        tools:layout="@layout/dialog_db_read" />
-
-    <dialog
-        android:id="@+id/fragmentWriteInteraction"
-        android:name="com.reteno.sample.fragments.database.InteractionWriteDialogFragment"
-        android:label="fragmentWriteInteraction"
-        tools:layout="@layout/dialog_db_write_interaction" />
-
-    <dialog
-        android:id="@+id/fragmentReadInteraction"
-        android:name="com.reteno.sample.fragments.database.InteractionReadDialogFragment"
-        android:label="fragmentReadInteraction"
-        tools:layout="@layout/dialog_db_read" />
-
-    <dialog
-        android:id="@+id/fragmentWriteEvent"
-        android:name="com.reteno.sample.fragments.database.EventWriteDialogFragment"
-        android:label="fragmentWriteEvent"
-        tools:layout="@layout/dialog_db_write_event" />
-
-    <dialog
-        android:id="@+id/fragmentReadEvent"
-        android:name="com.reteno.sample.fragments.database.EventReadDialogFragment"
-        android:label="fragmentReadEvent"
-        tools:layout="@layout/dialog_db_read" />
-
-    <dialog
-        android:id="@+id/inboxReadDialogFragment"
-        android:name="com.reteno.sample.fragments.database.InboxReadDialogFragment"
-        android:label="InboxReadDialogFragment"
-        tools:layout="@layout/dialog_db_read" />
-
-    <dialog
-        android:id="@+id/inboxWriteDialogFragment"
-        android:name="com.reteno.sample.fragments.database.InboxWriteDialogFragment"
-        android:label="dialog_db_write_inbox"
-        tools:layout="@layout/dialog_db_write_inbox" />
-
-    <fragment
         android:id="@+id/fragmentCustomEvent"
         android:name="com.reteno.sample.fragments.FragmentCustomEvent"
         android:label="fragment_custom_event"
@@ -205,6 +98,7 @@
         android:name="com.reteno.sample.fragments.FragmentScreenTracking"
         android:label="fragment_screen_tracking"
         tools:layout="@layout/fragment_screen_tracking" />
+
     <fragment
         android:id="@+id/fragmentAppInbox"
         android:name="com.reteno.sample.fragments.inbox.FragmentAppInbox"
@@ -212,14 +106,17 @@
         tools:layout="@layout/fragment_app_inbox" />
 
     <fragment
-        android:id="@+id/fragmentScreenRecommendationsGet"
+        android:id="@+id/fragmentRecommendationsGet"
         android:name="com.reteno.sample.fragments.FragmentRecommendationsGet"
         android:label="fragment_recommendations_get"
         tools:layout="@layout/fragment_recommendations_get" />
 
     <fragment
-        android:id="@+id/fragmentScreenRecommendationsPost"
+        android:id="@+id/fragmentRecommendationsPost"
         android:name="com.reteno.sample.fragments.FragmentRecommendationsPost"
         android:label="fragment_recommendations_post"
         tools:layout="@layout/fragment_recommendations_post" />
+
+    <include app:graph="@navigation/nav_graph_ecom_events" />
+    <include app:graph="@navigation/nav_graph_database" />
 </navigation>
