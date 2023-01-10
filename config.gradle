@@ -4,6 +4,6 @@ ext {
     androidCompileSdkVersion = 33
     androidBuildToolsVersion = "30.0.3"
 
-    versionCode = 16
+    versionCode = 59
     versionName = project.findProperty('VERSION_NAME')
 }

@@ -39,7 +39,16 @@ internal class RetenoDatabaseImpl(private val context: Context) : RetenoDatabase
         /*@formatter:on*/
         createTables(db)
         if (oldVersion == 1 && newVersion > 1) {
-            db.execSQL(DeviceSchema.SQL_UPGRADE_TABLE_VERSION_2)
+            try {
+                db.execSQL(DeviceSchema.SQL_UPGRADE_TABLE_VERSION_2)
+            } catch (e: SQLiteException) {
+                if (e.toString().startsWith("duplicate column name")) {
+                    /*@formatter:off*/ Logger.e(TAG, "onUpgrade(): Ignoring this exception", e)
+                    /*@formatter:on*/
+                } else {
+                    throw e
+                }
+            }
         }
     }
 
