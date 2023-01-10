@@ -24,6 +24,7 @@ import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.STORE_ID
 import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.TAXES
 import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.TOTAL_COST
 import java.time.ZonedDateTime
+import android.util.Pair
 
 data class Order(
     /**
@@ -135,7 +136,7 @@ data class Order(
      * Additional fields.
      */
     @SerializedName(ATTRIBUTES)
-    val attributes: List<Attributes>? = null
+    val attributes: List<Pair<String, String>>? = null
 ) {
     data class Builder(
         /**
@@ -242,7 +243,7 @@ data class Order(
         /**
          * Additional fields.
          */
-        var attributes: List<Attributes>? = null
+        var attributes: List<Pair<String, String>>? = null
 
         fun build(): Order = Order(
             externalOrderId = externalOrderId,

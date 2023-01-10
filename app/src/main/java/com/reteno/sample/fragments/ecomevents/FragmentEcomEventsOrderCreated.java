@@ -1,6 +1,7 @@
 package com.reteno.sample.fragments.ecomevents;
 
 import android.os.Bundle;
+import android.util.Pair;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -107,7 +108,7 @@ public class FragmentEcomEventsOrderCreated extends BaseEcomEventsFragment {
             orderBuilder.setPaymentMethod(Util.getTextOrNull(binding.etPaymentMethod));
             orderBuilder.setDeliveryAddress(Util.getTextOrNull(binding.etDeliveryAddress));
             orderBuilder.setItems(orderItems);
-            orderBuilder.setAttributes(getCustomAttributes(binding.llCustomAttributes));
+            orderBuilder.setAttributes(getOrderCustomAttributes(binding.llCustomAttributes));
 
             logEvent(orderBuilder.build());
             Toast.makeText(requireContext(), "Done", Toast.LENGTH_SHORT).show();
@@ -190,6 +191,27 @@ public class FragmentEcomEventsOrderCreated extends BaseEcomEventsFragment {
                                 description
                         )
                 );
+            }
+        }
+        return list;
+    }
+
+    private List<Pair<String, String>> getOrderCustomAttributes(LinearLayout llCustomAttributes) {
+        int countView = llCustomAttributes.getChildCount();
+        if (countView == 0) return null;
+
+        List<Pair<String, String>> list = new ArrayList<>();
+        for (int i = 0; i < countView; i++) {
+            LinearLayout parent = (LinearLayout) llCustomAttributes.getChildAt(i);
+
+            EditText etKey = (EditText) parent.getChildAt(0);
+            EditText etValue = (EditText) parent.getChildAt(1);
+
+            String key = Util.getTextOrNull(etKey);
+            String value = Util.getTextOrNull(etValue);
+
+            if (key != null && value != null) {
+                list.add(new Pair<String, String>(key, value));
             }
         }
         return list;
