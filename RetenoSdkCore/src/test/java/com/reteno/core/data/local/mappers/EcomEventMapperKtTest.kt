@@ -1,6 +1,6 @@
 package com.reteno.core.data.local.mappers
 
-import com.reteno.core.base.BaseUnitTest
+import com.reteno.core.base.robolectric.BaseRobolectricTest
 import com.reteno.core.data.local.model.event.EventDb
 import com.reteno.core.data.local.model.event.ParameterDb
 import com.reteno.core.domain.model.ecom.Attributes
@@ -69,7 +69,7 @@ import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.IS_IN_STOCK a
 import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.PRICE as KEY_PRICE
 
 
-class EcomEventMapperKtTest : BaseUnitTest() {
+class EcomEventMapperKtTest : BaseRobolectricTest() {
 
     // region constants ----------------------------------------------------------------------------
     private object General {
@@ -128,12 +128,12 @@ class EcomEventMapperKtTest : BaseUnitTest() {
         const val PRODUCT_1_QUANTITY_EXPECTED = "15"
         const val PRODUCT_1_PRICE = 1325.1
         const val PRODUCT_1_PRICE_EXPECTED = "1325.1"
-        const val PRODUCT_1_DISCOUNT = 0.12
-        const val PRODUCT_1_DISCOUNT_EXPECTED = "0.12"
         const val PRODUCT_1_NAME = "product_1_name"
         const val PRODUCT_1_NAME_EXPECTED = "\"product_1_name\""
         const val PRODUCT_1_CATEGORY = "product_1_category"
         const val PRODUCT_1_CATEGORY_EXPECTED = "\"product_1_category\""
+        const val PRODUCT_1_DISCOUNT = 0.12
+        const val PRODUCT_1_DISCOUNT_EXPECTED = "0.12"
 
         const val PRODUCT_2_ID = "product_id_2"
         const val PRODUCT_2_ID_EXPECTED = "\"product_id_2\""
@@ -141,32 +141,32 @@ class EcomEventMapperKtTest : BaseUnitTest() {
         const val PRODUCT_2_QUANTITY_EXPECTED = "32"
         const val PRODUCT_2_PRICE = 15.5
         const val PRODUCT_2_PRICE_EXPECTED = "15.5"
-        const val PRODUCT_2_DISCOUNT = 0.08
-        const val PRODUCT_2_DISCOUNT_EXPECTED = "0.08"
         const val PRODUCT_2_NAME = "product_2_name"
         const val PRODUCT_2_NAME_EXPECTED = "\"product_2_name\""
         const val PRODUCT_2_CATEGORY = "product_2_category"
         const val PRODUCT_2_CATEGORY_EXPECTED = "\"product_2_category\""
+        const val PRODUCT_2_DISCOUNT = 0.08
+        const val PRODUCT_2_DISCOUNT_EXPECTED = "0.08"
 
         val PRODUCT_1_EXPECTED = listOf<String>(
-            General.ATTRIBUTE_1_EXPECTED,
-            General.ATTRIBUTE_2_EXPECTED,
-            "\"${QUANTITY}\":$PRODUCT_1_QUANTITY_EXPECTED",
             "\"${PRODUCT_ID}\":$PRODUCT_1_ID_EXPECTED",
+            "\"${QUANTITY}\":$PRODUCT_1_QUANTITY_EXPECTED",
             "\"${KEY_PRICE}\":$PRODUCT_1_PRICE_EXPECTED",
             "\"${PRODUCT_NAME}\":$PRODUCT_1_NAME_EXPECTED",
+            "\"${PRODUCT_CATEGORY}\":$PRODUCT_1_CATEGORY_EXPECTED",
             "\"${DISCOUNT}\":$PRODUCT_1_DISCOUNT_EXPECTED",
-            "\"${PRODUCT_CATEGORY}\":$PRODUCT_1_CATEGORY_EXPECTED"
+            General.ATTRIBUTE_1_EXPECTED,
+            General.ATTRIBUTE_2_EXPECTED
         )
         val PRODUCT_2_EXPECTED = listOf<String>(
-            General.ATTRIBUTE_1_EXPECTED,
-            General.ATTRIBUTE_2_EXPECTED,
-            "\"${QUANTITY}\":$PRODUCT_2_QUANTITY_EXPECTED",
             "\"${PRODUCT_ID}\":$PRODUCT_2_ID_EXPECTED",
+            "\"${QUANTITY}\":$PRODUCT_2_QUANTITY_EXPECTED",
             "\"${KEY_PRICE}\":$PRODUCT_2_PRICE_EXPECTED",
             "\"${PRODUCT_NAME}\":$PRODUCT_2_NAME_EXPECTED",
+            "\"${PRODUCT_CATEGORY}\":$PRODUCT_2_CATEGORY_EXPECTED",
             "\"${DISCOUNT}\":$PRODUCT_2_DISCOUNT_EXPECTED",
-            "\"${PRODUCT_CATEGORY}\":$PRODUCT_2_CATEGORY_EXPECTED"
+            General.ATTRIBUTE_1_EXPECTED,
+            General.ATTRIBUTE_2_EXPECTED
         )
     }
 
@@ -197,7 +197,14 @@ class EcomEventMapperKtTest : BaseUnitTest() {
             "\"${ORDER_ITEM_IMAGE_URL}\":${ITEM_1_IMAGE_URL_EXPECTED}",
             "\"${ORDER_ITEM_DESCRIPTION}\":${ITEM_1_DESCRIPTION_EXPECTED}"
         )
-
+        private const val ATTRIBUTE_1_KEY = "key1"
+        private const val ATTRIBUTE_2_KEY = "key2"
+        private const val ATTRIBUTE_1_VALUE = "{param1:value11,param2:12,param3:true,param4:12.3}"
+        const val ATTRIBUTE_1_VALUE_EXPECTED = "{\"param1\":\"value11\",\"param2\":12,\"param3\":true,\"param4\":12.3}"
+        private const val ATTRIBUTE_2_VALUE = "[value21,value22,value23,value24]"
+        const val ATTRIBUTE_2_VALUE_EXPECTED = "[\"value21\",\"value22\",\"value23\",\"value24\"]"
+        val ATTRIBUTE_1 = android.util.Pair(ATTRIBUTE_1_KEY, ATTRIBUTE_1_VALUE)
+        val ATTRIBUTE_2 = android.util.Pair(ATTRIBUTE_2_KEY, ATTRIBUTE_2_VALUE)
 
         const val ITEM_2_EXTERNAL_ITEM_ID = "external_item_id_2"
         const val ITEM_2_EXTERNAL_ITEM_ID_EXPECTED = "\"external_item_id_2\""
@@ -469,12 +476,12 @@ class EcomEventMapperKtTest : BaseUnitTest() {
 
     // region helper methods -----------------------------------------------------------------------
     private fun getExpectedProductParams(): List<ParameterDb> {
-        val productParamsList = mutableListOf<String>(
-            General.ATTRIBUTE_1_EXPECTED,
-            General.ATTRIBUTE_2_EXPECTED
-        ).apply {
-            addAll(Product.PARAMS_EXPECTED)
-        }
+        val productParamsList = mutableListOf<String>()
+            .apply {
+                addAll(Product.PARAMS_EXPECTED)
+                add(General.ATTRIBUTE_1_EXPECTED)
+                add(General.ATTRIBUTE_2_EXPECTED)
+            }
         val productParams =
             productParamsList.joinToString(separator = ",", prefix = "{", postfix = "}")
         return listOf<ParameterDb>(
@@ -484,12 +491,12 @@ class EcomEventMapperKtTest : BaseUnitTest() {
     }
 
     private fun getExpectedProductCategoryViewedParams(): List<ParameterDb> {
-        val productParamsList = mutableListOf<String>(
-            General.ATTRIBUTE_1_EXPECTED,
-            General.ATTRIBUTE_2_EXPECTED
-        ).apply {
-            addAll(ProductCategoryViewed.PARAMS_EXPECTED)
-        }
+        val productParamsList = mutableListOf<String>()
+            .apply {
+                addAll(ProductCategoryViewed.PARAMS_EXPECTED)
+                add(General.ATTRIBUTE_1_EXPECTED)
+                add(General.ATTRIBUTE_2_EXPECTED)
+            }
 
         val productParams =
             productParamsList.joinToString(separator = ",", prefix = "{", postfix = "}")
@@ -556,7 +563,7 @@ class EcomEventMapperKtTest : BaseUnitTest() {
             paymentMethod = Order.PAYMENT_METHOD,
             deliveryAddress = Order.DELIVERY_ADDRESS,
             items = listOf(orderItem1, orderItem2),
-            attributes = General.ATTRIBUTES_EXPECTED,
+            attributes = listOf(Order.ATTRIBUTE_1, Order.ATTRIBUTE_2),
         )
     }
 
@@ -594,8 +601,8 @@ class EcomEventMapperKtTest : BaseUnitTest() {
             ParameterDb(PAYMENT_METHOD, Order.PAYMENT_METHOD_EXPECTED),
             ParameterDb(DELIVERY_ADDRESS, Order.DELIVERY_ADDRESS_EXPECTED),
             ParameterDb(ITEMS, itemsParams),
-            ParameterDb(General.ATTRIBUTE_1.name, General.ATTRIBUTE_1_VALUE_EXPECTED),
-            ParameterDb(General.ATTRIBUTE_2.name, General.ATTRIBUTE_2_VALUE_EXPECTED)
+            ParameterDb(Order.ATTRIBUTE_1.first, Order.ATTRIBUTE_1_VALUE_EXPECTED),
+            ParameterDb(Order.ATTRIBUTE_2.first, Order.ATTRIBUTE_2_VALUE_EXPECTED)
         )
     }
     // endregion helper methods --------------------------------------------------------------------

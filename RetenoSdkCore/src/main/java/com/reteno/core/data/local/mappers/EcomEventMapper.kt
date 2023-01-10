@@ -3,11 +3,11 @@ package com.reteno.core.data.local.mappers
 import com.reteno.core.data.local.model.event.EventDb
 import com.reteno.core.data.local.model.event.ParameterDb
 import com.reteno.core.data.remote.mapper.toJson
-import com.reteno.core.util.Util.formatToRemote
-import org.json.JSONArray
-import org.json.JSONObject
-
-import com.reteno.core.domain.model.ecom.*
+import com.reteno.core.domain.model.ecom.Attributes
+import com.reteno.core.domain.model.ecom.EcomEvent
+import com.reteno.core.domain.model.ecom.ProductCategoryView
+import com.reteno.core.domain.model.ecom.ProductInCart
+import com.reteno.core.domain.model.ecom.ProductView
 import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.CART_ID
 import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.CATEGORY
 import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.CURRENCY_CODE
@@ -16,7 +16,6 @@ import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.DELIVERY_ADDR
 import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.DELIVERY_METHOD
 import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.DISCOUNT
 import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.EMAIL
-import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.EVENT_TYPE_PRODUCT_VIEWED
 import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.EVENT_TYPE_CART_UPDATED
 import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.EVENT_TYPE_ORDER_CANCELLED
 import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.EVENT_TYPE_ORDER_CREATED
@@ -24,6 +23,7 @@ import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.EVENT_TYPE_OR
 import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.EVENT_TYPE_ORDER_UPDATED
 import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.EVENT_TYPE_PRODUCT_ADDED_TO_WISHLIST
 import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.EVENT_TYPE_PRODUCT_CATEGORY_VIEWED
+import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.EVENT_TYPE_PRODUCT_VIEWED
 import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.EVENT_TYPE_SEARCH_REQUEST
 import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.EXTERNAL_CUSTOMER_ID
 import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.EXTERNAL_ORDER_ID
@@ -52,6 +52,11 @@ import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.STATUS_DESCRI
 import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.STORE_ID
 import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.TAXES
 import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.TOTAL_COST
+import com.reteno.core.util.Logger
+import com.reteno.core.util.Util.formatToRemote
+import org.json.JSONArray
+import org.json.JSONException
+import org.json.JSONObject
 
 internal fun EcomEvent.toDb() = EventDb(
     eventTypeKey = getTypeKey(),
@@ -194,8 +199,31 @@ private fun EcomEvent.OrderCreated.formatToEventParams(): List<ParameterDb> {
         event.order.paymentMethod?.let { add(ParameterDb(PAYMENT_METHOD, it)) }
         event.order.deliveryAddress?.let { add(ParameterDb(DELIVERY_ADDRESS, it)) }
         event.order.items?.let { add(ParameterDb(ITEMS, it.toJson())) }
-        event.order.attributes?.forEach { add(ParameterDb(it.name, it.value.toJson())) }
+        event.order.attributes?.forEach {
+            val key = it.first
+            val escapedValue = orderAttributeEscapeJson(it.second)
+            add(ParameterDb(key, escapedValue))
+        }
     }
+}
+
+private fun orderAttributeEscapeJson(value: String): String {
+    val jsonValue = try {
+        val json = JSONObject(value)
+        json.toString()
+    } catch (jsonEx: JSONException) {
+        /*@formatter:off*/ Logger.d("EcomEventMapper.kt", "EcomEvent.OrderCreated.formatToEventParams(): ", "failed to parse json in value as JSON Object")
+        /*@formatter:on*/
+        try {
+            val json = JSONArray(value)
+            json.toString()
+        } catch (jsonEx: JSONException) {
+            /*@formatter:off*/ Logger.d("EcomEventMapper.kt", "EcomEvent.OrderCreated.formatToEventParams(): ", "failed to parse json in value as JSON Array")
+            /*@formatter:on*/
+            value
+        }
+    }
+    return jsonValue
 }
 
 private fun EcomEvent.OrderUpdated.formatToEventParams(): List<ParameterDb> {
@@ -226,7 +254,11 @@ private fun EcomEvent.OrderUpdated.formatToEventParams(): List<ParameterDb> {
         event.order.deliveryAddress?.let { add(ParameterDb(DELIVERY_ADDRESS, it)) }
         event.order.items?.let { add(ParameterDb(ITEMS, it.toJson())) }
 
-        event.order.attributes?.forEach { add(ParameterDb(it.name, it.value.toJson())) }
+        event.order.attributes?.forEach {
+            val key = it.first
+            val escapedValue = orderAttributeEscapeJson(it.second)
+            add(ParameterDb(key, escapedValue))
+        }
     }
 }
 
