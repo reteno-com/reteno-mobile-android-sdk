@@ -14,14 +14,15 @@ import com.reteno.core.data.local.model.recommendation.RecomEventTypeDb
 import com.reteno.core.data.local.model.recommendation.RecomEventsDb
 import com.reteno.core.util.Logger
 import com.reteno.core.util.Util.formatToRemote
-import io.mockk.*
+import io.mockk.clearMocks
+import io.mockk.every
 import io.mockk.impl.annotations.MockK
 import io.mockk.impl.annotations.RelaxedMockK
+import io.mockk.justRun
+import io.mockk.verify
 import junit.framework.TestCase.assertEquals
 import junit.framework.TestCase.assertTrue
 import net.sqlcipher.Cursor
-import org.junit.AfterClass
-import org.junit.BeforeClass
 import org.junit.Test
 import java.time.ZonedDateTime
 
@@ -59,18 +60,6 @@ class RetenoDatabaseManagerRecomEventsTest : BaseRobolectricTest() {
         private const val COLUMN_INDEX_RECOM_EVENT_PRODUCT_ID = 3
         private const val COLUMN_INDEX_RECOM_EVENT_OCCURRED = 4
         private const val COLUMN_INDEX_RECOM_EVENT_TYPE = 5
-
-        @JvmStatic
-        @BeforeClass
-        fun beforeClass() {
-            mockkStatic(Cursor::getRecomEvent)
-        }
-
-        @JvmStatic
-        @AfterClass
-        fun afterClass() {
-            unmockkStatic(Cursor::getRecomEvent)
-        }
     }
     // endregion constants -------------------------------------------------------------------------
 

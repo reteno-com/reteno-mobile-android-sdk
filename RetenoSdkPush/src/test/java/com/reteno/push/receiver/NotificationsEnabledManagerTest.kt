@@ -8,28 +8,10 @@ import io.mockk.every
 import io.mockk.impl.annotations.RelaxedMockK
 import io.mockk.justRun
 import io.mockk.verify
-import org.junit.AfterClass
-import org.junit.BeforeClass
 import org.junit.Test
 
 
 class NotificationsEnabledManagerTest : BaseRobolectricTest() {
-
-    // region constants ----------------------------------------------------------------------------
-    companion object {
-        @JvmStatic
-        @BeforeClass
-        fun beforeClass() {
-            mockObjectRetenoNotificationsChannel()
-        }
-
-        @JvmStatic
-        @AfterClass
-        fun afterClass() {
-            unMockObjectRetenoNotificationsChannel()
-        }
-    }
-    // endregion constants -------------------------------------------------------------------------
 
     // region helper fields ------------------------------------------------------------------------
     @RelaxedMockK

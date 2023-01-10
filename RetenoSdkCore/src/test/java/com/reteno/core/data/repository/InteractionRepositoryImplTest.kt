@@ -1,6 +1,6 @@
 package com.reteno.core.data.repository
 
-import com.reteno.core.base.BaseUnitTest
+import com.reteno.core.base.robolectric.BaseRobolectricTest
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerInteraction
 import com.reteno.core.data.local.mappers.toDb
 import com.reteno.core.data.local.model.interaction.InteractionDb
@@ -13,10 +13,12 @@ import com.reteno.core.domain.model.interaction.InteractionStatus
 import com.reteno.core.util.Logger
 import io.mockk.*
 import io.mockk.impl.annotations.RelaxedMockK
-import org.junit.*
+import org.junit.Assert
+import org.junit.Before
+import org.junit.Test
 import java.time.ZonedDateTime
 
-class InteractionRepositoryImplTest : BaseUnitTest() {
+class InteractionRepositoryImplTest : BaseRobolectricTest() {
 
     // region constants ----------------------------------------------------------------------------
     companion object {
@@ -29,20 +31,6 @@ class InteractionRepositoryImplTest : BaseUnitTest() {
             ApiContract.RetenoApi.InteractionStatus(INTERACTION_ID).url
         private const val EXPECTED_URL =
             "https://api.reteno.com/api/v1/interactions/$INTERACTION_ID/status"
-
-        @JvmStatic
-        @BeforeClass
-        fun beforeClass() {
-            mockObjectOperationQueue()
-            mockObjectPushOperationQueue()
-        }
-
-        @JvmStatic
-        @AfterClass
-        fun afterClass() {
-            unMockObjectOperationQueue()
-            unMockObjectPushOperationQueue()
-        }
     }
     // endregion constants -------------------------------------------------------------------------
 
@@ -91,7 +79,7 @@ class InteractionRepositoryImplTest : BaseUnitTest() {
                 responseHandler = any()
             )
         } just runs
-        every { databaseManagerInteraction.getInteractions(any()) } returns listOf(dbInteraction) andThen emptyList<InteractionDb>()
+        every { databaseManagerInteraction.getInteractions(any()) } returns listOf(dbInteraction) andThen emptyList()
 
         // When
         SUT.pushInteractions()
@@ -107,6 +95,7 @@ class InteractionRepositoryImplTest : BaseUnitTest() {
 
     @Test
     fun givenValidInteraction_whenInteractionPushSuccessful_thenTryPushNextInteraction() {
+        // Given
         val dbInteraction = mockk<InteractionDb>(relaxed = true)
         every { databaseManagerInteraction.getInteractions(any()) } returnsMany listOf(listOf(dbInteraction), listOf(dbInteraction), emptyList())
         every { apiClient.put(url = any(), jsonBody = any(), responseHandler = any()) } answers {
@@ -114,8 +103,10 @@ class InteractionRepositoryImplTest : BaseUnitTest() {
             callback.onSuccess("")
         }
 
+        // When
         SUT.pushInteractions()
 
+        // Then
         verify(exactly = 2) { apiClient.put(any(), any(), any()) }
         verify(exactly = 2) { databaseManagerInteraction.deleteInteractions(1) }
         verify(exactly = 1) { PushOperationQueue.nextOperation() }
@@ -123,6 +114,7 @@ class InteractionRepositoryImplTest : BaseUnitTest() {
 
     @Test
     fun givenValidInteraction_whenInteractionPushFailedAndErrorIsRepeatable_cancelPushOperations() {
+        // Given
         val dbInteraction = mockk<InteractionDb>(relaxed = true)
         every { databaseManagerInteraction.getInteractions(any()) } returns listOf(dbInteraction)
         every { apiClient.put(url = any(), jsonBody = any(), responseHandler = any()) } answers {
@@ -130,14 +122,17 @@ class InteractionRepositoryImplTest : BaseUnitTest() {
             callback.onFailure(500, null, null)
         }
 
+        // When
         SUT.pushInteractions()
 
+        // Then
         verify(exactly = 1) { apiClient.put(any(), any(), any()) }
         verify(exactly = 1) { PushOperationQueue.removeAllOperations() }
     }
 
     @Test
     fun givenValidInteraction_whenInteractionPushFailedAndErrorIsNonRepeatable_thenTryPushNextInteraction() {
+        // Given
         val dbInteraction = mockk<InteractionDb>(relaxed = true)
         every { databaseManagerInteraction.getInteractions(any()) } returnsMany listOf(listOf(dbInteraction), listOf(dbInteraction), emptyList())
         every { apiClient.put(url = any(), jsonBody = any(), responseHandler = any()) } answers {
@@ -145,8 +140,10 @@ class InteractionRepositoryImplTest : BaseUnitTest() {
             callback.onFailure(400, null, null)
         }
 
+        // When
         SUT.pushInteractions()
 
+        // Then
         verify(exactly = 2) { apiClient.put(any(), any(), any()) }
         verify(exactly = 3) { databaseManagerInteraction.getInteractions(1) }
         verify(exactly = 2) { databaseManagerInteraction.deleteInteractions(1) }
@@ -169,22 +166,28 @@ class InteractionRepositoryImplTest : BaseUnitTest() {
 
     @Test
     fun noOutdatedInteraction_whenClearOldInteractions_thenSentNothing() {
+        // Given
         every { databaseManagerInteraction.deleteInteractionByTime(any()) } returns 0
 
+        // When
         SUT.clearOldInteractions(ZonedDateTime.now())
 
+        // Then
         verify(exactly = 1) { databaseManagerInteraction.deleteInteractionByTime(any()) }
         verify(exactly = 0) { Logger.captureEvent(any()) }
     }
 
     @Test
     fun thereAreOutdatedInteraction_whenClearOldInteractions_thenSentCountDeleted() {
+        // Given
         val deletedInteractions = 2
         every { databaseManagerInteraction.deleteInteractionByTime(any()) } returns deletedInteractions
         val expectedMsg = "Outdated Interactions: - $deletedInteractions"
 
+        // When
         SUT.clearOldInteractions(ZonedDateTime.now())
 
+        // Then
         verify(exactly = 1) { databaseManagerInteraction.deleteInteractionByTime(any()) }
         verify(exactly = 1) { Logger.captureEvent(eq(expectedMsg)) }
     }

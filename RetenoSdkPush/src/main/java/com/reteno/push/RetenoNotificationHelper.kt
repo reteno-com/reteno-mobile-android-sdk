@@ -7,13 +7,19 @@ import android.os.Bundle
 import android.text.TextUtils
 import androidx.core.app.NotificationCompat
 import com.reteno.core.RetenoImpl
-import com.reteno.core.util.*
+import com.reteno.core.util.BitmapUtil
+import com.reteno.core.util.BuildUtil
+import com.reteno.core.util.Logger
+import com.reteno.core.util.getAppName
+import com.reteno.core.util.getApplicationMetaData
+import com.reteno.core.util.toStringVerbose
 import com.reteno.push.Constants.KEY_ACTION_BUTTON
 import com.reteno.push.Constants.KEY_BTN_ACTION_CUSTOM_DATA
 import com.reteno.push.Constants.KEY_BTN_ACTION_ID
 import com.reteno.push.Constants.KEY_BTN_ACTION_LABEL
 import com.reteno.push.Constants.KEY_BTN_ACTION_LINK_UNWRAPPED
 import com.reteno.push.Constants.KEY_BTN_ACTION_LINK_WRAPPED
+import com.reteno.push.Constants.KEY_ES_BADGE_COUNT
 import com.reteno.push.Constants.KEY_ES_BUTTONS
 import com.reteno.push.Constants.KEY_ES_BUTTON_ACTION_ID
 import com.reteno.push.Constants.KEY_ES_BUTTON_CUSTOM_DATA
@@ -31,8 +37,7 @@ import com.reteno.push.channel.RetenoNotificationChannel.DEFAULT_CHANNEL_ID
 import com.reteno.push.interceptor.click.RetenoNotificationClickedActivity
 import com.reteno.push.interceptor.click.RetenoNotificationClickedReceiver
 import org.json.JSONArray
-import java.util.*
-import kotlin.collections.HashMap
+import java.util.Random
 
 
 internal object RetenoNotificationHelper {
@@ -53,6 +58,7 @@ internal object RetenoNotificationHelper {
         val text = getNotificationText(bundle)
         val bigPicture = getNotificationBigPictureBitmap(bundle)
         val buttons = getNotificationButtons(bundle)
+        val badgeCount = getNotificationBadgeCount(bundle)
 
         val builder = NotificationCompat.Builder(context, DEFAULT_CHANNEL_ID)
             .setSmallIcon(icon)
@@ -60,6 +66,7 @@ internal object RetenoNotificationHelper {
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setAutoCancel(true)
         text?.let(builder::setContentText)
+        badgeCount?.let(builder::setNumber)
 
         bigPicture?.let {
             builder.setStyle(
@@ -187,6 +194,9 @@ internal object RetenoNotificationHelper {
 
         return actions.take(MAX_ACTION_BUTTONS)
     }
+
+    private fun getNotificationBadgeCount(bundle: Bundle): Int? =
+        bundle.getString(KEY_ES_BADGE_COUNT)?.toIntOrNull()
 
     private fun createPendingIntent(message: Bundle): PendingIntent {
         val context = RetenoImpl.application

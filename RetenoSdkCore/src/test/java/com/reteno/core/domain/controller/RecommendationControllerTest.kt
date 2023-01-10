@@ -1,6 +1,6 @@
 package com.reteno.core.domain.controller
 
-import com.reteno.core.base.BaseUnitTest
+import com.reteno.core.base.robolectric.BaseRobolectricTest
 import com.reteno.core.data.remote.model.recommendation.get.RecomBase
 import com.reteno.core.data.remote.model.recommendation.get.Recoms
 import com.reteno.core.data.repository.RecommendationRepository
@@ -14,13 +14,11 @@ import io.mockk.every
 import io.mockk.impl.annotations.RelaxedMockK
 import io.mockk.mockk
 import io.mockk.verify
-import org.junit.AfterClass
-import org.junit.BeforeClass
 import org.junit.Test
 import java.time.ZonedDateTime
 
 
-class RecommendationControllerTest : BaseUnitTest() {
+class RecommendationControllerTest : BaseRobolectricTest() {
 
     // region constants ----------------------------------------------------------------------------
     companion object {
@@ -28,19 +26,7 @@ class RecommendationControllerTest : BaseUnitTest() {
 
         private const val PRODUCT_ID = "w12345s1345"
         private const val CATEGORY = "category_here"
-        private val FIELDS = listOf<String>("field1", "field2", "field3")
-
-        @JvmStatic
-        @BeforeClass
-        fun beforeClass() {
-            mockObjectSchedulerUtils()
-        }
-
-        @JvmStatic
-        @AfterClass
-        fun afterClass() {
-            unMockObjectSchedulerUtils()
-        }
+        private val FIELDS = listOf("field1", "field2", "field3")
     }
     // endregion constants -------------------------------------------------------------------------
 
@@ -110,6 +96,7 @@ class RecommendationControllerTest : BaseUnitTest() {
 
     @Test
     fun whenClearOldRecommendations_thenClearOldRecommendationsCalledOnRepository() {
+        // Given
         val mockData = mockk<ZonedDateTime>()
         every { SchedulerUtils.getOutdatedTime() } returns mockData
 

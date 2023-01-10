@@ -137,8 +137,6 @@ object Util {
      */
     internal fun isDebugView(): Boolean {
         val debugString = getSysProp(PROP_KEY_DEBUG_VIEW)
-        /*@formatter:off*/ Logger.i(TAG, "isDebugView(): debugString = ", debugString)
-        /*@formatter:on*/
         return debugString == PROP_VALUE_DEBUG_VIEW_ENABLE
     }
 
@@ -155,7 +153,6 @@ object Util {
             propvalue = reader.readLine()
             process.destroy()
         } catch (e: Exception) {
-            Logger.i(TAG, "getSysProp($key): ", e.message)
             propvalue = ""
         }
         return propvalue

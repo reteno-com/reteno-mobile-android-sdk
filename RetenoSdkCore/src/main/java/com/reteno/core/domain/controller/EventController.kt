@@ -2,6 +2,7 @@ package com.reteno.core.domain.controller
 
 import com.reteno.core.data.repository.EventsRepository
 import com.reteno.core.domain.SchedulerUtils
+import com.reteno.core.domain.model.ecom.EcomEvent
 import com.reteno.core.domain.model.event.Event
 import com.reteno.core.util.Logger
 
@@ -19,6 +20,12 @@ internal class EventController(
         /*@formatter:off*/ Logger.i(TAG, "trackScreenViewEvent(): ", "screenName = [" , screenName , "]")
         /*@formatter:on*/
         eventsRepository.saveEvent(Event.ScreenView(screenName))
+    }
+
+    fun trackEcomEvent(ecomEvent: EcomEvent) {
+        /*@formatter:off*/ Logger.i(TAG, "trackEcomEvent(): ", "event = [" , ecomEvent , "]")
+        /*@formatter:on*/
+        eventsRepository.saveEcomEvent(ecomEvent)
     }
 
     fun pushEvents() {

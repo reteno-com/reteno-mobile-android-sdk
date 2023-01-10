@@ -15,11 +15,9 @@ import com.reteno.push.base.robolectric.BaseRobolectricTest
 import io.mockk.*
 import io.mockk.impl.annotations.RelaxedMockK
 import junit.framework.Assert.assertNotNull
-import org.junit.AfterClass
 import org.junit.Assert
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
-import org.junit.BeforeClass
 import org.junit.Test
 import org.robolectric.Robolectric.buildActivity
 import org.robolectric.Shadows.shadowOf
@@ -32,20 +30,6 @@ class RetenoNotificationClickedActivityTest : BaseRobolectricTest() {
     companion object {
         private const val DEEPLINK_WRAPPED = "https://wrapped.com"
         private const val DEEPLINK_UNWRAPPED = "https://unwrapped.com"
-
-        @JvmStatic
-        @BeforeClass
-        fun beforeClass() {
-            mockObjectUtil()
-            mockObjectAppLaunchIntent()
-        }
-
-        @JvmStatic
-        @AfterClass
-        fun afterClass() {
-            unMockObjectUtil()
-            unMockObjectAppLaunchIntent()
-        }
     }
     // endregion constants -------------------------------------------------------------------------
 

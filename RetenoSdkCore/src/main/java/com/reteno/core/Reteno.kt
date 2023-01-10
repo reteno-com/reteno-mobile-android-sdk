@@ -1,6 +1,7 @@
 package com.reteno.core
 
 import com.reteno.core.appinbox.AppInbox
+import com.reteno.core.domain.model.ecom.EcomEvent
 import com.reteno.core.domain.model.event.Event
 import com.reteno.core.domain.model.user.User
 import com.reteno.core.lifecycle.ScreenTrackingConfig
@@ -41,6 +42,13 @@ interface Reteno {
     fun logEvent(event: Event)
 
     /**
+     *  Tracking e-commerce events.
+     *
+     *  @param ecomEvent model to track.
+     */
+    fun logEcommerceEvent(ecomEvent: EcomEvent)
+
+    /**
      *  Tracking screen view events.
      *  Call this method when screen (fragment, activity, view) appeared for user
      *  @param screenName to track
@@ -48,11 +56,11 @@ interface Reteno {
     fun logScreenView(screenName: String)
 
     /**
-     * Enables automatic screen tracking. Screen view event happens on Fragment's onStart() by default
-     * lifecycle callback.
+     * Enable/disable automatic screen tracking.
+     * Screen view event happens on Fragment's onStart() by default lifecycle callback.
      * @see com.reteno.core.lifecycle.ScreenTrackingConfig for additional configuration
      *
-     * @param config - parameters for auto screen tracking
+     * @param config parameters for auto screen tracking
      */
     fun autoScreenTracking(config: ScreenTrackingConfig)
 

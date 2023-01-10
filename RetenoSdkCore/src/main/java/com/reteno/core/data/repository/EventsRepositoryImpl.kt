@@ -10,6 +10,7 @@ import com.reteno.core.data.remote.api.ApiContract
 import com.reteno.core.data.remote.mapper.toJson
 import com.reteno.core.data.remote.mapper.toRemote
 import com.reteno.core.domain.ResponseCallback
+import com.reteno.core.domain.model.ecom.EcomEvent
 import com.reteno.core.domain.model.event.Event
 import com.reteno.core.util.Logger
 import com.reteno.core.util.Util.formatToRemote
@@ -25,6 +26,7 @@ internal class EventsRepositoryImpl(
     override fun saveEvent(event: Event) {
         /*@formatter:off*/ Logger.i(TAG, "saveEvent(): ", "event = [" , event , "]")
         /*@formatter:on*/
+
         val deviceId = configRepository.getDeviceId()
         val events = EventsDb(
             deviceId = deviceId.id,
@@ -40,8 +42,30 @@ internal class EventsRepositoryImpl(
         }
     }
 
-    override fun pushEvents() {
-        val events: EventsDb = databaseManager.getEvents(1).firstOrNull() ?: kotlin.run {
+    override fun saveEcomEvent(ecomEvent: EcomEvent) {
+        /*@formatter:off*/ Logger.i(TAG, "saveEcomEvent(): ", "ecomEvent = [" , ecomEvent , "]")
+        /*@formatter:on*/
+
+        val deviceId = configRepository.getDeviceId()
+        val events = EventsDb(
+            deviceId = deviceId.id,
+            externalUserId = deviceId.externalId,
+            eventList = listOf(ecomEvent.toDb())
+        )
+        OperationQueue.addOperation {
+            try {
+                databaseManager.insertEvents(events)
+            } catch (e: Exception) {
+                Logger.e(TAG, "saveEcomEvent()", e)
+            }
+        }
+    }
+
+    override fun pushEvents(limit: Int?) {
+        /*@formatter:off*/ Logger.i(TAG, "pushEvents(): ", "limit = [", limit, "]")
+        /*@formatter:on*/
+
+        val events: EventsDb = databaseManager.getEvents(limit).firstOrNull() ?: kotlin.run {
             PushOperationQueue.nextOperation()
             return
         }

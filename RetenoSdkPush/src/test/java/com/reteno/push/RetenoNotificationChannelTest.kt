@@ -58,8 +58,8 @@ class RetenoNotificationChannelTest : BaseRobolectricTest() {
         super.before()
         every { BuildUtil.getTargetSdkVersion() } returns 26
 
-        contextMock = mockk<Context>()
-        notificationManager = mockk<NotificationManager>()
+        contextMock = mockk()
+        notificationManager = mockk()
         every { contextMock!!.getSystemService(Context.NOTIFICATION_SERVICE) } returns notificationManager
         justRun { notificationManager!!.createNotificationChannel(any()) }
     }
@@ -84,7 +84,7 @@ class RetenoNotificationChannelTest : BaseRobolectricTest() {
         val expectedChannel = NotificationChannel(
             RetenoNotificationChannel.DEFAULT_CHANNEL_ID,
             FALLBACK_DEFAULT_CHANNEL_NAME,
-            NotificationManager.IMPORTANCE_DEFAULT
+            NotificationManager.IMPORTANCE_HIGH
         ).apply {
             description = FALLBACK_DEFAULT_CHANNEL_DESCRIPTION
             enableLights(false)
@@ -108,7 +108,7 @@ class RetenoNotificationChannelTest : BaseRobolectricTest() {
      *  	"id":"defaultId",
      *  	"name":"name",
      *  	"description":"description",
-     *  	"importance":3,
+     *  	"importance":4,
      *  	"enable_lights":false,
      *  	"light_color":0,
      *  	"enable_vibration":false,
@@ -125,7 +125,7 @@ class RetenoNotificationChannelTest : BaseRobolectricTest() {
                 "\"id\":\"defaultId\"," +
                 "\"name\":\"name\"," +
                 "\"description\":\"description\"," +
-                "\"importance\":3," +
+                "\"importance\":4," +
                 "\"enable_lights\":false," +
                 "\"light_color\":0," +
                 "\"enable_vibration\":false," +
@@ -138,7 +138,7 @@ class RetenoNotificationChannelTest : BaseRobolectricTest() {
         val expectedChannel = NotificationChannel(
             "defaultId",
             "name",
-            NotificationManager.IMPORTANCE_DEFAULT
+            NotificationManager.IMPORTANCE_HIGH
         ).apply {
             description = "description"
             enableLights(false)
@@ -276,7 +276,7 @@ class RetenoNotificationChannelTest : BaseRobolectricTest() {
     fun givenNotificationChannelIsEnabled_whenIsNotificationChannelEnabled_thenReturnTrue() {
         // Given
         val channel = mockk<NotificationChannel>()
-        every { channel.importance } returns NotificationManager.IMPORTANCE_DEFAULT
+        every { channel.importance } returns NotificationManager.IMPORTANCE_HIGH
         every { notificationManager!!.getNotificationChannel(DEFAULT_CHANNEL_ID) } returns channel
 
         // When

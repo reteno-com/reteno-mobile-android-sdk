@@ -45,7 +45,7 @@ ext.robolectric = dependencyGroup {
     }
     testImplementation 'org.robolectric:shadows-play-services:3.3.2'
 
-    testImplementation 'androidx.fragment:fragment-testing:1.4.1'
+    testImplementation 'androidx.fragment:fragment-testing:1.5.5'
 }
 
 ext.androidx = dependencyGroup {
