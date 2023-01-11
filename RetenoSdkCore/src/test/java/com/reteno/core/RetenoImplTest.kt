@@ -1,14 +1,18 @@
 package com.reteno.core
 
-import android.content.*
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.ContextWrapper
+import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.ActivityInfo
 import android.content.pm.ResolveInfo
-import com.reteno.core.appinbox.AppInboxImpl
 import com.reteno.core.base.robolectric.BaseRobolectricTest
 import com.reteno.core.di.ServiceLocator
 import com.reteno.core.domain.controller.ContactController
 import com.reteno.core.domain.controller.EventController
 import com.reteno.core.domain.controller.ScheduleController
+import com.reteno.core.domain.controller.ScreenTrackingController
 import com.reteno.core.domain.model.ecom.EcomEvent
 import com.reteno.core.domain.model.event.Event
 import com.reteno.core.domain.model.event.Parameter
@@ -17,13 +21,18 @@ import com.reteno.core.domain.model.user.User
 import com.reteno.core.domain.model.user.UserAttributesAnonymous
 import com.reteno.core.domain.model.user.UserCustomField
 import com.reteno.core.lifecycle.RetenoActivityHelper
+import com.reteno.core.features.appinbox.AppInboxImpl
 import com.reteno.core.lifecycle.ScreenTrackingConfig
 import com.reteno.core.lifecycle.ScreenTrackingTrigger
 import com.reteno.core.util.Constants
 import com.reteno.core.util.Logger
 import com.reteno.core.util.queryBroadcastReceivers
-import io.mockk.*
+import io.mockk.every
 import io.mockk.impl.annotations.RelaxedMockK
+import io.mockk.mockk
+import io.mockk.mockkConstructor
+import io.mockk.unmockkConstructor
+import io.mockk.verify
 import junit.framework.TestCase.assertNotNull
 import junit.framework.TestCase.assertTrue
 import org.junit.Assert.assertEquals
@@ -97,7 +106,7 @@ class RetenoImplTest : BaseRobolectricTest() {
     private lateinit var eventController: EventController
 
     @RelaxedMockK
-    private lateinit var retenoActivityHelper: RetenoActivityHelper
+    private lateinit var screenTrackingController: ScreenTrackingController
 
     @RelaxedMockK
     private lateinit var inbox: AppInboxImpl
@@ -116,7 +125,7 @@ class RetenoImplTest : BaseRobolectricTest() {
         every { anyConstructed<ServiceLocator>().scheduleControllerProvider.get() } returns scheduleController
         every { anyConstructed<ServiceLocator>().eventsControllerProvider.get() } returns eventController
         every { anyConstructed<ServiceLocator>().appInboxProvider.get() } returns inbox
-        every { anyConstructed<ServiceLocator>().retenoActivityHelperProvider.get() } returns retenoActivityHelper
+        every { anyConstructed<ServiceLocator>().screenTrackingControllerProvider.get() } returns screenTrackingController
 
         contextWrapper = ContextWrapper(application)
         assertNotNull(contextWrapper)
@@ -369,7 +378,7 @@ class RetenoImplTest : BaseRobolectricTest() {
         retenoImpl.autoScreenTracking(config)
 
         // Then
-        verify(exactly = 1) { retenoActivityHelper.autoScreenTracking(config) }
+        verify(exactly = 1) { screenTrackingController.autoScreenTracking(config) }
     }
 
     @Test

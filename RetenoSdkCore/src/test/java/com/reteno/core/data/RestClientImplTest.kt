@@ -243,6 +243,7 @@ class RestClientImplTest : BaseUnitTest() {
         // Given
         val inputStream = ByteArrayInputStream(TEST_RESPONSE.toByteArray())
         val spyCallback = spyk<ResponseCallback>()
+        every { spyCallback.onSuccess(any(), any()) } answers { spyCallback.onSuccess(secondArg<String>()) }
 
         every { httpURLConnection.responseCode } returns HttpURLConnection.HTTP_OK
         every { httpURLConnection.inputStream } returns inputStream
@@ -266,6 +267,7 @@ class RestClientImplTest : BaseUnitTest() {
         // Given
         val inputStream = ByteArrayInputStream(TEST_RESPONSE.toByteArray())
         val spyCallback = spyk<ResponseCallback>()
+        every { spyCallback.onSuccess(any(), any()) } answers { spyCallback.onSuccess(secondArg<String>()) }
 
         every { httpURLConnection.responseCode } returns HttpURLConnection.HTTP_MOVED_PERM
         every { httpURLConnection.inputStream } returns inputStream

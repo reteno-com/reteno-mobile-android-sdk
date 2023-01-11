@@ -34,8 +34,9 @@ internal sealed interface ApiContract {
             override val url = "${BASE_URL}events"
         }
 
-        object Configuration : MobileApi() {
-            override val url = "${BASE_URL}configuration"
+        object InAppMessages : MobileApi() {
+            // TODO: Replace with actual URL
+            override val url = "${BASE_URL}inapp"
         }
     }
 
@@ -71,6 +72,12 @@ internal sealed interface ApiContract {
 
         object PostRecoms : Recommendation() {
             override val url = "${BASE_URL}events"
+        }
+    }
+
+    sealed class InAppMessages: ApiContract {
+        object BaseHtml: InAppMessages() {
+            override val url = "https://statics.esputnik.com/in-app/base.latest.html"
         }
     }
 

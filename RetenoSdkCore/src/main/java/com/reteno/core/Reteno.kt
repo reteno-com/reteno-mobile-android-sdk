@@ -1,12 +1,12 @@
 package com.reteno.core
 
-import com.reteno.core.appinbox.AppInbox
+import com.reteno.core.features.appinbox.AppInbox
 import com.reteno.core.domain.model.ecom.EcomEvent
 import com.reteno.core.domain.model.event.Event
 import com.reteno.core.domain.model.user.User
 import com.reteno.core.domain.model.user.UserAttributesAnonymous
 import com.reteno.core.lifecycle.ScreenTrackingConfig
-import com.reteno.core.recommendation.Recommendation
+import com.reteno.core.features.recommendation.Recommendation
 
 
 interface Reteno {

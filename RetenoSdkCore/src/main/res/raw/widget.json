@@ -1,0 +1,152 @@
+{
+  "version": "1",
+  "type": "MODEL",
+  "views": [
+    {
+      "id": "id0",
+      "component": "SysContainer",
+      "props": {
+        "textContent": ""
+      },
+      "attributes": {
+        "style": {
+          "background": "#a6c948",
+          "display": "flex",
+          "flex-direction": "column",
+          "align-items": "center",
+          "color": "#fff"
+        }
+      },
+      "handlers": [
+        {
+          "type": "CLICK",
+          "actions": [
+            {
+              "type": "BACKGROUND_CLICK",
+              "params": {}
+            }
+          ]
+        }
+      ],
+      "children": [
+        {
+          "id": "id1",
+          "component": "SysText",
+          "props": {
+            "textContent": "Welcome to our community, dear %USER_NAME% !🤗🤩🔥"
+          },
+          "attributes": {
+            "style": {
+              "color": "#fff",
+              "padding": "10px",
+              "margin": "10px",
+              "fontSize": "30px",
+              "fontWeight": "bold"
+            }
+          }
+        },
+        {
+          "id": "id2",
+          "component": "SysImage",
+          "attributes": {
+            "src": "https://cdn.claspo.io/img/54/commons/a31bc914-2cac-41a6-a7e1-f1a860eb6604.png",
+            "style": {
+              "width": "100%"
+            }
+          }
+        },
+        {
+          "id": "id3",
+          "component": "SysButton",
+          "props": {
+            "textContent": "Close Widget"
+          },
+          "attributes": {
+            "style": {
+              "width": "60%",
+              "color": "#fff",
+              "background": "#fcc500",
+              "borderStyle": "solid",
+              "border": "0px",
+              "padding": "10px",
+              "margin": "10px"
+            }
+          },
+          "handlers": [
+            {
+              "type": "CLICK",
+              "actions": [
+                {
+                  "type": "CLOSE_WIDGET",
+                  "params": {}
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "id4",
+          "component": "SysButton",
+          "props": {
+            "textContent": "Go to URL google.com"
+          },
+          "attributes": {
+            "style": {
+              "width": "60%",
+              "color": "#fff",
+              "background": "#fcc500",
+              "borderStyle": "solid",
+              "border": "0px",
+              "padding": "10px",
+              "margin": "10px"
+            }
+          },
+          "handlers": [
+            {
+              "type": "CLICK",
+              "actions": [
+                {
+                  "type": "OPEN_URL",
+                  "params": {
+                    "url": "https://google.com"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "id5",
+          "component": "SysButton",
+          "props": {
+            "textContent": "Go to URI in application (deep link)"
+          },
+          "attributes": {
+            "style": {
+              "width": "60%",
+              "color": "#fff",
+              "background": "#fcc500",
+              "border": "0px",
+              "padding": "10px",
+              "margin": "10px"
+            }
+          },
+          "handlers": [
+            {
+              "type": "CLICK",
+              "actions": [
+                {
+                  "type": "OPEN_URL",
+                  "params": {
+                    "url": "example-app:showProfile"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "shared": {}
+}

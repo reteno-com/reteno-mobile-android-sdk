@@ -4,19 +4,14 @@ import android.annotation.TargetApi
 import android.app.Activity
 import android.app.Application.ActivityLifecycleCallbacks
 import android.os.Bundle
-import androidx.fragment.app.Fragment
-import androidx.fragment.app.FragmentActivity
-import androidx.fragment.app.FragmentManager
-import androidx.fragment.app.FragmentManager.FragmentLifecycleCallbacks
 import com.reteno.core.RetenoImpl
-import com.reteno.core.domain.controller.EventController
 import com.reteno.core.util.BuildUtil
 import com.reteno.core.util.Logger
 import com.reteno.core.util.getAppName
 import java.util.*
 
 
-internal class RetenoActivityHelperImpl(private val eventController: EventController) : RetenoActivityHelper {
+internal class RetenoActivityHelperImpl : RetenoActivityHelper {
 
     private val retenoLifecycleCallbacks: MutableMap<String, RetenoLifecycleCallbacks> =
         Collections.synchronizedMap(HashMap())
@@ -30,46 +25,12 @@ internal class RetenoActivityHelperImpl(private val eventController: EventContro
     private var isActivityPaused = false
 
     // keeps current activity while app is in foreground
-    private var currentActivity: Activity? = null
+    override var currentActivity: Activity? = null
+        private set
 
     // keeps the last activity while app is in background, onDestroy will clear it
     private var lastForegroundActivity: Activity? = null
 
-    private var screenTrackingConfig = ScreenTrackingConfig(true)
-
-    private val fragmentLifecycleCallbacks = object : FragmentLifecycleCallbacks() {
-        override fun onFragmentStarted(fragmentManager: FragmentManager, fragment: Fragment) {
-            super.onFragmentStarted(fragmentManager, fragment)
-            val fragmentName = fragment::class.java.simpleName
-
-            if (screenTrackingConfig.trigger == ScreenTrackingTrigger.ON_START
-                && screenTrackingConfig.enable
-                && !screenTrackingConfig.excludeScreens.contains(fragmentName)
-            ) {
-                /*@formatter:off*/ Logger.i(TAG, "onFragmentStarted(): ", "trackScreen $fragmentName")
-                /*@formatter:on*/
-                eventController.trackScreenViewEvent(fragmentName)
-            }
-        }
-
-        override fun onFragmentResumed(fragmentManager: FragmentManager, fragment: Fragment) {
-            super.onFragmentResumed(fragmentManager, fragment)
-            val fragmentName = fragment::class.java.simpleName
-
-            if (screenTrackingConfig.trigger == ScreenTrackingTrigger.ON_RESUME
-                && screenTrackingConfig.enable
-                && !screenTrackingConfig.excludeScreens.contains(fragmentName)
-            ) {
-                /*@formatter:off*/ Logger.i(TAG, "onFragmentResumed(): ", "trackScreen $fragmentName")
-                /*@formatter:on*/
-                eventController.trackScreenViewEvent(fragmentName)
-            }
-        }
-    }
-
-    /**
-     * Enables lifecycle callbacks for Android devices with Android OS &gt;= 4.0
-     */
     override fun enableLifecycleCallbacks(callbacks: RetenoLifecycleCallbacks) {
         val app = RetenoImpl.application
         /*@formatter:off*/ Logger.i(TAG, "enableLifecycleCallbacks(): ", "callbacks = [" , callbacks , "], app = [" , app , "]")
@@ -82,28 +43,23 @@ internal class RetenoActivityHelperImpl(private val eventController: EventContro
         }
     }
 
-    override fun autoScreenTracking(config: ScreenTrackingConfig) {
-        /*@formatter:off*/ Logger.i(TAG, "autoScreenTracking(): ", "config = [" , config , "]")
-        /*@formatter:on*/
-        screenTrackingConfig = config
-    }
-
     override fun registerActivityLifecycleCallbacks(
         key: String,
         callbacks: RetenoLifecycleCallbacks
     ) {
-        /*@formatter:off*/ Logger.i(TAG, "registerActivityLifecycleCallbacks(): ", "key = [" , key , "], callbacks = [" , callbacks , "]")
-        /*@formatter:on*/
         synchronized(retenoLifecycleCallbacks) {
+            /*@formatter:off*/ Logger.i(TAG, "registerActivityLifecycleCallbacks(): ", "key = [" , key , "], callbacks = [" , callbacks , "]")
+            /*@formatter:on*/
             retenoLifecycleCallbacks[key] = callbacks
+            currentActivity?.let(callbacks::start)
+            currentActivity?.let(callbacks::resume)
         }
-        currentActivity?.let(callbacks::resume)
     }
 
     override fun unregisterActivityLifecycleCallbacks(key: String) {
-        /*@formatter:off*/ Logger.i(TAG, "unregisterActivityLifecycleCallbacks(): ", "key = [" , key , "]")
-        /*@formatter:on*/
         synchronized(retenoLifecycleCallbacks) {
+            /*@formatter:off*/ Logger.i(TAG, "unregisterActivityLifecycleCallbacks(): ", "key = [" , key , "]")
+            /*@formatter:on*/
             retenoLifecycleCallbacks.remove(key);
         }
     }
@@ -112,10 +68,7 @@ internal class RetenoActivityHelperImpl(private val eventController: EventContro
     private fun onStart(activity: Activity) {
         /*@formatter:off*/ Logger.i(TAG, "onStart(): ", "activity = [" , activity , "]")
         /*@formatter:on*/
-        (activity as? FragmentActivity)?.supportFragmentManager?.registerFragmentLifecycleCallbacks(
-            fragmentLifecycleCallbacks,
-            true
-        )
+        notifyLifecycleCallbacksStarted(activity)
     }
 
     private fun onResume(activity: Activity) {
@@ -126,52 +79,62 @@ internal class RetenoActivityHelperImpl(private val eventController: EventContro
         notifyLifecycleCallbacksResumed(activity)
     }
 
-    private fun notifyLifecycleCallbacksResumed(activity: Activity) {
-        /*@formatter:off*/ Logger.i(TAG, "notifyLifecycleCallbacksResumed(): ", "callbacks.size = [" , retenoLifecycleCallbacks.size , "]")
+
+    private fun onPause(activity: Activity) {
+        /*@formatter:off*/ Logger.i(TAG, "onPause(): ", "activity = [" , activity , "]")
         /*@formatter:on*/
+        isActivityPaused = true
+        notifyLifecycleCallbacksPaused(activity)
+    }
+
+    private fun onStop(activity: Activity) {
+        /*@formatter:off*/ Logger.i(TAG, "onStop(): ", "activity = [" , activity , "]")
+        /*@formatter:on*/
+        notifyLifecycleCallbacksStopped(activity)
+
+        if (currentActivity != null && currentActivity == activity) {
+            lastForegroundActivity = currentActivity
+            // Don't leak activities.
+            currentActivity = null
+        }
+    }
+
+    private fun notifyLifecycleCallbacksStarted(activity: Activity) {
         synchronized(retenoLifecycleCallbacks) {
+            /*@formatter:off*/ Logger.i(TAG, "notifyLifecycleCallbacksStarted(): ", "callbacks.size = [" , retenoLifecycleCallbacks.size , "]")
+            /*@formatter:on*/
+            for ((_, value) in retenoLifecycleCallbacks.entries) {
+                value.start(activity)
+            }
+        }
+    }
+
+    private fun notifyLifecycleCallbacksResumed(activity: Activity) {
+        synchronized(retenoLifecycleCallbacks) {
+            /*@formatter:off*/ Logger.i(TAG, "notifyLifecycleCallbacksResumed(): ", "callbacks.size = [" , retenoLifecycleCallbacks.size , "]")
+            /*@formatter:on*/
             for ((_, value) in retenoLifecycleCallbacks.entries) {
                 value.resume(activity)
             }
         }
     }
 
-
-    private fun onPause(activity: Activity) {
-        /*@formatter:off*/ Logger.i(TAG, "onPause(): ", "activity = [" , activity , "]")
-        /*@formatter:on*/
-        isActivityPaused = true
-    }
-
-    private fun onStop(activity: Activity) {
-        /*@formatter:off*/ Logger.i(TAG, "onStop(): ", "activity = [" , activity , "]")
-        /*@formatter:on*/
-        // onStop is called when the activity gets hidden, and is called after onPause.
-        //
-        // However, if we're switching to another activity, that activity will call onResume,
-        // so we shouldn't pause if that's the case.
-        //
-        // Thus, we can call pause from here, only if all activities are paused.
-        if (isActivityPaused) {
-            notifyLifecycleCallbacksPaused(activity)
-        }
-        if (currentActivity != null && currentActivity == activity) {
-            lastForegroundActivity = currentActivity
-            // Don't leak activities.
-            currentActivity = null
-        }
-
-        (activity as? FragmentActivity)?.supportFragmentManager?.unregisterFragmentLifecycleCallbacks(
-            fragmentLifecycleCallbacks
-        )
-    }
-
     private fun notifyLifecycleCallbacksPaused(activity: Activity) {
-        /*@formatter:off*/ Logger.i(TAG, "notifyLifecycleCallbacksPaused(): ", "callbacks.size = [" , retenoLifecycleCallbacks.size , "]")
-        /*@formatter:on*/
         synchronized(retenoLifecycleCallbacks) {
+            /*@formatter:off*/ Logger.i(TAG, "notifyLifecycleCallbacksPaused(): ", "callbacks.size = [" , retenoLifecycleCallbacks.size , "]")
+            /*@formatter:on*/
             for ((_, value) in retenoLifecycleCallbacks.entries) {
                 value.pause(activity)
+            }
+        }
+    }
+
+    private fun notifyLifecycleCallbacksStopped(activity: Activity) {
+        synchronized(retenoLifecycleCallbacks) {
+            /*@formatter:off*/ Logger.i(TAG, "notifyLifecycleCallbacksStopped(): ", "callbacks.size = [" , retenoLifecycleCallbacks.size , "]")
+            /*@formatter:on*/
+            for ((_, value) in retenoLifecycleCallbacks.entries) {
+                value.stop(activity)
             }
         }
     }
@@ -194,6 +157,19 @@ internal class RetenoActivityHelperImpl(private val eventController: EventContro
     override fun canPresentMessages(): Boolean =
         currentActivity != null && !currentActivity!!.isFinishing && !isActivityPaused
 
+    // Ensures the Activity is fully ready by;
+    //   1. Ensure it is attached to a top-level Window by checking if it has an IBinder
+    //   2. Ensure WindowInsets exists on the root window also
+    override fun isActivityFullyReady(): Boolean {
+        val decorView = currentActivity?.window?.decorView
+        val hasToken = decorView?.applicationWindowToken != null
+        val insetsAttached = decorView?.rootWindowInsets != null
+        val result = hasToken && insetsAttached
+        /*@formatter:off*/ Logger.i(TAG, "isActivityFullyReady(): ", result)
+        /*@formatter:on*/
+        return result
+    }
+
     /**
      * Class provides additional functionality to handle payloads of push notifications built to
      * comply with new Android 12 restrictions on using notification trampolines.
@@ -206,28 +182,6 @@ internal class RetenoActivityHelperImpl(private val eventController: EventContro
             /*@formatter:off*/ Logger.i(TAG, "onActivityResumed(): ", "activity = [" , activity , "]")
             /*@formatter:on*/
             super.onActivityResumed(activity)
-            // TODO: Not implemented yet
-//            if (activity.intent != null) {
-//                val extras = activity.intent.extras
-//                if (extras != null && extras.containsKey(Constants.Keys.PUSH_MESSAGE_TEXT)) {
-//                    OperationQueue.sharedInstance().addParallelOperation { handleNotificationPayload(extras) }
-//                }
-//            }
-        }
-
-        // TODO: Not used yet
-        private fun handleNotificationPayload(message: Bundle) {
-            try {
-                Class.forName("com.reteno.RetenoPushService")
-                    .getDeclaredMethod("onActivityNotificationClick", Bundle::class.java)
-                    .invoke(null, message)
-            } catch (t: Throwable) {
-                Logger.e(
-                    TAG,
-                    "Push Notification action not run. Did you forget reteno-push module?",
-                    t
-                )
-            }
         }
     }
 

@@ -17,9 +17,11 @@ import com.reteno.core.di.provider.controller.AppInboxControllerProvider
 import com.reteno.core.di.provider.controller.ContactControllerProvider
 import com.reteno.core.di.provider.controller.DeeplinkControllerProvider
 import com.reteno.core.di.provider.controller.EventsControllerProvider
+import com.reteno.core.di.provider.controller.InAppMessagesControllerProvider
 import com.reteno.core.di.provider.controller.InteractionControllerProvider
 import com.reteno.core.di.provider.controller.RecommendationControllerProvider
 import com.reteno.core.di.provider.controller.ScheduleControllerProvider
+import com.reteno.core.di.provider.controller.ScreenTrackingControllerProvider
 import com.reteno.core.di.provider.database.DatabaseProvider
 import com.reteno.core.di.provider.database.RetenoDatabaseManagerAppInboxProvider
 import com.reteno.core.di.provider.database.RetenoDatabaseManagerDeviceProvider
@@ -30,6 +32,7 @@ import com.reteno.core.di.provider.database.RetenoDatabaseManagerRecomEventsProv
 import com.reteno.core.di.provider.database.RetenoDatabaseManagerUserProvider
 import com.reteno.core.di.provider.database.RetenoDatabaseManagerWrappedLinkProvider
 import com.reteno.core.di.provider.features.AppInboxProvider
+import com.reteno.core.di.provider.features.InAppMessagesViewProvider
 import com.reteno.core.di.provider.features.RecommendationProvider
 import com.reteno.core.di.provider.network.ApiClientProvider
 import com.reteno.core.di.provider.network.RestClientProvider
@@ -38,6 +41,7 @@ import com.reteno.core.di.provider.repository.ConfigRepositoryProvider
 import com.reteno.core.di.provider.repository.ContactRepositoryProvider
 import com.reteno.core.di.provider.repository.DeeplinkRepositoryProvider
 import com.reteno.core.di.provider.repository.EventsRepositoryProvider
+import com.reteno.core.di.provider.repository.InAppMessagesRepositoryProvider
 import com.reteno.core.di.provider.repository.InteractionRepositoryProvider
 import com.reteno.core.di.provider.repository.RecommendationRepositoryProvider
 import com.reteno.core.domain.controller.ContactController
@@ -45,8 +49,14 @@ import com.reteno.core.domain.controller.DeeplinkController
 import com.reteno.core.domain.controller.InteractionController
 import com.reteno.core.domain.controller.ScheduleController
 import com.reteno.core.lifecycle.RetenoActivityHelper
+import com.reteno.core.view.inapp.InAppMessagesView
 
 class ServiceLocator(context: Context, accessKey: String) {
+
+    private val retenoActivityHelperProviderInternal: RetenoActivityHelperProvider =
+        RetenoActivityHelperProvider()
+    val retenoActivityHelperProvider: ProviderWeakReference<RetenoActivityHelper>
+        get() = retenoActivityHelperProviderInternal
 
     private val sharedPrefsManagerProvider: SharedPrefsManagerProvider = SharedPrefsManagerProvider()
     private val workManagerProvider: WorkManagerProvider = WorkManagerProvider(context)
@@ -141,6 +151,9 @@ class ServiceLocator(context: Context, accessKey: String) {
     private val recommendationRepositoryProvider: RecommendationRepositoryProvider =
         RecommendationRepositoryProvider(retenoDatabaseManagerRecomEventsProvider, apiClientProvider)
 
+    private val inAppMessagesRepositoryProvider: InAppMessagesRepositoryProvider =
+        InAppMessagesRepositoryProvider(apiClientProvider, sharedPrefsManagerProvider)
+
     /** Controller **/
     private val deeplinkControllerProviderInternal: DeeplinkControllerProvider =
         DeeplinkControllerProvider(deeplinkRepositoryProvider)
@@ -180,16 +193,21 @@ class ServiceLocator(context: Context, accessKey: String) {
             workManagerProvider
         )
 
-    /** Controller dependent **/
-    private val retenoActivityHelperProviderInternal: RetenoActivityHelperProvider =
-        RetenoActivityHelperProvider(eventsControllerProvider)
-    val retenoActivityHelperProvider: ProviderWeakReference<RetenoActivityHelper>
-        get() = retenoActivityHelperProviderInternal
+    internal val screenTrackingControllerProvider: ScreenTrackingControllerProvider =
+        ScreenTrackingControllerProvider(retenoActivityHelperProviderInternal, eventsControllerProvider)
 
+    private val inAppMessagesControllerProvider: InAppMessagesControllerProvider =
+        InAppMessagesControllerProvider(inAppMessagesRepositoryProvider)
+
+    /** Controller dependent **/
     internal val appInboxProvider: AppInboxProvider = AppInboxProvider(appInboxControllerProvider)
 
     internal val recommendationProvider: RecommendationProvider =
         RecommendationProvider(recommendationControllerProvider)
 
+    private val inAppMessagesViewProviderInternal: InAppMessagesViewProvider =
+        InAppMessagesViewProvider(retenoActivityHelperProviderInternal, inAppMessagesControllerProvider)
 
+    val inAppMessagesViewProvider: ProviderWeakReference<InAppMessagesView> =
+        inAppMessagesViewProviderInternal
 }

@@ -4,6 +4,7 @@ import android.content.ActivityNotFoundException
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.os.Bundle
 import com.reteno.core.RetenoApplication
 import com.reteno.core.RetenoImpl
 import com.reteno.core.domain.model.interaction.InteractionStatus
@@ -37,6 +38,10 @@ class RetenoNotificationClickedReceiver : BroadcastReceiver() {
         reteno.serviceLocator.scheduleControllerProvider.get()
     }
 
+    private val inAppMessagesView by lazy {
+        reteno.serviceLocator.inAppMessagesViewProvider.get()
+    }
+
     override fun onReceive(context: Context, intent: Intent?) {
         if (!isOsVersionSupported()) {
             return
@@ -53,6 +58,8 @@ class RetenoNotificationClickedReceiver : BroadcastReceiver() {
     }
 
     private fun sendInteractionStatus(intent: Intent?) {
+        /*@formatter:off*/ Logger.i(TAG, "sendInteractionStatus(): ", "intent = [", intent, "]")
+        /*@formatter:on*/
         intent?.extras?.getString(Constants.KEY_ES_INTERACTION_ID)?.let { interactionId ->
             interactionController.onInteraction(interactionId, InteractionStatus.CLICKED)
             scheduleController.forcePush()
@@ -60,6 +67,8 @@ class RetenoNotificationClickedReceiver : BroadcastReceiver() {
     }
 
     private fun handleIntent(context: Context, intent: Intent?) {
+        /*@formatter:off*/ Logger.i(TAG, "handleIntent(): ", "context = [", context, "], intent = [", intent, "]")
+        /*@formatter:on*/
         intent?.extras?.let { bundle ->
             if (bundle.getBoolean(KEY_ACTION_BUTTON, false)) {
                 val notificationId = bundle.getInt(Constants.KEY_NOTIFICATION_ID, -1)
@@ -79,6 +88,8 @@ class RetenoNotificationClickedReceiver : BroadcastReceiver() {
     }
 
     private fun launchDeeplink(context: Context, deeplinkIntent: Intent) {
+        /*@formatter:off*/ Logger.i(TAG, "launchDeeplink(): ", "context = [", context, "], deeplinkIntent = [", deeplinkIntent, "]")
+        /*@formatter:on*/
         try {
             context.startActivity(deeplinkIntent)
         } catch (ex: ActivityNotFoundException) {
@@ -89,13 +100,22 @@ class RetenoNotificationClickedReceiver : BroadcastReceiver() {
     }
 
     private fun launchApp(context: Context, intent: Intent?) {
+        /*@formatter:off*/ Logger.i(TAG, "launchApp(): ", "context = [", context, "], intent = [", intent, "]")
+        /*@formatter:on*/
         val launchIntent = IntentHandler.AppLaunchIntent.getAppLaunchIntent(context)
         if (intent == null || launchIntent == null) {
             return
         }
-
         intent.extras?.let(launchIntent::putExtras)
+        intent.extras?.let(::checkInAppMessage)
         context.startActivity(launchIntent)
+    }
+
+    private fun checkInAppMessage(bundle: Bundle) {
+        /*@formatter:off*/ Logger.i(TAG, "checkInAppMessage(): ", "bundle = [", bundle, "]")
+        /*@formatter:on*/
+        val widgetId = bundle.getString(Constants.KEY_ES_INAPP_WIDGET_ID)
+        widgetId?.let(inAppMessagesView::initialize)
     }
 
     companion object {
