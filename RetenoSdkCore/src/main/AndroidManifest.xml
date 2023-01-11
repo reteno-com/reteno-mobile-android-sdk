@@ -6,9 +6,9 @@
 
     <application>
         <!-- TODO If using Sentry In client application the !!!tools:node="replace"!!! should be added for meta-data android:name="io.sentry.dsn"-->
-        <!-- TODO <meta-data tools:node="replace" android:name="io.sentry.dsn" android:value="https://207223369c3f4a7ba8ac1db87f1897b9@o4503903413665792.ingest.sentry.io/4503903438503936"/> -->
+        <!-- TODO <meta-data tools:node="replace" android:name="io.sentry.dsn" android:value="https://dsn_here"/> -->
         <meta-data
             android:name="io.sentry.dsn"
-            android:value="https://b50d9bee97814c769500ea0d9eb7aaf4@o4503903413665792.ingest.sentry.io/4503903414779904" />
+            android:value="https://dsn_here" />
     </application>
 </manifest>
