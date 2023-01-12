@@ -3,11 +3,15 @@ package com.reteno.push
 import android.app.PendingIntent
 import android.content.Intent
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.os.Bundle
 import android.text.TextUtils
+import android.widget.RemoteViews
 import androidx.core.app.NotificationCompat
 import com.reteno.core.RetenoImpl
+import com.reteno.core.data.remote.mapper.listFromJson
 import com.reteno.core.util.BitmapUtil
+import com.reteno.core.util.BitmapUtil.resize
 import com.reteno.core.util.BuildUtil
 import com.reteno.core.util.Logger
 import com.reteno.core.util.getAppName
@@ -28,15 +32,21 @@ import com.reteno.push.Constants.KEY_ES_BUTTON_LINK_UNWRAPPED
 import com.reteno.push.Constants.KEY_ES_BUTTON_LINK_WRAPPED
 import com.reteno.push.Constants.KEY_ES_CONTENT
 import com.reteno.push.Constants.KEY_ES_INTERACTION_ID
+import com.reteno.push.Constants.KEY_ES_NOTIFICATION_CAROUSEL_IMAGES
 import com.reteno.push.Constants.KEY_ES_NOTIFICATION_IMAGE
 import com.reteno.push.Constants.KEY_ES_TITLE
 import com.reteno.push.Constants.MAX_ACTION_BUTTONS
+import com.reteno.push.Constants.NOTIFICATION_CAROUSEL_IMAGE_MAX_HEIGHT_PX
+import com.reteno.push.Constants.NOTIFICATION_CAROUSEL_IMAGE_MAX_WIDTH_PX
 import com.reteno.push.JsonUtils.getJSONObjectOrNull
 import com.reteno.push.JsonUtils.getStringOrNull
 import com.reteno.push.channel.RetenoNotificationChannel.DEFAULT_CHANNEL_ID
 import com.reteno.push.interceptor.click.RetenoNotificationClickedActivity
 import com.reteno.push.interceptor.click.RetenoNotificationClickedReceiver
 import org.json.JSONArray
+import java.io.IOException
+import java.io.InputStream
+import java.net.URL
 import java.util.Random
 
 
@@ -59,6 +69,7 @@ internal object RetenoNotificationHelper {
         val bigPicture = getNotificationBigPictureBitmap(bundle)
         val buttons = getNotificationButtons(bundle)
         val badgeCount = getNotificationBadgeCount(bundle)
+        val imageCarouselRemoteViews: RemoteViews? = getImageCarouselRemoteViews(bundle)
 
         val builder = NotificationCompat.Builder(context, DEFAULT_CHANNEL_ID)
             .setSmallIcon(icon)
@@ -75,6 +86,10 @@ internal object RetenoNotificationHelper {
                     .setBigContentTitle(title)
                     .setSummaryText(text)
             )
+        }
+        imageCarouselRemoteViews?.let {
+            builder.setStyle(NotificationCompat.DecoratedCustomViewStyle())
+            builder.setCustomBigContentView(it)
         }
 
         buttons?.forEach { action ->
@@ -197,6 +212,50 @@ internal object RetenoNotificationHelper {
 
     private fun getNotificationBadgeCount(bundle: Bundle): Int? =
         bundle.getString(KEY_ES_BADGE_COUNT)?.toIntOrNull()
+
+    private fun getImageCarouselRemoteViews(bundle: Bundle): RemoteViews? {
+        val imageUrlList = getCarouselImageUrlList(bundle) ?: return null
+
+        val context = RetenoImpl.application
+        val expandedView = RemoteViews(context.packageName, R.layout.image_carousel)
+
+        for (imageUrl in imageUrlList) {
+            val viewFlipperImage =
+                RemoteViews(context.packageName, R.layout.image_carousel_item)
+
+            try {
+                val remotePicture = BitmapFactory.decodeStream(
+                    URL(imageUrl).content as InputStream
+                )
+                val bitmap = resize(
+                    remotePicture,
+                    NOTIFICATION_CAROUSEL_IMAGE_MAX_WIDTH_PX,
+                    NOTIFICATION_CAROUSEL_IMAGE_MAX_HEIGHT_PX
+                )
+                viewFlipperImage.setImageViewBitmap(R.id.imageView, bitmap)
+                expandedView.addView(R.id.viewFlipper, viewFlipperImage)
+            } catch (e: IOException) {
+                /*@formatter:off*/ Logger.e(TAG, "getImageCarouselRemoteViews(): ", e)
+                /*@formatter:on*/
+            }
+        }
+
+        return expandedView
+    }
+
+    private fun getCarouselImageUrlList(bundle: Bundle): List<String>? {
+        val imagesJson = bundle.getString(KEY_ES_NOTIFICATION_CAROUSEL_IMAGES)
+        val imageUrlListAll = imagesJson?.listFromJson<String>()
+
+        return if (imageUrlListAll == null ||
+            imageUrlListAll.isEmpty() ||
+            imageUrlListAll.all { it.isBlank() }
+        ) {
+            null
+        } else {
+            imageUrlListAll.filter { it.isNotBlank() }
+        }
+    }
 
     private fun createPendingIntent(message: Bundle): PendingIntent {
         val context = RetenoImpl.application
