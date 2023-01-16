@@ -65,15 +65,15 @@ class InteractionControllerTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun givenTokenAvailable_whenOnInteractionOpened_thenInteractionOpenedPassedToRepository() {
+    fun givenTokenAvailable_whenOnInteractionClicked_thenInteractionOpenedPassedToRepository() {
         // Given
         every { configRepository.getFcmToken() } returns TOKEN
 
         // When
-        SUT.onInteraction(INTERACTION_ID, InteractionStatus.OPENED)
+        SUT.onInteraction(INTERACTION_ID, InteractionStatus.CLICKED)
 
         // Then
-        val expectedInteraction = Interaction(InteractionStatus.OPENED, CURRENT_TIMESTAMP, TOKEN)
+        val expectedInteraction = Interaction(InteractionStatus.CLICKED, CURRENT_TIMESTAMP, TOKEN)
         verify(exactly = 1) {
             interactionsRepository.saveInteraction(
                 eq(INTERACTION_ID),

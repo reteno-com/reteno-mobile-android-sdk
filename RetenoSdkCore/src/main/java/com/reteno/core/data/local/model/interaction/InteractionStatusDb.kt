@@ -4,6 +4,7 @@ import com.reteno.core.domain.model.interaction.InteractionStatus
 
 enum class InteractionStatusDb {
     DELIVERED,
+    CLICKED,
     OPENED;
 
     companion object {
@@ -11,6 +12,7 @@ enum class InteractionStatusDb {
         fun fromString(value: String?): InteractionStatusDb =
             when (value) {
                 InteractionStatus.DELIVERED.toString() -> DELIVERED
+                InteractionStatus.CLICKED.toString() -> CLICKED
                 InteractionStatus.OPENED.toString() -> OPENED
                 else -> DELIVERED
             }
