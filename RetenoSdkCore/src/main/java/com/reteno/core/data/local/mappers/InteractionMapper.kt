@@ -15,5 +15,6 @@ internal fun Interaction.toDb(interactionId: String) = InteractionDb(
 internal fun InteractionStatus.toDb(): InteractionStatusDb =
     when (this) {
         InteractionStatus.DELIVERED -> InteractionStatusDb.DELIVERED
+        InteractionStatus.CLICKED -> InteractionStatusDb.CLICKED
         InteractionStatus.OPENED -> InteractionStatusDb.OPENED
     }

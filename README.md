@@ -1,6 +1,7 @@
 # Android
 
-[GitHub - reteno-com/reteno-mobile-android-sdk](https://github.com/reteno-com/reteno-mobile-android-sdk)
+[GitHub repo](https://github.com/reteno-com/reteno-mobile-android-sdk)
+[Documentation](https://docs.reteno.com/reference/android-sdk-setup)
 
 The Reteno Android SDK for Mobile Customer Engagement and Analytics solutions.
 
