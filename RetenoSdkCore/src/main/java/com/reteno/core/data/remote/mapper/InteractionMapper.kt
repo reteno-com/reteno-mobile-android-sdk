@@ -14,5 +14,6 @@ internal fun InteractionDb.toRemote() = InteractionRemote(
 internal fun InteractionStatusDb.toRemote(): InteractionStatusRemote =
     when (this) {
         InteractionStatusDb.DELIVERED -> InteractionStatusRemote.DELIVERED
+        InteractionStatusDb.CLICKED -> InteractionStatusRemote.CLICKED
         InteractionStatusDb.OPENED -> InteractionStatusRemote.OPENED
     }

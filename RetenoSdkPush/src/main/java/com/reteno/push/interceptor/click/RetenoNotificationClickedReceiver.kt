@@ -45,7 +45,7 @@ class RetenoNotificationClickedReceiver : BroadcastReceiver() {
 
     private fun sendInteractionStatus(intent: Intent?) {
         intent?.extras?.getString(Constants.KEY_ES_INTERACTION_ID)?.let { interactionId ->
-            interactionController.onInteraction(interactionId, InteractionStatus.OPENED)
+            interactionController.onInteraction(interactionId, InteractionStatus.CLICKED)
             scheduleController.forcePush()
         }
     }

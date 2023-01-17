@@ -8,6 +8,7 @@ object Constants {
     const val KEY_ES_TITLE = "es_title"
     const val KEY_ES_CONTENT = "es_content"
     const val KEY_ES_NOTIFICATION_IMAGE = "es_notification_image"
+    const val KEY_ES_NOTIFICATION_CAROUSEL_IMAGES = "es_notification_images"
     const val KEY_ES_LINK_WRAPPED = "es_link"
     const val KEY_ES_LINK_UNWRAPPED = "es_link_raw"
     const val KEY_ES_BADGE_COUNT = "es_badge_count"
@@ -27,4 +28,7 @@ object Constants {
     const val KEY_BTN_ACTION_LINK_UNWRAPPED = "es_btn_action_link_unwrapped"
     const val KEY_BTN_ACTION_CUSTOM_DATA = "es_btn_action_custom_data"
     const val MAX_ACTION_BUTTONS = 3
+
+    const val NOTIFICATION_CAROUSEL_IMAGE_MAX_WIDTH_PX = 500
+    const val NOTIFICATION_CAROUSEL_IMAGE_MAX_HEIGHT_PX = 250
 }
