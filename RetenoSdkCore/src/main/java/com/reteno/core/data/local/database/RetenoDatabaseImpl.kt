@@ -25,7 +25,7 @@ internal class RetenoDatabaseImpl(private val context: Context) : RetenoDatabase
         /*@formatter:off*/ Logger.i(TAG, "onOpen(): ", "db = [" , db , "]")
         /*@formatter:on*/
         super.onOpen(db)
-        db?.execSQL("PRAGMA foreign_keys=ON");
+        db?.execSQL("PRAGMA foreign_keys=ON")
     }
 
     override fun onCreate(db: SQLiteDatabase) {

@@ -6,7 +6,6 @@ import com.reteno.core.R
 import com.reteno.core.RetenoImpl
 import com.reteno.core.util.Logger
 import com.reteno.core.util.Util
-import java.time.ZonedDateTime
 import java.util.UUID
 
 
@@ -85,34 +84,34 @@ internal class SharedPrefsManager {
         return result
     }
 
-    fun saveInAppMessagesBaseHtmlVersion(version: String) {
-        /*@formatter:off*/ Logger.i(TAG, "saveInAppMessagesBaseHtmlVersion(): ", "version = [", version, "]")
+    fun saveIamBaseHtmlVersion(version: String) {
+        /*@formatter:off*/ Logger.i(TAG, "saveIamBaseHtmlVersion(): ", "version = [", version, "]")
         /*@formatter:on*/
         sharedPreferences.edit()
-            ?.putString(PREF_KEY_IN_APP_MESSAGE_BASE_HTML_VERSION, version)
+            ?.putString(PREF_KEY_IAM_BASE_HTML_VERSION, version)
             ?.apply()
     }
 
-    fun getInAppMessagesBaseHtmlVersion(): String? {
-        val version = sharedPreferences.getString(PREF_KEY_IN_APP_MESSAGE_BASE_HTML_VERSION, null)
-        /*@formatter:off*/ Logger.i(TAG, "getInAppMessagesBaseHtmlVersion(): ", "version = [", version, "]")
+    fun getIamBaseHtmlVersion(): String? {
+        val version = sharedPreferences.getString(PREF_KEY_IAM_BASE_HTML_VERSION, null)
+        /*@formatter:off*/ Logger.i(TAG, "getIamBaseHtmlVersion(): ", "version = [", version, "]")
         /*@formatter:on*/
         return version
     }
 
-    fun saveInAppMessagesBaseHtmlContent(baseHtml: String) {
-        /*@formatter:off*/ Logger.i(TAG, "saveInAppMessagesBaseHtmlContent(): ", "baseHtml = [", baseHtml, "]")
+    fun saveIamBaseHtmlContent(baseHtml: String) {
+        /*@formatter:off*/ Logger.i(TAG, "saveIamBaseHtmlContent(): ", "baseHtml = [", baseHtml, "]")
         /*@formatter:on*/
         sharedPreferences.edit()
-            ?.putString(PREF_KEY_IN_APP_MESSAGE_BASE_HTML_CONTENT, baseHtml)
+            ?.putString(PREF_KEY_IAM_BASE_HTML_CONTENT, baseHtml)
             ?.apply()
     }
 
-    fun getInAppMessagesBaseHtmlContent(): String {
-        val result = sharedPreferences.getString(PREF_KEY_IN_APP_MESSAGE_BASE_HTML_CONTENT, null)
+    fun getIamBaseHtmlContent(): String {
+        val result = sharedPreferences.getString(PREF_KEY_IAM_BASE_HTML_CONTENT, null)
             ?: Util.readFromRaw(R.raw.base_html)
             ?: ""
-        /*@formatter:off*/ Logger.i(TAG, "getInAppMessagesBaseHtmlContent(): ", "result = ", result)
+        /*@formatter:off*/ Logger.i(TAG, "getIamBaseHtmlContent(): ", "result = ", result)
         /*@formatter:on*/
         return result
     }
@@ -126,7 +125,7 @@ internal class SharedPrefsManager {
         private const val PREF_KEY_NOTIFICATION_CHANNEL_DEFAULT = "notification_channel_default"
         private const val PREF_KEY_NOTIFICATIONS_ENABLED = "notifications_enabled"
         private const val PREF_KEY_DEVICE_REGISTERED = "device_registered"
-        private const val PREF_KEY_IN_APP_MESSAGE_BASE_HTML_VERSION = "in_app_messages_base_html_version"
-        private const val PREF_KEY_IN_APP_MESSAGE_BASE_HTML_CONTENT = "in_app_messages_base_html_content"
+        private const val PREF_KEY_IAM_BASE_HTML_VERSION = "in_app_messages_base_html_version"
+        private const val PREF_KEY_IAM_BASE_HTML_CONTENT = "in_app_messages_base_html_content"
     }
 }

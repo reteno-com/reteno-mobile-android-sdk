@@ -146,7 +146,7 @@ internal class RetenoActivityHelperImpl : RetenoActivityHelper {
             // prevent activity leak
             lastForegroundActivity = null
             // no activity is presented and last activity is being destroyed
-            // dismiss inapp dialogs to prevent leak
+            // dismiss iam dialogs to prevent leak
             // TODO: Not yet implemented
         }
     }

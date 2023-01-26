@@ -1,4 +1,4 @@
-package com.reteno.core.features.inapp
+package com.reteno.core.features.iam
 
 import android.webkit.JavascriptInterface
 import com.reteno.core.util.Logger

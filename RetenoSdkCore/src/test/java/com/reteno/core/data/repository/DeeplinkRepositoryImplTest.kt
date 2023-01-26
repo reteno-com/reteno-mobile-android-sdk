@@ -136,6 +136,7 @@ class DeeplinkRepositoryImplTest : BaseRobolectricTest() {
         verify(exactly = 2) { apiClient.head(any(), any(), any()) }
         verify(exactly = 2) { databaseManager.deleteWrappedLinks(1) }
         verify(exactly = 1) { PushOperationQueue.nextOperation() }
+        verify(exactly = 0) { PushOperationQueue.removeAllOperations() }
     }
 
     @Test

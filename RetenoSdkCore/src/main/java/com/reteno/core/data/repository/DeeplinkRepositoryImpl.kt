@@ -61,8 +61,9 @@ internal class DeeplinkRepositoryImpl(
                             if (isNonRepeatableError(statusCode)) {
                                 databaseManager.deleteWrappedLinks(1)
                                 pushWrappedLink()
+                            } else {
+                                PushOperationQueue.removeAllOperations()
                             }
-                            PushOperationQueue.removeAllOperations()
                         }
                     })
             } catch (t: Exception) {

@@ -16,7 +16,7 @@ import org.junit.Assert.assertNotNull
 import org.junit.Test
 
 
-class InAppMessagesRepositoryImplTest : BaseRobolectricTest() {
+class IamRepositoryImplTest : BaseRobolectricTest() {
 
     // region constants ----------------------------------------------------------------------------
     companion object {
@@ -36,19 +36,19 @@ class InAppMessagesRepositoryImplTest : BaseRobolectricTest() {
     @RelaxedMockK
     private lateinit var sharedPrefsManager: SharedPrefsManager
 
-    private lateinit var SUT: InAppMessagesRepositoryImpl
+    private lateinit var SUT: IamRepository
     // endregion helper fields ---------------------------------------------------------------------
 
     override fun before() {
         super.before()
-        SUT = InAppMessagesRepositoryImpl(apiClient, sharedPrefsManager)
+        SUT = IamRepositoryImpl(apiClient, sharedPrefsManager)
     }
 
     @Test
     fun givenBaseHtmlVersionRemoteDiffersFromLocal_whenGetBaseHtml_thenBaseHtmlContentRemoteSavedLocallyLocalVersionUpdated() {
         runBlocking {
             // Given
-            every { sharedPrefsManager.getInAppMessagesBaseHtmlVersion() } returns BASE_HTML_VERSION_LOCAL
+            every { sharedPrefsManager.getIamBaseHtmlVersion() } returns BASE_HTML_VERSION_LOCAL
             every { apiClient.head(ApiContract.InAppMessages.BaseHtml, any(), any()) } answers {
                 val callback = thirdArg<ResponseCallback>()
                 val headers = mapOf<String, List<String>>(HEADER_X_AMZ_META_VERSION to listOf<String>(BASE_HTML_VERSION_REMOTE))
@@ -63,8 +63,8 @@ class InAppMessagesRepositoryImplTest : BaseRobolectricTest() {
             val result = SUT.getBaseHtml()
 
             // Then
-            verify(exactly = 1) { sharedPrefsManager.saveInAppMessagesBaseHtmlVersion(eq(BASE_HTML_VERSION_REMOTE)) }
-            verify(exactly = 1) { sharedPrefsManager.saveInAppMessagesBaseHtmlContent(eq(BASE_HTML_CONTENT_REMOTE)) }
+            verify(exactly = 1) { sharedPrefsManager.saveIamBaseHtmlVersion(eq(BASE_HTML_VERSION_REMOTE)) }
+            verify(exactly = 1) { sharedPrefsManager.saveIamBaseHtmlContent(eq(BASE_HTML_CONTENT_REMOTE)) }
             assertEquals(BASE_HTML_CONTENT_REMOTE, result)
         }
     }
@@ -73,8 +73,8 @@ class InAppMessagesRepositoryImplTest : BaseRobolectricTest() {
     fun givenBaseHtmlVersionRemoteEqualsLocal_whenGetBaseHtml_thenBaseHtmlContentLocalReturned() {
         runBlocking {
             // Given
-            every { sharedPrefsManager.getInAppMessagesBaseHtmlVersion() } returns BASE_HTML_VERSION_LOCAL
-            every { sharedPrefsManager.getInAppMessagesBaseHtmlContent() } returns BASE_HTML_CONTENT_LOCAL
+            every { sharedPrefsManager.getIamBaseHtmlVersion() } returns BASE_HTML_VERSION_LOCAL
+            every { sharedPrefsManager.getIamBaseHtmlContent() } returns BASE_HTML_CONTENT_LOCAL
             every { apiClient.head(ApiContract.InAppMessages.BaseHtml, any(), any()) } answers {
                 val callback = thirdArg<ResponseCallback>()
                 val headers = mapOf<String, List<String>>(HEADER_X_AMZ_META_VERSION to listOf<String>(BASE_HTML_VERSION_LOCAL))

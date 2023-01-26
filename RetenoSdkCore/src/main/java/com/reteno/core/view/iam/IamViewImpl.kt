@@ -1,4 +1,4 @@
-package com.reteno.core.view.inapp
+package com.reteno.core.view.iam
 
 import android.app.Activity
 import android.content.Context
@@ -22,11 +22,11 @@ import androidx.core.widget.PopupWindowCompat
 import com.reteno.core.data.remote.OperationQueue
 import com.reteno.core.data.remote.mapper.fromJson
 import com.reteno.core.domain.ResultDomain
-import com.reteno.core.domain.controller.InAppMessagesController
-import com.reteno.core.features.inapp.InAppJsEvent
-import com.reteno.core.features.inapp.InAppJsEventType
-import com.reteno.core.features.inapp.InAppJsPayload
-import com.reteno.core.features.inapp.RetenoAndroidHandler
+import com.reteno.core.domain.controller.IamController
+import com.reteno.core.features.iam.IamJsEvent
+import com.reteno.core.features.iam.IamJsEventType
+import com.reteno.core.features.iam.IamJsPayload
+import com.reteno.core.features.iam.RetenoAndroidHandler
 import com.reteno.core.lifecycle.RetenoActivityHelper
 import com.reteno.core.util.Logger
 import kotlinx.coroutines.CoroutineScope
@@ -36,12 +36,12 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import java.util.concurrent.atomic.AtomicBoolean
 
-internal class InAppMessagesViewImpl(
+internal class IamViewImpl(
     private val activityHelper: RetenoActivityHelper,
-    private val inAppMessagesController: InAppMessagesController
-) : InAppMessagesView {
+    private val iamController: IamController
+) : IamView {
 
-    private val inAppShowScope = CoroutineScope(Dispatchers.Main.immediate)
+    private val iamShowScope = CoroutineScope(Dispatchers.Main.immediate)
 
     private val isViewShown = AtomicBoolean(false)
 
@@ -55,11 +55,13 @@ internal class InAppMessagesViewImpl(
             /*@formatter:off*/ Logger.i(TAG, "onMessagePosted(): ", "event = [", event, "]")
             /*@formatter:on*/
             try {
-                val jsEvent: InAppJsEvent = event?.fromJson<InAppJsEvent>() ?: return
+                val jsEvent: IamJsEvent = event?.fromJson<IamJsEvent>() ?: return
                 when (jsEvent.type) {
-                    InAppJsEventType.WIDGET_INIT_SUCCESS -> onWidgetInitialized()
-                    InAppJsEventType.OPEN_URL -> openUrl(jsEvent.payload)
-                    InAppJsEventType.CLOSE_WIDGET -> closeWidget(jsEvent.payload)
+                    IamJsEventType.WIDGET_INIT_SUCCESS -> onWidgetInitSuccess()
+                    IamJsEventType.WIDGET_INIT_FAILED -> onWidgetInitFailed(jsEvent)
+                    IamJsEventType.WIDGET_RUNTIME_ERROR -> onWidgetInitFailed(jsEvent)
+                    IamJsEventType.OPEN_URL -> openUrl(jsEvent.payload)
+                    IamJsEventType.CLOSE_WIDGET -> closeWidget(jsEvent.payload)
                 }
             } catch (e: Exception) {
                 /*@formatter:off*/ Logger.e(TAG, "onMessagePosted(): ", e)
@@ -68,13 +70,19 @@ internal class InAppMessagesViewImpl(
         }
     }
 
-    private fun onWidgetInitialized() {
-        /*@formatter:off*/ Logger.i(TAG, "onWidgetInitialized(): ", "")
+    private fun onWidgetInitSuccess() {
+        /*@formatter:off*/ Logger.i(TAG, "onWidgetInitSuccess(): ", "")
         /*@formatter:on*/
-        showInAppPopupWindowOnceReady(DELAY_UI_ATTEMPTS)
+        showIamPopupWindowOnceReady(DELAY_UI_ATTEMPTS)
     }
 
-    private fun openUrl(payload: InAppJsPayload?) {
+    private fun onWidgetInitFailed(jsEvent: IamJsEvent) {
+        /*@formatter:off*/ Logger.i(TAG, "onWidgetInitFailed(): ", "jsEvent = [", jsEvent, "]")
+        /*@formatter:on*/
+        iamController.widgetInitFailed(jsEvent)
+    }
+
+    private fun openUrl(payload: IamJsPayload?) {
         /*@formatter:off*/ Logger.i(TAG, "openUrl(): ", "payload = [", payload, "]")
         /*@formatter:on*/
         val url = payload?.url ?: return
@@ -87,7 +95,7 @@ internal class InAppMessagesViewImpl(
         teardown()
     }
 
-    private fun closeWidget(payload: InAppJsPayload?) {
+    private fun closeWidget(payload: IamJsPayload?) {
         /*@formatter:off*/ Logger.i(TAG, "closeWidget(): ", "payload = [", payload, "]")
         /*@formatter:on*/
         teardown()
@@ -98,7 +106,7 @@ internal class InAppMessagesViewImpl(
         /*@formatter:on*/
         try {
             teardown()
-            inAppMessagesController.fetchInAppMessagesFullHtml(widgetId)
+            iamController.fetchIamFullHtml(widgetId)
         } catch (e: Exception) {
             /*@formatter:off*/ Logger.e(TAG, "initialize(): ", e)
             /*@formatter:on*/
@@ -109,15 +117,13 @@ internal class InAppMessagesViewImpl(
         /*@formatter:off*/ Logger.i(TAG, "resume(): ", "activity = [", activity, "]") 
         /*@formatter:on*/
         if (isViewShown.get()) {
-            if (!popupWindow.isShowing) {
-                showInAppPopupWindowOnceReady(DELAY_UI_ATTEMPTS)
-            }
+            showIamPopupWindowOnceReady(DELAY_UI_ATTEMPTS)
             return
         }
 
-        createInAppInActivity(activity)
-        inAppShowScope.launch {
-            inAppMessagesController.fullHtmlStateFlow.collect { result ->
+        createIamInActivity(activity)
+        iamShowScope.launch {
+            iamController.fullHtmlStateFlow.collect { result ->
                 ensureActive()
                 if (result is ResultDomain.Success) {
                     uploadHtmlIntoWebView(result.body)
@@ -129,15 +135,15 @@ internal class InAppMessagesViewImpl(
     override fun pause(activity: Activity) {
         /*@formatter:off*/ Logger.i(TAG, "pause(): ", "activity = [", activity, "]") 
         /*@formatter:on*/
-        inAppShowScope.coroutineContext.cancelChildren()
+        iamShowScope.coroutineContext.cancelChildren()
         if (isViewShown.get()) {
             popupWindow.dismiss()
         }
     }
 
 
-    private fun showInAppPopupWindowOnceReady(attempts: Int) {
-        /*@formatter:off*/ Logger.i(TAG, "showInAppPopupWindowOnceReady(): ", "attempts = [", attempts, "]")
+    private fun showIamPopupWindowOnceReady(attempts: Int) {
+        /*@formatter:off*/ Logger.i(TAG, "showIamPopupWindowOnceReady(): ", "attempts = [", attempts, "]")
         /*@formatter:on*/
         if (attempts < 0) {
             return
@@ -145,17 +151,17 @@ internal class InAppMessagesViewImpl(
 
         if (activityHelper.canPresentMessages() && activityHelper.isActivityFullyReady()) {
             OperationQueue.addUiOperation {
-                activityHelper.currentActivity?.let(::showInAppPopupWindow)
+                activityHelper.currentActivity?.let(::showIamPopupWindow)
             }
         } else {
             OperationQueue.addOperationAfterDelay({
-                showInAppPopupWindowOnceReady(attempts - 1)
+                showIamPopupWindowOnceReady(attempts - 1)
             }, DELAY_UI_MS)
         }
     }
 
-    private fun createInAppInActivity(activity: Activity) {
-        /*@formatter:off*/ Logger.i(TAG, "showInActivity(): ", "activity = [", activity, "]")
+    private fun createIamInActivity(activity: Activity) {
+        /*@formatter:off*/ Logger.i(TAG, "createIamInActivity(): ", "activity = [", activity, "]")
         /*@formatter:on*/
         parentLayout = FrameLayout(activity)
         popupWindow = createPopupWindow(parentLayout)
@@ -223,23 +229,29 @@ internal class InAppMessagesViewImpl(
     }
 
     private fun addCardViewToParentLayout() {
+        /*@formatter:off*/ Logger.i(TAG, "addCardViewToParentLayout(): ", "")
+        /*@formatter:on*/
         parentLayout.clipChildren = false
         parentLayout.clipToPadding = false
         parentLayout.addView(cardView, LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
     }
 
     private fun addWebViewToCardView() {
+        /*@formatter:off*/ Logger.i(TAG, "addWebViewToCardView(): ", "")
+        /*@formatter:on*/
         cardView.addView(webView, LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
     }
 
     private fun uploadHtmlIntoWebView(fullHtml: String) {
+        /*@formatter:off*/ Logger.i(TAG, "uploadHtmlIntoWebView(): ")
+        /*@formatter:on*/
         val encodedHtml = Base64.encodeToString(fullHtml.toByteArray(), Base64.NO_PADDING)
         webView.loadData(encodedHtml, MIME_TYPE, ENCODING)
         webView.addJavascriptInterface(retenoAndroidHandler, JS_INTERFACE_NAME)
     }
 
-    private fun showInAppPopupWindow(activity: Activity) {
-        /*@formatter:off*/ Logger.i(TAG, "showPopupWindow(): ", "activity = [", activity, "]")
+    private fun showIamPopupWindow(activity: Activity) {
+        /*@formatter:off*/ Logger.i(TAG, "showIamPopupWindow(): ", "activity = [", activity, "]")
         /*@formatter:on*/
         val gravity = Gravity.CENTER_HORIZONTAL or Gravity.TOP
         val displayType = WindowManager.LayoutParams.TYPE_APPLICATION_PANEL
@@ -260,6 +272,8 @@ internal class InAppMessagesViewImpl(
     private fun teardown() {
         /*@formatter:off*/ Logger.i(TAG, "teardown(): ", "")
         /*@formatter:on*/
+        iamController.reset()
+
         OperationQueue.addUiOperation {
             if (this::parentLayout.isInitialized) {
                 parentLayout.removeAllViews()
@@ -277,13 +291,12 @@ internal class InAppMessagesViewImpl(
                 webView.removeAllViews()
                 webView.removeJavascriptInterface(JS_INTERFACE_NAME)
             }
-            inAppMessagesController.reset()
             isViewShown.set(false)
         }
     }
 
     companion object {
-        private val TAG: String = InAppMessagesViewImpl::class.java.simpleName
+        private val TAG: String = IamViewImpl::class.java.simpleName
 
         private const val DELAY_UI_MS = 200L
         private const val DELAY_UI_ATTEMPTS = 150

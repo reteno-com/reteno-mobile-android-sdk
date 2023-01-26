@@ -79,6 +79,10 @@ internal sealed interface ApiContract {
         object BaseHtml: InAppMessages() {
             override val url = "https://statics.esputnik.com/in-app/base.latest.html"
         }
+
+        object WidgetInitFailed: InAppMessages() {
+            override val url = "https://site-script.esputnik.com/site-script/v1/event"
+        }
     }
 
     data class Custom(override val url: String) : ApiContract

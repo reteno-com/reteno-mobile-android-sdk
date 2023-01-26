@@ -17,56 +17,92 @@ internal class ScreenTrackingController(private val retenoActivityHelper: Reteno
     private val fragmentLifecycleCallbacks = object : FragmentManager.FragmentLifecycleCallbacks() {
         override fun onFragmentStarted(fragmentManager: FragmentManager, fragment: Fragment) {
             super.onFragmentStarted(fragmentManager, fragment)
-            val fragmentName = fragment::class.java.simpleName
+            try {
+                val fragmentName = fragment::class.java.simpleName
 
-            if (screenTrackingConfig.trigger == ScreenTrackingTrigger.ON_START
-                && screenTrackingConfig.enable
-                && !screenTrackingConfig.excludeScreens.contains(fragmentName)
-            ) {
-                /*@formatter:off*/ Logger.i(TAG, "onFragmentStarted(): ", "trackScreen $fragmentName")
+                if (screenTrackingConfig.trigger == ScreenTrackingTrigger.ON_START
+                    && screenTrackingConfig.enable
+                    && !screenTrackingConfig.excludeScreens.contains(fragmentName)
+                ) {
+                    /*@formatter:off*/ Logger.i(TAG, "onFragmentStarted(): ", "trackScreen $fragmentName")
+                    /*@formatter:on*/
+                    eventController.trackScreenViewEvent(fragmentName)
+                }
+            } catch (t: Throwable) {
+                /*@formatter:off*/ Logger.e(TAG, "onFragmentStarted(): ", t)
                 /*@formatter:on*/
-                eventController.trackScreenViewEvent(fragmentName)
             }
         }
 
         override fun onFragmentResumed(fragmentManager: FragmentManager, fragment: Fragment) {
             super.onFragmentResumed(fragmentManager, fragment)
-            val fragmentName = fragment::class.java.simpleName
+            try {
+                val fragmentName = fragment::class.java.simpleName
 
-            if (screenTrackingConfig.trigger == ScreenTrackingTrigger.ON_RESUME
-                && screenTrackingConfig.enable
-                && !screenTrackingConfig.excludeScreens.contains(fragmentName)
-            ) {
-                /*@formatter:off*/ Logger.i(TAG, "onFragmentResumed(): ", "trackScreen $fragmentName")
+                if (screenTrackingConfig.trigger == ScreenTrackingTrigger.ON_RESUME
+                    && screenTrackingConfig.enable
+                    && !screenTrackingConfig.excludeScreens.contains(fragmentName)
+                ) {
+                    /*@formatter:off*/ Logger.i(TAG, "onFragmentResumed(): ", "trackScreen $fragmentName")
+                    /*@formatter:on*/
+                    eventController.trackScreenViewEvent(fragmentName)
+                }
+            } catch (t: Throwable) {
+                /*@formatter:off*/ Logger.e(TAG, "onFragmentResumed(): ", t)
                 /*@formatter:on*/
-                eventController.trackScreenViewEvent(fragmentName)
             }
         }
     }
 
 
     init {
-        retenoActivityHelper.registerActivityLifecycleCallbacks(TAG, object : RetenoLifecycleCallbacks{
-            override fun pause(activity: Activity) {
-            }
+        try {
+            retenoActivityHelper.registerActivityLifecycleCallbacks(TAG, object : RetenoLifecycleCallbacks{
+                override fun pause(activity: Activity) {
+                    try {
 
-            override fun resume(activity: Activity) {
-            }
+                    } catch (t: Throwable) {
+                        /*@formatter:off*/ Logger.e(TAG, "pause(): ", t)
+                        /*@formatter:on*/
+                    }
+                }
 
-            override fun start(activity: Activity) {
-                (activity as? FragmentActivity)?.supportFragmentManager?.registerFragmentLifecycleCallbacks(
-                    fragmentLifecycleCallbacks,
-                    true
-                )
-            }
+                override fun resume(activity: Activity) {
+                    try {
 
-            override fun stop(activity: Activity) {
-                (activity as? FragmentActivity)?.supportFragmentManager?.unregisterFragmentLifecycleCallbacks(
-                    fragmentLifecycleCallbacks
-                )
-            }
+                    } catch (t: Throwable) {
+                        /*@formatter:off*/ Logger.e(TAG, "resume(): ", t)
+                        /*@formatter:on*/
+                    }
+                }
 
-        })
+                override fun start(activity: Activity) {
+                    try {
+                        (activity as? FragmentActivity)?.supportFragmentManager?.registerFragmentLifecycleCallbacks(
+                            fragmentLifecycleCallbacks,
+                            true
+                        )
+                    } catch (t: Throwable) {
+                        /*@formatter:off*/ Logger.e(TAG, "start(): ", t)
+                        /*@formatter:on*/
+                    }
+                }
+
+                override fun stop(activity: Activity) {
+                    try {
+                        (activity as? FragmentActivity)?.supportFragmentManager?.unregisterFragmentLifecycleCallbacks(
+                            fragmentLifecycleCallbacks
+                        )
+                    } catch (t: Throwable) {
+                        /*@formatter:off*/ Logger.e(TAG, "stop(): ", t)
+                        /*@formatter:on*/
+                    }
+                }
+            })
+        } catch (t: Throwable) {
+            /*@formatter:off*/ Logger.e(TAG, "init(): ", t)
+            /*@formatter:on*/
+        }
     }
 
 

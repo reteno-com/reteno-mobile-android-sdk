@@ -8,14 +8,15 @@ import com.reteno.core.domain.controller.DeeplinkController
 import com.reteno.core.domain.controller.InteractionController
 import com.reteno.core.domain.controller.ScheduleController
 import com.reteno.core.domain.model.interaction.InteractionStatus
-import com.reteno.core.view.inapp.InAppMessagesView
+import com.reteno.core.view.iam.IamView
 import com.reteno.push.Constants
-import com.reteno.push.Constants.KEY_ES_INAPP_WIDGET_ID
+import com.reteno.push.Constants.KEY_ES_IAM_WIDGET_ID
 import com.reteno.push.Util
 import com.reteno.push.base.robolectric.BaseRobolectricTest
 import io.mockk.every
 import io.mockk.impl.annotations.RelaxedMockK
 import io.mockk.justRun
+import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.unmockkObject
 import io.mockk.verify
@@ -208,14 +209,14 @@ class RetenoNotificationClickedActivityTest : BaseRobolectricTest() {
     @Test
     fun givenPushWithIam_whenNotificationClicked_thenIamViewInitializeCalled() {
         // Given
-        val iamView = mockk<InAppMessagesView>(relaxed = true)
+        val iamView = mockk<IamView>(relaxed = true)
         val iamWidgetId = "123"
 
-        val extra = Bundle().apply { putString(KEY_ES_INAPP_WIDGET_ID, iamWidgetId) }
+        val extra = Bundle().apply { putString(KEY_ES_IAM_WIDGET_ID, iamWidgetId) }
         val intent = Intent().apply { putExtras(extra) }
         justRun { context.startActivity(any()) }
         every { IntentHandler.AppLaunchIntent.getAppLaunchIntent(any()) } returns intent
-        every { application.serviceLocator.inAppMessagesViewProvider.get() } returns iamView
+        every { reteno.serviceLocator.iamViewProvider.get() } returns iamView
 
         // When
         val activity = buildActivity(RetenoNotificationClickedActivity::class.java, intent).create().get()

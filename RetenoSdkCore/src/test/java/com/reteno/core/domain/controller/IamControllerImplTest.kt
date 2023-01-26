@@ -1,15 +1,14 @@
 package com.reteno.core.domain.controller
 
 import com.reteno.core.base.robolectric.BaseRobolectricTest
-import com.reteno.core.data.repository.InAppMessagesRepository
+import com.reteno.core.data.repository.IamRepository
 import com.reteno.core.domain.ResultDomain
-import com.reteno.core.domain.controller.InAppMessagesControllerImpl.Companion.TIMEOUT
+import com.reteno.core.domain.controller.IamControllerImpl.Companion.TIMEOUT
 import io.mockk.*
 import io.mockk.impl.annotations.RelaxedMockK
 import junit.framework.TestCase.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestCoroutineScheduler
@@ -25,7 +24,7 @@ import org.mockito.Mockito.*
 
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class InAppMessagesControllerImplTest : BaseRobolectricTest() {
+class IamControllerImplTest : BaseRobolectricTest() {
 
     // region constants ----------------------------------------------------------------------------
     companion object {
@@ -44,25 +43,25 @@ class InAppMessagesControllerImplTest : BaseRobolectricTest() {
 
     // region helper fields ------------------------------------------------------------------------
     @RelaxedMockK
-    private lateinit var inAppMessagesRepository: InAppMessagesRepository
+    private lateinit var iamRepository: IamRepository
 
     private val scheduler = TestCoroutineScheduler()
     private val dispatcher = StandardTestDispatcher(scheduler)
 
-    private lateinit var SUT: InAppMessagesControllerImpl
+    private lateinit var SUT: IamController
     // endregion helper fields ---------------------------------------------------------------------
 
     override fun before() {
         super.before()
         Dispatchers.setMain(dispatcher)
 
-        SUT = InAppMessagesControllerImpl(inAppMessagesRepository)
+        SUT = IamControllerImpl(iamRepository)
 
-        coEvery { inAppMessagesRepository.getBaseHtml() } coAnswers {
+        coEvery { iamRepository.getBaseHtml() } coAnswers {
             delay(DELAY_BASE_HTML)
             BASE_HTML_CONTENT
         }
-        coEvery { inAppMessagesRepository.getWidget(any()) } coAnswers {
+        coEvery { iamRepository.getWidget(any()) } coAnswers {
             delay(DELAY_WIDGET)
             WIDGET
         }
@@ -74,9 +73,9 @@ class InAppMessagesControllerImplTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun given_whenFetchInAppMessagesFullHtml_thenShouldLoadDataConcurrently() {
+    fun given_whenFetchIamFullHtml_thenShouldLoadDataConcurrently() {
         // When
-        SUT.fetchInAppMessagesFullHtml(WIDGET_ID)
+        SUT.fetchIamFullHtml(WIDGET_ID)
         scheduler.advanceUntilIdle()
 
         // Then
@@ -84,12 +83,12 @@ class InAppMessagesControllerImplTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun given_whenFetchInAppMessagesFullHtml_thenFullHtmlFlowChangesToSuccess() {
+    fun given_whenFetchIamFullHtml_thenFullHtmlFlowChangesToSuccess() {
         // Given
         assertEquals(ResultDomain.Loading, SUT.fullHtmlStateFlow.value)
 
         // When
-        SUT.fetchInAppMessagesFullHtml(WIDGET_ID)
+        SUT.fetchIamFullHtml(WIDGET_ID)
 
         // Then
         scheduler.advanceTimeBy(DELAY_BASE_HTML)
@@ -102,8 +101,8 @@ class InAppMessagesControllerImplTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun given_whenFetchInAppMessagesFullHtmlTimeoutReached_thenFullHtmlFlowChangesToError() {
-        coEvery { inAppMessagesRepository.getBaseHtml() } coAnswers {
+    fun given_whenFetchIamFullHtmlTimeoutReached_thenFullHtmlFlowChangesToError() {
+        coEvery { iamRepository.getBaseHtml() } coAnswers {
             delay(TIMEOUT)
             BASE_HTML_CONTENT
         }
@@ -112,7 +111,7 @@ class InAppMessagesControllerImplTest : BaseRobolectricTest() {
         assertEquals(ResultDomain.Loading, SUT.fullHtmlStateFlow.value)
 
         // When
-        SUT.fetchInAppMessagesFullHtml(WIDGET_ID)
+        SUT.fetchIamFullHtml(WIDGET_ID)
 
         // Then
         scheduler.advanceTimeBy(TIMEOUT)
@@ -132,7 +131,7 @@ class InAppMessagesControllerImplTest : BaseRobolectricTest() {
         assertEquals(ResultDomain.Loading, SUT.fullHtmlStateFlow.value)
 
         // When
-        SUT.fetchInAppMessagesFullHtml(WIDGET_ID)
+        SUT.fetchIamFullHtml(WIDGET_ID)
         scheduler.advanceTimeBy(DELAY_BASE_HTML)
 
         // Then

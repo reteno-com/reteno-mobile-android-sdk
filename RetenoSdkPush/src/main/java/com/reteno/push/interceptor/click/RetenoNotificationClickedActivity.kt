@@ -29,8 +29,8 @@ class RetenoNotificationClickedActivity : Activity() {
     private val scheduleController by lazy {
         reteno.serviceLocator.scheduleControllerProvider.get()
     }
-    private val inAppMessagesView by lazy {
-        reteno.serviceLocator.inAppMessagesViewProvider.get()
+    private val iamView by lazy {
+        reteno.serviceLocator.iamViewProvider.get()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -101,18 +101,18 @@ class RetenoNotificationClickedActivity : Activity() {
         if (intent == null || launchIntent == null) {
             return
         }
-        intent.extras?.let(::checkInAppMessage)
+        intent.extras?.let(::checkIam)
 
         intent.component = launchIntent.component
         this.startActivity(intent)
         finish()
     }
 
-    private fun checkInAppMessage(bundle: Bundle) {
-        /*@formatter:off*/ Logger.i(TAG, "checkInAppMessage(): ", "bundle = [", bundle, "]")
+    private fun checkIam(bundle: Bundle) {
+        /*@formatter:off*/ Logger.i(TAG, "checkIam(): ", "bundle = [", bundle, "]")
         /*@formatter:on*/
-        val widgetId = bundle.getString(Constants.KEY_ES_INAPP_WIDGET_ID)
-        widgetId?.let(inAppMessagesView::initialize)
+        val widgetId = bundle.getString(Constants.KEY_ES_IAM_WIDGET_ID)
+        widgetId?.let(iamView::initialize)
     }
 
     companion object {

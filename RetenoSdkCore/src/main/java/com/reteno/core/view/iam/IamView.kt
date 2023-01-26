@@ -1,8 +1,8 @@
-package com.reteno.core.view.inapp
+package com.reteno.core.view.iam
 
 import android.app.Activity
 
-interface InAppMessagesView {
+interface IamView {
 
     fun initialize(widgetId: String)
 

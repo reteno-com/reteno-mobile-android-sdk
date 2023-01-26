@@ -1,11 +1,14 @@
 package com.reteno.core.domain.controller
 
 import com.reteno.core.domain.ResultDomain
+import com.reteno.core.features.iam.IamJsEvent
 import kotlinx.coroutines.flow.StateFlow
 
-internal interface InAppMessagesController {
+internal interface IamController {
 
-    fun fetchInAppMessagesFullHtml(widgetId: String)
+    fun fetchIamFullHtml(widgetId: String)
+
+    fun widgetInitFailed(jsEvent: IamJsEvent)
 
     fun reset()
 

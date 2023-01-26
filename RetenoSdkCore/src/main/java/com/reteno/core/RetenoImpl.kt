@@ -17,7 +17,7 @@ import com.reteno.core.util.Constants.BROADCAST_ACTION_RETENO_APP_RESUME
 import com.reteno.core.util.Logger
 import com.reteno.core.util.isOsVersionSupported
 import com.reteno.core.util.queryBroadcastReceivers
-import com.reteno.core.view.inapp.InAppMessagesView
+import com.reteno.core.view.iam.IamView
 
 
 class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleCallbacks, Reteno {
@@ -29,17 +29,16 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
     }
 
     val serviceLocator: ServiceLocator = ServiceLocator(application, accessKey)
-
     private val activityHelper: RetenoActivityHelper by lazy { serviceLocator.retenoActivityHelperProvider.get() }
 
+    private val screenTrackingController: ScreenTrackingController by lazy { serviceLocator.screenTrackingControllerProvider.get() }
     private val contactController by lazy { serviceLocator.contactControllerProvider.get() }
     private val scheduleController by lazy { serviceLocator.scheduleControllerProvider.get() }
     private val eventController by lazy { serviceLocator.eventsControllerProvider.get() }
-    private val screenTrackingController: ScreenTrackingController by lazy { serviceLocator.screenTrackingControllerProvider.get() }
 
     override val appInbox by lazy { serviceLocator.appInboxProvider.get() }
     override val recommendation by lazy { serviceLocator.recommendationProvider.get() }
-    private val inAppMessagesView: InAppMessagesView by lazy { serviceLocator.inAppMessagesViewProvider.get() }
+    private val iamView: IamView by lazy { serviceLocator.iamViewProvider.get() }
 
     init {
         if (isOsVersionSupported()) {
@@ -79,7 +78,7 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
             contactController.checkIfDeviceRegistered()
             sendAppResumeBroadcast()
             startPushScheduler()
-            inAppMessagesView.resume(activity)
+            iamView.resume(activity)
         } catch (ex: Throwable) {
             /*@formatter:off*/ Logger.e(TAG, "resume(): ", ex)
             /*@formatter:on*/
@@ -105,7 +104,7 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
         /*@formatter:on*/
         try {
             stopPushScheduler()
-            inAppMessagesView.pause(activity)
+            iamView.pause(activity)
         } catch (ex: Throwable) {
             /*@formatter:off*/ Logger.e(TAG, "pause(): ", ex)
             /*@formatter:on*/

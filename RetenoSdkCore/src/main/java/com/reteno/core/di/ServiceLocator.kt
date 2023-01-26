@@ -17,7 +17,7 @@ import com.reteno.core.di.provider.controller.AppInboxControllerProvider
 import com.reteno.core.di.provider.controller.ContactControllerProvider
 import com.reteno.core.di.provider.controller.DeeplinkControllerProvider
 import com.reteno.core.di.provider.controller.EventsControllerProvider
-import com.reteno.core.di.provider.controller.InAppMessagesControllerProvider
+import com.reteno.core.di.provider.controller.IamControllerProvider
 import com.reteno.core.di.provider.controller.InteractionControllerProvider
 import com.reteno.core.di.provider.controller.RecommendationControllerProvider
 import com.reteno.core.di.provider.controller.ScheduleControllerProvider
@@ -32,7 +32,7 @@ import com.reteno.core.di.provider.database.RetenoDatabaseManagerRecomEventsProv
 import com.reteno.core.di.provider.database.RetenoDatabaseManagerUserProvider
 import com.reteno.core.di.provider.database.RetenoDatabaseManagerWrappedLinkProvider
 import com.reteno.core.di.provider.features.AppInboxProvider
-import com.reteno.core.di.provider.features.InAppMessagesViewProvider
+import com.reteno.core.di.provider.features.IamViewProvider
 import com.reteno.core.di.provider.features.RecommendationProvider
 import com.reteno.core.di.provider.network.ApiClientProvider
 import com.reteno.core.di.provider.network.RestClientProvider
@@ -41,7 +41,7 @@ import com.reteno.core.di.provider.repository.ConfigRepositoryProvider
 import com.reteno.core.di.provider.repository.ContactRepositoryProvider
 import com.reteno.core.di.provider.repository.DeeplinkRepositoryProvider
 import com.reteno.core.di.provider.repository.EventsRepositoryProvider
-import com.reteno.core.di.provider.repository.InAppMessagesRepositoryProvider
+import com.reteno.core.di.provider.repository.IamRepositoryProvider
 import com.reteno.core.di.provider.repository.InteractionRepositoryProvider
 import com.reteno.core.di.provider.repository.RecommendationRepositoryProvider
 import com.reteno.core.domain.controller.ContactController
@@ -49,7 +49,7 @@ import com.reteno.core.domain.controller.DeeplinkController
 import com.reteno.core.domain.controller.InteractionController
 import com.reteno.core.domain.controller.ScheduleController
 import com.reteno.core.lifecycle.RetenoActivityHelper
-import com.reteno.core.view.inapp.InAppMessagesView
+import com.reteno.core.view.iam.IamView
 
 class ServiceLocator(context: Context, accessKey: String) {
 
@@ -151,8 +151,8 @@ class ServiceLocator(context: Context, accessKey: String) {
     private val recommendationRepositoryProvider: RecommendationRepositoryProvider =
         RecommendationRepositoryProvider(retenoDatabaseManagerRecomEventsProvider, apiClientProvider)
 
-    private val inAppMessagesRepositoryProvider: InAppMessagesRepositoryProvider =
-        InAppMessagesRepositoryProvider(apiClientProvider, sharedPrefsManagerProvider)
+    private val iamRepositoryProvider: IamRepositoryProvider =
+        IamRepositoryProvider(apiClientProvider, sharedPrefsManagerProvider)
 
     /** Controller **/
     private val deeplinkControllerProviderInternal: DeeplinkControllerProvider =
@@ -196,8 +196,9 @@ class ServiceLocator(context: Context, accessKey: String) {
     internal val screenTrackingControllerProvider: ScreenTrackingControllerProvider =
         ScreenTrackingControllerProvider(retenoActivityHelperProviderInternal, eventsControllerProvider)
 
-    private val inAppMessagesControllerProvider: InAppMessagesControllerProvider =
-        InAppMessagesControllerProvider(inAppMessagesRepositoryProvider)
+    private val iamControllerProvider: IamControllerProvider =
+        IamControllerProvider(iamRepositoryProvider)
+
 
     /** Controller dependent **/
     internal val appInboxProvider: AppInboxProvider = AppInboxProvider(appInboxControllerProvider)
@@ -205,9 +206,9 @@ class ServiceLocator(context: Context, accessKey: String) {
     internal val recommendationProvider: RecommendationProvider =
         RecommendationProvider(recommendationControllerProvider)
 
-    private val inAppMessagesViewProviderInternal: InAppMessagesViewProvider =
-        InAppMessagesViewProvider(retenoActivityHelperProviderInternal, inAppMessagesControllerProvider)
+    private val iamViewProviderInternal: IamViewProvider =
+        IamViewProvider(retenoActivityHelperProviderInternal, iamControllerProvider)
 
-    val inAppMessagesViewProvider: ProviderWeakReference<InAppMessagesView> =
-        inAppMessagesViewProviderInternal
+    val iamViewProvider: ProviderWeakReference<IamView> =
+        iamViewProviderInternal
 }
