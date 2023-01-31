@@ -5,7 +5,7 @@ import kotlinx.coroutines.flow.StateFlow
 
 internal interface InAppMessagesController {
 
-    suspend fun fetchInAppMessagesFullHtml(widgetId: String)
+    fun fetchInAppMessagesFullHtml(widgetId: String)
 
     fun reset()
 

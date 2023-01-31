@@ -31,7 +31,6 @@ import com.reteno.core.lifecycle.RetenoActivityHelper
 import com.reteno.core.util.Logger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
@@ -42,7 +41,6 @@ internal class InAppMessagesViewImpl(
     private val inAppMessagesController: InAppMessagesController
 ) : InAppMessagesView {
 
-    private val inAppFetchScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private val inAppShowScope = CoroutineScope(Dispatchers.Main.immediate)
 
     private val isViewShown = AtomicBoolean(false)
@@ -100,10 +98,7 @@ internal class InAppMessagesViewImpl(
         /*@formatter:on*/
         try {
             teardown()
-            inAppFetchScope.coroutineContext.cancelChildren()
-            inAppFetchScope.launch {
-                inAppMessagesController.fetchInAppMessagesFullHtml(widgetId)
-            }
+            inAppMessagesController.fetchInAppMessagesFullHtml(widgetId)
         } catch (e: Exception) {
             /*@formatter:off*/ Logger.e(TAG, "initialize(): ", e)
             /*@formatter:on*/

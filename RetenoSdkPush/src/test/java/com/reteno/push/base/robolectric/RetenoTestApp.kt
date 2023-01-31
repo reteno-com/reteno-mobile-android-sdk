@@ -16,6 +16,8 @@ import io.mockk.*
 
 class RetenoTestApp : Application(), RetenoApplication {
     private lateinit var retenoInstance: Reteno
+    lateinit var serviceLocator: ServiceLocator
+        private set
 
     init {
         mockLogger()
@@ -33,7 +35,8 @@ class RetenoTestApp : Application(), RetenoApplication {
         Settings.Secure.putString(contentResolver, Settings.Secure.ANDROID_ID, Constants.DEVICE_ID_ANDROID)
 
         retenoInstance = spyk(RetenoImpl(this, ""))
-        every { retenoInstance.getProperty("serviceLocator") } returns spyk(ServiceLocator(this, ""))
+        serviceLocator = spyk(ServiceLocator(this, ""))
+        every { retenoInstance.getProperty("serviceLocator") } returns serviceLocator
     }
 
     override fun getRetenoInstance(): Reteno {

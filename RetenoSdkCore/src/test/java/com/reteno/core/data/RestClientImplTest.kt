@@ -257,6 +257,7 @@ class RestClientImplTest : BaseUnitTest() {
         assertEquals(HttpURLConnection.HTTP_OK, httpURLConnection.responseCode)
         verify { httpURLConnection.inputStream }
         verify(inverse = true) { httpURLConnection.errorStream }
+        verify { spyCallback.onSuccess(any(), eq(TEST_RESPONSE)) }
         verify { spyCallback.onSuccess(eq(TEST_RESPONSE)) }
         verify(inverse = true) { spyCallback.onFailure(any(), any(), any()) }
         verify { httpURLConnection.disconnect() }
@@ -281,6 +282,7 @@ class RestClientImplTest : BaseUnitTest() {
         assertEquals(HttpURLConnection.HTTP_MOVED_PERM, httpURLConnection.responseCode)
         verify { httpURLConnection.inputStream }
         verify(inverse = true) { httpURLConnection.errorStream }
+        verify { spyCallback.onSuccess(any(), eq(TEST_RESPONSE)) }
         verify { spyCallback.onSuccess(eq(TEST_RESPONSE)) }
         verify(inverse = true) { spyCallback.onFailure(any(), any(), any()) }
         verify { httpURLConnection.disconnect() }

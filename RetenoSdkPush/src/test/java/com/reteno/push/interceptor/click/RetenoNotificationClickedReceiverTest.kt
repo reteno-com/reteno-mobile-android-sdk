@@ -9,6 +9,7 @@ import com.reteno.core.domain.controller.DeeplinkController
 import com.reteno.core.domain.controller.InteractionController
 import com.reteno.core.domain.controller.ScheduleController
 import com.reteno.core.domain.model.interaction.InteractionStatus
+import com.reteno.core.view.inapp.InAppMessagesView
 import com.reteno.push.Constants
 import com.reteno.push.Constants.KEY_ES_LINK_UNWRAPPED
 import com.reteno.push.Constants.KEY_ES_LINK_WRAPPED
@@ -212,5 +213,26 @@ class RetenoNotificationClickedReceiverTest : BaseRobolectricTest() {
             assertTrue(extras?.containsKey(customDataKey) ?: false)
             assertEquals(customDataValue, extras?.getString(customDataKey))
         }
+    }
+
+    @Test
+    fun givenPushWithIam_whenNotificationClicked_thenIamViewInitializeCalled() {
+        // Given
+        val iamView = mockk<InAppMessagesView>(relaxed = true)
+        val iamWidgetId = "123"
+
+        val extra = Bundle().apply { putString(Constants.KEY_ES_INAPP_WIDGET_ID, iamWidgetId) }
+        val intent = Intent().apply { putExtras(extra) }
+        justRun { context.startActivity(any()) }
+        every { IntentHandler.AppLaunchIntent.getAppLaunchIntent(any()) } returns intent
+        every { application.serviceLocator.inAppMessagesViewProvider.get() } returns iamView
+
+        justRun { context.startActivity(any()) }
+
+        // When
+        receiver!!.onReceive(context, intent)
+
+        // Then
+        verify { iamView.initialize(iamWidgetId) }
     }
 }

@@ -1,5 +1,6 @@
 package com.reteno.core
 
+import android.app.Activity
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.ContextWrapper
@@ -27,6 +28,7 @@ import com.reteno.core.lifecycle.ScreenTrackingTrigger
 import com.reteno.core.util.Constants
 import com.reteno.core.util.Logger
 import com.reteno.core.util.queryBroadcastReceivers
+import com.reteno.core.view.inapp.InAppMessagesView
 import io.mockk.every
 import io.mockk.impl.annotations.RelaxedMockK
 import io.mockk.mockk
@@ -111,6 +113,9 @@ class RetenoImplTest : BaseRobolectricTest() {
     @RelaxedMockK
     private lateinit var inbox: AppInboxImpl
 
+    @RelaxedMockK
+    private lateinit var iamView: InAppMessagesView
+
     private val retenoImpl by lazy { RetenoImpl(application, "") }
 
     private var contextWrapper: ContextWrapper? = null
@@ -123,6 +128,7 @@ class RetenoImplTest : BaseRobolectricTest() {
         mockkConstructor(ServiceLocator::class)
         every { anyConstructed<ServiceLocator>().contactControllerProvider.get() } returns contactController
         every { anyConstructed<ServiceLocator>().scheduleControllerProvider.get() } returns scheduleController
+        every { anyConstructed<ServiceLocator>().inAppMessagesViewProvider.get() } returns iamView
         every { anyConstructed<ServiceLocator>().eventsControllerProvider.get() } returns eventController
         every { anyConstructed<ServiceLocator>().appInboxProvider.get() } returns inbox
         every { anyConstructed<ServiceLocator>().screenTrackingControllerProvider.get() } returns screenTrackingController
@@ -409,11 +415,13 @@ class RetenoImplTest : BaseRobolectricTest() {
     @Test
     fun whenResumeApp_thenStartScheduler() {
         // When
-        retenoImpl.resume(mockk())
+        val activity: Activity = mockk()
+        retenoImpl.resume(activity)
 
         // Then
-        verify(exactly = 1) { scheduleController.startScheduler() }
+        verify { scheduleController.startScheduler() }
         verify(exactly = 1) { contactController.checkIfDeviceRegistered() }
+        verify { iamView.resume(activity) }
     }
 
     @Test
@@ -452,10 +460,12 @@ class RetenoImplTest : BaseRobolectricTest() {
     @Test
     fun whenPauseApp_thenStopScheduler() {
         // When
-        retenoImpl.pause(mockk())
+        val activity: Activity = mockk()
+        retenoImpl.pause(activity)
 
         // Then
         verify { scheduleController.stopScheduler() }
+        verify { iamView.pause(activity) }
     }
 
     @Test

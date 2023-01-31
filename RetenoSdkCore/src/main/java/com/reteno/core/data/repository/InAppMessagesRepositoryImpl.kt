@@ -21,7 +21,6 @@ internal class InAppMessagesRepositoryImpl(
     override suspend fun getBaseHtml(): String {
         /*@formatter:off*/ Logger.i(TAG, "fetchBaseHtml(): ", "") 
         /*@formatter:on*/
-
         val versionRemote = getBaseHtmlVersionRemote() ?: BASE_HTML_VERSION_DEFAULT
         val versionLocal = sharedPrefsManager.getInAppMessagesBaseHtmlVersion() ?: BASE_HTML_VERSION_DEFAULT
 
