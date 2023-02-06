@@ -59,6 +59,9 @@ class ContactRepositoryImplTest : BaseRobolectricTest() {
         private val USER_GROUP_NAMES_INCLUDE = listOf("add1")
         private val USER_GROUP_NAMES_EXCLUDE = listOf("remove1")
 
+        private const val SERVER_ERROR_NON_REPEATABLE = 500
+        private const val SERVER_ERROR_REPEATABLE = 400
+
         @JvmStatic
         @BeforeClass
         fun beforeClass() {
@@ -197,7 +200,7 @@ class ContactRepositoryImplTest : BaseRobolectricTest() {
         every { databaseManagerDevice.getDevices(any()) } returns listOf(deviceDataDb)
         every { apiClient.post(url = any(), jsonBody = any(), responseHandler = any()) } answers {
             val callback = thirdArg<ResponseCallback>()
-            callback.onFailure(500, null, null)
+            callback.onFailure(SERVER_ERROR_NON_REPEATABLE, null, null)
         }
 
         // When
@@ -217,7 +220,7 @@ class ContactRepositoryImplTest : BaseRobolectricTest() {
         every { databaseManagerDevice.deleteDevice(deviceDataDb) } returns true
         every { apiClient.post(url = any(), jsonBody = any(), responseHandler = any()) } answers {
             val callback = thirdArg<ResponseCallback>()
-            callback.onFailure(400, null, null)
+            callback.onFailure(SERVER_ERROR_REPEATABLE, null, null)
         }
 
         // When
@@ -371,7 +374,7 @@ class ContactRepositoryImplTest : BaseRobolectricTest() {
         every { databaseManagerUser.getUsers(any()) } returns listOf(userData)
         every { apiClient.post(url = any(), jsonBody = any(), responseHandler = any()) } answers {
             val callback = thirdArg<ResponseCallback>()
-            callback.onFailure(500, null, null)
+            callback.onFailure(SERVER_ERROR_NON_REPEATABLE, null, null)
         }
 
         // When
@@ -390,7 +393,7 @@ class ContactRepositoryImplTest : BaseRobolectricTest() {
         every { databaseManagerUser.deleteUser(userData) } returns true
         every { apiClient.post(url = any(), jsonBody = any(), responseHandler = any()) } answers {
             val callback = thirdArg<ResponseCallback>()
-            callback.onFailure(400, null, null)
+            callback.onFailure(SERVER_ERROR_REPEATABLE, null, null)
         }
 
         // When

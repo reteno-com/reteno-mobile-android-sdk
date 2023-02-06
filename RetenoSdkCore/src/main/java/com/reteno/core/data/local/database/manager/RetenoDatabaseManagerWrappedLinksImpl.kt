@@ -16,6 +16,8 @@ internal class RetenoDatabaseManagerWrappedLinksImpl(private val database: Reten
     private val contentValues = ContentValues()
 
     override fun insertWrappedLink(url: String) {
+        /*@formatter:off*/ Logger.i(TAG, "insertWrappedLink(): ", "url = [", url, "]")
+        /*@formatter:on*/
         contentValues.put(WrappedLinkSchema.COLUMN_URL, url)
         database.insert(table = WrappedLinkSchema.TABLE_NAME_WRAPPED_LINK, contentValues = contentValues)
         contentValues.clear()
@@ -73,6 +75,8 @@ internal class RetenoDatabaseManagerWrappedLinksImpl(private val database: Reten
     override fun getWrappedLinksCount(): Long = database.getRowCount(WrappedLinkSchema.TABLE_NAME_WRAPPED_LINK)
 
     override fun deleteWrappedLinks(count: Int, oldest: Boolean) {
+        /*@formatter:off*/ Logger.i(TAG, "deleteWrappedLinks(): ", "count = [", count, "], oldest = [", oldest, "]")
+        /*@formatter:on*/
         val order = if (oldest) "ASC" else "DESC"
         database.delete(
             table = WrappedLinkSchema.TABLE_NAME_WRAPPED_LINK,
@@ -81,6 +85,8 @@ internal class RetenoDatabaseManagerWrappedLinksImpl(private val database: Reten
     }
 
     override fun deleteWrappedLinksByTime(outdatedTime: String): Int {
+        /*@formatter:off*/ Logger.i(TAG, "deleteWrappedLinksByTime(): ", "outdatedTime = [", outdatedTime, "]")
+        /*@formatter:on*/
         return database.delete(
             table = WrappedLinkSchema.TABLE_NAME_WRAPPED_LINK,
             whereClause = "${DbSchema.COLUMN_TIMESTAMP} < '$outdatedTime'"

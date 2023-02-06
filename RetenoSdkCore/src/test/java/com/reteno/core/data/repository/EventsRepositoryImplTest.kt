@@ -37,6 +37,9 @@ class EventsRepositoryImplTest : BaseRobolectricTest() {
         private const val OCCURRED = "2022-11-11T20:22:21Z"
         private const val ECOM_EVENT_KEY = RemoteConstants.EcomEvent.EXTERNAL_ORDER_ID
         private const val ECOM_EVENT_EXTERNAL_ORDER_ID = "external_order_id"
+
+        private const val SERVER_ERROR_NON_REPEATABLE = 500
+        private const val SERVER_ERROR_REPEATABLE = 400
     }
     // endregion constants -------------------------------------------------------------------------
 
@@ -147,7 +150,7 @@ class EventsRepositoryImplTest : BaseRobolectricTest() {
         every { databaseManagerEvents.getEvents(any()) } returns listOf(eventDb)
         every { apiClient.post(url = any(), jsonBody = any(), responseHandler = any()) } answers {
             val callback = thirdArg<ResponseCallback>()
-            callback.onFailure(500, null, null)
+            callback.onFailure(SERVER_ERROR_NON_REPEATABLE, null, null)
         }
 
         // When
@@ -169,7 +172,7 @@ class EventsRepositoryImplTest : BaseRobolectricTest() {
         )
         every { apiClient.post(url = any(), jsonBody = any(), responseHandler = any()) } answers {
             val callback = thirdArg<ResponseCallback>()
-            callback.onFailure(400, null, null)
+            callback.onFailure(SERVER_ERROR_REPEATABLE, null, null)
         }
 
         // When
