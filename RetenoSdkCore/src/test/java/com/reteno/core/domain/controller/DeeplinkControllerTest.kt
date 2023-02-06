@@ -29,11 +29,11 @@ class DeeplinkControllerTest : BaseUnitTest() {
     }
 
     @Test
-    fun givenWrappedDeeplink_whenTriggerWrappedLink_thenWrappedDeeplinkClickedEventSentToRepository() {
+    fun givenWrappedLink_whenDeeplinkClicked_thenSaveWrappedLinkInRepository() {
         // When
-        deeplinkController.triggerDeeplinkClicked(DEEPLINK_WRAPPED, DEEPLINK_UNWRAPPED)
+        deeplinkController.deeplinkClicked(DEEPLINK_WRAPPED, DEEPLINK_UNWRAPPED)
 
         // Then
-        verify(exactly = 1) { deeplinkRepository.triggerWrappedLinkClicked(DEEPLINK_WRAPPED) }
+        verify(exactly = 1) { deeplinkRepository.saveWrappedLink(DEEPLINK_WRAPPED) }
     }
 }

@@ -71,6 +71,7 @@ internal class RetenoDatabaseImpl(private val context: Context) : RetenoDatabase
         db.execSQL(AppInboxSchema.SQL_CREATE_TABLE)
         db.execSQL(RecomEventsSchema.SQL_CREATE_TABLE)
         db.execSQL(RecomEventsSchema.RecomEventSchema.SQL_CREATE_TABLE)
+        db.execSQL(WrappedLinkSchema.SQL_CREATE_TABLE)
     }
 
     override fun query(

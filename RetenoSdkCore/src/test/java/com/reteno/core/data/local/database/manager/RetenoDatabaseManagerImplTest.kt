@@ -24,6 +24,8 @@ class RetenoDatabaseManagerImplTest : BaseRobolectricTest() {
     private lateinit var appInboxManager: RetenoDatabaseManagerAppInbox
     @RelaxedMockK
     private lateinit var recomEventsManager: RetenoDatabaseManagerRecomEvents
+    @RelaxedMockK
+    private lateinit var wrappedLinksManager: RetenoDatabaseManagerWrappedLink
 
     private lateinit var SUT: RetenoDatabaseManager
     // endregion helper fields ---------------------------------------------------------------------
@@ -36,7 +38,8 @@ class RetenoDatabaseManagerImplTest : BaseRobolectricTest() {
             interactionManager,
             eventsManager,
             appInboxManager,
-            recomEventsManager
+            recomEventsManager,
+            wrappedLinksManager
         )
     }
 
@@ -49,6 +52,7 @@ class RetenoDatabaseManagerImplTest : BaseRobolectricTest() {
         every { eventsManager.getEventsCount() } returns 0
         every { appInboxManager.getAppInboxMessagesCount() } returns 0
         every { recomEventsManager.getRecomEventsCount() } returns 0
+        every { wrappedLinksManager.getWrappedLinksCount() } returns 0
 
         // When
         val isDatabaseEmpty = SUT.isDatabaseEmpty()
@@ -66,6 +70,7 @@ class RetenoDatabaseManagerImplTest : BaseRobolectricTest() {
         every { eventsManager.getEventsCount() } returns 0
         every { appInboxManager.getAppInboxMessagesCount() } returns 0
         every { recomEventsManager.getRecomEventsCount() } returns 0
+        every { wrappedLinksManager.getWrappedLinksCount() } returns 0
 
         // When
         val isDatabaseEmpty = SUT.isDatabaseEmpty()
@@ -83,6 +88,7 @@ class RetenoDatabaseManagerImplTest : BaseRobolectricTest() {
         every { eventsManager.getEventsCount() } returns 0
         every { appInboxManager.getAppInboxMessagesCount() } returns 0
         every { recomEventsManager.getRecomEventsCount() } returns 0
+        every { wrappedLinksManager.getWrappedLinksCount() } returns 0
 
         // When
         val isDatabaseEmpty = SUT.isDatabaseEmpty()
@@ -100,6 +106,7 @@ class RetenoDatabaseManagerImplTest : BaseRobolectricTest() {
         every { eventsManager.getEventsCount() } returns 0
         every { appInboxManager.getAppInboxMessagesCount() } returns 0
         every { recomEventsManager.getRecomEventsCount() } returns 0
+        every { wrappedLinksManager.getWrappedLinksCount() } returns 0
 
         // When
         val isDatabaseEmpty = SUT.isDatabaseEmpty()
@@ -117,6 +124,7 @@ class RetenoDatabaseManagerImplTest : BaseRobolectricTest() {
         every { eventsManager.getEventsCount() } returns 5
         every { appInboxManager.getAppInboxMessagesCount() } returns 0
         every { recomEventsManager.getRecomEventsCount() } returns 0
+        every { wrappedLinksManager.getWrappedLinksCount() } returns 0
 
         // When
         val isDatabaseEmpty = SUT.isDatabaseEmpty()
@@ -134,6 +142,7 @@ class RetenoDatabaseManagerImplTest : BaseRobolectricTest() {
         every { eventsManager.getEventsCount() } returns 0
         every { appInboxManager.getAppInboxMessagesCount() } returns 6
         every { recomEventsManager.getRecomEventsCount() } returns 0
+        every { wrappedLinksManager.getWrappedLinksCount() } returns 0
 
         // When
         val isDatabaseEmpty = SUT.isDatabaseEmpty()
@@ -151,6 +160,25 @@ class RetenoDatabaseManagerImplTest : BaseRobolectricTest() {
         every { eventsManager.getEventsCount() } returns 0
         every { appInboxManager.getAppInboxMessagesCount() } returns 0
         every { recomEventsManager.getRecomEventsCount() } returns 9
+        every { wrappedLinksManager.getWrappedLinksCount() } returns 0
+
+        // When
+        val isDatabaseEmpty = SUT.isDatabaseEmpty()
+
+        // Then
+        assertFalse(isDatabaseEmpty)
+    }
+
+    @Test
+    fun givenWrappedLinksPresent_whenIsDatabaseEmpty_thenFalseReturned() {
+        // Given
+        every { deviceManager.getDeviceCount() } returns 0
+        every { userManager.getUserCount() } returns 0
+        every { interactionManager.getInteractionCount() } returns 0
+        every { eventsManager.getEventsCount() } returns 0
+        every { appInboxManager.getAppInboxMessagesCount() } returns 0
+        every { recomEventsManager.getRecomEventsCount() } returns 0
+        every { wrappedLinksManager.getWrappedLinksCount() } returns 11
 
         // When
         val isDatabaseEmpty = SUT.isDatabaseEmpty()

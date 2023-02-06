@@ -1,26 +1,49 @@
 package com.reteno.core.data.repository
 
+import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerWrappedLink
 import com.reteno.core.data.remote.OperationQueue
+import com.reteno.core.data.remote.PushOperationQueue
 import com.reteno.core.data.remote.api.ApiClient
 import com.reteno.core.data.remote.api.ApiContract
 import com.reteno.core.domain.ResponseCallback
 import com.reteno.core.util.Logger
+import com.reteno.core.util.Util.formatToRemote
+import com.reteno.core.util.isNonRepeatableError
+import java.time.ZonedDateTime
 
-internal class DeeplinkRepositoryImpl(private val apiClient: ApiClient) :
+internal class DeeplinkRepositoryImpl(
+    private val apiClient: ApiClient,
+    private val databaseManager: RetenoDatabaseManagerWrappedLink
+) :
     DeeplinkRepository {
 
-    override fun triggerWrappedLinkClicked(wrappedLink: String) {
-        /*@formatter:off*/ Logger.i(TAG, "triggerWrappedLinkClicked(): ", "wrappedLink = [" , wrappedLink , "]")
+    override fun saveWrappedLink(wrappedLink: String) {
+        /*@formatter:off*/ Logger.i(TAG, "saveWrappedLink(): ", "wrappedLink = [", wrappedLink, "]")
         /*@formatter:on*/
-        if (wrappedLink.isEmpty()) return
+        if (wrappedLink.isBlank()) return
 
-        OperationQueue.addParallelOperation {
+        OperationQueue.addOperation {
+            databaseManager.insertWrappedLink(wrappedLink)
+        }
+    }
+
+    override fun pushWrappedLink() {
+        OperationQueue.addOperation {
+            val wrappedLink = databaseManager.getWrappedLinks(1).firstOrNull() ?: kotlin.run {
+                PushOperationQueue.nextOperation()
+                return@addOperation
+            }
+            /*@formatter:off*/ Logger.i(TAG, "pushWrappedLink(): ", "url = [" , wrappedLink , "]")
+            /*@formatter:on*/
+
             try {
-                apiClient.get(ApiContract.Custom(wrappedLink), null,
+                apiClient.head(ApiContract.Custom(wrappedLink), null,
                     object : ResponseCallback {
                         override fun onSuccess(response: String) {
                             /*@formatter:off*/ Logger.i(TAG, "onSuccess(): linkClicked = [", wrappedLink, "] response = [" , response , "]")
                             /*@formatter:on*/
+                            databaseManager.deleteWrappedLinks(1)
+                            pushWrappedLink()
                         }
 
                         override fun onFailure(
@@ -30,10 +53,29 @@ internal class DeeplinkRepositoryImpl(private val apiClient: ApiClient) :
                         ) {
                             /*@formatter:off*/ Logger.i(TAG, "onFailure(): linkClicked = [", wrappedLink, "] statusCode = [" , statusCode , "], response = [" , response , "], throwable = [" , throwable , "]")
                             /*@formatter:on*/
+                            if (isNonRepeatableError(statusCode)) {
+                                databaseManager.deleteWrappedLinks(1)
+                                pushWrappedLink()
+                            }
+                            PushOperationQueue.removeAllOperations()
                         }
                     })
             } catch (t: Exception) {
                 t.printStackTrace()
+            }
+        }
+    }
+
+    override fun clearOldWrappedLinks(outdatedTime: ZonedDateTime) {
+        /*@formatter:off*/ Logger.i(TAG, "clearOldWrappedLinks(): ", "outdatedTime = [", outdatedTime, "]")
+        /*@formatter:on*/
+        OperationQueue.addOperation {
+            val removedWrappedLinksCount = databaseManager.deleteWrappedLinksByTime(outdatedTime.formatToRemote())
+            /*@formatter:off*/ Logger.i(TAG, "clearOldWrappedLinks(): ", "removedWrappedLinksCount = [" , removedWrappedLinksCount , "]")
+            /*@formatter:on*/
+            if (removedWrappedLinksCount > 0) {
+                val msg = "Outdated WrappedLinks: - $removedWrappedLinksCount"
+                Logger.captureEvent(msg)
             }
         }
     }

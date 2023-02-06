@@ -64,7 +64,7 @@ class RetenoNotificationClickedActivity : Activity() {
 
             IntentHandler.getDeepLinkIntent(bundle)?.let { deeplinkIntent ->
                 val (linkWrapped, linkUnwrapped) = Util.getLinkFromBundle(bundle)
-                deeplinkController.triggerDeeplinkClicked(linkWrapped, linkUnwrapped)
+                deeplinkController.deeplinkClicked(linkWrapped, linkUnwrapped)
                 launchDeeplink(deeplinkIntent)
             } ?: launchApp(intent)
         } ?: launchApp(intent)

@@ -85,7 +85,7 @@ internal class RestClientImpl(private val restConfig: RestConfig) :RestClient {
                     Logger.i(TAG, "makeRequest(): ", "response: ", response)
                     responseCallback.onSuccess(response)
                 }
-                301 -> {
+                301, 302 -> {
                     val response = urlConnection.inputStream.bufferedReader().use { it.readText() }
                     Logger.i(TAG, "makeRequest(): ", "response: ", response)
                     responseCallback.onSuccess(response)
