@@ -4,6 +4,7 @@ import com.reteno.core.base.robolectric.BaseRobolectricTest
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerInteraction
 import com.reteno.core.data.local.mappers.toDb
 import com.reteno.core.data.local.model.interaction.InteractionDb
+import com.reteno.core.data.local.model.interaction.InteractionStatusDb
 import com.reteno.core.data.remote.PushOperationQueue
 import com.reteno.core.data.remote.api.ApiClient
 import com.reteno.core.data.remote.api.ApiContract
@@ -167,28 +168,30 @@ class InteractionRepositoryImplTest : BaseRobolectricTest() {
     @Test
     fun noOutdatedInteraction_whenClearOldInteractions_thenSentNothing() {
         // Given
-        every { databaseManagerInteraction.deleteInteractionByTime(any()) } returns 0
+        every { databaseManagerInteraction.deleteInteractionByTime(any()) } returns emptyList()
 
         // When
         SUT.clearOldInteractions(ZonedDateTime.now())
 
         // Then
         verify(exactly = 1) { databaseManagerInteraction.deleteInteractionByTime(any()) }
-        verify(exactly = 0) { Logger.captureEvent(any()) }
+        verify(exactly = 0) { Logger.captureMessage(any()) }
     }
 
     @Test
     fun thereAreOutdatedInteraction_whenClearOldInteractions_thenSentCountDeleted() {
         // Given
-        val deletedInteractions = 2
+        val deletedInteractions = listOf<InteractionDb>(
+            InteractionDb("1", InteractionStatusDb.CLICKED, "occurred1", "token"),
+            InteractionDb("2", InteractionStatusDb.OPENED, "occurred2", "token")
+        )
         every { databaseManagerInteraction.deleteInteractionByTime(any()) } returns deletedInteractions
-        val expectedMsg = "Outdated Interactions: - $deletedInteractions"
 
         // When
         SUT.clearOldInteractions(ZonedDateTime.now())
 
         // Then
         verify(exactly = 1) { databaseManagerInteraction.deleteInteractionByTime(any()) }
-        verify(exactly = 1) { Logger.captureEvent(eq(expectedMsg)) }
+        verify(exactly = 2) { Logger.captureEvent(any()) }
     }
 }

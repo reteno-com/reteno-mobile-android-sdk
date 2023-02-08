@@ -7,5 +7,5 @@ interface RetenoDatabaseManagerInteraction {
     fun getInteractions(limit: Int? = null): List<InteractionDb>
     fun getInteractionCount(): Long
     fun deleteInteractions(count: Int, oldest: Boolean = true)
-    fun deleteInteractionByTime(outdatedTime: String): Int
+    fun deleteInteractionByTime(outdatedTime: String): List<InteractionDb>
 }

@@ -49,6 +49,7 @@ class RetenoTestApp : Application(), RetenoApplication {
         justRun { Logger.e(any(), any()) }
         justRun { Logger.e(any(), any(), any()) }
         justRun { Logger.captureException(any()) }
+        justRun { Logger.captureMessage(any()) }
         justRun { Logger.captureEvent(any()) }
     }
 }

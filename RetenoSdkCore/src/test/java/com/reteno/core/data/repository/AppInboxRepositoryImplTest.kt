@@ -234,7 +234,7 @@ class AppInboxRepositoryImplTest : BaseRobolectricTest() {
 
         // Then
         verify(exactly = 1) { databaseManagerAppInbox.deleteAppInboxMessagesByTime(any()) }
-        verify(exactly = 0) { Logger.captureEvent(any()) }
+        verify(exactly = 0) { Logger.captureMessage(any()) }
     }
 
     @Test
@@ -249,7 +249,7 @@ class AppInboxRepositoryImplTest : BaseRobolectricTest() {
 
         // Then
         verify(exactly = 1) { databaseManagerAppInbox.deleteAppInboxMessagesByTime(any()) }
-        verify(exactly = 1) { Logger.captureEvent(eq(expectedMsg)) }
+        verify(exactly = 1) { Logger.captureMessage(eq(expectedMsg)) }
     }
 
     @Test

@@ -25,7 +25,7 @@ internal class RetenoDatabaseManagerInteractionImpl(private val database: Reteno
     }
 
     override fun getInteractions(limit: Int?): List<InteractionDb> {
-        val interactionEvents: MutableList<InteractionDb> = mutableListOf()
+        val interactions: MutableList<InteractionDb> = mutableListOf()
 
         var cursor: Cursor? = null
         try {
@@ -40,7 +40,7 @@ internal class RetenoDatabaseManagerInteractionImpl(private val database: Reteno
                 val interaction = cursor.getInteraction()
 
                 if (interaction != null) {
-                    interactionEvents.add(interaction)
+                    interactions.add(interaction)
                 } else {
                     val rowId =
                         cursor.getLongOrNull(cursor.getColumnIndex(InteractionSchema.COLUMN_INTERACTION_ROW_ID))
@@ -66,7 +66,7 @@ internal class RetenoDatabaseManagerInteractionImpl(private val database: Reteno
         } finally {
             cursor?.close()
         }
-        return interactionEvents
+        return interactions
     }
 
     override fun getInteractionCount(): Long = database.getRowCount(InteractionSchema.TABLE_NAME_INTERACTION)
@@ -79,11 +79,57 @@ internal class RetenoDatabaseManagerInteractionImpl(private val database: Reteno
         )
     }
 
-    override fun deleteInteractionByTime(outdatedTime: String): Int {
-        return database.delete(
+    override fun deleteInteractionByTime(outdatedTime: String): List<InteractionDb> {
+        /*@formatter:off*/ Logger.i(TAG, "deleteInteractionByTime(): ", "outdatedTime = [", outdatedTime, "]")
+        /*@formatter:on*/
+        val whereClause = "${InteractionSchema.COLUMN_INTERACTION_TIME} < '$outdatedTime'"
+
+        var cursor: Cursor? = null
+        val interactionsList = mutableListOf<InteractionDb>()
+        try {
+            cursor = database.query(
+                table = InteractionSchema.TABLE_NAME_INTERACTION,
+                columns = InteractionSchema.getAllColumns(),
+                selection = whereClause
+            )
+
+            while (cursor.moveToNext()) {
+                val interaction = cursor.getInteraction()
+                if (interaction != null) {
+                    interactionsList.add(interaction)
+                } else {
+                    val rowId = cursor.getLongOrNull(
+                        cursor.getColumnIndex(InteractionSchema.COLUMN_INTERACTION_ROW_ID)
+                    )
+                    val exception =
+                        SQLException("deleteInteractionByTime() Unable to read data from SQL database. interaction=$interaction")
+                    if (rowId == null) {
+                        /*@formatter:off*/ Logger.e(TAG, "deleteInteractionByTime(). rowId is NULL ", exception)
+                        /*@formatter:on*/
+                    } else {
+                        database.delete(
+                            table = InteractionSchema.TABLE_NAME_INTERACTION,
+                            whereClause = "${InteractionSchema.COLUMN_INTERACTION_ROW_ID}=?",
+                            whereArgs = arrayOf(rowId.toString())
+                        )
+                        /*@formatter:off*/ Logger.e(TAG, "deleteInteractionByTime(). Removed invalid entry from database. interaction=$interaction ", exception)
+                        /*@formatter:on*/
+                    }
+                }
+            }
+        } catch (t: Throwable) {
+            /*@formatter:off*/ Logger.e(TAG, "deleteInteractionByTime() handleSQLiteError(): Unable to get Interactions from the table.", t)
+            /*@formatter:on*/
+        } finally {
+            cursor?.close()
+        }
+
+        database.delete(
             table = InteractionSchema.TABLE_NAME_INTERACTION,
-            whereClause = "${InteractionSchema.COLUMN_INTERACTION_TIME} < '$outdatedTime'"
+            whereClause = whereClause
         )
+
+        return interactionsList
     }
 
     companion object {

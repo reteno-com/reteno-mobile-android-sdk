@@ -23,6 +23,7 @@ import io.mockk.verify
 import junit.framework.TestCase.assertEquals
 import junit.framework.TestCase.assertTrue
 import net.sqlcipher.Cursor
+import org.junit.Assert
 import org.junit.Test
 import java.time.ZonedDateTime
 
@@ -461,23 +462,6 @@ class RetenoDatabaseManagerEventsTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun whenDeleteEventsByTime_thenEventsDeleted() {
-        // Given
-        val outdatedTime = ZonedDateTime.now().formatToRemote()
-        val countExpected = 2
-        val whereClauseExpected = "${EventsSchema.EventSchema.COLUMN_EVENT_OCCURRED} < '$outdatedTime'"
-
-        every { database.delete(any(), any(), any()) } returns countExpected
-
-        // When
-        SUT.deleteEventsByTime(outdatedTime)
-
-        // Then
-        verify(exactly = 1) { database.delete(EventsSchema.EventSchema.TABLE_NAME_EVENT, whereClauseExpected) }
-        verify(exactly = 1) { database.cleanUnlinkedEvents() }
-    }
-
-    @Test
     fun given_whenDeleteEventsNewest_thenEventsDeleted() {
         // Given
         val order = "DESC"
@@ -495,6 +479,77 @@ class RetenoDatabaseManagerEventsTest : BaseRobolectricTest() {
 
         // Then
         verify(exactly = 1) { database.delete(EventsSchema.EventSchema.TABLE_NAME_EVENT, whereClauseExpected) }
+    }
+
+    @Test
+    fun givenOutdatedEventsFoundInDatabase_whenDeleteEventsByTime_thenEventsDeleted() {
+        // Given
+        val outdatedTime = ZonedDateTime.now().formatToRemote()
+        val whereClauseExpected = "${EventsSchema.EventSchema.COLUMN_EVENT_OCCURRED} < '$outdatedTime'"
+
+        mockCursorRecordsNumber(cursor, 2)
+        every { database.query(
+            table = eq(EventsSchema.EventSchema.TABLE_NAME_EVENT),
+            columns = eq(EventsSchema.EventSchema.getAllColumns()),
+            selection = eq(whereClauseExpected)
+        ) } returns cursor
+        every { cursor.getEvent() } returns event1 andThen event2
+
+        // When
+        val deletedEvents: List<EventDb> = SUT.deleteEventsByTime(outdatedTime)
+
+        // Then
+        verify(exactly = 1) {
+            database.query(
+                table = eq(EventsSchema.EventSchema.TABLE_NAME_EVENT),
+                columns = eq(EventsSchema.EventSchema.getAllColumns()),
+                selection = eq(whereClauseExpected)
+            )
+        }
+        verify(exactly = 1) {
+            database.delete(
+                EventsSchema.EventSchema.TABLE_NAME_EVENT,
+                whereClauseExpected
+            )
+        }
+        verify(exactly = 1) { database.cleanUnlinkedEvents() }
+
+        Assert.assertEquals(listOf(event1, event2), deletedEvents)
+    }
+
+    @Test
+    fun givenOutdatedEventsNotFoundInDatabase_whenDeleteEventsByTime_thenEventsNotDeleted() {
+        // Given
+        val outdatedTime = ZonedDateTime.now().formatToRemote()
+        val whereClauseExpected = "${EventsSchema.EventSchema.COLUMN_EVENT_OCCURRED} < '$outdatedTime'"
+
+        mockCursorRecordsNumber(cursor, 0)
+        every { database.query(
+            table = eq(EventsSchema.EventSchema.TABLE_NAME_EVENT),
+            columns = eq(EventsSchema.EventSchema.getAllColumns()),
+            selection = eq(whereClauseExpected)
+        ) } returns cursor
+
+        // When
+        val deletedEvents: List<EventDb> = SUT.deleteEventsByTime(outdatedTime)
+
+        // Then
+        verify(exactly = 1) {
+            database.query(
+                table = eq(EventsSchema.EventSchema.TABLE_NAME_EVENT),
+                columns = eq(EventsSchema.EventSchema.getAllColumns()),
+                selection = eq(whereClauseExpected)
+            )
+        }
+        verify(exactly = 1) {
+            database.delete(
+                EventsSchema.EventSchema.TABLE_NAME_EVENT,
+                whereClauseExpected
+            )
+        }
+        verify(exactly = 1) { database.cleanUnlinkedEvents() }
+
+        Assert.assertEquals(emptyList<EventDb>(), deletedEvents)
     }
 
 

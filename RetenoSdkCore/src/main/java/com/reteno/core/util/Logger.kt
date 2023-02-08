@@ -8,6 +8,7 @@ import com.reteno.core.RetenoImpl
 import io.sentry.Breadcrumb
 import io.sentry.Hub
 import io.sentry.Sentry
+import io.sentry.SentryEvent
 
 object Logger {
     private const val SENTRY_DSN = BuildConfig.SENTRY_DSN
@@ -16,13 +17,26 @@ object Logger {
     private const val BREADCRUMB_CATEGORY_DEVICE_ID = "deviceId"
 
     @JvmStatic
-    fun captureEvent(msg: String) {
+    fun captureMessage(msg: String, breadCrumbs: List<Breadcrumb> = emptyList()) {
         val mainHub = Sentry.getCurrentHub().clone()
         val retenoHub = Hub(mainHub.options.apply {
             dsn = SENTRY_DSN
         })
 
+        for (breadcrumb in breadCrumbs) {
+            retenoHub.addBreadcrumb(breadcrumb)
+        }
         retenoHub.captureMessage(msg)
+    }
+
+    @JvmStatic
+    fun captureEvent(event: SentryEvent) {
+        val mainHub = Sentry.getCurrentHub().clone()
+        val retenoHub = Hub(mainHub.options.apply {
+            dsn = SENTRY_DSN
+        })
+
+        retenoHub.captureEvent(event)
     }
 
     @JvmStatic
@@ -72,7 +86,7 @@ object Logger {
         if (BuildConfig.DEBUG || Util.isDebugView()) {
             Log.e(tag, message)
         }
-        captureEvent(message)
+        captureMessage(message)
     }
 
     @JvmStatic

@@ -192,7 +192,7 @@ internal class AppInboxRepositoryImpl(
             /*@formatter:on*/
             if (removedInboxCount > 0) {
                 val msg = "Outdated Inbox: - $removedInboxCount"
-                Logger.captureEvent(msg)
+                Logger.captureMessage(msg)
             }
         }
     }

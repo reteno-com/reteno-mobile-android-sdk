@@ -123,7 +123,7 @@ internal class RecommendationRepositoryImpl(
             /*@formatter:on*/
             if (removedRecomEventsCount > 0) {
                 val msg = "Outdated Recommendation Events: - $removedRecomEventsCount"
-                Logger.captureEvent(msg)
+                Logger.captureMessage(msg)
             }
         }
     }

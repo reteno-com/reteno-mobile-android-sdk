@@ -197,29 +197,31 @@ class EventsRepositoryImplTest : BaseRobolectricTest() {
     @Test
     fun noOutdatedInteraction_whenClearOldEvents_thenSentNothing() {
         // Given
-        every { databaseManagerEvents.deleteEventsByTime(any()) } returns 0
+        every { databaseManagerEvents.deleteEventsByTime(any()) } returns emptyList()
 
         // When
         SUT.clearOldEvents(ZonedDateTime.now())
 
         // Then
         verify(exactly = 1) { databaseManagerEvents.deleteEventsByTime(any()) }
-        verify(exactly = 0) { Logger.captureEvent(any()) }
+        verify(exactly = 0) { Logger.captureMessage(any()) }
     }
 
     @Test
-    fun thereAreOutdatedInteraction_whenClearOldEvents_thenSentCountDeleted() {
+    fun thereAreOutdatedEvents_whenClearOldEvents_thenSentCountDeleted() {
         // Given
-        val deletedEvents = 2
+        val deletedEvents = listOf<EventDb>(
+            EventDb("key1", "occurred1"),
+            EventDb("key2", "occurred2")
+        )
         every { databaseManagerEvents.deleteEventsByTime(any()) } returns deletedEvents
-        val expectedMsg = "Outdated Events: - $deletedEvents"
 
         // When
         SUT.clearOldEvents(ZonedDateTime.now())
 
         // Then
         verify(exactly = 1) { databaseManagerEvents.deleteEventsByTime(any()) }
-        verify(exactly = 1) { Logger.captureEvent(eq(expectedMsg)) }
+        verify(exactly = 2) { Logger.captureEvent(any()) }
     }
 
     // region helper methods -----------------------------------------------------------------------

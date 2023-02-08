@@ -187,15 +187,58 @@ internal class RetenoDatabaseManagerEventsImpl(private val database: RetenoDatab
         database.cleanUnlinkedEvents()
     }
 
-    override fun deleteEventsByTime(outdatedTime: String): Int {
+    override fun deleteEventsByTime(outdatedTime: String): List<EventDb> {
         /*@formatter:off*/ Logger.i(TAG, "deleteEventsByTime(): ", "outdatedTime = [", outdatedTime, "]")
         /*@formatter:on*/
-        val count = database.delete(
+        val whereClause = "${EventsSchema.EventSchema.COLUMN_EVENT_OCCURRED} < '$outdatedTime'"
+
+        var cursor: Cursor? = null
+        val eventList = mutableListOf<EventDb>()
+        try {
+            cursor = database.query(
+                table = EventsSchema.EventSchema.TABLE_NAME_EVENT,
+                columns = EventsSchema.EventSchema.getAllColumns(),
+                selection = whereClause
+            )
+
+            while (cursor.moveToNext()) {
+                val event = cursor.getEvent()
+                if (event != null) {
+                    eventList.add(event)
+                } else {
+                    val rowId = cursor.getLongOrNull(
+                        cursor.getColumnIndex(EventsSchema.EventSchema.COLUMN_EVENT_ROW_ID)
+                    )
+                    val exception =
+                        SQLException("deleteEventsByTime() Unable to read data from SQL database. event=$event")
+                    if (rowId == null) {
+                        /*@formatter:off*/ Logger.e(TAG, "deleteEventsByTime(). rowId is NULL ", exception)
+                        /*@formatter:on*/
+                    } else {
+                        database.delete(
+                            table = EventsSchema.EventSchema.TABLE_NAME_EVENT,
+                            whereClause = "${EventsSchema.EventSchema.COLUMN_EVENT_ROW_ID}=?",
+                            whereArgs = arrayOf(rowId.toString())
+                        )
+                        /*@formatter:off*/ Logger.e(TAG, "deleteEventsByTime(). Removed invalid entry from database. event=$event ", exception)
+                        /*@formatter:on*/
+                    }
+                }
+            }
+        } catch (t: Throwable) {
+            /*@formatter:off*/ Logger.e(TAG, "deleteEventsByTime() handleSQLiteError(): Unable to get Events from the table.", t)
+            /*@formatter:on*/
+        } finally {
+            cursor?.close()
+        }
+
+        database.delete(
             table = EventsSchema.EventSchema.TABLE_NAME_EVENT,
-            whereClause = "${EventsSchema.EventSchema.COLUMN_EVENT_OCCURRED} < '$outdatedTime'"
+            whereClause = whereClause
         )
         database.cleanUnlinkedEvents()
-        return count
+
+        return eventList
     }
 
     companion object {

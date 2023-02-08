@@ -1,7 +1,9 @@
 package com.reteno.core.data.repository
 
+import com.reteno.core.RetenoImpl
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerInteraction
 import com.reteno.core.data.local.mappers.toDb
+import com.reteno.core.data.local.model.interaction.InteractionDb
 import com.reteno.core.data.remote.OperationQueue
 import com.reteno.core.data.remote.PushOperationQueue
 import com.reteno.core.data.remote.api.ApiClient
@@ -13,6 +15,9 @@ import com.reteno.core.domain.model.interaction.Interaction
 import com.reteno.core.util.Logger
 import com.reteno.core.util.Util.formatToRemote
 import com.reteno.core.util.isNonRepeatableError
+import io.sentry.SentryEvent
+import io.sentry.SentryLevel
+import io.sentry.protocol.Message
 import java.time.ZonedDateTime
 
 internal class InteractionRepositoryImpl(
@@ -65,17 +70,41 @@ internal class InteractionRepositoryImpl(
         /*@formatter:off*/ Logger.i(TAG, "clearOldInteractions(): ", "outdatedTime = [" , outdatedTime , "]")
         /*@formatter:on*/
         OperationQueue.addOperation {
-            val removedInteractionsCount = databaseManager.deleteInteractionByTime(outdatedTime.formatToRemote())
-            /*@formatter:off*/ Logger.i(TAG, "clearOldInteractions(): ", "removedInteractionsCount = [" , removedInteractionsCount , "]")
+            val removedInteractions: List<InteractionDb> = databaseManager.deleteInteractionByTime(outdatedTime.formatToRemote())
+            /*@formatter:off*/ Logger.i(TAG, "clearOldInteractions(): ", "removedInteractionsCount = [" , removedInteractions.count() , "]")
             /*@formatter:on*/
-            if (removedInteractionsCount > 0) {
-                val msg = "Outdated Interactions: - $removedInteractionsCount"
-                Logger.captureEvent(msg)
+            if (removedInteractions.isNotEmpty()) {
+                removedInteractions
+                    .groupBy { it.status }
+                    .map { it.key to "${it.value.size}" }
+                    .forEach {
+                        val status = it.first
+                        val count = it.second
+
+                        val msg = "$REMOVE_INTERACTIONS($status) - $count"
+                        val event = SentryEvent().apply {
+                            message = Message().apply {
+                                message = msg
+                            }
+                            level = SentryLevel.INFO
+                            fingerprints = listOf(
+                                RetenoImpl.application.packageName,
+                                REMOVE_INTERACTIONS,
+                                status.toString()
+                            )
+
+                            setTag(TAG_KEY_INTERACTION_STATUS, status.toString())
+                        }
+                        Logger.captureEvent(event)
+                    }
             }
         }
     }
 
     companion object {
         private val TAG = InteractionRepositoryImpl::class.java.simpleName
+
+        private const val REMOVE_INTERACTIONS = "Removed interactions"
+        private const val TAG_KEY_INTERACTION_STATUS = "interaction_status"
     }
 }
