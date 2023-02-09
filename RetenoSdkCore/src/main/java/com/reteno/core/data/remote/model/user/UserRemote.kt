@@ -6,7 +6,7 @@ internal data class UserRemote(
     @SerializedName("deviceId")
     val deviceId: String,
     @SerializedName("externalUserId")
-    val externalUserId: String,
+    val externalUserId: String?,
     @SerializedName("userAttributes")
     val userAttributes: UserAttributesRemote? = null,
     @SerializedName("subscriptionKeys")
