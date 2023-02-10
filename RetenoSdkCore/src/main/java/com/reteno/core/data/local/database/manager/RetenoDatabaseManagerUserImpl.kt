@@ -45,7 +45,7 @@ internal class RetenoDatabaseManagerUserImpl(private val database: RetenoDatabas
         /*@formatter:off*/ Logger.i(TAG, "getUsers(): ", "limit = [", limit, "]")
         /*@formatter:on*/
 
-        val userEvents: MutableList<UserDb> = mutableListOf()
+        val userList: MutableList<UserDb> = mutableListOf()
         val rawQueryLimit: String = limit?.let { " LIMIT $it" } ?: ""
 
         var cursor: Cursor? = null

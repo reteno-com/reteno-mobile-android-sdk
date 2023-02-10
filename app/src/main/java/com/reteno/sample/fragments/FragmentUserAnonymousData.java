@@ -26,6 +26,7 @@ import java.util.List;
 
 public class FragmentUserAnonymousData extends BaseFragment {
 
+    private static final String TAG = FragmentUserAnonymousData.class.getSimpleName();
     protected FragmentUserAnonymousDataBinding binding;
 
     public FragmentUserAnonymousData() {
@@ -54,7 +55,7 @@ public class FragmentUserAnonymousData extends BaseFragment {
                 NavHostFragment.findNavController(this).popBackStack();
             } catch (Exception e) {
                 Toast.makeText(this.getContext(), e.getMessage(), Toast.LENGTH_LONG).show();
-                Logger.e("FragmentUserData", e.getMessage());
+                Logger.e(TAG, "FragmentUserData", e);
             }
         });
 

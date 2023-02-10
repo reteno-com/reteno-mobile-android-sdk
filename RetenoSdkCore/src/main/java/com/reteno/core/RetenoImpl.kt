@@ -104,12 +104,7 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
             throw exception
         }
 
-        try {
-            setUserAttributes(externalUserId, null)
-        } catch (ex: Throwable) {
-            /*@formatter:off*/ Logger.e(TAG, "setUserAttributes(): externalUserId = [$externalUserId]", ex)
-            /*@formatter:on*/
-        }
+        setUserAttributes(externalUserId, null)
     }
 
     @Throws(java.lang.IllegalArgumentException::class)
@@ -127,7 +122,6 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
         }
 
         try {
-            // TODO: Move this to background thread later
             contactController.setExternalUserId(externalUserId)
             contactController.setUserData(user)
         } catch (ex: Throwable) {
@@ -137,6 +131,9 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
     }
 
     override fun setAnonymousUserAttributes(userAttributes: UserAttributesAnonymous) {
+        if (!isOsVersionSupported()) {
+            return
+        }
         /*@formatter:off*/ Logger.i(TAG, "setAnonymousUserAttributes(): ", "userAttributes = [", userAttributes, "]")
         /*@formatter:on*/
         try {

@@ -44,7 +44,7 @@ class ContactController(
         validAttributes?.let {
             val userData = User(it.toUserAttributes())
             contactRepository.saveUserData(userData)
-        } ?: Logger.e(TAG, "setAnonymousUserAttributes(): attributes = [$attributes]")
+        } ?: Logger.captureMessage("setAnonymousUserAttributes(): attributes = [$attributes]")
     }
 
     fun onNewFcmToken(token: String) {
