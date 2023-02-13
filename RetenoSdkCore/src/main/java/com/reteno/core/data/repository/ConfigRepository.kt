@@ -11,5 +11,8 @@ interface ConfigRepository {
     fun getDefaultNotificationChannel(): String
 
     fun saveNotificationsEnabled(enabled: Boolean)
-    fun getNotificationsEnabled(): Boolean
+    fun isNotificationsEnabled(): Boolean
+
+    fun saveDeviceRegistered(registered: Boolean)
+    fun isDeviceRegistered(): Boolean
 }

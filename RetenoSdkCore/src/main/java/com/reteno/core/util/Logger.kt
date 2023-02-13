@@ -98,8 +98,13 @@ object Logger {
             dsn = SENTRY_DSN
         })
 
-        addBreadcrumbs(tag, methodName, retenoHub)
-        addBreadcrumbs(tag, "Google Play Services installed = ${isGooglePlayServicesAvailable()}", retenoHub)
+        try {
+            addBreadcrumbs(tag, methodName, retenoHub)
+            addBreadcrumbs(tag, "Google Play Services installed = ${isGooglePlayServicesAvailable()}", retenoHub)
+        } catch (ex: Throwable) {
+
+        }
+
         retenoHub.captureException(e)
     }
 
