@@ -195,7 +195,7 @@ class EventsRepositoryImplTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun noOutdatedInteraction_whenClearOldEvents_thenSentNothing() {
+    fun noOutdatedEvents_whenClearOldEvents_thenSentNothing() {
         // Given
         every { databaseManagerEvents.deleteEventsByTime(any()) } returns emptyList()
 

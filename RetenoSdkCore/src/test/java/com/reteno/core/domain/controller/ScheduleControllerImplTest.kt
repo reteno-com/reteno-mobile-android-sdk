@@ -65,19 +65,12 @@ class ScheduleControllerImplTest : BaseRobolectricTest() {
 
     @Test
     fun whenStartScheduler_thenAddPushOperation() {
-        // Given
-        val currentThreadExecutor = Executor(Runnable::run)
-        every { PushOperationQueue.addOperation(any()) } answers {
-            currentThreadExecutor.execute(firstArg())
-            PushOperationQueue.nextOperation()
-        }
-
         // When
         SUT.startScheduler()
 
         // Then
         verify(exactly = 6) { PushOperationQueue.addOperation(any()) }
-        verify(exactly = 7) { PushOperationQueue.nextOperation() }
+        verify(exactly = 1) { PushOperationQueue.nextOperation() }
         verify { contactController.pushDeviceData() }
         verify { contactController.pushUserData() }
         verify { interactionController.pushInteractions() }

@@ -66,11 +66,7 @@ internal class RecommendationRepositoryImpl(
         /*@formatter:off*/ Logger.i(TAG, "saveRecommendations(): ", "recomEvents = [" , recomEvents , "]")
         /*@formatter:on*/
         OperationQueue.addOperation {
-            try {
-                databaseManager.insertRecomEvents(recomEvents.toDb())
-            } catch (e: Exception) {
-                Logger.e(TAG, "saveRecommendations()", e)
-            }
+            databaseManager.insertRecomEvents(recomEvents.toDb())
         }
     }
 

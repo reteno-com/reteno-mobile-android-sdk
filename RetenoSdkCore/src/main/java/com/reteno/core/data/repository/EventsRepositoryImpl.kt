@@ -39,11 +39,7 @@ internal class EventsRepositoryImpl(
             eventList = listOf(event.toDb())
         )
         OperationQueue.addOperation {
-            try {
-                databaseManager.insertEvents(events)
-            } catch (e: Exception) {
-                Logger.e(TAG, "saveEvent()", e)
-            }
+            databaseManager.insertEvents(events)
         }
     }
 
@@ -58,11 +54,7 @@ internal class EventsRepositoryImpl(
             eventList = listOf(ecomEvent.toDb())
         )
         OperationQueue.addOperation {
-            try {
-                databaseManager.insertEvents(events)
-            } catch (e: Exception) {
-                Logger.e(TAG, "saveEcomEvent()", e)
-            }
+            databaseManager.insertEvents(events)
         }
     }
 

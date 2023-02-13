@@ -31,7 +31,7 @@ class ContactController(
 
         user?.let {
             val validUser = Validator.validateUser(it)
-            validUser?.let(contactRepository::saveUserData) ?: Logger.e(TAG, "setUserData(): user = [$it]")
+            validUser?.let(contactRepository::saveUserData) ?: Logger.captureMessage("ContactController.setUserData(): user = [$it]")
         }
     }
 

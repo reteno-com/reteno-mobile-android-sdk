@@ -7,7 +7,6 @@ import android.content.Intent
 import com.reteno.core.di.ServiceLocator
 import com.reteno.core.domain.model.ecom.EcomEvent
 import com.reteno.core.domain.model.event.Event
-import com.reteno.core.domain.model.interaction.InteractionStatus
 import com.reteno.core.domain.model.user.User
 import com.reteno.core.lifecycle.RetenoActivityHelper
 import com.reteno.core.lifecycle.RetenoLifecycleCallbacks

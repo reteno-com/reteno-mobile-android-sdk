@@ -12,41 +12,19 @@ import io.sentry.SentryEvent
 
 object Logger {
     private const val SENTRY_DSN = BuildConfig.SENTRY_DSN
+    private const val TAG_KEY_RELEASE_SDK = "release_sdk"
     private const val BREADCRUMB_CATEGORY_CLASS = "className"
     private const val BREADCRUMB_CATEGORY_METHOD = "methodName"
     private const val BREADCRUMB_CATEGORY_DEVICE_ID = "deviceId"
 
     @JvmStatic
-    fun captureMessage(msg: String, breadCrumbs: List<Breadcrumb> = emptyList()) {
-        val mainHub = Sentry.getCurrentHub().clone()
-        val retenoHub = Hub(mainHub.options.apply {
-            dsn = SENTRY_DSN
-        })
-
-        for (breadcrumb in breadCrumbs) {
-            retenoHub.addBreadcrumb(breadcrumb)
-        }
-        retenoHub.captureMessage(msg)
+    fun captureMessage(msg: String) {
+        getRetenoHub().captureMessage(msg)
     }
 
     @JvmStatic
     fun captureEvent(event: SentryEvent) {
-        val mainHub = Sentry.getCurrentHub().clone()
-        val retenoHub = Hub(mainHub.options.apply {
-            dsn = SENTRY_DSN
-        })
-
-        retenoHub.captureEvent(event)
-    }
-
-    @JvmStatic
-    fun captureException(e: Throwable) {
-        val mainHub = Sentry.getCurrentHub().clone()
-        val retenoHub = Hub(mainHub.options.apply {
-            dsn = SENTRY_DSN
-        })
-
-        retenoHub.captureException(e)
+        getRetenoHub().captureEvent(event)
     }
 
     @JvmStatic
@@ -82,19 +60,19 @@ object Logger {
     }
 
     @JvmStatic
-    fun e(tag: String, message: String) {
-        if (BuildConfig.DEBUG || Util.isDebugView()) {
-            Log.e(tag, message)
-        }
-        captureMessage(message)
-    }
-
-    @JvmStatic
     fun e(tag: String, methodName: String, tr: Throwable) {
         if (BuildConfig.DEBUG || Util.isDebugView()) {
             Log.e(tag, methodName, tr)
         }
-        captureException(tag, methodName, tr)
+        val retenoHub: Hub = getRetenoHub()
+
+        try {
+            addExceptionBreadcrumbs(tag, methodName, retenoHub)
+            addExceptionBreadcrumbs(tag, "Google Play Services installed = ${isGooglePlayServicesAvailable()}", retenoHub)
+        } catch (ex: Throwable) {
+            Log.e(TAG, "captureException: ", ex)
+        }
+        retenoHub.captureException(tr)
     }
 
     private fun buildMessage(methodName: String, arguments: Array<out Any?>): String {
@@ -105,24 +83,16 @@ object Logger {
         return builder.toString()
     }
 
-    private fun captureException(tag: String, methodName: String, e: Throwable) {
+    private fun getRetenoHub(): Hub {
         val mainHub = Sentry.getCurrentHub().clone()
         val retenoHub = Hub(mainHub.options.apply {
-            release = SDK_VERSION
+            setTag(TAG_KEY_RELEASE_SDK, SDK_VERSION)
             dsn = SENTRY_DSN
         })
-
-        try {
-            addBreadcrumbs(tag, methodName, retenoHub)
-            addBreadcrumbs(tag, "Google Play Services installed = ${isGooglePlayServicesAvailable()}", retenoHub)
-        } catch (ex: Throwable) {
-
-        }
-
-        retenoHub.captureException(e)
+        return retenoHub
     }
 
-    private fun addBreadcrumbs(tag: String, methodName: String, retenoHub: Hub) {
+    private fun addExceptionBreadcrumbs(tag: String, methodName: String, retenoHub: Hub) {
         val classBreadcrumb = Breadcrumb.debug(tag).apply {
             category = BREADCRUMB_CATEGORY_CLASS
         }

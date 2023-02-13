@@ -39,8 +39,13 @@ class RetenoNotificationClickedReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent?) {
         /*@formatter:off*/ Logger.i(TAG, "onReceive(): ", "notification clicked. Context = [" , context , "], intent.extras = [" , intent?.extras.toStringVerbose() , "]")
         /*@formatter:on*/
-        sendInteractionStatus(intent)
-        handleIntent(context, intent)
+        try {
+            sendInteractionStatus(intent)
+            handleIntent(context, intent)
+        } catch (ex: Throwable) {
+            /*@formatter:off*/ Logger.e(TAG, "onReceive(): ", ex)
+            /*@formatter:on*/
+        }
     }
 
     private fun sendInteractionStatus(intent: Intent?) {
@@ -51,27 +56,22 @@ class RetenoNotificationClickedReceiver : BroadcastReceiver() {
     }
 
     private fun handleIntent(context: Context, intent: Intent?) {
-        try {
-            intent?.extras?.let { bundle ->
-                if (bundle.getBoolean(KEY_ACTION_BUTTON, false)) {
-                    val notificationId = bundle.getInt(Constants.KEY_NOTIFICATION_ID, -1)
-                    closeNotification(context, notificationId)
-                }
-                bundle.remove(Constants.KEY_NOTIFICATION_ID)
+        intent?.extras?.let { bundle ->
+            if (bundle.getBoolean(KEY_ACTION_BUTTON, false)) {
+                val notificationId = bundle.getInt(Constants.KEY_NOTIFICATION_ID, -1)
+                closeNotification(context, notificationId)
+            }
+            bundle.remove(Constants.KEY_NOTIFICATION_ID)
 
-                Util.tryToSendToCustomReceiverNotificationClicked(bundle)
+            Util.tryToSendToCustomReceiverNotificationClicked(bundle)
 
-                IntentHandler.getDeepLinkIntent(bundle)?.let { deeplinkIntent ->
-                    val (linkWrapped, linkUnwrapped) = Util.getLinkFromBundle(bundle)
+            IntentHandler.getDeepLinkIntent(bundle)?.let { deeplinkIntent ->
+                val (linkWrapped, linkUnwrapped) = Util.getLinkFromBundle(bundle)
 
-                    deeplinkController.triggerDeeplinkClicked(linkWrapped, linkUnwrapped)
-                    launchDeeplink(context, deeplinkIntent)
-                } ?: launchApp(context, intent)
+                deeplinkController.triggerDeeplinkClicked(linkWrapped, linkUnwrapped)
+                launchDeeplink(context, deeplinkIntent)
             } ?: launchApp(context, intent)
-        } catch (t: Throwable) {
-            /*@formatter:off*/ Logger.e(TAG, "onReceive() ", t)
-            /*@formatter:on*/
-        }
+        } ?: launchApp(context, intent)
     }
 
     private fun launchDeeplink(context: Context, deeplinkIntent: Intent) {
