@@ -1,21 +1,26 @@
 package com.reteno.core.util
 
 import android.util.Log
+import com.google.firebase.FirebaseApp
 import com.reteno.core.BuildConfig
 import com.reteno.core.BuildConfig.SDK_VERSION
 import com.reteno.core.RetenoApplication
 import com.reteno.core.RetenoImpl
-import io.sentry.Breadcrumb
 import io.sentry.Hub
 import io.sentry.Sentry
 import io.sentry.SentryEvent
+import io.sentry.SentryOptions
 
 object Logger {
     private const val SENTRY_DSN = BuildConfig.SENTRY_DSN
-    private const val TAG_KEY_RELEASE_SDK = "release_sdk"
-    private const val BREADCRUMB_CATEGORY_CLASS = "className"
-    private const val BREADCRUMB_CATEGORY_METHOD = "methodName"
-    private const val BREADCRUMB_CATEGORY_DEVICE_ID = "deviceId"
+
+    private const val TAG_KEY_PACKAGE_NAME = "reteno.package_name"
+    private const val TAG_KEY_SDK_VERSION = "reteno.sdk_version"
+    private const val TAG_KEY_DEVICE_ID = "reteno.device_id"
+    private const val TAG_KEY_DEVICE_REGISTERED = "reteno.device_registered"
+    private const val TAG_KEY_PUSH_SUBSCRIBED = "reteno.push_subscribed"
+    private const val TAG_KEY_GOOGLE_PLAY_AVAILABLE = "reteno.google_play_available"
+    private const val TAG_KEY_FCM_AVAILABLE = "reteno.fcm_available"
 
     @JvmStatic
     fun captureMessage(msg: String) {
@@ -64,14 +69,8 @@ object Logger {
         if (BuildConfig.DEBUG || Util.isDebugView()) {
             Log.e(tag, methodName, tr)
         }
-        val retenoHub: Hub = getRetenoHub()
 
-        try {
-            addExceptionBreadcrumbs(tag, methodName, retenoHub)
-            addExceptionBreadcrumbs(tag, "Google Play Services installed = ${isGooglePlayServicesAvailable()}", retenoHub)
-        } catch (ex: Throwable) {
-            Log.e(TAG, "captureException: ", ex)
-        }
+        val retenoHub: Hub = getRetenoHub()
         retenoHub.captureException(tr)
     }
 
@@ -86,35 +85,45 @@ object Logger {
     private fun getRetenoHub(): Hub {
         val mainHub = Sentry.getCurrentHub().clone()
         val retenoHub = Hub(mainHub.options.apply {
-            setTag(TAG_KEY_RELEASE_SDK, SDK_VERSION)
             dsn = SENTRY_DSN
+            setTag(TAG_KEY_SDK_VERSION, SDK_VERSION)
+            setApplicationTags(this)
+            setServicesTags(this)
         })
         return retenoHub
     }
 
-    private fun addExceptionBreadcrumbs(tag: String, methodName: String, retenoHub: Hub) {
-        val classBreadcrumb = Breadcrumb.debug(tag).apply {
-            category = BREADCRUMB_CATEGORY_CLASS
-        }
+    private fun setApplicationTags(options: SentryOptions) {
+        try {
+            val packageName = RetenoImpl.application.packageName
+            options.setTag(TAG_KEY_PACKAGE_NAME, packageName)
 
-        val methodBreadcrumb = Breadcrumb.debug(methodName).apply {
-            category = BREADCRUMB_CATEGORY_METHOD
-        }
+            val serviceLocator =
+                ((RetenoImpl.application as RetenoApplication).getRetenoInstance() as RetenoImpl).serviceLocator
+            val configRepository = serviceLocator.configRepositoryProvider.get()
 
-        val serviceLocator =
-            ((RetenoImpl.application as RetenoApplication).getRetenoInstance() as RetenoImpl).serviceLocator
-        val deviceId = serviceLocator.configRepositoryProvider.get().getDeviceId()
-        val deviceIdBreadcrumb = Breadcrumb.debug(BREADCRUMB_CATEGORY_DEVICE_ID).apply {
-            category = BREADCRUMB_CATEGORY_DEVICE_ID
-            setData("id", deviceId.id)
-            setData("mode", deviceId.mode)
-            deviceId.externalId?.let { externalId ->
-                setData("externalId", externalId)
-            }
+            options.setTag(TAG_KEY_DEVICE_ID, configRepository.getDeviceId().id)
+            options.setTag(TAG_KEY_DEVICE_REGISTERED, configRepository.isDeviceRegistered().toString())
+            options.setTag(TAG_KEY_PUSH_SUBSCRIBED, configRepository.isNotificationsEnabled().toString())
+        } catch (ex: Throwable) {
+            Log.e(TAG, "setApplicationTags: ", ex)
         }
-
-        retenoHub.addBreadcrumb(classBreadcrumb)
-        retenoHub.addBreadcrumb(methodBreadcrumb)
-        retenoHub.addBreadcrumb(deviceIdBreadcrumb)
     }
+
+    private fun setServicesTags(options: SentryOptions) {
+        try {
+            options.setTag(TAG_KEY_FCM_AVAILABLE, isFirebaseEnabled().toString())
+            options.setTag(TAG_KEY_GOOGLE_PLAY_AVAILABLE, isGooglePlayServicesAvailable().toString())
+        } catch (ex: Throwable) {
+            Log.e(TAG, "setServicesTags: ", ex)
+        }
+    }
+
+    private fun isFirebaseEnabled(): Boolean =
+        try {
+            // Note: always true. Will throw exception if Firebase is not available
+            FirebaseApp.getInstance() != null
+        } catch (e: IllegalStateException) {
+            false
+        }
 }
