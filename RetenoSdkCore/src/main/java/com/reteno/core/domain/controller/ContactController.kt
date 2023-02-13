@@ -20,7 +20,8 @@ class ContactController(
         val oldDeviceId = configRepository.getDeviceId()
         if (oldDeviceId.externalId != id) {
             configRepository.setExternalUserId(id)
-            onNewContact()
+            val fcmToken = configRepository.getFcmToken()
+            onNewContact(fcmToken)
         }
     }
 
@@ -38,7 +39,7 @@ class ContactController(
         /*@formatter:off*/ Logger.i(TAG, "onNewFcmToken(): ", "newToken = [" , token , "]")
         /*@formatter:on*/
         configRepository.saveFcmToken(token)
-        onNewContact()
+        onNewContact(token)
     }
 
     fun pushDeviceData() {
@@ -53,25 +54,39 @@ class ContactController(
         contactRepository.pushUserData()
     }
 
-    fun notificationsEnabled(enabled: Boolean) {
-        /*@formatter:off*/ Logger.i(TAG, "notificationsEnabled(): ", "enabled = [" , enabled , "]")
+    fun checkIfDeviceRegistered() {
+        /*@formatter:off*/ Logger.i(TAG, "checkIfDeviceRegistered(): ")
         /*@formatter:on*/
-        val currentState = configRepository.getNotificationsEnabled()
-        if (enabled != currentState) {
-            configRepository.saveNotificationsEnabled(enabled)
-            onNewContact(enabled)
+
+        if (!configRepository.isDeviceRegistered()) {
+            val fcmToken = configRepository.getFcmToken()
+            onNewContact(fcmToken)
         }
     }
 
-    private fun onNewContact(enabled: Boolean? = null) {
-        val token = configRepository.getFcmToken()
-        if (token.isNotBlank()) {
+    fun notificationsEnabled(notificationsEnabled: Boolean) {
+        /*@formatter:off*/ Logger.i(TAG, "notificationsEnabled(): ", "notificationsEnabled = [" , notificationsEnabled , "]")
+        /*@formatter:on*/
+        val currentState = configRepository.isNotificationsEnabled()
+        if (notificationsEnabled != currentState) {
+            configRepository.saveNotificationsEnabled(notificationsEnabled)
+            val fcmToken = configRepository.getFcmToken()
+            onNewContact(fcmToken, notificationsEnabled)
+        }
+    }
+
+    private fun onNewContact(fcmToken: String, notificationsEnabled: Boolean? = null) {
+        /*@formatter:off*/ Logger.i(TAG, "onNewContact(): ", "fcmToken = [", fcmToken, "], notificationsEnabled = [", notificationsEnabled, "]")
+        /*@formatter:on*/
+        if (fcmToken.isNotEmpty()) {
+            /*@formatter:off*/ Logger.i(TAG, "onNewContact(): ", "token AVAILABLE")
+            /*@formatter:on*/
             val deviceId = configRepository.getDeviceId()
             val contact = Device.createDevice(
                 deviceId = deviceId.id,
                 externalUserId = deviceId.externalId,
-                pushToken = token,
-                pushSubscribed = enabled
+                pushToken = fcmToken,
+                pushSubscribed = notificationsEnabled
             )
 
             contactRepository.saveDeviceData(contact)

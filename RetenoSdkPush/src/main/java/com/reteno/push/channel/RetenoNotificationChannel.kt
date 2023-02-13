@@ -63,7 +63,6 @@ internal object RetenoNotificationChannel {
             channelData.importance
         ).apply {
             description = channelData.description
-            channelData.groupId?.let(::setGroup)
             enableLights(channelData.enableLights)
             lightColor = channelData.lightColor
             enableVibration(channelData.enableVibration)
@@ -128,7 +127,7 @@ internal object RetenoNotificationChannel {
                 val jsonChannel = configRepository.getDefaultNotificationChannel()
                 jsonChannel.fromJsonOrNull()
             } catch (e: Exception) {
-                /*@formatter:off*/ Logger.d(TAG, "retrieveNotificationChannels(): Failed to read saved DefaultChannelId ", e)
+                /*@formatter:off*/ Logger.d(TAG, "retrieveDefaultNotificationChannelData(): Failed to read saved DefaultChannelId ", e)
                 /*@formatter:on*/
                 null
             }
@@ -138,9 +137,9 @@ internal object RetenoNotificationChannel {
             val defaultJson = Util.readFromRaw(R.raw.default_channel) ?: ""
 
             configureDefaultNotificationChannel(defaultJson)
-            defaultJson.fromJson()
+            defaultJson.fromJson<NotificationChannelData>()
         } catch (e: Exception) {
-            /*@formatter:off*/ Logger.e(TAG, "retrieveNotificationChannels(): FALLBACK_MODE", e)
+            /*@formatter:off*/ Logger.e(TAG, "retrieveDefaultNotificationChannelData(): FALLBACK_MODE", e)
             /*@formatter:on*/
             NotificationChannelData(
                 DEFAULT_CHANNEL_ID,

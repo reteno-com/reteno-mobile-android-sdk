@@ -11,7 +11,6 @@ import com.google.gson.annotations.SerializedName
  *       "id":"id", 					// required
  *       "name":"name",					// required
  *       "description":"description",	// required
- *       "groupId":"groupId",
  *       "importance":4,
  *       "enable_lights":false,
  *       "light_color":0,
@@ -26,7 +25,6 @@ internal data class NotificationChannelData(
     @SerializedName("id") val id: String,
     @SerializedName("name") val name: String,
     @SerializedName("description") val description: String,
-    @SerializedName("group_id") val groupId: String? = null,
 
     @SerializedName("importance") val importance: Int = NotificationManager.IMPORTANCE_HIGH,
     @SerializedName("enable_lights") val enableLights: Boolean = false,

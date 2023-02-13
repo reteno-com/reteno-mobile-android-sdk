@@ -20,7 +20,7 @@ internal class SharedPrefsManager {
         val currentDeviceId = sharedPreferences.getString(PREF_KEY_DEVICE_ID, "")
         val deviceId = if (currentDeviceId.isNullOrBlank()) {
             val randomId = UUID.randomUUID().toString()
-            sharedPreferences.edit()?.putString(PREF_KEY_DEVICE_ID, randomId)?.apply()
+            sharedPreferences.edit().putString(PREF_KEY_DEVICE_ID, randomId).apply()
             randomId
         } else {
             currentDeviceId
@@ -33,7 +33,7 @@ internal class SharedPrefsManager {
     fun saveFcmToken(token: String) {
         /*@formatter:off*/ Logger.i(TAG, "saveFcmToken(): ", "token = [" , token , "]")
         /*@formatter:on*/
-        sharedPreferences.edit()?.putString(PREF_KEY_FCM_TOKEN, token)?.apply()
+        sharedPreferences.edit().putString(PREF_KEY_FCM_TOKEN, token).apply()
     }
 
     fun getFcmToken(): String {
@@ -46,7 +46,7 @@ internal class SharedPrefsManager {
     fun saveDefaultNotificationChannel(defaultChannel: String) {
         /*@formatter:off*/ Logger.i(TAG, "saveDefaultNotificationChannel(): ", "defaultChannel = [" , defaultChannel , "]")
         /*@formatter:on*/
-        sharedPreferences.edit()?.putString(PREF_KEY_NOTIFICATION_CHANNEL_DEFAULT, defaultChannel)?.apply()
+        sharedPreferences.edit().putString(PREF_KEY_NOTIFICATION_CHANNEL_DEFAULT, defaultChannel).apply()
     }
 
     fun getDefaultNotificationChannel(): String {
@@ -59,12 +59,25 @@ internal class SharedPrefsManager {
     fun saveNotificationsEnabled(enabled: Boolean) {
         /*@formatter:off*/ Logger.i(TAG, "saveNotificationsEnabled(): ", "boolean = [" , enabled , "]")
         /*@formatter:on*/
-        sharedPreferences.edit()?.putBoolean(PREF_KEY_NOTIFICATIONS_ENABLED, enabled)?.apply()
+        sharedPreferences.edit().putBoolean(PREF_KEY_NOTIFICATIONS_ENABLED, enabled).apply()
     }
 
-    fun getNotificationsEnabled(): Boolean {
+    fun isNotificationsEnabled(): Boolean {
         val result = sharedPreferences.getBoolean(PREF_KEY_NOTIFICATIONS_ENABLED, false)
-        /*@formatter:off*/ Logger.i(TAG, "getNotificationsEnabled(): ", result)
+        /*@formatter:off*/ Logger.i(TAG, "isNotificationsEnabled(): ", result)
+        /*@formatter:on*/
+        return result
+    }
+
+    fun saveDeviceRegistered(registered: Boolean) {
+        /*@formatter:off*/ Logger.i(TAG, "saveDeviceRegistered(): ", "registered = [", registered, "]")
+        /*@formatter:on*/
+        sharedPreferences.edit().putBoolean(PREF_KEY_DEVICE_REGISTERED, registered).apply()
+    }
+
+    fun isDeviceRegistered(): Boolean {
+        val result = sharedPreferences.getBoolean(PREF_KEY_DEVICE_REGISTERED, false)
+        /*@formatter:off*/ Logger.i(TAG, "isDeviceRegistered(): ", result)
         /*@formatter:on*/
         return result
     }
@@ -77,5 +90,6 @@ internal class SharedPrefsManager {
         private const val PREF_KEY_FCM_TOKEN = "fcm_token"
         private const val PREF_KEY_NOTIFICATION_CHANNEL_DEFAULT = "notification_channel_default"
         private const val PREF_KEY_NOTIFICATIONS_ENABLED = "notifications_enabled"
+        private const val PREF_KEY_DEVICE_REGISTERED = "device_registered"
     }
 }

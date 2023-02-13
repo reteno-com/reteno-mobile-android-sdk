@@ -2,7 +2,6 @@
 	"id":"defaultId",
 	"name":"name",
 	"description":"description",
-	"groupId":"groupId",
 	"importance":4,
 	"enable_lights":false,
 	"light_color":0,
