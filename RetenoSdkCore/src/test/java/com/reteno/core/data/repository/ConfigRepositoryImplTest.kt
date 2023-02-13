@@ -109,6 +109,33 @@ class ConfigRepositoryImplTest : BaseUnitTest() {
     }
 
     @Test
+    fun given_whenSaveDeviceRegistered_thenDelegatedToSharedPrefsManager() {
+        // Given
+        justRun { sharedPrefsManager.saveDeviceRegistered(any()) }
+        val isDeviceRegistered = false
+
+        // When
+        SUT.saveDeviceRegistered(isDeviceRegistered)
+
+        // Then
+        verify(exactly = 1) { sharedPrefsManager.saveDeviceRegistered(isDeviceRegistered) }
+    }
+
+    @Test
+    fun given_whenIsDeviceRegistered_thenDelegatedToSharedPrefsManager() {
+        // Given
+        val isDeviceRegistered = false
+        every { sharedPrefsManager.isDeviceRegistered() } returns isDeviceRegistered
+
+        // When
+        val actualResult = SUT.isDeviceRegistered()
+
+        // Then
+        verify(exactly = 1) { sharedPrefsManager.isDeviceRegistered() }
+        assertEquals(isDeviceRegistered, actualResult)
+    }
+
+    @Test
     fun givenFcmTokenAbsent_whenGetFcmToken_thenGetAndSaveFreshFcmTokenCalled() {
         // Given
         every { TextUtils.isEmpty(any()) } returns true

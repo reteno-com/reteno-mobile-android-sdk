@@ -88,11 +88,12 @@ class ContactRepositoryImplTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun whenSaveDeviceData_thenInsertDbAndPush() {
+    fun givenDeviceIsNotYetPresentInDb_whenSaveDeviceData_thenInsertDbAndPush() {
         // Given
         val device = getDevice()
         val deviceDb = getDeviceDb()
         every { databaseManagerDevice.getDevices(any()) } returnsMany listOf(
+            emptyList(),
             listOf(deviceDb),
             emptyList()
         )
@@ -101,8 +102,27 @@ class ContactRepositoryImplTest : BaseRobolectricTest() {
         SUT.saveDeviceData(device)
 
         // Then
+        verify(exactly = 1) { databaseManagerDevice.insertDevice(deviceDb) }
         verify(exactly = 1) { apiClient.post(any(), any(), any()) }
-        verify { databaseManagerDevice.insertDevice(deviceDb) }
+    }
+
+    @Test
+    fun givenDeviceAlreadyPresentInDb_whenSaveDeviceData_thenNotInsertDbAndPush() {
+        // Given
+        val device = getDevice()
+        val deviceDb = getDeviceDb()
+        every { databaseManagerDevice.getDevices(any()) } returnsMany listOf(
+            listOf(deviceDb),
+            listOf(deviceDb),
+            emptyList()
+        )
+
+        // When
+        SUT.saveDeviceData(device)
+
+        // Then
+        verify(exactly = 0) { databaseManagerDevice.insertDevice(deviceDb) }
+        verify(exactly = 1) { apiClient.post(any(), any(), any()) }
     }
 
     @Test
@@ -141,6 +161,7 @@ class ContactRepositoryImplTest : BaseRobolectricTest() {
         verify(exactly = 2) { apiClient.post(any(), any(), any()) }
         verify(exactly = 2) { databaseManagerDevice.deleteDevices(1) }
         verify(exactly = 1) { PushOperationQueue.nextOperation() }
+        verify(exactly = 2) { configRepository.saveDeviceRegistered(true) }
     }
 
     @Test
@@ -159,6 +180,7 @@ class ContactRepositoryImplTest : BaseRobolectricTest() {
         // Then
         verify(exactly = 1) { apiClient.post(any(), any(), any()) }
         verify(exactly = 1) { PushOperationQueue.removeAllOperations() }
+        verify(exactly = 0) { configRepository.saveDeviceRegistered(any()) }
     }
 
     @Test
@@ -179,6 +201,7 @@ class ContactRepositoryImplTest : BaseRobolectricTest() {
         verify(exactly = 3) { databaseManagerDevice.getDevices(1) }
         verify(exactly = 2) { databaseManagerDevice.deleteDevices(1) }
         verify(exactly = 1) { PushOperationQueue.nextOperation() }
+        verify(exactly = 0) { configRepository.saveDeviceRegistered(any()) }
     }
 
     @Test
@@ -192,7 +215,7 @@ class ContactRepositoryImplTest : BaseRobolectricTest() {
         // Then
         verify(exactly = 0) { apiClient.post(any(), any(), any()) }
         verify { PushOperationQueue.nextOperation() }
-
+        verify(exactly = 0) { configRepository.saveDeviceRegistered(any()) }
     }
 
     @Test

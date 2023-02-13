@@ -3,6 +3,7 @@ package com.reteno.core.data.repository
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerDevice
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerUser
 import com.reteno.core.data.local.mappers.toDb
+import com.reteno.core.data.local.model.device.DeviceDb
 import com.reteno.core.data.remote.OperationQueue
 import com.reteno.core.data.remote.PushOperationQueue
 import com.reteno.core.data.remote.api.ApiClient
@@ -26,7 +27,16 @@ internal class ContactRepositoryImpl(
         /*@formatter:off*/ Logger.i(TAG, "saveDeviceData(): ", "device = [" , device , "]")
         /*@formatter:on*/
         OperationQueue.addOperation {
-            databaseManagerDevice.insertDevice(device.toDb())
+            val newDevice: DeviceDb = device.toDb()
+            val savedDevices: List<DeviceDb> = databaseManagerDevice.getDevices()
+            if (!savedDevices.contains(newDevice)) {
+                databaseManagerDevice.insertDevice(device.toDb())
+                /*@formatter:off*/ Logger.i(TAG, "saveDeviceData(): ", "Device saved")
+                /*@formatter:on*/
+            } else {
+                /*@formatter:off*/ Logger.i(TAG, "saveDeviceData(): ", "Device NOT saved. Device is already present in database. Duplicates are not saved")
+                /*@formatter:on*/
+            }
             pushDeviceData()
         }
     }
@@ -41,7 +51,7 @@ internal class ContactRepositoryImpl(
     }
 
     override fun pushDeviceData() {
-        val device = databaseManagerDevice.getDevices(1).firstOrNull() ?: kotlin.run {
+        val device: DeviceDb = databaseManagerDevice.getDevices(1).firstOrNull() ?: kotlin.run {
             PushOperationQueue.nextOperation()
             return
         }
@@ -55,6 +65,7 @@ internal class ContactRepositoryImpl(
                     /*@formatter:off*/ Logger.i(TAG, "onSuccess(): ", "response = [" , response , "]")
                     /*@formatter:on*/
                     databaseManagerDevice.deleteDevices(1)
+                    configRepository.saveDeviceRegistered(true)
                     pushDeviceData()
                 }
 

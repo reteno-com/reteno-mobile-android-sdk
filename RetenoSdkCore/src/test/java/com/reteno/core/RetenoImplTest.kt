@@ -208,7 +208,8 @@ class RetenoImplTest : BaseRobolectricTest() {
         retenoImpl.resume(mockk())
 
         // Then
-        verify { scheduleController.startScheduler() }
+        verify(exactly = 1) { scheduleController.startScheduler() }
+        verify(exactly = 1) { contactController.checkIfDeviceRegistered() }
     }
 
     @Test
