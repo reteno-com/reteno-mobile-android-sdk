@@ -64,8 +64,14 @@ internal class ConfigRepositoryImpl(
         sharedPrefsManager.saveNotificationsEnabled(enabled)
     }
 
-    override fun getNotificationsEnabled(): Boolean =
-        sharedPrefsManager.getNotificationsEnabled()
+    override fun isNotificationsEnabled(): Boolean =
+        sharedPrefsManager.isNotificationsEnabled()
+
+    override fun saveDeviceRegistered(registered: Boolean) =
+        sharedPrefsManager.saveDeviceRegistered(registered)
+
+    override fun isDeviceRegistered(): Boolean =
+        sharedPrefsManager.isDeviceRegistered()
 
     companion object {
         private val TAG: String = ConfigRepositoryImpl::class.java.simpleName

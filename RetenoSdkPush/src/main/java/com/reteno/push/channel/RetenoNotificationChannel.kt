@@ -63,7 +63,6 @@ internal object RetenoNotificationChannel {
             channelData.importance
         ).apply {
             description = channelData.description
-            channelData.groupId?.let(::setGroup)
             enableLights(channelData.enableLights)
             lightColor = channelData.lightColor
             enableVibration(channelData.enableVibration)

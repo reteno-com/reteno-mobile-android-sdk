@@ -48,6 +48,7 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
         /*@formatter:on*/
         try {
             clearOldData()
+            contactController.checkIfDeviceRegistered()
             sendAppResumeBroadcast()
             startPushScheduler()
         } catch (ex: Throwable) {
