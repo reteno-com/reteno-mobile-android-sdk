@@ -28,7 +28,7 @@ import org.junit.Test
 import java.time.ZonedDateTime
 
 
-class RetenoDatabaseManagerEventsTest : BaseRobolectricTest() {
+class RetenoDatabaseManagerEventsImplTest : BaseRobolectricTest() {
 
     // region constants ----------------------------------------------------------------------------
     companion object {
@@ -37,6 +37,8 @@ class RetenoDatabaseManagerEventsTest : BaseRobolectricTest() {
         private const val ROW_ID_INSERTED = 1L
         private const val PARENT_ROW_ID_NOT_FOUND = -1L
 
+        private const val EVENT_ROW_ID_1 = "12333"
+        private const val EVENT_ROW_ID_2 = "1"
         private const val EVENT_TYPE_KEY_1 = "eventTypeKey_1"
         private val EVENT_OCCURRED_1 = ZonedDateTime.now().minusDays(1).toString()
         private const val EVENT_TYPE_KEY_2 = "eventTypeKey_2"
@@ -51,8 +53,8 @@ class RetenoDatabaseManagerEventsTest : BaseRobolectricTest() {
 
         private val param1 = ParameterDb(name = EVENT_PARAMS_NAME_1, value = EVENT_PARAMS_VALUE_1)
         private val param2 = ParameterDb(name = EVENT_PARAMS_NAME_2, value = EVENT_PARAMS_VALUE_2)
-        private val event1 = EventDb(eventTypeKey = EVENT_TYPE_KEY_1, occurred = EVENT_OCCURRED_1, params = null)
-        private val event2 = EventDb(eventTypeKey = EVENT_TYPE_KEY_2, occurred = EVENT_OCCURRED_2, params = listOf(
+        private val event1 = EventDb(rowId = EVENT_ROW_ID_1, eventTypeKey = EVENT_TYPE_KEY_1, occurred = EVENT_OCCURRED_1, params = null)
+        private val event2 = EventDb(rowId = EVENT_ROW_ID_2, eventTypeKey = EVENT_TYPE_KEY_2, occurred = EVENT_OCCURRED_2, params = listOf(
             param1, param2
         ))
         private val events = EventsDb(
@@ -442,43 +444,69 @@ class RetenoDatabaseManagerEventsTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun given_whenDeleteEventsOldest_thenEventsDeleted() {
-        // Given
-        val order = "ASC"
-        val count = 2
-        val whereClauseExpected = "${EventsSchema.EventSchema.COLUMN_EVENT_ROW_ID} " +
-                    "in (select ${EventsSchema.EventSchema.COLUMN_EVENT_ROW_ID} " +
-                    "from ${EventsSchema.EventSchema.TABLE_NAME_EVENT} " +
-                    "ORDER BY ${EventsSchema.EventSchema.COLUMN_EVENT_OCCURRED} $order " +
-                    "LIMIT $count)"
-
-        every { database.delete(any(), any(), any()) } returns 0
-
+    fun givenEventsNotEmpty_wheDeleteEvents_thenDeleteFromDatabaseCalled() {
         // When
-        SUT.deleteEvents(count, true)
+        SUT.deleteEvents(events)
 
         // Then
-        verify(exactly = 1) { database.delete(EventsSchema.EventSchema.TABLE_NAME_EVENT, whereClauseExpected) }
+        verify(exactly = 1) {
+            database.delete(
+                table = eq(EventsSchema.EventSchema.TABLE_NAME_EVENT),
+                whereClause = eq("${EventsSchema.EventSchema.COLUMN_EVENT_ROW_ID}=?"),
+                whereArgs = eq(arrayOf(EVENT_ROW_ID_1))
+            )
+        }
+        verify(exactly = 1) {
+            database.delete(
+                table = eq(EventsSchema.EventSchema.TABLE_NAME_EVENT),
+                whereClause = eq("${EventsSchema.EventSchema.COLUMN_EVENT_ROW_ID}=?"),
+                whereArgs = eq(arrayOf(EVENT_ROW_ID_2))
+            )
+        }
     }
 
     @Test
-    fun given_whenDeleteEventsNewest_thenEventsDeleted() {
+    fun givenEventsEmpty_wheDeleteEvents_thenDeleteFromDatabaseNotCalled() {
         // Given
-        val order = "DESC"
-        val count = 5
-        val whereClauseExpected = "${EventsSchema.EventSchema.COLUMN_EVENT_ROW_ID} " +
-                "in (select ${EventsSchema.EventSchema.COLUMN_EVENT_ROW_ID} " +
-                "from ${EventsSchema.EventSchema.TABLE_NAME_EVENT} " +
-                "ORDER BY ${EventsSchema.EventSchema.COLUMN_EVENT_OCCURRED} $order " +
-                "LIMIT $count)"
-
-        every { database.delete(any(), any(), any()) } returns 0
+        val events = EventsDb(
+            deviceId = DEVICE_ID,
+            externalUserId = EXTERNAL_USER_ID,
+            eventList = emptyList()
+        )
 
         // When
-        SUT.deleteEvents(count, false)
+        SUT.deleteEvents(events)
 
         // Then
-        verify(exactly = 1) { database.delete(EventsSchema.EventSchema.TABLE_NAME_EVENT, whereClauseExpected) }
+        verify(exactly = 0) {
+            database.delete(
+                table = any(),
+                whereClause = any(),
+                whereArgs = any()
+            )
+        }
+    }
+
+    @Test
+    fun givenEventsWithEmptyRowIds_wheDeleteEvents_thenDeleteFromDatabaseNotCalled() {
+        // Given
+        val events = EventsDb(
+            deviceId = DEVICE_ID,
+            externalUserId = EXTERNAL_USER_ID,
+            eventList = listOf(event1.copy(rowId = null), event2.copy(rowId =  null))
+        )
+
+        // When
+        SUT.deleteEvents(events)
+
+        // Then
+        verify(exactly = 0) {
+            database.delete(
+                table = any(),
+                whereClause = any(),
+                whereArgs = any()
+            )
+        }
     }
 
     @Test

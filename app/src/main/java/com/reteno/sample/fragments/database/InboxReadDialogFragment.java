@@ -56,7 +56,8 @@ public class InboxReadDialogFragment extends BaseReadDialogFragment<AppInboxMess
 
     @Override
     protected void deleteItems(int count) {
-        databaseManager.deleteAppInboxMessages(count, true);
+        List<AppInboxMessageDb> messages = databaseManager.getAppInboxMessages(count);
+        databaseManager.deleteAppInboxMessages(messages);
     }
 
     //==============================================================================================

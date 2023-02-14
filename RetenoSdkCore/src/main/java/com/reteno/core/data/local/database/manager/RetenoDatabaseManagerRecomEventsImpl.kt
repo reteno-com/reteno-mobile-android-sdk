@@ -20,6 +20,9 @@ internal class RetenoDatabaseManagerRecomEventsImpl(private val database: Reteno
     private val contentValues = ContentValues()
 
     override fun insertRecomEvents(recomEvents: RecomEventsDb) {
+        /*@formatter:off*/ Logger.i(TAG, "insertRecomEvents(): ", "INSERT")
+        /*@formatter:on*/
+
         if (recomEvents.recomEvents == null || recomEvents.recomEvents.isEmpty()) {
             /*@formatter:off*/ Logger.e(TAG, "insertRecomEvents(): ", Throwable("recomEvents = $recomEvents"))
             /*@formatter:on*/
@@ -43,6 +46,9 @@ internal class RetenoDatabaseManagerRecomEventsImpl(private val database: Reteno
     }
 
     private fun isRecomVariantIdPresentInParentTable(recomVariantId: String): Boolean {
+        /*@formatter:off*/ Logger.i(TAG, "isRecomVariantIdPresentInParentTable(): ", "recomVariantId = [", recomVariantId, "]")
+        /*@formatter:on*/
+
         var cursor: Cursor? = null
 
         try {
@@ -67,6 +73,9 @@ internal class RetenoDatabaseManagerRecomEventsImpl(private val database: Reteno
     }
 
     private fun putRecomVariantIdToParentTable(recomVariantId: String): Boolean {
+        /*@formatter:off*/ Logger.i(TAG, "putRecomVariantIdToParentTable(): ", "recomVariantId = [", recomVariantId, "]")
+        /*@formatter:on*/
+
         contentValues.putRecomVariantId(recomVariantId)
         val parentRowId = database.insert(
             table = RecomEventsSchema.TABLE_NAME_RECOM_EVENTS,
@@ -81,6 +90,8 @@ internal class RetenoDatabaseManagerRecomEventsImpl(private val database: Reteno
         variantId: String,
         recomEventListDb: List<RecomEventDb>
     ) {
+        /*@formatter:off*/ Logger.i(TAG, "insertRecomEventList(): ", "variantId = [", variantId, "], recomEventListDb = [", recomEventListDb, "]")
+        /*@formatter:on*/
 
         val contentValues = recomEventListDb.toContentValuesList(variantId)
         database.insertMultiple(
@@ -90,6 +101,9 @@ internal class RetenoDatabaseManagerRecomEventsImpl(private val database: Reteno
     }
 
     override fun getRecomEvents(limit: Int?): List<RecomEventsDb> {
+        /*@formatter:off*/ Logger.i(TAG, "getRecomEvents(): ", "limit = [", limit, "]")
+        /*@formatter:on*/
+
         val recomVariantIds: MutableList<String> = readRecomVariantIds()
         val recomEventsResult: MutableList<RecomEventsDb> =
             readRecomEventList(recomVariantIds, limit)
@@ -100,6 +114,9 @@ internal class RetenoDatabaseManagerRecomEventsImpl(private val database: Reteno
     }
 
     private fun readRecomVariantIds(): MutableList<String> {
+        /*@formatter:off*/ Logger.i(TAG, "readRecomVariantIds(): ", "")
+        /*@formatter:on*/
+
         val recomVariantIds: MutableList<String> = mutableListOf()
         var cursor: Cursor? = null
         try {
@@ -199,17 +216,33 @@ internal class RetenoDatabaseManagerRecomEventsImpl(private val database: Reteno
     /**
      * Call [com.reteno.core.data.local.database.RetenoDatabase.cleanUnlinkedRecomVariantIds] each time you remove events from RecomEvent table (Child table)
      */
-    override fun deleteRecomEvents(count: Int, oldest: Boolean) {
-        val order = if (oldest) "ASC" else "DESC"
-        database.delete(
-            table = RecomEventsSchema.RecomEventSchema.TABLE_NAME_RECOM_EVENT,
-            whereClause = "${RecomEventsSchema.RecomEventSchema.COLUMN_RECOM_EVENT_ROW_ID} in (select ${RecomEventsSchema.RecomEventSchema.COLUMN_RECOM_EVENT_ROW_ID} from ${RecomEventsSchema.RecomEventSchema.TABLE_NAME_RECOM_EVENT} ORDER BY ${RecomEventsSchema.RecomEventSchema.COLUMN_RECOM_EVENT_OCCURRED} $order LIMIT $count)"
-        )
+    override fun deleteRecomEvents(recomEvents: List<RecomEventsDb>) {
+        /*@formatter:off*/ Logger.i(TAG, "deleteRecomEvents(): ", "recomEvents = [", recomEvents, "]")
+        /*@formatter:on*/
+
+        val rowIds: List<String> = recomEvents
+            .mapNotNull { it.recomEvents }
+            .flatten()
+            .mapNotNull { it.rowId }
+
+        for (rowId: String in rowIds) {
+            database.delete(
+                table = RecomEventsSchema.RecomEventSchema.TABLE_NAME_RECOM_EVENT,
+                whereClause = "${RecomEventsSchema.RecomEventSchema.COLUMN_RECOM_EVENT_ROW_ID}=?",
+                whereArgs = arrayOf(rowId)
+            )
+        }
 
         database.cleanUnlinkedRecomVariantIds()
     }
 
+    /**
+     * Call [com.reteno.core.data.local.database.RetenoDatabase.cleanUnlinkedRecomVariantIds] each time you remove events from RecomEvent table (Child table)
+     */
     override fun deleteRecomEventsByTime(outdatedTime: String): Int {
+        /*@formatter:off*/ Logger.i(TAG, "deleteRecomEventsByTime(): ", "outdatedTime = [", outdatedTime, "]")
+        /*@formatter:on*/
+
         val count = database.delete(
             table = RecomEventsSchema.RecomEventSchema.TABLE_NAME_RECOM_EVENT,
             whereClause = "${RecomEventsSchema.RecomEventSchema.COLUMN_RECOM_EVENT_OCCURRED} < '$outdatedTime'"

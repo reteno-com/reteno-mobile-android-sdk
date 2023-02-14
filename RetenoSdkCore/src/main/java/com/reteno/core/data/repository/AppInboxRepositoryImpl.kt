@@ -45,7 +45,7 @@ internal class AppInboxRepositoryImpl(
     override fun saveMessageOpened(messageId: String) {
         /*@formatter:off*/ Logger.i(TAG, "saveMessageOpened(): ", "messageId = [" , messageId , "]")
         /*@formatter:on*/
-        OperationQueue.addOperation {
+        OperationQueue.addParallelOperation {
             val inbox = AppInboxMessageDb(
                 id = messageId,
                 deviceId = configRepository.getDeviceId().id
@@ -147,7 +147,8 @@ internal class AppInboxRepositoryImpl(
     override fun pushMessagesStatus() {
         /*@formatter:off*/ Logger.i(TAG, "pushMessagesStatus(): ", "")
         /*@formatter:on*/
-        val messagesIds: List<String> = databaseManager.getAppInboxMessages()
+        val appInboxMessages: List<AppInboxMessageDb> = databaseManager.getAppInboxMessages()
+        val messagesIds: List<String> = appInboxMessages
             .map { it.id }
             .takeIf { it.isNotEmpty() } ?: kotlin.run {
             PushOperationQueue.nextOperation()
@@ -164,19 +165,20 @@ internal class AppInboxRepositoryImpl(
                 override fun onSuccess(response: String) {
                     /*@formatter:off*/ Logger.i(TAG, "onSuccess(): ", "response = [" , response , "]")
                     /*@formatter:on*/
-                    databaseManager.deleteAppInboxMessages(messagesIds.size)
+                    databaseManager.deleteAppInboxMessages(appInboxMessages)
                     fetchCount()
-                    pushMessagesStatus()
+                    PushOperationQueue.nextOperation()
                 }
 
                 override fun onFailure(statusCode: Int?, response: String?, throwable: Throwable?) {
                     /*@formatter:off*/ Logger.i(TAG, "onFailure(): ", "statusCode = [" , statusCode , "], response = [" , response , "], throwable = [" , throwable , "]")
                     /*@formatter:on*/
                     if (isNonRepeatableError(statusCode)) {
-                        databaseManager.deleteAppInboxMessages(messagesIds.size)
-                        pushMessagesStatus()
+                        databaseManager.deleteAppInboxMessages(appInboxMessages)
+                        PushOperationQueue.nextOperation()
+                    } else {
+                        PushOperationQueue.removeAllOperations()
                     }
-                    PushOperationQueue.removeAllOperations()
                 }
 
             }

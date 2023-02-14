@@ -6,6 +6,6 @@ interface RetenoDatabaseManagerRecomEvents {
     fun insertRecomEvents(recomEvents: RecomEventsDb)
     fun getRecomEvents(limit: Int? = null): List<RecomEventsDb>
     fun getRecomEventsCount(): Long
-    fun deleteRecomEvents(count: Int, oldest: Boolean = true)
+    fun deleteRecomEvents(recomEvents: List<RecomEventsDb>)
     fun deleteRecomEventsByTime(outdatedTime: String): Int
 }

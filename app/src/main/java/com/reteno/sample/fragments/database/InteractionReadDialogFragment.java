@@ -56,7 +56,10 @@ public class InteractionReadDialogFragment extends BaseReadDialogFragment<Intera
 
     @Override
     protected void deleteItems(int count) {
-        databaseManager.deleteInteractions(count, true);
+        List<InteractionDb> interactions = databaseManager.getInteractions(count);
+        for (InteractionDb interaction : interactions) {
+            databaseManager.deleteInteraction(interaction);
+        }
     }
 
     //==============================================================================================

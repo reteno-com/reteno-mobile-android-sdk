@@ -7,6 +7,6 @@ interface RetenoDatabaseManagerEvents {
     fun insertEvents(events: EventsDb)
     fun getEvents(limit: Int? = null): List<EventsDb>
     fun getEventsCount(): Long
-    fun deleteEvents(count: Int, oldest: Boolean = true)
+    fun deleteEvents(events: EventsDb)
     fun deleteEventsByTime(outdatedTime: String): List<EventDb>
 }

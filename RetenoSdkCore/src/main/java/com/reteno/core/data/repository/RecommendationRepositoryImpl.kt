@@ -65,7 +65,7 @@ internal class RecommendationRepositoryImpl(
     override fun saveRecommendations(recomEvents: RecomEvents) {
         /*@formatter:off*/ Logger.i(TAG, "saveRecommendations(): ", "recomEvents = [" , recomEvents , "]")
         /*@formatter:on*/
-        OperationQueue.addOperation {
+        OperationQueue.addParallelOperation {
             databaseManager.insertRecomEvents(recomEvents.toDb())
         }
     }
@@ -84,7 +84,6 @@ internal class RecommendationRepositoryImpl(
         /*@formatter:off*/ Logger.i(TAG, "pushRecommendations(): ", "recomEventsList = [" , recomEventsList , "]")
         /*@formatter:on*/
 
-        val recomEventsListSize = recomEventsList.sumOf { it.recomEvents?.size ?: 0 }
         apiClient.post(
             ApiContract.Recommendation.PostRecoms,
             recomEventsList.toRemote().toJson(),
@@ -93,18 +92,20 @@ internal class RecommendationRepositoryImpl(
                 override fun onSuccess(response: String) {
                     /*@formatter:off*/ Logger.i(TAG, "pushRecommendations() onSuccess(): ", "response = [" , response , "]")
                     /*@formatter:on*/
-                    databaseManager.deleteRecomEvents(recomEventsListSize)
-                    pushRecommendations()
+
+                    databaseManager.deleteRecomEvents(recomEventsList)
+                    PushOperationQueue.nextOperation()
                 }
 
                 override fun onFailure(statusCode: Int?, response: String?, throwable: Throwable?) {
                     /*@formatter:off*/ Logger.i(TAG, "pushRecommendations() onFailure(): ", "statusCode = [" , statusCode , "], response = [" , response , "], throwable = [" , throwable , "]")
                     /*@formatter:on*/
                     if (isNonRepeatableError(statusCode)) {
-                        databaseManager.deleteRecomEvents(recomEventsListSize)
-                        pushRecommendations()
+                        databaseManager.deleteRecomEvents(recomEventsList)
+                        PushOperationQueue.nextOperation()
+                    } else {
+                        PushOperationQueue.removeAllOperations()
                     }
-                    PushOperationQueue.removeAllOperations()
                 }
             }
         )

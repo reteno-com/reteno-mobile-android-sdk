@@ -218,7 +218,7 @@ class RecommendationRepositoryImplTest : BaseRobolectricTest() {
         SUT.saveRecommendations(recomEvents)
 
         // Then
-        verify(exactly = 1) { OperationQueue.addOperation(any()) }
+        verify(exactly = 1) { OperationQueue.addParallelOperation(any()) }
         verify(exactly = 1) { databaseManagerRecomEvents.insertRecomEvents(recomEventsDb) }
     }
 
@@ -239,7 +239,7 @@ class RecommendationRepositoryImplTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun givenValidRecomEvents_whenRecomEventsPushSuccessful_thenTryPushNextRecomEvents() {
+    fun givenValidRecomEvents_whenRecomEventsPushSuccessful_thenNextOperation() {
         // Given
         val recomEvents = getRecomEvents()
         val recomEventsDb = getRecomEventsDb()
@@ -257,9 +257,10 @@ class RecommendationRepositoryImplTest : BaseRobolectricTest() {
         SUT.pushRecommendations()
 
         // Then
-        verify(exactly = 2) { apiClient.post(any(), any(), any()) }
-        verify(exactly = 2) { databaseManagerRecomEvents.deleteRecomEvents(1) }
+        verify(exactly = 1) { apiClient.post(any(), any(), any()) }
+        verify(exactly = 1) { databaseManagerRecomEvents.deleteRecomEvents(listOf(recomEventsDb)) }
         verify(exactly = 1) { PushOperationQueue.nextOperation() }
+        verify(exactly = 0) { PushOperationQueue.removeAllOperations() }
     }
 
     @Test
@@ -281,7 +282,7 @@ class RecommendationRepositoryImplTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun givenValidRecomEvents_whenRecomEventsPushFailedAndErrorIsNonRepeatable_thenTryPushNextRecomEvents() {
+    fun givenValidRecomEvents_whenRecomEventsPushFailedAndErrorIsNonRepeatable_thenNextOperation() {
         // Given
         val recomEventsDb = getRecomEventsDb()
         every { databaseManagerRecomEvents.getRecomEvents(any()) } returnsMany listOf(
@@ -298,10 +299,11 @@ class RecommendationRepositoryImplTest : BaseRobolectricTest() {
         SUT.pushRecommendations()
 
         // Then
-        verify(exactly = 2) { apiClient.post(any(), any(), any()) }
-        verify(exactly = 3) { databaseManagerRecomEvents.getRecomEvents() }
-        verify(exactly = 2) { databaseManagerRecomEvents.deleteRecomEvents(1) }
+        verify(exactly = 1) { apiClient.post(any(), any(), any()) }
+        verify(exactly = 1) { databaseManagerRecomEvents.getRecomEvents() }
+        verify(exactly = 1) { databaseManagerRecomEvents.deleteRecomEvents(listOf(recomEventsDb)) }
         verify(exactly = 1) { PushOperationQueue.nextOperation() }
+        verify(exactly = 0) { PushOperationQueue.removeAllOperations() }
     }
 
     @Test

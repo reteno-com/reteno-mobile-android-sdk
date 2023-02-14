@@ -4,6 +4,7 @@ import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerDevice
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerUser
 import com.reteno.core.data.local.mappers.toDb
 import com.reteno.core.data.local.model.device.DeviceDb
+import com.reteno.core.data.local.model.user.UserDb
 import com.reteno.core.data.remote.OperationQueue
 import com.reteno.core.data.remote.PushOperationQueue
 import com.reteno.core.data.remote.api.ApiClient
@@ -26,7 +27,7 @@ internal class ContactRepositoryImpl(
     override fun saveDeviceData(device: Device) {
         /*@formatter:off*/ Logger.i(TAG, "saveDeviceData(): ", "device = [" , device , "]")
         /*@formatter:on*/
-        OperationQueue.addOperation {
+        OperationQueue.addParallelOperation {
             val newDevice: DeviceDb = device.toDb()
             val savedDevices: List<DeviceDb> = databaseManagerDevice.getDevices()
             if (!savedDevices.contains(newDevice)) {
@@ -44,7 +45,7 @@ internal class ContactRepositoryImpl(
     override fun saveUserData(user: User) {
         /*@formatter:off*/ Logger.i(TAG, "saveUserData(): ", "user = [" , user , "]")
         /*@formatter:on*/
-        OperationQueue.addOperation {
+        OperationQueue.addParallelOperation {
             databaseManagerUser.insertUser(user.toDb(configRepository.getDeviceId()))
             pushUserData()
         }
@@ -64,17 +65,23 @@ internal class ContactRepositoryImpl(
                 override fun onSuccess(response: String) {
                     /*@formatter:off*/ Logger.i(TAG, "onSuccess(): ", "response = [" , response , "]")
                     /*@formatter:on*/
-                    databaseManagerDevice.deleteDevices(1)
                     configRepository.saveDeviceRegistered(true)
-                    pushDeviceData()
+                    val cacheUpdated = databaseManagerDevice.deleteDevice(device)
+                    if (cacheUpdated) {
+                        pushDeviceData()
+                    } else {
+                        PushOperationQueue.nextOperation()
+                    }
                 }
 
                 override fun onFailure(statusCode: Int?, response: String?, throwable: Throwable?) {
                     /*@formatter:off*/ Logger.i(TAG, "onFailure(): ", "statusCode = [" , statusCode , "], response = [" , response , "], throwable = [" , throwable , "]")
                     /*@formatter:on*/
                     if (isNonRepeatableError(statusCode)) {
-                        databaseManagerDevice.deleteDevices(1)
-                        pushDeviceData()
+                        val cacheUpdated = databaseManagerDevice.deleteDevice(device)
+                        if (cacheUpdated) {
+                            pushDeviceData()
+                        }
                     }
                     PushOperationQueue.removeAllOperations()
                 }
@@ -83,7 +90,7 @@ internal class ContactRepositoryImpl(
     }
 
     override fun pushUserData() {
-        val user = databaseManagerUser.getUser(1).firstOrNull() ?: kotlin.run {
+        val user: UserDb = databaseManagerUser.getUsers(1).firstOrNull() ?: kotlin.run {
             PushOperationQueue.nextOperation()
             return
         }
@@ -96,16 +103,22 @@ internal class ContactRepositoryImpl(
                 override fun onSuccess(response: String) {
                     /*@formatter:off*/ Logger.i(TAG, "onSuccess(): ", "response = [" , response , "]")
                     /*@formatter:on*/
-                    databaseManagerUser.deleteUsers(1)
-                    pushUserData()
+                    val cacheUpdated = databaseManagerUser.deleteUser(user)
+                    if (cacheUpdated) {
+                        pushUserData()
+                    } else {
+                        PushOperationQueue.nextOperation()
+                    }
                 }
 
                 override fun onFailure(statusCode: Int?, response: String?, throwable: Throwable?) {
                     /*@formatter:off*/ Logger.i(TAG, "onFailure(): ", "statusCode = [" , statusCode , "], response = [" , response , "], throwable = [" , throwable , "]")
                     /*@formatter:on*/
                     if (isNonRepeatableError(statusCode)) {
-                        databaseManagerUser.deleteUsers(1)
-                        pushUserData()
+                        val cacheUpdated = databaseManagerUser.deleteUser(user)
+                        if (cacheUpdated) {
+                            pushUserData()
+                        }
                     }
                     PushOperationQueue.removeAllOperations()
                 }

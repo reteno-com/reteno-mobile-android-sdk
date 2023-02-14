@@ -35,6 +35,7 @@ fun List<EventDb>.toContentValuesList(parentRowId: Long): List<ContentValues> {
 }
 
 fun Cursor.getEvent(): EventDb? {
+    val rowId = getStringOrNull(getColumnIndex(EventsSchema.EventSchema.COLUMN_EVENT_ROW_ID))
     val eventTypeKey = getStringOrNull(getColumnIndex(EventsSchema.EventSchema.COLUMN_EVENT_TYPE_KEY))
     val occurred = getStringOrNull(getColumnIndex(EventsSchema.EventSchema.COLUMN_EVENT_OCCURRED))
 
@@ -42,7 +43,12 @@ fun Cursor.getEvent(): EventDb? {
     val params: List<ParameterDb>? = paramsString?.listFromJson()
 
     val result: EventDb? = if (allElementsNotNull(eventTypeKey, occurred)) {
-        EventDb(eventTypeKey!!, occurred!!, params)
+        EventDb(
+            rowId = rowId,
+            eventTypeKey = eventTypeKey!!,
+            occurred = occurred!!,
+            params = params
+        )
     } else {
         null
     }

@@ -38,7 +38,7 @@ internal class EventsRepositoryImpl(
             externalUserId = deviceId.externalId,
             eventList = listOf(event.toDb())
         )
-        OperationQueue.addOperation {
+        OperationQueue.addParallelOperation {
             databaseManager.insertEvents(events)
         }
     }
@@ -53,7 +53,7 @@ internal class EventsRepositoryImpl(
             externalUserId = deviceId.externalId,
             eventList = listOf(ecomEvent.toDb())
         )
-        OperationQueue.addOperation {
+        OperationQueue.addParallelOperation {
             databaseManager.insertEvents(events)
         }
     }
@@ -70,7 +70,6 @@ internal class EventsRepositoryImpl(
         /*@formatter:off*/ Logger.i(TAG, "pushEvents(): ", "events = [" , events , "]")
         /*@formatter:on*/
 
-        val eventListSize = events.eventList.size
         apiClient.post(
             ApiContract.MobileApi.Events,
             events.toRemote().toJson(),
@@ -79,18 +78,20 @@ internal class EventsRepositoryImpl(
                 override fun onSuccess(response: String) {
                     /*@formatter:off*/ Logger.i(TAG, "onSuccess(): ", "response = [" , response , "]")
                     /*@formatter:on*/
-                    databaseManager.deleteEvents(eventListSize)
-                    pushEvents()
+
+                    databaseManager.deleteEvents(events)
+                    PushOperationQueue.nextOperation()
                 }
 
                 override fun onFailure(statusCode: Int?, response: String?, throwable: Throwable?) {
                     /*@formatter:off*/ Logger.i(TAG, "onFailure(): ", "statusCode = [" , statusCode , "], response = [" , response , "], throwable = [" , throwable , "]")
                     /*@formatter:on*/
                     if (isNonRepeatableError(statusCode)) {
-                        databaseManager.deleteEvents(eventListSize)
-                        pushEvents()
+                        databaseManager.deleteEvents(events)
+                        PushOperationQueue.nextOperation()
+                    } else {
+                        PushOperationQueue.removeAllOperations()
                     }
-                    PushOperationQueue.removeAllOperations()
                 }
 
             }

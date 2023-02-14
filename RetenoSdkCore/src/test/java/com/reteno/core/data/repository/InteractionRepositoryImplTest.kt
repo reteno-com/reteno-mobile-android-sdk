@@ -12,8 +12,13 @@ import com.reteno.core.domain.ResponseCallback
 import com.reteno.core.domain.model.interaction.Interaction
 import com.reteno.core.domain.model.interaction.InteractionStatus
 import com.reteno.core.util.Logger
-import io.mockk.*
+import io.mockk.every
 import io.mockk.impl.annotations.RelaxedMockK
+import io.mockk.just
+import io.mockk.mockk
+import io.mockk.runs
+import io.mockk.slot
+import io.mockk.verify
 import org.junit.Assert
 import org.junit.Before
 import org.junit.Test
@@ -95,10 +100,11 @@ class InteractionRepositoryImplTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun givenValidInteraction_whenInteractionPushSuccessful_thenTryPushNextInteraction() {
+    fun givenValidInteraction_whenInteractionPushSuccessfulAndCacheUpdated_thenTryPushNextInteraction() {
         // Given
         val dbInteraction = mockk<InteractionDb>(relaxed = true)
         every { databaseManagerInteraction.getInteractions(any()) } returnsMany listOf(listOf(dbInteraction), listOf(dbInteraction), emptyList())
+        every { databaseManagerInteraction.deleteInteraction(dbInteraction) } returns true
         every { apiClient.put(url = any(), jsonBody = any(), responseHandler = any()) } answers {
             val callback = thirdArg<ResponseCallback>()
             callback.onSuccess("")
@@ -109,7 +115,27 @@ class InteractionRepositoryImplTest : BaseRobolectricTest() {
 
         // Then
         verify(exactly = 2) { apiClient.put(any(), any(), any()) }
-        verify(exactly = 2) { databaseManagerInteraction.deleteInteractions(1) }
+        verify(exactly = 2) { databaseManagerInteraction.deleteInteraction(dbInteraction) }
+        verify(exactly = 1) { PushOperationQueue.nextOperation() }
+    }
+
+    @Test
+    fun givenValidInteraction_whenInteractionPushSuccessfulAndCacheNotUpdated_thenNextOperation() {
+        // Given
+        val dbInteraction = mockk<InteractionDb>(relaxed = true)
+        every { databaseManagerInteraction.getInteractions(any()) } returnsMany listOf(listOf(dbInteraction), listOf(dbInteraction), emptyList())
+        every { databaseManagerInteraction.deleteInteraction(dbInteraction) } returns false
+        every { apiClient.put(url = any(), jsonBody = any(), responseHandler = any()) } answers {
+            val callback = thirdArg<ResponseCallback>()
+            callback.onSuccess("")
+        }
+
+        // When
+        SUT.pushInteractions()
+
+        // Then
+        verify(exactly = 1) { apiClient.put(any(), any(), any()) }
+        verify(exactly = 1) { databaseManagerInteraction.deleteInteraction(dbInteraction) }
         verify(exactly = 1) { PushOperationQueue.nextOperation() }
     }
 
@@ -132,10 +158,11 @@ class InteractionRepositoryImplTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun givenValidInteraction_whenInteractionPushFailedAndErrorIsNonRepeatable_thenTryPushNextInteraction() {
+    fun givenValidInteraction_whenInteractionPushFailedAndErrorIsNonRepeatableAndCacheUpdated_thenTryPushNextInteraction() {
         // Given
         val dbInteraction = mockk<InteractionDb>(relaxed = true)
         every { databaseManagerInteraction.getInteractions(any()) } returnsMany listOf(listOf(dbInteraction), listOf(dbInteraction), emptyList())
+        every { databaseManagerInteraction.deleteInteraction(dbInteraction) } returns true
         every { apiClient.put(url = any(), jsonBody = any(), responseHandler = any()) } answers {
             val callback = thirdArg<ResponseCallback>()
             callback.onFailure(400, null, null)
@@ -147,8 +174,31 @@ class InteractionRepositoryImplTest : BaseRobolectricTest() {
         // Then
         verify(exactly = 2) { apiClient.put(any(), any(), any()) }
         verify(exactly = 3) { databaseManagerInteraction.getInteractions(1) }
-        verify(exactly = 2) { databaseManagerInteraction.deleteInteractions(1) }
+        verify(exactly = 2) { databaseManagerInteraction.deleteInteraction(dbInteraction) }
         verify(exactly = 1) { PushOperationQueue.nextOperation() }
+        verify(exactly = 2) { PushOperationQueue.removeAllOperations() }
+    }
+
+    @Test
+    fun givenValidInteraction_whenInteractionPushFailedAndErrorIsNonRepeatableAndCacheNotUpdated_thenRemoveAllOperations() {
+        // Given
+        val dbInteraction = mockk<InteractionDb>(relaxed = true)
+        every { databaseManagerInteraction.getInteractions(any()) } returnsMany listOf(listOf(dbInteraction), listOf(dbInteraction), emptyList())
+        every { databaseManagerInteraction.deleteInteraction(dbInteraction) } returns false
+        every { apiClient.put(url = any(), jsonBody = any(), responseHandler = any()) } answers {
+            val callback = thirdArg<ResponseCallback>()
+            callback.onFailure(400, null, null)
+        }
+
+        // When
+        SUT.pushInteractions()
+
+        // Then
+        verify(exactly = 1) { apiClient.put(any(), any(), any()) }
+        verify(exactly = 1) { databaseManagerInteraction.getInteractions(1) }
+        verify(exactly = 1) { databaseManagerInteraction.deleteInteraction(dbInteraction) }
+        verify(exactly = 0) { PushOperationQueue.nextOperation() }
+        verify(exactly = 1) { PushOperationQueue.removeAllOperations() }
     }
 
     @Test
@@ -182,8 +232,18 @@ class InteractionRepositoryImplTest : BaseRobolectricTest() {
     fun thereAreOutdatedInteraction_whenClearOldInteractions_thenSentCountDeleted() {
         // Given
         val deletedInteractions = listOf<InteractionDb>(
-            InteractionDb("1", InteractionStatusDb.CLICKED, "occurred1", "token"),
-            InteractionDb("2", InteractionStatusDb.OPENED, "occurred2", "token")
+            InteractionDb(
+                interactionId = "1",
+                status = InteractionStatusDb.CLICKED,
+                time = "occurred1",
+                token = "token"
+            ),
+            InteractionDb(
+                interactionId = "2",
+                status = InteractionStatusDb.OPENED,
+                time = "occurred2",
+                token = "token"
+            )
         )
         every { databaseManagerInteraction.deleteInteractionByTime(any()) } returns deletedInteractions
 

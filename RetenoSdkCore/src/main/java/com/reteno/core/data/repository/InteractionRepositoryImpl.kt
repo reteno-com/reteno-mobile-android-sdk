@@ -28,13 +28,13 @@ internal class InteractionRepositoryImpl(
     override fun saveInteraction(interactionId: String, interaction: Interaction) {
         /*@formatter:off*/ Logger.i(TAG, "saveInteraction(): ", "interactionId = [" , interactionId , "], interaction = [" , interaction , "]")
         /*@formatter:on*/
-        OperationQueue.addOperation {
+        OperationQueue.addParallelOperation {
             databaseManager.insertInteraction(interaction.toDb(interactionId))
         }
     }
 
     override fun pushInteractions() {
-        val interactionDb = databaseManager.getInteractions(1).firstOrNull() ?: kotlin.run {
+        val interactionDb: InteractionDb = databaseManager.getInteractions(1).firstOrNull() ?: kotlin.run {
             PushOperationQueue.nextOperation()
             return
         }
@@ -48,16 +48,22 @@ internal class InteractionRepositoryImpl(
                 override fun onSuccess(response: String) {
                     /*@formatter:off*/ Logger.i(TAG, "onSuccess(): ", "response = [" , response , "]")
                     /*@formatter:on*/
-                    databaseManager.deleteInteractions(1)
-                    pushInteractions()
+                    val cacheUpdated = databaseManager.deleteInteraction(interactionDb)
+                    if (cacheUpdated) {
+                        pushInteractions()
+                    } else {
+                        PushOperationQueue.nextOperation()
+                    }
                 }
 
                 override fun onFailure(statusCode: Int?, response: String?, throwable: Throwable?) {
                     /*@formatter:off*/ Logger.i(TAG, "onFailure(): ", "statusCode = [" , statusCode , "], response = [" , response , "], throwable = [" , throwable , "]")
                     /*@formatter:on*/
                     if (isNonRepeatableError(statusCode)) {
-                        databaseManager.deleteInteractions(1)
-                        pushInteractions()
+                        val cacheUpdated = databaseManager.deleteInteraction(interactionDb)
+                        if (cacheUpdated) {
+                            pushInteractions()
+                        }
                     }
                     PushOperationQueue.removeAllOperations()
                 }

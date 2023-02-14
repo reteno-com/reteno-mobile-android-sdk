@@ -8,7 +8,7 @@ import junit.framework.TestCase.assertTrue
 import org.junit.Test
 
 
-class RetenoDatabaseManagerTest : BaseRobolectricTest() {
+class RetenoDatabaseManagerImplTest : BaseRobolectricTest() {
 
 
     // region helper fields ------------------------------------------------------------------------

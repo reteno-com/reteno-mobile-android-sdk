@@ -96,6 +96,7 @@ fun Cursor.getUser(): UserDb? {
         )
     }
 
+    val rowId = getStringOrNull(getColumnIndex(UserSchema.COLUMN_USER_ROW_ID))
     val deviceId = getStringOrNull(getColumnIndex(UserSchema.COLUMN_DEVICE_ID))
     val externalUserId = getStringOrNull(getColumnIndex(UserSchema.COLUMN_EXTERNAL_USER_ID))
     val subscriptionKeys = getStringOrNull(getColumnIndex(UserSchema.COLUMN_SUBSCRIPTION_KEYS))?.fromJson<List<String>>()
@@ -106,6 +107,7 @@ fun Cursor.getUser(): UserDb? {
         null
     } else {
         UserDb(
+            rowId = rowId,
             deviceId = deviceId,
             externalUserId = externalUserId,
             userAttributes = userAttributes,

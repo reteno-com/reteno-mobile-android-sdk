@@ -117,7 +117,7 @@ class EventsRepositoryImplTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun givenValidEvents_whenEventsPushSuccessful_thenTryPushNextEvents() {
+    fun givenValidEvents_whenEventsPushSuccessful_thenNextOperation() {
         // Given
         val eventDb = getEventsDb()
         every { databaseManagerEvents.getEvents(any()) } returnsMany listOf(
@@ -134,9 +134,10 @@ class EventsRepositoryImplTest : BaseRobolectricTest() {
         SUT.pushEvents()
 
         // Then
-        verify(exactly = 2) { apiClient.post(any(), any(), any()) }
-        verify(exactly = 2) { databaseManagerEvents.deleteEvents(1) }
+        verify(exactly = 1) { apiClient.post(any(), any(), any()) }
+        verify(exactly = 1) { databaseManagerEvents.deleteEvents(eventDb) }
         verify(exactly = 1) { PushOperationQueue.nextOperation() }
+        verify(exactly = 0) { PushOperationQueue.removeAllOperations() }
     }
 
     @Test
@@ -158,7 +159,7 @@ class EventsRepositoryImplTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun givenValidEvents_whenEventsPushFailedAndErrorIsNonRepeatable_thenTryPushNextEvents() {
+    fun givenValidEvents_whenEventsPushFailedAndErrorIsNonRepeatable_thenNextOperation() {
         // Given
         val eventDb = getEventsDb()
         every { databaseManagerEvents.getEvents(any()) } returnsMany listOf(
@@ -175,10 +176,11 @@ class EventsRepositoryImplTest : BaseRobolectricTest() {
         SUT.pushEvents()
 
         // Then
-        verify(exactly = 2) { apiClient.post(any(), any(), any()) }
-        verify(exactly = 3) { databaseManagerEvents.getEvents(null) }
-        verify(exactly = 2) { databaseManagerEvents.deleteEvents(eventDb.eventList.size) }
+        verify(exactly = 1) { apiClient.post(any(), any(), any()) }
+        verify(exactly = 1) { databaseManagerEvents.getEvents(null) }
+        verify(exactly = 1) { databaseManagerEvents.deleteEvents(eventDb) }
         verify(exactly = 1) { PushOperationQueue.nextOperation() }
+        verify(exactly = 0) { PushOperationQueue.removeAllOperations() }
     }
 
     @Test
@@ -211,8 +213,8 @@ class EventsRepositoryImplTest : BaseRobolectricTest() {
     fun thereAreOutdatedEvents_whenClearOldEvents_thenSentCountDeleted() {
         // Given
         val deletedEvents = listOf<EventDb>(
-            EventDb("key1", "occurred1"),
-            EventDb("key2", "occurred2")
+            EventDb(eventTypeKey = "key1", occurred = "occurred1"),
+            EventDb(eventTypeKey = "key2", occurred = "occurred2")
         )
         every { databaseManagerEvents.deleteEventsByTime(any()) } returns deletedEvents
 
