@@ -25,6 +25,7 @@ fun ContentValues.putDevice(device: DeviceDb) {
 }
 
 fun Cursor.getDevice(): DeviceDb? {
+    val rowId = getStringOrNull(getColumnIndex(DeviceSchema.COLUMN_DEVICE_ROW_ID))
     val deviceId = getStringOrNull(getColumnIndex(DeviceSchema.COLUMN_DEVICE_ID))
     val externalUserId = getStringOrNull(getColumnIndex(DeviceSchema.COLUMN_EXTERNAL_USER_ID))
     val pushToken = getStringOrNull(getColumnIndex(DeviceSchema.COLUMN_PUSH_TOKEN))
@@ -43,6 +44,7 @@ fun Cursor.getDevice(): DeviceDb? {
         null
     } else {
         DeviceDb(
+            rowId = rowId,
             deviceId = deviceId,
             externalUserId = externalUserId,
             pushToken = pushToken,

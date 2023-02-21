@@ -4,6 +4,7 @@ import android.os.Handler
 import android.os.HandlerThread
 import android.os.Looper
 import android.os.Process
+import com.reteno.core.util.Logger
 import java.util.concurrent.Executor
 import java.util.concurrent.Executors
 
@@ -37,16 +38,33 @@ object OperationQueue {
      * Add operation to Executor to be run in parallel
      * @param operation The operation that will be executed.
      */
-    fun addParallelOperation(operation: Runnable) {
-        executor.execute(operation)
+    fun addParallelOperation(operation: () -> Unit) {
+        val catchableBlock: () -> Unit = {
+            try {
+                operation()
+            } catch (ex: Throwable) {
+                /*@formatter:off*/ Logger.e(TAG, "addParallelOperation(): ", ex)
+                /*@formatter:on*/
+            }
+        }
+        executor.execute(catchableBlock)
     }
 
     /**
      * Add operation to UI Handler to be run on main thread
      * @param operation The operation that will be executed.
      */
-    fun addUiOperation(operation: Runnable) {
-        uiHandler.post(operation)
+    fun addUiOperation(operation: () -> Unit) {
+        val catchableBlock: () -> Unit = {
+            try {
+                operation()
+            } catch (ex: Throwable) {
+                /*@formatter:off*/ Logger.e(TAG, "addUiOperation(): ", ex)
+                /*@formatter:on*/
+            }
+        }
+
+        uiHandler.post(catchableBlock)
     }
 
     /**
@@ -54,8 +72,17 @@ object OperationQueue {
      * @param operation The operation that will be executed.
      * @return return true if the operation was successfully placed in to the operation queue. Returns false on failure.
      */
-    fun addOperation(operation: Runnable): Boolean {
-        return handler.post(operation)
+    fun addOperation(operation: () -> Unit): Boolean {
+        val catchableBlock: () -> Unit = {
+            try {
+                operation()
+            } catch (ex: Throwable) {
+                /*@formatter:off*/ Logger.e(TAG, "addOperation(): ", ex)
+                /*@formatter:on*/
+            }
+        }
+
+        return handler.post(catchableBlock)
     }
 
     /**
@@ -63,8 +90,17 @@ object OperationQueue {
      * @param operation The operation that will be executed.
      * @return return true if the operation was successfully placed in to the operation queue. Returns false on failure.
      */
-    fun addOperationAtFront(operation: Runnable): Boolean {
-        return handler.postAtFrontOfQueue(operation)
+    fun addOperationAtFront(operation: () -> Unit): Boolean {
+        val catchableBlock: () -> Unit = {
+            try {
+                operation()
+            } catch (ex: Throwable) {
+                /*@formatter:off*/ Logger.e(TAG, "addOperationAtFront(): ", ex)
+                /*@formatter:on*/
+            }
+        }
+
+        return handler.postAtFrontOfQueue(catchableBlock)
     }
 
     /**
@@ -72,8 +108,17 @@ object OperationQueue {
      * @param operation operation The operation that will be executed.
      * @return return true if the operation was successfully placed in to the operation queue. Returns false on failure.
      */
-    fun addOperationAtTime(operation: Runnable, millis: Long): Boolean {
-        return handler.postAtTime(operation, millis)
+    fun addOperationAtTime(operation: () -> Unit, millis: Long): Boolean {
+        val catchableBlock: () -> Unit = {
+            try {
+                operation()
+            } catch (ex: Throwable) {
+                /*@formatter:off*/ Logger.e(TAG, "addOperationAtTime(): ", ex)
+                /*@formatter:on*/
+            }
+        }
+
+        return handler.postAtTime(catchableBlock, millis)
     }
 
     /**
@@ -82,21 +127,43 @@ object OperationQueue {
      * @param delayMillis
      * @return return true if the operation was successfully placed in to the operation queue. Returns false on failure.
      */
-    fun addOperationAfterDelay(operation: Runnable, delayMillis: Long): Boolean {
-        return handler.postDelayed(operation, delayMillis)
+    fun addOperationAfterDelay(operation: () -> Unit, delayMillis: Long): Boolean {
+        val catchableBlock: () -> Unit = {
+            try {
+                operation()
+            } catch (ex: Throwable) {
+                /*@formatter:off*/ Logger.e(TAG, "addOperationAfterDelay(): ", ex)
+                /*@formatter:on*/
+            }
+        }
+
+        return handler.postDelayed(catchableBlock, delayMillis)
     }
 
     /**
      * Removes pending operation from OperationQueue.
      */
-    fun removeOperation(operation: Runnable) {
-        handler.removeCallbacks(operation)
+    fun removeOperation(operation: () -> Unit) {
+        val catchableBlock: () -> Unit = {
+            try {
+                operation()
+            } catch (ex: Throwable) {
+                /*@formatter:off*/ Logger.e(TAG, "removeOperation(): ", ex)
+                /*@formatter:on*/
+            }
+        }
+
+        handler.removeCallbacks(catchableBlock)
     }
 
     /**
      * Remove all pending Operations that are in OperationQueue
+     *
+     * IMPORTANT: BE careful with this method as it may cause data loss
      */
     fun removeAllOperations() {
         handler.removeCallbacksAndMessages(null)
     }
+
+    private val TAG: String = OperationQueue::class.java.simpleName
 }

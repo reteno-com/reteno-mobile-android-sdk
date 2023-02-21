@@ -27,26 +27,30 @@ import org.junit.Test
 import java.time.ZonedDateTime
 
 
-class RetenoDatabaseManagerRecomEventsTest : BaseRobolectricTest() {
+class RetenoDatabaseManagerRecomEventsImplTest : BaseRobolectricTest() {
 
     // region constants ----------------------------------------------------------------------------
     companion object {
         private const val ROW_ID_CORRUPTED = 101L
         private const val ROW_ID_INSERTED = 1L
 
+        private const val ROW_ID_1 = "111"
         private const val PRODUCT_ID_1 = "w12345s1345"
         private val RECOM_EVENT_TYPE_1 = RecomEventTypeDb.CLICKS
         private val RECOM_EVENT_OCCURRED_1 = ZonedDateTime.now().minusDays(1)
         private val RECOM_EVENT_1 = RecomEventDb(
+            rowId = ROW_ID_1,
             recomEventType = RECOM_EVENT_TYPE_1,
             occurred = RECOM_EVENT_OCCURRED_1.formatToRemote(),
             productId = PRODUCT_ID_1
         )
 
+        private const val ROW_ID_2 = "222"
         private const val PRODUCT_ID_2 = "w999s999"
         private val RECOM_EVENT_TYPE_2 = RecomEventTypeDb.IMPRESSIONS
         private val RECOM_EVENT_OCCURRED_2 = ZonedDateTime.now().minusWeeks(1)
         private val RECOM_EVENT_2 = RecomEventDb(
+            rowId = ROW_ID_2,
             recomEventType = RECOM_EVENT_TYPE_2,
             occurred = RECOM_EVENT_OCCURRED_2.formatToRemote(),
             productId = PRODUCT_ID_2
@@ -355,43 +359,28 @@ class RetenoDatabaseManagerRecomEventsTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun given_whenDeleteRecomEventsOldest_thenRecomEventsDeleted() {
+    fun givenRecomEventsNotEmpty_wheDeleteRecomEvents_thenDeleteFromDatabaseCalled() {
         // Given
-        val order = "ASC"
-        val count = 2
-        val whereClauseExpected = "${RecomEventsSchema.RecomEventSchema.COLUMN_RECOM_EVENT_ROW_ID} " +
-                    "in (select ${RecomEventsSchema.RecomEventSchema.COLUMN_RECOM_EVENT_ROW_ID} " +
-                    "from ${RecomEventsSchema.RecomEventSchema.TABLE_NAME_RECOM_EVENT} " +
-                    "ORDER BY ${RecomEventsSchema.RecomEventSchema.COLUMN_RECOM_EVENT_OCCURRED} $order " +
-                    "LIMIT $count)"
-
-        every { database.delete(any(), any(), any()) } returns 0
+        val recomEvents = RecomEventsDb(RECOM_VARIANT_ID, RECOM_EVENTS_LIST)
 
         // When
-        SUT.deleteRecomEvents(count, true)
+        SUT.deleteRecomEvents(listOf(recomEvents))
 
         // Then
-        verify(exactly = 1) { database.delete(RecomEventsSchema.RecomEventSchema.TABLE_NAME_RECOM_EVENT, whereClauseExpected) }
-    }
-
-    @Test
-    fun given_whenDeleteRecomEventsNewest_thenRecomEventsDeleted() {
-        // Given
-        val order = "DESC"
-        val count = 5
-        val whereClauseExpected = "${RecomEventsSchema.RecomEventSchema.COLUMN_RECOM_EVENT_ROW_ID} " +
-                "in (select ${RecomEventsSchema.RecomEventSchema.COLUMN_RECOM_EVENT_ROW_ID} " +
-                "from ${RecomEventsSchema.RecomEventSchema.TABLE_NAME_RECOM_EVENT} " +
-                "ORDER BY ${RecomEventsSchema.RecomEventSchema.COLUMN_RECOM_EVENT_OCCURRED} $order " +
-                "LIMIT $count)"
-
-        every { database.delete(any(), any(), any()) } returns 0
-
-        // When
-        SUT.deleteRecomEvents(count, false)
-
-        // Then
-        verify(exactly = 1) { database.delete(RecomEventsSchema.RecomEventSchema.TABLE_NAME_RECOM_EVENT, whereClauseExpected) }
+        verify(exactly = 1) {
+            database.delete(
+                table = eq(RecomEventsSchema.RecomEventSchema.TABLE_NAME_RECOM_EVENT),
+                whereClause = eq("${RecomEventsSchema.RecomEventSchema.COLUMN_RECOM_EVENT_ROW_ID}=?"),
+                whereArgs = eq(arrayOf(ROW_ID_1))
+            )
+        }
+        verify(exactly = 1) {
+            database.delete(
+                table = eq(RecomEventsSchema.RecomEventSchema.TABLE_NAME_RECOM_EVENT),
+                whereClause = eq("${RecomEventsSchema.RecomEventSchema.COLUMN_RECOM_EVENT_ROW_ID}=?"),
+                whereArgs = eq(arrayOf(ROW_ID_2))
+            )
+        }
     }
 
     @Test

@@ -31,9 +31,8 @@ open class BaseUnitTest {
             justRun { Logger.d(any(), any(), *anyVararg()) }
             justRun { Logger.i(any(), any(), *anyVararg()) }
             justRun { Logger.w(any(), any(), *anyVararg()) }
-            justRun { Logger.e(any(), any()) }
             justRun { Logger.e(any(), any(), any()) }
-            justRun { Logger.captureException(any()) }
+            justRun { Logger.captureMessage(any()) }
             justRun { Logger.captureEvent(any()) }
         }
 

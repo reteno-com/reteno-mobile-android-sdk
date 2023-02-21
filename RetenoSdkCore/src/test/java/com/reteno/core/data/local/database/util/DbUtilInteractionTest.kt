@@ -19,15 +19,17 @@ class DbUtilInteractionTest : BaseRobolectricTest() {
 
     // region constants ----------------------------------------------------------------------------
     companion object {
+        private const val ROW_ID = "909"
         private const val INTERACTION_ID = "interactionId1"
         private val INTERACTION_STATUS = InteractionStatusDb.DELIVERED
         private const val INTERACTION_TIME = "interactionTime1"
         private const val INTERACTION_TOKEN = "interactionToken1"
 
-        private const val COLUMN_INDEX_INTERACTION_ID = 1
-        private const val COLUMN_INDEX_INTERACTION_TIME = 2
-        private const val COLUMN_INDEX_INTERACTION_STATUS = 3
-        private const val COLUMN_INDEX_INTERACTION_TOKEN = 4
+        private const val COLUMN_INDEX_ROW_ID = 1
+        private const val COLUMN_INDEX_INTERACTION_ID = 2
+        private const val COLUMN_INDEX_INTERACTION_TIME = 3
+        private const val COLUMN_INDEX_INTERACTION_STATUS = 4
+        private const val COLUMN_INDEX_INTERACTION_TOKEN = 5
     }
     // endregion constants -------------------------------------------------------------------------
 
@@ -85,6 +87,7 @@ class DbUtilInteractionTest : BaseRobolectricTest() {
         mockInteractionFull()
 
         val expectedInteraction = InteractionDb(
+            rowId = ROW_ID,
             interactionId = INTERACTION_ID,
             status = INTERACTION_STATUS,
             time = INTERACTION_TIME,
@@ -162,6 +165,7 @@ class DbUtilInteractionTest : BaseRobolectricTest() {
     private fun mockInteractionFull() {
         every { cursor.isNull(any()) } returns false
 
+        every { cursor.getStringOrNull(COLUMN_INDEX_ROW_ID) } returns ROW_ID
         every { cursor.getStringOrNull(COLUMN_INDEX_INTERACTION_ID) } returns INTERACTION_ID
         every { cursor.getStringOrNull(COLUMN_INDEX_INTERACTION_TIME) } returns INTERACTION_TIME
         every { cursor.getStringOrNull(COLUMN_INDEX_INTERACTION_STATUS) } returns INTERACTION_STATUS.toString()
@@ -171,6 +175,7 @@ class DbUtilInteractionTest : BaseRobolectricTest() {
     private fun mockInteractionEmpty() {
         every { cursor.isNull(any()) } returns false
 
+        every { cursor.getStringOrNull(COLUMN_INDEX_ROW_ID) } returns null
         every { cursor.getStringOrNull(COLUMN_INDEX_INTERACTION_ID) } returns null
         every { cursor.getStringOrNull(COLUMN_INDEX_INTERACTION_TIME) } returns null
         every { cursor.getStringOrNull(COLUMN_INDEX_INTERACTION_STATUS) } returns null
@@ -180,6 +185,7 @@ class DbUtilInteractionTest : BaseRobolectricTest() {
     private fun mockInteractionIdNull() {
         every { cursor.isNull(any()) } returns false
 
+        every { cursor.getStringOrNull(COLUMN_INDEX_ROW_ID) } returns ROW_ID
         every { cursor.getStringOrNull(COLUMN_INDEX_INTERACTION_ID) } returns null
         every { cursor.getStringOrNull(COLUMN_INDEX_INTERACTION_TIME) } returns INTERACTION_TIME
         every { cursor.getStringOrNull(COLUMN_INDEX_INTERACTION_STATUS) } returns INTERACTION_STATUS.toString()
@@ -189,6 +195,7 @@ class DbUtilInteractionTest : BaseRobolectricTest() {
     private fun mockInteractionStatusNull() {
         every { cursor.isNull(any()) } returns false
 
+        every { cursor.getStringOrNull(COLUMN_INDEX_ROW_ID) } returns ROW_ID
         every { cursor.getStringOrNull(COLUMN_INDEX_INTERACTION_ID) } returns INTERACTION_ID
         every { cursor.getStringOrNull(COLUMN_INDEX_INTERACTION_TIME) } returns INTERACTION_TIME
         every { cursor.getStringOrNull(COLUMN_INDEX_INTERACTION_STATUS) } returns null
@@ -198,6 +205,7 @@ class DbUtilInteractionTest : BaseRobolectricTest() {
     private fun mockInteractionTimeNull() {
         every { cursor.isNull(any()) } returns false
 
+        every { cursor.getStringOrNull(COLUMN_INDEX_ROW_ID) } returns ROW_ID
         every { cursor.getStringOrNull(COLUMN_INDEX_INTERACTION_ID) } returns INTERACTION_ID
         every { cursor.getStringOrNull(COLUMN_INDEX_INTERACTION_TIME) } returns null
         every { cursor.getStringOrNull(COLUMN_INDEX_INTERACTION_STATUS) } returns INTERACTION_STATUS.toString()
@@ -207,6 +215,7 @@ class DbUtilInteractionTest : BaseRobolectricTest() {
     private fun mockInteractionTokenNull() {
         every { cursor.isNull(any()) } returns false
 
+        every { cursor.getStringOrNull(COLUMN_INDEX_ROW_ID) } returns ROW_ID
         every { cursor.getStringOrNull(COLUMN_INDEX_INTERACTION_ID) } returns INTERACTION_ID
         every { cursor.getStringOrNull(COLUMN_INDEX_INTERACTION_TIME) } returns INTERACTION_TIME
         every { cursor.getStringOrNull(COLUMN_INDEX_INTERACTION_STATUS) } returns INTERACTION_STATUS.toString()
@@ -214,6 +223,7 @@ class DbUtilInteractionTest : BaseRobolectricTest() {
     }
 
     private fun mockColumnIndexes() {
+        every { cursor.getColumnIndex(InteractionSchema.COLUMN_INTERACTION_ROW_ID) } returns COLUMN_INDEX_ROW_ID
         every { cursor.getColumnIndex(InteractionSchema.COLUMN_INTERACTION_ID) } returns COLUMN_INDEX_INTERACTION_ID
         every { cursor.getColumnIndex(InteractionSchema.COLUMN_INTERACTION_TIME) } returns COLUMN_INDEX_INTERACTION_TIME
         every { cursor.getColumnIndex(InteractionSchema.COLUMN_INTERACTION_STATUS) } returns COLUMN_INDEX_INTERACTION_STATUS

@@ -29,6 +29,7 @@ class DbUtilRecomEventsTest : BaseRobolectricTest() {
         private val RECOM_EVENT_OCCURRED_2 = ZonedDateTime.now().minusWeeks(1)
 
 
+        private const val ROW_ID = "101"
         private const val RECOM_VARIANT_ID = "r111v333"
         private val RECOM_EVENTS_LIST = listOf(
             RecomEventDb(
@@ -136,6 +137,7 @@ class DbUtilRecomEventsTest : BaseRobolectricTest() {
         mockRecomEventFull()
 
         val expectedRecomEvent = RecomEventDb(
+            rowId = ROW_ID,
             recomEventType = RECOM_EVENT_TYPE_1,
             occurred = RECOM_EVENT_OCCURRED_1.formatToRemote(),
             productId = PRODUCT_ID_1
@@ -152,6 +154,7 @@ class DbUtilRecomEventsTest : BaseRobolectricTest() {
     private fun mockRecomEventFull() {
         every { cursor.isNull(any()) } returns false
 
+        every { cursor.getStringOrNull(COLUMN_INDEX_RECOM_EVENT_ROW_ID) } returns ROW_ID
         every { cursor.getStringOrNull(COLUMN_INDEX_RECOM_VARIANT_ID) } returns RECOM_VARIANT_ID
         every { cursor.getStringOrNull(COLUMN_INDEX_RECOM_EVENT_TYPE) } returns RECOM_EVENT_TYPE_1.toString()
         every { cursor.getStringOrNull(COLUMN_INDEX_RECOM_EVENT_OCCURRED) } returns RECOM_EVENT_OCCURRED_1.formatToRemote()

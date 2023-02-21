@@ -1,7 +1,9 @@
 package com.reteno.core.data.repository
 
+import com.reteno.core.RetenoImpl
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerEvents
 import com.reteno.core.data.local.mappers.toDb
+import com.reteno.core.data.local.model.event.EventDb
 import com.reteno.core.data.local.model.event.EventsDb
 import com.reteno.core.data.remote.OperationQueue
 import com.reteno.core.data.remote.PushOperationQueue
@@ -15,6 +17,9 @@ import com.reteno.core.domain.model.event.Event
 import com.reteno.core.util.Logger
 import com.reteno.core.util.Util.formatToRemote
 import com.reteno.core.util.isNonRepeatableError
+import io.sentry.SentryEvent
+import io.sentry.SentryLevel
+import io.sentry.protocol.Message
 import java.time.ZonedDateTime
 
 internal class EventsRepositoryImpl(
@@ -33,12 +38,8 @@ internal class EventsRepositoryImpl(
             externalUserId = deviceId.externalId,
             eventList = listOf(event.toDb())
         )
-        OperationQueue.addOperation {
-            try {
-                databaseManager.insertEvents(events)
-            } catch (e: Exception) {
-                Logger.e(TAG, "saveEvent()", e)
-            }
+        OperationQueue.addParallelOperation {
+            databaseManager.insertEvents(events)
         }
     }
 
@@ -52,12 +53,8 @@ internal class EventsRepositoryImpl(
             externalUserId = deviceId.externalId,
             eventList = listOf(ecomEvent.toDb())
         )
-        OperationQueue.addOperation {
-            try {
-                databaseManager.insertEvents(events)
-            } catch (e: Exception) {
-                Logger.e(TAG, "saveEcomEvent()", e)
-            }
+        OperationQueue.addParallelOperation {
+            databaseManager.insertEvents(events)
         }
     }
 
@@ -73,7 +70,6 @@ internal class EventsRepositoryImpl(
         /*@formatter:off*/ Logger.i(TAG, "pushEvents(): ", "events = [" , events , "]")
         /*@formatter:on*/
 
-        val eventListSize = events.eventList.size
         apiClient.post(
             ApiContract.MobileApi.Events,
             events.toRemote().toJson(),
@@ -82,18 +78,20 @@ internal class EventsRepositoryImpl(
                 override fun onSuccess(response: String) {
                     /*@formatter:off*/ Logger.i(TAG, "onSuccess(): ", "response = [" , response , "]")
                     /*@formatter:on*/
-                    databaseManager.deleteEvents(eventListSize)
-                    pushEvents()
+
+                    databaseManager.deleteEvents(events)
+                    PushOperationQueue.nextOperation()
                 }
 
                 override fun onFailure(statusCode: Int?, response: String?, throwable: Throwable?) {
                     /*@formatter:off*/ Logger.i(TAG, "onFailure(): ", "statusCode = [" , statusCode , "], response = [" , response , "], throwable = [" , throwable , "]")
                     /*@formatter:on*/
                     if (isNonRepeatableError(statusCode)) {
-                        databaseManager.deleteEvents(eventListSize)
-                        pushEvents()
+                        databaseManager.deleteEvents(events)
+                        PushOperationQueue.nextOperation()
+                    } else {
+                        PushOperationQueue.removeAllOperations()
                     }
-                    PushOperationQueue.removeAllOperations()
                 }
 
             }
@@ -104,18 +102,42 @@ internal class EventsRepositoryImpl(
         /*@formatter:off*/ Logger.i(TAG, "clearOldEvents(): ", "outdatedTime = [" , outdatedTime , "]")
         /*@formatter:on*/
         OperationQueue.addOperation {
-            val removedEventsCount = databaseManager.deleteEventsByTime(outdatedTime.formatToRemote())
-            /*@formatter:off*/ Logger.i(TAG, "clearOldEvents(): ", "removedEventsCount = [" , removedEventsCount , "]")
-            /*@formatter:on*/
-            if (removedEventsCount > 0) {
-                val msg = "Outdated Events: - $removedEventsCount"
-                Logger.captureEvent(msg)
+            val removedEvents: List<EventDb> = databaseManager.deleteEventsByTime(outdatedTime.formatToRemote())
+            if (removedEvents.isNotEmpty()) {
+                /*@formatter:off*/ Logger.i(TAG, "clearOldEvents(): ", "removedEventsCount = [" , removedEvents.count() , "]")
+                /*@formatter:on*/
+                removedEvents
+                    .groupBy { it.eventTypeKey }
+                    .map { it.key to "${it.value.size}" }
+                    .forEach {
+                        val eventKeyType = it.first
+                        val count = it.second
+
+                        val msg = "$REMOVED_EVENTS($eventKeyType) - $count"
+                        val event = SentryEvent().apply {
+                            message = Message().apply {
+                                message = msg
+                            }
+                            level = SentryLevel.INFO
+                            fingerprints = listOf(
+                                RetenoImpl.application.packageName,
+                                REMOVED_EVENTS,
+                                eventKeyType
+                            )
+
+                            setTag(TAG_KEY_EVENT_TYPE, eventKeyType)
+                        }
+                        Logger.captureEvent(event)
+                    }
             }
         }
     }
 
     companion object {
         private val TAG = EventsRepositoryImpl::class.java.simpleName
+
+        private const val REMOVED_EVENTS = "Removed events"
+        private const val TAG_KEY_EVENT_TYPE = "eventKeyType"
     }
 
 }

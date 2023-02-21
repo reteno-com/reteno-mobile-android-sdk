@@ -4,13 +4,10 @@ import android.content.ContentValues
 import androidx.core.database.getStringOrNull
 import com.reteno.core.base.robolectric.BaseRobolectricTest
 import com.reteno.core.data.local.database.schema.DeviceSchema
-import com.reteno.core.data.local.mappers.toDb
 import com.reteno.core.data.local.model.BooleanDb
 import com.reteno.core.data.local.model.device.DeviceCategoryDb
 import com.reteno.core.data.local.model.device.DeviceDb
 import com.reteno.core.data.local.model.device.DeviceOsDb
-import com.reteno.core.domain.model.device.Device
-import com.reteno.core.domain.model.device.DeviceOS
 import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
@@ -23,6 +20,7 @@ class DbUtilDeviceTest : BaseRobolectricTest() {
 
     // region constants ----------------------------------------------------------------------------
     companion object {
+        private const val ROW_ID = "12"
         private const val DEVICE_ID = "valueDeviceId"
         private const val EXTERNAL_USER_ID = "valueExternalUserId"
 
@@ -37,16 +35,17 @@ class DbUtilDeviceTest : BaseRobolectricTest() {
         private const val TIME_ZONE = "valueTimeZone"
         private const val ADVERTISING_ID = "valueAdvertisingId"
 
-        private const val COLUMN_INDEX_DEVICE_ID = 1
-        private const val COLUMN_INDEX_EXTERNAL_USER_ID = 2
-        private const val COLUMN_INDEX_PUSH_TOKEN = 3
-        private const val COLUMN_INDEX_PUSH_SUBSCRIBED = 4
-        private const val COLUMN_INDEX_CATEGORY = 5
-        private const val COLUMN_INDEX_OS_TYPE = 6
-        private const val COLUMN_INDEX_OS_VERSION = 7
-        private const val COLUMN_INDEX_DEVICE_MODEL = 8
-        private const val COLUMN_INDEX_APP_VERSION = 9
-        private const val COLUMN_INDEX_LANGUAGE_CODE = 10
+        private const val COLUMN_INDEX_ROW_ID = 1
+        private const val COLUMN_INDEX_DEVICE_ID = 2
+        private const val COLUMN_INDEX_EXTERNAL_USER_ID = 3
+        private const val COLUMN_INDEX_PUSH_TOKEN = 4
+        private const val COLUMN_INDEX_PUSH_SUBSCRIBED = 5
+        private const val COLUMN_INDEX_CATEGORY = 6
+        private const val COLUMN_INDEX_OS_TYPE = 7
+        private const val COLUMN_INDEX_OS_VERSION = 8
+        private const val COLUMN_INDEX_DEVICE_MODEL = 9
+        private const val COLUMN_INDEX_APP_VERSION = 10
+        private const val COLUMN_INDEX_LANGUAGE_CODE = 11
         private const val COLUMN_INDEX_TIME_ZONE = 12
         private const val COLUMN_INDEX_ADVERTISING_ID = 13
     }
@@ -128,6 +127,7 @@ class DbUtilDeviceTest : BaseRobolectricTest() {
         mockDeviceFull()
 
         val expectedDevice = DeviceDb(
+            rowId = ROW_ID,
             deviceId = DEVICE_ID,
             externalUserId = EXTERNAL_USER_ID,
             pushToken = PUSH_TOKEN,
@@ -154,20 +154,21 @@ class DbUtilDeviceTest : BaseRobolectricTest() {
         // Given
         mockDeviceDeviceIdOnly()
 
-        val expectedDevice = Device(
+        val expectedDevice = DeviceDb(
+            rowId = null,
             deviceId = DEVICE_ID,
             externalUserId = null,
             pushToken = null,
             pushSubscribed = null,
-            category = Device.fetchDeviceCategory(),
-            osType = DeviceOS.ANDROID,
+            category = DeviceCategoryDb.MOBILE,
+            osType = DeviceOsDb.ANDROID,
             osVersion = null,
             deviceModel = null,
             appVersion = null,
             languageCode = null,
             timeZone = null,
             advertisingId = null
-        ).toDb()
+        )
 
         // When
         val actualDevice = cursor.getDevice()
@@ -180,6 +181,7 @@ class DbUtilDeviceTest : BaseRobolectricTest() {
     private fun mockDeviceFull() {
         every { cursor.isNull(any()) } returns false
 
+        every { cursor.getStringOrNull(COLUMN_INDEX_ROW_ID) } returns ROW_ID
         every { cursor.getStringOrNull(COLUMN_INDEX_DEVICE_ID) } returns DEVICE_ID
         every { cursor.getStringOrNull(COLUMN_INDEX_EXTERNAL_USER_ID) } returns EXTERNAL_USER_ID
         every { cursor.getStringOrNull(COLUMN_INDEX_PUSH_TOKEN) } returns PUSH_TOKEN
@@ -197,6 +199,7 @@ class DbUtilDeviceTest : BaseRobolectricTest() {
     private fun mockDeviceDeviceIdOnly() {
         every { cursor.isNull(any()) } returns false
 
+        every { cursor.getStringOrNull(COLUMN_INDEX_ROW_ID) } returns null
         every { cursor.getStringOrNull(COLUMN_INDEX_DEVICE_ID) } returns DEVICE_ID
         every { cursor.getStringOrNull(COLUMN_INDEX_EXTERNAL_USER_ID) } returns null
         every { cursor.getStringOrNull(COLUMN_INDEX_PUSH_TOKEN) } returns null
@@ -213,6 +216,7 @@ class DbUtilDeviceTest : BaseRobolectricTest() {
     }
 
     private fun mockColumnIndexes() {
+        every { cursor.getColumnIndex(DeviceSchema.COLUMN_DEVICE_ROW_ID) } returns COLUMN_INDEX_ROW_ID
         every { cursor.getColumnIndex(DeviceSchema.COLUMN_DEVICE_ID) } returns COLUMN_INDEX_DEVICE_ID
         every { cursor.getColumnIndex(DeviceSchema.COLUMN_EXTERNAL_USER_ID) } returns COLUMN_INDEX_EXTERNAL_USER_ID
         every { cursor.getColumnIndex(DeviceSchema.COLUMN_PUSH_TOKEN) } returns COLUMN_INDEX_PUSH_TOKEN

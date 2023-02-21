@@ -22,11 +22,12 @@ import io.mockk.verify
 import junit.framework.TestCase.assertTrue
 import net.sqlcipher.Cursor
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Test
 import java.time.ZonedDateTime
 
 
-class RetenoDatabaseManagerInteractionTest : BaseRobolectricTest() {
+class RetenoDatabaseManagerInteractionImplTest : BaseRobolectricTest() {
 
     // region constants ----------------------------------------------------------------------------
     companion object {
@@ -35,18 +36,22 @@ class RetenoDatabaseManagerInteractionTest : BaseRobolectricTest() {
         private const val ROW_ID_INSERTED = 1L
         private const val TIMESTAMP = "TimeStampHere_Z"
 
+        private const val ROW_ID_1 = "1"
+        private const val ROW_ID_2 = "2"
         private const val INTERACTION_ID = "interactionId"
         private val INTERACTION_STATUS = InteractionStatusDb.DELIVERED
         private const val INTERACTION_TIME = "interactionTime"
         private const val INTERACTION_TOKEN = "interactionToken"
 
         private val interaction1 = InteractionDb(
+            rowId = ROW_ID_1,
             interactionId = INTERACTION_ID,
             status = INTERACTION_STATUS,
             time = INTERACTION_TIME,
             token = INTERACTION_TOKEN
         )
         private val interaction2 = InteractionDb(
+            rowId = ROW_ID_2,
             interactionId = "${INTERACTION_ID}_2",
             status = INTERACTION_STATUS,
             time = "${INTERACTION_TIME}_2}",
@@ -249,59 +254,109 @@ class RetenoDatabaseManagerInteractionTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun given_whenDeleteInteractionsOldest_thenInteractionsDeleted() {
-        // Given
-        val order = "ASC"
-        val count = 2
-        val whereClauseExpected = "${InteractionSchema.COLUMN_INTERACTION_ROW_ID} " +
-                    "in (select ${InteractionSchema.COLUMN_INTERACTION_ROW_ID} " +
-                    "from ${InteractionSchema.TABLE_NAME_INTERACTION} " +
-                    "ORDER BY ${DbSchema.COLUMN_TIMESTAMP} $order " +
-                    "LIMIT $count)"
-
-        every { database.delete(any(), any(), any()) } returns 0
-
+    fun givenInteractionProvided_wheDeleteInteraction_thenDeleteFromDatabaseCalled() {
         // When
-        SUT.deleteInteractions(count, true)
+        SUT.deleteInteraction(interaction1)
 
         // Then
-        verify(exactly = 1) { database.delete(InteractionSchema.TABLE_NAME_INTERACTION, whereClauseExpected) }
+        verify(exactly = 1) {
+            database.delete(
+                table = eq(InteractionSchema.TABLE_NAME_INTERACTION),
+                whereClause = eq("${InteractionSchema.COLUMN_INTERACTION_ROW_ID}=?"),
+                whereArgs = eq(arrayOf(ROW_ID_1))
+            )
+        }
     }
 
     @Test
-    fun given_whenDeleteInteractionsNewest_thenInteractionsDeleted() {
+    fun givenDatabaseDeleteReturns1_wheDeleteInteraction_thenResultIsTrue() {
         // Given
-        val order = "DESC"
-        val count = 4
-        val whereClauseExpected = "${InteractionSchema.COLUMN_INTERACTION_ROW_ID} " +
-                "in (select ${InteractionSchema.COLUMN_INTERACTION_ROW_ID} " +
-                "from ${InteractionSchema.TABLE_NAME_INTERACTION} " +
-                "ORDER BY ${DbSchema.COLUMN_TIMESTAMP} $order " +
-                "LIMIT $count)"
-
-        every { database.delete(any(), any(), any()) } returns 0
+        every { database.delete(table = any(), whereClause = any(), whereArgs = any()) } returns 1
 
         // When
-        SUT.deleteInteractions(count, false)
+        val result = SUT.deleteInteraction(interaction1)
 
         // Then
-        verify(exactly = 1) { database.delete(InteractionSchema.TABLE_NAME_INTERACTION, whereClauseExpected) }
+        assertTrue(result)
     }
 
     @Test
-    fun whenDeleteInteractionsByTime_thenInteractionsDeleted() {
+    fun givenDatabaseDeleteReturns0_wheDeleteInteraction_thenResultIsFalse() {
+        // Given
+        every { database.delete(table = any(), whereClause = any(), whereArgs = any()) } returns 0
+
+        // When
+        val result = SUT.deleteInteraction(interaction1)
+
+        // Then
+        assertFalse(result)
+    }
+
+    @Test
+    fun givenOutdatedInteractionsFoundInDatabase_whenDeleteInteractionsByTime_thenInteractionsDeleted() {
         // Given
         val outdatedTime = ZonedDateTime.now().formatToRemote()
-        val countExpected = 2
         val whereClauseExpected = "${InteractionSchema.COLUMN_INTERACTION_TIME} < '$outdatedTime'"
 
-        every { database.delete(any(), any(), any()) } returns countExpected
+        mockCursorRecordsNumber(2)
+        every { database.query(
+            table = eq(InteractionSchema.TABLE_NAME_INTERACTION),
+            columns = eq(InteractionSchema.getAllColumns()),
+            selection = eq(whereClauseExpected)
+        ) } returns cursor
+        every { cursor.getInteraction() } returns interaction1 andThen interaction2
 
         // When
-        SUT.deleteInteractionByTime(outdatedTime)
+        val deletedInteractions = SUT.deleteInteractionByTime(outdatedTime)
 
         // Then
-        verify(exactly = 1) { database.delete(InteractionSchema.TABLE_NAME_INTERACTION, whereClauseExpected) }
+        verify(exactly = 1) {
+            database.query(
+                table = eq(InteractionSchema.TABLE_NAME_INTERACTION),
+                columns = eq(InteractionSchema.getAllColumns()),
+                selection = eq(whereClauseExpected)
+            )
+        }
+        verify(exactly = 1) {
+            database.delete(
+                eq(InteractionSchema.TABLE_NAME_INTERACTION),
+                eq(whereClauseExpected)
+            )
+        }
+        assertEquals(listOf(interaction1, interaction2), deletedInteractions)
+    }
+
+    @Test
+    fun givenOutdatedInteractionsNotFoundInDatabase_whenDeleteInteractionsByTime_thenInteractionsNotDeleted() {
+        // Given
+        val outdatedTime = ZonedDateTime.now().formatToRemote()
+        val whereClauseExpected = "${InteractionSchema.COLUMN_INTERACTION_TIME} < '$outdatedTime'"
+
+        mockCursorRecordsNumber(0)
+        every { database.query(
+            table = eq(InteractionSchema.TABLE_NAME_INTERACTION),
+            columns = eq(InteractionSchema.getAllColumns()),
+            selection = eq(whereClauseExpected)
+        ) } returns cursor
+
+        // When
+        val deletedInteractions = SUT.deleteInteractionByTime(outdatedTime)
+
+        // Then
+        verify(exactly = 1) {
+            database.query(
+                table = eq(InteractionSchema.TABLE_NAME_INTERACTION),
+                columns = eq(InteractionSchema.getAllColumns()),
+                selection = eq(whereClauseExpected)
+            )
+        }
+        verify(exactly = 1) {
+            database.delete(
+                eq(InteractionSchema.TABLE_NAME_INTERACTION),
+                eq(whereClauseExpected)
+            )
+        }
+        assertEquals(emptyList<InteractionDb>(), deletedInteractions)
     }
 
 

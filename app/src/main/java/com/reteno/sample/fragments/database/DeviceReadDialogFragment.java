@@ -50,7 +50,10 @@ public class DeviceReadDialogFragment extends BaseReadDialogFragment<DeviceDb, I
 
     @Override
     protected void deleteItems(int count) {
-        databaseManager.deleteDevices(count, true);
+        List<DeviceDb> devices = databaseManager.getDevices(count);
+        for (DeviceDb device : devices) {
+            databaseManager.deleteDevice(device);
+        }
     }
 
     @Override

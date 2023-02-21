@@ -117,7 +117,7 @@ class EventsRepositoryImplTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun givenValidEvents_whenEventsPushSuccessful_thenTryPushNextEvents() {
+    fun givenValidEvents_whenEventsPushSuccessful_thenNextOperation() {
         // Given
         val eventDb = getEventsDb()
         every { databaseManagerEvents.getEvents(any()) } returnsMany listOf(
@@ -134,9 +134,10 @@ class EventsRepositoryImplTest : BaseRobolectricTest() {
         SUT.pushEvents()
 
         // Then
-        verify(exactly = 2) { apiClient.post(any(), any(), any()) }
-        verify(exactly = 2) { databaseManagerEvents.deleteEvents(1) }
+        verify(exactly = 1) { apiClient.post(any(), any(), any()) }
+        verify(exactly = 1) { databaseManagerEvents.deleteEvents(eventDb) }
         verify(exactly = 1) { PushOperationQueue.nextOperation() }
+        verify(exactly = 0) { PushOperationQueue.removeAllOperations() }
     }
 
     @Test
@@ -158,7 +159,7 @@ class EventsRepositoryImplTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun givenValidEvents_whenEventsPushFailedAndErrorIsNonRepeatable_thenTryPushNextEvents() {
+    fun givenValidEvents_whenEventsPushFailedAndErrorIsNonRepeatable_thenNextOperation() {
         // Given
         val eventDb = getEventsDb()
         every { databaseManagerEvents.getEvents(any()) } returnsMany listOf(
@@ -175,10 +176,11 @@ class EventsRepositoryImplTest : BaseRobolectricTest() {
         SUT.pushEvents()
 
         // Then
-        verify(exactly = 2) { apiClient.post(any(), any(), any()) }
-        verify(exactly = 3) { databaseManagerEvents.getEvents(null) }
-        verify(exactly = 2) { databaseManagerEvents.deleteEvents(eventDb.eventList.size) }
+        verify(exactly = 1) { apiClient.post(any(), any(), any()) }
+        verify(exactly = 1) { databaseManagerEvents.getEvents(null) }
+        verify(exactly = 1) { databaseManagerEvents.deleteEvents(eventDb) }
         verify(exactly = 1) { PushOperationQueue.nextOperation() }
+        verify(exactly = 0) { PushOperationQueue.removeAllOperations() }
     }
 
     @Test
@@ -195,31 +197,33 @@ class EventsRepositoryImplTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun noOutdatedInteraction_whenClearOldEvents_thenSentNothing() {
+    fun noOutdatedEvents_whenClearOldEvents_thenSentNothing() {
         // Given
-        every { databaseManagerEvents.deleteEventsByTime(any()) } returns 0
+        every { databaseManagerEvents.deleteEventsByTime(any()) } returns emptyList()
 
         // When
         SUT.clearOldEvents(ZonedDateTime.now())
 
         // Then
         verify(exactly = 1) { databaseManagerEvents.deleteEventsByTime(any()) }
-        verify(exactly = 0) { Logger.captureEvent(any()) }
+        verify(exactly = 0) { Logger.captureMessage(any()) }
     }
 
     @Test
-    fun thereAreOutdatedInteraction_whenClearOldEvents_thenSentCountDeleted() {
+    fun thereAreOutdatedEvents_whenClearOldEvents_thenSentCountDeleted() {
         // Given
-        val deletedEvents = 2
+        val deletedEvents = listOf<EventDb>(
+            EventDb(eventTypeKey = "key1", occurred = "occurred1"),
+            EventDb(eventTypeKey = "key2", occurred = "occurred2")
+        )
         every { databaseManagerEvents.deleteEventsByTime(any()) } returns deletedEvents
-        val expectedMsg = "Outdated Events: - $deletedEvents"
 
         // When
         SUT.clearOldEvents(ZonedDateTime.now())
 
         // Then
         verify(exactly = 1) { databaseManagerEvents.deleteEventsByTime(any()) }
-        verify(exactly = 1) { Logger.captureEvent(eq(expectedMsg)) }
+        verify(exactly = 2) { Logger.captureEvent(any()) }
     }
 
     // region helper methods -----------------------------------------------------------------------

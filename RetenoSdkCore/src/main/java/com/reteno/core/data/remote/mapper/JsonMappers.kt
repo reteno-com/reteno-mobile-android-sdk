@@ -19,7 +19,7 @@ fun <T> String.fromJson(classOfT: Class<T>):T =
     Gson().fromJson(this, classOfT)
 
 inline fun <reified T> String.listFromJson(): List<T> {
-    val listType: Type = object : TypeToken<ArrayList<T?>?>() {}.type
+    val listType: Type = object : TypeToken<ArrayList<T>?>() {}.type
     return Gson().fromJson(this, listType)
 }
 

@@ -16,6 +16,7 @@ fun ContentValues.putInteraction(interaction: InteractionDb) {
 }
 
 fun Cursor.getInteraction(): InteractionDb? {
+    val rowId = getStringOrNull(getColumnIndex(InteractionSchema.COLUMN_INTERACTION_ROW_ID))
     val interactionId = getStringOrNull(getColumnIndex(InteractionSchema.COLUMN_INTERACTION_ID))
     val status = getStringOrNull(getColumnIndex(InteractionSchema.COLUMN_INTERACTION_STATUS))
     val time = getStringOrNull(getColumnIndex(InteractionSchema.COLUMN_INTERACTION_TIME))
@@ -23,6 +24,7 @@ fun Cursor.getInteraction(): InteractionDb? {
 
     return if (allElementsNotNull(interactionId, status, time, token)) {
         InteractionDb(
+            rowId = rowId,
             interactionId = interactionId!!,
             status = InteractionStatusDb.fromString(status),
             time = time!!,

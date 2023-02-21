@@ -23,6 +23,9 @@ internal class RetenoDatabaseManagerAppInboxImpl(private val database: RetenoDat
     }
 
     override fun getAppInboxMessages(limit: Int?): List<AppInboxMessageDb> {
+        /*@formatter:off*/ Logger.i(TAG, "getAppInboxMessages(): ", "limit = [", limit, "]")
+        /*@formatter:on*/
+
         val inboxMessage: MutableList<AppInboxMessageDb> = mutableListOf()
 
         var cursor: Cursor? = null
@@ -69,19 +72,33 @@ internal class RetenoDatabaseManagerAppInboxImpl(private val database: RetenoDat
 
     override fun getAppInboxMessagesCount(): Long = database.getRowCount(AppInboxSchema.TABLE_NAME_APP_INBOX)
 
-    override fun deleteAppInboxMessages(count: Int, oldest: Boolean) {
-        val order = if (oldest) "ASC" else "DESC"
-        database.delete(
-            table = AppInboxSchema.TABLE_NAME_APP_INBOX,
-            whereClause = "${AppInboxSchema.COLUMN_APP_INBOX_ID} in (select ${AppInboxSchema.COLUMN_APP_INBOX_ID} from ${AppInboxSchema.TABLE_NAME_APP_INBOX} ORDER BY ${AppInboxSchema.COLUMN_APP_INBOX_TIME} $order LIMIT $count)"
-        )
+    override fun deleteAppInboxMessages(appInboxMessages: List<AppInboxMessageDb>) {
+        /*@formatter:off*/ Logger.i(TAG, "deleteAppInboxMessages(): ", "appInboxMessages = [", appInboxMessages, "]")
+        /*@formatter:on*/
+
+        val rowIds: List<String> = appInboxMessages
+            .map { it.id }
+
+        for (rowId: String in rowIds) {
+            database.delete(
+                table = AppInboxSchema.TABLE_NAME_APP_INBOX,
+                whereClause = "${AppInboxSchema.COLUMN_APP_INBOX_ID}=?",
+                whereArgs = arrayOf(rowId)
+            )
+        }
     }
 
     override fun deleteAllAppInboxMessages() {
+        /*@formatter:off*/ Logger.i(TAG, "deleteAllAppInboxMessages(): ", "")
+        /*@formatter:on*/
+
         database.delete(table = AppInboxSchema.TABLE_NAME_APP_INBOX)
     }
 
     override fun deleteAppInboxMessagesByTime(outdatedTime: String): Int {
+        /*@formatter:off*/ Logger.i(TAG, "deleteAppInboxMessagesByTime(): ", "outdatedTime = [", outdatedTime, "]")
+        /*@formatter:on*/
+
         return database.delete(
             table = AppInboxSchema.TABLE_NAME_APP_INBOX,
             whereClause = "${AppInboxSchema.COLUMN_APP_INBOX_TIME} < '$outdatedTime'"
