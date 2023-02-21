@@ -31,3 +31,5 @@
     public static *** d(...);
     public static *** i(...);
 }
+
+-keep class net.sqlcipher.database.** { *; }

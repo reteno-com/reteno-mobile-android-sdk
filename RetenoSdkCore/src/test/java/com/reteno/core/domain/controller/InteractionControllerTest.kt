@@ -104,7 +104,7 @@ class InteractionControllerTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun whenClearOldInteractions_thenRepositoryInteractionPushCalledWithOutdatedDate() {
+    fun whenClearOldInteractions_thenRepositoryInteractionClearOldCalledWithOutdatedDate() {
         // Given
         val mockData = mockk<ZonedDateTime>()
         every { SchedulerUtils.getOutdatedTime() } returns mockData

@@ -4,8 +4,8 @@ import android.app.Application
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import com.reteno.core.RetenoApplication
 import com.reteno.core.RetenoImpl
+import com.reteno.core.domain.controller.DeeplinkController
 import com.reteno.core.domain.controller.InteractionController
 import com.reteno.core.domain.controller.ScheduleController
 import com.reteno.core.domain.model.interaction.InteractionStatus
@@ -14,8 +14,14 @@ import com.reteno.push.Constants.KEY_ES_LINK_UNWRAPPED
 import com.reteno.push.Constants.KEY_ES_LINK_WRAPPED
 import com.reteno.push.Util
 import com.reteno.push.base.robolectric.BaseRobolectricTest
-import io.mockk.*
+import io.mockk.every
 import io.mockk.impl.annotations.RelaxedMockK
+import io.mockk.justRun
+import io.mockk.mockk
+import io.mockk.mockkObject
+import io.mockk.slot
+import io.mockk.unmockkObject
+import io.mockk.verify
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -36,11 +42,21 @@ class RetenoNotificationClickedReceiverTest : BaseRobolectricTest() {
 
     @RelaxedMockK
     private lateinit var context: Context
+
+    @RelaxedMockK
+    private lateinit var interactionController: InteractionController
+    @RelaxedMockK
+    private lateinit var deeplinkController: DeeplinkController
+    @RelaxedMockK
+    private lateinit var scheduleController: ScheduleController
     // endregion helper fields ---------------------------------------------------------------------
 
     override fun before() {
         super.before()
         receiver = RetenoNotificationClickedReceiver()
+        every { reteno.serviceLocator.interactionControllerProvider.get() } returns interactionController
+        every { reteno.serviceLocator.deeplinkControllerProvider.get() } returns deeplinkController
+        every { reteno.serviceLocator.scheduleControllerProvider.get() } returns scheduleController
     }
 
     override fun after() {
@@ -113,7 +129,7 @@ class RetenoNotificationClickedReceiverTest : BaseRobolectricTest() {
         val extra = Bundle().apply { putString("key", "value") }
         val intent = Intent()
         intent.putExtras(extra)
-        intent.putExtra(Constants.KEY_ES_LINK_WRAPPED, deepLink)
+        intent.putExtra(Constants.KEY_ES_LINK_UNWRAPPED, deepLink)
         justRun { context.startActivity(capture(intentSlot)) }
 
         receiver!!.onReceive(context, intent)
@@ -135,15 +151,6 @@ class RetenoNotificationClickedReceiverTest : BaseRobolectricTest() {
         val intent = Intent()
         intent.putExtras(extra)
 
-        val application = mockk<Application>(moreInterfaces = arrayOf(RetenoApplication::class))
-        val reteno = mockk<RetenoImpl>()
-        val interactionController = mockk<InteractionController>()
-        val scheduleController = mockk<ScheduleController>(relaxed = true)
-
-        every { reteno.serviceLocator.interactionControllerProvider.get() } returns interactionController
-        every { reteno.serviceLocator.scheduleControllerProvider.get() } returns scheduleController
-        every { (application as RetenoApplication).getRetenoInstance() } returns reteno
-        every { RetenoImpl.application } returns application
         justRun { interactionController.onInteraction(any(), any()) }
 
         receiver!!.onReceive(context, intent)

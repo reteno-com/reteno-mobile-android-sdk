@@ -18,6 +18,7 @@ internal class ScheduleControllerImpl(
     private val eventController: EventController,
     private val appInboxController: AppInboxController,
     private val recommendationController: RecommendationController,
+    private val deepLinkController: DeeplinkController,
     private val workManager: WorkManager
 ) : ScheduleController {
 
@@ -120,6 +121,10 @@ internal class ScheduleControllerImpl(
             recommendationController::clearOldRecommendations,
             CLEAR_OLD_DATA_DELAY
         )
+        OperationQueue.addOperationAfterDelay(
+            deepLinkController::clearOldDeeplinks,
+            CLEAR_OLD_DATA_DELAY
+        )
     }
 
     private fun sendData() {
@@ -159,6 +164,12 @@ internal class ScheduleControllerImpl(
             /*@formatter:off*/ Logger.i(TAG, "sendData(): ", "step: pushRecommendations")
             /*@formatter:on*/
             recommendationController.pushRecommendations()
+        }
+
+        PushOperationQueue.addOperation {
+            /*@formatter:off*/ Logger.i(TAG, "sendData(): ", "step: pushRecommendations")
+            /*@formatter:on*/
+            deepLinkController.pushDeeplink()
         }
 
         PushOperationQueue.nextOperation()

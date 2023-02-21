@@ -37,6 +37,9 @@ class InteractionRepositoryImplTest : BaseRobolectricTest() {
             ApiContract.RetenoApi.InteractionStatus(INTERACTION_ID).url
         private const val EXPECTED_URL =
             "https://api.reteno.com/api/v1/interactions/$INTERACTION_ID/status"
+
+        private const val SERVER_ERROR_NON_REPEATABLE = 500
+        private const val SERVER_ERROR_REPEATABLE = 400
     }
     // endregion constants -------------------------------------------------------------------------
 
@@ -146,7 +149,7 @@ class InteractionRepositoryImplTest : BaseRobolectricTest() {
         every { databaseManagerInteraction.getInteractions(any()) } returns listOf(dbInteraction)
         every { apiClient.put(url = any(), jsonBody = any(), responseHandler = any()) } answers {
             val callback = thirdArg<ResponseCallback>()
-            callback.onFailure(500, null, null)
+            callback.onFailure(SERVER_ERROR_NON_REPEATABLE, null, null)
         }
 
         // When
@@ -165,7 +168,7 @@ class InteractionRepositoryImplTest : BaseRobolectricTest() {
         every { databaseManagerInteraction.deleteInteraction(dbInteraction) } returns true
         every { apiClient.put(url = any(), jsonBody = any(), responseHandler = any()) } answers {
             val callback = thirdArg<ResponseCallback>()
-            callback.onFailure(400, null, null)
+            callback.onFailure(SERVER_ERROR_REPEATABLE, null, null)
         }
 
         // When
@@ -212,7 +215,6 @@ class InteractionRepositoryImplTest : BaseRobolectricTest() {
         // Then
         verify(exactly = 0) { apiClient.put(any(), any(), any()) }
         verify { PushOperationQueue.nextOperation() }
-
     }
 
     @Test
