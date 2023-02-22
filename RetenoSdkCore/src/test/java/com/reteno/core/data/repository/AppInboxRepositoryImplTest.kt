@@ -144,7 +144,7 @@ class AppInboxRepositoryImplTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun whenMessagesPushSuccessful_thenTryPushNextMessages() {
+    fun whenMessagesPushSuccessful_thenNextOperation() {
         // Given
         val inboxStatus = getTestAppInboxDb()
         val spyRepository = spyk(inboxRepository, recordPrivateCalls = true)
@@ -162,11 +162,12 @@ class AppInboxRepositoryImplTest : BaseRobolectricTest() {
         spyRepository.pushMessagesStatus()
 
         // Then
-        verify(exactly = 2) { apiClient.post(any(), any(), any()) }
-        verify(exactly = 2) { databaseManagerAppInbox.deleteAppInboxMessages(1) }
+        verify(exactly = 1) { apiClient.post(any(), any(), any()) }
+        verify(exactly = 1) { databaseManagerAppInbox.deleteAppInboxMessages(listOf(inboxStatus)) }
+        verify(exactly = 1) { spyRepository["fetchCount"]() }
         verify(exactly = 1) { PushOperationQueue.nextOperation() }
+        verify(exactly = 0) { PushOperationQueue.removeAllOperations() }
 
-        verify(exactly = 2) { spyRepository["fetchCount"]() }
     }
 
     @Test
@@ -188,7 +189,7 @@ class AppInboxRepositoryImplTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun whenMessagesPushFailedAndErrorIsNonRepeatable_thenTryPushNextMessages() {
+    fun whenMessagesPushFailedAndErrorIsNonRepeatable_thenNextOperation() {
         // Given
         val inboxStatus = getTestAppInboxDb()
         every { databaseManagerAppInbox.getAppInboxMessages(any()) } returnsMany listOf(
@@ -205,10 +206,10 @@ class AppInboxRepositoryImplTest : BaseRobolectricTest() {
         inboxRepository.pushMessagesStatus()
 
         // Then
-        verify(exactly = 2) { apiClient.post(any(), any(), any()) }
-        verify(exactly = 3) { databaseManagerAppInbox.getAppInboxMessages() }
-        verify(exactly = 2) { databaseManagerAppInbox.deleteAppInboxMessages(1) }
+        verify(exactly = 1) { apiClient.post(any(), any(), any()) }
+        verify(exactly = 1) { databaseManagerAppInbox.deleteAppInboxMessages(listOf(inboxStatus)) }
         verify(exactly = 1) { PushOperationQueue.nextOperation() }
+        verify(exactly = 0) { PushOperationQueue.removeAllOperations() }
     }
 
     @Test
@@ -234,7 +235,7 @@ class AppInboxRepositoryImplTest : BaseRobolectricTest() {
 
         // Then
         verify(exactly = 1) { databaseManagerAppInbox.deleteAppInboxMessagesByTime(any()) }
-        verify(exactly = 0) { Logger.captureEvent(any()) }
+        verify(exactly = 0) { Logger.captureMessage(any()) }
     }
 
     @Test
@@ -249,7 +250,7 @@ class AppInboxRepositoryImplTest : BaseRobolectricTest() {
 
         // Then
         verify(exactly = 1) { databaseManagerAppInbox.deleteAppInboxMessagesByTime(any()) }
-        verify(exactly = 1) { Logger.captureEvent(eq(expectedMsg)) }
+        verify(exactly = 1) { Logger.captureMessage(eq(expectedMsg)) }
     }
 
     @Test

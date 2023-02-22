@@ -63,6 +63,7 @@ public class InteractionWriteDialogFragment extends BaseDatabaseDialogFragment {
 
             if (UtilKt.allElementsNotNull(interactionId, status, time, token)) {
                 InteractionDb interaction = new InteractionDb(
+                        null,
                         interactionId,
                         InteractionStatusDb.fromString(status),
                         time,

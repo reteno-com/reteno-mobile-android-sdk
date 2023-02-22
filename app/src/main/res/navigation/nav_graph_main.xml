@@ -24,6 +24,9 @@
             android:id="@+id/start_to_userData"
             app:destination="@id/fragmentUserData" />
         <action
+            android:id="@+id/start_to_userAnonymousData"
+            app:destination="@id/fragmentUserAnonymousData" />
+        <action
             android:id="@+id/start_to_custom_data"
             app:destination="@id/fragmentCustomData" />
         <action
@@ -69,11 +72,18 @@
         android:name="com.reteno.sample.SecondActivity"
         android:label="secondActivity"
         tools:layout="@layout/activity_second" />
+
     <fragment
         android:id="@+id/fragmentUserData"
         android:name="com.reteno.sample.fragments.FragmentUserData"
         android:label="FragmentUserData"
         tools:layout="@layout/fragment_user_data" />
+
+    <fragment
+        android:id="@+id/fragmentUserAnonymousData"
+        android:name="com.reteno.sample.fragments.FragmentUserAnonymousData"
+        android:label="FragmentUserAnonymousData"
+        tools:layout="@layout/fragment_user_anonymous_data" />
 
     <fragment
         android:id="@+id/fragmentCustomData"

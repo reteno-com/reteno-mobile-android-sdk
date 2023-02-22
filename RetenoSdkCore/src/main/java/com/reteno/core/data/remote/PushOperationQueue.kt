@@ -1,8 +1,10 @@
 package com.reteno.core.data.remote
 
+import com.reteno.core.util.Logger
+
 internal object PushOperationQueue {
 
-    private val operationQueue = ArrayDeque<Runnable>()
+    private val operationQueue = ArrayDeque<() -> Unit>()
 
     /**
      * Add operation to [PushOperationQueue] at the end.
@@ -10,8 +12,17 @@ internal object PushOperationQueue {
      *
      * @param operation The operation that will be executed.
      */
-    fun addOperation(operation: Runnable) {
-        operationQueue.add(operation)
+    fun addOperation(operation: () -> Unit) {
+        val catchableBlock: () -> Unit = {
+            try {
+                operation.invoke()
+            } catch (ex: Throwable) {
+                /*@formatter:off*/ Logger.e("TAG", "addOperation(): ", ex)
+                /*@formatter:on*/
+            }
+        }
+
+        operationQueue.add(catchableBlock)
     }
 
     /**

@@ -2,6 +2,7 @@ package com.reteno.core.base
 
 import com.reteno.core.util.Logger
 import com.reteno.core.util.Util
+import com.reteno.core.util.isOsVersionSupported
 import io.mockk.*
 import org.junit.After
 import org.junit.AfterClass
@@ -17,12 +18,15 @@ open class BaseUnitTest {
         @BeforeClass
         fun beforeClassBase() {
             mockStaticLogger()
+            mockkStatic("com.reteno.core.util.UtilKt")
+            every { isOsVersionSupported() } returns true
         }
 
         @JvmStatic
         @AfterClass
         fun afterClassBase() {
             unMockStaticLogger()
+            unmockkStatic("com.reteno.core.util.UtilKt")
         }
 
         private fun mockStaticLogger() {
@@ -31,9 +35,8 @@ open class BaseUnitTest {
             justRun { Logger.d(any(), any(), *anyVararg()) }
             justRun { Logger.i(any(), any(), *anyVararg()) }
             justRun { Logger.w(any(), any(), *anyVararg()) }
-            justRun { Logger.e(any(), any()) }
             justRun { Logger.e(any(), any(), any()) }
-            justRun { Logger.captureException(any()) }
+            justRun { Logger.captureMessage(any()) }
             justRun { Logger.captureEvent(any()) }
         }
 

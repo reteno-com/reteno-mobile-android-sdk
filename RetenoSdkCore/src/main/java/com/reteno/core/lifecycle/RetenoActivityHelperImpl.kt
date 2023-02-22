@@ -222,7 +222,6 @@ internal class RetenoActivityHelperImpl(private val eventController: EventContro
                     .getDeclaredMethod("onActivityNotificationClick", Bundle::class.java)
                     .invoke(null, message)
             } catch (t: Throwable) {
-                Logger.captureException(t)
                 Logger.e(
                     TAG,
                     "Push Notification action not run. Did you forget reteno-push module?",
@@ -237,7 +236,8 @@ internal class RetenoActivityHelperImpl(private val eventController: EventContro
             try {
                 onStop(activity)
             } catch (t: Throwable) {
-                Logger.captureException(t)
+                /*@formatter:off*/ Logger.e(TAG, "onActivityStopped(): ", t)
+                /*@formatter:on*/
             }
         }
 
@@ -245,7 +245,8 @@ internal class RetenoActivityHelperImpl(private val eventController: EventContro
             try {
                 onResume(activity)
             } catch (t: Throwable) {
-                Logger.captureException(t)
+                /*@formatter:off*/ Logger.e(TAG, "onActivityResumed(): ", t)
+                /*@formatter:on*/
             }
         }
 
@@ -253,7 +254,8 @@ internal class RetenoActivityHelperImpl(private val eventController: EventContro
             try {
                 onPause(activity)
             } catch (t: Throwable) {
-                Logger.captureException(t)
+                /*@formatter:off*/ Logger.e(TAG, "onActivityPaused(): ", t)
+                /*@formatter:on*/
             }
         }
 
@@ -261,7 +263,8 @@ internal class RetenoActivityHelperImpl(private val eventController: EventContro
             try {
                 onStart(activity)
             } catch (t: Throwable) {
-                Logger.captureException(t)
+                /*@formatter:off*/ Logger.e(TAG, "onActivityStarted(): ", t)
+                /*@formatter:on*/
             }
         }
 
@@ -271,7 +274,8 @@ internal class RetenoActivityHelperImpl(private val eventController: EventContro
             try {
                 onDestroy(activity)
             } catch (t: Throwable) {
-                Logger.captureException(t)
+                /*@formatter:off*/ Logger.e(TAG, "onActivityDestroyed(): ", t)
+                /*@formatter:on*/
             }
         }
 

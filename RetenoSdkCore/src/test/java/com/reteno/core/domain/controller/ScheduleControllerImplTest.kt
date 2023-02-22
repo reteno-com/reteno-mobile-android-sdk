@@ -4,12 +4,10 @@ import com.reteno.core.base.robolectric.BaseRobolectricTest
 import com.reteno.core.data.remote.OperationQueue
 import com.reteno.core.data.remote.PushOperationQueue
 import io.mockk.clearMocks
-import io.mockk.every
 import io.mockk.impl.annotations.RelaxedMockK
 import io.mockk.mockk
 import io.mockk.verify
 import org.junit.Test
-import java.util.concurrent.Executor
 import java.util.concurrent.ScheduledExecutorService
 
 class ScheduleControllerImplTest : BaseRobolectricTest() {
@@ -25,19 +23,16 @@ class ScheduleControllerImplTest : BaseRobolectricTest() {
     // region helper fields ------------------------------------------------------------------------
     @RelaxedMockK
     private lateinit var contactController: ContactController
-
     @RelaxedMockK
     private lateinit var interactionController: InteractionController
-
     @RelaxedMockK
     private lateinit var eventController: EventController
-
     @RelaxedMockK
     private lateinit var appInboxController: AppInboxController
-
     @RelaxedMockK
     private lateinit var recommendationController: RecommendationController
-
+    @RelaxedMockK
+    private lateinit var deeplinkController: DeeplinkController
 
 
     private lateinit var SUT: ScheduleController
@@ -45,7 +40,15 @@ class ScheduleControllerImplTest : BaseRobolectricTest() {
 
     override fun before() {
         super.before()
-        SUT = ScheduleControllerImpl(contactController, interactionController, eventController, appInboxController, recommendationController, mockk(relaxed = true))
+        SUT = ScheduleControllerImpl(
+            contactController = contactController,
+            interactionController = interactionController,
+            eventController = eventController,
+            appInboxController = appInboxController,
+            recommendationController = recommendationController,
+            deepLinkController = deeplinkController,
+            workManager = mockk(relaxed = true)
+        )
         scheduler = application.scheduler
     }
 
@@ -65,24 +68,18 @@ class ScheduleControllerImplTest : BaseRobolectricTest() {
 
     @Test
     fun whenStartScheduler_thenAddPushOperation() {
-        // Given
-        val currentThreadExecutor = Executor(Runnable::run)
-        every { PushOperationQueue.addOperation(any()) } answers {
-            currentThreadExecutor.execute(firstArg())
-            PushOperationQueue.nextOperation()
-        }
-
         // When
         SUT.startScheduler()
 
         // Then
-        verify(exactly = 6) { PushOperationQueue.addOperation(any()) }
-        verify(exactly = 7) { PushOperationQueue.nextOperation() }
+        verify(exactly = 7) { PushOperationQueue.addOperation(any()) }
+        verify(exactly = 1) { PushOperationQueue.nextOperation() }
         verify { contactController.pushDeviceData() }
         verify { contactController.pushUserData() }
         verify { interactionController.pushInteractions() }
         verify { eventController.pushEvents() }
         verify { appInboxController.pushAppInboxMessagesStatus() }
+        verify { deeplinkController.pushDeeplink() }
     }
 
     @Test
@@ -101,7 +98,7 @@ class ScheduleControllerImplTest : BaseRobolectricTest() {
         SUT.forcePush()
 
         // Then
-        verify(exactly = 6) { PushOperationQueue.addOperation(any()) }
+        verify(exactly = 7) { PushOperationQueue.addOperation(any()) }
         verify(exactly = 1) { PushOperationQueue.nextOperation() }
     }
 
@@ -112,7 +109,7 @@ class ScheduleControllerImplTest : BaseRobolectricTest() {
         SUT.forcePush()
 
         // Then
-        verify(exactly = 6) { PushOperationQueue.addOperation(any()) }
+        verify(exactly = 7) { PushOperationQueue.addOperation(any()) }
         verify(exactly = 1) { PushOperationQueue.nextOperation() }
     }
 
@@ -122,10 +119,12 @@ class ScheduleControllerImplTest : BaseRobolectricTest() {
         SUT.clearOldData()
 
         // Then
-        verify(exactly = 4) { OperationQueue.addOperationAfterDelay(any(), eq(CLEAR_OLD_DATA_DELAY)) }
+        verify(exactly = 5) { OperationQueue.addOperationAfterDelay(any(), eq(CLEAR_OLD_DATA_DELAY)) }
         verify { interactionController.clearOldInteractions() }
         verify { eventController.clearOldEvents() }
         verify { appInboxController.clearOldMessagesStatus() }
+        verify { recommendationController.clearOldRecommendations() }
+        verify { deeplinkController.clearOldDeeplinks() }
     }
 
 }

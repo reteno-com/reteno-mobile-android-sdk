@@ -1,20 +1,15 @@
 package com.reteno.core.appinbox
 
+import com.reteno.core.base.BaseUnitTest
 import com.reteno.core.domain.callback.appinbox.RetenoResultCallback
 import com.reteno.core.domain.controller.AppInboxController
 import com.reteno.core.domain.model.appinbox.AppInboxMessages
-import io.mockk.MockKAnnotations
 import io.mockk.impl.annotations.RelaxedMockK
 import io.mockk.mockk
 import io.mockk.verify
-import org.junit.Assert.*
-import org.junit.Before
 import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
 
-@RunWith(JUnit4::class)
-class AppInboxImplTest {
+class AppInboxImplTest: BaseUnitTest() {
 
     // region constants ----------------------------------------------------------------------------
     private companion object {
@@ -32,9 +27,8 @@ class AppInboxImplTest {
     private lateinit var inbox: AppInboxImpl
     // endregion helper fields ---------------------------------------------------------------------
 
-    @Before
-    fun setUp() {
-        MockKAnnotations.init(this)
+    override fun before() {
+        super.before()
         inbox = AppInboxImpl(appInboxController)
     }
 

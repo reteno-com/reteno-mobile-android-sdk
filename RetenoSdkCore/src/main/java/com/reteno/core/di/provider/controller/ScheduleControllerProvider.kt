@@ -11,6 +11,7 @@ internal class ScheduleControllerProvider(
     private val eventsControllerProvider: EventsControllerProvider,
     private val appInboxControllerProvider: AppInboxControllerProvider,
     private val recommendationControllerProvider: RecommendationControllerProvider,
+    private val deeplinkControllerProvider: DeeplinkControllerProvider,
     private val workManagerProvider: WorkManagerProvider
 ) : ProviderWeakReference<ScheduleController>() {
 
@@ -21,6 +22,7 @@ internal class ScheduleControllerProvider(
             eventsControllerProvider.get(),
             appInboxControllerProvider.get(),
             recommendationControllerProvider.get(),
+            deeplinkControllerProvider.get(),
             workManagerProvider.get()
         )
     }

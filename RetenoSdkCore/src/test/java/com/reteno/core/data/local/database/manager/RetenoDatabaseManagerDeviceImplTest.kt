@@ -23,10 +23,11 @@ import io.mockk.verify
 import junit.framework.TestCase.assertTrue
 import net.sqlcipher.Cursor
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Test
 
 
-class RetenoDatabaseManagerDeviceTest : BaseRobolectricTest() {
+class RetenoDatabaseManagerDeviceImplTest : BaseRobolectricTest() {
 
     // region constants ----------------------------------------------------------------------------
     companion object {
@@ -35,6 +36,8 @@ class RetenoDatabaseManagerDeviceTest : BaseRobolectricTest() {
         private const val ROW_ID_INSERTED = 1L
         private const val TIMESTAMP = "TimeStampHere_Z"
 
+        private const val ROW_ID_1 = "12"
+        private const val ROW_ID_2 = "13"
         private const val DEVICE_ID = "valueDeviceId"
         private const val EXTERNAL_USER_ID = "valueExternalUserId"
         private const val PUSH_TOKEN = "valuePushToken"
@@ -64,6 +67,7 @@ class RetenoDatabaseManagerDeviceTest : BaseRobolectricTest() {
 
 
         private val device1 = DeviceDb(
+            rowId = ROW_ID_1,
             deviceId = DEVICE_ID,
             externalUserId = null,
             pushToken = PUSH_TOKEN,
@@ -79,6 +83,7 @@ class RetenoDatabaseManagerDeviceTest : BaseRobolectricTest() {
         )
 
         private val device2 = DeviceDb(
+            rowId = ROW_ID_2,
             deviceId = DEVICE_ID,
             externalUserId = EXTERNAL_USER_ID,
             pushToken = PUSH_TOKEN,
@@ -284,45 +289,43 @@ class RetenoDatabaseManagerDeviceTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun given_whenDeleteDevicesOldest_thenDevicesDeleted() {
-        // Given
-        val order = "ASC"
-        val count = 2
-        val whereClauseExpected = "${DeviceSchema.COLUMN_DEVICE_ROW_ID} " +
-                "in (select ${DeviceSchema.COLUMN_DEVICE_ROW_ID} " +
-                "from ${DeviceSchema.TABLE_NAME_DEVICE} " +
-                "ORDER BY ${DbSchema.COLUMN_TIMESTAMP} $order " +
-                "LIMIT $count)"
-
-        every { database.delete(any(), any(), any()) } returns 0
-
+    fun givenDeviceProvided_wheDeleteDevice_thenDeleteFromDatabaseCalled() {
         // When
-        SUT.deleteDevices(count, true)
+        SUT.deleteDevice(device1)
 
         // Then
-        verify(exactly = 1) { database.delete(DeviceSchema.TABLE_NAME_DEVICE, whereClauseExpected) }
+        verify(exactly = 1) {
+            database.delete(
+                table = eq(DeviceSchema.TABLE_NAME_DEVICE),
+                whereClause = eq("${DeviceSchema.COLUMN_DEVICE_ROW_ID}=?"),
+                whereArgs = arrayOf(ROW_ID_1)
+            )
+        }
     }
 
     @Test
-    fun given_whenDeleteDevicesNewest_thenDevicesDeleted() {
+    fun givenDatabaseDeleteReturns1_wheDeleteDevice_thenResultIsTrue() {
         // Given
-        val order = "DESC"
-        val count = 4
-        val whereClauseExpected = "${DeviceSchema.COLUMN_DEVICE_ROW_ID} " +
-                "in (select ${DeviceSchema.COLUMN_DEVICE_ROW_ID} " +
-                "from ${DeviceSchema.TABLE_NAME_DEVICE} " +
-                "ORDER BY ${DbSchema.COLUMN_TIMESTAMP} $order " +
-                "LIMIT $count)"
-
-        every { database.delete(any(), any(), any()) } returns 0
+        every { database.delete(table = any(), whereClause = any(), whereArgs = any()) } returns 1
 
         // When
-        SUT.deleteDevices(count, false)
+        val result = SUT.deleteDevice(device1)
 
         // Then
-        verify(exactly = 1) { database.delete(DeviceSchema.TABLE_NAME_DEVICE, whereClauseExpected) }
+        assertTrue(result)
     }
 
+    @Test
+    fun givenDatabaseDeleteReturns0_wheDeleteDevice_thenResultIsFalse() {
+        // Given
+        every { database.delete(table = any(), whereClause = any(), whereArgs = any()) } returns 0
+
+        // When
+        val result = SUT.deleteDevice(device1)
+
+        // Then
+        assertFalse(result)
+    }
 
     // region helper methods -----------------------------------------------------------------------
     private fun mockColumnIndexes() {

@@ -55,13 +55,16 @@ public class UserReadDialogFragment extends BaseReadDialogFragment<UserDb, ItemD
 
     @Override
     protected void initItems() {
-        List<UserDb> newItems = databaseManager.getUser(null);
+        List<UserDb> newItems = databaseManager.getUsers(null);
         adapter.setItems(newItems);
     }
 
     @Override
     protected void deleteItems(int count) {
-        databaseManager.deleteUsers(count, true);
+        List<UserDb> users = databaseManager.getUsers(count);
+        for (UserDb user : users) {
+            databaseManager.deleteUser(user);
+        }
     }
 
     //==============================================================================================

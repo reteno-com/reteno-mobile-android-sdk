@@ -73,15 +73,14 @@ android {
 }
 
 dependencies {
-    implementation "io.sentry:sentry-android:6.9.1"
+    api "io.sentry:sentry-android:6.9.1"
+    api "com.google.code.gson:gson:2.10"
 
     implementation "com.google.android.gms:play-services-base:18.1.0"
     implementation "com.google.android.gms:play-services-appset:16.0.2"
 
     implementation "androidx.core:core-ktx:1.9.0"
-    compileOnly "com.google.firebase:firebase-messaging-ktx:23.1.0"
-
-    api "com.google.code.gson:gson:2.10"
+    compileOnly "com.google.firebase:firebase-messaging-ktx:23.1.1"
 
     implementation "net.zetetic:android-database-sqlcipher:4.5.2"
     implementation "androidx.sqlite:sqlite:2.1.0"

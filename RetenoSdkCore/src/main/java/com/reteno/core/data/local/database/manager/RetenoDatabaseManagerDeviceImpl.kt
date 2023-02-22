@@ -19,12 +19,18 @@ internal class RetenoDatabaseManagerDeviceImpl(private val database: RetenoDatab
     private val contentValues = ContentValues()
 
     override fun insertDevice(device: DeviceDb) {
+        /*@formatter:off*/ Logger.i(TAG, "insertDevice(): ", "device = [", device, "]")
+        /*@formatter:on*/
+
         contentValues.putDevice(device)
         database.insert(table = DeviceSchema.TABLE_NAME_DEVICE, contentValues = contentValues)
         contentValues.clear()
     }
 
     override fun getDevices(limit: Int?): List<DeviceDb> {
+        /*@formatter:off*/ Logger.i(TAG, "getDevices(): ", "limit = [", limit, "]")
+        /*@formatter:on*/
+
         val deviceEvents: MutableList<DeviceDb> = mutableListOf()
 
         var cursor: Cursor? = null
@@ -70,12 +76,17 @@ internal class RetenoDatabaseManagerDeviceImpl(private val database: RetenoDatab
 
     override fun getDeviceCount(): Long = database.getRowCount(DeviceSchema.TABLE_NAME_DEVICE)
 
-    override fun deleteDevices(count: Int, oldest: Boolean) {
-        val order = if (oldest) "ASC" else "DESC"
-        database.delete(
+    override fun deleteDevice(device: DeviceDb): Boolean {
+        /*@formatter:off*/ Logger.i(TAG, "deleteDevice(): ", "device = [", device, "]")
+        /*@formatter:on*/
+
+        val removedRecordsCount = database.delete(
             table = DeviceSchema.TABLE_NAME_DEVICE,
-            whereClause = "${DeviceSchema.COLUMN_DEVICE_ROW_ID} in (select ${DeviceSchema.COLUMN_DEVICE_ROW_ID} from ${DeviceSchema.TABLE_NAME_DEVICE} ORDER BY ${DbSchema.COLUMN_TIMESTAMP} $order LIMIT $count)"
+            whereClause = "${DeviceSchema.COLUMN_DEVICE_ROW_ID}=?",
+            whereArgs = arrayOf(device.rowId)
         )
+
+        return removedRecordsCount > 0
     }
 
     companion object {

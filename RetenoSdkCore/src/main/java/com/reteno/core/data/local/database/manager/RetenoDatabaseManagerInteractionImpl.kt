@@ -19,13 +19,19 @@ internal class RetenoDatabaseManagerInteractionImpl(private val database: Reteno
     private val contentValues = ContentValues()
 
     override fun insertInteraction(interaction: InteractionDb) {
+        /*@formatter:off*/ Logger.i(TAG, "insertInteraction(): ", "interaction = [", interaction, "]")
+        /*@formatter:on*/
+
         contentValues.putInteraction(interaction)
         database.insert(table = InteractionSchema.TABLE_NAME_INTERACTION, contentValues = contentValues)
         contentValues.clear()
     }
 
     override fun getInteractions(limit: Int?): List<InteractionDb> {
-        val interactionEvents: MutableList<InteractionDb> = mutableListOf()
+        /*@formatter:off*/ Logger.i(TAG, "getInteractions(): ", "limit = [", limit, "]")
+        /*@formatter:on*/
+
+        val interactions: MutableList<InteractionDb> = mutableListOf()
 
         var cursor: Cursor? = null
         try {
@@ -40,7 +46,7 @@ internal class RetenoDatabaseManagerInteractionImpl(private val database: Reteno
                 val interaction = cursor.getInteraction()
 
                 if (interaction != null) {
-                    interactionEvents.add(interaction)
+                    interactions.add(interaction)
                 } else {
                     val rowId =
                         cursor.getLongOrNull(cursor.getColumnIndex(InteractionSchema.COLUMN_INTERACTION_ROW_ID))
@@ -66,24 +72,76 @@ internal class RetenoDatabaseManagerInteractionImpl(private val database: Reteno
         } finally {
             cursor?.close()
         }
-        return interactionEvents
+        return interactions
     }
 
     override fun getInteractionCount(): Long = database.getRowCount(InteractionSchema.TABLE_NAME_INTERACTION)
 
-    override fun deleteInteractions(count: Int, oldest: Boolean) {
-        val order = if (oldest) "ASC" else "DESC"
-        database.delete(
+    override fun deleteInteraction(interaction: InteractionDb): Boolean {
+        /*@formatter:off*/ Logger.i(TAG, "deleteInteraction(): ", "interaction = [", interaction, "]")
+        /*@formatter:on*/
+
+        val removedRecordsCount = database.delete(
             table = InteractionSchema.TABLE_NAME_INTERACTION,
-            whereClause = "${InteractionSchema.COLUMN_INTERACTION_ROW_ID} in (select ${InteractionSchema.COLUMN_INTERACTION_ROW_ID} from ${InteractionSchema.TABLE_NAME_INTERACTION} ORDER BY ${DbSchema.COLUMN_TIMESTAMP} $order LIMIT $count)"
+            whereClause = "${InteractionSchema.COLUMN_INTERACTION_ROW_ID}=?",
+            whereArgs = arrayOf(interaction.rowId)
         )
+
+        return removedRecordsCount > 0
     }
 
-    override fun deleteInteractionByTime(outdatedTime: String): Int {
-        return database.delete(
+    override fun deleteInteractionByTime(outdatedTime: String): List<InteractionDb> {
+        /*@formatter:off*/ Logger.i(TAG, "deleteInteractionByTime(): ", "outdatedTime = [", outdatedTime, "]")
+        /*@formatter:on*/
+
+        val whereClause = "${InteractionSchema.COLUMN_INTERACTION_TIME} < '$outdatedTime'"
+
+        var cursor: Cursor? = null
+        val interactionsList = mutableListOf<InteractionDb>()
+        try {
+            cursor = database.query(
+                table = InteractionSchema.TABLE_NAME_INTERACTION,
+                columns = InteractionSchema.getAllColumns(),
+                selection = whereClause
+            )
+
+            while (cursor.moveToNext()) {
+                val interaction = cursor.getInteraction()
+                if (interaction != null) {
+                    interactionsList.add(interaction)
+                } else {
+                    val rowId = cursor.getLongOrNull(
+                        cursor.getColumnIndex(InteractionSchema.COLUMN_INTERACTION_ROW_ID)
+                    )
+                    val exception =
+                        SQLException("deleteInteractionByTime() Unable to read data from SQL database. interaction=$interaction")
+                    if (rowId == null) {
+                        /*@formatter:off*/ Logger.e(TAG, "deleteInteractionByTime(). rowId is NULL ", exception)
+                        /*@formatter:on*/
+                    } else {
+                        database.delete(
+                            table = InteractionSchema.TABLE_NAME_INTERACTION,
+                            whereClause = "${InteractionSchema.COLUMN_INTERACTION_ROW_ID}=?",
+                            whereArgs = arrayOf(rowId.toString())
+                        )
+                        /*@formatter:off*/ Logger.e(TAG, "deleteInteractionByTime(). Removed invalid entry from database. interaction=$interaction ", exception)
+                        /*@formatter:on*/
+                    }
+                }
+            }
+        } catch (t: Throwable) {
+            /*@formatter:off*/ Logger.e(TAG, "deleteInteractionByTime() handleSQLiteError(): Unable to get Interactions from the table.", t)
+            /*@formatter:on*/
+        } finally {
+            cursor?.close()
+        }
+
+        database.delete(
             table = InteractionSchema.TABLE_NAME_INTERACTION,
-            whereClause = "${InteractionSchema.COLUMN_INTERACTION_TIME} < '$outdatedTime'"
+            whereClause = whereClause
         )
+
+        return interactionsList
     }
 
     companion object {
