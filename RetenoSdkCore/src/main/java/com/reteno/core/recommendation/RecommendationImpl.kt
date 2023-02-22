@@ -5,6 +5,7 @@ import com.reteno.core.domain.controller.RecommendationController
 import com.reteno.core.domain.model.recommendation.get.RecomRequest
 import com.reteno.core.domain.model.recommendation.post.RecomEvents
 import com.reteno.core.util.Logger
+import com.reteno.core.util.isOsVersionSupported
 
 internal class RecommendationImpl(private val recommendationController: RecommendationController) :
     Recommendation {
@@ -15,6 +16,9 @@ internal class RecommendationImpl(private val recommendationController: Recommen
         responseClass: Class<T>,
         responseCallback: GetRecommendationResponseCallback<T>
     ) {
+        if (!isOsVersionSupported()) {
+            return
+        }
         /*@formatter:off*/ Logger.i(TAG, "fetchRecommendation(): ", "recomVariantId = [" , recomVariantId , "], recomRequest = [" , recomRequest , "], responseClass = [" , responseClass , "], responseCallback = [" , responseCallback , "]")
         /*@formatter:on*/
         try {
@@ -30,6 +34,9 @@ internal class RecommendationImpl(private val recommendationController: Recommen
     }
 
     override fun logRecommendations(recomEvents: RecomEvents) {
+        if (!isOsVersionSupported()) {
+            return
+        }
         /*@formatter:off*/ Logger.i(TAG, "logRecommendations(): ", "recomEvents = [" , recomEvents , "]")
         /*@formatter:on*/
         try {

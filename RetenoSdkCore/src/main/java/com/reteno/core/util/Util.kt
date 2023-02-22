@@ -91,6 +91,13 @@ fun isRepeatableError(statusCode: Int?): Boolean {
 
 fun isNonRepeatableError(statusCode: Int?) = !isRepeatableError(statusCode)
 
+fun isOsVersionSupported(): Boolean {
+    val result = Build.VERSION.SDK_INT >= 26
+    /*@formatter:off*/ Logger.i(TAG, "isOsVersionSupported(): Build.VERSION.SDK_INT = [", Build.VERSION.SDK_INT, "], result = [", result ,"]")
+    /*@formatter:on*/
+    return result
+}
+
 object Util {
 
     private val formatter = DateTimeFormatter

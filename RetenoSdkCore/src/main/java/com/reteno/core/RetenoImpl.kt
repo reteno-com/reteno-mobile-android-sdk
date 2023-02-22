@@ -13,6 +13,7 @@ import com.reteno.core.lifecycle.RetenoLifecycleCallbacks
 import com.reteno.core.lifecycle.ScreenTrackingConfig
 import com.reteno.core.util.Constants.BROADCAST_ACTION_RETENO_APP_RESUME
 import com.reteno.core.util.Logger
+import com.reteno.core.util.isOsVersionSupported
 import com.reteno.core.util.queryBroadcastReceivers
 
 
@@ -36,14 +37,19 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
     private val activityHelper: RetenoActivityHelper by lazy { serviceLocator.retenoActivityHelperProvider.get() }
 
     init {
-        try {
-            activityHelper.enableLifecycleCallbacks(this)
-        } catch (t: Throwable) {
-            Logger.e(TAG, "init(): ", t)
+        if (isOsVersionSupported()) {
+            try {
+                activityHelper.enableLifecycleCallbacks(this)
+            } catch (t: Throwable) {
+                Logger.e(TAG, "init(): ", t)
+            }
         }
     }
 
     override fun resume(activity: Activity?) {
+        if (!isOsVersionSupported()) {
+            return
+        }
         /*@formatter:off*/ Logger.i(TAG, "resume(): ", "activity = [" , activity , "]")
         /*@formatter:on*/
         try {
@@ -68,6 +74,9 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
     }
 
     override fun pause(activity: Activity?) {
+        if (!isOsVersionSupported()) {
+            return
+        }
         /*@formatter:off*/ Logger.i(TAG, "pause(): ", "activity = [" , activity , "]")
         /*@formatter:on*/
         try {
@@ -79,6 +88,9 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
 
     @Throws(java.lang.IllegalArgumentException::class)
     override fun setUserAttributes(externalUserId: String) {
+        if (!isOsVersionSupported()) {
+            return
+        }
         /*@formatter:off*/ Logger.i(TAG, "setUserAttributes(): ", "externalUserId = [" , externalUserId , "]")
         /*@formatter:on*/
         if (externalUserId.isBlank()) {
@@ -97,6 +109,9 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
 
     @Throws(java.lang.IllegalArgumentException::class)
     override fun setUserAttributes(externalUserId: String, user: User?) {
+        if (!isOsVersionSupported()) {
+            return
+        }
         /*@formatter:off*/ Logger.i(TAG, "setUserAttributes(): ", "externalUserId = [" , externalUserId , "], used = [" , user , "]")
         /*@formatter:on*/
         if (externalUserId.isBlank()) {
@@ -116,6 +131,9 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
     }
 
     override fun logEvent(event: Event) {
+        if (!isOsVersionSupported()) {
+            return
+        }
         /*@formatter:off*/ Logger.i(TAG, "logEvent(): ", "eventType = [" , event.eventTypeKey , "], date = [" , event.occurred , "], parameters = [" , event.params , "]")
         /*@formatter:on*/
         try {
@@ -126,12 +144,18 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
     }
 
     override fun logEcommerceEvent(ecomEvent: EcomEvent) {
+        if (!isOsVersionSupported()) {
+            return
+        }
         /*@formatter:off*/ Logger.i(TAG, "logEcommerceEvent(): ", "ecomEvent = [" , ecomEvent , "]")
         /*@formatter:on*/
         eventController.trackEcomEvent(ecomEvent)
     }
 
     override fun logScreenView(screenName: String) {
+        if (!isOsVersionSupported()) {
+            return
+        }
         /*@formatter:off*/ Logger.i(TAG, "logScreenView(): ", "screenName = [" , screenName , "]")
         /*@formatter:on*/
         try {
@@ -142,6 +166,9 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
     }
 
     override fun autoScreenTracking(config: ScreenTrackingConfig) {
+        if (!isOsVersionSupported()) {
+            return
+        }
         /*@formatter:off*/ Logger.i(TAG, "autoScreenTracking(): ", "config = [" , config , "]")
         /*@formatter:on*/
         try {
@@ -152,6 +179,9 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
     }
 
     override fun forcePushData() {
+        if (!isOsVersionSupported()) {
+            return
+        }
         /*@formatter:off*/ Logger.i(TAG, "forcePushData(): ", "")
         /*@formatter:on*/
         try {

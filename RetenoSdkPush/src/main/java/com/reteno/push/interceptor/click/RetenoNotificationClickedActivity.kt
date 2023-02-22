@@ -8,6 +8,7 @@ import com.reteno.core.RetenoApplication
 import com.reteno.core.RetenoImpl
 import com.reteno.core.domain.model.interaction.InteractionStatus
 import com.reteno.core.util.Logger
+import com.reteno.core.util.isOsVersionSupported
 import com.reteno.core.util.toStringVerbose
 import com.reteno.push.Constants
 import com.reteno.push.Constants.KEY_ACTION_BUTTON
@@ -31,6 +32,9 @@ class RetenoNotificationClickedActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (!isOsVersionSupported()) {
+            return
+        }
         /*@formatter:off*/ Logger.i(TAG, "onCreate(): ", "notification clicked, intent.extras = [" , intent.extras.toStringVerbose() , "]")
         /*@formatter:on*/
 

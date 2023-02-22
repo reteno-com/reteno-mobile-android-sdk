@@ -3,6 +3,7 @@ package com.reteno.fcm
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import com.reteno.core.util.Logger
+import com.reteno.core.util.isOsVersionSupported
 import com.reteno.push.RetenoNotificationService
 
 open class RetenoFirebaseMessagingService : FirebaseMessagingService() {
@@ -15,6 +16,9 @@ open class RetenoFirebaseMessagingService : FirebaseMessagingService() {
 
     override fun onCreate() {
         super.onCreate()
+        if (!isOsVersionSupported()) {
+            return
+        }
         handler.toString()
         /*@formatter:off*/ Logger.i(TAG, "onCreate(): ", "")
         /*@formatter:on*/
@@ -22,6 +26,9 @@ open class RetenoFirebaseMessagingService : FirebaseMessagingService() {
 
     override fun onNewToken(token: String) {
         super.onNewToken(token)
+        if (!isOsVersionSupported()) {
+            return
+        }
         /*@formatter:off*/ Logger.i(TAG, "onNewToken(): ", "token = [" , token , "]")
         /*@formatter:on*/
         try {
@@ -33,6 +40,9 @@ open class RetenoFirebaseMessagingService : FirebaseMessagingService() {
 
     override fun onMessageReceived(message: RemoteMessage) {
         super.onMessageReceived(message)
+        if (!isOsVersionSupported()) {
+            return
+        }
         /*@formatter:off*/ Logger.i(TAG, "onMessageReceived(): ", "context = [", application, "] message.data = [" , message.toString() , "]")
         /*@formatter:on*/
         try {
