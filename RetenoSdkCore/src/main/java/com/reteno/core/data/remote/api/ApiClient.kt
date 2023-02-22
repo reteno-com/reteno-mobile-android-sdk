@@ -12,4 +12,7 @@ internal interface ApiClient {
 
     fun get(url: ApiContract, queryParams: Map<String, String?>?, responseHandler: ResponseCallback)
     fun getSync(url: ApiContract, queryParams: Map<String, String?>?, responseHandler: ResponseCallback)
+
+    fun head(url: ApiContract, queryParams: Map<String, String?>?, responseHandler: ResponseCallback)
+    fun headSync(url: ApiContract, queryParams: Map<String, String?>?, responseHandler: ResponseCallback)
 }

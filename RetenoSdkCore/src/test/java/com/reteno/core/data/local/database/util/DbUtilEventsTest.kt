@@ -22,6 +22,7 @@ class DbUtilEventsTest : BaseRobolectricTest() {
     // region constants ----------------------------------------------------------------------------
     companion object {
         private const val PARENT_ROW_ID = 1L
+        private const val EVENT_ROW_ID = "131"
 
         private const val DEVICE_ID = "deviceId1"
         private const val EXTERNAL_USER_ID = "externalUserId1"
@@ -42,9 +43,11 @@ class DbUtilEventsTest : BaseRobolectricTest() {
 
         private const val COLUMN_INDEX_DEVICE_ID = 1
         private const val COLUMN_INDEX_EXTERNAL_USER_ID = 2
-        private const val COLUMN_INDEX_EVENT_TYPE_KEY = 3
-        private const val COLUMN_INDEX_EVENT_OCCURRED = 4
-        private const val COLUMN_INDEX_EVENT_PARAMS = 5
+
+        private const val COLUMN_INDEX_EVENT_ROW_ID = 3
+        private const val COLUMN_INDEX_EVENT_TYPE_KEY = 4
+        private const val COLUMN_INDEX_EVENT_OCCURRED = 5
+        private const val COLUMN_INDEX_EVENT_PARAMS = 6
     }
     // endregion constants -------------------------------------------------------------------------
 
@@ -137,6 +140,7 @@ class DbUtilEventsTest : BaseRobolectricTest() {
             FIELD_PARAM_NAME_2, FIELD_PARAM_VALUE_2
         ))
         val expectedEvent = EventDb(
+            rowId = EVENT_ROW_ID,
             eventTypeKey = EVENT_1_TYPE_KEY,
             occurred = EVENT_1_OCCURRED,
             params = expectedParams
@@ -155,6 +159,7 @@ class DbUtilEventsTest : BaseRobolectricTest() {
         mockEventParamsEmpty()
 
         val expectedEvent = EventDb(
+            rowId = EVENT_ROW_ID,
             eventTypeKey = EVENT_1_TYPE_KEY,
             occurred = EVENT_1_OCCURRED,
             params = listOf()
@@ -173,6 +178,7 @@ class DbUtilEventsTest : BaseRobolectricTest() {
         mockEventParamsNull()
 
         val expectedEvent = EventDb(
+            rowId = EVENT_ROW_ID,
             eventTypeKey = EVENT_1_TYPE_KEY,
             occurred = EVENT_1_OCCURRED,
             params = null
@@ -233,6 +239,7 @@ class DbUtilEventsTest : BaseRobolectricTest() {
     private fun mockEventFull() {
         every { cursor.isNull(any()) } returns false
 
+        every { cursor.getStringOrNull(COLUMN_INDEX_EVENT_ROW_ID) } returns EVENT_ROW_ID
         every { cursor.getStringOrNull(COLUMN_INDEX_EVENT_TYPE_KEY) } returns EVENT_1_TYPE_KEY
         every { cursor.getStringOrNull(COLUMN_INDEX_EVENT_OCCURRED) } returns EVENT_1_OCCURRED.toString()
         every { cursor.getStringOrNull(COLUMN_INDEX_EVENT_PARAMS) } returns getExpectedFullParams()
@@ -241,6 +248,7 @@ class DbUtilEventsTest : BaseRobolectricTest() {
     private fun mockEventParamsEmpty() {
         every { cursor.isNull(any()) } returns false
 
+        every { cursor.getStringOrNull(COLUMN_INDEX_EVENT_ROW_ID) } returns EVENT_ROW_ID
         every { cursor.getStringOrNull(COLUMN_INDEX_EVENT_TYPE_KEY) } returns EVENT_1_TYPE_KEY
         every { cursor.getStringOrNull(COLUMN_INDEX_EVENT_OCCURRED) } returns EVENT_1_OCCURRED.toString()
         every { cursor.getStringOrNull(COLUMN_INDEX_EVENT_PARAMS) } returns "[]"
@@ -249,6 +257,7 @@ class DbUtilEventsTest : BaseRobolectricTest() {
     private fun mockEventParamsNull() {
         every { cursor.isNull(any()) } returns false
 
+        every { cursor.getStringOrNull(COLUMN_INDEX_EVENT_ROW_ID) } returns EVENT_ROW_ID
         every { cursor.getStringOrNull(COLUMN_INDEX_EVENT_TYPE_KEY) } returns EVENT_1_TYPE_KEY
         every { cursor.getStringOrNull(COLUMN_INDEX_EVENT_OCCURRED) } returns EVENT_1_OCCURRED.toString()
         every { cursor.getStringOrNull(COLUMN_INDEX_EVENT_PARAMS) } returns null
@@ -257,6 +266,7 @@ class DbUtilEventsTest : BaseRobolectricTest() {
     private fun mockEventTypeNull() {
         every { cursor.isNull(any()) } returns false
 
+        every { cursor.getStringOrNull(COLUMN_INDEX_EVENT_ROW_ID) } returns null
         every { cursor.getStringOrNull(COLUMN_INDEX_EVENT_TYPE_KEY) } returns null
         every { cursor.getStringOrNull(COLUMN_INDEX_EVENT_OCCURRED) } returns EVENT_1_OCCURRED.toString()
         every { cursor.getStringOrNull(COLUMN_INDEX_EVENT_PARAMS) } returns null
@@ -265,6 +275,7 @@ class DbUtilEventsTest : BaseRobolectricTest() {
     private fun mockEventOccurredNull() {
         every { cursor.isNull(any()) } returns false
 
+        every { cursor.getStringOrNull(COLUMN_INDEX_EVENT_ROW_ID) } returns null
         every { cursor.getStringOrNull(COLUMN_INDEX_EVENT_TYPE_KEY) } returns EVENT_1_TYPE_KEY
         every { cursor.getStringOrNull(COLUMN_INDEX_EVENT_OCCURRED) } returns null
         every { cursor.getStringOrNull(COLUMN_INDEX_EVENT_PARAMS) } returns null
@@ -273,6 +284,7 @@ class DbUtilEventsTest : BaseRobolectricTest() {
     private fun mockEventEmpty() {
         every { cursor.isNull(any()) } returns false
 
+        every { cursor.getStringOrNull(COLUMN_INDEX_EVENT_ROW_ID) } returns null
         every { cursor.getStringOrNull(COLUMN_INDEX_EVENT_TYPE_KEY) } returns null
         every { cursor.getStringOrNull(COLUMN_INDEX_EVENT_OCCURRED) } returns null
         every { cursor.getStringOrNull(COLUMN_INDEX_EVENT_PARAMS) } returns null
@@ -282,6 +294,7 @@ class DbUtilEventsTest : BaseRobolectricTest() {
         every { cursor.getColumnIndex(EventsSchema.COLUMN_EVENTS_DEVICE_ID) } returns COLUMN_INDEX_DEVICE_ID
         every { cursor.getColumnIndex(EventsSchema.COLUMN_EVENTS_EXTERNAL_USER_ID) } returns COLUMN_INDEX_EXTERNAL_USER_ID
 
+        every { cursor.getColumnIndex(EventsSchema.EventSchema.COLUMN_EVENT_ROW_ID) } returns COLUMN_INDEX_EVENT_ROW_ID
         every { cursor.getColumnIndex(EventsSchema.EventSchema.COLUMN_EVENT_TYPE_KEY) } returns COLUMN_INDEX_EVENT_TYPE_KEY
         every { cursor.getColumnIndex(EventsSchema.EventSchema.COLUMN_EVENT_OCCURRED) } returns COLUMN_INDEX_EVENT_OCCURRED
         every { cursor.getColumnIndex(EventsSchema.EventSchema.COLUMN_EVENT_PARAMS) } returns COLUMN_INDEX_EVENT_PARAMS

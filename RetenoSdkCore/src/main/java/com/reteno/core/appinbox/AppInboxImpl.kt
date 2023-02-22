@@ -4,6 +4,7 @@ import com.reteno.core.domain.callback.appinbox.RetenoResultCallback
 import com.reteno.core.domain.controller.AppInboxController
 import com.reteno.core.domain.model.appinbox.AppInboxMessages
 import com.reteno.core.util.Logger
+import com.reteno.core.util.isOsVersionSupported
 
 internal class AppInboxImpl(
     private val appInboxController: AppInboxController
@@ -14,6 +15,11 @@ internal class AppInboxImpl(
         pageSize: Int?,
         callback: RetenoResultCallback<AppInboxMessages>
     ) {
+        if (!isOsVersionSupported()) {
+            return
+        }
+        /*@formatter:off*/ Logger.i(TAG, "getAppInboxMessages(): ", "page = [", page, "], pageSize = [", pageSize, "], callback = [", callback, "]")
+        /*@formatter:on*/
         try {
             appInboxController.getAppInboxMessages(page, pageSize, callback)
         } catch (ex: Throwable) {
@@ -22,6 +28,11 @@ internal class AppInboxImpl(
     }
 
     override fun getAppInboxMessagesCount(callback: RetenoResultCallback<Int>) {
+        if (!isOsVersionSupported()) {
+            return
+        }
+        /*@formatter:off*/ Logger.i(TAG, "getAppInboxMessagesCount(): ", "callback = [", callback, "]")
+        /*@formatter:on*/
         try {
             appInboxController.getMessagesCount(callback)
         } catch (ex: Throwable) {
@@ -30,6 +41,11 @@ internal class AppInboxImpl(
     }
 
     override fun subscribeOnMessagesCountChanged(callback: RetenoResultCallback<Int>) {
+        if (!isOsVersionSupported()) {
+            return
+        }
+        /*@formatter:off*/ Logger.i(TAG, "subscribeOnMessagesCountChanged(): ", "callback = [", callback, "]")
+        /*@formatter:on*/
         try {
             appInboxController.subscribeCountChanges(callback)
         } catch (ex: Throwable) {
@@ -38,6 +54,11 @@ internal class AppInboxImpl(
     }
 
     override fun unsubscribeMessagesCountChanged(callback: RetenoResultCallback<Int>) {
+        if (!isOsVersionSupported()) {
+            return
+        }
+        /*@formatter:off*/ Logger.i(TAG, "unsubscribeMessagesCountChanged(): ", "callback = [", callback, "]")
+        /*@formatter:on*/
         try {
             appInboxController.unsubscribeCountChanges(callback)
         } catch (ex: Throwable) {
@@ -46,6 +67,11 @@ internal class AppInboxImpl(
     }
 
     override fun unsubscribeAllMessagesCountChanged() {
+        if (!isOsVersionSupported()) {
+            return
+        }
+        /*@formatter:off*/ Logger.i(TAG, "unsubscribeAllMessagesCountChanged(): ", "")
+        /*@formatter:on*/
         try {
             appInboxController.unsubscribeAllCountChanges()
         } catch (ex: Throwable) {
@@ -54,6 +80,11 @@ internal class AppInboxImpl(
     }
 
     override fun markAsOpened(messageId: String) {
+        if (!isOsVersionSupported()) {
+            return
+        }
+        /*@formatter:off*/ Logger.i(TAG, "markAsOpened(): ", "messageId = [", messageId, "]")
+        /*@formatter:on*/
         try {
             appInboxController.markAsOpened(messageId)
         } catch (ex: Throwable) {
@@ -62,6 +93,11 @@ internal class AppInboxImpl(
     }
 
     override fun markAllMessagesAsOpened(callback: RetenoResultCallback<Unit>) {
+        if (!isOsVersionSupported()) {
+            return
+        }
+        /*@formatter:off*/ Logger.i(TAG, "markAllMessagesAsOpened(): ", "callback = [", callback, "]")
+        /*@formatter:on*/
         try {
             appInboxController.markAllMessagesAsOpened(callback)
         } catch (ex: Throwable) {

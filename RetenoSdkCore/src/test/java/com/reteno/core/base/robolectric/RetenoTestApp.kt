@@ -54,9 +54,8 @@ class RetenoTestApp : Application(), RetenoApplication {
         justRun { Logger.d(any(), any(), *anyVararg()) }
         justRun { Logger.i(any(), any(), *anyVararg()) }
         justRun { Logger.w(any(), any(), *anyVararg()) }
-        justRun { Logger.e(any(), any()) }
         justRun { Logger.e(any(), any(), any()) }
-        justRun { Logger.captureException(any()) }
+        justRun { Logger.captureMessage(any()) }
         justRun { Logger.captureEvent(any()) }
     }
 
@@ -64,23 +63,27 @@ class RetenoTestApp : Application(), RetenoApplication {
         mockkObject(OperationQueue)
         val currentThreadExecutor = Executor(Runnable::run)
         every { OperationQueue.addParallelOperation(any()) } answers {
-            currentThreadExecutor.execute(firstArg())
+            currentThreadExecutor.execute(Runnable(firstArg()))
         }
         every { OperationQueue.addOperation(any()) } answers {
-            currentThreadExecutor.execute(firstArg())
+            currentThreadExecutor.execute(Runnable(firstArg()))
             true
         }
         every { OperationQueue.addOperationAfterDelay(any(), any()) } answers {
-            currentThreadExecutor.execute(firstArg())
+            currentThreadExecutor.execute(Runnable(firstArg()))
             true
         }
         every { OperationQueue.addUiOperation(any()) } answers {
-            currentThreadExecutor.execute(firstArg())
+            currentThreadExecutor.execute(Runnable(firstArg()))
         }
     }
 
     private fun mockObjectPushOperationQueue() {
         mockkObject(PushOperationQueue)
+        val currentThreadExecutor = Executor(Runnable::run)
+        every { PushOperationQueue.addOperation(any()) } answers {
+            currentThreadExecutor.execute(Runnable(firstArg()))
+        }
     }
 
     private fun mockObjectUtil() {

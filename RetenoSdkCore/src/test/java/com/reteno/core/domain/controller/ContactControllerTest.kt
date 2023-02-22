@@ -8,7 +8,11 @@ import com.reteno.core.domain.Validator
 import com.reteno.core.domain.model.device.Device
 import com.reteno.core.domain.model.device.DeviceCategory
 import com.reteno.core.domain.model.device.DeviceOS
+import com.reteno.core.domain.model.user.Address
 import com.reteno.core.domain.model.user.User
+import com.reteno.core.domain.model.user.UserAttributesAnonymous
+import com.reteno.core.domain.model.user.UserCustomField
+import com.reteno.core.util.Logger
 import io.mockk.every
 import io.mockk.impl.annotations.RelaxedMockK
 import io.mockk.mockkObject
@@ -23,8 +27,6 @@ class ContactControllerTest : BaseUnitTest() {
     // region constants ----------------------------------------------------------------------------
     companion object {
         private const val DEVICE_ID_ANDROID = "device_ID_ANDROID"
-        private const val DEVICE_ID_APP_SET = "device_ID_APP_SET"
-        private const val DEVICE_ID_UUID = "device_ID_UUID"
         private const val EXTERNAL_DEVICE_ID = "External_device_ID"
         private const val EXTERNAL_DEVICE_ID_NEW = "External_device_ID_NEW"
         private const val FCM_TOKEN_OLD = "FCM_Token_OLD"
@@ -34,6 +36,34 @@ class ContactControllerTest : BaseUnitTest() {
         private val USER_SUBSCRIPTION_KEYS = listOf("SUBSCRIPTION_KEYS")
         private val USER_GROUP_NAMES_INCLUDE = listOf("GROUP_NAMES_INCLUDE")
         private val USER_GROUP_NAMES_EXCLUDE = listOf("GROUP_NAMES_EXCLUDE")
+
+        private const val FIRST_NAME = "firstName1"
+        private const val LAST_NAME = "lastName1"
+        private const val LANGUAGE_CODE = "languageCode1"
+        private const val TIME_ZONE = "timeZone1"
+        private const val FIELD_KEY1 = "key1"
+        private const val FIELD_KEY2 = "key2"
+        private const val FIELD_KEY3 = "key3"
+        private const val FIELD_VALUE1 = "value1"
+        private const val FIELD_VALUE2 = "value2"
+
+        private const val REGION = "region1"
+        private const val TOWN = "town1"
+        private const val ADDRESS = "address1"
+        private const val POSTCODE = "postcode1"
+
+        private val addressFull = Address(
+            region = REGION,
+            town = TOWN,
+            address = ADDRESS,
+            postcode = POSTCODE
+        )
+
+        private val customFieldsFull = listOf(
+            UserCustomField(FIELD_KEY1, FIELD_VALUE1),
+            UserCustomField(FIELD_KEY2, FIELD_VALUE2),
+            UserCustomField(FIELD_KEY3, null)
+        )
 
         @JvmStatic
         @BeforeClass
@@ -170,14 +200,9 @@ class ContactControllerTest : BaseUnitTest() {
     }
 
     @Test
-    fun givenUserFull_whenSetUserData_thenInteractWithContactRepository() {
+    fun givenUserFull_whenSetUserData_thenContactRepositoryCalled() {
         // Given
-        val user = User(
-            userAttributes = null,
-            subscriptionKeys = USER_SUBSCRIPTION_KEYS,
-            groupNamesInclude = USER_GROUP_NAMES_INCLUDE,
-            groupNamesExclude = USER_GROUP_NAMES_EXCLUDE
-        )
+        val user = getUser()
         every { Validator.validateUser(user) } returns user
 
         // When
@@ -188,30 +213,28 @@ class ContactControllerTest : BaseUnitTest() {
     }
 
     @Test
-    fun givenUserNull_whenSetUserData_thenNoInteracttionWithContactRepository() {
-        // When
-        SUT.setUserData(null)
-
-        // Then
-        verify(exactly = 0) { contactRepository.saveUserData(any()) }
-    }
-
-    @Test
-    fun givenUserValidationReturnsNull_whenSetUserData_thenNoInteracttionWithContactRepository() {
+    fun givenUserNull_whenSetUserData_thenContactRepositoryNotCalled() {
         // Given
-        val user = User(
-            userAttributes = null,
-            subscriptionKeys = USER_SUBSCRIPTION_KEYS,
-            groupNamesInclude = USER_GROUP_NAMES_INCLUDE,
-            groupNamesExclude = USER_GROUP_NAMES_EXCLUDE
-        )
-        every { Validator.validateUser(any()) } returns null
+        val user = null
 
         // When
         SUT.setUserData(user)
 
         // Then
         verify(exactly = 0) { contactRepository.saveUserData(any()) }
+    }
+
+    @Test
+    fun givenInvalidUser_whenSetUserData_thenContactRepositoryNotCalled() {
+        val user = getUser()
+        every { Validator.validateUser(user) } returns null
+
+        // When
+        SUT.setUserData(user)
+
+        // Then
+        verify(exactly = 0) { contactRepository.saveUserData(any()) }
+        verify(exactly = 1) { Logger.captureMessage(eq("ContactController.setUserData(): user = [$user]")) }
     }
 
     @Test
@@ -334,4 +357,50 @@ class ContactControllerTest : BaseUnitTest() {
         // Then
         verify(exactly = 0) { contactRepository.saveDeviceData(any()) }
     }
+
+    @Test
+    fun givenValidAnonymousUserAttributes_whenSetAnonymousUserAttributes_thenRepositorySaveAnonymousUserData() {
+        // Given
+        val anonymousUserAttributes = getUserAttributesAnonymous()
+        every { Validator.validateAnonymousUserAttributes(anonymousUserAttributes) } returns anonymousUserAttributes
+        val expectedUserData = User(anonymousUserAttributes.toUserAttributes())
+
+        // When
+        SUT.setAnonymousUserAttributes(anonymousUserAttributes)
+
+        // Then
+        verify(exactly = 1) { contactRepository.saveUserData(eq(expectedUserData)) }
+    }
+
+    @Test
+    fun givenInvalidAnonymousUserAttributes_whenSetAnonymousUserAttributes_thenRepositorySaveAnonymousUserDataNotCalled() {
+        // Given
+        val anonymousUserAttributes = getUserAttributesAnonymous()
+        every { Validator.validateAnonymousUserAttributes(anonymousUserAttributes) } returns null
+
+        // When
+        SUT.setAnonymousUserAttributes(anonymousUserAttributes)
+
+        // Then
+        verify(exactly = 0) { contactRepository.saveUserData(any()) }
+        verify(exactly = 1) { Logger.captureMessage(eq("setAnonymousUserAttributes(): attributes = [$anonymousUserAttributes]")) }
+    }
+
+    // region helper methods -----------------------------------------------------------------------
+    private fun getUser() = User(
+        userAttributes = null,
+        subscriptionKeys = USER_SUBSCRIPTION_KEYS,
+        groupNamesInclude = USER_GROUP_NAMES_INCLUDE,
+        groupNamesExclude = USER_GROUP_NAMES_EXCLUDE
+    )
+
+    private fun getUserAttributesAnonymous() = UserAttributesAnonymous(
+        firstName = FIRST_NAME,
+        lastName = LAST_NAME,
+        languageCode = LANGUAGE_CODE,
+        timeZone = TIME_ZONE,
+        address = addressFull,
+        fields = customFieldsFull
+    )
+    // endregion helper methods --------------------------------------------------------------------
 }

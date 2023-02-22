@@ -21,6 +21,9 @@ internal class RetenoDatabaseManagerUserImpl(private val database: RetenoDatabas
     private val contentValues = ContentValues()
 
     override fun insertUser(user: UserDb) {
+        /*@formatter:off*/ Logger.i(TAG, "insertUser(): ", "user = [", user, "]")
+        /*@formatter:on*/
+
         contentValues.putUser(user)
         val rowId = database.insert(table = UserSchema.TABLE_NAME_USER, contentValues = contentValues)
         contentValues.clear()
@@ -38,13 +41,17 @@ internal class RetenoDatabaseManagerUserImpl(private val database: RetenoDatabas
         }
     }
 
-    override fun getUser(limit: Int?): List<UserDb> {
-        val userEvents: MutableList<UserDb> = mutableListOf()
+    override fun getUsers(limit: Int?): List<UserDb> {
+        /*@formatter:off*/ Logger.i(TAG, "getUsers(): ", "limit = [", limit, "]")
+        /*@formatter:on*/
+
+        val userList: MutableList<UserDb> = mutableListOf()
         val rawQueryLimit: String = limit?.let { " LIMIT $it" } ?: ""
 
         var cursor: Cursor? = null
         try {
             val rawQuery = "SELECT" +
+                    "  ${UserSchema.TABLE_NAME_USER}.${UserSchema.COLUMN_USER_ROW_ID} AS ${UserSchema.COLUMN_USER_ROW_ID}," +
                     "  ${UserSchema.TABLE_NAME_USER}.${UserSchema.COLUMN_DEVICE_ID} AS ${UserSchema.COLUMN_DEVICE_ID}," +
                     "  ${UserSchema.TABLE_NAME_USER}.${UserSchema.COLUMN_EXTERNAL_USER_ID} AS ${UserSchema.COLUMN_EXTERNAL_USER_ID}," +
                     "  ${UserSchema.TABLE_NAME_USER}.${DbSchema.COLUMN_TIMESTAMP} AS ${DbSchema.COLUMN_TIMESTAMP}," +
@@ -72,7 +79,7 @@ internal class RetenoDatabaseManagerUserImpl(private val database: RetenoDatabas
                 val user = cursor.getUser()
 
                 if (user != null) {
-                    userEvents.add(user)
+                    userList.add(user)
                 } else {
                     val rowId = cursor.getLongOrNull(cursor.getColumnIndex(UserSchema.COLUMN_USER_ROW_ID))
                     val exception =
@@ -97,17 +104,22 @@ internal class RetenoDatabaseManagerUserImpl(private val database: RetenoDatabas
         } finally {
             cursor?.close()
         }
-        return userEvents
+        return userList
     }
 
     override fun getUserCount(): Long = database.getRowCount(UserSchema.TABLE_NAME_USER)
 
-    override fun deleteUsers(count: Int, oldest: Boolean) {
-        val order = if (oldest) "ASC" else "DESC"
-        database.delete(
+    override fun deleteUser(user: UserDb): Boolean {
+        /*@formatter:off*/ Logger.i(TAG, "deleteUser(): ", "user = [", user, "]")
+        /*@formatter:on*/
+
+        val removedRecordsCount = database.delete(
             table = UserSchema.TABLE_NAME_USER,
-            whereClause = "${UserSchema.COLUMN_USER_ROW_ID} in (select ${UserSchema.COLUMN_USER_ROW_ID} from ${UserSchema.TABLE_NAME_USER} ORDER BY ${DbSchema.COLUMN_TIMESTAMP} $order LIMIT $count)"
+            whereClause = "${UserSchema.COLUMN_USER_ROW_ID}=?",
+            whereArgs = arrayOf(user.rowId)
         )
+
+        return removedRecordsCount > 0
     }
 
     companion object {

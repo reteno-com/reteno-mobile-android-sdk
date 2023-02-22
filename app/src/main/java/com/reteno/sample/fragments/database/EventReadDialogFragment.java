@@ -53,7 +53,10 @@ public class EventReadDialogFragment extends BaseReadDialogFragment<EventsDb, It
 
     @Override
     protected void deleteItems(int count) {
-        databaseManager.deleteEvents(count, true);
+        List<EventsDb> events = databaseManager.getEvents(count);
+        for (EventsDb event : events) {
+            databaseManager.deleteEvents(event);
+        }
     }
 
     @Override
@@ -77,7 +80,8 @@ public class EventReadDialogFragment extends BaseReadDialogFragment<EventsDb, It
         }
 
         @Override
-        protected void initListeners(ItemDbEventBinding binding) {}
+        protected void initListeners(ItemDbEventBinding binding) {
+        }
     }
 
     //==============================================================================================

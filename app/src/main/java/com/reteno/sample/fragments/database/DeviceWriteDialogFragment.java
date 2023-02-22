@@ -103,6 +103,7 @@ public class DeviceWriteDialogFragment extends BaseDatabaseDialogFragment {
             BooleanDb finalPushSubscribed = pushSubscribed;
 
             DeviceDb device = new DeviceDb(
+                    null,
                     binding.etDeviceId.getText().toString(),
                     Util.getTextOrNull(binding.etExternalUserId),
                     Util.getTextOrNull(binding.etPushToken),

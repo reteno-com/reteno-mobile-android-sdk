@@ -6,7 +6,7 @@ interface RetenoDatabaseManagerAppInbox {
     fun insertAppInboxMessage(message: AppInboxMessageDb)
     fun getAppInboxMessages(limit: Int? = null): List<AppInboxMessageDb>
     fun getAppInboxMessagesCount(): Long
-    fun deleteAppInboxMessages(count: Int, oldest: Boolean = true)
+    fun deleteAppInboxMessages(appInboxMessages: List<AppInboxMessageDb>)
     fun deleteAllAppInboxMessages()
     fun deleteAppInboxMessagesByTime(outdatedTime: String): Int
 }

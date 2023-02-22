@@ -14,6 +14,16 @@ internal class PushDataWorker(context: Context, params: WorkerParameters) : Work
     override fun doWork(): Result {
         /*@formatter:off*/ Logger.i(TAG, "doWork(): ", "")
         /*@formatter:on*/
+        return try {
+            return doWorkActual()
+        } catch (ex: Throwable) {
+            /*@formatter:off*/ Logger.e(TAG, "doWork(): ", ex)
+            /*@formatter:on*/
+            Result.failure()
+        }
+    }
+
+    private fun doWorkActual(): Result {
         val serviceLocator =
             ((applicationContext as RetenoApplication).getRetenoInstance() as RetenoImpl).serviceLocator
         val activityHelper = serviceLocator.retenoActivityHelperProvider.get()

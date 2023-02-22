@@ -21,6 +21,7 @@ class DbUtilUserTest : BaseRobolectricTest() {
 
     // region constants ----------------------------------------------------------------------------
     companion object {
+        private const val USER_PARENT_ROW_ID = 1L
         private const val DEVICE_ID = "valueDeviceId"
         private const val EXTERNAL_USER_ID = "valueExternalUserId"
         private val SUBSCRIPTION_KEYS = listOf("subscriptionKey1", "subscriptionKey2", "subscriptionKey3")
@@ -67,6 +68,7 @@ class DbUtilUserTest : BaseRobolectricTest() {
             fields = customFieldsFull
         )
         private val userFull = UserDb(
+            rowId = USER_PARENT_ROW_ID.toString(),
             deviceId = DEVICE_ID,
             externalUserId = EXTERNAL_USER_ID,
             userAttributes = userAttributesFull,
@@ -74,8 +76,6 @@ class DbUtilUserTest : BaseRobolectricTest() {
             groupNamesInclude = GROUP_NAMES_INCLUDE,
             groupNamesExclude = GROUP_NAMES_EXCLUDE,
         )
-
-        private const val USER_PARENT_ROW_ID = 1L
 
         private const val COLUMN_INDEX_USER_ROW_ID = 1
         private const val COLUMN_INDEX_REGION = 2
@@ -354,20 +354,6 @@ class DbUtilUserTest : BaseRobolectricTest() {
         assertNull(actualUser)
     }
 
-    @Test
-    fun givenCursorWithExternalUserIdNull_whenGetUser_thenUserIsNull() {
-        // Given
-        mockUserExternalUserIdIsNull()
-        mockUserAddressEmpty()
-        mockUserAttributesEmpty()
-
-        // When
-        val actualUser = cursor.getUser()
-
-        // Then
-        assertNull(actualUser)
-    }
-
     // region helper methods -----------------------------------------------------------------------
     private fun getGroupNamesExcludeFull() =
         "[\"${GROUP_NAMES_EXCLUDE[0]}\",\"${GROUP_NAMES_EXCLUDE[1]}\",\"${GROUP_NAMES_EXCLUDE[2]}\"]"
@@ -388,6 +374,7 @@ class DbUtilUserTest : BaseRobolectricTest() {
     private fun mockUserDeviceIdIsNull() {
         every { cursor.isNull(any()) } returns false
 
+        every { cursor.getStringOrNull(COLUMN_INDEX_USER_ROW_ID) } returns USER_PARENT_ROW_ID.toString()
         every { cursor.getStringOrNull(COLUMN_INDEX_DEVICE_ID) } returns null
         every { cursor.getStringOrNull(COLUMN_INDEX_EXTERNAL_USER_ID) } returns EXTERNAL_USER_ID
         every { cursor.getStringOrNull(COLUMN_INDEX_SUBSCRIPTION_KEYS) } returns getExpectedSubscriptionKeysFull()
@@ -398,6 +385,7 @@ class DbUtilUserTest : BaseRobolectricTest() {
     private fun mockUserExternalUserIdIsNull() {
         every { cursor.isNull(any()) } returns false
 
+        every { cursor.getStringOrNull(COLUMN_INDEX_USER_ROW_ID) } returns USER_PARENT_ROW_ID.toString()
         every { cursor.getStringOrNull(COLUMN_INDEX_DEVICE_ID) } returns DEVICE_ID
         every { cursor.getStringOrNull(COLUMN_INDEX_EXTERNAL_USER_ID) } returns null
         every { cursor.getStringOrNull(COLUMN_INDEX_SUBSCRIPTION_KEYS) } returns getExpectedSubscriptionKeysFull()
@@ -408,6 +396,7 @@ class DbUtilUserTest : BaseRobolectricTest() {
     private fun mockUserDeviceIdExternalUserIdIsNonEmpty() {
         every { cursor.isNull(any()) } returns false
 
+        every { cursor.getStringOrNull(COLUMN_INDEX_USER_ROW_ID) } returns USER_PARENT_ROW_ID.toString()
         every { cursor.getStringOrNull(COLUMN_INDEX_DEVICE_ID) } returns DEVICE_ID
         every { cursor.getStringOrNull(COLUMN_INDEX_EXTERNAL_USER_ID) } returns EXTERNAL_USER_ID
         every { cursor.getStringOrNull(COLUMN_INDEX_SUBSCRIPTION_KEYS) } returns null
@@ -418,6 +407,7 @@ class DbUtilUserTest : BaseRobolectricTest() {
     private fun mockUserFull() {
         every { cursor.isNull(any()) } returns false
 
+        every { cursor.getStringOrNull(COLUMN_INDEX_USER_ROW_ID) } returns USER_PARENT_ROW_ID.toString()
         every { cursor.getStringOrNull(COLUMN_INDEX_DEVICE_ID) } returns DEVICE_ID
         every { cursor.getStringOrNull(COLUMN_INDEX_EXTERNAL_USER_ID) } returns EXTERNAL_USER_ID
         every { cursor.getStringOrNull(COLUMN_INDEX_SUBSCRIPTION_KEYS) } returns getExpectedSubscriptionKeysFull()

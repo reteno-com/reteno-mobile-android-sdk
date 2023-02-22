@@ -3,6 +3,7 @@ package com.reteno.core.data.local.model.device
 import com.reteno.core.data.local.model.BooleanDb
 
 data class DeviceDb(
+    val rowId: String? = null,
     val deviceId: String,
     val externalUserId: String?,
     val pushToken: String?,

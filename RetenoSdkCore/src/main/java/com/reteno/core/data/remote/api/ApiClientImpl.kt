@@ -42,4 +42,22 @@ internal class ApiClientImpl(private val restClient: RestClient) : ApiClient {
     ) {
         restClient.makeRequest(HttpMethod.GET, url, null, queryParams, responseHandler)
     }
+
+    override fun head(
+        url: ApiContract,
+        queryParams: Map<String, String?>?,
+        responseHandler: ResponseCallback
+    ) {
+        OperationQueue.addOperation {
+            headSync(url, queryParams, responseHandler)
+        }
+    }
+
+    override fun headSync(
+        url: ApiContract,
+        queryParams: Map<String, String?>?,
+        responseHandler: ResponseCallback
+    ) {
+        restClient.makeRequest(HttpMethod.HEAD, url, null, queryParams, responseHandler)
+    }
 }

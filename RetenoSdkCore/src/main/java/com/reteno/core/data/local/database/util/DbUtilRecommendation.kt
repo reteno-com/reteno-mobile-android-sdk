@@ -29,6 +29,7 @@ fun List<RecomEventDb>.toContentValuesList(recomVariantId: String): List<Content
 }
 
 fun Cursor.getRecomEvent(): RecomEventDb? {
+    val rowId = getStringOrNull(getColumnIndex(RecomEventsSchema.RecomEventSchema.COLUMN_RECOM_EVENT_ROW_ID))
     val productId = getStringOrNull(getColumnIndex(RecomEventsSchema.RecomEventSchema.COLUMN_RECOM_EVENT_PRODUCT_ID))
     val occurred = getStringOrNull(getColumnIndex(RecomEventsSchema.RecomEventSchema.COLUMN_RECOM_EVENT_OCCURRED))
     val recomEventTypeString = getStringOrNull(getColumnIndex(RecomEventsSchema.RecomEventSchema.COLUMN_RECOM_EVENT_TYPE))
@@ -36,6 +37,7 @@ fun Cursor.getRecomEvent(): RecomEventDb? {
 
     return if (allElementsNotNull(recomEventType, occurred, productId)) {
         return RecomEventDb(
+            rowId = rowId,
             recomEventType = recomEventType!!,
             occurred = occurred!!,
             productId = productId!!

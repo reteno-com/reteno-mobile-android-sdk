@@ -24,26 +24,27 @@ import org.junit.Test
 import java.time.ZonedDateTime
 
 
-class RetenoDatabaseManagerInboxTest : BaseRobolectricTest() {
+class RetenoDatabaseManagerAppInboxImplTest : BaseRobolectricTest() {
 
     // region constants ----------------------------------------------------------------------------
     companion object {
         private const val ROW_ID_INSERTED = 1L
 
-        private const val INBOX_ID = "214-asf-42412-dgjh-24512-mcgsd"
+        private const val INBOX_ID_1 = "214-asf-42412-dgjh-24512-mcgsd"
+        private const val INBOX_ID_2 = "214-asf-42412-dgjh-24512-mcgsd_2"
         private const val INBOX_ID_CORRUPTED = "214-asf-42412-dgjh-24512-mcgsd_c"
         private val INBOX_STATUS = AppInboxMessageStatusDb.OPENED
         private const val INBOX_OCCURRED_TIME = "2022-11-22T13:38:01Z"
         private const val INBOX_DEVICE_ID = "device_test"
 
         private val inbox1 = AppInboxMessageDb(
-            id = INBOX_ID,
+            id = INBOX_ID_1,
             status = INBOX_STATUS,
             occurredDate = INBOX_OCCURRED_TIME,
             deviceId = INBOX_DEVICE_ID
         )
         private val inbox2 = AppInboxMessageDb(
-            id = "${INBOX_ID}_2",
+            id = INBOX_ID_2,
             status = INBOX_STATUS,
             occurredDate = "${INBOX_OCCURRED_TIME}_2}",
             deviceId = INBOX_DEVICE_ID
@@ -240,49 +241,44 @@ class RetenoDatabaseManagerInboxTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun given_whenDeleteInboxesOldest_thenInboxesDeleted() {
+    fun giveAppInboxMessagesListNotEmpty_wheDeleteAppInboxMessages_thenDeleteFromDatabaseCalled() {
         // Given
-        val order = "ASC"
-        val count = 2
-        val whereClauseExpected = "${AppInboxSchema.COLUMN_APP_INBOX_ID} " +
-                "in (select ${AppInboxSchema.COLUMN_APP_INBOX_ID} " +
-                "from ${AppInboxSchema.TABLE_NAME_APP_INBOX} " +
-                "ORDER BY ${AppInboxSchema.COLUMN_APP_INBOX_TIME} $order " +
-                "LIMIT $count)"
-        every { database.delete(any(), any(), any()) } returns 0
+        val inboxMessagesList = listOf(inbox1, inbox2)
 
         // When
-        SUT.deleteAppInboxMessages(count, true)
+        SUT.deleteAppInboxMessages(inboxMessagesList)
 
         // Then
         verify(exactly = 1) {
             database.delete(
-                AppInboxSchema.TABLE_NAME_APP_INBOX,
-                whereClauseExpected
+                table = eq(AppInboxSchema.TABLE_NAME_APP_INBOX),
+                whereClause = eq("${AppInboxSchema.COLUMN_APP_INBOX_ID}=?"),
+                whereArgs = arrayOf(INBOX_ID_1)
+            )
+        }
+        verify(exactly = 1) {
+            database.delete(
+                table = eq(AppInboxSchema.TABLE_NAME_APP_INBOX),
+                whereClause = eq("${AppInboxSchema.COLUMN_APP_INBOX_ID}=?"),
+                whereArgs = arrayOf(INBOX_ID_2)
             )
         }
     }
 
     @Test
-    fun given_whenDeleteInboxesNewest_thenInboxesDeleted() {
+    fun giveAppInboxMessagesListEmpty_wheDeleteAppInboxMessages_thenDeleteFromDatabaseNotCalled() {
         // Given
-        val order = "DESC"
-        val count = 4
-        val whereClauseExpected = "${AppInboxSchema.COLUMN_APP_INBOX_ID} " +
-                "in (select ${AppInboxSchema.COLUMN_APP_INBOX_ID} " +
-                "from ${AppInboxSchema.TABLE_NAME_APP_INBOX} " +
-                "ORDER BY ${AppInboxSchema.COLUMN_APP_INBOX_TIME} $order " +
-                "LIMIT $count)"
-        every { database.delete(any(), any(), any()) } returns 0
+        val inboxMessagesList = emptyList<AppInboxMessageDb>()
 
         // When
-        SUT.deleteAppInboxMessages(count, false)
+        SUT.deleteAppInboxMessages(inboxMessagesList)
 
         // Then
-        verify(exactly = 1) {
+        verify(exactly = 0) {
             database.delete(
-                AppInboxSchema.TABLE_NAME_APP_INBOX,
-                whereClauseExpected
+                table = any(),
+                whereClause = any(),
+                whereArgs = any()
             )
         }
     }

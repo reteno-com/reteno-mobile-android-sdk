@@ -4,7 +4,7 @@ import com.reteno.core.data.local.model.user.UserDb
 
 interface RetenoDatabaseManagerUser {
     fun insertUser(user: UserDb)
-    fun getUser(limit: Int? = null): List<UserDb>
+    fun getUsers(limit: Int? = null): List<UserDb>
     fun getUserCount(): Long
-    fun deleteUsers(count: Int, oldest: Boolean = true)
+    fun deleteUser(user: UserDb): Boolean
 }

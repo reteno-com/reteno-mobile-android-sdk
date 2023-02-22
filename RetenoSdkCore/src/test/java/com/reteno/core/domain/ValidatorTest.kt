@@ -1,9 +1,11 @@
 package com.reteno.core.domain
 
 import com.reteno.core.base.BaseUnitTest
+import com.reteno.core.data.remote.mapper.toJson
 import com.reteno.core.domain.model.user.Address
 import com.reteno.core.domain.model.user.User
 import com.reteno.core.domain.model.user.UserAttributes
+import com.reteno.core.domain.model.user.UserAttributesAnonymous
 import com.reteno.core.domain.model.user.UserCustomField
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -216,7 +218,7 @@ class ValidatorTest : BaseUnitTest() {
     }
 
     @Test
-    fun givenAllUserFieldsNull_whenValidateUser_thenAttributesIsNull() {
+    fun givenAllUserFieldsNull_whenValidateUser_thenValidatedUserIsNull() {
         // Given
         val user = User(
             userAttributes = null,
@@ -230,5 +232,100 @@ class ValidatorTest : BaseUnitTest() {
 
         // Then
         assertNull(userValidated)
+    }
+
+    @Test
+    fun givenAllUserAnonymousAttributesNull_whenValidateAnonymousUserAttributes_thenNullReturned() {
+        // Given
+        val userAnonymousAttributes = UserAttributesAnonymous(
+            firstName = null,
+            lastName = null,
+            languageCode = null,
+            timeZone = null,
+            address = null,
+            fields = null
+        )
+
+        // When
+        val userAttributesValidated = SUT.validateAnonymousUserAttributes(userAnonymousAttributes)
+
+        // Then
+        assertNull(userAttributesValidated)
+    }
+
+    @Test
+    fun givenAllUserAnonymousAttributesNullAddressFieldsNull_whenValidateAnonymousUserAttributes_thenNullReturned() {
+        // Given
+        val userAnonymousAttributes = UserAttributesAnonymous(
+            firstName = null,
+            lastName = null,
+            languageCode = null,
+            timeZone = null,
+            address = Address(null, null, null, null),
+            fields = null
+        )
+
+        // When
+        val userAttributesValidated = SUT.validateAnonymousUserAttributes(userAnonymousAttributes)
+
+        // Then
+        assertNull(userAttributesValidated)
+    }
+
+    @Test
+    fun givenAllUserAnonymousAttributesNotNull_whenValidateAnonymousUserAttributes_thenAttributesNotChanged() {
+        // Given
+        val userAnonymousAttributes = UserAttributesAnonymous(
+            firstName = FIRST_NAME,
+            lastName = LAST_NAME,
+            languageCode = LANGUAGE_CODE,
+            timeZone = TIME_ZONE,
+            address = addressFull,
+            fields = customFieldsFull
+        )
+
+        // When
+        val userAttributesValidated = SUT.validateAnonymousUserAttributes(userAnonymousAttributes)
+
+        // Then
+        assertEquals(userAnonymousAttributes, userAttributesValidated)
+    }
+
+    @Test
+    fun givenAllUserAnonymousAttributesOneFieldNotNull_whenValidateAnonymousUserAttributes_thenAttributesNotChanged() {
+        // Given
+        val userAnonymousAttributes = UserAttributesAnonymous(
+            firstName = null,
+            lastName = LAST_NAME,
+            languageCode = null,
+            timeZone = null,
+            address = null,
+            fields = null
+        )
+
+        // When
+        val userAttributesValidated = SUT.validateAnonymousUserAttributes(userAnonymousAttributes)
+
+        // Then
+        assertEquals(userAnonymousAttributes, userAttributesValidated)
+    }
+
+    @Test
+    fun givenAllUserAnonymousAttributesAddressOneFieldNotNull_whenValidateAnonymousUserAttributes_thenAttributesNotChanged() {
+        // Given
+        val userAnonymousAttributes = UserAttributesAnonymous(
+            firstName = null,
+            lastName = null,
+            languageCode = null,
+            timeZone = null,
+            address = Address(null, TOWN, null, null),
+            fields = null
+        )
+
+        // When
+        val userAttributesValidated = SUT.validateAnonymousUserAttributes(userAnonymousAttributes)
+
+        // Then
+        assertEquals(userAnonymousAttributes, userAttributesValidated)
     }
 }

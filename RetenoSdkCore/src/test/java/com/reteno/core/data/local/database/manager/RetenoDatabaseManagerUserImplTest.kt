@@ -25,10 +25,11 @@ import io.mockk.verify
 import junit.framework.TestCase.assertTrue
 import net.sqlcipher.Cursor
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Test
 
 
-class RetenoDatabaseManagerUserTest : BaseRobolectricTest() {
+class RetenoDatabaseManagerUserImplTest : BaseRobolectricTest() {
 
     // region constants ----------------------------------------------------------------------------
     companion object {
@@ -37,7 +38,7 @@ class RetenoDatabaseManagerUserTest : BaseRobolectricTest() {
         private const val ROW_ID_INSERTED = 1L
         private const val TIMESTAMP = "TimeStampHere_Z"
 
-        private const val USER_ROW_ID = "USER_ROW_ID"
+        private const val USER_ROW_ID = "111"
         private const val DEVICE_ID = "DEVICE_ID"
         private const val EXTERNAL_USER_ID = "EXTERNAL_USER_ID"
         private val SUBSCRIPTION_KEYS = listOf("SUBSCRIPTION_KEYS")
@@ -83,6 +84,7 @@ class RetenoDatabaseManagerUserTest : BaseRobolectricTest() {
             fields = listOf(customField1, customField2)
         )
         private val userFull = UserDb(
+            rowId = USER_ROW_ID,
             deviceId = DEVICE_ID,
             externalUserId = EXTERNAL_USER_ID,
             userAttributes = userAttributesFull,
@@ -268,7 +270,7 @@ class RetenoDatabaseManagerUserTest : BaseRobolectricTest() {
         every { cursor.getUser() } returns user1 andThen user2
 
         // When
-        val users = SUT.getUser(null)
+        val users = SUT.getUsers(null)
 
         // Then
         verify(exactly = 1) { database.rawQuery(any(), any()) }
@@ -286,7 +288,7 @@ class RetenoDatabaseManagerUserTest : BaseRobolectricTest() {
         mockDatabaseQuery()
 
         // When
-        val users = SUT.getUser(null)
+        val users = SUT.getUsers(null)
 
         // Then
         verify(exactly = 1) { database.rawQuery(any(), any()) }
@@ -305,7 +307,7 @@ class RetenoDatabaseManagerUserTest : BaseRobolectricTest() {
         every { cursor.getLongOrNull(COLUMN_INDEX_USER_ROW_ID) } returns ROW_ID_CORRUPTED
 
         // When
-        val users = SUT.getUser(null)
+        val users = SUT.getUsers(null)
 
         // Then
         verify(exactly = 1) { database.rawQuery(any(), any()) }
@@ -330,7 +332,7 @@ class RetenoDatabaseManagerUserTest : BaseRobolectricTest() {
         every { cursor.getLongOrNull(COLUMN_INDEX_USER_ROW_ID) } returns null
 
         // When
-        val users = SUT.getUser(null)
+        val users = SUT.getUsers(null)
 
         // Then
         verify(exactly = 1) { database.rawQuery(any(), any()) }
@@ -368,43 +370,42 @@ class RetenoDatabaseManagerUserTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun given_whenDeleteUserOldest_thenUserDeleted() {
-        // Given
-        val order = "ASC"
-        val count = 2
-        val whereClauseExpected = "${UserSchema.COLUMN_USER_ROW_ID} " +
-                    "in (select ${UserSchema.COLUMN_USER_ROW_ID} " +
-                    "from ${UserSchema.TABLE_NAME_USER} " +
-                    "ORDER BY ${DbSchema.COLUMN_TIMESTAMP} $order " +
-                    "LIMIT $count)"
-
-        every { database.delete(any(), any(), any()) } returns 0
-
+    fun givenUserProvided_wheDeleteUser_thenDeleteFromDatabaseCalled() {
         // When
-        SUT.deleteUsers(count, true)
+        SUT.deleteUser(userFull)
 
         // Then
-        verify(exactly = 1) { database.delete(UserSchema.TABLE_NAME_USER, whereClauseExpected) }
+        verify(exactly = 1) {
+            database.delete(
+                table = eq(UserSchema.TABLE_NAME_USER),
+                whereClause = eq("${UserSchema.COLUMN_USER_ROW_ID}=?"),
+                whereArgs = eq(arrayOf(USER_ROW_ID))
+            )
+        }
     }
 
     @Test
-    fun given_whenDeleteUserNewest_thenUserDeleted() {
+    fun givenDatabaseDeleteReturns1_wheDeleteUser_thenResultIsTrue() {
         // Given
-        val order = "DESC"
-        val count = 6
-        val whereClauseExpected = "${UserSchema.COLUMN_USER_ROW_ID} " +
-                "in (select ${UserSchema.COLUMN_USER_ROW_ID} " +
-                "from ${UserSchema.TABLE_NAME_USER} " +
-                "ORDER BY ${DbSchema.COLUMN_TIMESTAMP} $order " +
-                "LIMIT $count)"
-
-        every { database.delete(any(), any(), any()) } returns 0
+        every { database.delete(table = any(), whereClause = any(), whereArgs = any()) } returns 1
 
         // When
-        SUT.deleteUsers(count, false)
+        val result = SUT.deleteUser(userFull)
 
         // Then
-        verify(exactly = 1) { database.delete(UserSchema.TABLE_NAME_USER, whereClauseExpected) }
+        assertTrue(result)
+    }
+
+    @Test
+    fun givenDatabaseDeleteReturns0_wheDeleteUser_thenResultIsFalse() {
+        // Given
+        every { database.delete(table = any(), whereClause = any(), whereArgs = any()) } returns 0
+
+        // When
+        val result = SUT.deleteUser(userFull)
+
+        // Then
+        assertFalse(result)
     }
 
     // region helper methods -----------------------------------------------------------------------

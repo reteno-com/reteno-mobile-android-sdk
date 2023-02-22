@@ -1,6 +1,7 @@
 package com.reteno.sample.fragments;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -16,7 +17,6 @@ import com.reteno.core.domain.model.user.Address;
 import com.reteno.core.domain.model.user.User;
 import com.reteno.core.domain.model.user.UserAttributes;
 import com.reteno.core.domain.model.user.UserCustomField;
-import com.reteno.core.util.Logger;
 import com.reteno.sample.BaseFragment;
 import com.reteno.sample.R;
 import com.reteno.sample.databinding.FragmentUserDataBinding;
@@ -26,6 +26,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class FragmentUserData extends BaseFragment {
+
+    private static final String TAG = FragmentUserData.class.getSimpleName();
 
     protected FragmentUserDataBinding binding;
 
@@ -55,7 +57,7 @@ public class FragmentUserData extends BaseFragment {
                 NavHostFragment.findNavController(this).popBackStack();
             } catch (Exception e) {
                 Toast.makeText(this.getContext(), e.getMessage(), Toast.LENGTH_LONG).show();
-                Logger.e("FragmentUserData", e.getMessage());
+                Log.e(TAG, "FragmentUserData", e);
             }
         });
 

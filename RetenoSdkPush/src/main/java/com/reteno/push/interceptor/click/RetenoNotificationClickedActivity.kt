@@ -8,6 +8,7 @@ import com.reteno.core.RetenoApplication
 import com.reteno.core.RetenoImpl
 import com.reteno.core.domain.model.interaction.InteractionStatus
 import com.reteno.core.util.Logger
+import com.reteno.core.util.isOsVersionSupported
 import com.reteno.core.util.toStringVerbose
 import com.reteno.push.Constants
 import com.reteno.push.Constants.KEY_ACTION_BUTTON
@@ -31,11 +32,19 @@ class RetenoNotificationClickedActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (!isOsVersionSupported()) {
+            return
+        }
         /*@formatter:off*/ Logger.i(TAG, "onCreate(): ", "notification clicked, intent.extras = [" , intent.extras.toStringVerbose() , "]")
         /*@formatter:on*/
 
-        sendInteractionStatus(intent)
-        handleIntent(intent)
+        try {
+            sendInteractionStatus(intent)
+            handleIntent(intent)
+        } catch (ex: Throwable) {
+            /*@formatter:off*/ Logger.e(TAG, "onCreate(): ", ex)
+            /*@formatter:on*/
+        }
 
         finish()
     }
@@ -48,26 +57,21 @@ class RetenoNotificationClickedActivity : Activity() {
     }
 
     private fun handleIntent(intent: Intent?) {
-        try {
-            intent?.extras?.let { bundle ->
-                if (bundle.getBoolean(KEY_ACTION_BUTTON, false)) {
-                    val notificationId = bundle.getInt(Constants.KEY_NOTIFICATION_ID, -1)
-                    closeNotification(this, notificationId)
-                }
-                bundle.remove(Constants.KEY_NOTIFICATION_ID)
+        intent?.extras?.let { bundle ->
+            if (bundle.getBoolean(KEY_ACTION_BUTTON, false)) {
+                val notificationId = bundle.getInt(Constants.KEY_NOTIFICATION_ID, -1)
+                closeNotification(this, notificationId)
+            }
+            bundle.remove(Constants.KEY_NOTIFICATION_ID)
 
-                Util.tryToSendToCustomReceiverNotificationClicked(bundle)
+            Util.tryToSendToCustomReceiverNotificationClicked(bundle)
 
-                IntentHandler.getDeepLinkIntent(bundle)?.let { deeplinkIntent ->
-                    val (linkWrapped, linkUnwrapped) = Util.getLinkFromBundle(bundle)
-                    deeplinkController.triggerDeeplinkClicked(linkWrapped, linkUnwrapped)
-                    launchDeeplink(deeplinkIntent)
-                } ?: launchApp(intent)
+            IntentHandler.getDeepLinkIntent(bundle)?.let { deeplinkIntent ->
+                val (linkWrapped, linkUnwrapped) = Util.getLinkFromBundle(bundle)
+                deeplinkController.deeplinkClicked(linkWrapped, linkUnwrapped)
+                launchDeeplink(deeplinkIntent)
             } ?: launchApp(intent)
-        } catch (t: Throwable) {
-            /*@formatter:off*/ Logger.e(TAG, "handleIntent() ", t)
-            /*@formatter:on*/
-        }
+        } ?: launchApp(intent)
     }
 
     private fun launchDeeplink(deeplinkIntent: Intent) {
