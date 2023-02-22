@@ -4,6 +4,7 @@ import com.reteno.core.appinbox.AppInbox
 import com.reteno.core.domain.model.ecom.EcomEvent
 import com.reteno.core.domain.model.event.Event
 import com.reteno.core.domain.model.user.User
+import com.reteno.core.domain.model.user.UserAttributesAnonymous
 import com.reteno.core.lifecycle.ScreenTrackingConfig
 import com.reteno.core.recommendation.Recommendation
 
@@ -30,10 +31,18 @@ interface Reteno {
      * Set the user ID (Note: id should not be null or empty, or IllegalArgumentException will be thrown)
      * and add or modify user attributes.
      *
-     * @see com.reteno.core.domain.model.user
+     * @see com.reteno.core.domain.model.user.User
      */
     @Throws(java.lang.IllegalArgumentException::class)
     fun setUserAttributes(externalUserId: String, user: User?)
+
+    /**
+     * Add or modify user attributes without providing externalUserId.
+     * User attributes are added/modified for anonymous contact
+     *
+     * @see com.reteno.core.domain.model.user.UserAttributesAnonymous
+     */
+    fun setAnonymousUserAttributes(userAttributes: UserAttributesAnonymous)
 
     /**
      *  Tracking events

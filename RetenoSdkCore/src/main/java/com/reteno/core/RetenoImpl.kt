@@ -8,6 +8,7 @@ import com.reteno.core.di.ServiceLocator
 import com.reteno.core.domain.model.ecom.EcomEvent
 import com.reteno.core.domain.model.event.Event
 import com.reteno.core.domain.model.user.User
+import com.reteno.core.domain.model.user.UserAttributesAnonymous
 import com.reteno.core.lifecycle.RetenoActivityHelper
 import com.reteno.core.lifecycle.RetenoLifecycleCallbacks
 import com.reteno.core.lifecycle.ScreenTrackingConfig
@@ -41,7 +42,8 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
             try {
                 activityHelper.enableLifecycleCallbacks(this)
             } catch (t: Throwable) {
-                Logger.e(TAG, "init(): ", t)
+                /*@formatter:off*/ Logger.e(TAG, "init(): ", t)
+                /*@formatter:on*/
             }
         }
     }
@@ -58,7 +60,8 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
             sendAppResumeBroadcast()
             startPushScheduler()
         } catch (ex: Throwable) {
-            Logger.e(TAG, "resume(): ", ex)
+            /*@formatter:off*/ Logger.e(TAG, "resume(): ", ex)
+            /*@formatter:on*/
         }
     }
 
@@ -82,7 +85,8 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
         try {
             stopPushScheduler()
         } catch (ex: Throwable) {
-            Logger.e(TAG, "pause(): ", ex)
+            /*@formatter:off*/ Logger.e(TAG, "pause(): ", ex)
+            /*@formatter:on*/
         }
     }
 
@@ -94,17 +98,13 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
         /*@formatter:off*/ Logger.i(TAG, "setUserAttributes(): ", "externalUserId = [" , externalUserId , "]")
         /*@formatter:on*/
         if (externalUserId.isBlank()) {
-            val exception = java.lang.IllegalArgumentException("externalUserId should not be null or blank")
+            val exception = IllegalArgumentException("externalUserId should not be null or blank")
             /*@formatter:off*/ Logger.e(TAG, "setUserAttributes(): ", exception)
             /*@formatter:on*/
             throw exception
         }
 
-        try {
-            setUserAttributes(externalUserId, null)
-        } catch (ex: Throwable) {
-            Logger.e(TAG, "setUserAttributes(): ", ex)
-        }
+        setUserAttributes(externalUserId, null)
     }
 
     @Throws(java.lang.IllegalArgumentException::class)
@@ -115,18 +115,32 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
         /*@formatter:off*/ Logger.i(TAG, "setUserAttributes(): ", "externalUserId = [" , externalUserId , "], used = [" , user , "]")
         /*@formatter:on*/
         if (externalUserId.isBlank()) {
-            val exception = java.lang.IllegalArgumentException("externalUserId should not be null or blank")
+            val exception = IllegalArgumentException("externalUserId should not be null or blank")
             /*@formatter:off*/ Logger.e(TAG, "setUserAttributes(): ", exception)
             /*@formatter:on*/
             throw exception
         }
 
         try {
-            // TODO: Move this to background thread later
             contactController.setExternalUserId(externalUserId)
             contactController.setUserData(user)
         } catch (ex: Throwable) {
-            Logger.e(TAG, "setUserAttributes(): ", ex)
+            /*@formatter:off*/ Logger.e(TAG, "setUserAttributes(): externalUserId = [$externalUserId], user = [$user]", ex)
+            /*@formatter:on*/
+        }
+    }
+
+    override fun setAnonymousUserAttributes(userAttributes: UserAttributesAnonymous) {
+        if (!isOsVersionSupported()) {
+            return
+        }
+        /*@formatter:off*/ Logger.i(TAG, "setAnonymousUserAttributes(): ", "userAttributes = [", userAttributes, "]")
+        /*@formatter:on*/
+        try {
+            contactController.setAnonymousUserAttributes(userAttributes)
+        } catch (ex: Throwable) {
+            /*@formatter:off*/ Logger.e(TAG, "setAnonymousUserAttributes(): userAttributes = [$userAttributes]", ex)
+            /*@formatter:on*/
         }
     }
 
@@ -139,7 +153,8 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
         try {
             eventController.trackEvent(event)
         } catch (ex: Throwable) {
-            Logger.e(TAG, "logEvent(): ", ex)
+            /*@formatter:off*/ Logger.e(TAG, "logEvent(): event = [$event]", ex)
+            /*@formatter:on*/
         }
     }
 
@@ -149,7 +164,12 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
         }
         /*@formatter:off*/ Logger.i(TAG, "logEcommerceEvent(): ", "ecomEvent = [" , ecomEvent , "]")
         /*@formatter:on*/
-        eventController.trackEcomEvent(ecomEvent)
+        try {
+            eventController.trackEcomEvent(ecomEvent)
+        } catch (ex: Throwable) {
+            /*@formatter:off*/ Logger.e(TAG, "logEcommerceEvent(): ecomEvent = [$ecomEvent]", ex)
+            /*@formatter:on*/
+        }
     }
 
     override fun logScreenView(screenName: String) {
@@ -161,7 +181,8 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
         try {
             eventController.trackScreenViewEvent(screenName)
         } catch (ex: Throwable) {
-            Logger.e(TAG, "logScreenView(): ", ex)
+            /*@formatter:off*/ Logger.e(TAG, "logScreenView(): screenName = [$screenName]", ex)
+            /*@formatter:on*/
         }
     }
 
@@ -174,7 +195,8 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
         try {
             activityHelper.autoScreenTracking(config)
         } catch (ex: Throwable) {
-            Logger.e(TAG, "autoScreenTracking(): ", ex)
+            /*@formatter:off*/ Logger.e(TAG, "autoScreenTracking(): config = [$config]", ex)
+            /*@formatter:on*/
         }
     }
 
@@ -187,7 +209,8 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
         try {
             scheduleController.forcePush()
         } catch (ex: Throwable) {
-            Logger.e(TAG, "forcePushData(): ", ex)
+            /*@formatter:off*/ Logger.e(TAG, "forcePushData(): ", ex)
+            /*@formatter:on*/
         }
     }
 
@@ -211,8 +234,9 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
     private fun testCrash() {
         try {
             throw NullPointerException("This is a test crash in SDK")
-        } catch (t: Throwable) {
-            Logger.e(TAG, "testCrash(): ", t)
+        } catch (ex: Throwable) {
+            /*@formatter:off*/ Logger.e(TAG, "testCrash(): ", ex)
+            /*@formatter:on*/
         }
     }
 

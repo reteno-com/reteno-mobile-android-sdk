@@ -5,6 +5,7 @@ import com.reteno.core.data.repository.ContactRepository
 import com.reteno.core.domain.Validator
 import com.reteno.core.domain.model.device.Device
 import com.reteno.core.domain.model.user.User
+import com.reteno.core.domain.model.user.UserAttributesAnonymous
 import com.reteno.core.util.Logger
 
 
@@ -33,6 +34,17 @@ class ContactController(
             val validUser = Validator.validateUser(it)
             validUser?.let(contactRepository::saveUserData) ?: Logger.captureMessage("ContactController.setUserData(): user = [$it]")
         }
+    }
+
+    fun setAnonymousUserAttributes(attributes: UserAttributesAnonymous) {
+        /*@formatter:off*/ Logger.i(TAG, "setAnonymousUserAttributes(): ", "attributes = [", attributes, "]")
+        /*@formatter:on*/
+
+        val validAttributes: UserAttributesAnonymous? = Validator.validateAnonymousUserAttributes(attributes)
+        validAttributes?.let {
+            val userData = User(it.toUserAttributes())
+            contactRepository.saveUserData(userData)
+        } ?: Logger.captureMessage("setAnonymousUserAttributes(): attributes = [$attributes]")
     }
 
     fun onNewFcmToken(token: String) {

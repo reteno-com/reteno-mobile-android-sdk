@@ -45,7 +45,7 @@ internal class RetenoDatabaseManagerUserImpl(private val database: RetenoDatabas
         /*@formatter:off*/ Logger.i(TAG, "getUsers(): ", "limit = [", limit, "]")
         /*@formatter:on*/
 
-        val userEvents: MutableList<UserDb> = mutableListOf()
+        val userList: MutableList<UserDb> = mutableListOf()
         val rawQueryLimit: String = limit?.let { " LIMIT $it" } ?: ""
 
         var cursor: Cursor? = null
@@ -79,7 +79,7 @@ internal class RetenoDatabaseManagerUserImpl(private val database: RetenoDatabas
                 val user = cursor.getUser()
 
                 if (user != null) {
-                    userEvents.add(user)
+                    userList.add(user)
                 } else {
                     val rowId = cursor.getLongOrNull(cursor.getColumnIndex(UserSchema.COLUMN_USER_ROW_ID))
                     val exception =
@@ -104,7 +104,7 @@ internal class RetenoDatabaseManagerUserImpl(private val database: RetenoDatabas
         } finally {
             cursor?.close()
         }
-        return userEvents
+        return userList
     }
 
     override fun getUserCount(): Long = database.getRowCount(UserSchema.TABLE_NAME_USER)

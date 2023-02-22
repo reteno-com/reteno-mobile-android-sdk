@@ -354,20 +354,6 @@ class DbUtilUserTest : BaseRobolectricTest() {
         assertNull(actualUser)
     }
 
-    @Test
-    fun givenCursorWithExternalUserIdNull_whenGetUser_thenUserIsNull() {
-        // Given
-        mockUserExternalUserIdIsNull()
-        mockUserAddressEmpty()
-        mockUserAttributesEmpty()
-
-        // When
-        val actualUser = cursor.getUser()
-
-        // Then
-        assertNull(actualUser)
-    }
-
     // region helper methods -----------------------------------------------------------------------
     private fun getGroupNamesExcludeFull() =
         "[\"${GROUP_NAMES_EXCLUDE[0]}\",\"${GROUP_NAMES_EXCLUDE[1]}\",\"${GROUP_NAMES_EXCLUDE[2]}\"]"

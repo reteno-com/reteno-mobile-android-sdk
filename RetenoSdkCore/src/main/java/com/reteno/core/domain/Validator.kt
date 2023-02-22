@@ -3,9 +3,29 @@ package com.reteno.core.domain
 import com.reteno.core.domain.model.user.Address
 import com.reteno.core.domain.model.user.User
 import com.reteno.core.domain.model.user.UserAttributes
+import com.reteno.core.domain.model.user.UserAttributesAnonymous
 import com.reteno.core.util.allElementsNull
 
 object Validator {
+
+    fun validateAnonymousUserAttributes(attributes: UserAttributesAnonymous): UserAttributesAnonymous? {
+        val addressValidated: Address? = validateAddress(attributes.address)
+
+        val userAttrsValidated: UserAttributesAnonymous? = if (allElementsNull(
+                attributes.firstName,
+                attributes.lastName,
+                attributes.languageCode,
+                attributes.timeZone,
+                attributes.fields,
+                addressValidated
+            )
+        ) {
+            null
+        } else {
+            attributes.copy(address = addressValidated)
+        }
+        return userAttrsValidated
+    }
 
     fun validateUser(user: User): User? {
         val userAttrsValidated = validateAttributes(user.userAttributes)
@@ -24,7 +44,7 @@ object Validator {
     }
 
     private fun validateAttributes(userAttributes: UserAttributes?): UserAttributes? {
-        val addressValidated = validateAddress(userAttributes?.address)
+        val addressValidated: Address? = validateAddress(userAttributes?.address)
 
         val userAttrsValidated = if (userAttributes == null || allElementsNull(
                 userAttributes.phone,
