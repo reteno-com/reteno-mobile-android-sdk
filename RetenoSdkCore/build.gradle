@@ -44,7 +44,7 @@ android {
             buildConfigField "String", "SENTRY_DSN", sdkProps['reteno.sentry.dsn.release']
 
             minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            consumerProguardFiles 'consumer-rules.pro'
         }
     }
     sourceSets {
