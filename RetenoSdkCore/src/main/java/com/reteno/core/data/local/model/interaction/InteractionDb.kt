@@ -5,5 +5,6 @@ data class InteractionDb(
     val interactionId: String,
     val status: InteractionStatusDb,
     val time: String,
-    val token: String
+    val token: String? = null,
+    val action: String? = null,
 )

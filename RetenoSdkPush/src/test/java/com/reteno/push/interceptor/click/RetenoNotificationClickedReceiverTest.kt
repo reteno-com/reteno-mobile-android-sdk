@@ -11,18 +11,13 @@ import com.reteno.core.domain.controller.ScheduleController
 import com.reteno.core.domain.model.interaction.InteractionStatus
 import com.reteno.core.view.iam.IamView
 import com.reteno.push.Constants
+import com.reteno.push.Constants.KEY_ES_INTERACTION_ID
 import com.reteno.push.Constants.KEY_ES_LINK_UNWRAPPED
 import com.reteno.push.Constants.KEY_ES_LINK_WRAPPED
 import com.reteno.push.Util
 import com.reteno.push.base.robolectric.BaseRobolectricTest
-import io.mockk.every
+import io.mockk.*
 import io.mockk.impl.annotations.RelaxedMockK
-import io.mockk.justRun
-import io.mockk.mockk
-import io.mockk.mockkObject
-import io.mockk.slot
-import io.mockk.unmockkObject
-import io.mockk.verify
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -221,7 +216,10 @@ class RetenoNotificationClickedReceiverTest : BaseRobolectricTest() {
         val iamView = mockk<IamView>(relaxed = true)
         val iamWidgetId = "123"
 
-        val extra = Bundle().apply { putString(Constants.KEY_ES_IAM_WIDGET_ID, iamWidgetId) }
+        val extra = Bundle().apply {
+            putString(Constants.KEY_ES_IAM, "1")
+            putString(KEY_ES_INTERACTION_ID, iamWidgetId)
+        }
         val intent = Intent().apply { putExtras(extra) }
         justRun { context.startActivity(any()) }
         every { IntentHandler.AppLaunchIntent.getAppLaunchIntent(any()) } returns intent

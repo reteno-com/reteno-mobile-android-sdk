@@ -133,6 +133,7 @@ internal class RestClientImpl(private val restConfig: RestConfig) :RestClient {
                     setRequestProperty(HEADER_KEY, restConfig.accessKey)
                     setRequestProperty(HEADER_VERSION, BuildConfig.SDK_VERSION)
                 }
+                is ApiContract.InAppMessages,
                 is ApiContract.AppInbox,
                 is ApiContract.Recommendation -> {
                     setRequestProperty(HEADER_KEY, restConfig.accessKey)

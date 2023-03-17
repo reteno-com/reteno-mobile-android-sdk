@@ -6,7 +6,7 @@ import kotlinx.coroutines.flow.StateFlow
 
 internal interface IamController {
 
-    fun fetchIamFullHtml(widgetId: String)
+    fun fetchIamFullHtml(interactionId: String)
 
     fun widgetInitFailed(jsEvent: IamJsEvent)
 

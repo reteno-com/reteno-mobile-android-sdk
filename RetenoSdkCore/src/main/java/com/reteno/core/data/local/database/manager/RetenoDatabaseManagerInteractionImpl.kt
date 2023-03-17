@@ -21,7 +21,6 @@ internal class RetenoDatabaseManagerInteractionImpl(private val database: Reteno
     override fun insertInteraction(interaction: InteractionDb) {
         /*@formatter:off*/ Logger.i(TAG, "insertInteraction(): ", "interaction = [", interaction, "]")
         /*@formatter:on*/
-
         contentValues.putInteraction(interaction)
         database.insert(table = InteractionSchema.TABLE_NAME_INTERACTION, contentValues = contentValues)
         contentValues.clear()

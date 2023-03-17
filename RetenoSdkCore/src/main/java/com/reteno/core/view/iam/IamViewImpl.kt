@@ -19,32 +19,42 @@ import android.widget.FrameLayout
 import android.widget.PopupWindow
 import androidx.cardview.widget.CardView
 import androidx.core.widget.PopupWindowCompat
+import com.reteno.core.RetenoApplication
+import com.reteno.core.RetenoImpl
 import com.reteno.core.data.remote.OperationQueue
 import com.reteno.core.data.remote.mapper.fromJson
 import com.reteno.core.domain.ResultDomain
 import com.reteno.core.domain.controller.IamController
+import com.reteno.core.domain.model.interaction.InteractionAction
 import com.reteno.core.features.iam.IamJsEvent
 import com.reteno.core.features.iam.IamJsEventType
 import com.reteno.core.features.iam.IamJsPayload
 import com.reteno.core.features.iam.RetenoAndroidHandler
 import com.reteno.core.lifecycle.RetenoActivityHelper
 import com.reteno.core.util.Logger
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.cancelChildren
-import kotlinx.coroutines.ensureActive
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 import java.util.concurrent.atomic.AtomicBoolean
 
 internal class IamViewImpl(
     private val activityHelper: RetenoActivityHelper,
-    private val iamController: IamController
+    private val iamController: IamController,
 ) : IamView {
+
+    private val reteno by lazy {
+        ((RetenoImpl.application as RetenoApplication).getRetenoInstance() as RetenoImpl)
+    }
+    private val interactionController by lazy {
+        reteno.serviceLocator.interactionControllerProvider.get()
+    }
+    private val scheduleController by lazy {
+        reteno.serviceLocator.scheduleControllerProvider.get()
+    }
 
     private val iamShowScope = CoroutineScope(Dispatchers.Main.immediate)
 
     private val isViewShown = AtomicBoolean(false)
 
+    private lateinit var interactionId: String
     private lateinit var parentLayout: FrameLayout
     private lateinit var popupWindow: PopupWindow
     private lateinit var cardView: CardView
@@ -57,10 +67,11 @@ internal class IamViewImpl(
             try {
                 val jsEvent: IamJsEvent = event?.fromJson<IamJsEvent>() ?: return
                 when (jsEvent.type) {
-                    IamJsEventType.WIDGET_INIT_SUCCESS -> onWidgetInitSuccess()
-                    IamJsEventType.WIDGET_INIT_FAILED -> onWidgetInitFailed(jsEvent)
+                    IamJsEventType.WIDGET_INIT_FAILED,
                     IamJsEventType.WIDGET_RUNTIME_ERROR -> onWidgetInitFailed(jsEvent)
-                    IamJsEventType.OPEN_URL -> openUrl(jsEvent.payload)
+                    IamJsEventType.WIDGET_INIT_SUCCESS -> onWidgetInitSuccess()
+                    IamJsEventType.CLICK,
+                    IamJsEventType.OPEN_URL -> openUrl(jsEvent)
                     IamJsEventType.CLOSE_WIDGET -> closeWidget(jsEvent.payload)
                 }
             } catch (e: Exception) {
@@ -82,10 +93,19 @@ internal class IamViewImpl(
         iamController.widgetInitFailed(jsEvent)
     }
 
-    private fun openUrl(payload: IamJsPayload?) {
-        /*@formatter:off*/ Logger.i(TAG, "openUrl(): ", "payload = [", payload, "]")
+    private fun openUrl(jsEvent: IamJsEvent) {
+        /*@formatter:off*/ Logger.i(TAG, "openUrl(): ", "jsEvent = [", jsEvent, "]")
         /*@formatter:on*/
-        val url = payload?.url ?: return
+        interactionController.onInteractionIamClick(
+            interactionId,
+            InteractionAction(
+                jsEvent.type.name,
+                jsEvent.payload?.targetComponentId,
+                jsEvent.payload?.url
+            )
+        )
+        scheduleController.forcePush()
+        val url = jsEvent.payload?.url ?: return
         val deepLinkIntent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
         deepLinkIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
 
@@ -101,12 +121,13 @@ internal class IamViewImpl(
         teardown()
     }
 
-    override fun initialize(widgetId: String) {
-        /*@formatter:off*/ Logger.i(TAG, "initialize(): ", "widgetId = [", widgetId, "]")
+    override fun initialize(interactionId: String) {
+        this.interactionId = interactionId
+        /*@formatter:off*/ Logger.i(TAG, "initialize(): ", "widgetId = [", interactionId, "]")
         /*@formatter:on*/
         try {
             teardown()
-            iamController.fetchIamFullHtml(widgetId)
+            iamController.fetchIamFullHtml(interactionId)
         } catch (e: Exception) {
             /*@formatter:off*/ Logger.e(TAG, "initialize(): ", e)
             /*@formatter:on*/
@@ -282,6 +303,8 @@ internal class IamViewImpl(
                 try {
                     popupWindow.dismiss()
                 } catch (e: Exception) {
+                    /*@formatter:off*/ Logger.e(TAG, "teardown(): popupWindow.dismiss() ", e)
+                    /*@formatter:on*/
                 }
             }
             if (this::cardView.isInitialized) {

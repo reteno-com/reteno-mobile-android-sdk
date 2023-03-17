@@ -10,16 +10,12 @@ import com.reteno.core.domain.controller.ScheduleController
 import com.reteno.core.domain.model.interaction.InteractionStatus
 import com.reteno.core.view.iam.IamView
 import com.reteno.push.Constants
-import com.reteno.push.Constants.KEY_ES_IAM_WIDGET_ID
+import com.reteno.push.Constants.KEY_ES_IAM
+import com.reteno.push.Constants.KEY_ES_INTERACTION_ID
 import com.reteno.push.Util
 import com.reteno.push.base.robolectric.BaseRobolectricTest
-import io.mockk.every
+import io.mockk.*
 import io.mockk.impl.annotations.RelaxedMockK
-import io.mockk.justRun
-import io.mockk.mockk
-import io.mockk.mockkObject
-import io.mockk.unmockkObject
-import io.mockk.verify
 import junit.framework.Assert.assertNotNull
 import org.junit.Assert
 import org.junit.Assert.assertEquals
@@ -45,8 +41,10 @@ class RetenoNotificationClickedActivityTest : BaseRobolectricTest() {
 
     @RelaxedMockK
     private lateinit var interactionController: InteractionController
+
     @RelaxedMockK
     private lateinit var deeplinkController: DeeplinkController
+
     @RelaxedMockK
     private lateinit var scheduleController: ScheduleController
     // endregion helper fields ---------------------------------------------------------------------
@@ -163,7 +161,8 @@ class RetenoNotificationClickedActivityTest : BaseRobolectricTest() {
         justRun { context.startActivity(any()) }
 
         // When
-        val activity = buildActivity(RetenoNotificationClickedActivity::class.java, intent).create().get()
+        val activity =
+            buildActivity(RetenoNotificationClickedActivity::class.java, intent).create().get()
         val shadow = shadowOf(activity)
         val appLaunchIntent = shadow.peekNextStartedActivity()
 
@@ -195,7 +194,8 @@ class RetenoNotificationClickedActivityTest : BaseRobolectricTest() {
         justRun { context.startActivity(any()) }
 
         // When
-        val activity = buildActivity(RetenoNotificationClickedActivity::class.java, intent).create().get()
+        val activity =
+            buildActivity(RetenoNotificationClickedActivity::class.java, intent).create().get()
         val shadow = shadowOf(activity)
         val appLaunchIntent = shadow.peekNextStartedActivity()
 
@@ -212,14 +212,18 @@ class RetenoNotificationClickedActivityTest : BaseRobolectricTest() {
         val iamView = mockk<IamView>(relaxed = true)
         val iamWidgetId = "123"
 
-        val extra = Bundle().apply { putString(KEY_ES_IAM_WIDGET_ID, iamWidgetId) }
+        val extra = Bundle().apply {
+            putString(KEY_ES_INTERACTION_ID, iamWidgetId)
+            putString(KEY_ES_IAM, "1")
+        }
         val intent = Intent().apply { putExtras(extra) }
         justRun { context.startActivity(any()) }
         every { IntentHandler.AppLaunchIntent.getAppLaunchIntent(any()) } returns intent
         every { reteno.serviceLocator.iamViewProvider.get() } returns iamView
 
         // When
-        val activity = buildActivity(RetenoNotificationClickedActivity::class.java, intent).create().get()
+        val activity =
+            buildActivity(RetenoNotificationClickedActivity::class.java, intent).create().get()
         activity.onCreate(extra, null)
 
         // Then

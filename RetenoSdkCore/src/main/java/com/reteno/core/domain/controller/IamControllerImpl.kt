@@ -4,59 +4,52 @@ import com.reteno.core.data.repository.IamRepository
 import com.reteno.core.domain.ResultDomain
 import com.reteno.core.features.iam.IamJsEvent
 import com.reteno.core.util.Logger
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.TimeoutCancellationException
-import kotlinx.coroutines.async
-import kotlinx.coroutines.cancelChildren
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withTimeout
 
 internal class IamControllerImpl(
     private val iamRepository: IamRepository
 ) : IamController {
 
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
-    private var widgetId: String? = null
+    private var interactionId: String? = null
     private val _fullHtmlStateFlow: MutableStateFlow<ResultDomain<String>> = MutableStateFlow(ResultDomain.Loading)
     override val fullHtmlStateFlow: StateFlow<ResultDomain<String>> = _fullHtmlStateFlow
 
-    override fun fetchIamFullHtml(widgetId: String) {
-        /*@formatter:off*/ Logger.i(TAG, "fetchIamFullHtml(): ", "widgetId = [", widgetId, "]")
+    override fun fetchIamFullHtml(interactionId: String) {
+        /*@formatter:off*/ Logger.i(TAG, "fetchIamFullHtml(): ", "widgetId = [", this.interactionId, "]")
         /*@formatter:on*/
-        this.widgetId = widgetId
+        this.interactionId = interactionId
         _fullHtmlStateFlow.value = ResultDomain.Loading
 
         scope.launch {
             try {
-                withTimeout(TIMEOUT) {
+               // withTimeout(TIMEOUT) {
                     val baseHtml = async { iamRepository.getBaseHtml() }
-                    val widget = async { iamRepository.getWidget(widgetId) }
+                    val widget = async { iamRepository.getWidgetRemote(interactionId) }
 
                     val fullHtml = baseHtml.await().replace("\${documentModel}", widget.await())
                     _fullHtmlStateFlow.value = ResultDomain.Success(fullHtml)
-                }
+               // }
             } catch (e: TimeoutCancellationException) {
                 _fullHtmlStateFlow.value =
-                    ResultDomain.Error("fetchIamFullHtml(): widgetId = [$widgetId] TIMEOUT")
+                    ResultDomain.Error("fetchIamFullHtml(): widgetId = [${this@IamControllerImpl.interactionId}] TIMEOUT")
             }
         }
     }
 
     override fun widgetInitFailed(jsEvent: IamJsEvent) {
-        /*@formatter:off*/ Logger.i(TAG, "widgetInitFailed(): ", "widgetId = [", widgetId, "], jsEvent = [", jsEvent, "]")
+        /*@formatter:off*/ Logger.i(TAG, "widgetInitFailed(): ", "widgetId = [", interactionId, "], jsEvent = [", jsEvent, "]")
         /*@formatter:on*/
-        widgetId?.let {
+        interactionId?.let {
             iamRepository.widgetInitFailed(it, jsEvent)
         }
     }
 
     override fun reset() {
         _fullHtmlStateFlow.value = ResultDomain.Loading
-        widgetId = null
+        interactionId = null
         scope.coroutineContext.cancelChildren()
     }
 

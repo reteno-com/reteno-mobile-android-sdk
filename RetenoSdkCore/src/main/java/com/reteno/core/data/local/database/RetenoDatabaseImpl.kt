@@ -50,6 +50,20 @@ internal class RetenoDatabaseImpl(private val context: Context) : RetenoDatabase
                 }
             }
         }
+        if(oldVersion<4){
+            try {
+                /*@formatter:off*/ Logger.i(TAG, "onUpgrade(): start update table \"Interaction\"", "old DB version = ",oldVersion,", newVersion = ",newVersion )
+                /*@formatter:on*/
+                db.execSQL(InteractionSchema.SQL_UPGRADE_TABLE_VERSION_4)
+            } catch (e: SQLiteException) {
+                if (e.toString().startsWith("duplicate column name")) {
+                    /*@formatter:off*/ Logger.e(TAG, "onUpgrade(): Ignoring this exception", e)
+                    /*@formatter:on*/
+                } else {
+                    throw e
+                }
+            }
+        }
     }
 
     override fun onDowngrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {

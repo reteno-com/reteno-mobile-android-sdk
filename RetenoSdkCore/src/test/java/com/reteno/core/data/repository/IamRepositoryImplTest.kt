@@ -9,10 +9,10 @@ import com.reteno.core.domain.ResponseCallback
 import io.mockk.every
 import io.mockk.impl.annotations.RelaxedMockK
 import io.mockk.verify
-import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotNull
 import org.junit.Test
 
 
@@ -39,9 +39,10 @@ class IamRepositoryImplTest : BaseRobolectricTest() {
     private lateinit var SUT: IamRepository
     // endregion helper fields ---------------------------------------------------------------------
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     override fun before() {
         super.before()
-        SUT = IamRepositoryImpl(apiClient, sharedPrefsManager)
+        SUT = IamRepositoryImpl(apiClient, sharedPrefsManager,UnconfinedTestDispatcher())
     }
 
     @Test
@@ -89,29 +90,29 @@ class IamRepositoryImplTest : BaseRobolectricTest() {
         }
     }
 
-    @OptIn(DelicateCoroutinesApi::class)
+  /*  @OptIn(DelicateCoroutinesApi::class)
     @Test
     fun whenGetWidget_thenDispatchersIoUsed() {
         runBlocking {
             // Given
-            val widgetId = "widgetIdHere"
+            val interactionId = "widgetIdHere"
             val widget = "widgetJsonHere"
 
             var usedThreadName: String? = null
 
-            every { apiClient.get(ApiContract.MobileApi.InAppMessages, any(), any()) } answers {
+            coEvery { apiClient.get(ApiContract.InAppMessages.GetInnAppWidgetByInteractionId(interactionId), any(), any()) }  coAnswers  {
                 val callback = thirdArg<ResponseCallback>()
                 usedThreadName = Thread.currentThread().name
                 callback.onSuccess(mapOf<String, List<String>>(), widget)
             }
 
             // When
-            SUT.getWidget(widgetId)
+            SUT.getWidgetRemote(interactionId)
 
             // Then
             assertNotNull(usedThreadName)
             val expectedPrefix = "DefaultDispatcher-worker-"
             assert(usedThreadName!!.startsWith(expectedPrefix))
         }
-    }
+    }*/
 }

@@ -58,11 +58,14 @@ class RetenoNotificationClickedReceiver : BroadcastReceiver() {
     }
 
     private fun sendInteractionStatus(intent: Intent?) {
-        /*@formatter:off*/ Logger.i(TAG, "sendInteractionStatus(): ", "intent = [", intent, "]")
-        /*@formatter:on*/
-        intent?.extras?.getString(Constants.KEY_ES_INTERACTION_ID)?.let { interactionId ->
-            interactionController.onInteraction(interactionId, InteractionStatus.CLICKED)
-            scheduleController.forcePush()
+        if (intent?.extras?.getString(Constants.KEY_ES_IAM) != "1") {
+
+            intent?.extras?.getString(Constants.KEY_ES_INTERACTION_ID)?.let { interactionId ->
+                /*@formatter:off*/ Logger.i(TAG, "sendInteractionStatus(): ", "intent = [", intent, "]")
+                /*@formatter:on*/
+                interactionController.onInteraction(interactionId, InteractionStatus.CLICKED)
+                scheduleController.forcePush()
+            }
         }
     }
 
@@ -112,10 +115,13 @@ class RetenoNotificationClickedReceiver : BroadcastReceiver() {
     }
 
     private fun checkIam(bundle: Bundle) {
-        /*@formatter:off*/ Logger.i(TAG, "checkIam(): ", "bundle = [", bundle, "]")
+        /*@formatter:off*/ Logger.i(TAG, "RetenoNotificationClickedReceiver.class: checkIam(): ", "bundle = [", bundle, "]")
         /*@formatter:on*/
-        val widgetId = bundle.getString(Constants.KEY_ES_IAM_WIDGET_ID)
-        widgetId?.let(iamView::initialize)
+        bundle.getString(Constants.KEY_ES_IAM)
+            .takeIf { it == "1" }
+            ?.run {
+                bundle.getString(Constants.KEY_ES_INTERACTION_ID)?.let(iamView::initialize)
+            }
     }
 
     companion object {

@@ -4,7 +4,7 @@ import android.app.Activity
 
 interface IamView {
 
-    fun initialize(widgetId: String)
+    fun initialize(interactionId: String)
 
     fun resume(activity: Activity)
 

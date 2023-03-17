@@ -1,10 +1,12 @@
 package com.reteno.core.data.repository
 
+import com.google.gson.JsonObject
 import com.reteno.core.R
 import com.reteno.core.data.local.sharedpref.SharedPrefsManager
 import com.reteno.core.data.remote.api.ApiClient
 import com.reteno.core.data.remote.api.ApiContract
 import com.reteno.core.data.remote.api.RestClientImpl.Companion.HEADER_X_AMZ_META_VERSION
+import com.reteno.core.data.remote.mapper.fromJson
 import com.reteno.core.data.remote.mapper.toJson
 import com.reteno.core.data.remote.model.iam.initfailed.Data
 import com.reteno.core.data.remote.model.iam.initfailed.IamJsWidgetInitiFailed
@@ -13,14 +15,15 @@ import com.reteno.core.domain.ResponseCallback
 import com.reteno.core.features.iam.IamJsEvent
 import com.reteno.core.util.Logger
 import com.reteno.core.util.Util
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.resume
 
 internal class IamRepositoryImpl(
     private val apiClient: ApiClient,
-    private val sharedPrefsManager: SharedPrefsManager
+    private val sharedPrefsManager: SharedPrefsManager,
+    private val coroutineDispatcher: CoroutineDispatcher,
 ) : IamRepository {
 
     override suspend fun getBaseHtml(): String {
@@ -46,7 +49,7 @@ internal class IamRepositoryImpl(
     private suspend fun getBaseHtmlVersionRemote(): String? {
         /*@formatter:off*/ Logger.i(TAG, "getBaseHtmlVersionRemote(): ", "")
         /*@formatter:on*/
-        return withContext(Dispatchers.IO) {
+        return withContext(coroutineDispatcher) {
             suspendCancellableCoroutine { continuation ->
                 apiClient.head(url = ApiContract.InAppMessages.BaseHtml,
                     queryParams = null,
@@ -80,7 +83,7 @@ internal class IamRepositoryImpl(
     private suspend fun getBaseHtmlContentRemote(): String? {
         /*@formatter:off*/ Logger.i(TAG, "getBaseHtmlContentRemote(): ", "")
         /*@formatter:on*/
-        return withContext(Dispatchers.IO) {
+        return withContext(coroutineDispatcher) {
             suspendCancellableCoroutine { continuation ->
                 apiClient.get(url = ApiContract.InAppMessages.BaseHtml,
                     queryParams = null,
@@ -107,17 +110,21 @@ internal class IamRepositoryImpl(
     }
 
 
-    override suspend fun getWidget(widgetId: String): String {
-        /*@formatter:off*/ Logger.i(TAG, "getWidget(): ", "widgetId = [", widgetId, "]")
+    override suspend fun getWidgetRemote(interactionId: String): String {
+        /*@formatter:off*/ Logger.i(TAG, "getWidget(): ", "widgetId = [", interactionId, "]")
         /*@formatter:on*/
-        return withContext(Dispatchers.IO) {
+        return withContext(coroutineDispatcher) {
             suspendCancellableCoroutine { continuation ->
-                apiClient.get(url = ApiContract.MobileApi.InAppMessages,
+                apiClient.get(
+                    url = ApiContract.InAppMessages.GetInnAppWidgetByInteractionId(interactionId),
                     queryParams = null,
                     responseHandler = object : ResponseCallback {
                         override fun onSuccess(response: String) {
-                            // TODO: Replace with actual response
-                            continuation.resume(WIDGET)
+                            /*@formatter:off*/ Logger.i(TAG, "getWidgetRemote(): onSuccess(): ", "response = [", response, "]")
+                            /*@formatter:on*/
+                            continuation.resume(
+                                response.fromJson<JsonObject>().get("model").toString()
+                            )
                         }
 
                         override fun onFailure(
@@ -125,7 +132,8 @@ internal class IamRepositoryImpl(
                             response: String?,
                             throwable: Throwable?
                         ) {
-                            // TODO: Replace with error handling
+                            /*@formatter:off*/ Logger.i(TAG, "getWidgetRemote(): onFailure(): ", "statusCode = [", statusCode, "], response = [", response, "], throwable = [", throwable, "]")
+                            /*@formatter:on*/
                             continuation.resume(WIDGET)
 //                            continuation.resumeWithException()
                         }

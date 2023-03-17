@@ -5,5 +5,6 @@ internal enum class IamJsEventType {
     WIDGET_INIT_FAILED,
     WIDGET_RUNTIME_ERROR,
     CLOSE_WIDGET,
-    OPEN_URL
+    OPEN_URL,
+    CLICK,
 }
