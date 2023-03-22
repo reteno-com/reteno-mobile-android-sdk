@@ -14,7 +14,8 @@ internal class IamControllerImpl(
 
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private var interactionId: String? = null
-    private val _fullHtmlStateFlow: MutableStateFlow<ResultDomain<String>> = MutableStateFlow(ResultDomain.Loading)
+    private val _fullHtmlStateFlow: MutableStateFlow<ResultDomain<String>> =
+        MutableStateFlow(ResultDomain.Loading)
     override val fullHtmlStateFlow: StateFlow<ResultDomain<String>> = _fullHtmlStateFlow
 
     override fun fetchIamFullHtml(interactionId: String) {
@@ -25,13 +26,13 @@ internal class IamControllerImpl(
 
         scope.launch {
             try {
-               // withTimeout(TIMEOUT) {
+                withTimeout(TIMEOUT) {
                     val baseHtml = async { iamRepository.getBaseHtml() }
                     val widget = async { iamRepository.getWidgetRemote(interactionId) }
 
                     val fullHtml = baseHtml.await().replace("\${documentModel}", widget.await())
                     _fullHtmlStateFlow.value = ResultDomain.Success(fullHtml)
-               // }
+                }
             } catch (e: TimeoutCancellationException) {
                 _fullHtmlStateFlow.value =
                     ResultDomain.Error("fetchIamFullHtml(): widgetId = [${this@IamControllerImpl.interactionId}] TIMEOUT")

@@ -117,9 +117,9 @@ class IamControllerImplTest : BaseRobolectricTest() {
         scheduler.advanceTimeBy(TIMEOUT)
         assertEquals(ResultDomain.Loading, SUT.fullHtmlStateFlow.value)
         scheduler.runCurrent()
-    //    assert(SUT.fullHtmlStateFlow.value is ResultDomain.Error)
-      //  val result = SUT.fullHtmlStateFlow.value as ResultDomain.Error
-        //assert(result.errorBody.contains("TIMEOUT"))
+        assert(SUT.fullHtmlStateFlow.value is ResultDomain.Error)
+        val result = SUT.fullHtmlStateFlow.value as ResultDomain.Error
+        assert(result.errorBody.contains("TIMEOUT"))
 
         SUT.reset()
         assertEquals(ResultDomain.Loading, SUT.fullHtmlStateFlow.value)
