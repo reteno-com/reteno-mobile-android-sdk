@@ -15,6 +15,7 @@ import com.reteno.push.receiver.NotificationsEnabledManager
 import io.mockk.*
 
 class RetenoTestApp : Application(), RetenoApplication {
+
     private lateinit var retenoInstance: Reteno
 
     init {
@@ -33,7 +34,9 @@ class RetenoTestApp : Application(), RetenoApplication {
         Settings.Secure.putString(contentResolver, Settings.Secure.ANDROID_ID, Constants.DEVICE_ID_ANDROID)
 
         retenoInstance = spyk(RetenoImpl(this, ""))
-        every { retenoInstance.getProperty("serviceLocator") } returns spyk(ServiceLocator(this, ""))
+        every { retenoInstance.getProperty("serviceLocator") } returns spyk(
+            ServiceLocator(this, "")
+        )
     }
 
     override fun getRetenoInstance(): Reteno {

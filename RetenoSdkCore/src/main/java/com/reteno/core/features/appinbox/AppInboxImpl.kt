@@ -1,4 +1,4 @@
-package com.reteno.core.appinbox
+package com.reteno.core.features.appinbox
 
 import com.reteno.core.domain.callback.appinbox.RetenoResultCallback
 import com.reteno.core.domain.controller.AppInboxController

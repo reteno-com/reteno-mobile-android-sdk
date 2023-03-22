@@ -3,7 +3,7 @@ package com.reteno.core.data.repository
 import com.reteno.core.data.remote.model.recommendation.get.RecomBase
 import com.reteno.core.domain.model.recommendation.get.RecomRequest
 import com.reteno.core.domain.model.recommendation.post.RecomEvents
-import com.reteno.core.recommendation.GetRecommendationResponseCallback
+import com.reteno.core.features.recommendation.GetRecommendationResponseCallback
 import java.time.ZonedDateTime
 
 internal interface RecommendationRepository {

@@ -31,4 +31,6 @@ object Constants {
 
     const val NOTIFICATION_CAROUSEL_IMAGE_MAX_WIDTH_PX = 500
     const val NOTIFICATION_CAROUSEL_IMAGE_MAX_HEIGHT_PX = 250
+
+    const val KEY_ES_IAM = "es_inapp"
 }

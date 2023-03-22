@@ -3,7 +3,6 @@ package com.reteno.sample.fragments.database;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.os.Bundle;
-import android.view.View;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -60,14 +59,16 @@ public class InteractionWriteDialogFragment extends BaseDatabaseDialogFragment {
             String status = Util.getTextOrNull(binding.etStatus);
             String time = Util.getTextOrNull(binding.etTime);
             String token = Util.getTextOrNull(binding.etToken);
+            String action = Util.getTextOrNull(binding.etAction);
 
-            if (UtilKt.allElementsNotNull(interactionId, status, time, token)) {
+            if (UtilKt.allElementsNotNull(interactionId, status, time) && (token != null || action != null)) {
                 InteractionDb interaction = new InteractionDb(
                         null,
                         interactionId,
                         InteractionStatusDb.fromString(status),
                         time,
-                        token
+                        token,
+                        action
                 );
                 databaseManager.insertInteraction(interaction);
                 Toast.makeText(this.getContext(), "Sent", Toast.LENGTH_SHORT).show();

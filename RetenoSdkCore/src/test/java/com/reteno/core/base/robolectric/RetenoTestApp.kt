@@ -20,6 +20,9 @@ import java.util.concurrent.ScheduledExecutorService
 
 class RetenoTestApp : Application(), RetenoApplication {
 
+    private lateinit var retenoInstance: Reteno
+    internal val scheduler: ScheduledExecutorService = mockStaticScheduler()
+
     init {
         mockStaticLogger()
         mockObjectOperationQueue()
@@ -29,10 +32,6 @@ class RetenoTestApp : Application(), RetenoApplication {
         mockStaticZoneDateTime()
         mockStaticCursor()
     }
-
-    private lateinit var retenoInstance: Reteno
-
-    internal val scheduler: ScheduledExecutorService = mockStaticScheduler()
 
     override fun onCreate() {
         super.onCreate()

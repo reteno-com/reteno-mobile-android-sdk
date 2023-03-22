@@ -29,6 +29,9 @@ class RetenoNotificationClickedActivity : Activity() {
     private val scheduleController by lazy {
         reteno.serviceLocator.scheduleControllerProvider.get()
     }
+    private val iamView by lazy {
+        reteno.serviceLocator.iamViewProvider.get()
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -50,13 +53,19 @@ class RetenoNotificationClickedActivity : Activity() {
     }
 
     private fun sendInteractionStatus(intent: Intent?) {
-        intent?.extras?.getString(Constants.KEY_ES_INTERACTION_ID)?.let { interactionId ->
-            interactionController.onInteraction(interactionId, InteractionStatus.CLICKED)
-            scheduleController.forcePush()
+        if (intent?.extras?.getString(Constants.KEY_ES_IAM) != "1") {
+            intent?.extras?.getString(Constants.KEY_ES_INTERACTION_ID)?.let { interactionId ->
+                /*@formatter:off*/ Logger.i(TAG, "sendInteractionStatus(): ", "intent = [", intent, "]")
+                /*@formatter:on*/
+                interactionController.onInteraction(interactionId, InteractionStatus.CLICKED)
+                scheduleController.forcePush()
+            }
         }
     }
 
     private fun handleIntent(intent: Intent?) {
+        /*@formatter:off*/ Logger.i(TAG, "handleIntent(): ", "intent = [", intent, "]")
+        /*@formatter:on*/
         intent?.extras?.let { bundle ->
             if (bundle.getBoolean(KEY_ACTION_BUTTON, false)) {
                 val notificationId = bundle.getInt(Constants.KEY_NOTIFICATION_ID, -1)
@@ -75,6 +84,8 @@ class RetenoNotificationClickedActivity : Activity() {
     }
 
     private fun launchDeeplink(deeplinkIntent: Intent) {
+        /*@formatter:off*/ Logger.i(TAG, "launchDeeplink(): ", "deeplinkIntent = [", deeplinkIntent, "]")
+        /*@formatter:on*/
         try {
             startActivity(deeplinkIntent)
         } catch (ex: ActivityNotFoundException) {
@@ -86,14 +97,27 @@ class RetenoNotificationClickedActivity : Activity() {
     }
 
     private fun launchApp(intent: Intent?) {
+        /*@formatter:off*/ Logger.i(TAG, "launchApp(): ", "intent = [", intent, "]")
+        /*@formatter:on*/
         val launchIntent = IntentHandler.AppLaunchIntent.getAppLaunchIntent(this)
         if (intent == null || launchIntent == null) {
             return
         }
+        intent.extras?.let(::checkIam)
 
         intent.component = launchIntent.component
         this.startActivity(intent)
         finish()
+    }
+
+    private fun checkIam(bundle: Bundle) {
+        /*@formatter:off*/ Logger.i(TAG, "RetenoNotificationClickedActivity.class: checkIam(): ", "bundle = [", bundle, "]")
+        /*@formatter:on*/
+        bundle.getString(Constants.KEY_ES_IAM)
+            .takeIf { it == "1" }
+            ?.run {
+                bundle.getString(Constants.KEY_ES_INTERACTION_ID)?.let(iamView::initialize)
+            }
     }
 
     companion object {

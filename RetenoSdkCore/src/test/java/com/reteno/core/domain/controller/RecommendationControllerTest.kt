@@ -9,7 +9,7 @@ import com.reteno.core.domain.model.recommendation.get.RecomRequest
 import com.reteno.core.domain.model.recommendation.post.RecomEvent
 import com.reteno.core.domain.model.recommendation.post.RecomEventType
 import com.reteno.core.domain.model.recommendation.post.RecomEvents
-import com.reteno.core.recommendation.GetRecommendationResponseCallback
+import com.reteno.core.features.recommendation.GetRecommendationResponseCallback
 import io.mockk.every
 import io.mockk.impl.annotations.RelaxedMockK
 import io.mockk.mockk

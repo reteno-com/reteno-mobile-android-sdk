@@ -119,8 +119,9 @@ internal class ContactRepositoryImpl(
                         if (cacheUpdated) {
                             pushUserData()
                         }
+                    } else {
+                        PushOperationQueue.removeAllOperations()
                     }
-                    PushOperationQueue.removeAllOperations()
                 }
 
             })
