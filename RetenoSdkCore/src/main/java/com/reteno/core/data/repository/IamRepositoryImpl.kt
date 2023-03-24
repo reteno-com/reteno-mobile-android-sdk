@@ -149,7 +149,7 @@ internal class IamRepositoryImpl(
 
         val payload = Payload(reason = jsEvent.payload?.reason)
         val data = Data(type = jsEvent.type.name, payload = payload)
-        val initFailed = IamJsWidgetInitiFailed(tenantId = widgetId, data = data)
+        val initFailed = IamJsWidgetInitiFailed(tenantId = widgetId, data = data.toJson())
         apiClient.post(
             ApiContract.InAppMessages.WidgetInitFailed,
             initFailed.toJson(),
