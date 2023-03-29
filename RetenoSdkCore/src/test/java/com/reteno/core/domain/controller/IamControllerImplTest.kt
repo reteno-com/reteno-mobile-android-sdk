@@ -1,6 +1,7 @@
 package com.reteno.core.domain.controller
 
 import com.reteno.core.base.robolectric.BaseRobolectricTest
+import com.reteno.core.data.remote.model.iam.widget.WidgetModel
 import com.reteno.core.data.repository.IamRepository
 import com.reteno.core.domain.ResultDomain
 import com.reteno.core.domain.controller.IamControllerImpl.Companion.TIMEOUT
@@ -63,7 +64,7 @@ class IamControllerImplTest : BaseRobolectricTest() {
         }
         coEvery { iamRepository.getWidgetRemote(any()) } coAnswers {
             delay(DELAY_WIDGET)
-            WIDGET
+            WidgetModel(WIDGET)
         }
     }
 

@@ -30,7 +30,18 @@ internal class IamControllerImpl(
                     val baseHtml = async { iamRepository.getBaseHtml() }
                     val widget = async { iamRepository.getWidgetRemote(interactionId) }
 
-                    val fullHtml = baseHtml.await().replace("\${documentModel}", widget.await())
+                    val fullHtml = baseHtml.await().run {
+                        widget.await().let { widgetModel ->
+                            var text = this
+                            widgetModel.model?.let {
+                                text = text.replace(KEY_DOCUMENT_MODEL, it)
+                            }
+                            widgetModel.personalization?.let {
+                                text = text.replace(KEY_PERSONALISATION, it)
+                            }
+                            text
+                        }
+                    }
                     _fullHtmlStateFlow.value = ResultDomain.Success(fullHtml)
                 }
             } catch (e: TimeoutCancellationException) {
@@ -58,5 +69,7 @@ internal class IamControllerImpl(
         private val TAG: String = IamControllerImpl::class.java.simpleName
 
         internal const val TIMEOUT = 30_000L
+        const val KEY_DOCUMENT_MODEL = "\${documentModel}"
+        const val KEY_PERSONALISATION = "\${personalisation}"
     }
 }
