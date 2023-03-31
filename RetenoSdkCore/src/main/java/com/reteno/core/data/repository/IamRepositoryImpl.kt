@@ -11,6 +11,7 @@ import com.reteno.core.data.remote.mapper.toJson
 import com.reteno.core.data.remote.model.iam.initfailed.Data
 import com.reteno.core.data.remote.model.iam.initfailed.IamJsWidgetInitiFailed
 import com.reteno.core.data.remote.model.iam.initfailed.Payload
+import com.reteno.core.data.remote.model.iam.widget.WidgetModel
 import com.reteno.core.domain.ResponseCallback
 import com.reteno.core.features.iam.IamJsEvent
 import com.reteno.core.util.Logger
@@ -109,8 +110,7 @@ internal class IamRepositoryImpl(
         }
     }
 
-
-    override suspend fun getWidgetRemote(interactionId: String): String {
+    override suspend fun getWidgetRemote(interactionId: String): WidgetModel {
         /*@formatter:off*/ Logger.i(TAG, "getWidget(): ", "widgetId = [", interactionId, "]")
         /*@formatter:on*/
         return withContext(coroutineDispatcher) {
@@ -123,7 +123,12 @@ internal class IamRepositoryImpl(
                             /*@formatter:off*/ Logger.i(TAG, "getWidgetRemote(): onSuccess(): ", "response = [", response, "]")
                             /*@formatter:on*/
                             continuation.resume(
-                                response.fromJson<JsonObject>().get("model").toString()
+                                response.fromJson<JsonObject>().run {
+                                    WidgetModel(
+                                        get("model").toString(),
+                                        get("personalisation").toString(),
+                                    )
+                                }
                             )
                         }
 
@@ -134,7 +139,7 @@ internal class IamRepositoryImpl(
                         ) {
                             /*@formatter:off*/ Logger.i(TAG, "getWidgetRemote(): onFailure(): ", "statusCode = [", statusCode, "], response = [", response, "], throwable = [", throwable, "]")
                             /*@formatter:on*/
-                            continuation.resume(WIDGET)
+                            continuation.resume(WidgetModel(WIDGET))
 //                            continuation.resumeWithException()
                         }
                     }
