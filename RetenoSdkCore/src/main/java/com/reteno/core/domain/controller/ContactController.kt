@@ -22,7 +22,7 @@ class ContactController(
         if (oldDeviceId.externalId != id) {
             configRepository.setExternalUserId(id)
             val fcmToken = configRepository.getFcmToken()
-            onNewContact(fcmToken)
+            onNewContact(fcmToken, toParallelWork = false)
         }
     }
 
@@ -30,9 +30,10 @@ class ContactController(
         /*@formatter:off*/ Logger.i(TAG, "setUserData(): ", "user = [" , user , "]")
         /*@formatter:on*/
 
-        user?.let {
-            val validUser = Validator.validateUser(it)
-            validUser?.let(contactRepository::saveUserData) ?: Logger.captureMessage("ContactController.setUserData(): user = [$it]")
+        user?.let { userTmp ->
+            Validator.validateUser(userTmp)?.let {
+                contactRepository.saveUserData(it, toParallelWork = false)
+            } ?: Logger.captureMessage("ContactController.setUserData(): user = [$userTmp]")
         }
     }
 
@@ -40,7 +41,8 @@ class ContactController(
         /*@formatter:off*/ Logger.i(TAG, "setAnonymousUserAttributes(): ", "attributes = [", attributes, "]")
         /*@formatter:on*/
 
-        val validAttributes: UserAttributesAnonymous? = Validator.validateAnonymousUserAttributes(attributes)
+        val validAttributes: UserAttributesAnonymous? =
+            Validator.validateAnonymousUserAttributes(attributes)
         validAttributes?.let {
             val userData = User(it.toUserAttributes())
             contactRepository.saveUserData(userData)
@@ -83,11 +85,15 @@ class ContactController(
         if (notificationsEnabled != currentState) {
             configRepository.saveNotificationsEnabled(notificationsEnabled)
             val fcmToken = configRepository.getFcmToken()
-            onNewContact(fcmToken, notificationsEnabled)
+            onNewContact(fcmToken, notificationsEnabled = notificationsEnabled)
         }
     }
 
-    private fun onNewContact(fcmToken: String, notificationsEnabled: Boolean? = null) {
+    private fun onNewContact(
+        fcmToken: String,
+        notificationsEnabled: Boolean? = null,
+        toParallelWork: Boolean = true
+    ) {
         /*@formatter:off*/ Logger.i(TAG, "onNewContact(): ", "fcmToken = [", fcmToken, "], notificationsEnabled = [", notificationsEnabled, "]")
         /*@formatter:on*/
         if (fcmToken.isNotEmpty()) {
@@ -100,9 +106,13 @@ class ContactController(
                 pushToken = fcmToken,
                 pushSubscribed = notificationsEnabled
             )
-
-            contactRepository.saveDeviceData(contact)
+            contactRepository.saveDeviceData(contact, toParallelWork)
         }
+    }
+
+    fun setExternalIdAndUserData(externalUserId: String, user: User?) {
+        setExternalUserId(externalUserId)
+        setUserData(user)
     }
 
     companion object {
