@@ -86,7 +86,8 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
     }
 
     private fun sendAppResumeBroadcast() {
-        val intent = Intent(BROADCAST_ACTION_RETENO_APP_RESUME).setFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES)
+        val intent =
+            Intent(BROADCAST_ACTION_RETENO_APP_RESUME).setFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES)
         val infoList = application.queryBroadcastReceivers(intent)
         for (info in infoList) {
             info?.activityInfo?.let {
@@ -143,8 +144,7 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
         }
 
         try {
-            contactController.setExternalUserId(externalUserId)
-            contactController.setUserData(user)
+            contactController.setExternalIdAndUserData(externalUserId, user)
         } catch (ex: Throwable) {
             /*@formatter:off*/ Logger.e(TAG, "setUserAttributes(): externalUserId = [$externalUserId], user = [$user]", ex)
             /*@formatter:on*/
