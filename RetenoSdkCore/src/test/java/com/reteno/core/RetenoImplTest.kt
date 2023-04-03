@@ -30,7 +30,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Test
 import org.robolectric.shadows.ShadowLooper.shadowMainLooper
-import java.lang.Exception
 import java.time.ZonedDateTime
 
 
@@ -136,8 +135,13 @@ class RetenoImplTest : BaseRobolectricTest() {
         retenoImpl.setUserAttributes(externalUserId = EXTERNAL_USER_ID)
 
         // Then
-        verify(exactly = 1) { contactController.setExternalUserId(eq(EXTERNAL_USER_ID)) }
-        verify(exactly = 1) { contactController.setUserData(null) }
+        verify(exactly = 1) {
+            contactController.setExternalIdAndUserData(
+                eq(EXTERNAL_USER_ID),
+                null
+            )
+        }
+        //  verify(exactly = 1) { contactController.setUserData(null) }
     }
 
     @Test
@@ -146,8 +150,12 @@ class RetenoImplTest : BaseRobolectricTest() {
         retenoImpl.setUserAttributes(EXTERNAL_USER_ID, null)
 
         // Then
-        verify(exactly = 1) { contactController.setExternalUserId(eq(EXTERNAL_USER_ID)) }
-        verify(exactly = 1) { contactController.setUserData(null) }
+        verify(exactly = 1) {
+            contactController.setExternalIdAndUserData(
+                eq(EXTERNAL_USER_ID),
+                null
+            )
+        }
     }
 
     @Test
@@ -159,14 +167,14 @@ class RetenoImplTest : BaseRobolectricTest() {
         retenoImpl.setUserAttributes(EXTERNAL_USER_ID, userFull)
 
         // Then
-        verify { contactController.setExternalUserId(eq(EXTERNAL_USER_ID)) }
-        verify { contactController.setUserData(userFull) }
+        verify { contactController.setExternalIdAndUserData((eq(EXTERNAL_USER_ID)), userFull) }
+        //  verify { contactController.setUserData(userFull) }
     }
 
     @Test
     fun givenExceptionThrown_whenSetUserData_thenExceptionSentToLogger() {
         // Given
-        every { contactController.setUserData(any()) } throws EXCEPTION
+        every { contactController.setExternalIdAndUserData(any(), any()) } throws EXCEPTION
 
         val userFull = getUserFull()
 
@@ -192,7 +200,8 @@ class RetenoImplTest : BaseRobolectricTest() {
     @Test
     fun givenExternalIdBlank_whenSetUserAttributesWithUser_thenThrowException() {
         // Given
-        val expectedException = IllegalArgumentException("externalUserId should not be null or blank")
+        val expectedException =
+            IllegalArgumentException("externalUserId should not be null or blank")
 
         // When
         val actualException = try {
@@ -262,7 +271,6 @@ class RetenoImplTest : BaseRobolectricTest() {
         // Then
         verify(exactly = 1) { eventController.trackEvent(event) }
     }
-
 
 
     @Test
