@@ -24,30 +24,23 @@ internal class ContactRepositoryImpl(
     private val databaseManagerUser: RetenoDatabaseManagerUser
 ) : ContactRepository {
 
-    override fun saveDeviceData(device: Device) {
+    override fun saveDeviceData(device: Device, toParallelWork: Boolean) {
         /*@formatter:off*/ Logger.i(TAG, "saveDeviceData(): ", "device = [" , device , "]")
         /*@formatter:on*/
-        OperationQueue.addParallelOperation {
-            val newDevice: DeviceDb = device.toDb()
-            val savedDevices: List<DeviceDb> = databaseManagerDevice.getDevices()
-            if (!savedDevices.contains(newDevice)) {
-                databaseManagerDevice.insertDevice(device.toDb())
-                /*@formatter:off*/ Logger.i(TAG, "saveDeviceData(): ", "Device saved")
-                /*@formatter:on*/
-            } else {
-                /*@formatter:off*/ Logger.i(TAG, "saveDeviceData(): ", "Device NOT saved. Device is already present in database. Duplicates are not saved")
-                /*@formatter:on*/
-            }
-            pushDeviceData()
+        if (toParallelWork) {
+            OperationQueue.addParallelOperation { onSaveDeviceData(device) }
+        } else {
+            OperationQueue.addOperation { onSaveDeviceData(device) }
         }
     }
 
-    override fun saveUserData(user: User) {
+    override fun saveUserData(user: User, toParallelWork: Boolean) {
         /*@formatter:off*/ Logger.i(TAG, "saveUserData(): ", "user = [" , user , "]")
         /*@formatter:on*/
-        OperationQueue.addParallelOperation {
-            databaseManagerUser.insertUser(user.toDb(configRepository.getDeviceId()))
-            pushUserData()
+        if (toParallelWork) {
+            OperationQueue.addParallelOperation { onSaveUserData(user) }
+        } else {
+            OperationQueue.addOperation { onSaveUserData(user) }
         }
     }
 
@@ -125,6 +118,25 @@ internal class ContactRepositoryImpl(
                 }
 
             })
+    }
+
+    private fun onSaveDeviceData(device: Device) {
+        val newDevice: DeviceDb = device.toDb()
+        val savedDevices: List<DeviceDb> = databaseManagerDevice.getDevices()
+        if (!savedDevices.map { it.copy(rowId = null) }.contains(newDevice)) {
+            databaseManagerDevice.insertDevice(device.toDb())
+            /*@formatter:off*/ Logger.i(TAG, "saveDeviceData(): ", "Device saved")
+            /*@formatter:on*/
+        } else {
+            /*@formatter:off*/ Logger.i(TAG, "saveDeviceData(): ", "Device NOT saved. Device is already present in database. Duplicates are not saved")
+            /*@formatter:on*/
+        }
+        pushDeviceData()
+    }
+
+    private fun onSaveUserData(user: User) {
+        databaseManagerUser.insertUser(user.toDb(configRepository.getDeviceId()))
+        pushUserData()
     }
 
     companion object {

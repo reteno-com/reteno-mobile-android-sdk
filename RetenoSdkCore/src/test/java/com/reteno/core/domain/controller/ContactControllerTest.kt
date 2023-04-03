@@ -163,7 +163,7 @@ class ContactControllerTest : BaseUnitTest() {
         // Then
         val expectedDevice =
             Device.createDevice(DEVICE_ID_ANDROID, EXTERNAL_DEVICE_ID, FCM_TOKEN_NEW)
-        verify(exactly = 1) { contactRepository.saveDeviceData(eq(expectedDevice)) }
+        verify(exactly = 1) { contactRepository.saveDeviceData(eq(expectedDevice), eq(false)) }
     }
 
     @Test
@@ -209,7 +209,7 @@ class ContactControllerTest : BaseUnitTest() {
         SUT.setUserData(user)
 
         // Then
-        verify(exactly = 1) { contactRepository.saveUserData(eq(user)) }
+        verify(exactly = 1) { contactRepository.saveUserData(eq(user), false) }
     }
 
     @Test

@@ -1,11 +1,7 @@
 package com.reteno.core
 
 import android.app.Activity
-import android.content.BroadcastReceiver
-import android.content.Context
-import android.content.ContextWrapper
-import android.content.Intent
-import android.content.IntentFilter
+import android.content.*
 import android.content.pm.ActivityInfo
 import android.content.pm.ResolveInfo
 import com.reteno.core.base.robolectric.BaseRobolectricTest
@@ -28,21 +24,17 @@ import com.reteno.core.util.Constants
 import com.reteno.core.util.Logger
 import com.reteno.core.util.queryBroadcastReceivers
 import com.reteno.core.view.iam.IamView
-import io.mockk.every
+import io.mockk.*
 import io.mockk.impl.annotations.RelaxedMockK
-import io.mockk.mockk
-import io.mockk.mockkConstructor
-import io.mockk.unmockkConstructor
-import io.mockk.verify
 import junit.framework.TestCase.assertNotNull
 import junit.framework.TestCase.assertTrue
 import org.junit.AfterClass
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Before
 import org.junit.BeforeClass
 import org.junit.Test
 import org.robolectric.shadows.ShadowLooper
-import java.lang.Exception
 import java.time.ZonedDateTime
 
 
@@ -136,6 +128,7 @@ class RetenoImplTest : BaseRobolectricTest() {
     private val transcript: MutableList<String> = mutableListOf()
     // endregion helper fields ---------------------------------------------------------------------
 
+    @Before
     override fun before() {
         super.before()
         every { anyConstructed<ServiceLocator>().contactControllerProvider.get() } returns contactController
@@ -162,8 +155,13 @@ class RetenoImplTest : BaseRobolectricTest() {
         retenoImpl.setUserAttributes(externalUserId = EXTERNAL_USER_ID)
 
         // Then
-        verify(exactly = 1) { contactController.setExternalUserId(eq(EXTERNAL_USER_ID)) }
-        verify(exactly = 1) { contactController.setUserData(null) }
+        verify(exactly = 1) {
+            contactController.setExternalIdAndUserData(
+                eq(EXTERNAL_USER_ID),
+                null
+            )
+        }
+        //  verify(exactly = 1) { contactController.setUserData(null) }
     }
 
     @Test
@@ -172,8 +170,12 @@ class RetenoImplTest : BaseRobolectricTest() {
         retenoImpl.setUserAttributes(EXTERNAL_USER_ID, null)
 
         // Then
-        verify(exactly = 1) { contactController.setExternalUserId(eq(EXTERNAL_USER_ID)) }
-        verify(exactly = 1) { contactController.setUserData(null) }
+        verify(exactly = 1) {
+            contactController.setExternalIdAndUserData(
+                eq(EXTERNAL_USER_ID),
+                null
+            )
+        }
     }
 
     @Test
@@ -185,14 +187,14 @@ class RetenoImplTest : BaseRobolectricTest() {
         retenoImpl.setUserAttributes(EXTERNAL_USER_ID, userFull)
 
         // Then
-        verify { contactController.setExternalUserId(eq(EXTERNAL_USER_ID)) }
-        verify { contactController.setUserData(userFull) }
+        verify { contactController.setExternalIdAndUserData((eq(EXTERNAL_USER_ID)), userFull) }
+        //  verify { contactController.setUserData(userFull) }
     }
 
     @Test
     fun givenExceptionThrown_whenSetUserData_thenExceptionSentToLogger() {
         // Given
-        every { contactController.setUserData(any()) } throws EXCEPTION
+        every { contactController.setExternalIdAndUserData(any(), any()) } throws EXCEPTION
 
         val userFull = getUserFull()
 
@@ -218,7 +220,8 @@ class RetenoImplTest : BaseRobolectricTest() {
     @Test
     fun givenExternalIdBlank_whenSetUserAttributesWithUser_thenThrowException() {
         // Given
-        val expectedException = IllegalArgumentException("externalUserId should not be null or blank")
+        val expectedException =
+            IllegalArgumentException("externalUserId should not be null or blank")
 
         // When
         val actualException = try {
@@ -288,7 +291,6 @@ class RetenoImplTest : BaseRobolectricTest() {
         // Then
         verify(exactly = 1) { eventController.trackEvent(event) }
     }
-
 
 
     @Test
