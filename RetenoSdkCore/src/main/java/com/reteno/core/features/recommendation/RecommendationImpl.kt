@@ -1,4 +1,4 @@
-package com.reteno.core.recommendation
+package com.reteno.core.features.recommendation
 
 import com.reteno.core.data.remote.model.recommendation.get.RecomBase
 import com.reteno.core.domain.controller.RecommendationController

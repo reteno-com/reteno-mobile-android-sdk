@@ -4,6 +4,7 @@ import android.content.ActivityNotFoundException
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.os.Bundle
 import com.reteno.core.RetenoApplication
 import com.reteno.core.RetenoImpl
 import com.reteno.core.domain.model.interaction.InteractionStatus
@@ -37,6 +38,10 @@ class RetenoNotificationClickedReceiver : BroadcastReceiver() {
         reteno.serviceLocator.scheduleControllerProvider.get()
     }
 
+    private val iamView by lazy {
+        reteno.serviceLocator.iamViewProvider.get()
+    }
+
     override fun onReceive(context: Context, intent: Intent?) {
         if (!isOsVersionSupported()) {
             return
@@ -53,13 +58,20 @@ class RetenoNotificationClickedReceiver : BroadcastReceiver() {
     }
 
     private fun sendInteractionStatus(intent: Intent?) {
-        intent?.extras?.getString(Constants.KEY_ES_INTERACTION_ID)?.let { interactionId ->
-            interactionController.onInteraction(interactionId, InteractionStatus.CLICKED)
-            scheduleController.forcePush()
+        if (intent?.extras?.getString(Constants.KEY_ES_IAM) != "1") {
+
+            intent?.extras?.getString(Constants.KEY_ES_INTERACTION_ID)?.let { interactionId ->
+                /*@formatter:off*/ Logger.i(TAG, "sendInteractionStatus(): ", "intent = [", intent, "]")
+                /*@formatter:on*/
+                interactionController.onInteraction(interactionId, InteractionStatus.CLICKED)
+                scheduleController.forcePush()
+            }
         }
     }
 
     private fun handleIntent(context: Context, intent: Intent?) {
+        /*@formatter:off*/ Logger.i(TAG, "handleIntent(): ", "context = [", context, "], intent = [", intent, "]")
+        /*@formatter:on*/
         intent?.extras?.let { bundle ->
             if (bundle.getBoolean(KEY_ACTION_BUTTON, false)) {
                 val notificationId = bundle.getInt(Constants.KEY_NOTIFICATION_ID, -1)
@@ -79,6 +91,8 @@ class RetenoNotificationClickedReceiver : BroadcastReceiver() {
     }
 
     private fun launchDeeplink(context: Context, deeplinkIntent: Intent) {
+        /*@formatter:off*/ Logger.i(TAG, "launchDeeplink(): ", "context = [", context, "], deeplinkIntent = [", deeplinkIntent, "]")
+        /*@formatter:on*/
         try {
             context.startActivity(deeplinkIntent)
         } catch (ex: ActivityNotFoundException) {
@@ -89,13 +103,25 @@ class RetenoNotificationClickedReceiver : BroadcastReceiver() {
     }
 
     private fun launchApp(context: Context, intent: Intent?) {
+        /*@formatter:off*/ Logger.i(TAG, "launchApp(): ", "context = [", context, "], intent = [", intent, "]")
+        /*@formatter:on*/
         val launchIntent = IntentHandler.AppLaunchIntent.getAppLaunchIntent(context)
         if (intent == null || launchIntent == null) {
             return
         }
-
         intent.extras?.let(launchIntent::putExtras)
+        intent.extras?.let(::checkIam)
         context.startActivity(launchIntent)
+    }
+
+    private fun checkIam(bundle: Bundle) {
+        /*@formatter:off*/ Logger.i(TAG, "RetenoNotificationClickedReceiver.class: checkIam(): ", "bundle = [", bundle, "]")
+        /*@formatter:on*/
+        bundle.getString(Constants.KEY_ES_IAM)
+            .takeIf { it == "1" }
+            ?.run {
+                bundle.getString(Constants.KEY_ES_INTERACTION_ID)?.let(iamView::initialize)
+            }
     }
 
     companion object {

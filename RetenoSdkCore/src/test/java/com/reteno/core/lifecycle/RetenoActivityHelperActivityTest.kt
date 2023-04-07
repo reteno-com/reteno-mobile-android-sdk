@@ -16,9 +16,6 @@ class RetenoActivityHelperActivityTest : BaseRobolectricTest() {
 
     // region helper fields ------------------------------------------------------------------------
     @RelaxedMockK
-    private lateinit var eventController: EventController
-
-    @RelaxedMockK
     private lateinit var retenoLifecycleCallbacks: RetenoLifecycleCallbacks
 
     private lateinit var activityController: ActivityController<Activity>
@@ -29,7 +26,7 @@ class RetenoActivityHelperActivityTest : BaseRobolectricTest() {
 
     override fun before() {
         super.before()
-        SUT = RetenoActivityHelperImpl(eventController)
+        SUT = RetenoActivityHelperImpl()
         activityController = Robolectric.buildActivity(Activity::class.java).setup()
         SUT.enableLifecycleCallbacks(retenoLifecycleCallbacks)
     }
@@ -44,12 +41,21 @@ class RetenoActivityHelperActivityTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun whenActivityStopped_thenLifecycleCallbackPauseCalled() {
+    fun whenActivityPaused_thenLifecycleCallbackPauseCalled() {
+        // When
+        activityController.start().resume().pause()
+
+        // Then
+        verify(exactly = 1) { retenoLifecycleCallbacks.pause(activityController.get()) }
+    }
+
+    @Test
+    fun whenActivityStopped_thenLifecycleCallbackStopCalled() {
         // When
         activityController.start().resume().pause().stop()
 
         // Then
-        verify(exactly = 1) { retenoLifecycleCallbacks.pause(activityController.get()) }
+        verify(exactly = 1) { retenoLifecycleCallbacks.stop(activityController.get()) }
     }
 
     @Test

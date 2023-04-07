@@ -404,11 +404,11 @@ class ContactRepositoryImplTest : BaseRobolectricTest() {
         verify(exactly = 3) { databaseManagerUser.getUsers(1) }
         verify(exactly = 2) { databaseManagerUser.deleteUser(userData) }
         verify(exactly = 1) { PushOperationQueue.nextOperation() }
-        verify(exactly = 2) { PushOperationQueue.removeAllOperations() }
+        verify(exactly = 0) { PushOperationQueue.removeAllOperations() }
     }
 
     @Test
-    fun whenUserPushFailedAndErrorIsNonRepeatableAndCacheNotUpdated_thenRemoveAllOperations() {
+    fun whenUserPushFailedAndErrorIsNonRepeatableAndCacheNotUpdated_thenIncorrectUserRemoved() {
         // Given
         val userData = mockk<UserDb>(relaxed = true)
         every { databaseManagerUser.getUsers(any()) } returnsMany listOf(listOf(userData), listOf(userData), emptyList())
@@ -426,7 +426,7 @@ class ContactRepositoryImplTest : BaseRobolectricTest() {
         verify(exactly = 1) { databaseManagerUser.getUsers(1) }
         verify(exactly = 1) { databaseManagerUser.deleteUser(userData) }
         verify(exactly = 0) { PushOperationQueue.nextOperation() }
-        verify(exactly = 1) { PushOperationQueue.removeAllOperations() }
+        verify(exactly = 0) { PushOperationQueue.removeAllOperations() }
     }
 
     @Test

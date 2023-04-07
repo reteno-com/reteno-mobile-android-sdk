@@ -13,6 +13,7 @@ fun ContentValues.putInteraction(interaction: InteractionDb) {
     put(InteractionSchema.COLUMN_INTERACTION_TIME, interaction.time)
     put(InteractionSchema.COLUMN_INTERACTION_STATUS, interaction.status.toString())
     put(InteractionSchema.COLUMN_INTERACTION_TOKEN, interaction.token)
+    put(InteractionSchema.COLUMN_INTERACTION_ACTION, interaction.action)
 }
 
 fun Cursor.getInteraction(): InteractionDb? {
@@ -21,14 +22,20 @@ fun Cursor.getInteraction(): InteractionDb? {
     val status = getStringOrNull(getColumnIndex(InteractionSchema.COLUMN_INTERACTION_STATUS))
     val time = getStringOrNull(getColumnIndex(InteractionSchema.COLUMN_INTERACTION_TIME))
     val token = getStringOrNull(getColumnIndex(InteractionSchema.COLUMN_INTERACTION_TOKEN))
+    val action = getStringOrNull(getColumnIndex(InteractionSchema.COLUMN_INTERACTION_ACTION))
 
-    return if (allElementsNotNull(interactionId, status, time, token)) {
+    return if (
+        allElementsNotNull(interactionId, status, time)
+        && (!token.isNullOrEmpty() || !action.isNullOrEmpty())
+    ) {
+
         InteractionDb(
             rowId = rowId,
             interactionId = interactionId!!,
             status = InteractionStatusDb.fromString(status),
             time = time!!,
-            token = token!!
+            token = token,
+            action = action
         )
     } else {
         null

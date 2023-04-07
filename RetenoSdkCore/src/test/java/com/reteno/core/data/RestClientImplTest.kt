@@ -243,6 +243,7 @@ class RestClientImplTest : BaseUnitTest() {
         // Given
         val inputStream = ByteArrayInputStream(TEST_RESPONSE.toByteArray())
         val spyCallback = spyk<ResponseCallback>()
+        every { spyCallback.onSuccess(any(), any()) } answers { spyCallback.onSuccess(secondArg<String>()) }
 
         every { httpURLConnection.responseCode } returns HttpURLConnection.HTTP_OK
         every { httpURLConnection.inputStream } returns inputStream
@@ -256,6 +257,7 @@ class RestClientImplTest : BaseUnitTest() {
         assertEquals(HttpURLConnection.HTTP_OK, httpURLConnection.responseCode)
         verify { httpURLConnection.inputStream }
         verify(inverse = true) { httpURLConnection.errorStream }
+        verify { spyCallback.onSuccess(any(), eq(TEST_RESPONSE)) }
         verify { spyCallback.onSuccess(eq(TEST_RESPONSE)) }
         verify(inverse = true) { spyCallback.onFailure(any(), any(), any()) }
         verify { httpURLConnection.disconnect() }
@@ -266,6 +268,7 @@ class RestClientImplTest : BaseUnitTest() {
         // Given
         val inputStream = ByteArrayInputStream(TEST_RESPONSE.toByteArray())
         val spyCallback = spyk<ResponseCallback>()
+        every { spyCallback.onSuccess(any(), any()) } answers { spyCallback.onSuccess(secondArg<String>()) }
 
         every { httpURLConnection.responseCode } returns HttpURLConnection.HTTP_MOVED_PERM
         every { httpURLConnection.inputStream } returns inputStream
@@ -279,6 +282,7 @@ class RestClientImplTest : BaseUnitTest() {
         assertEquals(HttpURLConnection.HTTP_MOVED_PERM, httpURLConnection.responseCode)
         verify { httpURLConnection.inputStream }
         verify(inverse = true) { httpURLConnection.errorStream }
+        verify { spyCallback.onSuccess(any(), eq(TEST_RESPONSE)) }
         verify { spyCallback.onSuccess(eq(TEST_RESPONSE)) }
         verify(inverse = true) { spyCallback.onFailure(any(), any(), any()) }
         verify { httpURLConnection.disconnect() }

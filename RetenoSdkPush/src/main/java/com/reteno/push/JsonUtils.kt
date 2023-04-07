@@ -35,8 +35,11 @@ internal object JsonUtils {
     }
 
     private fun convertNestedJSONType(value: Any): Any {
-        if (value is JSONObject) return jsonObjectToMapNonNull(value)
-        return if (value is JSONArray) jsonArrayToListNonNull(value) else value
+        return when (value) {
+            is JSONObject -> jsonObjectToMapNonNull(value)
+            is JSONArray -> jsonArrayToListNonNull(value)
+            else -> value
+        }
     }
 
     private fun jsonArrayToListNonNull(array: JSONArray): List<Any> {

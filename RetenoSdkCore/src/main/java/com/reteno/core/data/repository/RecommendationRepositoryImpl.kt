@@ -14,7 +14,7 @@ import com.reteno.core.data.remote.model.recommendation.get.RecomBase
 import com.reteno.core.domain.ResponseCallback
 import com.reteno.core.domain.model.recommendation.get.RecomRequest
 import com.reteno.core.domain.model.recommendation.post.RecomEvents
-import com.reteno.core.recommendation.GetRecommendationResponseCallback
+import com.reteno.core.features.recommendation.GetRecommendationResponseCallback
 import com.reteno.core.util.Logger
 import com.reteno.core.util.Util.formatToRemote
 import com.reteno.core.util.isNonRepeatableError

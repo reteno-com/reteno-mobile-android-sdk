@@ -38,6 +38,7 @@ internal class RestClientImpl(private val restConfig: RestConfig) :RestClient {
         private const val HEADER_ENCODING_VALUE = "gzip"
         private const val HEADER_ACCEPT = "Accept"
         private const val HEADER_ACCEPT_VALUE = "*/*"
+        internal const val HEADER_X_AMZ_META_VERSION = "x-amz-meta-version"
     }
 
 
@@ -74,7 +75,8 @@ internal class RestClientImpl(private val restConfig: RestConfig) :RestClient {
                 attachBody(urlConnection, body)
             }
             urlConnection.connect()
-            Logger.i(TAG, "makeRequest(): ", "connect, headers: ${urlConnection.headerFields}")
+            val headers: Map<String, List<String>> = urlConnection.headerFields
+            Logger.i(TAG, "makeRequest(): ", "connect, headers: $headers")
 
             val responseCode = urlConnection.responseCode
             Logger.i(TAG, "makeRequest(): ", "responseCode: ", responseCode)
@@ -83,12 +85,12 @@ internal class RestClientImpl(private val restConfig: RestConfig) :RestClient {
                 200 -> {
                     val response = urlConnection.inputStream.bufferedReader().use { it.readText() }
                     Logger.i(TAG, "makeRequest(): ", "response: ", response)
-                    responseCallback.onSuccess(response)
+                    responseCallback.onSuccess(headers, response)
                 }
                 301, 302 -> {
                     val response = urlConnection.inputStream.bufferedReader().use { it.readText() }
                     Logger.i(TAG, "makeRequest(): ", "response: ", response)
-                    responseCallback.onSuccess(response)
+                    responseCallback.onSuccess(headers, response)
                 }
                 else -> {
                     val response =
@@ -131,6 +133,7 @@ internal class RestClientImpl(private val restConfig: RestConfig) :RestClient {
                     setRequestProperty(HEADER_KEY, restConfig.accessKey)
                     setRequestProperty(HEADER_VERSION, BuildConfig.SDK_VERSION)
                 }
+                is ApiContract.InAppMessages,
                 is ApiContract.AppInbox,
                 is ApiContract.Recommendation -> {
                     setRequestProperty(HEADER_KEY, restConfig.accessKey)

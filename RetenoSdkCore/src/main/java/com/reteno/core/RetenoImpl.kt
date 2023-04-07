@@ -5,6 +5,7 @@ import android.app.Application
 import android.content.ComponentName
 import android.content.Intent
 import com.reteno.core.di.ServiceLocator
+import com.reteno.core.domain.controller.ScreenTrackingController
 import com.reteno.core.domain.model.ecom.EcomEvent
 import com.reteno.core.domain.model.event.Event
 import com.reteno.core.domain.model.user.User
@@ -16,6 +17,7 @@ import com.reteno.core.util.Constants.BROADCAST_ACTION_RETENO_APP_RESUME
 import com.reteno.core.util.Logger
 import com.reteno.core.util.isOsVersionSupported
 import com.reteno.core.util.queryBroadcastReceivers
+import com.reteno.core.view.iam.IamView
 
 
 class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleCallbacks, Reteno {
@@ -27,15 +29,16 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
     }
 
     val serviceLocator: ServiceLocator = ServiceLocator(application, accessKey)
+    private val activityHelper: RetenoActivityHelper by lazy { serviceLocator.retenoActivityHelperProvider.get() }
 
+    private val screenTrackingController: ScreenTrackingController by lazy { serviceLocator.screenTrackingControllerProvider.get() }
     private val contactController by lazy { serviceLocator.contactControllerProvider.get() }
     private val scheduleController by lazy { serviceLocator.scheduleControllerProvider.get() }
     private val eventController by lazy { serviceLocator.eventsControllerProvider.get() }
 
     override val appInbox by lazy { serviceLocator.appInboxProvider.get() }
     override val recommendation by lazy { serviceLocator.recommendationProvider.get() }
-
-    private val activityHelper: RetenoActivityHelper by lazy { serviceLocator.retenoActivityHelperProvider.get() }
+    private val iamView: IamView by lazy { serviceLocator.iamViewProvider.get() }
 
     init {
         if (isOsVersionSupported()) {
@@ -48,7 +51,23 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
         }
     }
 
-    override fun resume(activity: Activity?) {
+    override fun start(activity: Activity) {
+        if (!isOsVersionSupported()) {
+            return
+        }
+        /*@formatter:off*/ Logger.i(TAG, "start(): ", "activity = [", activity, "]")
+        /*@formatter:on*/
+    }
+
+    override fun stop(activity: Activity) {
+        if (!isOsVersionSupported()) {
+            return
+        }
+        /*@formatter:off*/ Logger.i(TAG, "stop(): ", "activity = [", activity, "]")
+        /*@formatter:on*/
+    }
+
+    override fun resume(activity: Activity) {
         if (!isOsVersionSupported()) {
             return
         }
@@ -59,6 +78,7 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
             contactController.checkIfDeviceRegistered()
             sendAppResumeBroadcast()
             startPushScheduler()
+            iamView.resume(activity)
         } catch (ex: Throwable) {
             /*@formatter:off*/ Logger.e(TAG, "resume(): ", ex)
             /*@formatter:on*/
@@ -77,7 +97,7 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
         }
     }
 
-    override fun pause(activity: Activity?) {
+    override fun pause(activity: Activity) {
         if (!isOsVersionSupported()) {
             return
         }
@@ -85,6 +105,7 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
         /*@formatter:on*/
         try {
             stopPushScheduler()
+            iamView.pause(activity)
         } catch (ex: Throwable) {
             /*@formatter:off*/ Logger.e(TAG, "pause(): ", ex)
             /*@formatter:on*/
@@ -193,7 +214,7 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
         /*@formatter:off*/ Logger.i(TAG, "autoScreenTracking(): ", "config = [" , config , "]")
         /*@formatter:on*/
         try {
-            activityHelper.autoScreenTracking(config)
+            screenTrackingController.autoScreenTracking(config)
         } catch (ex: Throwable) {
             /*@formatter:off*/ Logger.e(TAG, "autoScreenTracking(): config = [$config]", ex)
             /*@formatter:on*/
