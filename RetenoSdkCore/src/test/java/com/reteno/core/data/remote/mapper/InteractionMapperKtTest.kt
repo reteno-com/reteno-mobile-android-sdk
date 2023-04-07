@@ -16,6 +16,7 @@ class InteractionMapperKtTest : BaseUnitTest() {
         private const val INTERACTION_ID = "interactionId"
         private const val INTERACTION_TIME = "interactionTime"
         private const val INTERACTION_TOKEN = "interactionToken"
+        private const val INTERACTION_ACTION = "interactionAction"
     }
     // endregion constants -------------------------------------------------------------------------
 

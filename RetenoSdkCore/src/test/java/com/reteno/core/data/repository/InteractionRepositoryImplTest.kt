@@ -179,11 +179,11 @@ class InteractionRepositoryImplTest : BaseRobolectricTest() {
         verify(exactly = 3) { databaseManagerInteraction.getInteractions(1) }
         verify(exactly = 2) { databaseManagerInteraction.deleteInteraction(dbInteraction) }
         verify(exactly = 1) { PushOperationQueue.nextOperation() }
-        verify(exactly = 2) { PushOperationQueue.removeAllOperations() }
+        verify(exactly = 0) { PushOperationQueue.removeAllOperations() }
     }
 
     @Test
-    fun givenValidInteraction_whenInteractionPushFailedAndErrorIsNonRepeatableAndCacheNotUpdated_thenRemoveAllOperations() {
+    fun givenValidInteraction_whenInteractionPushFailedAndErrorIsNonRepeatableAndCacheNotUpdated_thenDeleteInteraction() {
         // Given
         val dbInteraction = mockk<InteractionDb>(relaxed = true)
         every { databaseManagerInteraction.getInteractions(any()) } returnsMany listOf(listOf(dbInteraction), listOf(dbInteraction), emptyList())
@@ -201,7 +201,7 @@ class InteractionRepositoryImplTest : BaseRobolectricTest() {
         verify(exactly = 1) { databaseManagerInteraction.getInteractions(1) }
         verify(exactly = 1) { databaseManagerInteraction.deleteInteraction(dbInteraction) }
         verify(exactly = 0) { PushOperationQueue.nextOperation() }
-        verify(exactly = 1) { PushOperationQueue.removeAllOperations() }
+        verify(exactly = 0) { PushOperationQueue.removeAllOperations() }
     }
 
     @Test

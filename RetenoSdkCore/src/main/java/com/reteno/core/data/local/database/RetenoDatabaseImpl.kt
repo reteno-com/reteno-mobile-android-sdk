@@ -25,7 +25,7 @@ internal class RetenoDatabaseImpl(private val context: Context) : RetenoDatabase
         /*@formatter:off*/ Logger.i(TAG, "onOpen(): ", "db = [" , db , "]")
         /*@formatter:on*/
         super.onOpen(db)
-        db?.execSQL("PRAGMA foreign_keys=ON");
+        db?.execSQL("PRAGMA foreign_keys=ON")
     }
 
     override fun onCreate(db: SQLiteDatabase) {
@@ -41,6 +41,20 @@ internal class RetenoDatabaseImpl(private val context: Context) : RetenoDatabase
         if (oldVersion == 1 && newVersion > 1) {
             try {
                 db.execSQL(DeviceSchema.SQL_UPGRADE_TABLE_VERSION_2)
+            } catch (e: SQLiteException) {
+                if (e.toString().startsWith("duplicate column name")) {
+                    /*@formatter:off*/ Logger.e(TAG, "onUpgrade(): Ignoring this exception", e)
+                    /*@formatter:on*/
+                } else {
+                    throw e
+                }
+            }
+        }
+        if(oldVersion<4){
+            try {
+                /*@formatter:off*/ Logger.i(TAG, "onUpgrade(): start update table \"Interaction\"", "old DB version = ",oldVersion,", newVersion = ",newVersion )
+                /*@formatter:on*/
+                db.execSQL(InteractionSchema.SQL_UPGRADE_TABLE_VERSION_4)
             } catch (e: SQLiteException) {
                 if (e.toString().startsWith("duplicate column name")) {
                     /*@formatter:off*/ Logger.e(TAG, "onUpgrade(): Ignoring this exception", e)

@@ -64,8 +64,9 @@ internal class InteractionRepositoryImpl(
                         if (cacheUpdated) {
                             pushInteractions()
                         }
+                    } else {
+                        PushOperationQueue.removeAllOperations()
                     }
-                    PushOperationQueue.removeAllOperations()
                 }
 
             }

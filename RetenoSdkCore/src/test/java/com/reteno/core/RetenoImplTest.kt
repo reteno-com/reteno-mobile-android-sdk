@@ -1,14 +1,15 @@
 package com.reteno.core
 
+import android.app.Activity
 import android.content.*
 import android.content.pm.ActivityInfo
 import android.content.pm.ResolveInfo
-import com.reteno.core.appinbox.AppInboxImpl
 import com.reteno.core.base.robolectric.BaseRobolectricTest
 import com.reteno.core.di.ServiceLocator
 import com.reteno.core.domain.controller.ContactController
 import com.reteno.core.domain.controller.EventController
 import com.reteno.core.domain.controller.ScheduleController
+import com.reteno.core.domain.controller.ScreenTrackingController
 import com.reteno.core.domain.model.ecom.EcomEvent
 import com.reteno.core.domain.model.event.Event
 import com.reteno.core.domain.model.event.Parameter
@@ -16,20 +17,24 @@ import com.reteno.core.domain.model.user.Address
 import com.reteno.core.domain.model.user.User
 import com.reteno.core.domain.model.user.UserAttributesAnonymous
 import com.reteno.core.domain.model.user.UserCustomField
-import com.reteno.core.lifecycle.RetenoActivityHelper
+import com.reteno.core.features.appinbox.AppInboxImpl
 import com.reteno.core.lifecycle.ScreenTrackingConfig
 import com.reteno.core.lifecycle.ScreenTrackingTrigger
 import com.reteno.core.util.Constants
 import com.reteno.core.util.Logger
 import com.reteno.core.util.queryBroadcastReceivers
+import com.reteno.core.view.iam.IamView
 import io.mockk.*
 import io.mockk.impl.annotations.RelaxedMockK
 import junit.framework.TestCase.assertNotNull
 import junit.framework.TestCase.assertTrue
+import org.junit.AfterClass
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Before
+import org.junit.BeforeClass
 import org.junit.Test
-import org.robolectric.shadows.ShadowLooper.shadowMainLooper
+import org.robolectric.shadows.ShadowLooper
 import java.time.ZonedDateTime
 
 
@@ -82,6 +87,18 @@ class RetenoImplTest : BaseRobolectricTest() {
         )
 
         private val EXCEPTION = Exception("MyCustomException")
+
+        @BeforeClass
+        @JvmStatic
+        fun beforeClass() {
+            mockkConstructor(ServiceLocator::class)
+        }
+
+        @AfterClass
+        @JvmStatic
+        fun afterClass() {
+            unmockkConstructor(ServiceLocator::class)
+        }
     }
     // endregion constants -------------------------------------------------------------------------
 
@@ -96,10 +113,13 @@ class RetenoImplTest : BaseRobolectricTest() {
     private lateinit var eventController: EventController
 
     @RelaxedMockK
-    private lateinit var retenoActivityHelper: RetenoActivityHelper
+    private lateinit var screenTrackingController: ScreenTrackingController
 
     @RelaxedMockK
     private lateinit var inbox: AppInboxImpl
+
+    @RelaxedMockK
+    private lateinit var iamView: IamView
 
     private val retenoImpl by lazy { RetenoImpl(application, "") }
 
@@ -108,14 +128,15 @@ class RetenoImplTest : BaseRobolectricTest() {
     private val transcript: MutableList<String> = mutableListOf()
     // endregion helper fields ---------------------------------------------------------------------
 
+    @Before
     override fun before() {
         super.before()
-        mockkConstructor(ServiceLocator::class)
         every { anyConstructed<ServiceLocator>().contactControllerProvider.get() } returns contactController
         every { anyConstructed<ServiceLocator>().scheduleControllerProvider.get() } returns scheduleController
+        every { anyConstructed<ServiceLocator>().iamViewProvider.get() } returns iamView
         every { anyConstructed<ServiceLocator>().eventsControllerProvider.get() } returns eventController
         every { anyConstructed<ServiceLocator>().appInboxProvider.get() } returns inbox
-        every { anyConstructed<ServiceLocator>().retenoActivityHelperProvider.get() } returns retenoActivityHelper
+        every { anyConstructed<ServiceLocator>().screenTrackingControllerProvider.get() } returns screenTrackingController
 
         contextWrapper = ContextWrapper(application)
         assertNotNull(contextWrapper)
@@ -124,7 +145,6 @@ class RetenoImplTest : BaseRobolectricTest() {
 
     override fun after() {
         super.after()
-        unmockkConstructor(ServiceLocator::class)
         contextWrapper = null
         transcript.clear()
     }
@@ -207,7 +227,7 @@ class RetenoImplTest : BaseRobolectricTest() {
         val actualException = try {
             retenoImpl.setUserAttributes(" ")
             null
-        } catch (e: java.lang.Exception) {
+        } catch (e: Exception) {
             e
         }
 
@@ -377,13 +397,13 @@ class RetenoImplTest : BaseRobolectricTest() {
         retenoImpl.autoScreenTracking(config)
 
         // Then
-        verify(exactly = 1) { retenoActivityHelper.autoScreenTracking(config) }
+        verify(exactly = 1) { screenTrackingController.autoScreenTracking(config) }
     }
 
     @Test
     fun givenExceptionThrown_whenAutoScreenTracking_thenExceptionSentToLogger() {
         // Given
-        every { retenoActivityHelper.autoScreenTracking(any()) } throws EXCEPTION
+        every { screenTrackingController.autoScreenTracking(any()) } throws EXCEPTION
         val config = getScreenTrackingConfig()
 
         // When
@@ -408,11 +428,13 @@ class RetenoImplTest : BaseRobolectricTest() {
     @Test
     fun whenResumeApp_thenStartScheduler() {
         // When
-        retenoImpl.resume(mockk())
+        val activity: Activity = mockk()
+        retenoImpl.resume(activity)
 
         // Then
-        verify(exactly = 1) { scheduleController.startScheduler() }
+        verify { scheduleController.startScheduler() }
         verify(exactly = 1) { contactController.checkIfDeviceRegistered() }
+        verify { iamView.resume(activity) }
     }
 
     @Test
@@ -451,10 +473,12 @@ class RetenoImplTest : BaseRobolectricTest() {
     @Test
     fun whenPauseApp_thenStopScheduler() {
         // When
-        retenoImpl.pause(mockk())
+        val activity: Activity = mockk()
+        retenoImpl.pause(activity)
 
         // Then
         verify { scheduleController.stopScheduler() }
+        verify { iamView.pause(activity) }
     }
 
     @Test
@@ -525,6 +549,14 @@ class RetenoImplTest : BaseRobolectricTest() {
     @Test
     fun whenAppResume_thenBroadcastSent() {
         // Given
+        mockkConstructor(ServiceLocator::class)
+        every { anyConstructed<ServiceLocator>().contactControllerProvider.get() } returns contactController
+        every { anyConstructed<ServiceLocator>().scheduleControllerProvider.get() } returns scheduleController
+        every { anyConstructed<ServiceLocator>().iamViewProvider.get() } returns iamView
+        every { anyConstructed<ServiceLocator>().eventsControllerProvider.get() } returns eventController
+        every { anyConstructed<ServiceLocator>().appInboxProvider.get() } returns inbox
+        every { anyConstructed<ServiceLocator>().screenTrackingControllerProvider.get() } returns screenTrackingController
+        mockQueryBroadcastReceivers()
         val receiver =
             object : BroadcastReceiver() {
                 override fun onReceive(context: Context?, intent: Intent?) {
@@ -535,13 +567,12 @@ class RetenoImplTest : BaseRobolectricTest() {
             receiver,
             IntentFilter(Constants.BROADCAST_ACTION_RETENO_APP_RESUME)
         )
-        mockQueryBroadcastReceivers()
 
         // When
         retenoImpl.resume(mockk())
 
         // Then
-        shadowMainLooper().idle()
+        ShadowLooper.shadowMainLooper().idle()
         assertTrue(transcript.contains(TRANSCRIPT_RESUME_RECEIVED))
     }
 

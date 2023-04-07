@@ -5,7 +5,7 @@ import com.reteno.core.data.repository.RecommendationRepository
 import com.reteno.core.domain.SchedulerUtils
 import com.reteno.core.domain.model.recommendation.get.RecomRequest
 import com.reteno.core.domain.model.recommendation.post.RecomEvents
-import com.reteno.core.recommendation.GetRecommendationResponseCallback
+import com.reteno.core.features.recommendation.GetRecommendationResponseCallback
 import com.reteno.core.util.Logger
 
 internal class RecommendationController(private val recommendationRepository: RecommendationRepository) {
