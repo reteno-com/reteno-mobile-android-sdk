@@ -105,12 +105,15 @@ internal class IamViewImpl(
             )
         )
         scheduleController.forcePush()
-        val url = jsEvent.payload?.url ?: return
+        val url = jsEvent.payload?.url.takeUnless { it.isNullOrBlank() } ?: return
         val deepLinkIntent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
         deepLinkIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-
-        OperationQueue.addUiOperation {
-            activityHelper.currentActivity?.startActivity(deepLinkIntent)
+        try {
+            OperationQueue.addUiOperation {
+                activityHelper.currentActivity?.startActivity(deepLinkIntent)
+            }
+        } catch (e: Throwable) {
+            Logger.e(TAG, "openUrl()", e)
         }
         teardown()
     }
@@ -135,7 +138,7 @@ internal class IamViewImpl(
     }
 
     override fun resume(activity: Activity) {
-        /*@formatter:off*/ Logger.i(TAG, "resume(): ", "activity = [", activity, "]") 
+        /*@formatter:off*/ Logger.i(TAG, "resume(): ", "activity = [", activity, "]")
         /*@formatter:on*/
         if (isViewShown.get()) {
             showIamPopupWindowOnceReady(DELAY_UI_ATTEMPTS)
@@ -154,7 +157,7 @@ internal class IamViewImpl(
     }
 
     override fun pause(activity: Activity) {
-        /*@formatter:off*/ Logger.i(TAG, "pause(): ", "activity = [", activity, "]") 
+        /*@formatter:off*/ Logger.i(TAG, "pause(): ", "activity = [", activity, "]")
         /*@formatter:on*/
         iamShowScope.coroutineContext.cancelChildren()
         if (isViewShown.get()) {
