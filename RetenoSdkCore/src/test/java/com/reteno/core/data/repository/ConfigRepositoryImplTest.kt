@@ -140,9 +140,11 @@ class ConfigRepositoryImplTest : BaseUnitTest() {
         // Given
         every { TextUtils.isEmpty(any()) } returns true
         val firebaseMockk = mockk<FirebaseMessaging>(relaxed = true)
+        every {firebaseMockk.isAutoInitEnabled} returns false
         every { FirebaseMessaging.getInstance() } returns firebaseMockk
 
         every { sharedPrefsManager.getFcmToken() } returns ""
+        every { sharedPrefsManager.saveFcmToken(anyString()) } just runs
 
         // When
         val configRepositorySpy = spyk(SUT, recordPrivateCalls = true)
