@@ -100,7 +100,9 @@ android {
 }
 
 dependencies {
-    implementation project(':RetenoSdkFcm')
+    //implementation 'com.reteno:fcm:1.6.1'
+    project(':RetenoSdkFcm')
+
 
     implementation platform("com.google.firebase:firebase-bom:31.1.0")
     implementation "com.google.firebase:firebase-messaging:23.1.0"
