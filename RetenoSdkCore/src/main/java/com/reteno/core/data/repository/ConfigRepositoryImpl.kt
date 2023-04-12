@@ -38,7 +38,8 @@ internal class ConfigRepositoryImpl(
     private fun getAndSaveFreshFcmToken() {
         /*@formatter:off*/ Logger.i(TAG, "getAndSaveFreshFcmToken(): ", "")
         /*@formatter:on*/
-        FirebaseMessaging.getInstance().token.addOnCompleteListener(OnCompleteListener { task ->
+        FirebaseMessaging.getInstance()
+            .takeIf { it.isAutoInitEnabled }?.token?.addOnCompleteListener(OnCompleteListener { task ->
             if (!task.isSuccessful) {
                 Logger.d(
                     TAG,
@@ -50,7 +51,11 @@ internal class ConfigRepositoryImpl(
 
             val freshToken = task.result
             saveFcmToken(freshToken)
-        })
+        }) ?: Logger.d(
+            TAG,
+            "setting AutoInitEnabled = false. cannot initiate FirebaseMessaging"
+        )
+        saveFcmToken("")
     }
 
     override fun saveDefaultNotificationChannel(channel: String) {
