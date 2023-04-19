@@ -10,6 +10,7 @@ import io.sentry.Hub
 import io.sentry.Sentry
 import io.sentry.SentryEvent
 import io.sentry.SentryOptions
+import kotlinx.coroutines.runBlocking
 
 object Logger {
     private const val SENTRY_DSN = BuildConfig.SENTRY_DSN
@@ -35,7 +36,7 @@ object Logger {
     @JvmStatic
     fun v(tag: String, methodName: String, vararg arguments: Any?) {
         val message = buildMessage(methodName, arguments)
-        if (BuildConfig.DEBUG || Util.isDebugView()) {
+        if (BuildConfig.DEBUG || runBlocking { Util.isDebugView() }) {
             Log.v(tag, message)
         }
     }
@@ -43,7 +44,7 @@ object Logger {
     @JvmStatic
     fun d(tag: String, methodName: String, vararg arguments: Any?) {
         val message = buildMessage(methodName, arguments)
-        if (BuildConfig.DEBUG || Util.isDebugView()) {
+        if (BuildConfig.DEBUG || runBlocking { Util.isDebugView() }) {
             Log.d(tag, message)
         }
     }
@@ -51,7 +52,7 @@ object Logger {
     @JvmStatic
     fun i(tag: String, methodName: String, vararg arguments: Any?) {
         val message = buildMessage(methodName, arguments)
-        if (BuildConfig.DEBUG || Util.isDebugView()) {
+        if (BuildConfig.DEBUG || runBlocking { Util.isDebugView() }) {
             Log.i(tag, message)
         }
     }
@@ -59,14 +60,14 @@ object Logger {
     @JvmStatic
     fun w(tag: String, methodName: String, vararg arguments: Any?) {
         val message = buildMessage(methodName, arguments)
-        if (BuildConfig.DEBUG || Util.isDebugView()) {
+        if (BuildConfig.DEBUG || runBlocking { Util.isDebugView() }) {
             Log.w(tag, message)
         }
     }
 
     @JvmStatic
     fun e(tag: String, methodName: String, tr: Throwable) {
-        if (BuildConfig.DEBUG || Util.isDebugView()) {
+        if (BuildConfig.DEBUG || runBlocking { Util.isDebugView() }) {
             Log.e(tag, methodName, tr)
         }
 
@@ -103,8 +104,14 @@ object Logger {
             val configRepository = serviceLocator.configRepositoryProvider.get()
 
             options.setTag(TAG_KEY_DEVICE_ID, configRepository.getDeviceId().id)
-            options.setTag(TAG_KEY_DEVICE_REGISTERED, configRepository.isDeviceRegistered().toString())
-            options.setTag(TAG_KEY_PUSH_SUBSCRIBED, configRepository.isNotificationsEnabled().toString())
+            options.setTag(
+                TAG_KEY_DEVICE_REGISTERED,
+                configRepository.isDeviceRegistered().toString()
+            )
+            options.setTag(
+                TAG_KEY_PUSH_SUBSCRIBED,
+                configRepository.isNotificationsEnabled().toString()
+            )
         } catch (ex: Throwable) {
             Log.e(TAG, "setApplicationTags: ", ex)
         }
@@ -113,7 +120,10 @@ object Logger {
     private fun setServicesTags(options: SentryOptions) {
         try {
             options.setTag(TAG_KEY_FCM_AVAILABLE, isFirebaseEnabled().toString())
-            options.setTag(TAG_KEY_GOOGLE_PLAY_AVAILABLE, isGooglePlayServicesAvailable().toString())
+            options.setTag(
+                TAG_KEY_GOOGLE_PLAY_AVAILABLE,
+                isGooglePlayServicesAvailable().toString()
+            )
         } catch (ex: Throwable) {
             Log.e(TAG, "setServicesTags: ", ex)
         }

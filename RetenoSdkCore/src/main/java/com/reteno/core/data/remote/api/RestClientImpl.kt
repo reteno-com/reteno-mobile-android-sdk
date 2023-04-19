@@ -6,6 +6,7 @@ import com.reteno.core.data.local.config.RestConfig
 import com.reteno.core.domain.ResponseCallback
 import com.reteno.core.util.Logger
 import com.reteno.core.util.Util
+import kotlinx.coroutines.runBlocking
 import java.io.BufferedWriter
 import java.io.OutputStreamWriter
 import java.net.HttpURLConnection
@@ -124,7 +125,7 @@ internal class RestClientImpl(private val restConfig: RestConfig) :RestClient {
 
         urlConnection.apply {
 
-            if (Util.isDebugView()) {
+            if ( runBlocking { Util.isDebugView() }) {
                 setRequestProperty(HEADER_DEBUG, "true")
             }
 
