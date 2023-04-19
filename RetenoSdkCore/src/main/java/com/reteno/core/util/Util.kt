@@ -9,6 +9,9 @@ import android.os.Bundle
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GoogleApiAvailability
 import com.reteno.core.RetenoImpl
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers.IO
+import kotlinx.coroutines.launch
 import java.io.*
 import java.time.Instant
 import java.time.ZoneId
@@ -100,9 +103,18 @@ fun isOsVersionSupported(): Boolean {
 
 object Util {
 
+    private var isDebugViewCashed: Boolean = false
+
     private val formatter = DateTimeFormatter
         .ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'")
         .withZone(ZoneId.of("UTC"))
+
+    init {
+        CoroutineScope(IO).launch {
+            val debugString = getSysProp(PROP_KEY_DEBUG_VIEW)
+            isDebugViewCashed = debugString == PROP_VALUE_DEBUG_VIEW_ENABLE
+        }
+    }
 
     @JvmStatic
     fun readFromRaw(rawResourceId: Int): String? {
@@ -143,8 +155,7 @@ object Util {
      * adb shell setprop debug.com.reteno.debug.view disable
      */
     internal fun isDebugView(): Boolean {
-        val debugString = getSysProp(PROP_KEY_DEBUG_VIEW)
-        return debugString == PROP_VALUE_DEBUG_VIEW_ENABLE
+        return isDebugViewCashed
     }
 
     fun ZonedDateTime.formatToRemote(): String {

@@ -6,11 +6,11 @@ import com.reteno.core.RetenoApplication
 import com.reteno.core.RetenoImpl
 import com.reteno.core.util.Logger
 import com.reteno.core.util.Util
-import kotlinx.coroutines.runBlocking
 import java.util.*
 import java.util.concurrent.TimeUnit
 
-internal class PushDataWorker(context: Context, params: WorkerParameters) : Worker(context, params) {
+internal class PushDataWorker(context: Context, params: WorkerParameters) :
+    Worker(context, params) {
 
     override fun doWork(): Result {
         /*@formatter:off*/ Logger.i(TAG, "doWork(): ", "")
@@ -80,7 +80,7 @@ internal class PushDataWorker(context: Context, params: WorkerParameters) : Work
         }
 
         private fun buildWorker(): PeriodicWorkRequest {
-            val initialDelay = if ( runBlocking { Util.isDebugView() }) {
+            val initialDelay = if (Util.isDebugView()) {
                 INITIAL_DELAY_DEBUG
             } else {
                 INITIAL_DELAY_DEFAULT
