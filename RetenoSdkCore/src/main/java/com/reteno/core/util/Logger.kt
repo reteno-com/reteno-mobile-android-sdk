@@ -10,7 +10,6 @@ import io.sentry.Hub
 import io.sentry.Sentry
 import io.sentry.SentryEvent
 import io.sentry.SentryOptions
-import kotlinx.coroutines.runBlocking
 
 object Logger {
     private const val SENTRY_DSN = BuildConfig.SENTRY_DSN
@@ -36,7 +35,7 @@ object Logger {
     @JvmStatic
     fun v(tag: String, methodName: String, vararg arguments: Any?) {
         val message = buildMessage(methodName, arguments)
-        if (BuildConfig.DEBUG || runBlocking { Util.isDebugView() }) {
+        if (BuildConfig.DEBUG || Util.isDebugView()) {
             Log.v(tag, message)
         }
     }
@@ -44,7 +43,7 @@ object Logger {
     @JvmStatic
     fun d(tag: String, methodName: String, vararg arguments: Any?) {
         val message = buildMessage(methodName, arguments)
-        if (BuildConfig.DEBUG || runBlocking { Util.isDebugView() }) {
+        if (BuildConfig.DEBUG || Util.isDebugView()) {
             Log.d(tag, message)
         }
     }
@@ -52,7 +51,7 @@ object Logger {
     @JvmStatic
     fun i(tag: String, methodName: String, vararg arguments: Any?) {
         val message = buildMessage(methodName, arguments)
-        if (BuildConfig.DEBUG || runBlocking { Util.isDebugView() }) {
+        if (BuildConfig.DEBUG || Util.isDebugView()) {
             Log.i(tag, message)
         }
     }
@@ -60,14 +59,14 @@ object Logger {
     @JvmStatic
     fun w(tag: String, methodName: String, vararg arguments: Any?) {
         val message = buildMessage(methodName, arguments)
-        if (BuildConfig.DEBUG || runBlocking { Util.isDebugView() }) {
+        if (BuildConfig.DEBUG || Util.isDebugView()) {
             Log.w(tag, message)
         }
     }
 
     @JvmStatic
     fun e(tag: String, methodName: String, tr: Throwable) {
-        if (BuildConfig.DEBUG || runBlocking { Util.isDebugView() }) {
+        if (BuildConfig.DEBUG || Util.isDebugView()) {
             Log.e(tag, methodName, tr)
         }
 

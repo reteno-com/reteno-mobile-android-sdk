@@ -6,7 +6,6 @@ import com.reteno.core.data.local.config.RestConfig
 import com.reteno.core.domain.ResponseCallback
 import com.reteno.core.util.Logger
 import com.reteno.core.util.Util
-import kotlinx.coroutines.runBlocking
 import java.io.BufferedWriter
 import java.io.OutputStreamWriter
 import java.net.HttpURLConnection
@@ -14,7 +13,7 @@ import java.util.zip.GZIPOutputStream
 import javax.net.ssl.HttpsURLConnection
 import javax.net.ssl.SSLSocketFactory
 
-internal class RestClientImpl(private val restConfig: RestConfig) :RestClient {
+internal class RestClientImpl(private val restConfig: RestConfig) : RestClient {
 
     companion object {
         private val TAG = RestClientImpl::class.java.simpleName
@@ -125,7 +124,7 @@ internal class RestClientImpl(private val restConfig: RestConfig) :RestClient {
 
         urlConnection.apply {
 
-            if ( runBlocking { Util.isDebugView() }) {
+            if ( Util.isDebugView()) {
                 setRequestProperty(HEADER_DEBUG, "true")
             }
 

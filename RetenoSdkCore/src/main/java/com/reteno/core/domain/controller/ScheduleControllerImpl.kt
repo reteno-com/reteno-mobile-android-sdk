@@ -7,7 +7,6 @@ import com.reteno.core.data.workmanager.PushDataWorker
 import com.reteno.core.util.Logger
 import com.reteno.core.util.RetenoThreadFactory
 import com.reteno.core.util.Util
-import kotlinx.coroutines.runBlocking
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
@@ -52,7 +51,7 @@ internal class ScheduleControllerImpl(
     override fun startScheduler() {
         /*@formatter:off*/ Logger.i(TAG, "startScheduler(): ", "")
         /*@formatter:on*/
-        val delay = if (runBlocking { Util.isDebugView() }) {
+        val delay = if (Util.isDebugView()) {
             REGULAR_DELAY_DEBUG_VIEW
         } else {
             REGULAR_DELAY

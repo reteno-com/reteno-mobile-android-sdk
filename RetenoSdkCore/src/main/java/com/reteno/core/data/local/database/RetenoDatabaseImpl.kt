@@ -10,8 +10,6 @@ import com.reteno.core.data.local.database.schema.*
 import com.reteno.core.data.local.database.schema.DbSchema.DATABASE_NAME
 import com.reteno.core.data.local.database.schema.DbSchema.DATABASE_VERSION
 import com.reteno.core.util.Logger
-import kotlinx.coroutines.Dispatchers.IO
-import kotlinx.coroutines.runBlocking
 import net.sqlcipher.Cursor
 import net.sqlcipher.DatabaseUtils
 import net.sqlcipher.database.SQLiteDatabase
@@ -21,9 +19,7 @@ import net.sqlcipher.database.SQLiteOpenHelper
 internal class RetenoDatabaseImpl(private val context: Context) : RetenoDatabase,
     SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
 
-    private val writableDatabase: SQLiteDatabase = runBlocking(IO) {
-        getWritableDatabase(BuildConfig.SQL_PASSWORD)
-    }
+    private val writableDatabase: SQLiteDatabase = getWritableDatabase(BuildConfig.SQL_PASSWORD)
 
     override fun onOpen(db: SQLiteDatabase?) {
         /*@formatter:off*/ Logger.i(TAG, "onOpen(): ", "db = [" , db , "]")
