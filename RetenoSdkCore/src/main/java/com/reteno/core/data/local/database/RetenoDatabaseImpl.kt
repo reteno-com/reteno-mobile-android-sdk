@@ -2,24 +2,42 @@ package com.reteno.core.data.local.database
 
 import android.content.ContentValues
 import android.content.Context
-import android.database.sqlite.SQLiteCantOpenDatabaseException
-import android.database.sqlite.SQLiteDatabaseLockedException
+import android.database.Cursor
+import android.database.DatabaseUtils
+import android.database.sqlite.*
 import android.os.SystemClock
 import com.reteno.core.BuildConfig
 import com.reteno.core.data.local.database.schema.*
 import com.reteno.core.data.local.database.schema.DbSchema.DATABASE_NAME
 import com.reteno.core.data.local.database.schema.DbSchema.DATABASE_VERSION
 import com.reteno.core.util.Logger
-import net.sqlcipher.Cursor
-import net.sqlcipher.DatabaseUtils
-import net.sqlcipher.database.SQLiteDatabase
-import net.sqlcipher.database.SQLiteException
-import net.sqlcipher.database.SQLiteOpenHelper
+import com.reteno.core.util.SqlStateEncrypt
+import com.reteno.core.util.Util
+import kotlinx.coroutines.Dispatchers.IO
+import kotlinx.coroutines.runBlocking
 
 internal class RetenoDatabaseImpl(private val context: Context) : RetenoDatabase,
     SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
 
-    private val writableDatabase: SQLiteDatabase = getWritableDatabase(BuildConfig.SQL_PASSWORD)
+
+    init {
+        runBlocking(IO) {
+            if (Util.getDatabaseState(
+                    context,
+                    context.getDatabasePath(DATABASE_NAME)
+                ) == SqlStateEncrypt.ENCRYPTED
+            ) {
+                Util.decrypt(
+                    context,
+                    context.getDatabasePath(DATABASE_NAME),
+                    BuildConfig.SQL_PASSWORD.toByteArray()
+                )
+            }
+        }
+    }
+
+    private val writableDatabase: SQLiteDatabase = getWritableDatabase()
+
 
     override fun onOpen(db: SQLiteDatabase?) {
         /*@formatter:off*/ Logger.i(TAG, "onOpen(): ", "db = [" , db , "]")

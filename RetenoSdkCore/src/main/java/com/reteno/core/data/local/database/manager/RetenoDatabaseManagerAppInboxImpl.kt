@@ -1,6 +1,8 @@
 package com.reteno.core.data.local.database.manager
 
 import android.content.ContentValues
+import android.database.Cursor
+import android.database.SQLException
 import androidx.core.database.getStringOrNull
 import com.reteno.core.data.local.database.RetenoDatabase
 import com.reteno.core.data.local.database.schema.AppInboxSchema
@@ -8,8 +10,6 @@ import com.reteno.core.data.local.database.util.getAppInbox
 import com.reteno.core.data.local.database.util.putAppInbox
 import com.reteno.core.data.local.model.appinbox.AppInboxMessageDb
 import com.reteno.core.util.Logger
-import net.sqlcipher.Cursor
-import net.sqlcipher.SQLException
 
 internal class RetenoDatabaseManagerAppInboxImpl(private val database: RetenoDatabase) :
     RetenoDatabaseManagerAppInbox {

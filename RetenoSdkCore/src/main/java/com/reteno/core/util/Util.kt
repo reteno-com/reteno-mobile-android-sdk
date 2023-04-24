@@ -12,6 +12,9 @@ import com.reteno.core.RetenoImpl
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import net.sqlcipher.database.SQLiteDatabase
+import net.sqlcipher.database.SQLiteStatement
 import java.io.*
 import java.time.Instant
 import java.time.ZoneId
@@ -174,6 +177,70 @@ object Util {
             propvalue = ""
         }
         return propvalue
+    }
+
+    suspend fun getDatabaseState(context: Context, dbPath: File): SqlStateEncrypt {
+        if (dbPath.exists()) {
+            return withContext(IO) {
+                SQLiteDatabase.loadLibs(context)
+                var db: SQLiteDatabase? = null
+                try {
+                    db = SQLiteDatabase.openDatabase(
+                        dbPath.absolutePath,
+                        "",
+                        null,
+                        SQLiteDatabase.OPEN_READONLY
+                    )
+                    db.version
+                    SqlStateEncrypt.UNENCRYPTED
+                } catch (e: Exception) {
+                    SqlStateEncrypt.ENCRYPTED
+                } finally {
+                    db?.close()
+                }
+            }
+        }
+        return SqlStateEncrypt.DOES_NOT_EXIST
+    }
+
+    @Throws(IOException::class)
+    suspend fun decrypt(ctxt: Context, originalFile: File, passphrase: ByteArray?) {
+        withContext(IO) {
+            SQLiteDatabase.loadLibs(ctxt)
+            try {
+                if (originalFile.exists()) {
+                    val newFile = File.createTempFile(
+                        "sqlcipherutils", "tmp",
+                        ctxt.cacheDir
+                    )
+                    var db: SQLiteDatabase = SQLiteDatabase.openDatabase(
+                        originalFile.absolutePath,
+                        passphrase, null, SQLiteDatabase.OPEN_READWRITE, null, null
+                    )
+                    val st: SQLiteStatement =
+                        db.compileStatement("ATTACH DATABASE ? AS plaintext KEY ''")
+                    st.bindString(1, newFile.absolutePath)
+                    st.execute()
+                    db.rawExecSQL("SELECT sqlcipher_export('plaintext')")
+                    db.rawExecSQL("DETACH DATABASE plaintext")
+                    val version: Int = db.version
+                    st.close()
+                    db.close()
+                    db = SQLiteDatabase.openDatabase(
+                        newFile.absolutePath, "",
+                        null, SQLiteDatabase.OPEN_READWRITE
+                    )
+                    db.version = version
+                    db.close()
+                    originalFile.delete()
+                    newFile.renameTo(originalFile)
+                } else {
+                    throw FileNotFoundException(originalFile.absolutePath + " not found")
+                }
+            } catch (ex: Exception) {
+
+            }
+        }
     }
 }
 
