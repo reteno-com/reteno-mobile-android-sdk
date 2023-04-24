@@ -103,8 +103,14 @@ object Logger {
             val configRepository = serviceLocator.configRepositoryProvider.get()
 
             options.setTag(TAG_KEY_DEVICE_ID, configRepository.getDeviceId().id)
-            options.setTag(TAG_KEY_DEVICE_REGISTERED, configRepository.isDeviceRegistered().toString())
-            options.setTag(TAG_KEY_PUSH_SUBSCRIBED, configRepository.isNotificationsEnabled().toString())
+            options.setTag(
+                TAG_KEY_DEVICE_REGISTERED,
+                configRepository.isDeviceRegistered().toString()
+            )
+            options.setTag(
+                TAG_KEY_PUSH_SUBSCRIBED,
+                configRepository.isNotificationsEnabled().toString()
+            )
         } catch (ex: Throwable) {
             Log.e(TAG, "setApplicationTags: ", ex)
         }
@@ -113,7 +119,10 @@ object Logger {
     private fun setServicesTags(options: SentryOptions) {
         try {
             options.setTag(TAG_KEY_FCM_AVAILABLE, isFirebaseEnabled().toString())
-            options.setTag(TAG_KEY_GOOGLE_PLAY_AVAILABLE, isGooglePlayServicesAvailable().toString())
+            options.setTag(
+                TAG_KEY_GOOGLE_PLAY_AVAILABLE,
+                isGooglePlayServicesAvailable().toString()
+            )
         } catch (ex: Throwable) {
             Log.e(TAG, "setServicesTags: ", ex)
         }
