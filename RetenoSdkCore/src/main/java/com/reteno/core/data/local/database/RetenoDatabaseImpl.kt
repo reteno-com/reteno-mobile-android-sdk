@@ -19,7 +19,7 @@ import net.sqlcipher.database.SQLiteOpenHelper
 internal class RetenoDatabaseImpl(private val context: Context) : RetenoDatabase,
     SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
 
-    private val writableDatabase = getWritableDatabase(BuildConfig.SQL_PASSWORD)
+    private val writableDatabase: SQLiteDatabase = getWritableDatabase(BuildConfig.SQL_PASSWORD)
 
     override fun onOpen(db: SQLiteDatabase?) {
         /*@formatter:off*/ Logger.i(TAG, "onOpen(): ", "db = [" , db , "]")
@@ -50,7 +50,7 @@ internal class RetenoDatabaseImpl(private val context: Context) : RetenoDatabase
                 }
             }
         }
-        if(oldVersion<4){
+        if (oldVersion < 4) {
             try {
                 /*@formatter:off*/ Logger.i(TAG, "onUpgrade(): start update table \"Interaction\"", "old DB version = ",oldVersion,", newVersion = ",newVersion )
                 /*@formatter:on*/

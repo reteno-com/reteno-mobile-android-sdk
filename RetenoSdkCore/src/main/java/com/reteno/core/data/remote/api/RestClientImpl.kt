@@ -13,7 +13,7 @@ import java.util.zip.GZIPOutputStream
 import javax.net.ssl.HttpsURLConnection
 import javax.net.ssl.SSLSocketFactory
 
-internal class RestClientImpl(private val restConfig: RestConfig) :RestClient {
+internal class RestClientImpl(private val restConfig: RestConfig) : RestClient {
 
     companion object {
         private val TAG = RestClientImpl::class.java.simpleName
@@ -124,7 +124,7 @@ internal class RestClientImpl(private val restConfig: RestConfig) :RestClient {
 
         urlConnection.apply {
 
-            if (Util.isDebugView()) {
+            if ( Util.isDebugView()) {
                 setRequestProperty(HEADER_DEBUG, "true")
             }
 
