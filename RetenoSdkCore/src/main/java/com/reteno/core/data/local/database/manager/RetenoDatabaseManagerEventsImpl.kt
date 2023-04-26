@@ -1,6 +1,8 @@
 package com.reteno.core.data.local.database.manager
 
 import android.content.ContentValues
+import android.database.Cursor
+import android.database.SQLException
 import androidx.core.database.getLongOrNull
 import androidx.core.database.getStringOrNull
 import com.reteno.core.data.local.database.RetenoDatabase
@@ -12,8 +14,6 @@ import com.reteno.core.data.local.model.event.EventDb
 import com.reteno.core.data.local.model.event.EventsDb
 import com.reteno.core.util.Logger
 import com.reteno.core.util.allElementsNotNull
-import net.sqlcipher.Cursor
-import net.sqlcipher.SQLException
 
 internal class RetenoDatabaseManagerEventsImpl(private val database: RetenoDatabase) :
     RetenoDatabaseManagerEvents {

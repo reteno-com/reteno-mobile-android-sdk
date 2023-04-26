@@ -179,6 +179,7 @@ object Util {
         return propvalue
     }
 
+    //TODO Delete this code when instructed to remove the sqlcipher library.
     suspend fun getDatabaseState(context: Context, dbPath: File): SqlStateEncrypt {
         if (dbPath.exists()) {
             return withContext(IO) {
@@ -192,21 +193,27 @@ object Util {
                         SQLiteDatabase.OPEN_READONLY
                     )
                     db.version
+                    /*@formatter:off*/Logger.i(TAG, "getDatabaseState(...)", "DB unencrypted")
+                    /*@formatter:on*/
                     SqlStateEncrypt.UNENCRYPTED
                 } catch (e: Exception) {
+                    /*@formatter:off*/Logger.i(TAG, "getDatabaseState(...)", "DB encrypted")
+                    /*@formatter:on*/
                     SqlStateEncrypt.ENCRYPTED
                 } finally {
                     db?.close()
                 }
             }
         }
+        /*@formatter:off*/Logger.i(TAG, "getDatabaseState(...)", "DB does not exist")
+        /*@formatter:on*/
         return SqlStateEncrypt.DOES_NOT_EXIST
     }
 
+    //TODO Delete this code when instructed to remove the sqlcipher library.
     @Throws(IOException::class)
     suspend fun decrypt(ctxt: Context, originalFile: File, passphrase: ByteArray?) {
         withContext(IO) {
-            SQLiteDatabase.loadLibs(ctxt)
             try {
                 if (originalFile.exists()) {
                     val newFile = File.createTempFile(
@@ -235,10 +242,14 @@ object Util {
                     originalFile.delete()
                     newFile.renameTo(originalFile)
                 } else {
-                    throw FileNotFoundException(originalFile.absolutePath + " not found")
+                    val throws = FileNotFoundException(originalFile.absolutePath + " not found")
+                    /*@formatter:off*/Logger.e(TAG, "decrypt(...)", throws)
+                    /*@formatter:on*/
+                    throw throws
                 }
             } catch (ex: Exception) {
-
+                /*@formatter:off*/Logger.e(TAG, "decrypt(...)", ex)
+                /*@formatter:on*/
             }
         }
     }

@@ -15,11 +15,12 @@ import com.reteno.core.util.SqlStateEncrypt
 import com.reteno.core.util.Util
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.runBlocking
+import java.io.IOException
 
 internal class RetenoDatabaseImpl(private val context: Context) : RetenoDatabase,
     SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
 
-
+    //TODO Delete this code when instructed to remove the sqlcipher library.
     init {
         runBlocking(IO) {
             if (Util.getDatabaseState(
@@ -27,17 +28,23 @@ internal class RetenoDatabaseImpl(private val context: Context) : RetenoDatabase
                     context.getDatabasePath(DATABASE_NAME)
                 ) == SqlStateEncrypt.ENCRYPTED
             ) {
-                Util.decrypt(
-                    context,
-                    context.getDatabasePath(DATABASE_NAME),
-                    BuildConfig.SQL_PASSWORD.toByteArray()
-                )
+                try {
+                    Util.decrypt(
+                        context,
+                        context.getDatabasePath(DATABASE_NAME),
+                        BuildConfig.SQL_PASSWORD.toByteArray()
+                    )
+                    /*@formatter:off*/ Logger.d(TAG, "RetenoDatabaseImpl.init{}" , "DB converted from sqlCipher")
+                    /*@formatter:on*/
+                } catch (ioe: IOException) {
+                    /*@formatter:off*/ Logger.e(TAG, "RetenoDatabaseImpl.init{}" , ioe)
+                    /*@formatter:on*/
+                }
             }
         }
     }
 
     private val writableDatabase: SQLiteDatabase = getWritableDatabase()
-
 
     override fun onOpen(db: SQLiteDatabase?) {
         /*@formatter:off*/ Logger.i(TAG, "onOpen(): ", "db = [" , db , "]")

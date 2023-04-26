@@ -1,6 +1,7 @@
 package com.reteno.core.data.local.database.manager
 
 import android.content.ContentValues
+import android.database.Cursor
 import androidx.core.database.getLongOrNull
 import androidx.core.database.getStringOrNull
 import com.reteno.core.base.robolectric.BaseRobolectricTest
@@ -23,7 +24,6 @@ import io.mockk.impl.annotations.RelaxedMockK
 import io.mockk.justRun
 import io.mockk.verify
 import junit.framework.TestCase.assertTrue
-import net.sqlcipher.Cursor
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Test

@@ -4,8 +4,6 @@ import android.app.Activity
 import android.app.Application
 import android.content.ComponentName
 import android.content.Intent
-import android.util.Log
-import com.reteno.core.data.local.database.schema.DbSchema
 import com.reteno.core.di.ServiceLocator
 import com.reteno.core.domain.controller.ScreenTrackingController
 import com.reteno.core.domain.model.ecom.EcomEvent
@@ -18,7 +16,6 @@ import com.reteno.core.lifecycle.ScreenTrackingConfig
 import com.reteno.core.util.*
 import com.reteno.core.util.Constants.BROADCAST_ACTION_RETENO_APP_RESUME
 import com.reteno.core.view.iam.IamView
-import kotlinx.coroutines.runBlocking
 
 
 class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleCallbacks, Reteno {
@@ -27,39 +24,6 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
         /*@formatter:off*/ Logger.i(TAG, "RetenoImpl(): ", "context = [" , application , "]")
         /*@formatter:on*/
         Companion.application = application
-        //TODO можливо потрібно перенести кудись в слой DB
-        Log.i(
-            "1DB exist = ",
-            runBlocking {
-                Util.getDatabaseState(
-                    application,
-                    application.getDatabasePath(DbSchema.DATABASE_NAME)
-                )
-            }.name
-        )
-        if (runBlocking {
-                Util.getDatabaseState(
-                    application.applicationContext,
-                    application.applicationContext.getDatabasePath(DbSchema.DATABASE_NAME)
-                )
-            } == SqlStateEncrypt.ENCRYPTED) {
-            runBlocking {
-                Util.decrypt(
-                    application,
-                    application.getDatabasePath(DbSchema.DATABASE_NAME),
-                    BuildConfig.SQL_PASSWORD.toByteArray()
-                )
-            }
-        }
-        Log.i(
-            "2DB exist = ",
-            runBlocking {
-                Util.getDatabaseState(
-                    application.applicationContext,
-                    application.applicationContext.getDatabasePath(DbSchema.DATABASE_NAME)
-                )
-            }.name
-        )
     }
 
     val serviceLocator: ServiceLocator = ServiceLocator(application, accessKey)

@@ -1,6 +1,7 @@
 package com.reteno.core.data.local.database.util
 
 import android.content.ContentValues
+import android.database.Cursor
 import androidx.core.database.getStringOrNull
 import com.reteno.core.base.robolectric.BaseRobolectricTest
 import com.reteno.core.data.local.database.schema.EventsSchema
@@ -12,7 +13,6 @@ import io.mockk.every
 import io.mockk.impl.annotations.MockK
 import junit.framework.TestCase.assertEquals
 import junit.framework.TestCase.assertNull
-import net.sqlcipher.Cursor
 import org.junit.Test
 import java.time.ZonedDateTime
 
