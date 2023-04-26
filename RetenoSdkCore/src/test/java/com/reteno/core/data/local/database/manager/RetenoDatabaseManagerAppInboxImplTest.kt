@@ -1,6 +1,7 @@
 package com.reteno.core.data.local.database.manager
 
 import android.content.ContentValues
+import android.database.Cursor
 import androidx.core.database.getStringOrNull
 import com.reteno.core.base.robolectric.BaseRobolectricTest
 import com.reteno.core.data.local.database.RetenoDatabase
@@ -18,7 +19,6 @@ import io.mockk.impl.annotations.RelaxedMockK
 import io.mockk.justRun
 import io.mockk.verify
 import junit.framework.TestCase.assertTrue
-import net.sqlcipher.Cursor
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import java.time.ZonedDateTime
@@ -322,7 +322,7 @@ class RetenoDatabaseManagerAppInboxImplTest : BaseRobolectricTest() {
     // region helper methods -----------------------------------------------------------------------
     private fun mockColumnIndexes() {
         every { cursor.isNull(any()) } returns false
-        
+
         every { cursor.getColumnIndex(AppInboxSchema.COLUMN_APP_INBOX_ID) } returns COLUMN_INDEX_INBOX_ID
         every { cursor.getColumnIndex(AppInboxSchema.COLUMN_APP_INBOX_STATUS) } returns COLUMN_INDEX_INBOX_STATUS
         every { cursor.getColumnIndex(AppInboxSchema.COLUMN_APP_INBOX_TIME) } returns COLUMN_INDEX_INBOX_TIME

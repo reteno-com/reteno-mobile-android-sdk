@@ -13,10 +13,8 @@ import com.reteno.core.domain.model.user.UserAttributesAnonymous
 import com.reteno.core.lifecycle.RetenoActivityHelper
 import com.reteno.core.lifecycle.RetenoLifecycleCallbacks
 import com.reteno.core.lifecycle.ScreenTrackingConfig
+import com.reteno.core.util.*
 import com.reteno.core.util.Constants.BROADCAST_ACTION_RETENO_APP_RESUME
-import com.reteno.core.util.Logger
-import com.reteno.core.util.isOsVersionSupported
-import com.reteno.core.util.queryBroadcastReceivers
 import com.reteno.core.view.iam.IamView
 
 

@@ -1,6 +1,8 @@
 package com.reteno.core.data.local.database.manager
 
 import android.content.ContentValues
+import android.database.Cursor
+import android.database.SQLException
 import androidx.core.database.getLongOrNull
 import androidx.core.database.getStringOrNull
 import com.reteno.core.data.local.database.RetenoDatabase
@@ -10,8 +12,6 @@ import com.reteno.core.data.local.database.util.getDevice
 import com.reteno.core.data.local.database.util.putDevice
 import com.reteno.core.data.local.model.device.DeviceDb
 import com.reteno.core.util.Logger
-import net.sqlcipher.Cursor
-import net.sqlcipher.SQLException
 
 internal class RetenoDatabaseManagerDeviceImpl(private val database: RetenoDatabase) :
     RetenoDatabaseManagerDevice {

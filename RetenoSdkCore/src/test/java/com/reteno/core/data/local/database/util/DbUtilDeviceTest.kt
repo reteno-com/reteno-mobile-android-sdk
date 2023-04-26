@@ -1,6 +1,7 @@
 package com.reteno.core.data.local.database.util
 
 import android.content.ContentValues
+import android.database.Cursor
 import androidx.core.database.getStringOrNull
 import com.reteno.core.base.robolectric.BaseRobolectricTest
 import com.reteno.core.data.local.database.schema.DeviceSchema
@@ -11,7 +12,6 @@ import com.reteno.core.data.local.model.device.DeviceOsDb
 import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
-import net.sqlcipher.Cursor
 import org.junit.Assert.assertEquals
 import org.junit.Test
 

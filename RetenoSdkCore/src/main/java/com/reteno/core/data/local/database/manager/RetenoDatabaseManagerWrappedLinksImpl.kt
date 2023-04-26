@@ -1,14 +1,14 @@
 package com.reteno.core.data.local.database.manager
 
 import android.content.ContentValues
+import android.database.Cursor
+import android.database.SQLException
 import androidx.core.database.getLongOrNull
 import androidx.core.database.getStringOrNull
 import com.reteno.core.data.local.database.RetenoDatabase
 import com.reteno.core.data.local.database.schema.DbSchema
 import com.reteno.core.data.local.database.schema.WrappedLinkSchema
 import com.reteno.core.util.Logger
-import net.sqlcipher.Cursor
-import net.sqlcipher.SQLException
 
 internal class RetenoDatabaseManagerWrappedLinksImpl(private val database: RetenoDatabase) :
     RetenoDatabaseManagerWrappedLink {
@@ -19,7 +19,10 @@ internal class RetenoDatabaseManagerWrappedLinksImpl(private val database: Reten
         /*@formatter:off*/ Logger.i(TAG, "insertWrappedLink(): ", "url = [", url, "]")
         /*@formatter:on*/
         contentValues.put(WrappedLinkSchema.COLUMN_URL, url)
-        database.insert(table = WrappedLinkSchema.TABLE_NAME_WRAPPED_LINK, contentValues = contentValues)
+        database.insert(
+            table = WrappedLinkSchema.TABLE_NAME_WRAPPED_LINK,
+            contentValues = contentValues
+        )
         contentValues.clear()
     }
 
@@ -72,7 +75,8 @@ internal class RetenoDatabaseManagerWrappedLinksImpl(private val database: Reten
         return wrappedLinks
     }
 
-    override fun getWrappedLinksCount(): Long = database.getRowCount(WrappedLinkSchema.TABLE_NAME_WRAPPED_LINK)
+    override fun getWrappedLinksCount(): Long =
+        database.getRowCount(WrappedLinkSchema.TABLE_NAME_WRAPPED_LINK)
 
     override fun deleteWrappedLinks(count: Int, oldest: Boolean) {
         /*@formatter:off*/ Logger.i(TAG, "deleteWrappedLinks(): ", "count = [", count, "], oldest = [", oldest, "]")
