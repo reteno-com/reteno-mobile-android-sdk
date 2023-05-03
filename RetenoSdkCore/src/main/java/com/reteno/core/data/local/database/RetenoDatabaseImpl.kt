@@ -2,24 +2,49 @@ package com.reteno.core.data.local.database
 
 import android.content.ContentValues
 import android.content.Context
-import android.database.sqlite.SQLiteCantOpenDatabaseException
-import android.database.sqlite.SQLiteDatabaseLockedException
+import android.database.Cursor
+import android.database.DatabaseUtils
+import android.database.sqlite.*
 import android.os.SystemClock
 import com.reteno.core.BuildConfig
 import com.reteno.core.data.local.database.schema.*
 import com.reteno.core.data.local.database.schema.DbSchema.DATABASE_NAME
 import com.reteno.core.data.local.database.schema.DbSchema.DATABASE_VERSION
 import com.reteno.core.util.Logger
-import net.sqlcipher.Cursor
-import net.sqlcipher.DatabaseUtils
-import net.sqlcipher.database.SQLiteDatabase
-import net.sqlcipher.database.SQLiteException
-import net.sqlcipher.database.SQLiteOpenHelper
+import com.reteno.core.util.SqlStateEncrypt
+import com.reteno.core.util.Util
+import kotlinx.coroutines.Dispatchers.IO
+import kotlinx.coroutines.runBlocking
+import java.io.IOException
 
 internal class RetenoDatabaseImpl(private val context: Context) : RetenoDatabase,
     SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
 
-    private val writableDatabase: SQLiteDatabase = getWritableDatabase(BuildConfig.SQL_PASSWORD)
+    //TODO Delete this code when instructed to remove the sqlcipher library.
+    init {
+        runBlocking(IO) {
+            if (Util.getDatabaseState(
+                    context,
+                    context.getDatabasePath(DATABASE_NAME)
+                ) == SqlStateEncrypt.ENCRYPTED
+            ) {
+                try {
+                    Util.decrypt(
+                        context,
+                        context.getDatabasePath(DATABASE_NAME),
+                        BuildConfig.SQL_PASSWORD.toByteArray()
+                    )
+                    /*@formatter:off*/ Logger.d(TAG, "RetenoDatabaseImpl.init{}" , "DB converted from sqlCipher")
+                    /*@formatter:on*/
+                } catch (ioe: IOException) {
+                    /*@formatter:off*/ Logger.e(TAG, "RetenoDatabaseImpl.init{}" , ioe)
+                    /*@formatter:on*/
+                }
+            }
+        }
+    }
+
+    private val writableDatabase: SQLiteDatabase = getWritableDatabase()
 
     override fun onOpen(db: SQLiteDatabase?) {
         /*@formatter:off*/ Logger.i(TAG, "onOpen(): ", "db = [" , db , "]")

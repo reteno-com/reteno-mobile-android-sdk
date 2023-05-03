@@ -1,8 +1,8 @@
 package com.reteno.core.data.local.database
 
 import android.content.ContentValues
-import net.sqlcipher.Cursor
-import net.sqlcipher.SQLException
+import android.database.Cursor
+import android.database.SQLException
 
 internal interface RetenoDatabase {
 

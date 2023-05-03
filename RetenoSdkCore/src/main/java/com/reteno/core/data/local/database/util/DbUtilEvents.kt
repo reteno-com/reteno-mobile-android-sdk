@@ -1,6 +1,7 @@
 package com.reteno.core.data.local.database.util
 
 import android.content.ContentValues
+import android.database.Cursor
 import androidx.core.database.getStringOrNull
 import com.reteno.core.data.local.database.schema.EventsSchema
 import com.reteno.core.data.local.model.event.EventDb
@@ -9,7 +10,6 @@ import com.reteno.core.data.local.model.event.ParameterDb
 import com.reteno.core.data.remote.mapper.listFromJson
 import com.reteno.core.data.remote.mapper.toJson
 import com.reteno.core.util.allElementsNotNull
-import net.sqlcipher.Cursor
 
 fun ContentValues.putEvents(events: EventsDb) {
     put(EventsSchema.COLUMN_EVENTS_DEVICE_ID, events.deviceId)

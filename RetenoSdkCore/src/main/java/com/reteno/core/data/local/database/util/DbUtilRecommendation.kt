@@ -1,12 +1,12 @@
 package com.reteno.core.data.local.database.util
 
 import android.content.ContentValues
+import android.database.Cursor
 import androidx.core.database.getStringOrNull
 import com.reteno.core.data.local.database.schema.RecomEventsSchema
 import com.reteno.core.data.local.model.recommendation.RecomEventDb
 import com.reteno.core.data.local.model.recommendation.RecomEventTypeDb
 import com.reteno.core.util.allElementsNotNull
-import net.sqlcipher.Cursor
 
 fun ContentValues.putRecomVariantId(recomVariantId: String) {
     put(RecomEventsSchema.COLUMN_RECOM_VARIANT_ID, recomVariantId)

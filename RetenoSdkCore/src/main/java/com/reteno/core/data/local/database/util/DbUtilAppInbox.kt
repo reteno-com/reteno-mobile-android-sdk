@@ -1,12 +1,12 @@
 package com.reteno.core.data.local.database.util
 
 import android.content.ContentValues
+import android.database.Cursor
 import androidx.core.database.getStringOrNull
 import com.reteno.core.data.local.database.schema.AppInboxSchema
 import com.reteno.core.data.local.model.appinbox.AppInboxMessageDb
 import com.reteno.core.data.local.model.appinbox.AppInboxMessageStatusDb
 import com.reteno.core.util.allElementsNotNull
-import net.sqlcipher.Cursor
 
 fun ContentValues.putAppInbox(inboxDb: AppInboxMessageDb) {
     put(AppInboxSchema.COLUMN_APP_INBOX_ID, inboxDb.id)
