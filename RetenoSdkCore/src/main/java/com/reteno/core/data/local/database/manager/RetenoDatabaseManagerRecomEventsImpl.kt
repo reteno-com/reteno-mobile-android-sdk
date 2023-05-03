@@ -1,6 +1,8 @@
 package com.reteno.core.data.local.database.manager
 
 import android.content.ContentValues
+import android.database.Cursor
+import android.database.SQLException
 import androidx.core.database.getLongOrNull
 import androidx.core.database.getStringOrNull
 import com.reteno.core.data.local.database.RetenoDatabase
@@ -11,8 +13,6 @@ import com.reteno.core.data.local.database.util.toContentValuesList
 import com.reteno.core.data.local.model.recommendation.RecomEventDb
 import com.reteno.core.data.local.model.recommendation.RecomEventsDb
 import com.reteno.core.util.Logger
-import net.sqlcipher.Cursor
-import net.sqlcipher.SQLException
 
 internal class RetenoDatabaseManagerRecomEventsImpl(private val database: RetenoDatabase) :
     RetenoDatabaseManagerRecomEvents {

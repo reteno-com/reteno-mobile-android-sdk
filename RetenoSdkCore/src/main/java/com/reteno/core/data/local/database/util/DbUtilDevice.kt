@@ -1,13 +1,13 @@
 package com.reteno.core.data.local.database.util
 
 import android.content.ContentValues
+import android.database.Cursor
 import androidx.core.database.getStringOrNull
 import com.reteno.core.data.local.database.schema.DeviceSchema
 import com.reteno.core.data.local.model.BooleanDb
 import com.reteno.core.data.local.model.device.DeviceCategoryDb
 import com.reteno.core.data.local.model.device.DeviceDb
 import com.reteno.core.data.local.model.device.DeviceOsDb
-import net.sqlcipher.Cursor
 
 fun ContentValues.putDevice(device: DeviceDb) {
     put(DeviceSchema.COLUMN_DEVICE_ID, device.deviceId)
