@@ -1,6 +1,7 @@
 package com.reteno.core.base.robolectric
 
 import android.app.Application
+import android.database.Cursor
 import android.provider.Settings
 import com.reteno.core.Reteno
 import com.reteno.core.RetenoApplication
@@ -12,7 +13,6 @@ import com.reteno.core.di.ServiceLocator
 import com.reteno.core.util.Logger
 import com.reteno.core.util.Util
 import io.mockk.*
-import net.sqlcipher.Cursor
 import java.time.ZonedDateTime
 import java.util.concurrent.Executor
 import java.util.concurrent.Executors

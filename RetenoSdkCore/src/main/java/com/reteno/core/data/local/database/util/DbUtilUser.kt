@@ -1,6 +1,7 @@
 package com.reteno.core.data.local.database.util
 
 import android.content.ContentValues
+import android.database.Cursor
 import androidx.core.database.getStringOrNull
 import com.reteno.core.data.local.database.schema.UserSchema
 import com.reteno.core.data.local.model.user.AddressDb
@@ -11,7 +12,6 @@ import com.reteno.core.data.remote.mapper.fromJson
 import com.reteno.core.data.remote.mapper.listFromJson
 import com.reteno.core.data.remote.mapper.toJson
 import com.reteno.core.util.allElementsNull
-import net.sqlcipher.Cursor
 
 fun ContentValues.putUser(user: UserDb) {
     put(UserSchema.COLUMN_DEVICE_ID, user.deviceId)
