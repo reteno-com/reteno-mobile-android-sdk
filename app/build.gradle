@@ -108,7 +108,7 @@ dependencies {
     implementation "com.google.firebase:firebase-messaging:23.1.0"
     implementation "com.google.firebase:firebase-messaging-ktx:23.1.0"
 
-    implementation "io.sentry:sentry-android:6.9.1"
+    implementation "io.sentry:sentry-android:6.18.1"
 
     implementation "androidx.navigation:navigation-fragment-ktx:2.5.3"
     implementation "androidx.navigation:navigation-ui-ktx:2.5.3"
