@@ -64,5 +64,5 @@ ext.sqlCipher = dependencyGroup {
 }
 
 ext.workManager = dependencyGroup {
-    testImplementation 'androidx.work:work-testing:2.7.1'
+    testImplementation 'androidx.work:work-testing:2.8.1'
 }

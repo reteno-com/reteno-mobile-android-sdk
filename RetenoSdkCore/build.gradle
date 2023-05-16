@@ -73,7 +73,7 @@ android {
 }
 
 dependencies {
-    api "io.sentry:sentry-android:6.9.1"
+    api "io.sentry:sentry-android:6.18.1"
     api "com.google.code.gson:gson:2.10"
 
     implementation "com.google.android.gms:play-services-base:18.1.0"
@@ -86,7 +86,7 @@ dependencies {
     implementation "net.zetetic:android-database-sqlcipher:4.5.2"
     implementation "androidx.sqlite:sqlite:2.1.0"
 
-    implementation 'androidx.work:work-runtime-ktx:2.7.1'
+    implementation 'androidx.work:work-runtime-ktx:2.8.1'
 
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4'
 
