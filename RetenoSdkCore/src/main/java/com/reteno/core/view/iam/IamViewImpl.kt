@@ -32,7 +32,11 @@ import com.reteno.core.features.iam.IamJsPayload
 import com.reteno.core.features.iam.RetenoAndroidHandler
 import com.reteno.core.lifecycle.RetenoActivityHelper
 import com.reteno.core.util.Logger
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancelChildren
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.launch
 import java.util.concurrent.atomic.AtomicBoolean
 
 internal class IamViewImpl(
@@ -69,9 +73,12 @@ internal class IamViewImpl(
                 when (jsEvent.type) {
                     IamJsEventType.WIDGET_INIT_FAILED,
                     IamJsEventType.WIDGET_RUNTIME_ERROR -> onWidgetInitFailed(jsEvent)
+
                     IamJsEventType.WIDGET_INIT_SUCCESS -> onWidgetInitSuccess()
+
                     IamJsEventType.CLICK,
                     IamJsEventType.OPEN_URL -> openUrl(jsEvent)
+
                     IamJsEventType.CLOSE_WIDGET -> closeWidget(jsEvent.payload)
                 }
             } catch (e: Exception) {
@@ -105,15 +112,16 @@ internal class IamViewImpl(
             )
         )
         scheduleController.forcePush()
-        val url = jsEvent.payload?.url.takeUnless { it.isNullOrBlank() } ?: return
-        val deepLinkIntent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-        deepLinkIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-        try {
-            OperationQueue.addUiOperation {
-                activityHelper.currentActivity?.startActivity(deepLinkIntent)
+        jsEvent.payload?.url.takeUnless { it.isNullOrBlank() }?.let {
+            val deepLinkIntent = Intent(Intent.ACTION_VIEW, Uri.parse(it))
+            deepLinkIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            try {
+                OperationQueue.addUiOperation {
+                    activityHelper.currentActivity?.startActivity(deepLinkIntent)
+                }
+            } catch (e: Throwable) {
+                Logger.e(TAG, "openUrl()", e)
             }
-        } catch (e: Throwable) {
-            Logger.e(TAG, "openUrl()", e)
         }
         teardown()
     }
