@@ -3,7 +3,6 @@ package com.reteno.push.channel
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
-import android.text.TextUtils
 import com.reteno.core.RetenoApplication
 import com.reteno.core.RetenoImpl
 import com.reteno.core.data.remote.mapper.fromJson
@@ -35,7 +34,8 @@ internal object RetenoNotificationChannel {
         val isEnabled = if (channelId.isNullOrBlank()) {
             false
         } else {
-            val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            val manager =
+                context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             val channel = manager.getNotificationChannel(channelId)
             if (channel == null) {
                 createDefaultChannel(context)
@@ -84,14 +84,13 @@ internal object RetenoNotificationChannel {
      * @param channel Default channel details.
      */
     private fun configureDefaultNotificationChannel(channel: String) {
-        try {
-            if (TextUtils.isEmpty(channel)) {
-                return
+        channel.takeUnless { it.isEmpty() }?.let {
+            try {
+                storeDefaultNotificationChannel(it)
+            } catch (t: Throwable) {
+                /*@formatter:off*/ Logger.e(TAG, "configureDefaultNotificationChannel(): ", t)
+                /*@formatter:on*/
             }
-            storeDefaultNotificationChannel(channel)
-        } catch (t: Throwable) {
-            /*@formatter:off*/ Logger.e(TAG, "configureDefaultNotificationChannel(): ", t)
-            /*@formatter:on*/
         }
     }
 
