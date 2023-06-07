@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.pm.ResolveInfo
+import android.database.sqlite.SQLiteDatabase
 import android.os.Build
 import android.os.Bundle
 import com.google.android.gms.common.ConnectionResult
@@ -13,7 +14,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import net.sqlcipher.database.SQLiteDatabase
 import net.sqlcipher.database.SQLiteStatement
 import java.io.*
 import java.time.Instant
@@ -21,6 +21,7 @@ import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
+import net.sqlcipher.database.SQLiteDatabase as CipherSQLiteDatabase
 
 fun <T : Any> allElementsNull(vararg elements: T?) = elements.all { it == null }
 
@@ -183,14 +184,14 @@ object Util {
     suspend fun getDatabaseState(context: Context, dbPath: File): SqlStateEncrypt {
         if (dbPath.exists()) {
             return withContext(IO) {
-                SQLiteDatabase.loadLibs(context)
-                var db: SQLiteDatabase? = null
+                CipherSQLiteDatabase.loadLibs(context)
+                var db: CipherSQLiteDatabase? = null
                 try {
-                    db = SQLiteDatabase.openDatabase(
+                    db = CipherSQLiteDatabase.openDatabase(
                         dbPath.absolutePath,
                         "",
                         null,
-                        SQLiteDatabase.OPEN_READONLY
+                        CipherSQLiteDatabase.OPEN_READWRITE
                     )
                     db.version
                     /*@formatter:off*/Logger.i(TAG, "getDatabaseState(...)", "DB unencrypted")
@@ -201,6 +202,8 @@ object Util {
                     /*@formatter:on*/
                     SqlStateEncrypt.ENCRYPTED
                 } finally {
+                    /*@formatter:off*/Logger.i(TAG, "getDatabaseState(...)", "finally - close DB")
+                    /*@formatter:on*/
                     db?.close()
                 }
             }
@@ -220,7 +223,7 @@ object Util {
                         "sqlcipherutils", "tmp",
                         ctxt.cacheDir
                     )
-                    var db: SQLiteDatabase = SQLiteDatabase.openDatabase(
+                    var db: CipherSQLiteDatabase = CipherSQLiteDatabase.openDatabase(
                         originalFile.absolutePath,
                         passphrase, null, SQLiteDatabase.OPEN_READWRITE, null, null
                     )
@@ -233,12 +236,11 @@ object Util {
                     val version: Int = db.version
                     st.close()
                     db.close()
-                    db = SQLiteDatabase.openDatabase(
-                        newFile.absolutePath, "",
-                        null, SQLiteDatabase.OPEN_READWRITE
+                    val db2 = SQLiteDatabase.openDatabase(
+                        newFile.absolutePath, null, SQLiteDatabase.OPEN_READWRITE
                     )
-                    db.version = version
-                    db.close()
+                    db2.version = version
+                    db2.close()
                     originalFile.delete()
                     newFile.renameTo(originalFile)
                 } else {

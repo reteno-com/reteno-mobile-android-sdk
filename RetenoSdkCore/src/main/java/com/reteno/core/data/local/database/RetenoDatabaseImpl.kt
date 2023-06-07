@@ -4,12 +4,22 @@ import android.content.ContentValues
 import android.content.Context
 import android.database.Cursor
 import android.database.DatabaseUtils
-import android.database.sqlite.*
+import android.database.sqlite.SQLiteCantOpenDatabaseException
+import android.database.sqlite.SQLiteDatabase
+import android.database.sqlite.SQLiteDatabaseLockedException
+import android.database.sqlite.SQLiteException
+import android.database.sqlite.SQLiteOpenHelper
 import android.os.SystemClock
 import com.reteno.core.BuildConfig
-import com.reteno.core.data.local.database.schema.*
+import com.reteno.core.data.local.database.schema.AppInboxSchema
 import com.reteno.core.data.local.database.schema.DbSchema.DATABASE_NAME
 import com.reteno.core.data.local.database.schema.DbSchema.DATABASE_VERSION
+import com.reteno.core.data.local.database.schema.DeviceSchema
+import com.reteno.core.data.local.database.schema.EventsSchema
+import com.reteno.core.data.local.database.schema.InteractionSchema
+import com.reteno.core.data.local.database.schema.RecomEventsSchema
+import com.reteno.core.data.local.database.schema.UserSchema
+import com.reteno.core.data.local.database.schema.WrappedLinkSchema
 import com.reteno.core.util.Logger
 import com.reteno.core.util.SqlStateEncrypt
 import com.reteno.core.util.Util
@@ -44,7 +54,7 @@ internal class RetenoDatabaseImpl(private val context: Context) : RetenoDatabase
         }
     }
 
-    private val writableDatabase: SQLiteDatabase = getWritableDatabase()
+    private val writableSQLDatabase: SQLiteDatabase by lazy { writableDatabase }
 
     override fun onOpen(db: SQLiteDatabase?) {
         /*@formatter:off*/ Logger.i(TAG, "onOpen(): ", "db = [" , db , "]")
@@ -326,7 +336,7 @@ internal class RetenoDatabaseImpl(private val context: Context) : RetenoDatabase
                 /*@formatter:on*/
             } finally {
                 try {
-                    writableDatabase.endTransaction() // May throw if transaction was never opened or DB is full.
+                    writableSQLDatabase.endTransaction() // May throw if transaction was never opened or DB is full.
                 } catch (e: IllegalStateException) {
                     /*@formatter:off*/ Logger.i(TAG, "delete(): Error closing transaction! ", e)
                     /*@formatter:on*/
@@ -426,7 +436,7 @@ internal class RetenoDatabaseImpl(private val context: Context) : RetenoDatabase
     private fun getSQLiteDatabase(): SQLiteDatabase {
         synchronized(LOCK) {
             return try {
-                writableDatabase
+                writableSQLDatabase
             } catch (e: SQLiteCantOpenDatabaseException) {
                 /*@formatter:off*/ Logger.e(TAG, "getSQLiteDatabase(): ", e)
                 /*@formatter:on*/
