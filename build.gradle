@@ -3,9 +3,6 @@ buildscript {
 
     apply from: 'config.gradle'
 
-    repositories {
-        mavenCentral()
-    }
     dependencies {
         classpath 'com.vanniktech:gradle-maven-publish-plugin:0.22.0'
         classpath "androidx.navigation:navigation-safe-args-gradle-plugin:2.5.3"

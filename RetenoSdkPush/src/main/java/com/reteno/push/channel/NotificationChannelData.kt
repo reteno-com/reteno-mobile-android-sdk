@@ -2,6 +2,7 @@ package com.reteno.push.channel
 
 import android.app.Notification
 import android.app.NotificationManager
+import androidx.annotation.Keep
 import com.google.gson.annotations.SerializedName
 
 
@@ -21,6 +22,7 @@ import com.google.gson.annotations.SerializedName
  *       "show_badge":false
  *   }
  */
+@Keep
 internal data class NotificationChannelData(
     @SerializedName("id") val id: String,
     @SerializedName("name") val name: String,
