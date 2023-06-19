@@ -100,8 +100,8 @@ android {
 }
 
 dependencies {
-    implementation 'com.reteno:fcm:1.6.6-SNAPSHOT'
-    //implementation project(':RetenoSdkFcm')
+    //implementation 'com.reteno:fcm:1.6.6-SNAPSHOT'
+    implementation project(':RetenoSdkFcm')
 
 
     implementation platform("com.google.firebase:firebase-bom:31.1.0")
