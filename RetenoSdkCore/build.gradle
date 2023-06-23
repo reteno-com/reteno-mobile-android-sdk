@@ -74,14 +74,14 @@ android {
 
 dependencies {
     api "io.sentry:sentry-android:6.18.1"
-    api "com.google.code.gson:gson:2.10"
+    api "com.google.code.gson:gson:2.10.1"
 
     implementation "com.google.android.gms:play-services-base:18.1.0"
     implementation "com.google.android.gms:play-services-appset:16.0.2"
 
     implementation "androidx.core:core-ktx:1.9.0"
     implementation 'androidx.cardview:cardview:1.0.0'
-    compileOnly "com.google.firebase:firebase-messaging-ktx:23.1.1"
+    compileOnly "com.google.firebase:firebase-messaging-ktx:23.1.2"
 
     implementation "net.zetetic:android-database-sqlcipher:4.5.2"
     implementation "androidx.sqlite:sqlite:2.1.0"

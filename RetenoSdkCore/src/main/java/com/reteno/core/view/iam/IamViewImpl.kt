@@ -82,7 +82,7 @@ internal class IamViewImpl(
                     IamJsEventType.CLOSE_WIDGET -> closeWidget(jsEvent.payload)
                 }
             } catch (e: Exception) {
-                /*@formatter:off*/ Logger.e(TAG, "onMessagePosted(): ", e)
+                /*@formatter:off*/ Logger.e(TAG, "exception onMessagePosted(): ", e)
                 /*@formatter:on*/
             }
         }
