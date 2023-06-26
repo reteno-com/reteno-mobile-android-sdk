@@ -50,10 +50,10 @@ android {
             versionNameSuffix "-debug"
 
             firebaseAppDistribution {
-                appId="1:987851207632:android:862ec0f79ede137abc7fd5"
+                appId = "1:987851207632:android:862ec0f79ede137abc7fd5"
                 serviceCredentialsFile = file(config.firebaseFile)
-                artifactType="APK"
-                groups="yalantis"
+                artifactType = "APK"
+                groups = "yalantis"
             }
         }
 
@@ -64,11 +64,11 @@ android {
             versionNameSuffix "-qa"
 
             firebaseAppDistribution {
-                appId="1:987851207632:android:862ec0f79ede137abc7fd5"
-                releaseNotesFile="release-notes.txt"
+                appId = "1:987851207632:android:862ec0f79ede137abc7fd5"
+                releaseNotesFile = "release-notes.txt"
                 serviceCredentialsFile = file(config.firebaseFile)
-                artifactType="APK"
-                groups="yalantis"
+                artifactType = "APK"
+                groups = "yalantis"
             }
         }
 
@@ -79,10 +79,10 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
 
             firebaseAppDistribution {
-                appId="1:987851207632:android:862ec0f79ede137abc7fd5"
-                releaseNotesFile="release-notes.txt"
-                artifactType="APK"
-                groups="yalantis, client"
+                appId = "1:987851207632:android:862ec0f79ede137abc7fd5"
+                releaseNotesFile = "release-notes.txt"
+                artifactType = "APK"
+                groups = "yalantis, client"
                 serviceCredentialsFile = file(config.firebaseFile)
             }
         }
@@ -100,13 +100,13 @@ android {
 }
 
 dependencies {
-    //implementation 'com.reteno:fcm:1.6.1'
+    //implementation 'com.reteno:fcm:1.6.6-SNAPSHOT'
     implementation project(':RetenoSdkFcm')
 
 
     implementation platform("com.google.firebase:firebase-bom:31.1.0")
-    implementation "com.google.firebase:firebase-messaging:23.1.0"
-    implementation "com.google.firebase:firebase-messaging-ktx:23.1.0"
+    implementation "com.google.firebase:firebase-messaging"
+    implementation "com.google.firebase:firebase-messaging-ktx"
 
     implementation "io.sentry:sentry-android:6.18.1"
 

@@ -8,6 +8,7 @@ import android.os.Bundle
 import android.text.TextUtils
 import android.widget.RemoteViews
 import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat
 import com.reteno.core.RetenoImpl
 import com.reteno.core.data.remote.mapper.listFromJson
 import com.reteno.core.util.BitmapUtil
@@ -64,6 +65,7 @@ internal object RetenoNotificationHelper {
         /*@formatter:off*/ Logger.i(TAG, "getNotificationBuilderCompat(): ", "context = [" , context , "], bundle = [" , bundle.toStringVerbose() , "]")
         /*@formatter:on*/
         val icon = getNotificationIcon()
+        val color = getNotificationIconColor()
         val title = getNotificationTitle(bundle)
         val text = getNotificationText(bundle)
         val bigPicture = getNotificationBigPictureBitmap(bundle)
@@ -76,6 +78,11 @@ internal object RetenoNotificationHelper {
             .setContentTitle(title)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setAutoCancel(true)
+        color.takeUnless { it == 0 }?.let {
+            builder
+                .setColor(ContextCompat.getColor(context, it))
+                .setStyle(NotificationCompat.DecoratedCustomViewStyle())
+        }
         text?.let(builder::setContentText)
         badgeCount?.let(builder::setNumber)
 
@@ -110,6 +117,14 @@ internal object RetenoNotificationHelper {
         /*@formatter:off*/ Logger.i(TAG, "getNotificationId(): ", "bundle = [" , bundle , "]", " notificationId = [", notificationId, "]")
         /*@formatter:on*/
         return notificationId
+    }
+
+    private fun getNotificationIconColor(): Int {
+        val context = RetenoImpl.application
+
+        val metadata = context.getApplicationMetaData()
+        val customIconColorResName = context.resources.getString(R.string.notification_icon_color)
+        return metadata.getInt(customIconColorResName)
     }
 
     private fun getNotificationIcon(): Int {
