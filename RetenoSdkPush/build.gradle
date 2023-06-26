@@ -18,6 +18,7 @@ android {
 
         consumerProguardFiles "consumer-rules.pro"
         resValue "string", "notification_icon", "com.reteno.notification_icon"
+        resValue "string", "notification_icon_color", "com.reteno.notification_icon_color"
     }
 
     buildTypes {
