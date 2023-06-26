@@ -78,7 +78,11 @@ internal object RetenoNotificationHelper {
             .setContentTitle(title)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setAutoCancel(true)
-        color.takeUnless { it == 0 }?.let { builder.setColor(ContextCompat.getColor(context, it)) }
+        color.takeUnless { it == 0 }?.let {
+            builder
+                .setColor(ContextCompat.getColor(context, it))
+                .setStyle(NotificationCompat.DecoratedCustomViewStyle())
+        }
         text?.let(builder::setContentText)
         badgeCount?.let(builder::setNumber)
 
