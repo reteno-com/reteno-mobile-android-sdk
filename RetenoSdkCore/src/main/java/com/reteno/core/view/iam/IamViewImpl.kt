@@ -7,7 +7,6 @@ import android.content.res.Resources
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.net.Uri
-import android.util.Base64
 import android.util.Log
 import android.view.Gravity
 import android.view.ViewGroup.LayoutParams
@@ -277,8 +276,9 @@ internal class IamViewImpl(
     private fun uploadHtmlIntoWebView(fullHtml: String) {
         /*@formatter:off*/ Logger.i(TAG, "uploadHtmlIntoWebView(): ")
         /*@formatter:on*/
-        val encodedHtml = Base64.encodeToString(fullHtml.toByteArray(), Base64.NO_PADDING)
-        webView.loadData(encodedHtml, MIME_TYPE, ENCODING)
+//        val encodedHtml = Base64.encodeToString(fullHtml.toByteArray(), Base64.NO_PADDING)
+//        webView.loadData(encodedHtml, MIME_TYPE, ENCODING)
+        webView.loadDataWithBaseURL("",fullHtml, MIME_TYPE,"UTF-8","")
         webView.addJavascriptInterface(retenoAndroidHandler, JS_INTERFACE_NAME)
     }
 
