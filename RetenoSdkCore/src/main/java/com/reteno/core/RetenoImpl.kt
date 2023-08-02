@@ -57,14 +57,6 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
         /*@formatter:on*/
     }
 
-    override fun stop(activity: Activity) {
-        if (!isOsVersionSupported()) {
-            return
-        }
-        /*@formatter:off*/ Logger.i(TAG, "stop(): ", "activity = [", activity, "]")
-        /*@formatter:on*/
-    }
-
     override fun resume(activity: Activity) {
         if (!isOsVersionSupported()) {
             return
@@ -83,18 +75,6 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
         }
     }
 
-    private fun sendAppResumeBroadcast() {
-        val intent =
-            Intent(BROADCAST_ACTION_RETENO_APP_RESUME).setFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES)
-        val infoList = application.queryBroadcastReceivers(intent)
-        for (info in infoList) {
-            info?.activityInfo?.let {
-                intent.component = ComponentName(it.packageName, it.name)
-                application.sendBroadcast(intent)
-            }
-        }
-    }
-
     override fun pause(activity: Activity) {
         if (!isOsVersionSupported()) {
             return
@@ -107,6 +87,26 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
         } catch (ex: Throwable) {
             /*@formatter:off*/ Logger.e(TAG, "pause(): ", ex)
             /*@formatter:on*/
+        }
+    }
+
+    override fun stop(activity: Activity) {
+        if (!isOsVersionSupported()) {
+            return
+        }
+        /*@formatter:off*/ Logger.i(TAG, "stop(): ", "activity = [", activity, "]")
+        /*@formatter:on*/
+    }
+
+    private fun sendAppResumeBroadcast() {
+        val intent =
+            Intent(BROADCAST_ACTION_RETENO_APP_RESUME).setFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES)
+        val infoList = application.queryBroadcastReceivers(intent)
+        for (info in infoList) {
+            info?.activityInfo?.let {
+                intent.component = ComponentName(it.packageName, it.name)
+                application.sendBroadcast(intent)
+            }
         }
     }
 
