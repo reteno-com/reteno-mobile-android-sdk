@@ -51,11 +51,7 @@ internal class ScheduleControllerImpl(
     override fun startScheduler() {
         /*@formatter:off*/ Logger.i(TAG, "startScheduler(): ", "")
         /*@formatter:on*/
-        val delay = if (Util.isDebugView()) {
-            REGULAR_DELAY_DEBUG_VIEW
-        } else {
-            REGULAR_DELAY
-        }
+        val delay = if (Util.isDebugView()) REGULAR_DELAY_DEBUG_VIEW else REGULAR_DELAY
         scheduler?.shutdownNow()
         scheduler = Executors.newScheduledThreadPool(1, RetenoThreadFactory())
         scheduler?.scheduleAtFixedRate(
@@ -167,7 +163,7 @@ internal class ScheduleControllerImpl(
         }
 
         PushOperationQueue.addOperation {
-            /*@formatter:off*/ Logger.i(TAG, "sendData(): ", "step: pushRecommendations")
+            /*@formatter:off*/ Logger.i(TAG, "sendData(): ", "step: pushDeeplink")
             /*@formatter:on*/
             deepLinkController.pushDeeplink()
         }

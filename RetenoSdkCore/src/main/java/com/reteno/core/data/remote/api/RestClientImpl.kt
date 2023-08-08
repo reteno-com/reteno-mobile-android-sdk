@@ -70,6 +70,7 @@ internal class RestClientImpl(private val restConfig: RestConfig) : RestClient {
             /*@formatter:on*/
             urlConnection =
                 defaultHttpConnection(method, urlWithParams, apiContract)
+            Logger.i(TAG, "makeRequest(): ", "request, headers: ${urlConnection.requestProperties}")
 
             if (body != null) {
                 attachBody(urlConnection, body)
@@ -87,11 +88,13 @@ internal class RestClientImpl(private val restConfig: RestConfig) : RestClient {
                     Logger.i(TAG, "makeRequest(): ", "response: ", response)
                     responseCallback.onSuccess(headers, response)
                 }
+
                 301, 302 -> {
                     val response = urlConnection.inputStream.bufferedReader().use { it.readText() }
                     Logger.i(TAG, "makeRequest(): ", "response: ", response)
                     responseCallback.onSuccess(headers, response)
                 }
+
                 else -> {
                     val response =
                         urlConnection.errorStream.bufferedReader().use { it.readText() }
