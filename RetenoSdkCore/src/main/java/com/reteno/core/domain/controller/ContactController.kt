@@ -14,6 +14,8 @@ class ContactController(
     private val configRepository: ConfigRepository
 ) {
 
+    private var userAttributesCache: Pair<String, User?>? = null
+
     fun setExternalUserId(id: String?) {
         /*@formatter:off*/ Logger.i(TAG, "setExternalUserId(): ", "id = [" , id , "]")
         /*@formatter:on*/
@@ -111,6 +113,12 @@ class ContactController(
     }
 
     fun setExternalIdAndUserData(externalUserId: String, user: User?) {
+        if (externalUserId == userAttributesCache?.first && user == userAttributesCache?.second) {
+            /*@formatter:off*/ Logger.i(TAG, "setExternalIdAndUserData(): ", "ExternalId and UserData are duplicated - IGNORING")
+            /*@formatter:on*/
+            return
+        }
+        userAttributesCache = externalUserId to user?.copy()
         setExternalUserId(externalUserId)
         setUserData(user)
     }
