@@ -80,7 +80,11 @@ internal class EventsRepositoryImpl(
                     /*@formatter:on*/
 
                     databaseManager.deleteEvents(events)
-                    PushOperationQueue.nextOperation()
+                    if (databaseManager.getEventsCount() > 0) {
+                        pushEvents()
+                    } else {
+                        PushOperationQueue.nextOperation()
+                    }
                 }
 
                 override fun onFailure(statusCode: Int?, response: String?, throwable: Throwable?) {
@@ -102,7 +106,8 @@ internal class EventsRepositoryImpl(
         /*@formatter:off*/ Logger.i(TAG, "clearOldEvents(): ", "outdatedTime = [" , outdatedTime , "]")
         /*@formatter:on*/
         OperationQueue.addOperation {
-            val removedEvents: List<EventDb> = databaseManager.deleteEventsByTime(outdatedTime.formatToRemote())
+            val removedEvents: List<EventDb> =
+                databaseManager.deleteEventsByTime(outdatedTime.formatToRemote())
             if (removedEvents.isNotEmpty()) {
                 /*@formatter:off*/ Logger.i(TAG, "clearOldEvents(): ", "removedEventsCount = [" , removedEvents.count() , "]")
                 /*@formatter:on*/
