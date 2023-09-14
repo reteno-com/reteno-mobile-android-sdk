@@ -23,8 +23,9 @@ class ContactController(
         val oldDeviceId = configRepository.getDeviceId()
         if (oldDeviceId.externalId != id) {
             configRepository.setExternalUserId(id)
-            val fcmToken = configRepository.getFcmToken()
-            onNewContact(fcmToken, toParallelWork = false)
+            configRepository.getFcmToken {
+                onNewContact(it, toParallelWork = false)
+            }
         }
     }
 
@@ -73,10 +74,10 @@ class ContactController(
     fun checkIfDeviceRegistered() {
         /*@formatter:off*/ Logger.i(TAG, "checkIfDeviceRegistered(): ")
         /*@formatter:on*/
-
         if (!configRepository.isDeviceRegistered()) {
-            val fcmToken = configRepository.getFcmToken()
-            onNewContact(fcmToken)
+            configRepository.getFcmToken {
+                onNewContact(it)
+            }
         }
     }
 
@@ -86,8 +87,9 @@ class ContactController(
         val currentState = configRepository.isNotificationsEnabled()
         if (notificationsEnabled != currentState) {
             configRepository.saveNotificationsEnabled(notificationsEnabled)
-            val fcmToken = configRepository.getFcmToken()
-            onNewContact(fcmToken, notificationsEnabled = notificationsEnabled)
+            configRepository.getFcmToken {
+                onNewContact(it, notificationsEnabled = notificationsEnabled)
+            }
         }
     }
 

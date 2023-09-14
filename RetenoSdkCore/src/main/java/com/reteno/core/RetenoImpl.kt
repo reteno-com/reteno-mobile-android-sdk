@@ -42,6 +42,9 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
         if (isOsVersionSupported()) {
             try {
                 activityHelper.enableLifecycleCallbacks(this)
+                clearOldData()
+                contactController.checkIfDeviceRegistered()
+                sendAppResumeBroadcast()
             } catch (t: Throwable) {
                 /*@formatter:off*/ Logger.e(TAG, "init(): ", t)
                 /*@formatter:on*/
@@ -64,9 +67,6 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
         /*@formatter:off*/ Logger.i(TAG, "resume(): ", "activity = [" , activity , "]")
         /*@formatter:on*/
         try {
-            clearOldData()
-            contactController.checkIfDeviceRegistered()
-            sendAppResumeBroadcast()
             startPushScheduler()
             iamView.resume(activity)
         } catch (ex: Throwable) {
