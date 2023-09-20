@@ -28,39 +28,37 @@ internal class ConfigRepositoryImpl(
             .takeIf { it.isNotEmpty() }
             ?.let { callback.invoke(it) }
             ?: run {
-                getAndSaveFreshFcmToken {
-                    callback.invoke(sharedPrefsManager.getFcmToken())
+                getAndSaveFreshFcmToken { token ->
+                    token?.takeIf { it.isNotEmpty() }?.let { callback.invoke(it) }
                 }
             }
     }
 
-    private fun getAndSaveFreshFcmToken(callback: () -> Unit) {
+    private fun getAndSaveFreshFcmToken(callback: (String?) -> Unit) {
         /*@formatter:off*/ Logger.i(TAG, "getAndSaveFreshFcmToken(): ", "")
         /*@formatter:on*/
         val firebaseMessaging = FirebaseMessaging.getInstance()
         if (firebaseMessaging.isAutoInitEnabled) {
             firebaseMessaging.token.addOnCompleteListener(OnCompleteListener { task ->
                 if (!task.isSuccessful) {
-                    Logger.d(
-                        TAG,
-                        "Fetching FCM registration token failed",
-                        task.exception ?: Throwable("")
-                    )
-                    callback.invoke()
+                    /*@formatter:off*/Logger.d(TAG, "Fetching FCM registration token failed", task.exception ?: Throwable(""))
+                    /*@formatter:on*/
                     return@OnCompleteListener
                 }
 
                 val freshToken = task.result
-                saveFcmToken(freshToken)
-                callback.invoke()
+                /*@formatter:off*/Logger.d(TAG, "getAndSaveFreshFcmToken()", "result: $freshToken")
+                /*@formatter:on*/
+                sharedPrefsManager.getFcmToken().takeIf { it.isNotEmpty() } ?: run {
+                    saveFcmToken(freshToken)
+                    callback.invoke(freshToken)
+                }
             })
         } else {
-            Logger.d(
-                TAG,
-                "setting AutoInitEnabled = false. cannot initiate FirebaseMessaging"
-            )
+            /*@formatter:off*/ Logger.d(TAG, "setting AutoInitEnabled = false. cannot initiate FirebaseMessaging")
+            /*@formatter:on*/
             saveFcmToken("")
-            callback.invoke()
+            callback.invoke(null)
         }
     }
 

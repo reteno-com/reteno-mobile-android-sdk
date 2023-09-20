@@ -194,7 +194,7 @@ class ContactControllerTest : BaseUnitTest() {
     }
 
     @Test
-    fun whenOnNewFcmToken_thenTokenSavedDeviceUpdated() {
+    fun whenOnNewFcmToken_andTokenSame_thenTokenNotSavedDeviceUpdated() {
         // Given
         every { configRepository.getFcmToken(any()) } answers {
             val callback = arg<((String) -> Unit)>(0)
@@ -206,9 +206,27 @@ class ContactControllerTest : BaseUnitTest() {
         SUT.onNewFcmToken(FCM_TOKEN_NEW)
 
         // Then
+        verify(exactly = 0) { configRepository.saveFcmToken(FCM_TOKEN_NEW) }
+        val expectedDevice = Device.createDevice(DEVICE_ID_ANDROID, null, FCM_TOKEN_NEW)
+        verify(exactly = 0) { contactRepository.saveDeviceData(expectedDevice) }
+    }
+
+    @Test
+    fun whenOnNewFcmToken_andTokenDifferent_thenTokenSavedDeviceUpdated() {
+        // Given
+        every { configRepository.getFcmToken(any()) } answers {
+            val callback = arg<((String) -> Unit)>(0)
+            callback.invoke(FCM_TOKEN_NEW + "different")
+        }
+        every { configRepository.getDeviceId() } returns DeviceId(DEVICE_ID_ANDROID, null)
+
+        // When
+        SUT.onNewFcmToken(FCM_TOKEN_NEW)
+
+        // Then
         verify(exactly = 1) { configRepository.saveFcmToken(FCM_TOKEN_NEW) }
         val expectedDevice = Device.createDevice(DEVICE_ID_ANDROID, null, FCM_TOKEN_NEW)
-        verify(exactly = 1) { contactRepository.saveDeviceData(expectedDevice) }
+        verify(exactly = 1) { contactRepository.saveDeviceData(expectedDevice, false) }
     }
 
     @Test
@@ -364,7 +382,7 @@ class ContactControllerTest : BaseUnitTest() {
         SUT.checkIfDeviceRegistered()
 
         // Then
-        verify(exactly = 1) { contactRepository.saveDeviceData(expectedDevice) }
+        verify(exactly = 1) { contactRepository.saveDeviceData(expectedDevice, false) }
     }
 
     @Test

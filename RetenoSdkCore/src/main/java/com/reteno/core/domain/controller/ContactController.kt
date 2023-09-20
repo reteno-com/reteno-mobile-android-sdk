@@ -55,8 +55,12 @@ class ContactController(
     fun onNewFcmToken(token: String) {
         /*@formatter:off*/ Logger.i(TAG, "onNewFcmToken(): ", "newToken = [" , token , "]")
         /*@formatter:on*/
-        configRepository.saveFcmToken(token)
-        onNewContact(token)
+        configRepository.getFcmToken { oldToken ->
+            token.takeIf { it != oldToken }?.let {
+                configRepository.saveFcmToken(it)
+                onNewContact(it, toParallelWork = false)
+            }
+        }
     }
 
     fun pushDeviceData() {
@@ -76,7 +80,7 @@ class ContactController(
         /*@formatter:on*/
         if (!configRepository.isDeviceRegistered()) {
             configRepository.getFcmToken {
-                onNewContact(it)
+                onNewContact(it, toParallelWork = false)
             }
         }
     }

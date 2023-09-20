@@ -160,8 +160,8 @@ class ConfigRepositoryImplTest : BaseUnitTest() {
         configRepositorySpy.getFcmToken {}
 
         // Then
-        verify(exactly = 2) { sharedPrefsManager.getFcmToken() }
-        verify(exactly = 1) { configRepositorySpy["getAndSaveFreshFcmToken"](any<() -> Unit>()) }
+        verify(exactly = 1) { sharedPrefsManager.getFcmToken() }
+        verify(exactly = 1) { configRepositorySpy["getAndSaveFreshFcmToken"](any<(String) -> Unit>()) }
     }
 
     @Test
@@ -181,7 +181,7 @@ class ConfigRepositoryImplTest : BaseUnitTest() {
 
         // Then
         verify(exactly = 1) { sharedPrefsManager.getFcmToken() }
-        verify(exactly = 0) { configRepositorySpy["getAndSaveFreshFcmToken"](any<() -> Unit>()) }
+        verify(exactly = 0) { configRepositorySpy["getAndSaveFreshFcmToken"](any<(String) -> Unit>()) }
     }
 
     @Test
