@@ -22,6 +22,8 @@ import com.reteno.sample.SampleApp;
 import com.reteno.sample.databinding.DialogDbWriteDeviceBinding;
 import com.reteno.sample.util.Util;
 
+import kotlin.Unit;
+
 public class DeviceWriteDialogFragment extends BaseDatabaseDialogFragment {
 
     private DialogDbWriteDeviceBinding binding;
@@ -65,25 +67,29 @@ public class DeviceWriteDialogFragment extends BaseDatabaseDialogFragment {
         Reteno reteno = ((SampleApp) requireActivity().getApplication()).getRetenoInstance();
         RetenoImpl retenoImpl = ((RetenoImpl) reteno);
         DeviceId deviceId = retenoImpl.getServiceLocator().getConfigRepositoryProvider().get().getDeviceId();
-        String pushToken = retenoImpl.getServiceLocator().getConfigRepositoryProvider().get().getFcmToken();
-        Device device = Device.createDevice(DeviceIdInternal.INSTANCE.getIdInternal(deviceId),
-                DeviceIdInternal.INSTANCE.getExternalIdInternal(deviceId),
-                pushToken,
-                null,
-                null
-        );
+        retenoImpl.getServiceLocator().getConfigRepositoryProvider().get().getFcmToken(token -> {
 
-        binding.etDeviceId.setText(device.getDeviceId());
-        binding.etExternalUserId.setText(device.getExternalUserId());
-        binding.etPushToken.setText(device.getPushToken());
-        binding.etCategory.setText(device.getCategory().toString());
-        binding.etOsType.setText(device.getOsType().toString());
-        binding.etOsVersion.setText(device.getOsVersion());
-        binding.etDeviceModel.setText(device.getDeviceModel());
-        binding.etAppVersion.setText(device.getAppVersion());
-        binding.etLanguageCode.setText(device.getLanguageCode());
-        binding.etTimeZone.setText(device.getTimeZone());
-        binding.etAdvertisingId.setText(device.getAdvertisingId());
+
+            Device device = Device.createDevice(DeviceIdInternal.INSTANCE.getIdInternal(deviceId),
+                    DeviceIdInternal.INSTANCE.getExternalIdInternal(deviceId),
+                    token,
+                    null,
+                    null
+            );
+
+            binding.etDeviceId.setText(device.getDeviceId());
+            binding.etExternalUserId.setText(device.getExternalUserId());
+            binding.etPushToken.setText(device.getPushToken());
+            binding.etCategory.setText(device.getCategory().toString());
+            binding.etOsType.setText(device.getOsType().toString());
+            binding.etOsVersion.setText(device.getOsVersion());
+            binding.etDeviceModel.setText(device.getDeviceModel());
+            binding.etAppVersion.setText(device.getAppVersion());
+            binding.etLanguageCode.setText(device.getLanguageCode());
+            binding.etTimeZone.setText(device.getTimeZone());
+            binding.etAdvertisingId.setText(device.getAdvertisingId());
+            return Unit.INSTANCE;
+        });
     }
 
     private void initListeners() {

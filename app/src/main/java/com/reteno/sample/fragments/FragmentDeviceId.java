@@ -20,6 +20,8 @@ import com.reteno.sample.util.AppSharedPreferencesManager;
 
 import java.lang.reflect.Field;
 
+import kotlin.Unit;
+
 public class FragmentDeviceId extends BaseFragment {
 
     private FragmentDeviceIdBinding binding;
@@ -77,7 +79,11 @@ public class FragmentDeviceId extends BaseFragment {
         binding.tvCurrentDeviceIdMode.setText(mode.toString());
         binding.tvCurrentDeviceId.setText(id);
         binding.tvExternalId.setText(externalId);
-        binding.etFcmToken.setText(configRepository.getFcmToken());
+        configRepository.getFcmToken(str -> {
+                    binding.etFcmToken.setText(str);
+                    return Unit.INSTANCE;
+                }
+        );
     }
 
     private void initListeners(@NonNull View view) {

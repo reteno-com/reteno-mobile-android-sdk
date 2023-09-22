@@ -1,6 +1,5 @@
 package com.reteno.core.data.repository
 
-import android.text.TextUtils
 import com.google.android.gms.tasks.OnCompleteListener
 import com.google.firebase.messaging.FirebaseMessaging
 import com.reteno.core.data.local.config.DeviceId
@@ -24,39 +23,45 @@ internal class ConfigRepositoryImpl(
         sharedPrefsManager.saveFcmToken(token)
     }
 
-    override fun getFcmToken(): String {
-        val currentToken = sharedPrefsManager.getFcmToken()
-        if (TextUtils.isEmpty(currentToken)) {
-            getAndSaveFreshFcmToken()
-        }
-
-        /*@formatter:off*/ Logger.i(TAG, "getFcmToken(): ", currentToken)
-        /*@formatter:on*/
-        return currentToken
+    override fun getFcmToken(callback: (String) -> Unit) {
+        sharedPrefsManager.getFcmToken()
+            .takeIf { it.isNotEmpty() }
+            ?.let { callback.invoke(it) }
+            ?: run {
+                getAndSaveFreshFcmToken { token ->
+                    token?.takeIf { it.isNotEmpty() }?.let { callback.invoke(it) }
+                }
+            }
     }
 
-    private fun getAndSaveFreshFcmToken() {
+    private fun getAndSaveFreshFcmToken(callback: (String?) -> Unit) {
         /*@formatter:off*/ Logger.i(TAG, "getAndSaveFreshFcmToken(): ", "")
         /*@formatter:on*/
-        FirebaseMessaging.getInstance()
-            .takeIf { it.isAutoInitEnabled }?.token?.addOnCompleteListener(OnCompleteListener { task ->
-            if (!task.isSuccessful) {
-                Logger.d(
-                    TAG,
-                    "Fetching FCM registration token failed",
-                    task.exception ?: Throwable("")
-                )
-                return@OnCompleteListener
-            }
+        val firebaseMessaging = FirebaseMessaging.getInstance()
+        if (firebaseMessaging.isAutoInitEnabled) {
+            firebaseMessaging.token.addOnCompleteListener(OnCompleteListener { task ->
+                if (!task.isSuccessful) {
+                    /*@formatter:off*/Logger.d(TAG, "Fetching FCM registration token failed", task.exception ?: Throwable(""))
+                    /*@formatter:on*/
+                    return@OnCompleteListener
+                }
 
-            val freshToken = task.result
-            saveFcmToken(freshToken)
-        }) ?: Logger.d(
-            TAG,
-            "setting AutoInitEnabled = false. cannot initiate FirebaseMessaging"
-        )
-        saveFcmToken("")
+                val freshToken = task.result
+                /*@formatter:off*/Logger.d(TAG, "getAndSaveFreshFcmToken()", "result: $freshToken")
+                /*@formatter:on*/
+                sharedPrefsManager.getFcmToken().takeIf { it.isNotEmpty() } ?: run {
+                    saveFcmToken(freshToken)
+                    callback.invoke(freshToken)
+                }
+            })
+        } else {
+            /*@formatter:off*/ Logger.d(TAG, "setting AutoInitEnabled = false. cannot initiate FirebaseMessaging")
+            /*@formatter:on*/
+            saveFcmToken("")
+            callback.invoke(null)
+        }
     }
+
 
     override fun saveDefaultNotificationChannel(channel: String) {
         sharedPrefsManager.saveDefaultNotificationChannel(channel)

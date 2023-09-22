@@ -7,14 +7,22 @@ import com.reteno.core.data.local.config.DeviceId
 import com.reteno.core.data.local.config.DeviceIdMode
 import com.reteno.core.data.local.config.RestConfig
 import com.reteno.core.data.local.sharedpref.SharedPrefsManager
-import io.mockk.*
+import io.mockk.every
 import io.mockk.impl.annotations.MockK
 import io.mockk.impl.annotations.RelaxedMockK
+import io.mockk.just
+import io.mockk.justRun
+import io.mockk.mockk
+import io.mockk.mockkStatic
+import io.mockk.runs
+import io.mockk.spyk
+import io.mockk.unmockkStatic
+import io.mockk.verify
 import org.junit.AfterClass
 import org.junit.Assert.assertEquals
 import org.junit.BeforeClass
 import org.junit.Test
-import org.mockito.Matchers.anyString
+import org.mockito.ArgumentMatchers.anyString
 
 class ConfigRepositoryImplTest : BaseUnitTest() {
 
@@ -101,11 +109,12 @@ class ConfigRepositoryImplTest : BaseUnitTest() {
         every { sharedPrefsManager.getFcmToken() } returns FCM_TOKEN
 
         // When
-        val result = SUT.getFcmToken()
+        SUT.getFcmToken {
+            assertEquals(FCM_TOKEN, it)
+        }
 
         // Then
         verify(exactly = 1) { sharedPrefsManager.getFcmToken() }
-        assertEquals(FCM_TOKEN, result)
     }
 
     @Test
@@ -140,7 +149,7 @@ class ConfigRepositoryImplTest : BaseUnitTest() {
         // Given
         every { TextUtils.isEmpty(any()) } returns true
         val firebaseMockk = mockk<FirebaseMessaging>(relaxed = true)
-        every {firebaseMockk.isAutoInitEnabled} returns false
+        every { firebaseMockk.isAutoInitEnabled } returns false
         every { FirebaseMessaging.getInstance() } returns firebaseMockk
 
         every { sharedPrefsManager.getFcmToken() } returns ""
@@ -148,11 +157,31 @@ class ConfigRepositoryImplTest : BaseUnitTest() {
 
         // When
         val configRepositorySpy = spyk(SUT, recordPrivateCalls = true)
-        configRepositorySpy.getFcmToken()
+        configRepositorySpy.getFcmToken {}
 
         // Then
         verify(exactly = 1) { sharedPrefsManager.getFcmToken() }
-        verify(exactly = 1) { configRepositorySpy["getAndSaveFreshFcmToken"]() }
+        verify(exactly = 1) { configRepositorySpy["getAndSaveFreshFcmToken"](any<(String) -> Unit>()) }
+    }
+
+    @Test
+    fun givenFcmTokenPresent_whenGetFcmToken_thenGetAndSaveFreshFcmTokenCalled() {
+        // Given
+        every { TextUtils.isEmpty(any()) } returns true
+        val firebaseMockk = mockk<FirebaseMessaging>(relaxed = true)
+        every { firebaseMockk.isAutoInitEnabled } returns false
+        every { FirebaseMessaging.getInstance() } returns firebaseMockk
+
+        every { sharedPrefsManager.getFcmToken() } returns FCM_TOKEN
+        every { sharedPrefsManager.saveFcmToken(anyString()) } just runs
+
+        // When
+        val configRepositorySpy = spyk(SUT, recordPrivateCalls = true)
+        configRepositorySpy.getFcmToken {}
+
+        // Then
+        verify(exactly = 1) { sharedPrefsManager.getFcmToken() }
+        verify(exactly = 0) { configRepositorySpy["getAndSaveFreshFcmToken"](any<(String) -> Unit>()) }
     }
 
     @Test
