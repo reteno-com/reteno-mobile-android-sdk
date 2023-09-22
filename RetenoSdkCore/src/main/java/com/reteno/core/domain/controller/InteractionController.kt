@@ -23,17 +23,18 @@ class InteractionController(
     }
 
     fun onInteraction(interactionId: String, status: InteractionStatus) {
-        val fcmToken = configRepository.getFcmToken()
-        if (fcmToken.isBlank()) {
-            /*@formatter:off*/ Logger.i(TAG, "onInteraction(): ", "interactionId = [" , interactionId , "], NO PUSH TOKEN FOUND. Terminating")
-            /*@formatter:on*/
-            return
+        configRepository.getFcmToken { pushToken ->
+            pushToken.takeIf { it.isNotBlank() }?.run {
+                val timeStamp = Util.getCurrentTimeStamp()
+                val interaction = Interaction(status, timeStamp, token = pushToken)
+                /*@formatter:off*/ Logger.i(TAG, "onInteraction(): ", "interactionId = [", interactionId, "], interaction = [", interaction.toString(), "]")
+                /*@formatter:on*/
+                saveInteraction(interactionId, interaction)
+            } ?: run {
+                /*@formatter:off*/ Logger.i(TAG, "onInteraction(): ", "interactionId = [", interactionId, "], NO PUSH TOKEN FOUND. Terminating")
+                /*@formatter:on*/
+            }
         }
-        val timeStamp = Util.getCurrentTimeStamp()
-        val interaction = Interaction(status, timeStamp, token = fcmToken)
-        /*@formatter:off*/ Logger.i(TAG, "onInteraction(): ", "interactionId = [" , interactionId , "], interaction = [" , interaction.toString() , "]")
-        /*@formatter:on*/
-        saveInteraction(interactionId, interaction)
     }
 
     fun pushInteractions() {

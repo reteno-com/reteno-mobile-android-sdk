@@ -338,7 +338,7 @@ class RetenoDatabaseManagerEventsImplTest : BaseRobolectricTest() {
         }
         verify(exactly = 1) { Logger.e(any(), any(), any()) }
         verify(exactly = 1) { cursor.close() }
-        assertTrue(actualEvents?.isEmpty() ?: false)
+        assertTrue(actualEvents.isEmpty())
     }
 
     @Test
