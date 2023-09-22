@@ -49,8 +49,10 @@ class InteractionControllerTest : BaseRobolectricTest() {
     @Test
     fun givenTokenAvailable_whenOnInteractionDelivered_thenInteractionDeliveredPassedToRepository() {
         // Given
-        every { configRepository.getFcmToken() } returns TOKEN
-
+        every { configRepository.getFcmToken(any()) } answers {
+            val callback = arg<((String) -> Unit)>(0)
+            callback.invoke(TOKEN)
+        }
         // When
         SUT.onInteraction(INTERACTION_ID, InteractionStatus.DELIVERED)
 
@@ -67,8 +69,10 @@ class InteractionControllerTest : BaseRobolectricTest() {
     @Test
     fun givenTokenAvailable_whenOnInteractionClicked_thenInteractionOpenedPassedToRepository() {
         // Given
-        every { configRepository.getFcmToken() } returns TOKEN
-
+        every { configRepository.getFcmToken(any()) } answers {
+            val callback = arg<((String) -> Unit)>(0)
+            callback.invoke(TOKEN)
+        }
         // When
         SUT.onInteraction(INTERACTION_ID, InteractionStatus.CLICKED)
 
@@ -85,8 +89,10 @@ class InteractionControllerTest : BaseRobolectricTest() {
     @Test
     fun givenTokenNotAvailable_whenOnInteraction_thenRepositoryNotCalled() {
         // Given
-        every { configRepository.getFcmToken() } returns ""
-
+        every { configRepository.getFcmToken(any()) } answers {
+            val callback = arg<((String) -> Unit)>(0)
+            callback.invoke("")
+        }
         // When
         SUT.onInteraction(INTERACTION_ID, InteractionStatus.DELIVERED)
 

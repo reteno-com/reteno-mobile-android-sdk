@@ -1,7 +1,11 @@
 package com.reteno.core
 
 import android.app.Activity
-import android.content.*
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.ContextWrapper
+import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.ActivityInfo
 import android.content.pm.ResolveInfo
 import com.reteno.core.base.robolectric.BaseRobolectricTest
@@ -24,8 +28,12 @@ import com.reteno.core.util.Constants
 import com.reteno.core.util.Logger
 import com.reteno.core.util.queryBroadcastReceivers
 import com.reteno.core.view.iam.IamView
-import io.mockk.*
+import io.mockk.every
 import io.mockk.impl.annotations.RelaxedMockK
+import io.mockk.mockk
+import io.mockk.mockkConstructor
+import io.mockk.unmockkConstructor
+import io.mockk.verify
 import junit.framework.TestCase.assertNotNull
 import junit.framework.TestCase.assertTrue
 import org.junit.AfterClass
@@ -433,7 +441,7 @@ class RetenoImplTest : BaseRobolectricTest() {
 
         // Then
         verify { scheduleController.startScheduler() }
-        verify(exactly = 1) { contactController.checkIfDeviceRegistered() }
+        verify(exactly = 2) { contactController.checkIfDeviceRegistered() }
         verify { iamView.resume(activity) }
     }
 

@@ -6,7 +6,7 @@ interface ConfigRepository {
     fun setExternalUserId(externalId: String?)
     fun getDeviceId(): DeviceId
     fun saveFcmToken(token: String)
-    fun getFcmToken(): String
+    fun getFcmToken(callback: (String) -> Unit)
     fun saveDefaultNotificationChannel(channel: String)
     fun getDefaultNotificationChannel(): String
 
