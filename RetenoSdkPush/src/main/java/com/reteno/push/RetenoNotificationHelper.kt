@@ -86,13 +86,15 @@ internal object RetenoNotificationHelper {
         text?.let(builder::setContentText)
         badgeCount?.let(builder::setNumber)
 
-        bigPicture?.let {
-            builder.setStyle(
-                NotificationCompat.BigPictureStyle()
-                    .bigPicture(it)
-                    .setBigContentTitle(title)
-                    .setSummaryText(text)
-            )
+        bigPicture?.let { bitmap ->
+            builder.setLargeIcon(bitmap)
+                .setStyle(
+                    NotificationCompat.BigPictureStyle()
+                        .bigPicture(bitmap)
+                        .setBigContentTitle(title)
+                        .setSummaryText(text)
+                        .bigLargeIcon(null)
+                )
         }
         imageCarouselRemoteViews?.let {
             builder.setStyle(NotificationCompat.DecoratedCustomViewStyle())
