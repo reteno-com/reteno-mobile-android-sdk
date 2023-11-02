@@ -6,7 +6,7 @@ import com.reteno.core.data.remote.model.device.DeviceOsRemote
 internal data class RetenoLogEventRemote(
     @SerializedName("platformName")
     var platformName: DeviceOsRemote,
-    @SerializedName("osVeersion")
+    @SerializedName("osVersion")
     var osVersion: String,
     @SerializedName("version")
     var version: String?,
