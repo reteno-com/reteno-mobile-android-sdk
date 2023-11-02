@@ -168,7 +168,7 @@ class ContactControllerTest : BaseUnitTest() {
 
         // Then
         val expectedDevice =
-            Device.createDevice(DEVICE_ID_ANDROID, EXTERNAL_DEVICE_ID, FCM_TOKEN_NEW)
+            Device.createDevice(DEVICE_ID_ANDROID, EXTERNAL_DEVICE_ID, FCM_TOKEN_NEW, configRepository.isNotificationsEnabled())
         verify(exactly = 1) { contactRepository.saveDeviceData(eq(expectedDevice), eq(false)) }
     }
 
@@ -225,7 +225,7 @@ class ContactControllerTest : BaseUnitTest() {
 
         // Then
         verify(exactly = 1) { configRepository.saveFcmToken(FCM_TOKEN_NEW) }
-        val expectedDevice = Device.createDevice(DEVICE_ID_ANDROID, null, FCM_TOKEN_NEW)
+        val expectedDevice = Device.createDevice(DEVICE_ID_ANDROID, null, FCM_TOKEN_NEW, configRepository.isNotificationsEnabled())
         verify(exactly = 1) { contactRepository.saveDeviceData(expectedDevice, false) }
     }
 
@@ -376,7 +376,7 @@ class ContactControllerTest : BaseUnitTest() {
             EXTERNAL_DEVICE_ID
         )
         val expectedDevice =
-            createDevice(DEVICE_ID_ANDROID, EXTERNAL_DEVICE_ID, FCM_TOKEN_NEW)
+            createDevice(DEVICE_ID_ANDROID, EXTERNAL_DEVICE_ID, FCM_TOKEN_NEW, configRepository.isNotificationsEnabled())
 
         // When
         SUT.checkIfDeviceRegistered()
