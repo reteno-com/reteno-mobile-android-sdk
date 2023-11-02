@@ -60,3 +60,6 @@
 -keep class * implements com.google.gson.JsonDeserializer {
   <init>();
 }
+-keep class com.reteno.core.data.remote.model** {
+    *;
+}
