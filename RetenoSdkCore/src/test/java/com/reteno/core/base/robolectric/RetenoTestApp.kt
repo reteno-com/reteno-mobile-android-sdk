@@ -55,7 +55,6 @@ class RetenoTestApp : Application(), RetenoApplication {
         justRun { Logger.w(any(), any(), *anyVararg()) }
         justRun { Logger.e(any(), any(), any()) }
         justRun { Logger.captureMessage(any()) }
-        justRun { Logger.captureEvent(any()) }
     }
 
     private fun mockObjectOperationQueue() {

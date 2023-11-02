@@ -1,6 +1,5 @@
 package com.reteno.core.data.repository
 
-import com.reteno.core.RetenoImpl
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerEvents
 import com.reteno.core.data.local.mappers.toDb
 import com.reteno.core.data.local.model.event.EventDb
@@ -14,12 +13,11 @@ import com.reteno.core.data.remote.mapper.toRemote
 import com.reteno.core.domain.ResponseCallback
 import com.reteno.core.domain.model.ecom.EcomEvent
 import com.reteno.core.domain.model.event.Event
+import com.reteno.core.domain.model.logevent.LogLevel
+import com.reteno.core.domain.model.logevent.RetenoLogEvent
 import com.reteno.core.util.Logger
 import com.reteno.core.util.Util.formatToRemote
 import com.reteno.core.util.isNonRepeatableError
-import io.sentry.SentryEvent
-import io.sentry.SentryLevel
-import io.sentry.protocol.Message
 import java.time.ZonedDateTime
 
 internal class EventsRepositoryImpl(
@@ -119,19 +117,10 @@ internal class EventsRepositoryImpl(
                         val count = it.second
 
                         val msg = "$REMOVED_EVENTS($eventKeyType) - $count"
-                        val event = SentryEvent().apply {
-                            message = Message().apply {
-                                message = msg
-                            }
-                            level = SentryLevel.INFO
-                            fingerprints = listOf(
-                                RetenoImpl.application.packageName,
-                                REMOVED_EVENTS,
-                                eventKeyType
-                            )
-
-                            setTag(TAG_KEY_EVENT_TYPE, eventKeyType)
-                        }
+                        val event = RetenoLogEvent(
+                            logLevel = LogLevel.INFO,
+                            errorMessage = msg
+                        )
                         Logger.captureEvent(event)
                     }
             }
@@ -142,7 +131,6 @@ internal class EventsRepositoryImpl(
         private val TAG = EventsRepositoryImpl::class.java.simpleName
 
         private const val REMOVED_EVENTS = "Removed events"
-        private const val TAG_KEY_EVENT_TYPE = "eventKeyType"
     }
 
 }

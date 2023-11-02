@@ -1,14 +1,12 @@
 package com.reteno.core.domain.model.device
 
 import android.content.Context
-import android.content.pm.PackageManager
-import android.content.pm.PackageManager.PackageInfoFlags
-import android.os.Build
 import android.telephony.TelephonyManager
-import androidx.core.content.pm.PackageInfoCompat
 import com.reteno.core.RetenoImpl
+import com.reteno.core.util.DeviceInfo
 import com.reteno.core.util.Logger
-import java.util.*
+import java.util.Locale
+import java.util.TimeZone
 
 
 data class Device(
@@ -43,9 +41,9 @@ data class Device(
                 pushSubscribed = pushSubscribed,
                 category = fetchDeviceCategory(),
                 osType = DeviceOS.ANDROID,
-                osVersion = fetchOsVersion(),
-                deviceModel = fetchDeviceModel(),
-                appVersion = fetchAppVersion(),
+                osVersion = DeviceInfo.fetchOsVersion(),
+                deviceModel = DeviceInfo.fetchDeviceModel(),
+                appVersion = DeviceInfo.fetchAppVersion(),
                 languageCode = fetchLanguageCode(),
                 timeZone = fetchTimeZone(),
                 advertisingId = advertisingId
@@ -71,54 +69,6 @@ data class Device(
             /*@formatter:on*/
             return deviceCategory
         }
-
-        internal fun fetchOsVersion(): String {
-            val osVersion = "${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})"
-            /*@formatter:off*/ Logger.i(TAG, "fetchOsVersion(): ", osVersion)
-            /*@formatter:on*/
-            return osVersion
-        }
-
-
-        internal fun fetchDeviceModel(): String {
-            val manufacturer = Build.MANUFACTURER
-            val model = Build.MODEL
-
-            val deviceModel = if (model.lowercase().startsWith(manufacturer.lowercase())) {
-                model.uppercase()
-            } else {
-                "${manufacturer.uppercase()} $model"
-            }
-
-            /*@formatter:off*/ Logger.i(TAG, "fetchDeviceModel(): ", deviceModel)
-            /*@formatter:on*/
-            return deviceModel
-        }
-
-        internal fun fetchAppVersion(): String? =
-            try {
-                val context = RetenoImpl.application
-
-                val pInfo = if (Build.VERSION.SDK_INT >= 33) {
-                    context.packageManager.getPackageInfo(
-                        context.packageName,
-                        PackageInfoFlags.of(0)
-                    )
-                } else {
-                    context.packageManager.getPackageInfo(context.packageName, 0)
-                }
-                val versionName = pInfo.versionName
-                val versionCode = PackageInfoCompat.getLongVersionCode(pInfo)
-
-
-                val appVersion = "$versionName ($versionCode)"
-                /*@formatter:off*/ Logger.i(TAG, "fetchAppVersion(): ", appVersion)
-                /*@formatter:on*/
-                appVersion
-            } catch (e: PackageManager.NameNotFoundException) {
-                Logger.e(TAG, "fetchAppVersion(): ", e)
-                null
-            }
 
         internal fun fetchLanguageCode(): String {
             val languageCode = Locale.getDefault().toLanguageTag()

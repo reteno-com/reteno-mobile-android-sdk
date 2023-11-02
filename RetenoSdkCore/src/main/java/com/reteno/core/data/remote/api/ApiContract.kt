@@ -87,6 +87,17 @@ internal sealed interface ApiContract {
         }
     }
 
+    sealed class LogEvent : ApiContract {
+
+        companion object {
+            private const val BASE_URL = "https://mobile-api.reteno.com/logs/v1/"
+        }
+
+        object Events : LogEvent() {
+            override val url = "${BASE_URL}events"
+        }
+    }
+
     data class Custom(override val url: String) : ApiContract
 
 }
