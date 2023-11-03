@@ -1,18 +1,16 @@
 package com.reteno.core.data.repository
 
-import com.reteno.core.RetenoImpl
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerWrappedLink
 import com.reteno.core.data.remote.OperationQueue
 import com.reteno.core.data.remote.PushOperationQueue
 import com.reteno.core.data.remote.api.ApiClient
 import com.reteno.core.data.remote.api.ApiContract
 import com.reteno.core.domain.ResponseCallback
+import com.reteno.core.domain.model.logevent.LogLevel
+import com.reteno.core.domain.model.logevent.RetenoLogEvent
 import com.reteno.core.util.Logger
 import com.reteno.core.util.Util.formatToRemote
 import com.reteno.core.util.isNonRepeatableError
-import io.sentry.SentryEvent
-import io.sentry.SentryLevel
-import io.sentry.protocol.Message
 import java.time.ZonedDateTime
 
 internal class DeeplinkRepositoryImpl(
@@ -81,13 +79,10 @@ internal class DeeplinkRepositoryImpl(
             /*@formatter:on*/
             if (count > 0) {
                 val msg = "$REMOVE_WRAPPED_LINKS - $count"
-                val event = SentryEvent().apply {
-                    message = Message().apply {
-                        message = msg
-                    }
-                    level = SentryLevel.INFO
-                    fingerprints = listOf(RetenoImpl.application.packageName, REMOVE_WRAPPED_LINKS)
-                }
+                val event = RetenoLogEvent(
+                    logLevel = LogLevel.INFO,
+                    errorMessage = msg
+                )
                 Logger.captureEvent(event)
             }
         }

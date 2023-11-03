@@ -5,10 +5,6 @@
     <uses-permission android:name="android.permission.INTERNET"/>
 
     <application>
-        <!-- TODO If using Sentry In client application the !!!tools:node="replace"!!! should be added for meta-data android:name="io.sentry.dsn"-->
-        <!-- TODO <meta-data tools:node="replace" android:name="io.sentry.dsn" android:value="https://dsn_here"/> -->
-        <meta-data
-            android:name="io.sentry.dsn"
-            android:value="https://80a079cf25c042e88e107af569d21663@sentry.reteno.com/4503937453588480" />
+
     </application>
 </manifest>

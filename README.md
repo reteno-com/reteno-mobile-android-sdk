@@ -158,15 +158,6 @@ Reteno reteno = ((CustomApplication)getApplication()).getRetenoInstance();
 val reteno = (application as CustomApplication).getRetenoInstance()
 ```
 
-> **Optional.** RetenoSDK utilizes Sentry for its internal purposes. If you are using Sentry in your application make sure to add `tools:node="replace"` in your AndroidManifest.xml for the SentryDSN meta data section.
-
-```xml
-<meta-data
-            android:name="io.sentry.dsn"
-            android:value="https://DSN_HERE"
-            tools:node="replace" />
-```
-
 > **Optional.** You may add your default icon for all Reteno notifications via AndroidManifest.xml
 
 ```xml

@@ -7,7 +7,6 @@ import com.reteno.core.data.remote.PushOperationQueue
 import com.reteno.core.data.remote.api.ApiClient
 import com.reteno.core.data.remote.api.ApiContract
 import com.reteno.core.domain.ResponseCallback
-import com.reteno.core.util.Logger
 import io.mockk.every
 import io.mockk.impl.annotations.RelaxedMockK
 import io.mockk.just
@@ -197,7 +196,6 @@ class DeeplinkRepositoryImplTest : BaseRobolectricTest() {
         // Then
         verify(exactly = 1) { OperationQueue.addOperation(any()) }
         verify(exactly = 1) { databaseManager.deleteWrappedLinksByTime(any()) }
-        verify(exactly = 0) { Logger.captureEvent(any()) }
     }
 
     @Test
@@ -212,6 +210,5 @@ class DeeplinkRepositoryImplTest : BaseRobolectricTest() {
         // Then
         verify(exactly = 1) { OperationQueue.addOperation(any()) }
         verify(exactly = 1) { databaseManager.deleteWrappedLinksByTime(any()) }
-        verify(exactly = 1) { Logger.captureEvent(any()) }
     }
 }

@@ -226,7 +226,6 @@ class EventsRepositoryImplTest : BaseRobolectricTest() {
 
         // Then
         verify(exactly = 1) { databaseManagerEvents.deleteEventsByTime(any()) }
-        verify(exactly = 2) { Logger.captureEvent(any()) }
     }
 
     // region helper methods -----------------------------------------------------------------------

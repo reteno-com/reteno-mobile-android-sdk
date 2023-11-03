@@ -96,19 +96,6 @@
             android:name="@string/notification_icon_color"
             android:resource="@android:color/holo_red_dark" />
 
-        <!-- TODO make sure to add tools:node="replace" in your app if you use Sentry in Application -->
-        <meta-data
-            android:name="io.sentry.dsn"
-            android:value="https://4da29edb20d143ab94cda3c3fe871a77@sentry.reteno.com/4503937502609408"
-            tools:node="replace" />
-
-        <!--Set tracesSampleRate to 1.0 to capture 100% of transactions for performance monitoring. We recommend adjusting this value in production. -->
-        <meta-data
-            android:name="io.sentry.traces.sample-rate"
-            android:value="1.0" /> <!-- Enable user interaction tracing to capture transactions for various UI events (such as clicks or scrolls). -->
-        <meta-data
-            android:name="io.sentry.traces.user-interaction.enable"
-            android:value="true" />
     </application>
 
 </manifest>

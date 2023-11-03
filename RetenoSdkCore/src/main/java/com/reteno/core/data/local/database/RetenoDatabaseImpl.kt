@@ -17,6 +17,7 @@ import com.reteno.core.data.local.database.schema.DbSchema.DATABASE_VERSION
 import com.reteno.core.data.local.database.schema.DeviceSchema
 import com.reteno.core.data.local.database.schema.EventsSchema
 import com.reteno.core.data.local.database.schema.InteractionSchema
+import com.reteno.core.data.local.database.schema.LogEventSchema
 import com.reteno.core.data.local.database.schema.RecomEventsSchema
 import com.reteno.core.data.local.database.schema.UserSchema
 import com.reteno.core.data.local.database.schema.WrappedLinkSchema
@@ -121,6 +122,7 @@ internal class RetenoDatabaseImpl(private val context: Context) : RetenoDatabase
         db.execSQL(RecomEventsSchema.SQL_CREATE_TABLE)
         db.execSQL(RecomEventsSchema.RecomEventSchema.SQL_CREATE_TABLE)
         db.execSQL(WrappedLinkSchema.SQL_CREATE_TABLE)
+        db.execSQL(LogEventSchema.SQL_CREATE_TABLE)
     }
 
     override fun query(

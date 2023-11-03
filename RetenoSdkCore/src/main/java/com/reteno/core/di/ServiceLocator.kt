@@ -3,6 +3,7 @@ package com.reteno.core.di
 import android.content.Context
 import com.reteno.core.data.local.database.manager.*
 import com.reteno.core.data.repository.ConfigRepository
+import com.reteno.core.data.repository.LogEventRepository
 import com.reteno.core.di.base.ProviderWeakReference
 import com.reteno.core.di.provider.*
 import com.reteno.core.di.provider.controller.*
@@ -67,6 +68,9 @@ class ServiceLocator(context: Context, accessKey: String) {
     val retenoDatabaseManagerAppInboxProvider: ProviderWeakReference<RetenoDatabaseManagerAppInbox>
         get() = retenoDatabaseManagerAppInboxProviderInternal
 
+    private val retenoDatabaseManagerLogEventProvider =
+        RetenoDatabaseManagerLogEventProvider(databaseProvider)
+
     private val retenoDatabaseManagerRecomEventsProvider =
         RetenoDatabaseManagerRecomEventsProvider(databaseProvider)
 
@@ -80,7 +84,8 @@ class ServiceLocator(context: Context, accessKey: String) {
         retenoDatabaseManagerEventsProviderInternal,
         retenoDatabaseManagerAppInboxProviderInternal,
         retenoDatabaseManagerRecomEventsProvider,
-        retenoDatabaseManagerWrappedLinksProvider
+        retenoDatabaseManagerWrappedLinksProvider,
+        retenoDatabaseManagerLogEventProvider
     )
 
     /** Repository **/
@@ -113,7 +118,6 @@ class ServiceLocator(context: Context, accessKey: String) {
             retenoDatabaseManagerInteractionProviderInternal
         )
 
-
     private val deeplinkRepositoryProvider: DeeplinkRepositoryProvider =
         DeeplinkRepositoryProvider(apiClientProvider, retenoDatabaseManagerWrappedLinksProvider)
 
@@ -132,6 +136,15 @@ class ServiceLocator(context: Context, accessKey: String) {
 
     private val iamRepositoryProvider: IamRepositoryProvider =
         IamRepositoryProvider(apiClientProvider, sharedPrefsManagerProvider, Dispatchers.IO)
+
+    private val logEventRepositoryProviderInternal: LogEventRepositoryProvider =
+        LogEventRepositoryProvider(
+            retenoDatabaseManagerLogEventProvider,
+            apiClientProvider
+        )
+    val logEventRepositoryProvider: ProviderWeakReference<LogEventRepository>
+        get() = logEventRepositoryProviderInternal
+
 
     /** Controller **/
     private val deeplinkControllerProviderInternal: DeeplinkControllerProvider =
