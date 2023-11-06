@@ -9,7 +9,8 @@ internal class RetenoDatabaseManagerImpl(
     private val eventsManager: RetenoDatabaseManagerEvents,
     private val appInboxManager: RetenoDatabaseManagerAppInbox,
     private val recomEventsManager: RetenoDatabaseManagerRecomEvents,
-    private val wrappedLinkManager: RetenoDatabaseManagerWrappedLink
+    private val wrappedLinkManager: RetenoDatabaseManagerWrappedLink,
+    private val logEventManager: RetenoDatabaseManagerLogEvent
 ): RetenoDatabaseManager {
 
     override fun isDatabaseEmpty(): Boolean {
@@ -20,6 +21,7 @@ internal class RetenoDatabaseManagerImpl(
         val appInboxCount = appInboxManager.getAppInboxMessagesCount()
         val recomEventsCount = recomEventsManager.getRecomEventsCount()
         val wrappedLinksCount = wrappedLinkManager.getWrappedLinksCount()
+        val logEventsCount = logEventManager.getLogEventsCount()
 
         val result = deviceCount == 0L
                 && userCount == 0L
@@ -28,6 +30,7 @@ internal class RetenoDatabaseManagerImpl(
                 && appInboxCount == 0L
                 && recomEventsCount == 0L
                 && wrappedLinksCount == 0L
+                && logEventsCount == 0L
         /*@formatter:off*/ Logger.i(TAG, "isDatabaseEmpty(): ", "result = $result")
         /*@formatter:on*/
         return result

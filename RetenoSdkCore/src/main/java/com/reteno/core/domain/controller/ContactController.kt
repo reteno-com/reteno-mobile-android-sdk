@@ -112,7 +112,7 @@ class ContactController(
                 deviceId = deviceId.id,
                 externalUserId = deviceId.externalId,
                 pushToken = fcmToken,
-                pushSubscribed = notificationsEnabled
+                pushSubscribed = notificationsEnabled ?: configRepository.isNotificationsEnabled()
             )
             contactRepository.saveDeviceData(contact, toParallelWork)
         }

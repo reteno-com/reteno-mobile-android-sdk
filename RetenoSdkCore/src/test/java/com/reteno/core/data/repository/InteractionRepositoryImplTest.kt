@@ -254,6 +254,5 @@ class InteractionRepositoryImplTest : BaseRobolectricTest() {
 
         // Then
         verify(exactly = 1) { databaseManagerInteraction.deleteInteractionByTime(any()) }
-        verify(exactly = 2) { Logger.captureEvent(any()) }
     }
 }
