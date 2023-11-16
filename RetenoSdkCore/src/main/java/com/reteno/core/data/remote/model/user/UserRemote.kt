@@ -16,33 +16,33 @@ internal data class UserRemote(
     @SerializedName("groupNamesExclude")
     var groupNamesExclude: List<String>? = null
 ) {
-    fun createDiffModel(another: UserRemote?): UserRemote? {
-        if (another == null) return this
+    fun createDiffModel(olderModel: UserRemote?): UserRemote? {
+        if (olderModel == null) return copy()
 
-        if (another == this) return null
+        if (olderModel == this) return null
 
         var somethingChanged = false
-        val result = another.copy()
+        val result = copy()
 
-        val userAttributesDiff = userAttributes?.createDiffModel(another.userAttributes)
+        val userAttributesDiff = userAttributes?.createDiffModel(olderModel.userAttributes)
         result.userAttributes = userAttributesDiff
         if (userAttributesDiff != null) {
             somethingChanged = true
         }
 
-        if (areListsSame(subscriptionKeys, result.subscriptionKeys)) {
+        if (areListsSame(subscriptionKeys, olderModel.subscriptionKeys)) {
             result.subscriptionKeys = null
         } else {
             somethingChanged = true
         }
 
-        if (areListsSame(groupNamesInclude, result.groupNamesInclude)) {
+        if (areListsSame(groupNamesInclude, olderModel.groupNamesInclude)) {
             result.groupNamesInclude = null
         } else {
             somethingChanged = true
         }
 
-        if (areListsSame(groupNamesExclude, result.groupNamesExclude)) {
+        if (areListsSame(groupNamesExclude, olderModel.groupNamesExclude)) {
             result.groupNamesExclude = null
         } else {
             somethingChanged = true

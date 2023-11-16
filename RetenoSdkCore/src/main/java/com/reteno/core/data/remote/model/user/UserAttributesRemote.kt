@@ -20,57 +20,57 @@ internal data class UserAttributesRemote(
     @SerializedName("fields")
     var fields: List<UserCustomFieldRemote>? = null,
 ) {
-    fun createDiffModel(another: UserAttributesRemote?): UserAttributesRemote? {
-        if (another == null) return this
+    fun createDiffModel(olderModel: UserAttributesRemote?): UserAttributesRemote? {
+        if (olderModel == null) return copy()
 
-        if (another == this) return null
+        if (olderModel == this) return null
 
         var somethingChanged = false
-        val result = another.copy()
+        val result = copy()
 
-        if (phone == result.phone) {
+        if (phone == olderModel.phone) {
             result.phone = null
         } else {
             somethingChanged = true
         }
 
-        if (email == result.email) {
+        if (email == olderModel.email) {
             result.email = null
         } else {
             somethingChanged = true
         }
 
-        if (firstName == result.firstName) {
+        if (firstName == olderModel.firstName) {
             result.firstName = null
         } else {
             somethingChanged = true
         }
 
-        if (lastName == result.lastName) {
+        if (lastName == olderModel.lastName) {
             result.lastName = null
         } else {
             somethingChanged = true
         }
 
-        if (languageCode == result.languageCode) {
+        if (languageCode == olderModel.languageCode) {
             result.languageCode = null
         } else {
             somethingChanged = true
         }
 
-        if (timeZone == result.timeZone) {
+        if (timeZone == olderModel.timeZone) {
             result.timeZone = null
         } else {
             somethingChanged = true
         }
 
-        if (address == result.address) {
+        if (address == olderModel.address) {
             result.address = null
         } else {
             somethingChanged = true
         }
 
-        if (fields == result.fields) {
+        if (fields == olderModel.fields) {
             result.fields = null
         } else {
             somethingChanged = true
