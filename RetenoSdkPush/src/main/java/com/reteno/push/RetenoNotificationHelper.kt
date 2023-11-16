@@ -319,18 +319,32 @@ internal object RetenoNotificationHelper {
     }
 
     private fun createDeleteIntent(data: Bundle): PendingIntent? {
-        val context = RetenoImpl.application
-        val receiver = RetenoImpl.application.getApplicationMetaData()
-            .getString(Constants.META_DATA_KEY_CUSTOM_RECEIVER_NOTIFICATION_DELETED)
-        receiver?.let {  receiverClassName ->
-            val intent = Intent()
-            intent.setClassName(context, receiverClassName)
-            intent.putExtras(data)
-            return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                PendingIntent.getBroadcast(context, 0, intent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_CANCEL_CURRENT)
-            } else {
-                PendingIntent.getBroadcast(context, 0, intent, PendingIntent.FLAG_CANCEL_CURRENT)
+        try {
+            val context = RetenoImpl.application
+            val receiver = RetenoImpl.application.getApplicationMetaData()
+                .getString(Constants.META_DATA_KEY_CUSTOM_RECEIVER_NOTIFICATION_DELETED)
+            receiver?.let { receiverClassName ->
+                val intent = Intent()
+                intent.setClassName(context, receiverClassName)
+                intent.putExtras(data)
+                return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    PendingIntent.getBroadcast(
+                        context,
+                        0,
+                        intent,
+                        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_CANCEL_CURRENT
+                    )
+                } else {
+                    PendingIntent.getBroadcast(
+                        context,
+                        0,
+                        intent,
+                        PendingIntent.FLAG_CANCEL_CURRENT
+                    )
+                }
             }
+        } catch (e: Throwable) {
+            Logger.e(TAG, "createDeleteIntent()", e)
         }
         return null
     }
