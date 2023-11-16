@@ -4,15 +4,65 @@ import com.google.gson.annotations.SerializedName
 
 internal data class UserRemote(
     @SerializedName("deviceId")
-    val deviceId: String,
+    var deviceId: String,
     @SerializedName("externalUserId")
-    val externalUserId: String?,
+    var externalUserId: String?,
     @SerializedName("userAttributes")
-    val userAttributes: UserAttributesRemote? = null,
+    var userAttributes: UserAttributesRemote? = null,
     @SerializedName("subscriptionKeys")
-    val subscriptionKeys: List<String>? = null,
+    var subscriptionKeys: List<String>? = null,
     @SerializedName("groupNamesInclude")
-    val groupNamesInclude: List<String>? = null,
+    var groupNamesInclude: List<String>? = null,
     @SerializedName("groupNamesExclude")
-    val groupNamesExclude: List<String>? = null
-)
+    var groupNamesExclude: List<String>? = null
+) {
+    fun createDiffModel(another: UserRemote?): UserRemote? {
+        if (another == null) return this
+
+        if (another == this) return null
+
+        var somethingChanged = false
+        val result = another.copy()
+
+        val userAttributesDiff = userAttributes?.createDiffModel(another.userAttributes)
+        result.userAttributes = userAttributesDiff
+        if (userAttributesDiff != null) {
+            somethingChanged = true
+        }
+
+        if (areListsSame(subscriptionKeys, result.subscriptionKeys)) {
+            result.subscriptionKeys = null
+        } else {
+            somethingChanged = true
+        }
+
+        if (areListsSame(groupNamesInclude, result.groupNamesInclude)) {
+            result.groupNamesInclude = null
+        } else {
+            somethingChanged = true
+        }
+
+        if (areListsSame(groupNamesExclude, result.groupNamesExclude)) {
+            result.groupNamesExclude = null
+        } else {
+            somethingChanged = true
+        }
+
+        return if (somethingChanged) {
+            result
+        } else {
+            null
+        }
+    }
+
+    private fun areListsSame(firstList: List<Any>?, secondList: List<Any>?): Boolean {
+        if (firstList == null && secondList == null) return true
+
+        if (firstList != null && secondList != null &&
+            firstList.size == secondList.size && firstList.containsAll(secondList)) {
+            return true
+        }
+
+        return false
+    }
+}

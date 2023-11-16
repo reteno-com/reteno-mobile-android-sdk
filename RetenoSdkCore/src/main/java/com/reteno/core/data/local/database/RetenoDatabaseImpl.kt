@@ -10,6 +10,7 @@ import android.database.sqlite.SQLiteDatabaseLockedException
 import android.database.sqlite.SQLiteException
 import android.database.sqlite.SQLiteOpenHelper
 import android.os.SystemClock
+import android.util.Log
 import com.reteno.core.BuildConfig
 import com.reteno.core.data.local.database.schema.AppInboxSchema
 import com.reteno.core.data.local.database.schema.DbSchema.DATABASE_NAME
@@ -88,9 +89,35 @@ internal class RetenoDatabaseImpl(private val context: Context) : RetenoDatabase
         }
         if (oldVersion < 4) {
             try {
-                /*@formatter:off*/ Logger.i(TAG, "onUpgrade(): start update table \"Interaction\"", "old DB version = ",oldVersion,", newVersion = ",newVersion )
+                /*@formatter:off*/ Logger.i(TAG, "onUpgrade(): start update table \"Interaction\"", " old DB version = ",oldVersion,", newVersion = ",newVersion )
                 /*@formatter:on*/
                 db.execSQL(InteractionSchema.SQL_UPGRADE_TABLE_VERSION_4)
+            } catch (e: SQLiteException) {
+                if (e.toString().startsWith("duplicate column name")) {
+                    /*@formatter:off*/ Logger.e(TAG, "onUpgrade(): Ignoring this exception", e)
+                    /*@formatter:on*/
+                } else {
+                    throw e
+                }
+            }
+        }
+        if (oldVersion < 6) {
+            try {
+                /*@formatter:off*/ Logger.i(TAG, "onUpgrade(): start update table \"User\"", " old DB version = ",oldVersion,", newVersion = ",newVersion )
+                /*@formatter:on*/
+                db.execSQL(UserSchema.SQL_UPGRADE_TABLE_VERSION_6)
+            } catch (e: SQLiteException) {
+                if (e.toString().startsWith("duplicate column name")) {
+                    /*@formatter:off*/ Logger.e(TAG, "onUpgrade(): Ignoring this exception", e)
+                    /*@formatter:on*/
+                } else {
+                    throw e
+                }
+            }
+            try {
+                /*@formatter:off*/ Logger.i(TAG, "onUpgrade(): start update table \"Device\"", " old DB version = ",oldVersion,", newVersion = ",newVersion )
+                /*@formatter:on*/
+                db.execSQL(DeviceSchema.SQL_UPGRADE_TABLE_VERSION_6)
             } catch (e: SQLiteException) {
                 if (e.toString().startsWith("duplicate column name")) {
                     /*@formatter:off*/ Logger.e(TAG, "onUpgrade(): Ignoring this exception", e)
@@ -336,7 +363,12 @@ internal class RetenoDatabaseImpl(private val context: Context) : RetenoDatabase
             } catch (e: IllegalStateException) {
                 /*@formatter:off*/ Logger.e(TAG, "delete(): Error under delete transaction under table: $table with whereClause: $whereClause and whereArgs: $whereArgs", e)
                 /*@formatter:on*/
-            } finally {
+            } catch (e: Throwable) {
+                /*@formatter:off*/ Log.e(TAG, "delete(): Error under delete transaction under table: $table with whereClause: $whereClause and whereArgs: $whereArgs", e)
+                /*@formatter:on*/
+                e.printStackTrace()
+            }
+            finally {
                 try {
                     writableSQLDatabase.endTransaction() // May throw if transaction was never opened or DB is full.
                 } catch (e: IllegalStateException) {
@@ -352,11 +384,16 @@ internal class RetenoDatabaseImpl(private val context: Context) : RetenoDatabase
         return count
     }
 
-    override fun getRowCount(tableName: String): Long {
+    override fun getRowCount(tableName: String, whereClause: String?, whereArgs: Array<String?>?): Long {
         var count: Long = 0
 
         try {
-            count = DatabaseUtils.queryNumEntries(getSQLiteDatabaseWithRetries(), tableName)
+            count = DatabaseUtils.queryNumEntries(
+                getSQLiteDatabaseWithRetries(),
+                tableName,
+                whereClause,
+                whereArgs
+            )
         } catch (ex: SQLiteException) {
             /*@formatter:off*/ Logger.e(TAG, "getRowCount(): ", ex)
             /*@formatter:on*/

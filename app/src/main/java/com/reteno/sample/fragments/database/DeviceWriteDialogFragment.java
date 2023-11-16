@@ -110,6 +110,7 @@ public class DeviceWriteDialogFragment extends BaseDatabaseDialogFragment {
 
             DeviceDb device = new DeviceDb(
                     null,
+                    0L,
                     binding.etDeviceId.getText().toString(),
                     Util.getTextOrNull(binding.etExternalUserId),
                     Util.getTextOrNull(binding.etPushToken),
@@ -121,7 +122,8 @@ public class DeviceWriteDialogFragment extends BaseDatabaseDialogFragment {
                     Util.getTextOrNull(binding.etAppVersion),
                     Util.getTextOrNull(binding.etLanguageCode),
                     Util.getTextOrNull(binding.etTimeZone),
-                    Util.getTextOrNull(binding.etAdvertisingId)
+                    Util.getTextOrNull(binding.etAdvertisingId),
+                    null
             );
 
             databaseManager.insertDevice(device);

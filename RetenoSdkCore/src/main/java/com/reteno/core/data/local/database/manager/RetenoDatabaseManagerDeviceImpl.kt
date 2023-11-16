@@ -10,6 +10,7 @@ import com.reteno.core.data.local.database.schema.DbSchema
 import com.reteno.core.data.local.database.schema.DeviceSchema
 import com.reteno.core.data.local.database.util.getDevice
 import com.reteno.core.data.local.database.util.putDevice
+import com.reteno.core.data.local.model.BooleanDb
 import com.reteno.core.data.local.model.device.DeviceDb
 import com.reteno.core.util.Logger
 
@@ -74,7 +75,11 @@ internal class RetenoDatabaseManagerDeviceImpl(private val database: RetenoDatab
         return deviceEvents
     }
 
-    override fun getDeviceCount(): Long = database.getRowCount(DeviceSchema.TABLE_NAME_DEVICE)
+    override fun getDeviceCount(): Long = database.getRowCount(
+        DeviceSchema.TABLE_NAME_DEVICE,
+        whereClause = "${DeviceSchema.COLUMN_SYNCHRONIZED_WITH_BACKEND}<>?",
+        whereArgs = arrayOf(BooleanDb.TRUE.toString())
+    )
 
     override fun deleteDevice(device: DeviceDb): Boolean {
         /*@formatter:off*/ Logger.i(TAG, "deleteDevice(): ", "device = [", device, "]")
@@ -87,6 +92,21 @@ internal class RetenoDatabaseManagerDeviceImpl(private val database: RetenoDatab
         )
 
         return removedRecordsCount > 0
+    }
+
+    override fun deleteDevices(devices: List<DeviceDb>) {
+        /*@formatter:off*/ Logger.i(TAG, "deleteDevices(): ", "devices: [", devices, "]")
+        /*@formatter:on*/
+
+        val rowIds = devices.mapNotNull { it.rowId }
+
+        for (rowId: String in rowIds) {
+            database.delete(
+                table = DeviceSchema.TABLE_NAME_DEVICE,
+                whereClause = "${DeviceSchema.COLUMN_DEVICE_ROW_ID}=?",
+                whereArgs = arrayOf(rowId)
+            )
+        }
     }
 
     companion object {

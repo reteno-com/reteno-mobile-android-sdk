@@ -16,6 +16,7 @@ internal object DeviceSchema {
     internal const val COLUMN_LANGUAGE_CODE = "languageCode"
     internal const val COLUMN_TIMEZONE = "timeZone"
     internal const val COLUMN_ADVERTISING_ID = "advertisingId"
+    internal const val COLUMN_SYNCHRONIZED_WITH_BACKEND = "synchronizedWithBackend"
 
     internal const val SQL_CREATE_TABLE =
         "CREATE TABLE IF NOT EXISTS $TABLE_NAME_DEVICE" +
@@ -33,11 +34,15 @@ internal object DeviceSchema {
                 "$COLUMN_APP_VERSION TEXT, " +
                 "$COLUMN_LANGUAGE_CODE TEXT, " +
                 "$COLUMN_TIMEZONE TEXT, " +
-                "$COLUMN_ADVERTISING_ID TEXT" +
+                "$COLUMN_ADVERTISING_ID TEXT, " +
+                "$COLUMN_SYNCHRONIZED_WITH_BACKEND TEXT" +
                 ")"
 
     internal const val SQL_UPGRADE_TABLE_VERSION_2 =
         "ALTER TABLE $TABLE_NAME_DEVICE ADD COLUMN $COLUMN_PUSH_SUBSCRIBED TEXT"
+
+    internal const val SQL_UPGRADE_TABLE_VERSION_6 =
+        "ALTER TABLE $TABLE_NAME_DEVICE ADD COLUMN $COLUMN_SYNCHRONIZED_WITH_BACKEND TEXT"
 
     fun getAllColumns(): Array<String> = arrayOf(
         COLUMN_DEVICE_ROW_ID,
@@ -53,6 +58,7 @@ internal object DeviceSchema {
         COLUMN_APP_VERSION,
         COLUMN_LANGUAGE_CODE,
         COLUMN_TIMEZONE,
-        COLUMN_ADVERTISING_ID
+        COLUMN_ADVERTISING_ID,
+        COLUMN_SYNCHRONIZED_WITH_BACKEND
     )
 }
