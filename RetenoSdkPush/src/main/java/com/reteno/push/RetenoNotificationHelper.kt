@@ -4,6 +4,7 @@ import android.app.PendingIntent
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.os.Build
 import android.os.Bundle
 import android.text.TextUtils
 import android.widget.RemoteViews
@@ -103,6 +104,10 @@ internal object RetenoNotificationHelper {
 
         buttons?.forEach { action ->
             builder.addAction(action)
+        }
+
+        createDeleteIntent(bundle)?.let {
+            builder.setDeleteIntent(it)
         }
 
         val pendingIntent = createPendingIntent(bundle)
@@ -311,6 +316,23 @@ internal object RetenoNotificationHelper {
         val intent = Intent(context, RetenoNotificationClickedReceiver::class.java)
         intent.putExtras(bundle)
         return intent
+    }
+
+    private fun createDeleteIntent(data: Bundle): PendingIntent? {
+        val context = RetenoImpl.application
+        val receiver = RetenoImpl.application.getApplicationMetaData()
+            .getString(Constants.META_DATA_KEY_CUSTOM_RECEIVER_NOTIFICATION_DELETED)
+        receiver?.let {  receiverClassName ->
+            val intent = Intent()
+            intent.setClassName(context, receiverClassName)
+            intent.putExtras(data)
+            return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                PendingIntent.getBroadcast(context, 0, intent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_CANCEL_CURRENT)
+            } else {
+                PendingIntent.getBroadcast(context, 0, intent, PendingIntent.FLAG_CANCEL_CURRENT)
+            }
+        }
+        return null
     }
 
     private fun createPendingIntentForButton(
