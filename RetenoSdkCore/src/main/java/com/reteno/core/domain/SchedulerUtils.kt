@@ -1,5 +1,7 @@
 package com.reteno.core.domain
 
+import com.reteno.core.BuildConfig
+import com.reteno.core.util.BuildUtil
 import com.reteno.core.util.Util
 import java.time.ZonedDateTime
 
@@ -17,7 +19,7 @@ object SchedulerUtils {
     }
 
     fun getOutdatedDeviceAndUserTime(): Long {
-        return if (Util.isDebugView()) {
+        return if (Util.isDebugView() || BuildConfig.DEBUG) {
             KEEP_USER_AND_DEVICE_DATA_MINUTES_DEBUG * 60L * 1000L
         } else {
             KEEP_USER_AND_DEVICE_DATA_HOURS * 60L * 60L * 1000L

@@ -162,7 +162,7 @@ internal class ContactRepositoryImpl(
     private fun onSaveDeviceData(device: Device) {
         val newDevice: DeviceDb = device.toDb()
         val savedDevices: List<DeviceDb> = databaseManagerDevice.getDevices()
-        if (!savedDevices.map { it.copy(rowId = null) }.contains(newDevice)) {
+        if (!savedDevices.map { it.copy(rowId = null, isSynchronizedWithBackend = null) }.contains(newDevice)) {
             databaseManagerDevice.insertDevice(device.toDb())
             /*@formatter:off*/ Logger.i(TAG, "saveDeviceData(): ", "Device saved")
             /*@formatter:on*/
