@@ -7,4 +7,5 @@ interface RetenoDatabaseManagerDevice {
     fun getDevices(limit: Int? = null): List<DeviceDb>
     fun getDeviceCount(): Long
     fun deleteDevice(device: DeviceDb): Boolean
+    fun deleteDevices(devices: List<DeviceDb>)
 }

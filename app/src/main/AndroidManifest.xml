@@ -76,6 +76,14 @@
             android:value="com.reteno.sample.CustomReceiverNotificationClicked" />
 
         <receiver
+            android:name=".CustomReceiverNotificationDeleted"
+            android:enabled="true"
+            android:exported="true"/>
+        <meta-data
+            android:name="com.reteno.Receiver.NotificationDeleted"
+            android:value="com.reteno.sample.CustomReceiverNotificationDeleted" />
+
+        <receiver
             android:name="com.reteno.sample.CustomPushReceiver"
             android:enabled="true"
             android:exported="false" >

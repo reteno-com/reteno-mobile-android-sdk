@@ -12,6 +12,7 @@ import com.reteno.core.data.local.database.util.getUser
 import com.reteno.core.data.local.database.util.putUser
 import com.reteno.core.data.local.database.util.putUserAddress
 import com.reteno.core.data.local.database.util.putUserAttributes
+import com.reteno.core.data.local.model.BooleanDb
 import com.reteno.core.data.local.model.user.AddressDb
 import com.reteno.core.data.local.model.user.UserAttributesDb
 import com.reteno.core.data.local.model.user.UserCustomFieldDb
@@ -360,7 +361,13 @@ class RetenoDatabaseManagerUserImplTest : BaseRobolectricTest() {
     fun givenUserCountNonEmpty_whenGetUserCount_thenCountReturned() {
         // Given
         val recordsCount = 5L
-        every { database.getRowCount(UserSchema.TABLE_NAME_USER) } returns recordsCount
+        every {
+            database.getRowCount(
+                UserSchema.TABLE_NAME_USER,
+                whereClause = "${UserSchema.COLUMN_SYNCHRONIZED_WITH_BACKEND}<>?",
+                whereArgs = arrayOf(BooleanDb.TRUE.toString())
+            )
+        } returns recordsCount
 
         // When
         val count = SUT.getUserCount()

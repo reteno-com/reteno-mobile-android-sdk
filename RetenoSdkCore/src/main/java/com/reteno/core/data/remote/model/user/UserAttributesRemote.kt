@@ -4,19 +4,82 @@ import com.google.gson.annotations.SerializedName
 
 internal data class UserAttributesRemote(
     @SerializedName("phone")
-    val phone: String? = null,
+    var phone: String? = null,
     @SerializedName("email")
-    val email: String? = null,
+    var email: String? = null,
     @SerializedName("firstName")
-    val firstName: String? = null,
+    var firstName: String? = null,
     @SerializedName("lastName")
-    val lastName: String? = null,
+    var lastName: String? = null,
     @SerializedName("languageCode")
-    val languageCode: String? = null,
+    var languageCode: String? = null,
     @SerializedName("timeZone")
-    val timeZone: String? = null,
+    var timeZone: String? = null,
     @SerializedName("address")
-    val address: AddressRemote? = null,
+    var address: AddressRemote? = null,
     @SerializedName("fields")
-    val fields: List<UserCustomFieldRemote>? = null,
-)
+    var fields: List<UserCustomFieldRemote>? = null,
+) {
+    fun createDiffModel(olderModel: UserAttributesRemote?): UserAttributesRemote? {
+        if (olderModel == null) return copy()
+
+        if (olderModel == this) return null
+
+        var somethingChanged = false
+        val result = copy()
+
+        if (phone == olderModel.phone) {
+            result.phone = null
+        } else {
+            somethingChanged = true
+        }
+
+        if (email == olderModel.email) {
+            result.email = null
+        } else {
+            somethingChanged = true
+        }
+
+        if (firstName == olderModel.firstName) {
+            result.firstName = null
+        } else {
+            somethingChanged = true
+        }
+
+        if (lastName == olderModel.lastName) {
+            result.lastName = null
+        } else {
+            somethingChanged = true
+        }
+
+        if (languageCode == olderModel.languageCode) {
+            result.languageCode = null
+        } else {
+            somethingChanged = true
+        }
+
+        if (timeZone == olderModel.timeZone) {
+            result.timeZone = null
+        } else {
+            somethingChanged = true
+        }
+
+        if (address == olderModel.address) {
+            result.address = null
+        } else {
+            somethingChanged = true
+        }
+
+        if (fields == olderModel.fields) {
+            result.fields = null
+        } else {
+            somethingChanged = true
+        }
+
+        return if (somethingChanged) {
+            result
+        } else {
+            null
+        }
+    }
+}
