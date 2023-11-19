@@ -7,4 +7,5 @@ interface RetenoDatabaseManagerUser {
     fun getUsers(limit: Int? = null): List<UserDb>
     fun getUserCount(): Long
     fun deleteUser(user: UserDb): Boolean
+    fun deleteUsers(users: List<UserDb>)
 }

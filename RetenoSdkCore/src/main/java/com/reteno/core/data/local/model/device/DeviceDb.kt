@@ -4,6 +4,7 @@ import com.reteno.core.data.local.model.BooleanDb
 
 data class DeviceDb(
     val rowId: String? = null,
+    val createdAt: Long = 0L,
     val deviceId: String,
     val externalUserId: String?,
     val pushToken: String?,
@@ -15,5 +16,6 @@ data class DeviceDb(
     val appVersion: String?,
     val languageCode: String?,
     val timeZone: String?,
-    val advertisingId: String?
+    val advertisingId: String?,
+    val isSynchronizedWithBackend: BooleanDb? = null
 )

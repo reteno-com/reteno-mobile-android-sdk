@@ -4,11 +4,14 @@ import android.content.ContentValues
 import android.database.Cursor
 import androidx.core.database.getStringOrNull
 import com.reteno.core.base.robolectric.BaseRobolectricTest
+import com.reteno.core.data.local.database.schema.DbSchema
 import com.reteno.core.data.local.database.schema.UserSchema
+import com.reteno.core.data.local.model.BooleanDb
 import com.reteno.core.data.local.model.user.AddressDb
 import com.reteno.core.data.local.model.user.UserAttributesDb
 import com.reteno.core.data.local.model.user.UserCustomFieldDb
 import com.reteno.core.data.local.model.user.UserDb
+import com.reteno.core.util.Util
 import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
@@ -22,11 +25,13 @@ class DbUtilUserTest : BaseRobolectricTest() {
     // region constants ----------------------------------------------------------------------------
     companion object {
         private const val USER_PARENT_ROW_ID = 1L
+        private const val CREATED_AT = 0L
         private const val DEVICE_ID = "valueDeviceId"
         private const val EXTERNAL_USER_ID = "valueExternalUserId"
         private val SUBSCRIPTION_KEYS = listOf("subscriptionKey1", "subscriptionKey2", "subscriptionKey3")
         private val GROUP_NAMES_INCLUDE = listOf("groupNamesInclude1", "groupNamesInclude2", "groupNamesInclude3")
         private val GROUP_NAMES_EXCLUDE = listOf("groupNamesExclude1", "groupNamesExclude2", "groupNamesExclude3")
+        private val SYNCHRONIZED_WITH_BACKEND = BooleanDb.FALSE
 
         private const val PHONE = "phone1"
         private const val EMAIL = "email1"
@@ -69,31 +74,35 @@ class DbUtilUserTest : BaseRobolectricTest() {
         )
         private val userFull = UserDb(
             rowId = USER_PARENT_ROW_ID.toString(),
+            createdAt = CREATED_AT,
             deviceId = DEVICE_ID,
             externalUserId = EXTERNAL_USER_ID,
             userAttributes = userAttributesFull,
             subscriptionKeys = SUBSCRIPTION_KEYS,
             groupNamesInclude = GROUP_NAMES_INCLUDE,
             groupNamesExclude = GROUP_NAMES_EXCLUDE,
+            isSynchronizedWithBackend = SYNCHRONIZED_WITH_BACKEND
         )
 
         private const val COLUMN_INDEX_USER_ROW_ID = 1
-        private const val COLUMN_INDEX_REGION = 2
-        private const val COLUMN_INDEX_TOWN = 3
-        private const val COLUMN_INDEX_ADDRESS = 4
-        private const val COLUMN_INDEX_POSTCODE = 5
-        private const val COLUMN_INDEX_PHONE = 6
-        private const val COLUMN_INDEX_EMAIL = 7
-        private const val COLUMN_INDEX_FIRST_NAME = 8
-        private const val COLUMN_INDEX_LAST_NAME = 9
-        private const val COLUMN_INDEX_LANGUAGE_CODE = 10
-        private const val COLUMN_INDEX_TIME_ZONE = 11
-        private const val COLUMN_INDEX_FIELDS = 12
-        private const val COLUMN_INDEX_DEVICE_ID = 13
-        private const val COLUMN_INDEX_EXTERNAL_USER_ID = 14
-        private const val COLUMN_INDEX_SUBSCRIPTION_KEYS = 15
-        private const val COLUMN_INDEX_GROUP_NAMES_INCLUDE = 16
-        private const val COLUMN_INDEX_GROUP_NAMES_EXCLUDE = 17
+        private const val COLUMN_INDEX_TIMESTAMP = 2
+        private const val COLUMN_INDEX_REGION = 3
+        private const val COLUMN_INDEX_TOWN = 4
+        private const val COLUMN_INDEX_ADDRESS = 5
+        private const val COLUMN_INDEX_POSTCODE = 6
+        private const val COLUMN_INDEX_PHONE = 7
+        private const val COLUMN_INDEX_EMAIL = 8
+        private const val COLUMN_INDEX_FIRST_NAME = 9
+        private const val COLUMN_INDEX_LAST_NAME = 10
+        private const val COLUMN_INDEX_LANGUAGE_CODE = 11
+        private const val COLUMN_INDEX_TIME_ZONE = 12
+        private const val COLUMN_INDEX_FIELDS = 13
+        private const val COLUMN_INDEX_DEVICE_ID = 14
+        private const val COLUMN_INDEX_EXTERNAL_USER_ID = 15
+        private const val COLUMN_INDEX_SUBSCRIPTION_KEYS = 16
+        private const val COLUMN_INDEX_GROUP_NAMES_INCLUDE = 17
+        private const val COLUMN_INDEX_GROUP_NAMES_EXCLUDE = 18
+        private const val COLUMN_INDEX_SYNCHRONIZED_WITH_BACKEND = 19
     }
     // endregion constants -------------------------------------------------------------------------
 
@@ -125,7 +134,8 @@ class DbUtilUserTest : BaseRobolectricTest() {
             UserSchema.COLUMN_EXTERNAL_USER_ID,
             UserSchema.COLUMN_SUBSCRIPTION_KEYS,
             UserSchema.COLUMN_GROUP_NAMES_INCLUDE,
-            UserSchema.COLUMN_GROUP_NAMES_EXCLUDE
+            UserSchema.COLUMN_GROUP_NAMES_EXCLUDE,
+            UserSchema.COLUMN_SYNCHRONIZED_WITH_BACKEND
         )
 
         // When
@@ -152,7 +162,8 @@ class DbUtilUserTest : BaseRobolectricTest() {
         )
         val keySet = arrayOf(
             UserSchema.COLUMN_DEVICE_ID,
-            UserSchema.COLUMN_EXTERNAL_USER_ID
+            UserSchema.COLUMN_EXTERNAL_USER_ID,
+            UserSchema.COLUMN_SYNCHRONIZED_WITH_BACKEND
         )
 
         // When
@@ -373,46 +384,58 @@ class DbUtilUserTest : BaseRobolectricTest() {
 
     private fun mockUserDeviceIdIsNull() {
         every { cursor.isNull(any()) } returns false
+        every { Util.formatSqlDateToTimestamp("") } returns 0L
 
         every { cursor.getStringOrNull(COLUMN_INDEX_USER_ROW_ID) } returns USER_PARENT_ROW_ID.toString()
+        every { cursor.getStringOrNull(COLUMN_INDEX_TIMESTAMP) } returns ""
         every { cursor.getStringOrNull(COLUMN_INDEX_DEVICE_ID) } returns null
         every { cursor.getStringOrNull(COLUMN_INDEX_EXTERNAL_USER_ID) } returns EXTERNAL_USER_ID
         every { cursor.getStringOrNull(COLUMN_INDEX_SUBSCRIPTION_KEYS) } returns getExpectedSubscriptionKeysFull()
         every { cursor.getStringOrNull(COLUMN_INDEX_GROUP_NAMES_INCLUDE) } returns getGroupNamesIncludeFull()
         every { cursor.getStringOrNull(COLUMN_INDEX_GROUP_NAMES_EXCLUDE) } returns getGroupNamesExcludeFull()
+        every { cursor.getStringOrNull(COLUMN_INDEX_SYNCHRONIZED_WITH_BACKEND) } returns SYNCHRONIZED_WITH_BACKEND.toString()
     }
 
     private fun mockUserExternalUserIdIsNull() {
         every { cursor.isNull(any()) } returns false
+        every { Util.formatSqlDateToTimestamp("") } returns 0L
 
         every { cursor.getStringOrNull(COLUMN_INDEX_USER_ROW_ID) } returns USER_PARENT_ROW_ID.toString()
+        every { cursor.getStringOrNull(COLUMN_INDEX_TIMESTAMP) } returns ""
         every { cursor.getStringOrNull(COLUMN_INDEX_DEVICE_ID) } returns DEVICE_ID
         every { cursor.getStringOrNull(COLUMN_INDEX_EXTERNAL_USER_ID) } returns null
         every { cursor.getStringOrNull(COLUMN_INDEX_SUBSCRIPTION_KEYS) } returns getExpectedSubscriptionKeysFull()
         every { cursor.getStringOrNull(COLUMN_INDEX_GROUP_NAMES_INCLUDE) } returns getGroupNamesIncludeFull()
         every { cursor.getStringOrNull(COLUMN_INDEX_GROUP_NAMES_EXCLUDE) } returns getGroupNamesExcludeFull()
+        every { cursor.getStringOrNull(COLUMN_INDEX_SYNCHRONIZED_WITH_BACKEND) } returns SYNCHRONIZED_WITH_BACKEND.toString()
     }
 
     private fun mockUserDeviceIdExternalUserIdIsNonEmpty() {
         every { cursor.isNull(any()) } returns false
+        every { Util.formatSqlDateToTimestamp("") } returns 0L
 
         every { cursor.getStringOrNull(COLUMN_INDEX_USER_ROW_ID) } returns USER_PARENT_ROW_ID.toString()
+        every { cursor.getStringOrNull(COLUMN_INDEX_TIMESTAMP) } returns ""
         every { cursor.getStringOrNull(COLUMN_INDEX_DEVICE_ID) } returns DEVICE_ID
         every { cursor.getStringOrNull(COLUMN_INDEX_EXTERNAL_USER_ID) } returns EXTERNAL_USER_ID
         every { cursor.getStringOrNull(COLUMN_INDEX_SUBSCRIPTION_KEYS) } returns null
         every { cursor.getStringOrNull(COLUMN_INDEX_GROUP_NAMES_INCLUDE) } returns null
         every { cursor.getStringOrNull(COLUMN_INDEX_GROUP_NAMES_EXCLUDE) } returns null
+        every { cursor.getStringOrNull(COLUMN_INDEX_SYNCHRONIZED_WITH_BACKEND) } returns SYNCHRONIZED_WITH_BACKEND.toString()
     }
 
     private fun mockUserFull() {
         every { cursor.isNull(any()) } returns false
+        every { Util.formatSqlDateToTimestamp("") } returns 0L
 
         every { cursor.getStringOrNull(COLUMN_INDEX_USER_ROW_ID) } returns USER_PARENT_ROW_ID.toString()
+        every { cursor.getStringOrNull(COLUMN_INDEX_TIMESTAMP) } returns ""
         every { cursor.getStringOrNull(COLUMN_INDEX_DEVICE_ID) } returns DEVICE_ID
         every { cursor.getStringOrNull(COLUMN_INDEX_EXTERNAL_USER_ID) } returns EXTERNAL_USER_ID
         every { cursor.getStringOrNull(COLUMN_INDEX_SUBSCRIPTION_KEYS) } returns getExpectedSubscriptionKeysFull()
         every { cursor.getStringOrNull(COLUMN_INDEX_GROUP_NAMES_INCLUDE) } returns getGroupNamesIncludeFull()
         every { cursor.getStringOrNull(COLUMN_INDEX_GROUP_NAMES_EXCLUDE) } returns getGroupNamesExcludeFull()
+        every { cursor.getStringOrNull(COLUMN_INDEX_SYNCHRONIZED_WITH_BACKEND) } returns SYNCHRONIZED_WITH_BACKEND.toString()
     }
 
     private fun mockUserAddressFull() {
@@ -485,11 +508,14 @@ class DbUtilUserTest : BaseRobolectricTest() {
         every { cursor.getColumnIndex(UserSchema.UserAttributesSchema.COLUMN_CUSTOM_FIELDS) } returns COLUMN_INDEX_FIELDS
 
         every { cursor.getColumnIndex(UserSchema.COLUMN_USER_ROW_ID) } returns COLUMN_INDEX_USER_ROW_ID
+        every { cursor.getColumnIndex(DbSchema.COLUMN_TIMESTAMP) } returns COLUMN_INDEX_TIMESTAMP
         every { cursor.getColumnIndex(UserSchema.COLUMN_DEVICE_ID) } returns COLUMN_INDEX_DEVICE_ID
         every { cursor.getColumnIndex(UserSchema.COLUMN_EXTERNAL_USER_ID) } returns COLUMN_INDEX_EXTERNAL_USER_ID
         every { cursor.getColumnIndex(UserSchema.COLUMN_SUBSCRIPTION_KEYS) } returns COLUMN_INDEX_SUBSCRIPTION_KEYS
         every { cursor.getColumnIndex(UserSchema.COLUMN_GROUP_NAMES_INCLUDE) } returns COLUMN_INDEX_GROUP_NAMES_INCLUDE
         every { cursor.getColumnIndex(UserSchema.COLUMN_GROUP_NAMES_EXCLUDE) } returns COLUMN_INDEX_GROUP_NAMES_EXCLUDE
+        every { cursor.getColumnIndex(UserSchema.COLUMN_USER_ROW_ID) } returns COLUMN_INDEX_USER_ROW_ID
+        every { cursor.getColumnIndex(UserSchema.COLUMN_SYNCHRONIZED_WITH_BACKEND) } returns COLUMN_INDEX_SYNCHRONIZED_WITH_BACKEND
     }
     // endregion helper methods --------------------------------------------------------------------
 }

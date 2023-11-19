@@ -3,7 +3,9 @@ package com.reteno.core.data.local.database.util
 import android.content.ContentValues
 import android.database.Cursor
 import androidx.core.database.getStringOrNull
+import com.reteno.core.data.local.database.schema.DbSchema
 import com.reteno.core.data.local.database.schema.UserSchema
+import com.reteno.core.data.local.model.BooleanDb
 import com.reteno.core.data.local.model.user.AddressDb
 import com.reteno.core.data.local.model.user.UserAttributesDb
 import com.reteno.core.data.local.model.user.UserCustomFieldDb
@@ -11,6 +13,7 @@ import com.reteno.core.data.local.model.user.UserDb
 import com.reteno.core.data.remote.mapper.fromJson
 import com.reteno.core.data.remote.mapper.listFromJson
 import com.reteno.core.data.remote.mapper.toJson
+import com.reteno.core.util.Util
 import com.reteno.core.util.allElementsNull
 
 fun ContentValues.putUser(user: UserDb) {
@@ -25,6 +28,7 @@ fun ContentValues.putUser(user: UserDb) {
     user.groupNamesExclude?.toJson()?.let { groupNamesExclude ->
         put(UserSchema.COLUMN_GROUP_NAMES_EXCLUDE, groupNamesExclude)
     }
+    put(UserSchema.COLUMN_SYNCHRONIZED_WITH_BACKEND, user.isSynchronizedWithBackend?.toString())
 }
 
 fun ContentValues.putUserAttributes(parentRowId: Long, userAttributes: UserAttributesDb) {
@@ -97,23 +101,28 @@ fun Cursor.getUser(): UserDb? {
     }
 
     val rowId = getStringOrNull(getColumnIndex(UserSchema.COLUMN_USER_ROW_ID))
+    val createdAt = getStringOrNull(getColumnIndex(DbSchema.COLUMN_TIMESTAMP))
     val deviceId = getStringOrNull(getColumnIndex(UserSchema.COLUMN_DEVICE_ID))
     val externalUserId = getStringOrNull(getColumnIndex(UserSchema.COLUMN_EXTERNAL_USER_ID))
     val subscriptionKeys = getStringOrNull(getColumnIndex(UserSchema.COLUMN_SUBSCRIPTION_KEYS))?.fromJson<List<String>>()
     val groupNamesInclude = getStringOrNull(getColumnIndex(UserSchema.COLUMN_GROUP_NAMES_INCLUDE))?.fromJson<List<String>>()
     val groupNamesExclude = getStringOrNull(getColumnIndex(UserSchema.COLUMN_GROUP_NAMES_EXCLUDE))?.fromJson<List<String>>()
+    val synchronizedWithBackendString = getStringOrNull(getColumnIndex(UserSchema.COLUMN_SYNCHRONIZED_WITH_BACKEND))
+    val synchronizedWithBackend: BooleanDb? = BooleanDb.fromString(synchronizedWithBackendString)
 
-    return if (deviceId == null) {
-        null
-    } else {
+    return if (deviceId != null && createdAt != null) {
         UserDb(
             rowId = rowId,
+            createdAt = Util.formatSqlDateToTimestamp(createdAt),
             deviceId = deviceId,
             externalUserId = externalUserId,
             userAttributes = userAttributes,
             subscriptionKeys = subscriptionKeys,
             groupNamesInclude = groupNamesInclude,
-            groupNamesExclude = groupNamesExclude
+            groupNamesExclude = groupNamesExclude,
+            isSynchronizedWithBackend = synchronizedWithBackend
         )
+    } else {
+        null
     }
 }

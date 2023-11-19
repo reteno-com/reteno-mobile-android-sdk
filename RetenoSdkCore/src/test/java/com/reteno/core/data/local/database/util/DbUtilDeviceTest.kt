@@ -2,13 +2,16 @@ package com.reteno.core.data.local.database.util
 
 import android.content.ContentValues
 import android.database.Cursor
+import androidx.core.database.getLongOrNull
 import androidx.core.database.getStringOrNull
 import com.reteno.core.base.robolectric.BaseRobolectricTest
+import com.reteno.core.data.local.database.schema.DbSchema
 import com.reteno.core.data.local.database.schema.DeviceSchema
 import com.reteno.core.data.local.model.BooleanDb
 import com.reteno.core.data.local.model.device.DeviceCategoryDb
 import com.reteno.core.data.local.model.device.DeviceDb
 import com.reteno.core.data.local.model.device.DeviceOsDb
+import com.reteno.core.util.Util
 import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
@@ -23,6 +26,7 @@ class DbUtilDeviceTest : BaseRobolectricTest() {
         private const val ROW_ID = "12"
         private const val DEVICE_ID = "valueDeviceId"
         private const val EXTERNAL_USER_ID = "valueExternalUserId"
+        private const val CREATED_AT = 0L
 
         private const val PUSH_TOKEN = "valuePushToken"
         private val PUSH_SUBSCRIBED = BooleanDb.TRUE
@@ -34,20 +38,23 @@ class DbUtilDeviceTest : BaseRobolectricTest() {
         private const val LANGUAGE_CODE = "valueLanguageCode"
         private const val TIME_ZONE = "valueTimeZone"
         private const val ADVERTISING_ID = "valueAdvertisingId"
+        private val SYNCHRONIZED_WITH_BACKEND = BooleanDb.FALSE
 
         private const val COLUMN_INDEX_ROW_ID = 1
-        private const val COLUMN_INDEX_DEVICE_ID = 2
-        private const val COLUMN_INDEX_EXTERNAL_USER_ID = 3
-        private const val COLUMN_INDEX_PUSH_TOKEN = 4
-        private const val COLUMN_INDEX_PUSH_SUBSCRIBED = 5
-        private const val COLUMN_INDEX_CATEGORY = 6
-        private const val COLUMN_INDEX_OS_TYPE = 7
-        private const val COLUMN_INDEX_OS_VERSION = 8
-        private const val COLUMN_INDEX_DEVICE_MODEL = 9
-        private const val COLUMN_INDEX_APP_VERSION = 10
-        private const val COLUMN_INDEX_LANGUAGE_CODE = 11
-        private const val COLUMN_INDEX_TIME_ZONE = 12
-        private const val COLUMN_INDEX_ADVERTISING_ID = 13
+        private const val COLUMN_INDEX_TIMESTAMP = 2
+        private const val COLUMN_INDEX_DEVICE_ID = 3
+        private const val COLUMN_INDEX_EXTERNAL_USER_ID = 4
+        private const val COLUMN_INDEX_PUSH_TOKEN = 5
+        private const val COLUMN_INDEX_PUSH_SUBSCRIBED = 6
+        private const val COLUMN_INDEX_CATEGORY = 7
+        private const val COLUMN_INDEX_OS_TYPE = 8
+        private const val COLUMN_INDEX_OS_VERSION = 9
+        private const val COLUMN_INDEX_DEVICE_MODEL = 10
+        private const val COLUMN_INDEX_APP_VERSION = 11
+        private const val COLUMN_INDEX_LANGUAGE_CODE = 12
+        private const val COLUMN_INDEX_TIME_ZONE = 13
+        private const val COLUMN_INDEX_ADVERTISING_ID = 14
+        private const val COLUMN_INDEX_SYNCHRONIZED_WITH_BACKEND = 15
     }
     // endregion constants -------------------------------------------------------------------------
 
@@ -62,6 +69,7 @@ class DbUtilDeviceTest : BaseRobolectricTest() {
         super.before()
         contentValues.clear()
         mockColumnIndexes()
+
     }
 
     override fun after() {
@@ -99,7 +107,8 @@ class DbUtilDeviceTest : BaseRobolectricTest() {
             DeviceSchema.COLUMN_APP_VERSION,
             DeviceSchema.COLUMN_LANGUAGE_CODE,
             DeviceSchema.COLUMN_TIMEZONE,
-            DeviceSchema.COLUMN_ADVERTISING_ID
+            DeviceSchema.COLUMN_ADVERTISING_ID,
+            DeviceSchema.COLUMN_SYNCHRONIZED_WITH_BACKEND
         )
 
         // When
@@ -128,6 +137,7 @@ class DbUtilDeviceTest : BaseRobolectricTest() {
 
         val expectedDevice = DeviceDb(
             rowId = ROW_ID,
+            createdAt = CREATED_AT,
             deviceId = DEVICE_ID,
             externalUserId = EXTERNAL_USER_ID,
             pushToken = PUSH_TOKEN,
@@ -139,7 +149,8 @@ class DbUtilDeviceTest : BaseRobolectricTest() {
             appVersion = APP_VERSION,
             languageCode = LANGUAGE_CODE,
             timeZone = TIME_ZONE,
-            advertisingId = ADVERTISING_ID
+            advertisingId = ADVERTISING_ID,
+            isSynchronizedWithBackend = SYNCHRONIZED_WITH_BACKEND
         )
 
         // When
@@ -156,6 +167,7 @@ class DbUtilDeviceTest : BaseRobolectricTest() {
 
         val expectedDevice = DeviceDb(
             rowId = null,
+            createdAt = CREATED_AT,
             deviceId = DEVICE_ID,
             externalUserId = null,
             pushToken = null,
@@ -167,7 +179,8 @@ class DbUtilDeviceTest : BaseRobolectricTest() {
             appVersion = null,
             languageCode = null,
             timeZone = null,
-            advertisingId = null
+            advertisingId = null,
+            isSynchronizedWithBackend = null
         )
 
         // When
@@ -180,8 +193,10 @@ class DbUtilDeviceTest : BaseRobolectricTest() {
     // region helper methods -----------------------------------------------------------------------
     private fun mockDeviceFull() {
         every { cursor.isNull(any()) } returns false
+        every { Util.formatSqlDateToTimestamp("") } returns 0L
 
         every { cursor.getStringOrNull(COLUMN_INDEX_ROW_ID) } returns ROW_ID
+        every { cursor.getStringOrNull(COLUMN_INDEX_TIMESTAMP) } returns ""
         every { cursor.getStringOrNull(COLUMN_INDEX_DEVICE_ID) } returns DEVICE_ID
         every { cursor.getStringOrNull(COLUMN_INDEX_EXTERNAL_USER_ID) } returns EXTERNAL_USER_ID
         every { cursor.getStringOrNull(COLUMN_INDEX_PUSH_TOKEN) } returns PUSH_TOKEN
@@ -194,12 +209,15 @@ class DbUtilDeviceTest : BaseRobolectricTest() {
         every { cursor.getStringOrNull(COLUMN_INDEX_LANGUAGE_CODE) } returns LANGUAGE_CODE
         every { cursor.getStringOrNull(COLUMN_INDEX_TIME_ZONE) } returns TIME_ZONE
         every { cursor.getStringOrNull(COLUMN_INDEX_ADVERTISING_ID) } returns ADVERTISING_ID
+        every { cursor.getStringOrNull(COLUMN_INDEX_SYNCHRONIZED_WITH_BACKEND) } returns SYNCHRONIZED_WITH_BACKEND.toString()
     }
 
     private fun mockDeviceDeviceIdOnly() {
         every { cursor.isNull(any()) } returns false
+        every { Util.formatSqlDateToTimestamp("") } returns 0L
 
         every { cursor.getStringOrNull(COLUMN_INDEX_ROW_ID) } returns null
+        every { cursor.getStringOrNull(COLUMN_INDEX_TIMESTAMP) } returns ""
         every { cursor.getStringOrNull(COLUMN_INDEX_DEVICE_ID) } returns DEVICE_ID
         every { cursor.getStringOrNull(COLUMN_INDEX_EXTERNAL_USER_ID) } returns null
         every { cursor.getStringOrNull(COLUMN_INDEX_PUSH_TOKEN) } returns null
@@ -213,10 +231,12 @@ class DbUtilDeviceTest : BaseRobolectricTest() {
         every { cursor.getStringOrNull(COLUMN_INDEX_LANGUAGE_CODE) } returns null
         every { cursor.getStringOrNull(COLUMN_INDEX_TIME_ZONE) } returns null
         every { cursor.getStringOrNull(COLUMN_INDEX_ADVERTISING_ID) } returns null
+        every { cursor.getStringOrNull(COLUMN_INDEX_SYNCHRONIZED_WITH_BACKEND) } returns null
     }
 
     private fun mockColumnIndexes() {
         every { cursor.getColumnIndex(DeviceSchema.COLUMN_DEVICE_ROW_ID) } returns COLUMN_INDEX_ROW_ID
+        every { cursor.getColumnIndex(DbSchema.COLUMN_TIMESTAMP) } returns COLUMN_INDEX_TIMESTAMP
         every { cursor.getColumnIndex(DeviceSchema.COLUMN_DEVICE_ID) } returns COLUMN_INDEX_DEVICE_ID
         every { cursor.getColumnIndex(DeviceSchema.COLUMN_EXTERNAL_USER_ID) } returns COLUMN_INDEX_EXTERNAL_USER_ID
         every { cursor.getColumnIndex(DeviceSchema.COLUMN_PUSH_TOKEN) } returns COLUMN_INDEX_PUSH_TOKEN
@@ -229,6 +249,7 @@ class DbUtilDeviceTest : BaseRobolectricTest() {
         every { cursor.getColumnIndex(DeviceSchema.COLUMN_LANGUAGE_CODE) } returns COLUMN_INDEX_LANGUAGE_CODE
         every { cursor.getColumnIndex(DeviceSchema.COLUMN_TIMEZONE) } returns COLUMN_INDEX_TIME_ZONE
         every { cursor.getColumnIndex(DeviceSchema.COLUMN_ADVERTISING_ID) } returns COLUMN_INDEX_ADVERTISING_ID
+        every { cursor.getColumnIndex(DeviceSchema.COLUMN_SYNCHRONIZED_WITH_BACKEND) } returns COLUMN_INDEX_SYNCHRONIZED_WITH_BACKEND
     }
     // endregion helper methods --------------------------------------------------------------------
 }

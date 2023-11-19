@@ -34,7 +34,7 @@ internal interface RetenoDatabase {
 
     fun delete(table: String, whereClause: String? = null, whereArgs: Array<String?>? = null): Int
 
-    fun getRowCount(tableName: String): Long
+    fun getRowCount(tableName: String, whereClause: String? = null, whereArgs: Array<String?>? = null): Long
 
     /**
      * Call this method each time you remove any record from Event table (Child table)

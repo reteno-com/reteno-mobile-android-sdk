@@ -12,6 +12,7 @@ import com.reteno.core.data.local.database.util.getUser
 import com.reteno.core.data.local.database.util.putUser
 import com.reteno.core.data.local.database.util.putUserAddress
 import com.reteno.core.data.local.database.util.putUserAttributes
+import com.reteno.core.data.local.model.BooleanDb
 import com.reteno.core.data.local.model.user.UserDb
 import com.reteno.core.util.Logger
 
@@ -58,6 +59,7 @@ internal class RetenoDatabaseManagerUserImpl(private val database: RetenoDatabas
                     "  ${UserSchema.TABLE_NAME_USER}.${UserSchema.COLUMN_SUBSCRIPTION_KEYS} AS ${UserSchema.COLUMN_SUBSCRIPTION_KEYS}," +
                     "  ${UserSchema.TABLE_NAME_USER}.${UserSchema.COLUMN_GROUP_NAMES_INCLUDE} AS ${UserSchema.COLUMN_GROUP_NAMES_INCLUDE}," +
                     "  ${UserSchema.TABLE_NAME_USER}.${UserSchema.COLUMN_GROUP_NAMES_EXCLUDE} AS ${UserSchema.COLUMN_GROUP_NAMES_EXCLUDE}," +
+                    "  ${UserSchema.TABLE_NAME_USER}.${UserSchema.COLUMN_SYNCHRONIZED_WITH_BACKEND} AS ${UserSchema.COLUMN_SYNCHRONIZED_WITH_BACKEND}," +
                     "  ${UserSchema.UserAttributesSchema.TABLE_NAME_USER_ATTRIBUTES}.${UserSchema.UserAttributesSchema.COLUMN_PHONE} AS ${UserSchema.UserAttributesSchema.COLUMN_PHONE}," +
                     "  ${UserSchema.UserAttributesSchema.TABLE_NAME_USER_ATTRIBUTES}.${UserSchema.UserAttributesSchema.COLUMN_EMAIL} AS ${UserSchema.UserAttributesSchema.COLUMN_EMAIL}," +
                     "  ${UserSchema.UserAttributesSchema.TABLE_NAME_USER_ATTRIBUTES}.${UserSchema.UserAttributesSchema.COLUMN_FIRST_NAME} AS ${UserSchema.UserAttributesSchema.COLUMN_FIRST_NAME}," +
@@ -107,7 +109,11 @@ internal class RetenoDatabaseManagerUserImpl(private val database: RetenoDatabas
         return userList
     }
 
-    override fun getUserCount(): Long = database.getRowCount(UserSchema.TABLE_NAME_USER)
+    override fun getUserCount(): Long = database.getRowCount(
+        UserSchema.TABLE_NAME_USER,
+        whereClause = "${UserSchema.COLUMN_SYNCHRONIZED_WITH_BACKEND}<>?",
+        whereArgs = arrayOf(BooleanDb.TRUE.toString())
+    )
 
     override fun deleteUser(user: UserDb): Boolean {
         /*@formatter:off*/ Logger.i(TAG, "deleteUser(): ", "user = [", user, "]")
@@ -120,6 +126,21 @@ internal class RetenoDatabaseManagerUserImpl(private val database: RetenoDatabas
         )
 
         return removedRecordsCount > 0
+    }
+
+    override fun deleteUsers(users: List<UserDb>) {
+        /*@formatter:off*/ Logger.i(TAG, "deleteUsers(): ", "users: [", users, "]")
+        /*@formatter:on*/
+
+        val rowIds = users.mapNotNull { it.rowId }
+
+        for (rowId: String in rowIds) {
+            database.delete(
+                table = UserSchema.TABLE_NAME_USER,
+                whereClause = "${UserSchema.COLUMN_USER_ROW_ID}=?",
+                whereArgs = arrayOf(rowId)
+            )
+        }
     }
 
     companion object {
