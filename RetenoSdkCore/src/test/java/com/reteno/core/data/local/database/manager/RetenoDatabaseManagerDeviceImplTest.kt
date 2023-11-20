@@ -279,7 +279,13 @@ class RetenoDatabaseManagerDeviceImplTest : BaseRobolectricTest() {
     fun givenDeviceCountNonEmpty_whenGetDeviceCount_thenCountReturned() {
         // Given
         val recordsCount = 5L
-        every { database.getRowCount(DeviceSchema.TABLE_NAME_DEVICE) } returns recordsCount
+        every {
+            database.getRowCount(
+                DeviceSchema.TABLE_NAME_DEVICE,
+                whereClause = "${DeviceSchema.COLUMN_SYNCHRONIZED_WITH_BACKEND}<>?",
+                whereArgs = arrayOf(BooleanDb.TRUE.toString())
+            )
+        } returns recordsCount
 
         // When
         val count = SUT.getDeviceCount()

@@ -9,6 +9,7 @@ internal object UserSchema {
     internal const val COLUMN_SUBSCRIPTION_KEYS = "subscriptionKeys"
     internal const val COLUMN_GROUP_NAMES_INCLUDE = "groupNamesInclude"
     internal const val COLUMN_GROUP_NAMES_EXCLUDE = "groupNamesExclude"
+    internal const val COLUMN_SYNCHRONIZED_WITH_BACKEND = "synchronizedWithBackend"
 
     internal const val SQL_CREATE_TABLE =
         "CREATE TABLE IF NOT EXISTS $TABLE_NAME_USER" +
@@ -19,8 +20,12 @@ internal object UserSchema {
                 "$COLUMN_EXTERNAL_USER_ID TEXT, " +
                 "$COLUMN_SUBSCRIPTION_KEYS TEXT, " +
                 "$COLUMN_GROUP_NAMES_INCLUDE TEXT, " +
-                "$COLUMN_GROUP_NAMES_EXCLUDE TEXT" +
+                "$COLUMN_GROUP_NAMES_EXCLUDE TEXT," +
+                "$COLUMN_SYNCHRONIZED_WITH_BACKEND TEXT" +
                 ")"
+
+    internal const val SQL_UPGRADE_TABLE_VERSION_6 =
+        "ALTER TABLE $TABLE_NAME_USER ADD COLUMN $COLUMN_SYNCHRONIZED_WITH_BACKEND TEXT"
 
     internal object UserAttributesSchema {
         internal const val TABLE_NAME_USER_ATTRIBUTES = "UserAttributes"

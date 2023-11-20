@@ -156,28 +156,7 @@ class ContactRepositoryImplTest : BaseRobolectricTest() {
         // Given
         val deviceDataDb = mockk<DeviceDb>(relaxed = true)
         every { databaseManagerDevice.getDevices(any()) } returnsMany listOf(listOf(deviceDataDb), listOf(deviceDataDb), emptyList())
-        every { databaseManagerDevice.deleteDevice(deviceDataDb) } returns true
-        every { apiClient.post(url = any(), jsonBody = any(), responseHandler = any()) } answers {
-            val callback = thirdArg<ResponseCallback>()
-            callback.onSuccess("")
-        }
-
-        // When
-        SUT.pushDeviceData()
-
-        // Then
-        verify(exactly = 2) { apiClient.post(any(), any(), any()) }
-        verify(exactly = 2) { databaseManagerDevice.deleteDevice(deviceDataDb) }
-        verify(exactly = 1) { PushOperationQueue.nextOperation() }
-        verify(exactly = 2) { configRepository.saveDeviceRegistered(true) }
-    }
-
-    @Test
-    fun whenDevicePushSuccessfulAndCacheNotUpdated_thenNextOperation() {
-        // Given
-        val deviceDataDb = mockk<DeviceDb>(relaxed = true)
-        every { databaseManagerDevice.getDevices(any()) } returnsMany listOf(listOf(deviceDataDb), listOf(deviceDataDb), emptyList())
-        every { databaseManagerDevice.deleteDevice(deviceDataDb) } returns false
+        every { databaseManagerDevice.deleteDevices(any()) } returns Unit
         every { apiClient.post(url = any(), jsonBody = any(), responseHandler = any()) } answers {
             val callback = thirdArg<ResponseCallback>()
             callback.onSuccess("")
@@ -188,7 +167,28 @@ class ContactRepositoryImplTest : BaseRobolectricTest() {
 
         // Then
         verify(exactly = 1) { apiClient.post(any(), any(), any()) }
-        verify(exactly = 1) { databaseManagerDevice.deleteDevice(deviceDataDb) }
+        verify(exactly = 1) { databaseManagerDevice.deleteDevices(any()) }
+        verify(exactly = 1) { PushOperationQueue.nextOperation() }
+        verify(exactly = 1) { configRepository.saveDeviceRegistered(true) }
+    }
+
+    @Test
+    fun whenDevicePushSuccessfulAndCacheNotUpdated_thenNextOperation() {
+        // Given
+        val deviceDataDb = mockk<DeviceDb>(relaxed = true)
+        every { databaseManagerDevice.getDevices(any()) } returnsMany listOf(listOf(deviceDataDb), listOf(deviceDataDb), emptyList())
+        every { databaseManagerDevice.deleteDevices(any()) } returns Unit
+        every { apiClient.post(url = any(), jsonBody = any(), responseHandler = any()) } answers {
+            val callback = thirdArg<ResponseCallback>()
+            callback.onSuccess("")
+        }
+
+        // When
+        SUT.pushDeviceData()
+
+        // Then
+        verify(exactly = 1) { apiClient.post(any(), any(), any()) }
+        verify(exactly = 1) { databaseManagerDevice.deleteDevices(any()) }
         verify(exactly = 1) { PushOperationQueue.nextOperation() }
         verify(exactly = 1) { configRepository.saveDeviceRegistered(true) }
     }
@@ -217,7 +217,8 @@ class ContactRepositoryImplTest : BaseRobolectricTest() {
         // Given
         val deviceDataDb = mockk<DeviceDb>(relaxed = true)
         every { databaseManagerDevice.getDevices(any()) } returnsMany listOf(listOf(deviceDataDb), listOf(deviceDataDb), emptyList())
-        every { databaseManagerDevice.deleteDevice(deviceDataDb) } returns true
+        every { databaseManagerDevice.deleteDevices(any()) } returns Unit
+        every { databaseManagerDevice.getDeviceCount() } returnsMany listOf(1, 0)
         every { apiClient.post(url = any(), jsonBody = any(), responseHandler = any()) } answers {
             val callback = thirdArg<ResponseCallback>()
             callback.onFailure(SERVER_ERROR_REPEATABLE, null, null)
@@ -228,9 +229,8 @@ class ContactRepositoryImplTest : BaseRobolectricTest() {
 
         // Then
         verify(exactly = 2) { apiClient.post(any(), any(), any()) }
-        verify(exactly = 3) { databaseManagerDevice.getDevices(1) }
-        verify(exactly = 2) { databaseManagerDevice.deleteDevice(deviceDataDb) }
-        verify(exactly = 1) { PushOperationQueue.nextOperation() }
+        verify(exactly = 2) { databaseManagerDevice.getDevices(any()) }
+        verify(exactly = 2) { databaseManagerDevice.deleteDevices(any()) }
         verify(exactly = 2) { PushOperationQueue.removeAllOperations() }
         verify(exactly = 0) { configRepository.saveDeviceRegistered(any()) }
     }
@@ -241,6 +241,7 @@ class ContactRepositoryImplTest : BaseRobolectricTest() {
         val deviceDataDb = mockk<DeviceDb>(relaxed = true)
         every { databaseManagerDevice.getDevices(any()) } returnsMany listOf(listOf(deviceDataDb), listOf(deviceDataDb), emptyList())
         every { databaseManagerDevice.deleteDevice(deviceDataDb) } returns false
+        every { databaseManagerDevice.getDeviceCount() } returns 0
         every { apiClient.post(url = any(), jsonBody = any(), responseHandler = any()) } answers {
             val callback = thirdArg<ResponseCallback>()
             callback.onFailure(400, null, null)
@@ -251,8 +252,8 @@ class ContactRepositoryImplTest : BaseRobolectricTest() {
 
         // Then
         verify(exactly = 1) { apiClient.post(any(), any(), any()) }
-        verify(exactly = 1) { databaseManagerDevice.getDevices(1) }
-        verify(exactly = 1) { databaseManagerDevice.deleteDevice(deviceDataDb) }
+        verify(exactly = 1) { databaseManagerDevice.getDevices() }
+        verify(exactly = 1) { databaseManagerDevice.deleteDevices(any()) }
         verify(exactly = 0) { PushOperationQueue.nextOperation() }
         verify(exactly = 1) { PushOperationQueue.removeAllOperations() }
         verify(exactly = 0) { configRepository.saveDeviceRegistered(any()) }
@@ -328,31 +329,11 @@ class ContactRepositoryImplTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun whenUserPushSuccessfulAndCacheUpdated_thenTryPushNextUser() {
-        // Given
-        val userData = mockk<UserDb>(relaxed = true)
-        every { databaseManagerUser.getUsers(any()) } returnsMany listOf(listOf(userData), listOf(userData), emptyList())
-        every { databaseManagerUser.deleteUser(userData) } returns true
-        every { apiClient.post(url = any(), jsonBody = any(), responseHandler = any()) } answers {
-            val callback = thirdArg<ResponseCallback>()
-            callback.onSuccess("")
-        }
-
-        // When
-        SUT.pushUserData()
-
-        // Then
-        verify(exactly = 2) { apiClient.post(any(), any(), any()) }
-        verify(exactly = 2) { databaseManagerUser.deleteUser(userData) }
-        verify(exactly = 1) { PushOperationQueue.nextOperation() }
-    }
-
-    @Test
     fun whenUserPushSuccessfulAndCacheNotUpdated_thenNextOperation() {
         // Given
         val userData = mockk<UserDb>(relaxed = true)
         every { databaseManagerUser.getUsers(any()) } returnsMany listOf(listOf(userData), listOf(userData), emptyList())
-        every { databaseManagerUser.deleteUser(userData) } returns false
+        every { databaseManagerUser.deleteUsers(any()) } returns Unit
         every { apiClient.post(url = any(), jsonBody = any(), responseHandler = any()) } answers {
             val callback = thirdArg<ResponseCallback>()
             callback.onSuccess("")
@@ -363,7 +344,7 @@ class ContactRepositoryImplTest : BaseRobolectricTest() {
 
         // Then
         verify(exactly = 1) { apiClient.post(any(), any(), any()) }
-        verify(exactly = 1) { databaseManagerUser.deleteUser(userData) }
+        verify(exactly = 1) { databaseManagerUser.deleteUsers(any()) }
         verify(exactly = 1) { PushOperationQueue.nextOperation() }
     }
 
@@ -386,33 +367,11 @@ class ContactRepositoryImplTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun whenUserPushFailedAndErrorIsNonRepeatableAndCacheUpdated_thenTryPushNextUser() {
-        // Given
-        val userData = mockk<UserDb>(relaxed = true)
-        every { databaseManagerUser.getUsers(any()) } returnsMany listOf(listOf(userData), listOf(userData), emptyList())
-        every { databaseManagerUser.deleteUser(userData) } returns true
-        every { apiClient.post(url = any(), jsonBody = any(), responseHandler = any()) } answers {
-            val callback = thirdArg<ResponseCallback>()
-            callback.onFailure(SERVER_ERROR_REPEATABLE, null, null)
-        }
-
-        // When
-        SUT.pushUserData()
-
-        // Then
-        verify(exactly = 2) { apiClient.post(any(), any(), any()) }
-        verify(exactly = 3) { databaseManagerUser.getUsers(1) }
-        verify(exactly = 2) { databaseManagerUser.deleteUser(userData) }
-        verify(exactly = 1) { PushOperationQueue.nextOperation() }
-        verify(exactly = 0) { PushOperationQueue.removeAllOperations() }
-    }
-
-    @Test
     fun whenUserPushFailedAndErrorIsNonRepeatableAndCacheNotUpdated_thenIncorrectUserRemoved() {
         // Given
         val userData = mockk<UserDb>(relaxed = true)
-        every { databaseManagerUser.getUsers(any()) } returnsMany listOf(listOf(userData), listOf(userData), emptyList())
-        every { databaseManagerUser.deleteUser(userData) } returns false
+        every { databaseManagerUser.getUsers() } returnsMany listOf(listOf(userData), listOf(userData), emptyList())
+        every { databaseManagerUser.deleteUsers(any()) } returns Unit
         every { apiClient.post(url = any(), jsonBody = any(), responseHandler = any()) } answers {
             val callback = thirdArg<ResponseCallback>()
             callback.onFailure(400, null, null)
@@ -423,8 +382,8 @@ class ContactRepositoryImplTest : BaseRobolectricTest() {
 
         // Then
         verify(exactly = 1) { apiClient.post(any(), any(), any()) }
-        verify(exactly = 1) { databaseManagerUser.getUsers(1) }
-        verify(exactly = 1) { databaseManagerUser.deleteUser(userData) }
+        verify(exactly = 1) { databaseManagerUser.getUsers() }
+        verify(exactly = 1) { databaseManagerUser.deleteUsers(any()) }
         verify(exactly = 0) { PushOperationQueue.nextOperation() }
         verify(exactly = 0) { PushOperationQueue.removeAllOperations() }
     }

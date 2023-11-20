@@ -7,20 +7,24 @@ import android.content.pm.ResolveInfo
 import android.database.sqlite.SQLiteDatabase
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GoogleApiAvailability
 import com.reteno.core.RetenoImpl
+import com.reteno.core.domain.SchedulerUtils
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import net.sqlcipher.database.SQLiteStatement
 import java.io.*
+import java.text.SimpleDateFormat
 import java.time.Instant
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
+import java.util.Locale
 import net.sqlcipher.database.SQLiteDatabase as CipherSQLiteDatabase
 
 fun <T : Any> allElementsNull(vararg elements: T?) = elements.all { it == null }
@@ -113,6 +117,10 @@ object Util {
         .ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'")
         .withZone(ZoneId.of("UTC"))
 
+    private val sqlToTimestampFormat by lazy {
+        SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+    }
+
     init {
         CoroutineScope(IO).launch {
             val debugString = getSysProp(PROP_KEY_DEBUG_VIEW)
@@ -164,6 +172,20 @@ object Util {
 
     fun ZonedDateTime.formatToRemote(): String {
         return formatter.format(this)
+    }
+
+    fun formatSqlDateToTimestamp(sqlDate: String): Long {
+        return sqlToTimestampFormat.parse(sqlDate)?.time ?: 0L
+    }
+
+    /**
+     *  Returns true if timestamp is older than 40 hours
+     */
+    fun isTimestampOutdated(oldTimestamp: Long, newTimestamp: Long): Boolean {
+        if (newTimestamp < oldTimestamp) return true
+
+        val diff = newTimestamp - oldTimestamp
+        return diff > SchedulerUtils.getOutdatedDeviceAndUserTime()
     }
 
     private fun getSysProp(key: String): String {
