@@ -7,4 +7,6 @@ object Constants {
     const val BROADCAST_ACTION_PUSH_PERMISSION_CHANGED = "com.reteno.push-permission-changed"
 
     const val BROADCAST_ACTION_CUSTOM_PUSH = "com.reteno.custom-push"
+
+    const val BROADCAST_ACTION_CUSTOM_INAPP_DATA = "com.reteno.custom-inapp-data"
 }
