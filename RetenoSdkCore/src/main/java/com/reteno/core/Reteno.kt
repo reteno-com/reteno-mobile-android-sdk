@@ -73,6 +73,11 @@ interface Reteno {
      */
     fun autoScreenTracking(config: ScreenTrackingConfig)
 
+    /**
+     *  Updates status of POST_NOTIFICATIONS permission and pushes it to backend if status was changed.
+     *  Call this function after acquiring result from runtime permission on Android 13 and above
+     */
+    fun updatePushPermissionStatus()
 
     /**
      *  Sends stored data without waiting for a send queue.
