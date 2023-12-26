@@ -16,6 +16,8 @@ import androidx.core.content.ContextCompat;
 import androidx.navigation.fragment.NavHostFragment;
 
 import com.google.android.material.snackbar.Snackbar;
+import com.reteno.core.Reteno;
+import com.reteno.core.RetenoApplication;
 import com.reteno.sample.databinding.ActivityMainBinding;
 
 
@@ -25,6 +27,7 @@ public class MainActivity extends AppCompatActivity {
 
     private final ActivityResultLauncher<String> requestPermissionLauncher = registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
         if (isGranted) {
+            ((RetenoApplication) getApplicationContext()).getRetenoInstance().updatePushPermissionStatus();
             Toast.makeText(this, "Permission granted", Toast.LENGTH_SHORT).show();
         } else {
             Toast.makeText(this, "Permission not granted", Toast.LENGTH_SHORT).show();

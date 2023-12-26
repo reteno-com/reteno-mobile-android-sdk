@@ -58,8 +58,8 @@ class ContactController(
         configRepository.getFcmToken { oldToken ->
             token.takeIf { it != oldToken }?.let {
                 configRepository.saveFcmToken(it)
-                onNewContact(it, toParallelWork = false)
             }
+            onNewContact(token, toParallelWork = false)
         }
     }
 
