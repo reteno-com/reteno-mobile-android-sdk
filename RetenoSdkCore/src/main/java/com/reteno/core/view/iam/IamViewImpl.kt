@@ -1,12 +1,14 @@
 package com.reteno.core.view.iam
 
 import android.app.Activity
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.res.Resources
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.net.Uri
+import android.os.Bundle
 import android.util.Log
 import android.view.Gravity
 import android.view.ViewGroup.LayoutParams
@@ -17,6 +19,7 @@ import android.webkit.WebView
 import android.widget.FrameLayout
 import android.widget.PopupWindow
 import androidx.cardview.widget.CardView
+import androidx.core.os.toPersistableBundle
 import androidx.core.widget.PopupWindowCompat
 import com.reteno.core.RetenoApplication
 import com.reteno.core.RetenoImpl
@@ -30,7 +33,9 @@ import com.reteno.core.features.iam.IamJsEventType
 import com.reteno.core.features.iam.IamJsPayload
 import com.reteno.core.features.iam.RetenoAndroidHandler
 import com.reteno.core.lifecycle.RetenoActivityHelper
+import com.reteno.core.util.Constants
 import com.reteno.core.util.Logger
+import com.reteno.core.util.queryBroadcastReceivers
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancelChildren
@@ -111,17 +116,12 @@ internal class IamViewImpl(
             )
         )
         scheduleController.forcePush()
-        jsEvent.payload?.url.takeUnless { it.isNullOrBlank() }?.let {
-            val deepLinkIntent = Intent(Intent.ACTION_VIEW, Uri.parse(it))
-            deepLinkIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-            try {
-                OperationQueue.addUiOperation {
-                    activityHelper.currentActivity?.startActivity(deepLinkIntent)
-                }
-            } catch (e: Throwable) {
-                Logger.e(TAG, "openUrl()", e)
-            }
+
+        jsEvent.payload?.let {
+            val isCustomDataSent = tryHandleCustomData(it.url, it.customData)
+            if (isCustomDataSent.not()) tryHandleUrl(jsEvent)
         }
+
         teardown()
     }
 
@@ -326,6 +326,44 @@ internal class IamViewImpl(
                 webView.removeJavascriptInterface(JS_INTERFACE_NAME)
             }
             isViewShown.set(false)
+        }
+    }
+
+    private fun tryHandleCustomData(url: String?, customData: Map<String, String>?): Boolean {
+        val bundle = Bundle()
+        bundle.putString("url", url)
+        customData?.entries?.forEach { entry ->
+            bundle.putString(entry.key, entry.value)
+        }
+
+        val intent =
+            Intent(Constants.BROADCAST_ACTION_CUSTOM_INAPP_DATA).setFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES)
+        intent.putExtras(bundle)
+
+        val infoList = RetenoImpl.application.queryBroadcastReceivers(intent)
+        var customDataSent = false
+        for (info in infoList) {
+            info?.activityInfo?.let {
+                intent.component = ComponentName(it.packageName, it.name)
+                RetenoImpl.application.sendBroadcast(intent)
+                customDataSent = true
+            }
+        }
+
+        return customDataSent
+    }
+
+    private fun tryHandleUrl(jsEvent: IamJsEvent) {
+        jsEvent.payload?.url.takeUnless { it.isNullOrBlank() }?.let {
+            val deepLinkIntent = Intent(Intent.ACTION_VIEW, Uri.parse(it))
+            deepLinkIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            try {
+                OperationQueue.addUiOperation {
+                    activityHelper.currentActivity?.startActivity(deepLinkIntent)
+                }
+            } catch (e: Throwable) {
+                Logger.e(TAG, "openUrl()", e)
+            }
         }
     }
 
