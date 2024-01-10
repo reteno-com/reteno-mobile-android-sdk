@@ -33,5 +33,15 @@
                 <action android:name="com.reteno.app-resume" />
             </intent-filter>
         </receiver>
+
+        <receiver
+            android:name="com.reteno.push.receiver.PushPermissionChangedReceiver"
+            android:enabled="true"
+            android:exported="false" >
+
+            <intent-filter>
+                <action android:name="com.reteno.push-permission-changed" />
+            </intent-filter>
+        </receiver>
     </application>
 </manifest>

@@ -2,7 +2,9 @@ package com.reteno.core
 
 import android.app.Activity
 import android.app.Application
+import android.app.NotificationManager
 import android.content.ComponentName
+import android.content.Context
 import android.content.Intent
 import com.reteno.core.di.ServiceLocator
 import com.reteno.core.domain.controller.ScreenTrackingController
@@ -14,6 +16,7 @@ import com.reteno.core.lifecycle.RetenoActivityHelper
 import com.reteno.core.lifecycle.RetenoLifecycleCallbacks
 import com.reteno.core.lifecycle.ScreenTrackingConfig
 import com.reteno.core.util.*
+import com.reteno.core.util.Constants.BROADCAST_ACTION_PUSH_PERMISSION_CHANGED
 import com.reteno.core.util.Constants.BROADCAST_ACTION_RETENO_APP_RESUME
 import com.reteno.core.view.iam.IamView
 
@@ -217,6 +220,18 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
         } catch (ex: Throwable) {
             /*@formatter:off*/ Logger.e(TAG, "autoScreenTracking(): config = [$config]", ex)
             /*@formatter:on*/
+        }
+    }
+
+    override fun updatePushPermissionStatus() {
+        val intent =
+            Intent(BROADCAST_ACTION_PUSH_PERMISSION_CHANGED).setFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES)
+        val infoList = application.queryBroadcastReceivers(intent)
+        for (info in infoList) {
+            info?.activityInfo?.let {
+                intent.component = ComponentName(it.packageName, it.name)
+                application.sendBroadcast(intent)
+            }
         }
     }
 
