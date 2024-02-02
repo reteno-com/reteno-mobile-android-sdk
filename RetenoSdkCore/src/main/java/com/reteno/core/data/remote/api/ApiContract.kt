@@ -85,6 +85,22 @@ internal sealed interface ApiContract {
         object WidgetInitFailed: InAppMessages() {
             override val url = "https://site-script.reteno.com/site-script/v1/event"
         }
+
+        object GetInAppMessages: InAppMessages() {
+            override val url = "${BASE_URL}messages"
+        }
+
+        object GetInAppMessagesContent: InAppMessages() {
+            override val url = "${BASE_URL}contents/request"
+        }
+
+        object CheckUserInSegment: InAppMessages() {
+            override val url = "${BASE_URL}async-rules/check"
+        }
+
+        object RegisterInteraction: InAppMessages() {
+            override val url = "${BASE_URL}interaction"
+        }
     }
 
     sealed class LogEvent : ApiContract {

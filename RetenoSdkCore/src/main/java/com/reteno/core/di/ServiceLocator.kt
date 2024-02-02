@@ -194,7 +194,7 @@ class ServiceLocator(context: Context, accessKey: String) {
             eventsControllerProvider
         )
 
-    private val iamControllerProvider: IamControllerProvider =
+    internal val iamControllerProvider: IamControllerProvider =
         IamControllerProvider(iamRepositoryProvider)
 
 

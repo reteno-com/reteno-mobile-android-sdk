@@ -11,6 +11,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.view.Gravity
+import android.view.View
 import android.view.ViewGroup.LayoutParams
 import android.view.WindowManager
 import android.webkit.ConsoleMessage
@@ -25,6 +26,8 @@ import com.reteno.core.RetenoApplication
 import com.reteno.core.RetenoImpl
 import com.reteno.core.data.remote.OperationQueue
 import com.reteno.core.data.remote.mapper.fromJson
+import com.reteno.core.data.remote.model.iam.message.InAppMessage
+import com.reteno.core.data.remote.model.iam.message.InAppMessageContent
 import com.reteno.core.domain.ResultDomain
 import com.reteno.core.domain.controller.IamController
 import com.reteno.core.domain.model.interaction.InteractionAction
@@ -107,15 +110,17 @@ internal class IamViewImpl(
     private fun openUrl(jsEvent: IamJsEvent) {
         /*@formatter:off*/ Logger.i(TAG, "openUrl(): ", "jsEvent = [", jsEvent, "]")
         /*@formatter:on*/
-        interactionController.onInteractionIamClick(
-            interactionId,
-            InteractionAction(
-                jsEvent.type.name,
-                jsEvent.payload?.targetComponentId,
-                jsEvent.payload?.url
+        if (this::interactionId.isInitialized) {
+            interactionController.onInteractionIamClick(
+                interactionId,
+                InteractionAction(
+                    jsEvent.type.name,
+                    jsEvent.payload?.targetComponentId,
+                    jsEvent.payload?.url
+                )
             )
-        )
-        scheduleController.forcePush()
+            scheduleController.forcePush()
+        }
 
         jsEvent.payload?.let {
             val isCustomDataSent = tryHandleCustomData(it.url, it.customData)
@@ -138,6 +143,19 @@ internal class IamViewImpl(
         try {
             teardown()
             iamController.fetchIamFullHtml(interactionId)
+        } catch (e: Exception) {
+            /*@formatter:off*/ Logger.e(TAG, "initialize(): ", e)
+            /*@formatter:on*/
+        }
+    }
+
+    override fun initialize(inAppMessage: InAppMessage?, inAppMessageContent: InAppMessageContent?) {
+        //this.interactionId = inAppMessage.messageId
+        /*@formatter:off*/ //Logger.i(TAG, "initialize(): ", "widgetId = [", interactionId, "]")
+        /*@formatter:on*/
+        try {
+            teardown()
+            iamController.fetchIamFullHtml(inAppMessageContent)
         } catch (e: Exception) {
             /*@formatter:off*/ Logger.e(TAG, "initialize(): ", e)
             /*@formatter:on*/
@@ -213,7 +231,7 @@ internal class IamViewImpl(
             true
         )
 
-        popupWindow.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+        popupWindow.setBackgroundDrawable(ColorDrawable(Color.BLUE))
         popupWindow.isTouchable = true
         // Required for getting fullscreen under notches working in portrait mode
         popupWindow.isClippingEnabled = false
@@ -234,7 +252,7 @@ internal class IamViewImpl(
         cardView.clipChildren = false
         cardView.clipToPadding = false
         cardView.preventCornerOverlap = false
-        cardView.setCardBackgroundColor(Color.TRANSPARENT)
+        cardView.setCardBackgroundColor(Color.RED)
         return cardView
     }
 
@@ -255,7 +273,11 @@ internal class IamViewImpl(
             javaScriptEnabled = true
             domStorageEnabled = true
             databaseEnabled = true
+//            setBuiltInZoomControls(true)
+//            setUseWideViewPort(true)
+//            setLoadWithOverviewMode(true)
         }
+//        webView.setScrollBarStyle(View.SCROLLBARS_OUTSIDE_OVERLAY)
         return webView
     }
 
@@ -291,6 +313,8 @@ internal class IamViewImpl(
         PopupWindowCompat.setWindowLayoutType(popupWindow, displayType)
 
         if (activityHelper.canPresentMessages() && activityHelper.isActivityFullyReady()) {
+            /*@formatter:off*/ Logger.i(TAG, "showIamPopupWindow(): ", "Start showing")
+            /*@formatter:on*/
             popupWindow.showAtLocation(
                 activity.window.decorView.rootView,
                 gravity,

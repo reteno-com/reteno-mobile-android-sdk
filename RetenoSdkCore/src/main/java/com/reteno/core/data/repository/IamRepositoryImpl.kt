@@ -11,6 +11,11 @@ import com.reteno.core.data.remote.mapper.toJson
 import com.reteno.core.data.remote.model.iam.initfailed.Data
 import com.reteno.core.data.remote.model.iam.initfailed.IamJsWidgetInitiFailed
 import com.reteno.core.data.remote.model.iam.initfailed.Payload
+import com.reteno.core.data.remote.model.iam.message.InAppMessage
+import com.reteno.core.data.remote.model.iam.message.InAppMessageContent
+import com.reteno.core.data.remote.model.iam.message.InAppMessagesContentRequest
+import com.reteno.core.data.remote.model.iam.message.InAppMessagesContentResponse
+import com.reteno.core.data.remote.model.iam.message.InAppMessagesResponse
 import com.reteno.core.data.remote.model.iam.widget.WidgetModel
 import com.reteno.core.domain.ResponseCallback
 import com.reteno.core.features.iam.IamJsEvent
@@ -169,6 +174,72 @@ internal class IamRepositoryImpl(
                     /*@formatter:on*/
                 }
             })
+    }
+
+    override suspend fun getInAppMessages(): List<InAppMessage> {
+        /*@formatter:off*/ Logger.i(TAG, "getInAppMessages(): ", "")
+        /*@formatter:on*/
+        return withContext(coroutineDispatcher) {
+            suspendCancellableCoroutine { continuation ->
+                apiClient.get(
+                    url = ApiContract.InAppMessages.GetInAppMessages,
+                    queryParams = null,
+                    responseHandler = object : ResponseCallback {
+                        override fun onSuccess(response: String) {
+                            /*@formatter:off*/ Logger.i(TAG, "getInAppMessages(): onSuccess(): ", "response = [", response, "]")
+                            /*@formatter:on*/
+                            continuation.resume(
+                                response.fromJson<InAppMessagesResponse>().messages
+                            )
+                        }
+
+                        override fun onFailure(
+                            statusCode: Int?,
+                            response: String?,
+                            throwable: Throwable?
+                        ) {
+                            /*@formatter:off*/ Logger.i(TAG, "getInAppMessages(): onFailure(): ", "statusCode = [", statusCode, "], response = [", response, "], throwable = [", throwable, "]")
+                            /*@formatter:on*/
+                            continuation.resume(emptyList())
+//                            continuation.resumeWithException()
+                        }
+                    }
+                )
+            }
+        }
+    }
+
+    override suspend fun getInAppMessagesContent(messageInstanceIds: List<Long>): List<InAppMessageContent> {
+        /*@formatter:off*/ Logger.i(TAG, "getInAppMessagesContent(): ", "messageInstanceIds = [", messageInstanceIds.toString(), "]")
+        /*@formatter:on*/
+        return withContext(coroutineDispatcher) {
+            suspendCancellableCoroutine { continuation ->
+                apiClient.post(
+                    url = ApiContract.InAppMessages.GetInAppMessagesContent,
+                    jsonBody = InAppMessagesContentRequest(messageInstanceIds).toJson(),
+                    responseHandler = object : ResponseCallback {
+                        override fun onSuccess(response: String) {
+                            /*@formatter:off*/ Logger.i(TAG, "getInAppMessagesContent(): onSuccess(): ", "response = [", response, "]")
+                            /*@formatter:on*/
+                            continuation.resume(
+                                response.fromJson<InAppMessagesContentResponse>().contents
+                            )
+                        }
+
+                        override fun onFailure(
+                            statusCode: Int?,
+                            response: String?,
+                            throwable: Throwable?
+                        ) {
+                            /*@formatter:off*/ Logger.i(TAG, "getInAppMessagesContent(): onFailure(): ", "statusCode = [", statusCode, "], response = [", response, "], throwable = [", throwable, "]")
+                            /*@formatter:on*/
+                            continuation.resume(emptyList())
+//                            continuation.resumeWithException()
+                        }
+                    }
+                )
+            }
+        }
     }
 
     companion object {

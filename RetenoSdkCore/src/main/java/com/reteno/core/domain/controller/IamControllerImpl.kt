@@ -1,5 +1,8 @@
 package com.reteno.core.domain.controller
 
+import android.util.Log
+import com.reteno.core.data.remote.model.iam.message.InAppMessage
+import com.reteno.core.data.remote.model.iam.message.InAppMessageContent
 import com.reteno.core.data.repository.IamRepository
 import com.reteno.core.domain.ResultDomain
 import com.reteno.core.features.iam.IamJsEvent
@@ -51,6 +54,30 @@ internal class IamControllerImpl(
         }
     }
 
+    override fun fetchIamFullHtml(messageContent: InAppMessageContent?) {
+        /*@formatter:off*/ Logger.i(TAG, "fetchIamFullHtml(): ", "widgetId = [", this.interactionId, "]")
+        /*@formatter:on*/
+        _fullHtmlStateFlow.value = ResultDomain.Loading
+
+        scope.launch {
+            try {
+                withTimeout(TIMEOUT) {
+                    val baseHtml = iamRepository.getBaseHtml()
+                    val widgetModel = messageContent?.model.toString()
+
+                    var text = baseHtml
+                    text = text.replace(KEY_DOCUMENT_MODEL, widgetModel)
+                    text = text.replace(KEY_PERSONALISATION, "{}")
+
+                    _fullHtmlStateFlow.value = ResultDomain.Success(text)
+                }
+            } catch (e: TimeoutCancellationException) {
+                _fullHtmlStateFlow.value =
+                    ResultDomain.Error("fetchIamFullHtml(): widgetId = [${this@IamControllerImpl.interactionId}] TIMEOUT")
+            }
+        }
+    }
+
     override fun widgetInitFailed(jsEvent: IamJsEvent) {
         /*@formatter:off*/ Logger.i(TAG, "widgetInitFailed(): ", "widgetId = [", interactionId, "], jsEvent = [", jsEvent, "]")
         /*@formatter:on*/
@@ -63,6 +90,18 @@ internal class IamControllerImpl(
         _fullHtmlStateFlow.value = ResultDomain.Loading
         interactionId = null
         scope.coroutineContext.cancelChildren()
+    }
+
+    override fun getInAppMessages(onMessagesLoaded: (List<InAppMessage>, List<InAppMessageContent>) -> Unit) {
+        scope.launch {
+            try {
+                val inAppMessages = iamRepository.getInAppMessages()
+                val contents = iamRepository.getInAppMessagesContent(inAppMessages.map { it.messageInstanceId })
+                onMessagesLoaded(inAppMessages, contents)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
     }
 
     companion object {
