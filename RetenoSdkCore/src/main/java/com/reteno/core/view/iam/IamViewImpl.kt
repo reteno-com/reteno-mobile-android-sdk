@@ -110,6 +110,7 @@ internal class IamViewImpl(
     private fun openUrl(jsEvent: IamJsEvent) {
         /*@formatter:off*/ Logger.i(TAG, "openUrl(): ", "jsEvent = [", jsEvent, "]")
         /*@formatter:on*/
+
         if (this::interactionId.isInitialized) {
             interactionController.onInteractionIamClick(
                 interactionId,
