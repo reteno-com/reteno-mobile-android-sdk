@@ -4,6 +4,7 @@ import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import com.reteno.core.util.Logger
 import com.reteno.core.util.isOsVersionSupported
+import com.reteno.push.Constants
 import com.reteno.push.RetenoNotificationService
 
 open class RetenoFirebaseMessagingService : FirebaseMessagingService() {
@@ -50,6 +51,10 @@ open class RetenoFirebaseMessagingService : FirebaseMessagingService() {
         } catch (t: Throwable) {
             Logger.e(TAG, "onNewPushReceived", t)
         }
+    }
+
+    public fun isRetenoMessage(message: RemoteMessage): Boolean {
+        return message.data.containsKey(Constants.KEY_ES_INTERACTION_ID)
     }
 
     companion object {

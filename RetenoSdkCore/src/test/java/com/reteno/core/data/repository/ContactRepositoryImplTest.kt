@@ -110,7 +110,7 @@ class ContactRepositoryImplTest : BaseRobolectricTest() {
 
         // Then
         verify(exactly = 1) { databaseManagerDevice.insertDevice(deviceDb) }
-        verify(exactly = 1) { apiClient.post(any(), any(), any()) }
+        verify(exactly = 1) { apiClient.postSync(any(), any(), any()) }
     }
 
     @Test
@@ -129,7 +129,7 @@ class ContactRepositoryImplTest : BaseRobolectricTest() {
 
         // Then
         verify(exactly = 0) { databaseManagerDevice.insertDevice(deviceDb) }
-        verify(exactly = 1) { apiClient.post(any(), any(), any()) }
+        verify(exactly = 1) { apiClient.postSync(any(), any(), any()) }
     }
 
     @Test
@@ -148,7 +148,7 @@ class ContactRepositoryImplTest : BaseRobolectricTest() {
         SUT.pushDeviceData()
 
         // Then
-        verify(exactly = 1) { apiClient.post(eq(ApiContract.MobileApi.Device), eq(expectedDeviceJson), any()) }
+        verify(exactly = 1) { apiClient.postSync(eq(ApiContract.MobileApi.Device), eq(expectedDeviceJson), any()) }
     }
 
     @Test
@@ -157,7 +157,7 @@ class ContactRepositoryImplTest : BaseRobolectricTest() {
         val deviceDataDb = mockk<DeviceDb>(relaxed = true)
         every { databaseManagerDevice.getDevices(any()) } returnsMany listOf(listOf(deviceDataDb), listOf(deviceDataDb), emptyList())
         every { databaseManagerDevice.deleteDevices(any()) } returns Unit
-        every { apiClient.post(url = any(), jsonBody = any(), responseHandler = any()) } answers {
+        every { apiClient.postSync(url = any(), jsonBody = any(), responseHandler = any()) } answers {
             val callback = thirdArg<ResponseCallback>()
             callback.onSuccess("")
         }
@@ -166,7 +166,7 @@ class ContactRepositoryImplTest : BaseRobolectricTest() {
         SUT.pushDeviceData()
 
         // Then
-        verify(exactly = 1) { apiClient.post(any(), any(), any()) }
+        verify(exactly = 1) { apiClient.postSync(any(), any(), any()) }
         verify(exactly = 1) { databaseManagerDevice.deleteDevices(any()) }
         verify(exactly = 1) { PushOperationQueue.nextOperation() }
         verify(exactly = 1) { configRepository.saveDeviceRegistered(true) }
@@ -178,7 +178,7 @@ class ContactRepositoryImplTest : BaseRobolectricTest() {
         val deviceDataDb = mockk<DeviceDb>(relaxed = true)
         every { databaseManagerDevice.getDevices(any()) } returnsMany listOf(listOf(deviceDataDb), listOf(deviceDataDb), emptyList())
         every { databaseManagerDevice.deleteDevices(any()) } returns Unit
-        every { apiClient.post(url = any(), jsonBody = any(), responseHandler = any()) } answers {
+        every { apiClient.postSync(url = any(), jsonBody = any(), responseHandler = any()) } answers {
             val callback = thirdArg<ResponseCallback>()
             callback.onSuccess("")
         }
@@ -187,7 +187,7 @@ class ContactRepositoryImplTest : BaseRobolectricTest() {
         SUT.pushDeviceData()
 
         // Then
-        verify(exactly = 1) { apiClient.post(any(), any(), any()) }
+        verify(exactly = 1) { apiClient.postSync(any(), any(), any()) }
         verify(exactly = 1) { databaseManagerDevice.deleteDevices(any()) }
         verify(exactly = 1) { PushOperationQueue.nextOperation() }
         verify(exactly = 1) { configRepository.saveDeviceRegistered(true) }
@@ -198,7 +198,7 @@ class ContactRepositoryImplTest : BaseRobolectricTest() {
         // Given
         val deviceDataDb = mockk<DeviceDb>(relaxed = true)
         every { databaseManagerDevice.getDevices(any()) } returns listOf(deviceDataDb)
-        every { apiClient.post(url = any(), jsonBody = any(), responseHandler = any()) } answers {
+        every { apiClient.postSync(url = any(), jsonBody = any(), responseHandler = any()) } answers {
             val callback = thirdArg<ResponseCallback>()
             callback.onFailure(SERVER_ERROR_NON_REPEATABLE, null, null)
         }
@@ -207,7 +207,7 @@ class ContactRepositoryImplTest : BaseRobolectricTest() {
         SUT.pushDeviceData()
 
         // Then
-        verify(exactly = 1) { apiClient.post(any(), any(), any()) }
+        verify(exactly = 1) { apiClient.postSync(any(), any(), any()) }
         verify(exactly = 1) { PushOperationQueue.removeAllOperations() }
         verify(exactly = 0) { configRepository.saveDeviceRegistered(any()) }
     }
@@ -219,7 +219,7 @@ class ContactRepositoryImplTest : BaseRobolectricTest() {
         every { databaseManagerDevice.getDevices(any()) } returnsMany listOf(listOf(deviceDataDb), listOf(deviceDataDb), emptyList())
         every { databaseManagerDevice.deleteDevices(any()) } returns Unit
         every { databaseManagerDevice.getDeviceCount() } returnsMany listOf(1, 0)
-        every { apiClient.post(url = any(), jsonBody = any(), responseHandler = any()) } answers {
+        every { apiClient.postSync(url = any(), jsonBody = any(), responseHandler = any()) } answers {
             val callback = thirdArg<ResponseCallback>()
             callback.onFailure(SERVER_ERROR_REPEATABLE, null, null)
         }
@@ -228,7 +228,7 @@ class ContactRepositoryImplTest : BaseRobolectricTest() {
         SUT.pushDeviceData()
 
         // Then
-        verify(exactly = 2) { apiClient.post(any(), any(), any()) }
+        verify(exactly = 2) { apiClient.postSync(any(), any(), any()) }
         verify(exactly = 2) { databaseManagerDevice.getDevices(any()) }
         verify(exactly = 2) { databaseManagerDevice.deleteDevices(any()) }
         verify(exactly = 2) { PushOperationQueue.removeAllOperations() }
@@ -242,7 +242,7 @@ class ContactRepositoryImplTest : BaseRobolectricTest() {
         every { databaseManagerDevice.getDevices(any()) } returnsMany listOf(listOf(deviceDataDb), listOf(deviceDataDb), emptyList())
         every { databaseManagerDevice.deleteDevice(deviceDataDb) } returns false
         every { databaseManagerDevice.getDeviceCount() } returns 0
-        every { apiClient.post(url = any(), jsonBody = any(), responseHandler = any()) } answers {
+        every { apiClient.postSync(url = any(), jsonBody = any(), responseHandler = any()) } answers {
             val callback = thirdArg<ResponseCallback>()
             callback.onFailure(400, null, null)
         }
@@ -251,7 +251,7 @@ class ContactRepositoryImplTest : BaseRobolectricTest() {
         SUT.pushDeviceData()
 
         // Then
-        verify(exactly = 1) { apiClient.post(any(), any(), any()) }
+        verify(exactly = 1) { apiClient.postSync(any(), any(), any()) }
         verify(exactly = 1) { databaseManagerDevice.getDevices() }
         verify(exactly = 1) { databaseManagerDevice.deleteDevices(any()) }
         verify(exactly = 0) { PushOperationQueue.nextOperation() }
