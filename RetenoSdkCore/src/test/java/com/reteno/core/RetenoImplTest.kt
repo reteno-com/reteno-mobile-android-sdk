@@ -441,7 +441,8 @@ class RetenoImplTest : BaseRobolectricTest() {
 
         // Then
         verify { scheduleController.startScheduler() }
-        verify(exactly = 2) { contactController.checkIfDeviceRegistered() }
+        verify(exactly = 1) { contactController.checkIfDeviceRegistered() }
+        verify(exactly = 1) { contactController.checkIfDeviceRequestSentThisSession() }
         verify { iamView.resume(activity) }
     }
 
