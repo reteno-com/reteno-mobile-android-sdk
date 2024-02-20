@@ -1,5 +1,6 @@
 package com.reteno.core.domain.controller
 
+import android.util.Log
 import com.reteno.core.data.repository.ConfigRepository
 import com.reteno.core.data.repository.ContactRepository
 import com.reteno.core.domain.Validator
@@ -14,7 +15,7 @@ class ContactController(
     private val configRepository: ConfigRepository
 ) {
 
-    private var userAttributesCache: Pair<String, User?>? = null
+    private var isDeviceSentThisSession = false
 
     fun setExternalUserId(id: String?) {
         /*@formatter:off*/ Logger.i(TAG, "setExternalUserId(): ", "id = [" , id , "]")
@@ -22,6 +23,7 @@ class ContactController(
 
         val oldDeviceId = configRepository.getDeviceId()
         if (oldDeviceId.externalId != id) {
+            isDeviceSentThisSession = true
             configRepository.setExternalUserId(id)
             configRepository.getFcmToken {
                 onNewContact(it, toParallelWork = false)
@@ -55,6 +57,7 @@ class ContactController(
     fun onNewFcmToken(token: String) {
         /*@formatter:off*/ Logger.i(TAG, "onNewFcmToken(): ", "newToken = [" , token , "]")
         /*@formatter:on*/
+        isDeviceSentThisSession = true
         configRepository.getFcmToken { oldToken ->
             token.takeIf { it != oldToken }?.let {
                 configRepository.saveFcmToken(it)
@@ -79,9 +82,22 @@ class ContactController(
         /*@formatter:off*/ Logger.i(TAG, "checkIfDeviceRegistered(): ")
         /*@formatter:on*/
         if (!configRepository.isDeviceRegistered()) {
+            isDeviceSentThisSession = true
             configRepository.getFcmToken {
                 onNewContact(it, toParallelWork = false)
             }
+        }
+    }
+
+    fun checkIfDeviceRequestSentThisSession() {
+        /*@formatter:off*/ Logger.i(TAG, "checkIfDeviceRequestSentThisSession(): ", "isDeviceSentThisSession = [" , isDeviceSentThisSession , "]")
+        /*@formatter:on*/
+        if (isDeviceSentThisSession.not()) {
+            contactRepository.deleteSynchedDevices()
+            configRepository.getFcmToken {
+                onNewContact(it, toParallelWork = false)
+            }
+            isDeviceSentThisSession = true
         }
     }
 
@@ -90,6 +106,7 @@ class ContactController(
         /*@formatter:on*/
         val currentState = configRepository.isNotificationsEnabled()
         if (notificationsEnabled != currentState) {
+            isDeviceSentThisSession = true
             configRepository.saveNotificationsEnabled(notificationsEnabled)
             configRepository.getFcmToken {
                 onNewContact(it, notificationsEnabled = notificationsEnabled)
@@ -119,12 +136,6 @@ class ContactController(
     }
 
     fun setExternalIdAndUserData(externalUserId: String, user: User?) {
-        if (externalUserId == userAttributesCache?.first && user == userAttributesCache?.second) {
-            /*@formatter:off*/ Logger.i(TAG, "setExternalIdAndUserData(): ", "ExternalId and UserData are duplicated - IGNORING")
-            /*@formatter:on*/
-            return
-        }
-        userAttributesCache = externalUserId to user?.copy()
         setExternalUserId(externalUserId)
         setUserData(user)
     }

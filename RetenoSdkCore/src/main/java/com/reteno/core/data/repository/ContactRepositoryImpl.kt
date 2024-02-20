@@ -1,5 +1,6 @@
 package com.reteno.core.data.repository
 
+import android.util.Log
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerDevice
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerUser
 import com.reteno.core.data.local.mappers.toDb
@@ -70,7 +71,7 @@ internal class ContactRepositoryImpl(
 
         /*@formatter:off*/ Logger.i(TAG, "pushDeviceData(): ", "device = [" , requestModel , "]")
         /*@formatter:on*/
-        apiClient.post(
+        apiClient.postSync(
             ApiContract.MobileApi.Device,
             requestModel.toJson(),
             object : ResponseCallback {
@@ -159,10 +160,20 @@ internal class ContactRepositoryImpl(
             })
     }
 
+    override fun deleteSynchedDevices() {
+        val devices: List<DeviceDb> = databaseManagerDevice.getDevices()
+        val synchedDevices = devices.filter { it.isSynchronizedWithBackend == BooleanDb.TRUE  }
+        if (synchedDevices.isNotEmpty()) {
+            databaseManagerDevice.deleteDevices(synchedDevices)
+        }
+    }
+
     private fun onSaveDeviceData(device: Device) {
         val newDevice: DeviceDb = device.toDb()
         val savedDevices: List<DeviceDb> = databaseManagerDevice.getDevices()
-        if (!savedDevices.map { it.copy(rowId = null, isSynchronizedWithBackend = null) }.contains(newDevice)) {
+        val mappedSavedDevices = savedDevices.map { it.copy(rowId = null, createdAt = 0L, isSynchronizedWithBackend = null) }
+
+        if (mappedSavedDevices.contains(newDevice).not()) {
             databaseManagerDevice.insertDevice(device.toDb())
             /*@formatter:off*/ Logger.i(TAG, "saveDeviceData(): ", "Device saved")
             /*@formatter:on*/
@@ -170,7 +181,7 @@ internal class ContactRepositoryImpl(
             /*@formatter:off*/ Logger.i(TAG, "saveDeviceData(): ", "Device NOT saved. Device is already present in database. Duplicates are not saved")
             /*@formatter:on*/
         }
-        pushDeviceData()
+        OperationQueue.addOperation { pushDeviceData() }
     }
 
     private fun onSaveUserData(user: User) {
