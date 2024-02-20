@@ -9,4 +9,6 @@ interface ContactRepository {
 
     fun pushDeviceData()
     fun pushUserData()
+
+    fun deleteSynchedDevices()
 }
