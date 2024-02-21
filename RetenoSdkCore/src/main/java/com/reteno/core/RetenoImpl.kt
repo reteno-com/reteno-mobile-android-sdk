@@ -70,7 +70,7 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
         /*@formatter:off*/ Logger.i(TAG, "resume(): ", "activity = [" , activity , "]")
         /*@formatter:on*/
         try {
-            contactController.checkIfDeviceRegistered()
+            contactController.checkIfDeviceRequestSentThisSession()
             startPushScheduler()
             iamView.resume(activity)
         } catch (ex: Throwable) {
