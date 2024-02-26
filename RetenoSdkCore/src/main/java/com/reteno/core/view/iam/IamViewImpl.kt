@@ -11,7 +11,6 @@ import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.view.Gravity
-import android.view.View
 import android.view.ViewGroup.LayoutParams
 import android.view.WindowManager
 import android.webkit.ConsoleMessage
@@ -20,13 +19,13 @@ import android.webkit.WebView
 import android.widget.FrameLayout
 import android.widget.PopupWindow
 import androidx.cardview.widget.CardView
-import androidx.core.os.toPersistableBundle
 import androidx.core.widget.PopupWindowCompat
 import com.reteno.core.RetenoApplication
 import com.reteno.core.RetenoImpl
 import com.reteno.core.data.remote.OperationQueue
 import com.reteno.core.data.remote.mapper.fromJson
 import com.reteno.core.data.remote.model.iam.message.InAppMessage
+import com.reteno.core.data.remote.model.iam.message.InAppMessageResponse
 import com.reteno.core.data.remote.model.iam.message.InAppMessageContent
 import com.reteno.core.domain.ResultDomain
 import com.reteno.core.domain.controller.IamController
@@ -137,6 +136,11 @@ internal class IamViewImpl(
         teardown()
     }
 
+    override fun isViewShown(): Boolean {
+        return isViewShown.get()
+    }
+
+
     override fun initialize(interactionId: String) {
         this.interactionId = interactionId
         /*@formatter:off*/ Logger.i(TAG, "initialize(): ", "widgetId = [", interactionId, "]")
@@ -150,13 +154,19 @@ internal class IamViewImpl(
         }
     }
 
-    override fun initialize(inAppMessage: InAppMessage?, inAppMessageContent: InAppMessageContent?) {
+    override fun initialize(inAppMessage: InAppMessage) {
+        if (isViewShown.get()) return
         //this.interactionId = inAppMessage.messageId
         /*@formatter:off*/ //Logger.i(TAG, "initialize(): ", "widgetId = [", interactionId, "]")
         /*@formatter:on*/
         try {
-            teardown()
-            iamController.fetchIamFullHtml(inAppMessageContent)
+            //teardown()
+            OperationQueue.addUiOperation {
+                activityHelper.currentActivity?.let {
+                    createIamInActivity(it)
+                }
+                iamController.fetchIamFullHtml(inAppMessage.content)
+            }
         } catch (e: Exception) {
             /*@formatter:off*/ Logger.e(TAG, "initialize(): ", e)
             /*@formatter:on*/
@@ -171,7 +181,7 @@ internal class IamViewImpl(
             return
         }
 
-        createIamInActivity(activity)
+
         iamShowScope.launch {
             iamController.fullHtmlStateFlow.collect { result ->
                 ensureActive()
@@ -232,7 +242,7 @@ internal class IamViewImpl(
             true
         )
 
-        popupWindow.setBackgroundDrawable(ColorDrawable(Color.BLUE))
+        popupWindow.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
         popupWindow.isTouchable = true
         // Required for getting fullscreen under notches working in portrait mode
         popupWindow.isClippingEnabled = false
@@ -253,7 +263,7 @@ internal class IamViewImpl(
         cardView.clipChildren = false
         cardView.clipToPadding = false
         cardView.preventCornerOverlap = false
-        cardView.setCardBackgroundColor(Color.RED)
+        cardView.setCardBackgroundColor(Color.TRANSPARENT)
         return cardView
     }
 
@@ -274,11 +284,7 @@ internal class IamViewImpl(
             javaScriptEnabled = true
             domStorageEnabled = true
             databaseEnabled = true
-//            setBuiltInZoomControls(true)
-//            setUseWideViewPort(true)
-//            setLoadWithOverviewMode(true)
         }
-//        webView.setScrollBarStyle(View.SCROLLBARS_OUTSIDE_OVERLAY)
         return webView
     }
 

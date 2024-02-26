@@ -4,6 +4,8 @@ import android.app.Activity
 import android.app.Application
 import android.content.ComponentName
 import android.content.Intent
+import android.util.Log
+import androidx.lifecycle.ProcessLifecycleOwner
 import com.reteno.core.di.ServiceLocator
 import com.reteno.core.domain.controller.ScreenTrackingController
 import com.reteno.core.domain.model.ecom.EcomEvent
@@ -11,6 +13,7 @@ import com.reteno.core.domain.model.event.Event
 import com.reteno.core.domain.model.user.User
 import com.reteno.core.domain.model.user.UserAttributesAnonymous
 import com.reteno.core.lifecycle.RetenoActivityHelper
+import com.reteno.core.lifecycle.RetenoAppLifecycleObserver
 import com.reteno.core.lifecycle.RetenoLifecycleCallbacks
 import com.reteno.core.lifecycle.ScreenTrackingConfig
 import com.reteno.core.util.*
@@ -43,6 +46,7 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
     init {
         if (isOsVersionSupported()) {
             try {
+                observeAppLifecycle()
                 activityHelper.enableLifecycleCallbacks(this)
                 clearOldData()
                 contactController.checkIfDeviceRegistered()
@@ -102,9 +106,17 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
         /*@formatter:on*/
     }
 
+    private fun observeAppLifecycle() {
+        ProcessLifecycleOwner.get().lifecycle.addObserver(RetenoAppLifecycleObserver(serviceLocator))
+    }
+
     private fun fetchInAppMessages() {
-        iamController.getInAppMessages { inAppMessages, inAppContents ->
-            iamController.fetchIamFullHtml(inAppContents.last())
+        iamController.setIamView(iamView)
+        eventController.setIamController(iamController)
+        iamController.getInAppMessages { messageToShow ->
+            //Log.e("ololo","got messages: $inAppMessages")
+            //iamView.initialize(messageToShow)
+            //iamController.fetchIamFullHtml(inAppMessages.last().content)
             //iamView.initialize(inAppMessages.first(), inAppContents.first())
         }
     }

@@ -11,11 +11,11 @@ import com.reteno.core.data.remote.mapper.toJson
 import com.reteno.core.data.remote.model.iam.initfailed.Data
 import com.reteno.core.data.remote.model.iam.initfailed.IamJsWidgetInitiFailed
 import com.reteno.core.data.remote.model.iam.initfailed.Payload
-import com.reteno.core.data.remote.model.iam.message.InAppMessage
+import com.reteno.core.data.remote.model.iam.message.InAppMessageResponse
 import com.reteno.core.data.remote.model.iam.message.InAppMessageContent
 import com.reteno.core.data.remote.model.iam.message.InAppMessagesContentRequest
 import com.reteno.core.data.remote.model.iam.message.InAppMessagesContentResponse
-import com.reteno.core.data.remote.model.iam.message.InAppMessagesResponse
+import com.reteno.core.data.remote.model.iam.message.InAppMessageListResponse
 import com.reteno.core.data.remote.model.iam.widget.WidgetModel
 import com.reteno.core.domain.ResponseCallback
 import com.reteno.core.features.iam.IamJsEvent
@@ -176,7 +176,7 @@ internal class IamRepositoryImpl(
             })
     }
 
-    override suspend fun getInAppMessages(): List<InAppMessage> {
+    override suspend fun getInAppMessages(): List<InAppMessageResponse> {
         /*@formatter:off*/ Logger.i(TAG, "getInAppMessages(): ", "")
         /*@formatter:on*/
         return withContext(coroutineDispatcher) {
@@ -189,7 +189,7 @@ internal class IamRepositoryImpl(
                             /*@formatter:off*/ Logger.i(TAG, "getInAppMessages(): onSuccess(): ", "response = [", response, "]")
                             /*@formatter:on*/
                             continuation.resume(
-                                response.fromJson<InAppMessagesResponse>().messages
+                                response.fromJson<InAppMessageListResponse>().messages
                             )
                         }
 

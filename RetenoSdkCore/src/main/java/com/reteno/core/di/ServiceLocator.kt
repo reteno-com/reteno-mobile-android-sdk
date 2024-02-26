@@ -11,6 +11,7 @@ import com.reteno.core.di.provider.database.*
 import com.reteno.core.di.provider.features.AppInboxProvider
 import com.reteno.core.di.provider.features.IamViewProvider
 import com.reteno.core.di.provider.features.RecommendationProvider
+import com.reteno.core.di.provider.features.RetenoSessionHandlerProvider
 import com.reteno.core.di.provider.network.ApiClientProvider
 import com.reteno.core.di.provider.network.RestClientProvider
 import com.reteno.core.di.provider.repository.*
@@ -19,6 +20,7 @@ import com.reteno.core.domain.controller.DeeplinkController
 import com.reteno.core.domain.controller.InteractionController
 import com.reteno.core.domain.controller.ScheduleController
 import com.reteno.core.lifecycle.RetenoActivityHelper
+import com.reteno.core.lifecycle.RetenoSessionHandler
 import com.reteno.core.view.iam.IamView
 import kotlinx.coroutines.Dispatchers
 
@@ -194,15 +196,20 @@ class ServiceLocator(context: Context, accessKey: String) {
             eventsControllerProvider
         )
 
-    internal val iamControllerProvider: IamControllerProvider =
-        IamControllerProvider(iamRepositoryProvider)
-
 
     /** Controller dependent **/
     internal val appInboxProvider: AppInboxProvider = AppInboxProvider(appInboxControllerProvider)
 
     internal val recommendationProvider: RecommendationProvider =
         RecommendationProvider(recommendationControllerProvider)
+
+    private val retenoSessionHandlerProviderInternal =
+        RetenoSessionHandlerProvider(sharedPrefsManagerProvider)
+    internal val retenoSessionHandlerProvider: ProviderWeakReference<RetenoSessionHandler>
+        get() = retenoSessionHandlerProviderInternal
+
+    internal val iamControllerProvider: IamControllerProvider =
+        IamControllerProvider(iamRepositoryProvider, retenoSessionHandlerProviderInternal)
 
     private val iamViewProviderInternal: IamViewProvider =
         IamViewProvider(retenoActivityHelperProviderInternal, iamControllerProvider)

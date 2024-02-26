@@ -5,6 +5,7 @@ import com.reteno.core.data.remote.model.iam.widget.WidgetModel
 import com.reteno.core.data.repository.IamRepository
 import com.reteno.core.domain.ResultDomain
 import com.reteno.core.domain.controller.IamControllerImpl.Companion.TIMEOUT
+import com.reteno.core.lifecycle.RetenoSessionHandler
 import io.mockk.*
 import io.mockk.impl.annotations.RelaxedMockK
 import junit.framework.TestCase.*
@@ -46,6 +47,9 @@ class IamControllerImplTest : BaseRobolectricTest() {
     @RelaxedMockK
     private lateinit var iamRepository: IamRepository
 
+    @RelaxedMockK
+    private lateinit var sessionHandler: RetenoSessionHandler
+
     private val scheduler = TestCoroutineScheduler()
     private val dispatcher = StandardTestDispatcher(scheduler)
 
@@ -56,7 +60,7 @@ class IamControllerImplTest : BaseRobolectricTest() {
         super.before()
         Dispatchers.setMain(dispatcher)
 
-        SUT = IamControllerImpl(iamRepository)
+        SUT = IamControllerImpl(iamRepository, sessionHandler)
 
         coEvery { iamRepository.getBaseHtml() } coAnswers {
             delay(DELAY_BASE_HTML)

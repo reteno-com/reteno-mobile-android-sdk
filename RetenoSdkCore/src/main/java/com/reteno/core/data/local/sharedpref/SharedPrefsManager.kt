@@ -116,6 +116,36 @@ internal class SharedPrefsManager {
         return result
     }
 
+    fun saveAppStoppedTimestamp(appStoppedTimestamp: Long) {
+        /*@formatter:off*/ Logger.i(TAG, "saveAppStoppedTimestamp(): ", "appStoppedTimestamp = [", appStoppedTimestamp, "]")
+        /*@formatter:on*/
+        sharedPreferences.edit()
+            ?.putLong(PREF_KEY_APP_STOPPED_TIMESTAMP, appStoppedTimestamp)
+            ?.apply()
+    }
+
+    fun getAppStoppedTimestamp(): Long {
+        val result = sharedPreferences.getLong(PREF_KEY_APP_STOPPED_TIMESTAMP, 0L)
+        /*@formatter:off*/ Logger.i(TAG, "getAppStoppedTimestamp(): ", "result = ", result)
+        /*@formatter:on*/
+        return result
+    }
+
+    fun saveAppSessionTime(appSessionTime: Long) {
+        /*@formatter:off*/ Logger.i(TAG, "saveAppSessionTime(): ", "appSessionTime = [", appSessionTime, "]")
+        /*@formatter:on*/
+        sharedPreferences.edit()
+            ?.putLong(PREF_KEY_APP_SESSION_TIME, appSessionTime)
+            ?.apply()
+    }
+
+    fun getAppSessionTime(): Long {
+        val result = sharedPreferences.getLong(PREF_KEY_APP_SESSION_TIME, 0L)
+        /*@formatter:off*/ Logger.i(TAG, "getAppSessionTime(): ", "result = ", result)
+        /*@formatter:on*/
+        return result
+    }
+
     companion object {
         private val TAG: String = SharedPrefsManager::class.java.simpleName
 
@@ -127,5 +157,7 @@ internal class SharedPrefsManager {
         private const val PREF_KEY_DEVICE_REGISTERED = "device_registered"
         private const val PREF_KEY_IAM_BASE_HTML_VERSION = "in_app_messages_base_html_version"
         private const val PREF_KEY_IAM_BASE_HTML_CONTENT = "in_app_messages_base_html_content"
+        private const val PREF_KEY_APP_STOPPED_TIMESTAMP = "app_stopped_timestamp"
+        private const val PREF_KEY_APP_SESSION_TIME = "session_time"
     }
 }

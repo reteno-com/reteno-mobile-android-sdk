@@ -1,12 +1,11 @@
 package com.reteno.core.data.remote.model.iam.message
 
-import com.google.gson.annotations.SerializedName
+import com.reteno.core.data.remote.model.iam.displayrules.DisplayRules
 
 data class InAppMessage(
-    @SerializedName("messageId")
     val messageId: Long,
-    @SerializedName("messageInstanceId")
     val messageInstanceId: Long,
-//    @SerializedName("messageId")
-//    val displayRules: String,
+    val displayRules: DisplayRules,
+    var content: InAppMessageContent? = null,
+    var alreadyShown: Boolean = false
 )

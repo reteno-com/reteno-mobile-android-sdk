@@ -25,6 +25,7 @@ import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import java.util.Locale
+import java.util.concurrent.TimeUnit
 import net.sqlcipher.database.SQLiteDatabase as CipherSQLiteDatabase
 
 fun <T : Any> allElementsNull(vararg elements: T?) = elements.all { it == null }
@@ -94,6 +95,17 @@ fun Bundle?.toStringVerbose(): String {
     stringBuilder.delete(stringBuilder.length - 2, stringBuilder.length)
     stringBuilder.append("]")
     return stringBuilder.toString()
+}
+
+fun String?.toTimeUnit(): TimeUnit? {
+    return when (this) {
+        "DAY" -> TimeUnit.DAYS
+        "HOUR" -> TimeUnit.HOURS
+        "MINUTE" -> TimeUnit.MINUTES
+        "SECOND" -> TimeUnit.SECONDS
+        "MILLISECOND" -> TimeUnit.MILLISECONDS
+        else -> null
+    }
 }
 
 fun isRepeatableError(statusCode: Int?): Boolean {
