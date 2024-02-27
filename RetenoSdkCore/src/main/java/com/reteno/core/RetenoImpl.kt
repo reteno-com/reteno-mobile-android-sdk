@@ -5,7 +5,6 @@ import android.app.Application
 import android.content.ComponentName
 import android.content.Intent
 import android.util.Log
-import androidx.lifecycle.ProcessLifecycleOwner
 import com.reteno.core.di.ServiceLocator
 import com.reteno.core.domain.controller.ScreenTrackingController
 import com.reteno.core.domain.model.ecom.EcomEvent
@@ -38,15 +37,16 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
     private val scheduleController by lazy { serviceLocator.scheduleControllerProvider.get() }
     private val eventController by lazy { serviceLocator.eventsControllerProvider.get() }
     private val iamController by lazy { serviceLocator.iamControllerProvider.get() }
+    private val sessionHandler by lazy {  serviceLocator.retenoSessionHandlerProvider.get() }
 
     override val appInbox by lazy { serviceLocator.appInboxProvider.get() }
     override val recommendation by lazy { serviceLocator.recommendationProvider.get() }
     private val iamView: IamView by lazy { serviceLocator.iamViewProvider.get() }
 
     init {
+        Log.e("ololo","main onCreate")
         if (isOsVersionSupported()) {
             try {
-                observeAppLifecycle()
                 activityHelper.enableLifecycleCallbacks(this)
                 clearOldData()
                 contactController.checkIfDeviceRegistered()
@@ -60,6 +60,7 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
     }
 
     override fun start(activity: Activity) {
+        Log.e("ololo","main onStart")
         if (!isOsVersionSupported()) {
             return
         }
@@ -68,6 +69,7 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
     }
 
     override fun resume(activity: Activity) {
+        Log.e("ololo","main onResume")
         if (!isOsVersionSupported()) {
             return
         }
@@ -75,6 +77,7 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
         /*@formatter:on*/
         try {
             contactController.checkIfDeviceRequestSentThisSession()
+            sessionHandler.start()
             startPushScheduler()
             iamView.resume(activity)
         } catch (ex: Throwable) {
@@ -84,12 +87,14 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
     }
 
     override fun pause(activity: Activity) {
+        Log.e("ololo","main onPause")
         if (!isOsVersionSupported()) {
             return
         }
         /*@formatter:off*/ Logger.i(TAG, "pause(): ", "activity = [" , activity , "]")
         /*@formatter:on*/
         try {
+            sessionHandler.stop()
             stopPushScheduler()
             iamView.pause(activity)
         } catch (ex: Throwable) {
@@ -99,15 +104,12 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
     }
 
     override fun stop(activity: Activity) {
+        Log.e("ololo","main onStop")
         if (!isOsVersionSupported()) {
             return
         }
         /*@formatter:off*/ Logger.i(TAG, "stop(): ", "activity = [", activity, "]")
         /*@formatter:on*/
-    }
-
-    private fun observeAppLifecycle() {
-        ProcessLifecycleOwner.get().lifecycle.addObserver(RetenoAppLifecycleObserver(serviceLocator))
     }
 
     private fun fetchInAppMessages() {

@@ -1,13 +1,11 @@
 package com.reteno.core.lifecycle
 
 import android.util.Log
-import androidx.lifecycle.DefaultLifecycleObserver
-import androidx.lifecycle.LifecycleOwner
 import com.reteno.core.di.ServiceLocator
 import com.reteno.core.domain.controller.IamController
 
-class RetenoAppLifecycleObserver(val serviceLocator: ServiceLocator) : DefaultLifecycleObserver {
-
+class RetenoAppLifecycleObserver(val serviceLocator: ServiceLocator) /*: DefaultLifecycleObserver*/ {
+/*
     private val sessionHandler = serviceLocator.retenoSessionHandlerProvider.get()
     private val iamController = serviceLocator.iamControllerProvider.get()
 
@@ -42,4 +40,6 @@ class RetenoAppLifecycleObserver(val serviceLocator: ServiceLocator) : DefaultLi
         super.onDestroy(owner)
         Log.e("ololo","lifecycle onDestroy")
     }
+
+ */
 }
