@@ -9,7 +9,9 @@ class RuleEventValidator {
 
     fun checkEventMatchesRules(inapp: InAppWithEvent, event: Event): Boolean {
         return when {
-            inapp.event.params.isNullOrEmpty() -> true
+            inapp.event.params.isNullOrEmpty() -> {
+                true
+            }
 
             inapp.event.paramsRelation == RuleRelation.AND -> {
                 var paramsCheckSuccessful = true

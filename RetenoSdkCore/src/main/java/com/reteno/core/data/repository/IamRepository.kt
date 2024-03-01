@@ -1,5 +1,6 @@
 package com.reteno.core.data.repository
 
+import com.reteno.core.data.remote.model.iam.displayrules.async.AsyncRulesCheckResult
 import com.reteno.core.data.remote.model.iam.message.InAppMessageResponse
 import com.reteno.core.data.remote.model.iam.message.InAppMessageContent
 import com.reteno.core.data.remote.model.iam.widget.WidgetModel
@@ -11,4 +12,5 @@ internal interface IamRepository {
     fun widgetInitFailed(widgetId: String, jsEvent: IamJsEvent)
     suspend fun getInAppMessages(): List<InAppMessageResponse>
     suspend fun getInAppMessagesContent(messageInstanceIds: List<Long>): List<InAppMessageContent>
+    suspend fun checkUserInSegments(segmentIds: List<Long>): List<AsyncRulesCheckResult>
 }

@@ -94,7 +94,7 @@ internal sealed interface ApiContract {
             override val url = "${BASE_URL}contents/request"
         }
 
-        object CheckUserInSegment: InAppMessages() {
+        object CheckUserInSegments: InAppMessages() {
             override val url = "${BASE_URL}async-rules/check"
         }
 

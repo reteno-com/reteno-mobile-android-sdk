@@ -8,6 +8,8 @@ import com.reteno.core.data.remote.model.iam.displayrules.frequency.FrequencyDis
 import com.reteno.core.data.remote.model.iam.displayrules.frequency.FrequencyRule
 import com.reteno.core.data.remote.model.iam.displayrules.RuleRelation
 import com.reteno.core.data.remote.model.iam.displayrules.ScheduleDisplayRules
+import com.reteno.core.data.remote.model.iam.displayrules.async.AsyncDisplayRules
+import com.reteno.core.data.remote.model.iam.displayrules.async.SegmentRule
 import com.reteno.core.data.remote.model.iam.displayrules.targeting.TargetingDisplayRules
 import com.reteno.core.data.remote.model.iam.displayrules.targeting.TargetingRule
 import com.reteno.core.data.remote.model.iam.displayrules.targeting.TargetingRuleConditionsGroup
@@ -21,16 +23,12 @@ data class InAppMessageResponse(
     @SerializedName("displayRules")
     val displayRules: JsonObject,
 ) {
-    //var rules:
-
-    init {
-        //parseRules()
-    }
     fun parseRules(): DisplayRules {
         return DisplayRules(
             parseFrequencyRules(),
             parseTargetingRules(),
-            ScheduleDisplayRules()
+            null,
+            parseAsyncRules()
         )
     }
 
@@ -100,6 +98,18 @@ data class InAppMessageResponse(
 
         return if (conditionsRelation != null && conditions.isNotEmpty()) {
             TargetingRuleConditionsGroup(conditionsRelation, conditions)
+        } else {
+            null
+        }
+    }
+
+    private fun parseAsyncRules(): AsyncDisplayRules? {
+        val async: JsonObject? = displayRules.getAsJsonObject(DisplayRuleType.ASYNC.name)
+        val segment = async?.getAsJsonObject("IS_IN_SEGMENT")
+
+        return if (segment != null && segment.get("enabled")?.asBoolean == true) {
+            val segmentId = segment.get("segmentId").asLong
+            AsyncDisplayRules(SegmentRule(segmentId))
         } else {
             null
         }

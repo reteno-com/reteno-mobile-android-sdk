@@ -8,6 +8,9 @@ import com.reteno.core.data.remote.api.ApiContract
 import com.reteno.core.data.remote.api.RestClientImpl.Companion.HEADER_X_AMZ_META_VERSION
 import com.reteno.core.data.remote.mapper.fromJson
 import com.reteno.core.data.remote.mapper.toJson
+import com.reteno.core.data.remote.model.iam.displayrules.async.AsyncRulesCheckRequest
+import com.reteno.core.data.remote.model.iam.displayrules.async.AsyncRulesCheckResponse
+import com.reteno.core.data.remote.model.iam.displayrules.async.AsyncRulesCheckResult
 import com.reteno.core.data.remote.model.iam.initfailed.Data
 import com.reteno.core.data.remote.model.iam.initfailed.IamJsWidgetInitiFailed
 import com.reteno.core.data.remote.model.iam.initfailed.Payload
@@ -234,13 +237,45 @@ internal class IamRepositoryImpl(
                             /*@formatter:off*/ Logger.i(TAG, "getInAppMessagesContent(): onFailure(): ", "statusCode = [", statusCode, "], response = [", response, "], throwable = [", throwable, "]")
                             /*@formatter:on*/
                             continuation.resume(emptyList())
-//                            continuation.resumeWithException()
                         }
                     }
                 )
             }
         }
     }
+
+    override suspend fun checkUserInSegments(segmentIds: List<Long>): List<AsyncRulesCheckResult> {
+        /*@formatter:off*/ Logger.i(TAG, "checkUserInSegments(): ", "segmentIds = [", segmentIds.toString(), "]")
+        /*@formatter:on*/
+        return withContext(coroutineDispatcher) {
+            suspendCancellableCoroutine { continuation ->
+                apiClient.post(
+                    url = ApiContract.InAppMessages.CheckUserInSegments,
+                    jsonBody = AsyncRulesCheckRequest.createSegmentRequest(segmentIds).toJson(),
+                    responseHandler = object : ResponseCallback {
+                        override fun onSuccess(response: String) {
+                            /*@formatter:off*/ Logger.i(TAG, "checkUserInSegments(): onSuccess(): ", "response = [", response, "]")
+                            /*@formatter:on*/
+                            continuation.resume(
+                                response.fromJson<AsyncRulesCheckResponse>().checks
+                            )
+                        }
+
+                        override fun onFailure(
+                            statusCode: Int?,
+                            response: String?,
+                            throwable: Throwable?
+                        ) {
+                            /*@formatter:off*/ Logger.i(TAG, "checkUserInSegments(): onFailure(): ", "statusCode = [", statusCode, "], response = [", response, "], throwable = [", throwable, "]")
+                            /*@formatter:on*/
+                            continuation.resume(emptyList())
+                        }
+                    }
+                )
+            }
+        }
+    }
+
 
     companion object {
         private val TAG: String = IamRepositoryImpl::class.java.simpleName

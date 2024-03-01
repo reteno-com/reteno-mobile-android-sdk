@@ -122,13 +122,30 @@ internal class IamControllerImpl(
                     )
                 }
 
-                val contents = iamRepository.getInAppMessagesContent(inAppMessages.map { it.messageInstanceId })
+                val messagesWithSegments = inAppMessages.filter { it.displayRules.async?.segment?.segmentId != null }
+                val segmentIds = messagesWithSegments.mapNotNull { it.displayRules.async?.segment?.segmentId }.distinct()
+
+                val contentsDeferred = async { iamRepository.getInAppMessagesContent(inAppMessages.map { it.messageInstanceId })}
+                val segmentDeferred = async { iamRepository.checkUserInSegments(segmentIds) }
+
+                val contents = contentsDeferred.await()
 
                 inAppMessages.forEach { message ->
                     message.content = contents.firstOrNull {
                         it.messageInstanceId == message.messageInstanceId
                     }
                     Log.e("ololo","found content for ${message.messageId} instance ${message.messageInstanceId}: ${message.content != null}")
+                }
+
+                val segmentResponses = segmentDeferred.await()
+                messagesWithSegments.forEach { message ->
+                    val segment = message.displayRules.async?.segment
+                    segment?.let { segmentRule ->
+                        segmentRule.isInSegment = segmentResponses.firstOrNull { checkResult ->
+                            checkResult.segmentId == segmentRule.segmentId
+                        }?.checkResult ?: false
+                        Log.e("ololo","set segment for ${message.messageId}, segment id ${segmentRule.segmentId}: ${segmentRule.isInSegment}")
+                    }
                 }
 
                 sortMessages(inAppMessages)
@@ -150,14 +167,12 @@ internal class IamControllerImpl(
 
         val validator = RuleEventValidator()
         val inAppsMatchingEventParams = inAppsWithCurrentEvent.filter { inapp ->
-            validator.checkEventMatchesRules(inapp, event)
+            val result = validator.checkEventMatchesRules(inapp, event)
+            Log.e("ololo","checkEventMatchesRules ${inapp.inApp.messageId} is matching $result")
+            result
         }
 
-        if (inAppsMatchingEventParams.isNotEmpty()) {
-            val inAppWithHighestId = inAppsWithCurrentEvent.maxBy { it.inApp.messageId }
-            Log.e("ololo","show inapp by event ${inAppWithHighestId.inApp.messageId}")
-            tryShowInApp(inAppWithHighestId.inApp)
-        }
+        tryShowInAppFromList(inAppsMatchingEventParams.map { it.inApp }.toMutableList())
     }
 
     private fun sortMessages(inAppMessages: List<InAppMessage>) {
@@ -183,10 +198,8 @@ internal class IamControllerImpl(
 
         if (inAppsWithTimer.isNotEmpty()) {
             sessionHandler.scheduleInAppMessages(inAppsWithTimer) { messagesToShow ->
-                findInAppToShowByTime(messagesToShow)?.let { message ->
-                    Log.e("ololo","show inapp by time ${message.messageId}")
-                    tryShowInApp(message) //TODO uncomment
-                }
+                Log.e("ololo","show inapp by time: ${messagesToShow.size}")
+                tryShowInAppFromList(messagesToShow.toMutableList())
             }
         }
 
@@ -194,22 +207,43 @@ internal class IamControllerImpl(
             inAppsWaitingForEvent = inAppsWithEvents
         }
 
-        if (inAppsOnAppStart.isNotEmpty()) {
-            val inAppWithHighestId = inAppsOnAppStart.maxBy { it.messageId }
-            Log.e("ololo","show inapp on start ${inAppWithHighestId.messageId}")
-            tryShowInApp(inAppWithHighestId)
+        tryShowInAppFromList(inAppsOnAppStart)
+    }
+
+    private fun tryShowInAppFromList(inAppMessages: MutableList<InAppMessage>) {
+        while (true) {
+            if (inAppMessages.isEmpty()) return
+
+            val inAppWithHighestId = inAppMessages.maxBy { it.messageId }
+            Log.e("ololo","try show inapp ${inAppWithHighestId.messageId}")
+            val showedInApp = tryShowInApp(inAppWithHighestId)
+
+            if (showedInApp) {
+                return
+            }
+            inAppMessages.remove(inAppWithHighestId)
         }
     }
 
-    private fun tryShowInApp(inAppMessage: InAppMessage) {
-        if (iamView == null || iamView?.isViewShown() == true) return
+    private fun tryShowInApp(inAppMessage: InAppMessage): Boolean {
+        if (iamView == null || iamView?.isViewShown() == true) return false
 
         val frequency = inAppMessage.displayRules.frequency?.predicates?.firstOrNull()
-        if (frequency != null && frequency != FrequencyRule.NoLimit && inAppMessage.alreadyShown) return
+        if (frequency != null && frequency != FrequencyRule.NoLimit && inAppMessage.alreadyShown) {
+            return false
+        }
+
+        if (checkSegmentRuleMatches(inAppMessage).not()) {
+            return false
+        }
 
         inAppMessage.alreadyShown = true
         iamView?.initialize(inAppMessage)
-        //fetchIamFullHtml(inAppMessage.content)
+        return true
+    }
+
+    private fun checkSegmentRuleMatches(inAppMessage: InAppMessage): Boolean {
+        return inAppMessage.displayRules.async?.segment?.isInSegment ?: true
     }
 
     private fun findInAppToShowByTime(inAppMessages: List<InAppMessage>): InAppMessage? {

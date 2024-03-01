@@ -92,12 +92,15 @@ internal class RetenoSessionHandler(private val sharedPrefsManager: SharedPrefsM
 
         val nextMessages = closestScheduledMessages
         if (nextMessages != null && nextMessages.isNotEmpty() && foregroundTimeMillis >= nextMessages.first().time) {
-            Log.e("ololo", "RetenoSessionHandler showInApp() $nextMessages")
+            //Log.e("ololo", "RetenoSessionHandler showInApp() $nextMessages")
             scheduledMessages?.removeAll(nextMessages)
             findNextScheduledMessages()
-            showInApp?.invoke(nextMessages.map { it.inApp })
+
+            if (nextMessages.first().time <= foregroundTimeMillis + TIME_COUNTER_DELAY) { // check it is not too late to show inApp
+                showInApp?.invoke(nextMessages.map { it.inApp })
+            }
         }
-        Log.e("ololo", "RetenoSessionHandler countTime() $appResumedTimestamp -> ${timeSinceResume/1000L}, total ${foregroundTimeMillis/1000L}")
+        //Log.e("ololo", "RetenoSessionHandler countTime() $appResumedTimestamp -> ${timeSinceResume/1000L}, total ${foregroundTimeMillis/1000L}")
     }
 
     companion object {

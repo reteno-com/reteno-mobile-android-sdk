@@ -12,7 +12,6 @@ import com.reteno.core.domain.model.event.Event
 import com.reteno.core.domain.model.user.User
 import com.reteno.core.domain.model.user.UserAttributesAnonymous
 import com.reteno.core.lifecycle.RetenoActivityHelper
-import com.reteno.core.lifecycle.RetenoAppLifecycleObserver
 import com.reteno.core.lifecycle.RetenoLifecycleCallbacks
 import com.reteno.core.lifecycle.ScreenTrackingConfig
 import com.reteno.core.util.*
