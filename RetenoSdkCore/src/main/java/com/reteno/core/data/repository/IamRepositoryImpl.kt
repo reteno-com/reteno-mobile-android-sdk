@@ -2,6 +2,9 @@ package com.reteno.core.data.repository
 
 import com.google.gson.JsonObject
 import com.reteno.core.R
+import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerInAppMessages
+import com.reteno.core.data.local.mappers.toDB
+import com.reteno.core.data.local.mappers.toInAppMessage
 import com.reteno.core.data.local.sharedpref.SharedPrefsManager
 import com.reteno.core.data.remote.api.ApiClient
 import com.reteno.core.data.remote.api.ApiContract
@@ -14,11 +17,12 @@ import com.reteno.core.data.remote.model.iam.displayrules.async.AsyncRulesCheckR
 import com.reteno.core.data.remote.model.iam.initfailed.Data
 import com.reteno.core.data.remote.model.iam.initfailed.IamJsWidgetInitiFailed
 import com.reteno.core.data.remote.model.iam.initfailed.Payload
-import com.reteno.core.data.remote.model.iam.message.InAppMessageResponse
+import com.reteno.core.data.remote.model.iam.message.InAppMessage
 import com.reteno.core.data.remote.model.iam.message.InAppMessageContent
 import com.reteno.core.data.remote.model.iam.message.InAppMessagesContentRequest
 import com.reteno.core.data.remote.model.iam.message.InAppMessagesContentResponse
 import com.reteno.core.data.remote.model.iam.message.InAppMessageListResponse
+import com.reteno.core.data.remote.model.iam.message.InAppMessagesList
 import com.reteno.core.data.remote.model.iam.widget.WidgetModel
 import com.reteno.core.domain.ResponseCallback
 import com.reteno.core.features.iam.IamJsEvent
@@ -32,7 +36,8 @@ import kotlin.coroutines.resume
 internal class IamRepositoryImpl(
     private val apiClient: ApiClient,
     private val sharedPrefsManager: SharedPrefsManager,
-    private val coroutineDispatcher: CoroutineDispatcher,
+    private val databaseManager: RetenoDatabaseManagerInAppMessages,
+    private val coroutineDispatcher: CoroutineDispatcher
 ) : IamRepository {
 
     override suspend fun getBaseHtml(): String {
@@ -179,21 +184,49 @@ internal class IamRepositoryImpl(
             })
     }
 
-    override suspend fun getInAppMessages(): List<InAppMessageResponse> {
+    override suspend fun getInAppMessages(): InAppMessagesList {
         /*@formatter:off*/ Logger.i(TAG, "getInAppMessages(): ", "")
         /*@formatter:on*/
         return withContext(coroutineDispatcher) {
+            val etag = sharedPrefsManager.getIamEtag()
+            val headersWithEtag: Map<String, String>? = if (etag != null) {
+                mapOf(HEADER_ETAG_REQUEST to etag)
+            } else {
+                null
+            }
+
             suspendCancellableCoroutine { continuation ->
                 apiClient.get(
                     url = ApiContract.InAppMessages.GetInAppMessages,
+                    headers = headersWithEtag,
                     queryParams = null,
                     responseHandler = object : ResponseCallback {
-                        override fun onSuccess(response: String) {
-                            /*@formatter:off*/ Logger.i(TAG, "getInAppMessages(): onSuccess(): ", "response = [", response, "]")
+                        override fun onSuccess(headers: Map<String, List<String>>, response: String) {
+                            /*@formatter:off*/ Logger.i(TAG, "getInAppMessages(): onSuccess(): ", "response = [", response, "], headers = [", headers.toString(), "]")
                             /*@formatter:on*/
+                            val localMessages = databaseManager.getInAppMessages()
+                            val remoteMessagesResponse = response.fromJson<InAppMessageListResponse>().messages
+                            val remoteMessages = remoteMessagesResponse.map { it.toInAppMessage() }
+                            remoteMessages.forEach {  remoteMessage ->
+                                val localMessage = localMessages.firstOrNull {
+                                    it.messageId == remoteMessage.messageId
+                                }
+                                localMessage?.let {
+                                    remoteMessage.lastShowTime = it.lastShowTime
+                                    remoteMessage.showCount = it.showCount
+                                }
+                            }
                             continuation.resume(
-                                response.fromJson<InAppMessageListResponse>().messages
+                                InAppMessagesList(
+                                    messages = remoteMessages,
+                                    etag = headers[HEADER_ETAG_RESPONSE]?.firstOrNull(),
+                                    isFromRemote = true
+                                )
                             )
+                        }
+
+                        override fun onSuccess(response: String) {
+                            onSuccess(emptyMap(), response)
                         }
 
                         override fun onFailure(
@@ -203,8 +236,17 @@ internal class IamRepositoryImpl(
                         ) {
                             /*@formatter:off*/ Logger.i(TAG, "getInAppMessages(): onFailure(): ", "statusCode = [", statusCode, "], response = [", response, "], throwable = [", throwable, "]")
                             /*@formatter:on*/
-                            continuation.resume(emptyList())
-//                            continuation.resumeWithException()
+                            if (statusCode == IN_APP_NO_CHANGES_CODE) {
+                                val localMessages = databaseManager.getInAppMessages()
+                                continuation.resume(
+                                    InAppMessagesList(
+                                        messages = localMessages.map { it.toInAppMessage() },
+                                        isFromRemote = false
+                                    )
+                                )
+                            } else {
+                                continuation.resume(InAppMessagesList())
+                            }
                         }
                     }
                 )
@@ -215,6 +257,8 @@ internal class IamRepositoryImpl(
     override suspend fun getInAppMessagesContent(messageInstanceIds: List<Long>): List<InAppMessageContent> {
         /*@formatter:off*/ Logger.i(TAG, "getInAppMessagesContent(): ", "messageInstanceIds = [", messageInstanceIds.toString(), "]")
         /*@formatter:on*/
+        if (messageInstanceIds.isEmpty()) return emptyList()
+
         return withContext(coroutineDispatcher) {
             suspendCancellableCoroutine { continuation ->
                 apiClient.post(
@@ -244,9 +288,29 @@ internal class IamRepositoryImpl(
         }
     }
 
+    override suspend fun saveInAppMessages(inAppMessageList: InAppMessagesList) {
+        /*@formatter:off*/ Logger.i(TAG, "saveInAppMessages(): ", "inAppMessageList = [", inAppMessageList, "]")
+        /*@formatter:on*/
+        if (inAppMessageList.isFromRemote) {
+            databaseManager.deleteAllInAppMessages()
+            databaseManager.insertInAppMessages(inAppMessageList.messages.map { it.toDB() })
+            sharedPrefsManager.saveIamEtag(inAppMessageList.etag)
+        }
+    }
+
+    override suspend fun updateInAppMessage(inAppMessage: InAppMessage) {
+        /*@formatter:off*/ Logger.i(TAG, "updateInAppMessage(): ", "inAppMessage = [", inAppMessage, "]")
+        /*@formatter:on*/
+        val messageDb = inAppMessage.toDB()
+        databaseManager.deleteInAppMessage(messageDb)
+        databaseManager.insertInAppMessages(listOf(messageDb))
+    }
+
     override suspend fun checkUserInSegments(segmentIds: List<Long>): List<AsyncRulesCheckResult> {
         /*@formatter:off*/ Logger.i(TAG, "checkUserInSegments(): ", "segmentIds = [", segmentIds.toString(), "]")
         /*@formatter:on*/
+        if (segmentIds.isEmpty()) return emptyList()
+
         return withContext(coroutineDispatcher) {
             suspendCancellableCoroutine { continuation ->
                 apiClient.post(
@@ -281,6 +345,9 @@ internal class IamRepositoryImpl(
         private val TAG: String = IamRepositoryImpl::class.java.simpleName
 
         private const val BASE_HTML_VERSION_DEFAULT = "0"
+        private const val IN_APP_NO_CHANGES_CODE = 304
+        private const val HEADER_ETAG_RESPONSE = "ETag"
+        private const val HEADER_ETAG_REQUEST = "If-None-Match"
         private val WIDGET = Util.readFromRaw(R.raw.widget) ?: ""
     }
 }

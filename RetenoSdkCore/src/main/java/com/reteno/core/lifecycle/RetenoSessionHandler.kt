@@ -14,6 +14,7 @@ import kotlinx.coroutines.launch
 internal class RetenoSessionHandler(private val sharedPrefsManager: SharedPrefsManager) {
 
     var foregroundTimeMillis: Long = 0L
+        private set
 
     private var timeSinceResume: Long = 0L
     private var appResumedTimestamp: Long = 0L

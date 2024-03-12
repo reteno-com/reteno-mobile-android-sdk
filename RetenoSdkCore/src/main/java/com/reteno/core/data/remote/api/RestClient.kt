@@ -21,6 +21,7 @@ internal interface RestClient {
         method: HttpMethod,
         apiContract: ApiContract,
         body: String?,
+        headers: Map<String, String>? = null,
         queryParams: Map<String, String?>? = null,
         responseCallback: ResponseCallback
     )

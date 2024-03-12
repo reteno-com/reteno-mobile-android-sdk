@@ -1,10 +1,11 @@
 package com.reteno.core.data.remote.model.iam.displayrules.frequency
 
 import com.google.gson.JsonObject
+import com.reteno.core.util.toTimeUnit
 import java.util.concurrent.TimeUnit
 
 
-sealed class FrequencyRule() {
+sealed class FrequencyRule {
     object NoLimit : FrequencyRule()
 
     object OncePerApp : FrequencyRule()
@@ -12,13 +13,12 @@ sealed class FrequencyRule() {
     object OncePerSession : FrequencyRule()
 
     class MinInterval(
-        val timeUnit: TimeUnit,
-        val amount: Long
+        val intervalMillis: Long
     ) : FrequencyRule()
 
     class TimesPerTimeUnit(
         val timeUnit: TimeUnit,
-        val count: Long
+        val count: Int
     ) : FrequencyRule()
 
     companion object {
@@ -34,38 +34,26 @@ sealed class FrequencyRule() {
                 "ONCE_PER_APP" -> OncePerApp
                 "ONCE_PER_SESSION" -> OncePerSession
                 "MIN_INTERVAL" -> {
-                    // parse params model
-                    //"type": "FREQUENCY",
-                    //          "predicates": [
-                    //            {
-                    //              "name": "MIN_INTERVAL",
-                    //              "isActive": true,
-                    //              "params": {
-                    //                "unit": "HOUR",
-                    //                "amount": 1
-                    //              }
-                    //            }
-                    //          ]
-//                    val interval = json.get("amount").asLong
-//                    val timeUnit = json.get("timeUnit").asString.toTimeUnit()
-//
-//                    if (timeUnit != null) {
-//                        MinInterval(timeUnit, interval)
-//                    } else {
-//                        null
-//                    }
-                    null
+                    val params = json.getAsJsonObject("params")
+                    val interval = params.get("amount").asLong
+                    val timeUnit = params.get("unit").asString.toTimeUnit()
+
+                    if (timeUnit != null && interval > 0) {
+                        MinInterval(timeUnit.toMillis(interval))
+                    } else {
+                        null
+                    }
                 }
                 "TIMES_PER_TIME_UNIT" -> {
-//                    val count = json.get("count").asLong
-//                    val timeUnit = json.get("timeUnit").asString.toTimeUnit()
-//
-//                    if (timeUnit != null) {
-//                        TimesPerTimeUnit(timeUnit, count)
-//                    } else {
-//                        null
-//                    }
-                    null
+                    val params = json.getAsJsonObject("params")
+                    val count = params.get("count").asInt
+                    val timeUnit = params.get("unit").asString.toTimeUnit()
+
+                    if (timeUnit != null && count > 0) {
+                        TimesPerTimeUnit(timeUnit, count)
+                    } else {
+                        null
+                    }
                 }
                 else -> null
             }

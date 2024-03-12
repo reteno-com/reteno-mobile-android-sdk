@@ -1,9 +1,11 @@
 package com.reteno.core.domain.controller
 
 import android.util.Log
+import com.reteno.core.data.remote.OperationQueue
 import com.reteno.core.data.remote.model.iam.displayrules.RuleRelation
 import com.reteno.core.data.remote.model.iam.displayrules.StringOperator
 import com.reteno.core.data.remote.model.iam.displayrules.frequency.FrequencyRule
+import com.reteno.core.data.remote.model.iam.displayrules.frequency.FrequencyRuleValidator
 import com.reteno.core.data.remote.model.iam.displayrules.targeting.InAppWithEvent
 import com.reteno.core.data.remote.model.iam.displayrules.targeting.InAppWithTime
 import com.reteno.core.data.remote.model.iam.displayrules.targeting.RuleEventValidator
@@ -114,23 +116,19 @@ internal class IamControllerImpl(
     override fun getInAppMessages(showMessage: (InAppMessage) -> Unit) {
         scope.launch {
             try {
-                val inAppMessages = iamRepository.getInAppMessages().map {
-                    InAppMessage(
-                        it.messageId,
-                        it.messageInstanceId,
-                        it.parseRules()
-                    )
-                }
+                val messageListModel = iamRepository.getInAppMessages()
+                val inAppMessages = messageListModel.messages
+
+                val messagesWithNoContent = inAppMessages.filter { it.content == null }
+                val contentIds = messagesWithNoContent.map { it.messageInstanceId }
+                val contentsDeferred = async { iamRepository.getInAppMessagesContent(contentIds)}
 
                 val messagesWithSegments = inAppMessages.filter { it.displayRules.async?.segment?.segmentId != null }
                 val segmentIds = messagesWithSegments.mapNotNull { it.displayRules.async?.segment?.segmentId }.distinct()
-
-                val contentsDeferred = async { iamRepository.getInAppMessagesContent(inAppMessages.map { it.messageInstanceId })}
                 val segmentDeferred = async { iamRepository.checkUserInSegments(segmentIds) }
 
                 val contents = contentsDeferred.await()
-
-                inAppMessages.forEach { message ->
+                messagesWithNoContent.forEach { message ->
                     message.content = contents.firstOrNull {
                         it.messageInstanceId == message.messageInstanceId
                     }
@@ -148,6 +146,7 @@ internal class IamControllerImpl(
                     }
                 }
 
+                iamRepository.saveInAppMessages(messageListModel)
                 sortMessages(inAppMessages)
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -211,12 +210,15 @@ internal class IamControllerImpl(
     }
 
     private fun tryShowInAppFromList(inAppMessages: MutableList<InAppMessage>) {
+        if (iamView == null || iamView?.isViewShown() == true) return
+
+        val frequencyValidator = FrequencyRuleValidator()
         while (true) {
             if (inAppMessages.isEmpty()) return
 
             val inAppWithHighestId = inAppMessages.maxBy { it.messageId }
             Log.e("ololo","try show inapp ${inAppWithHighestId.messageId}")
-            val showedInApp = tryShowInApp(inAppWithHighestId)
+            val showedInApp = tryShowInApp(inAppWithHighestId, frequencyValidator)
 
             if (showedInApp) {
                 return
@@ -225,46 +227,41 @@ internal class IamControllerImpl(
         }
     }
 
-    private fun tryShowInApp(inAppMessage: InAppMessage): Boolean {
+    private fun tryShowInApp(
+        inAppMessage: InAppMessage,
+        frequencyValidator: FrequencyRuleValidator = FrequencyRuleValidator()
+    ): Boolean {
         if (iamView == null || iamView?.isViewShown() == true) return false
-
-        val frequency = inAppMessage.displayRules.frequency?.predicates?.firstOrNull()
-        if (frequency != null && frequency != FrequencyRule.NoLimit && inAppMessage.alreadyShown) {
-            return false
-        }
 
         if (checkSegmentRuleMatches(inAppMessage).not()) {
             return false
         }
 
-        inAppMessage.alreadyShown = true
-        iamView?.initialize(inAppMessage)
+        if (!frequencyValidator.checkInAppMatchesFrequencyRules(
+                inAppMessage,
+                sessionHandler.foregroundTimeMillis
+        )) {
+            return false
+        }
+
+        showInApp(inAppMessage)
         return true
+    }
+
+    private fun showInApp(inAppMessage: InAppMessage) {
+        inAppMessage.notifyShown()
+        iamView?.initialize(inAppMessage)
+        updateInAppMessage(inAppMessage)
+    }
+
+    private fun updateInAppMessage(inAppMessage: InAppMessage) {
+        scope.launch {
+            iamRepository.updateInAppMessage(inAppMessage)
+        }
     }
 
     private fun checkSegmentRuleMatches(inAppMessage: InAppMessage): Boolean {
         return inAppMessage.displayRules.async?.segment?.isInSegment ?: true
-    }
-
-    private fun findInAppToShowByTime(inAppMessages: List<InAppMessage>): InAppMessage? {
-        var filteredMessages = inAppMessages// TODO filterInAppsByFrequency(inAppMessages)
-        return if (filteredMessages.isEmpty()) {
-            null
-        } else {
-            filteredMessages.maxBy { it.messageId }
-        }
-    }
-
-    private fun filterInAppsByFrequency(inAppMessages: List<InAppMessage>): List<InAppMessage> {
-        return inAppMessages.filter {
-            val predicates = it.displayRules.frequency?.predicates
-            if (predicates == null) {
-                false
-            } else {
-                predicates.contains(FrequencyRule.NoLimit) ||
-                        predicates.contains(FrequencyRule.OncePerApp)
-            }
-        }
     }
 
     companion object {
