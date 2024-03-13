@@ -4,10 +4,12 @@ import com.google.gson.JsonObject
 import com.reteno.core.data.remote.model.iam.displayrules.DisplayRuleType
 import com.reteno.core.data.remote.model.iam.displayrules.DisplayRules
 import com.reteno.core.data.remote.model.iam.displayrules.RuleRelation
+import com.reteno.core.data.remote.model.iam.displayrules.schedule.ScheduleDisplayRules
 import com.reteno.core.data.remote.model.iam.displayrules.async.AsyncDisplayRules
 import com.reteno.core.data.remote.model.iam.displayrules.async.SegmentRule
 import com.reteno.core.data.remote.model.iam.displayrules.frequency.FrequencyDisplayRules
 import com.reteno.core.data.remote.model.iam.displayrules.frequency.FrequencyRule
+import com.reteno.core.data.remote.model.iam.displayrules.schedule.ScheduleRule
 import com.reteno.core.data.remote.model.iam.displayrules.targeting.TargetingDisplayRules
 import com.reteno.core.data.remote.model.iam.displayrules.targeting.TargetingRule
 import com.reteno.core.data.remote.model.iam.displayrules.targeting.TargetingRuleConditionsGroup
@@ -18,7 +20,7 @@ object InAppMessageUtil {
         return DisplayRules(
             parseFrequencyRules(displayRulesJson),
             parseTargetingRules(displayRulesJson),
-            null,
+            parseScheduleRules(displayRulesJson),
             parseAsyncRules(displayRulesJson)
         )
     }
@@ -103,6 +105,27 @@ object InAppMessageUtil {
             AsyncDisplayRules(SegmentRule(segmentId))
         } else {
             null
+        }
+    }
+
+    private fun parseScheduleRules(displayRulesJson: JsonObject): ScheduleDisplayRules? {
+        val scheduleRules = ScheduleDisplayRules()
+        val schedule: JsonObject? = displayRulesJson.getAsJsonObject(DisplayRuleType.SCHEDULE.name)
+
+        if (schedule != null && schedule.get("enabled")?.asBoolean == true) {
+            val predicates = schedule.getAsJsonArray("predicates")
+            predicates.forEach { item ->
+                val rule = ScheduleRule.fromJson(item.asJsonObject)
+                if (rule != null) {
+                    scheduleRules.predicates.add(rule)
+                }
+            }
+        }
+
+        return if (scheduleRules.predicates.isEmpty()) {
+            null
+        } else {
+            scheduleRules
         }
     }
 }

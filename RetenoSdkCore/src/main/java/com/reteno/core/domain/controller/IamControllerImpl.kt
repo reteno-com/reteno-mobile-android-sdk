@@ -6,6 +6,7 @@ import com.reteno.core.data.remote.model.iam.displayrules.RuleRelation
 import com.reteno.core.data.remote.model.iam.displayrules.StringOperator
 import com.reteno.core.data.remote.model.iam.displayrules.frequency.FrequencyRule
 import com.reteno.core.data.remote.model.iam.displayrules.frequency.FrequencyRuleValidator
+import com.reteno.core.data.remote.model.iam.displayrules.schedule.ScheduleRuleValidator
 import com.reteno.core.data.remote.model.iam.displayrules.targeting.InAppWithEvent
 import com.reteno.core.data.remote.model.iam.displayrules.targeting.InAppWithTime
 import com.reteno.core.data.remote.model.iam.displayrules.targeting.RuleEventValidator
@@ -213,12 +214,13 @@ internal class IamControllerImpl(
         if (iamView == null || iamView?.isViewShown() == true) return
 
         val frequencyValidator = FrequencyRuleValidator()
+        val scheduleValidator = ScheduleRuleValidator()
         while (true) {
             if (inAppMessages.isEmpty()) return
 
             val inAppWithHighestId = inAppMessages.maxBy { it.messageId }
             Log.e("ololo","try show inapp ${inAppWithHighestId.messageId}")
-            val showedInApp = tryShowInApp(inAppWithHighestId, frequencyValidator)
+            val showedInApp = tryShowInApp(inAppWithHighestId, frequencyValidator, scheduleValidator)
 
             if (showedInApp) {
                 return
@@ -229,7 +231,8 @@ internal class IamControllerImpl(
 
     private fun tryShowInApp(
         inAppMessage: InAppMessage,
-        frequencyValidator: FrequencyRuleValidator = FrequencyRuleValidator()
+        frequencyValidator: FrequencyRuleValidator = FrequencyRuleValidator(),
+        scheduleValidator: ScheduleRuleValidator = ScheduleRuleValidator()
     ): Boolean {
         if (iamView == null || iamView?.isViewShown() == true) return false
 
@@ -241,6 +244,10 @@ internal class IamControllerImpl(
                 inAppMessage,
                 sessionHandler.foregroundTimeMillis
         )) {
+            return false
+        }
+
+        if (!scheduleValidator.checkInAppMatchesScheduleRules(inAppMessage)) {
             return false
         }
 

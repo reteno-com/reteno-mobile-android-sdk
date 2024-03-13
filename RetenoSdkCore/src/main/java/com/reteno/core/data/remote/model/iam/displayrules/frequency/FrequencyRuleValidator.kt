@@ -5,18 +5,33 @@ import java.util.concurrent.TimeUnit
 
 class FrequencyRuleValidator {
     fun checkInAppMatchesFrequencyRules(inAppMessage: InAppMessage, sessionTimeMillis: Long): Boolean {
-        val frequency = inAppMessage.displayRules.frequency?.predicates?.firstOrNull()
+        val frequencyRules = inAppMessage.displayRules.frequency?.predicates
 
-        return when (frequency) {
-            null -> false
+        if (frequencyRules.isNullOrEmpty()) {
+            return true
+        }
+
+        var allRulesMatch = true
+        frequencyRules.forEach { rule ->
+            if (!checkRuleMatch(rule, inAppMessage, sessionTimeMillis)) {
+                allRulesMatch = false
+                return@forEach
+            }
+        }
+
+        return allRulesMatch
+    }
+
+    private fun checkRuleMatch(rule: FrequencyRule, inAppMessage: InAppMessage, sessionTimeMillis: Long): Boolean {
+        return when (rule) {
             FrequencyRule.NoLimit -> true
             FrequencyRule.OncePerApp -> checkCanShowOncePerApp(inAppMessage)
             FrequencyRule.OncePerSession -> checkCanShowOncePerSession(inAppMessage, sessionTimeMillis)
-            is FrequencyRule.MinInterval -> checkCanShowMinInterval(inAppMessage, frequency.intervalMillis)
+            is FrequencyRule.MinInterval -> checkCanShowMinInterval(inAppMessage, rule.intervalMillis)
             is FrequencyRule.TimesPerTimeUnit -> checkCanShowTimesPerTimeUnit(
                 inAppMessage,
-                frequency.count,
-                frequency.timeUnit.toMillis(1)
+                rule.count,
+                rule.timeUnit.toMillis(1)
             )
         }
     }

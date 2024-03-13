@@ -20,6 +20,7 @@ import net.sqlcipher.database.SQLiteStatement
 import java.io.*
 import java.text.SimpleDateFormat
 import java.time.Instant
+import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
@@ -133,6 +134,8 @@ object Util {
         SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
     }
 
+    private val patternWithNoSeconds = "yyyy-MM-dd'T'HH:mm"
+
     init {
         CoroutineScope(IO).launch {
             val debugString = getSysProp(PROP_KEY_DEBUG_VIEW)
@@ -188,6 +191,14 @@ object Util {
 
     fun formatSqlDateToTimestamp(sqlDate: String): Long {
         return sqlToTimestampFormat.parse(sqlDate)?.time ?: 0L
+    }
+
+    fun parseWithTimeZone(dateTime: String, timeZone: String): ZonedDateTime {
+        val formatter = DateTimeFormatter
+            .ofPattern(patternWithNoSeconds)
+            .withZone(ZoneId.of(timeZone))
+
+        return ZonedDateTime.parse(dateTime, formatter)
     }
 
     /**
