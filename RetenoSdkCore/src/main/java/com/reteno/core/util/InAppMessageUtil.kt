@@ -29,7 +29,7 @@ object InAppMessageUtil {
     private fun parseFrequencyRules(displayRulesJson: JsonObject): FrequencyDisplayRules {
         val frequencyRules = FrequencyDisplayRules()
         val frequency: JsonObject? = displayRulesJson.getAsJsonObject(DisplayRuleType.FREQUENCY.name)
-        throw DisplayRulesParsingException()
+
         if (frequency != null && frequency.get("enabled")?.asBoolean == true) {
             val predicates = frequency.getAsJsonArray("predicates")
             predicates.forEach { item ->

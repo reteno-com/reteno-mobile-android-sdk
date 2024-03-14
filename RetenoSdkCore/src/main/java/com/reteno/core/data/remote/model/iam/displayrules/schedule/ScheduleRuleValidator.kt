@@ -32,11 +32,13 @@ class ScheduleRuleValidator {
     }
 
     private fun checkShowAfterRuleMatches(showAfter: ScheduleRule.ShowAfter, now: ZonedDateTime): Boolean {
-        return showAfter.zonedDateTime.isAfter(now)
+        val result = showAfter.zonedDateTime.isAfter(now)
+        return result
     }
 
     private fun checkHideAfterRuleMatches(hideAfter: ScheduleRule.HideAfter, now: ZonedDateTime): Boolean {
-        return hideAfter.zonedDateTime.isBefore(now)
+        val result = hideAfter.zonedDateTime.isBefore(now)
+        return result
     }
 
     private fun checkSpecificDaysAndTimeRuleMatches(
