@@ -21,7 +21,7 @@ internal interface IamController {
 
     fun setIamView(iamView: IamView)
 
-    fun getInAppMessages(showMessage: (InAppMessage) -> Unit)
+    fun getInAppMessages()
 
     fun notifyEventOccurred(event: Event)
 

@@ -4,7 +4,7 @@ import com.google.gson.annotations.SerializedName
 
 data class AsyncRulesCheckError(
     @SerializedName("status")
-    val statusCode: Long,
+    val statusCode: Int,
     @SerializedName("retryAfter")
-    val retryAfter: AsyncRulesCheckRetryModel
+    val retryAfter: AsyncRulesCheckRetryModel?
 )

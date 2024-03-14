@@ -47,7 +47,6 @@ class RetenoImpl @JvmOverloads constructor(
     private val iamView: IamView by lazy { serviceLocator.iamViewProvider.get() }
 
     init {
-        Log.e("ololo","main onCreate")
         if (isOsVersionSupported()) {
             try {
                 activityHelper.enableLifecycleCallbacks(this)
@@ -64,7 +63,6 @@ class RetenoImpl @JvmOverloads constructor(
     }
 
     override fun start(activity: Activity) {
-        Log.e("ololo","main onStart")
         if (!isOsVersionSupported()) {
             return
         }
@@ -73,7 +71,6 @@ class RetenoImpl @JvmOverloads constructor(
     }
 
     override fun resume(activity: Activity) {
-        Log.e("ololo","main onResume")
         if (!isOsVersionSupported()) {
             return
         }
@@ -91,7 +88,6 @@ class RetenoImpl @JvmOverloads constructor(
     }
 
     override fun pause(activity: Activity) {
-        Log.e("ololo","main onPause")
         if (!isOsVersionSupported()) {
             return
         }
@@ -108,7 +104,6 @@ class RetenoImpl @JvmOverloads constructor(
     }
 
     override fun stop(activity: Activity) {
-        Log.e("ololo","main onStop")
         if (!isOsVersionSupported()) {
             return
         }
@@ -119,12 +114,7 @@ class RetenoImpl @JvmOverloads constructor(
     private fun fetchInAppMessages() {
         iamController.setIamView(iamView)
         eventController.setIamController(iamController)
-        iamController.getInAppMessages { messageToShow ->
-            //Log.e("ololo","got messages: $inAppMessages")
-            //iamView.initialize(messageToShow)
-            //iamController.fetchIamFullHtml(inAppMessages.last().content)
-            //iamView.initialize(inAppMessages.first(), inAppContents.first())
-        }
+        iamController.getInAppMessages()
     }
 
     private fun sendAppResumeBroadcast() {

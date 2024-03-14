@@ -111,8 +111,9 @@ object InAppMessageUtil {
                 if (segmentJson.get("enabled")?.asBoolean == true) {
                     val segmentId = segmentJson.get("segmentId").asLong
                     AsyncDisplayRules(SegmentRule(segmentId))
+                } else {
+                    null
                 }
-                null
             }
             else -> throw DisplayRulesParsingException()
         }

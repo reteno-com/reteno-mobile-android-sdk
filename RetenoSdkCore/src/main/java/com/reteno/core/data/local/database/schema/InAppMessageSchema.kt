@@ -26,6 +26,28 @@ object InAppMessageSchema {
                 "$COLUMN_IAM_MODEL TEXT" +
                 ")"
 
+    internal object SegmentSchema {
+        internal const val TABLE_NAME_SEGMENT = "Segment"
+
+        internal const val COLUMN_SEGMENT_ID = "segmentId"
+        internal const val COLUMN_IS_IN_SEGMENT = "isInSegment"
+        internal const val COLUMN_LAST_CHECK_TIME = "lastCheckTime"
+        internal const val COLUMN_CHECK_STATUS_CODE = "checkStatusCode"
+        internal const val COLUMN_RETRY_AFTER = "retryAfter"
+
+        internal const val SQL_CREATE_TABLE =
+            "CREATE TABLE IF NOT EXISTS $TABLE_NAME_SEGMENT" +
+                    "(" +
+                    "${InAppMessageSchema.COLUMN_IAM_ROW_ID} INTEGER NOT NULL, " +
+                    "$COLUMN_SEGMENT_ID INTEGER NOT NULL, " +
+                    "$COLUMN_IS_IN_SEGMENT TEXT, " +
+                    "$COLUMN_LAST_CHECK_TIME INTEGER, " +
+                    "$COLUMN_CHECK_STATUS_CODE INTEGER, " +
+                    "$COLUMN_RETRY_AFTER INTEGER, " +
+                    "FOREIGN KEY (${InAppMessageSchema.COLUMN_IAM_ROW_ID}) REFERENCES ${InAppMessageSchema.TABLE_NAME_IN_APP_MESSAGE} (${InAppMessageSchema.COLUMN_IAM_ROW_ID}) ON DELETE CASCADE" +
+                    ")"
+    }
+
     fun getAllColumns(): Array<String> = arrayOf(
         COLUMN_IAM_ROW_ID,
         DbSchema.COLUMN_TIMESTAMP,

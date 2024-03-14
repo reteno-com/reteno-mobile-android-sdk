@@ -4,7 +4,7 @@ import com.google.gson.annotations.SerializedName
 
 data class AsyncRulesCheckRetryModel(
     @SerializedName("unit")
-    val timeUnit: String,
+    val timeUnit: String? = null,
     @SerializedName("amount")
-    val amount: Long
+    val amount: Long? = null
 )

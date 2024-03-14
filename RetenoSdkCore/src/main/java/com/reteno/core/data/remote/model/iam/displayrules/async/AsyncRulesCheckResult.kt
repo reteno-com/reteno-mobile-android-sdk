@@ -6,7 +6,7 @@ data class AsyncRulesCheckResult(
     @SerializedName("segmentId")
     val segmentId: Long,
     @SerializedName("checkResult")
-    val checkResult: Boolean,
+    val checkResult: Boolean?,
     @SerializedName("error")
-    val error: AsyncRulesCheckError
+    val error: AsyncRulesCheckError? = null
 )

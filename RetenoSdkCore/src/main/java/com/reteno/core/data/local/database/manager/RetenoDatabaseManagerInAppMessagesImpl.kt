@@ -1,16 +1,15 @@
 package com.reteno.core.data.local.database.manager
 
-import android.content.ContentValues
 import android.database.Cursor
 import android.database.SQLException
 import androidx.core.database.getLongOrNull
 import androidx.core.database.getStringOrNull
 import com.reteno.core.data.local.database.RetenoDatabase
-import com.reteno.core.data.local.database.schema.AppInboxSchema
 import com.reteno.core.data.local.database.schema.DbSchema
 import com.reteno.core.data.local.database.schema.InAppMessageSchema
 import com.reteno.core.data.local.database.util.getInAppMessage
 import com.reteno.core.data.local.database.util.toContentValuesList
+import com.reteno.core.data.local.database.util.toSegmentContentValuesList
 import com.reteno.core.data.local.model.iam.InAppMessageDb
 import com.reteno.core.util.Logger
 
@@ -22,10 +21,22 @@ internal class RetenoDatabaseManagerInAppMessagesImpl(private val database: Rete
         /*@formatter:on*/
 
         val contentValues = inApps.toContentValuesList()
-        database.insertMultiple(
+        val rowIds = database.insertMultiple(
             table = InAppMessageSchema.TABLE_NAME_IN_APP_MESSAGE,
             contentValues = contentValues
         )
+
+        if (rowIds.size == inApps.size) {
+            val rowIdToSegmentList = rowIds.zip(inApps)
+                .filter { (_, inApp) -> inApp.segment != null }
+                .map { it.first to it.second.segment!! }
+
+            val segmentContentValues = rowIdToSegmentList.toSegmentContentValuesList()
+            database.insertMultiple(
+                table = InAppMessageSchema.SegmentSchema.TABLE_NAME_SEGMENT,
+                contentValues = segmentContentValues
+            )
+        }
     }
 
     override fun getInAppMessages(limit: Int?): List<InAppMessageDb> {
@@ -33,15 +44,29 @@ internal class RetenoDatabaseManagerInAppMessagesImpl(private val database: Rete
         /*@formatter:on*/
 
         val inAppMessages: MutableList<InAppMessageDb> = mutableListOf()
+        val rawQueryLimit: String = limit?.let { " LIMIT $it" } ?: ""
 
         var cursor: Cursor? = null
         try {
-            cursor = database.query(
-                table = InAppMessageSchema.TABLE_NAME_IN_APP_MESSAGE,
-                columns = InAppMessageSchema.getAllColumns(),
-                orderBy = "${DbSchema.COLUMN_TIMESTAMP} ASC",
-                limit = limit?.toString()
-            )
+            val rawQuery = "SELECT" +
+                    "  ${InAppMessageSchema.TABLE_NAME_IN_APP_MESSAGE}.${InAppMessageSchema.COLUMN_IAM_ROW_ID} AS ${InAppMessageSchema.COLUMN_IAM_ROW_ID}," +
+                    "  ${InAppMessageSchema.TABLE_NAME_IN_APP_MESSAGE}.${InAppMessageSchema.COLUMN_IAM_ID} AS ${InAppMessageSchema.COLUMN_IAM_ID}," +
+                    "  ${InAppMessageSchema.TABLE_NAME_IN_APP_MESSAGE}.${InAppMessageSchema.COLUMN_IAM_INSTANCE_ID} AS ${InAppMessageSchema.COLUMN_IAM_INSTANCE_ID}," +
+                    "  ${InAppMessageSchema.TABLE_NAME_IN_APP_MESSAGE}.${DbSchema.COLUMN_TIMESTAMP} AS ${DbSchema.COLUMN_TIMESTAMP}," +
+                    "  ${InAppMessageSchema.TABLE_NAME_IN_APP_MESSAGE}.${InAppMessageSchema.COLUMN_IAM_DISPLAY_RULES} AS ${InAppMessageSchema.COLUMN_IAM_DISPLAY_RULES}," +
+                    "  ${InAppMessageSchema.TABLE_NAME_IN_APP_MESSAGE}.${InAppMessageSchema.COLUMN_IAM_LAST_SHOW_TIME} AS ${InAppMessageSchema.COLUMN_IAM_LAST_SHOW_TIME}," +
+                    "  ${InAppMessageSchema.TABLE_NAME_IN_APP_MESSAGE}.${InAppMessageSchema.COLUMN_IAM_SHOW_COUNT} AS ${InAppMessageSchema.COLUMN_IAM_SHOW_COUNT}," +
+                    "  ${InAppMessageSchema.TABLE_NAME_IN_APP_MESSAGE}.${InAppMessageSchema.COLUMN_IAM_LAYOUT_TYPE} AS ${InAppMessageSchema.COLUMN_IAM_LAYOUT_TYPE}," +
+                    "  ${InAppMessageSchema.TABLE_NAME_IN_APP_MESSAGE}.${InAppMessageSchema.COLUMN_IAM_MODEL} AS ${InAppMessageSchema.COLUMN_IAM_MODEL}," +
+                    "  ${InAppMessageSchema.SegmentSchema.TABLE_NAME_SEGMENT}.${InAppMessageSchema.SegmentSchema.COLUMN_SEGMENT_ID} AS ${InAppMessageSchema.SegmentSchema.COLUMN_SEGMENT_ID}," +
+                    "  ${InAppMessageSchema.SegmentSchema.TABLE_NAME_SEGMENT}.${InAppMessageSchema.SegmentSchema.COLUMN_IS_IN_SEGMENT} AS ${InAppMessageSchema.SegmentSchema.COLUMN_IS_IN_SEGMENT}," +
+                    "  ${InAppMessageSchema.SegmentSchema.TABLE_NAME_SEGMENT}.${InAppMessageSchema.SegmentSchema.COLUMN_LAST_CHECK_TIME} AS ${InAppMessageSchema.SegmentSchema.COLUMN_LAST_CHECK_TIME}," +
+                    "  ${InAppMessageSchema.SegmentSchema.TABLE_NAME_SEGMENT}.${InAppMessageSchema.SegmentSchema.COLUMN_CHECK_STATUS_CODE} AS ${InAppMessageSchema.SegmentSchema.COLUMN_CHECK_STATUS_CODE}," +
+                    "  ${InAppMessageSchema.SegmentSchema.TABLE_NAME_SEGMENT}.${InAppMessageSchema.SegmentSchema.COLUMN_RETRY_AFTER} AS ${InAppMessageSchema.SegmentSchema.COLUMN_RETRY_AFTER}" +
+                    " FROM ${InAppMessageSchema.TABLE_NAME_IN_APP_MESSAGE}" +
+                    "  LEFT JOIN ${InAppMessageSchema.SegmentSchema.TABLE_NAME_SEGMENT} ON ${InAppMessageSchema.TABLE_NAME_IN_APP_MESSAGE}.${InAppMessageSchema.COLUMN_IAM_ROW_ID} = ${InAppMessageSchema.SegmentSchema.TABLE_NAME_SEGMENT}.${InAppMessageSchema.COLUMN_IAM_ROW_ID}" +
+                    rawQueryLimit
+            cursor = database.rawQuery(rawQuery)
             while (cursor.moveToNext()) {
                 val timestamp = cursor.getStringOrNull(cursor.getColumnIndex(DbSchema.COLUMN_TIMESTAMP))
                 val inApp = cursor.getInAppMessage()
@@ -79,17 +104,18 @@ internal class RetenoDatabaseManagerInAppMessagesImpl(private val database: Rete
         return database.getRowCount(InAppMessageSchema.TABLE_NAME_IN_APP_MESSAGE)
     }
 
-    override fun deleteInAppMessage(inApp: InAppMessageDb): Boolean {
-        /*@formatter:off*/ Logger.i(TAG, "deleteInAppMessage(): ", "inApp = [", inApp, "]")
+    override fun deleteInAppMessages(inApps: List<InAppMessageDb>) {
+        /*@formatter:off*/ Logger.i(TAG, "deleteInAppMessages(): ", "inApps = [", inApps, "]")
         /*@formatter:on*/
+        val ids = inApps.map { it.messageId }
 
-        val removedRecordsCount = database.delete(
-            table = InAppMessageSchema.TABLE_NAME_IN_APP_MESSAGE,
-            whereClause = "${InAppMessageSchema.COLUMN_IAM_ROW_ID}=?",
-            whereArgs = arrayOf(inApp.rowId)
-        )
-
-        return removedRecordsCount > 0
+        for (id: Long in ids) {
+            database.delete(
+                table = InAppMessageSchema.TABLE_NAME_IN_APP_MESSAGE,
+                whereClause = "${InAppMessageSchema.COLUMN_IAM_ID}=?",
+                whereArgs = arrayOf(id.toString())
+            )
+        }
     }
 
     override fun deleteAllInAppMessages() {

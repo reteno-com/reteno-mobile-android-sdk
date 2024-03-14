@@ -3,12 +3,17 @@ package com.reteno.core.data.local.mappers
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.reteno.core.data.local.model.iam.InAppMessageDb
+import com.reteno.core.data.local.model.iam.SegmentDb
 import com.reteno.core.data.remote.mapper.fromJson
 import com.reteno.core.data.remote.model.iam.displayrules.DisplayRulesParsingException
+import com.reteno.core.data.remote.model.iam.displayrules.async.AsyncRuleRetryParams
+import com.reteno.core.data.remote.model.iam.displayrules.async.AsyncRulesCheckError
+import com.reteno.core.data.remote.model.iam.displayrules.async.SegmentRule
 import com.reteno.core.data.remote.model.iam.message.InAppMessage
 import com.reteno.core.data.remote.model.iam.message.InAppMessageContent
 import com.reteno.core.data.remote.model.iam.message.InAppMessageResponse
 import com.reteno.core.util.InAppMessageUtil
+import com.reteno.core.util.toTimeUnit
 
 internal fun InAppMessageResponse.toInAppMessage() = InAppMessage(
     messageId = messageId,
@@ -21,7 +26,7 @@ internal fun List<InAppMessageResponse>.mapResponseToInAppMessages(): List<InApp
     return mapNotNull { message ->
         try {
             message.toInAppMessage()
-        } catch (e: DisplayRulesParsingException) {
+        } catch (e: Throwable) {
             e.printStackTrace()
             null
         }
@@ -38,7 +43,7 @@ internal fun InAppMessageDb.toInAppMessage(): InAppMessage {
         )
     } else null
 
-    return InAppMessage(
+    val result = InAppMessage(
         messageId = messageId,
         messageInstanceId = messageInstanceId,
         displayRulesJson = rulesJson,
@@ -47,25 +52,79 @@ internal fun InAppMessageDb.toInAppMessage(): InAppMessage {
         lastShowTime = lastShowTime,
         showCount = showCount
     )
+
+    segment?.let {
+        val resultSegment = result.displayRules.async?.segment
+        if (resultSegment != null && resultSegment.segmentId == it.segmentId) {
+            result.displayRules.async?.segment = it.toDomain()
+        }
+    }
+
+    return result
 }
 
 internal fun List<InAppMessageDb>.mapDbToInAppMessages(): List<InAppMessage> {
     return mapNotNull { message ->
         try {
             message.toInAppMessage()
-        } catch (e: DisplayRulesParsingException) {
+        } catch (e: Throwable) {
             e.printStackTrace()
             null
         }
     }
 }
 
-internal fun InAppMessage.toDB() = InAppMessageDb(
-    messageId = messageId,
-    messageInstanceId = messageInstanceId,
-    displayRules = displayRulesJson.toString(),
-    layoutType = content?.layoutType,
-    model = content?.model?.toString(),
-    lastShowTime = lastShowTime,
-    showCount = showCount
+internal fun InAppMessage.toDB(): InAppMessageDb {
+    val result = InAppMessageDb(
+        messageId = messageId,
+        messageInstanceId = messageInstanceId,
+        displayRules = displayRulesJson.toString(),
+        layoutType = content?.layoutType,
+        model = content?.model?.toString(),
+        lastShowTime = lastShowTime,
+        showCount = showCount
+    )
+
+    result.segment = displayRules.async?.segment?.toDb()
+
+    return result
+}
+
+internal fun InAppMessage.updateFromDb(messageDb: InAppMessageDb) {
+    lastShowTime = messageDb.lastShowTime
+    showCount = messageDb.showCount
+    displayRules.async?.segment?.let {
+        val segmentDb = messageDb.segment
+        if (segmentDb != null && it.segmentId == segmentDb.segmentId) {
+            it.isInSegment = segmentDb.isInSegment
+            it.lastCheckedTimestamp = segmentDb.lastCheckTime
+            it.retryParams?.statusCode = segmentDb.checkStatusCode ?: 0
+            it.retryParams?.retryAfter = segmentDb.retryAfter
+        }
+    }
+}
+
+internal fun AsyncRulesCheckError.toDomain() = AsyncRuleRetryParams(
+    statusCode = statusCode,
+    retryAfter = retryAfter?.let { retryModel ->
+        retryModel.timeUnit.toTimeUnit()?.toMillis(retryModel.amount ?: 0)
+    }
 )
+
+internal fun SegmentRule.toDb() = SegmentDb(
+    segmentId = segmentId,
+    isInSegment = isInSegment,
+    lastCheckTime = lastCheckedTimestamp,
+    checkStatusCode = retryParams?.statusCode,
+    retryAfter = retryParams?.retryAfter
+)
+
+internal fun SegmentDb.toDomain(): SegmentRule {
+    val result = SegmentRule(segmentId)
+    result.isInSegment = isInSegment
+    result.lastCheckedTimestamp = lastCheckTime
+    result.retryParams = checkStatusCode?.let { code ->
+        AsyncRuleRetryParams(code, retryAfter)
+    }
+    return result
+}

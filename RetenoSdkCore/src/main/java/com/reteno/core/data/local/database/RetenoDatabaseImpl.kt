@@ -152,6 +152,7 @@ internal class RetenoDatabaseImpl(private val context: Context) : RetenoDatabase
         db.execSQL(WrappedLinkSchema.SQL_CREATE_TABLE)
         db.execSQL(LogEventSchema.SQL_CREATE_TABLE)
         db.execSQL(InAppMessageSchema.SQL_CREATE_TABLE)
+        db.execSQL(InAppMessageSchema.SegmentSchema.SQL_CREATE_TABLE)
     }
 
     override fun query(

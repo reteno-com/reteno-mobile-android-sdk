@@ -1,6 +1,7 @@
 package com.reteno.core.domain.controller
 
 import android.util.Log
+import com.reteno.core.data.local.mappers.toDomain
 import com.reteno.core.data.remote.model.iam.displayrules.frequency.FrequencyRuleValidator
 import com.reteno.core.data.remote.model.iam.displayrules.schedule.ScheduleRuleValidator
 import com.reteno.core.data.remote.model.iam.displayrules.targeting.InAppWithEvent
@@ -113,8 +114,8 @@ internal class IamControllerImpl(
         this.iamView = iamView
     }
 
-    override fun getInAppMessages(showMessage: (InAppMessage) -> Unit) {
-        Log.e("ololo","getInAppMessages 1")
+    override fun getInAppMessages() {
+        Log.e("ololo","getInAppMessages")
         scope.launch {
             try {
                 val messageListModel = iamRepository.getInAppMessages()
@@ -124,9 +125,12 @@ internal class IamControllerImpl(
                 val contentIds = messagesWithNoContent.map { it.messageInstanceId }
                 val contentsDeferred = async { iamRepository.getInAppMessagesContent(contentIds)}
 
-                val messagesWithSegments = inAppMessages.filter { it.displayRules.async?.segment?.segmentId != null }
+                val messagesWithSegments = inAppMessages.filter {
+                    it.displayRules.async?.segment?.shouldCheckStatus(sessionHandler.getForegroundTimeMillis()) == true
+                }
                 val segmentIds = messagesWithSegments.mapNotNull { it.displayRules.async?.segment?.segmentId }.distinct()
-                val segmentDeferred = async { iamRepository.checkUserInSegments(segmentIds) }
+
+                updateSegmentStatuses(inAppMessages, updateCacheOnSuccess = messageListModel.isFromRemote.not())
 
                 val contents = contentsDeferred.await()
                 messagesWithNoContent.forEach { message ->
@@ -134,17 +138,6 @@ internal class IamControllerImpl(
                         it.messageInstanceId == message.messageInstanceId
                     }
                     Log.e("ololo","found content for ${message.messageId} instance ${message.messageInstanceId}: ${message.content != null}")
-                }
-
-                val segmentResponses = segmentDeferred.await()
-                messagesWithSegments.forEach { message ->
-                    val segment = message.displayRules.async?.segment
-                    segment?.let { segmentRule ->
-                        segmentRule.isInSegment = segmentResponses.firstOrNull { checkResult ->
-                            checkResult.segmentId == segmentRule.segmentId
-                        }?.checkResult ?: false
-                        Log.e("ololo","set segment for ${message.messageId}, segment id ${segmentRule.segmentId}: ${segmentRule.isInSegment}")
-                    }
                 }
 
                 iamRepository.saveInAppMessages(messageListModel)
@@ -215,21 +208,60 @@ internal class IamControllerImpl(
     }
 
     private fun tryShowInAppFromList(inAppMessages: MutableList<InAppMessage>) {
+        Log.e("ololo","tryShowInAppFromList, inApps paused ${isPausedInAppMessages.get()}")
         if (iamView == null || iamView?.isViewShown() == true || isPausedInAppMessages.get()) return
 
-        val frequencyValidator = FrequencyRuleValidator()
-        val scheduleValidator = ScheduleRuleValidator()
-        while (true) {
-            if (inAppMessages.isEmpty()) return
+        scope.launch {
+            updateSegmentStatuses(inAppMessages, updateCacheOnSuccess = true)
 
-            val inAppWithHighestId = inAppMessages.maxBy { it.messageId }
-            Log.e("ololo","try show inapp ${inAppWithHighestId.messageId}")
-            val showedInApp = tryShowInApp(inAppWithHighestId, frequencyValidator, scheduleValidator)
+            val frequencyValidator = FrequencyRuleValidator()
+            val scheduleValidator = ScheduleRuleValidator()
+            while (true) {
+                if (inAppMessages.isEmpty()) break
 
-            if (showedInApp) {
-                return
+                val inAppWithHighestId = inAppMessages.maxBy { it.messageId }
+                Log.e("ololo","try show inapp ${inAppWithHighestId.messageId}")
+                val showedInApp = tryShowInApp(inAppWithHighestId, frequencyValidator, scheduleValidator)
+
+                if (showedInApp) {
+                    break
+                }
+                inAppMessages.remove(inAppWithHighestId)
             }
-            inAppMessages.remove(inAppWithHighestId)
+        }
+    }
+
+    private suspend fun updateSegmentStatuses(inAppMessages: List<InAppMessage>, updateCacheOnSuccess: Boolean = true) {
+        Log.e("ololo","update segment statuses")
+        val messagesWithSegments = inAppMessages.filter {
+            val segment = it.displayRules.async?.segment
+            val shouldCheck = it.displayRules.async?.segment?.shouldCheckStatus(sessionHandler.getForegroundTimeMillis())
+            Log.e("ololo","shouldCheck $shouldCheck ${it.messageId}, segment $segment")
+            shouldCheck == true
+        }
+        Log.e("ololo","update segment statuses for ${messagesWithSegments.size}")
+        val segmentIds = messagesWithSegments.mapNotNull { it.displayRules.async?.segment?.segmentId }.distinct()
+        val segmentResponses = iamRepository.checkUserInSegments(segmentIds)
+
+        val updatedMessages = mutableListOf<InAppMessage>()
+        messagesWithSegments.forEach { message ->
+            val segment = message.displayRules.async?.segment
+            if (segment != null) {
+                val checkResult = segmentResponses.firstOrNull { result ->
+                    result.segmentId == segment.segmentId
+                }
+                if (checkResult != null) {
+                    segment.isInSegment = checkResult.checkResult ?: false
+                    segment.retryParams = checkResult.error?.toDomain()
+                    segment.lastCheckedTimestamp = System.currentTimeMillis()
+                    updatedMessages.add(message)
+                    Log.e("ololo","set segment for ${message.messageId}, segment id ${segment.segmentId}: ${segment.isInSegment}")
+                }
+            }
+        }
+
+        if (updateCacheOnSuccess) {
+            iamRepository.updateInAppMessages(updatedMessages)
         }
     }
 
@@ -272,7 +304,7 @@ internal class IamControllerImpl(
 
     private fun updateInAppMessage(inAppMessage: InAppMessage) {
         scope.launch {
-            iamRepository.updateInAppMessage(inAppMessage)
+            iamRepository.updateInAppMessages(listOf(inAppMessage))
         }
     }
 

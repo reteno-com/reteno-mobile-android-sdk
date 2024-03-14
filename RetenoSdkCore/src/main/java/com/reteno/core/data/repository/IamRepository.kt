@@ -14,6 +14,6 @@ internal interface IamRepository {
     suspend fun getInAppMessages(): InAppMessagesList
     suspend fun getInAppMessagesContent(messageInstanceIds: List<Long>): List<InAppMessageContent>
     suspend fun saveInAppMessages(inAppMessageList: InAppMessagesList)
-    suspend fun updateInAppMessage(inAppMessage: InAppMessage)
+    suspend fun updateInAppMessages(inAppMessages: List<InAppMessage>)
     suspend fun checkUserInSegments(segmentIds: List<Long>): List<AsyncRulesCheckResult>
 }

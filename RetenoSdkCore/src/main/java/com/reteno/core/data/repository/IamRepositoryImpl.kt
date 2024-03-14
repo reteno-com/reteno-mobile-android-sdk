@@ -7,6 +7,7 @@ import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerInAppMes
 import com.reteno.core.data.local.mappers.mapDbToInAppMessages
 import com.reteno.core.data.local.mappers.mapResponseToInAppMessages
 import com.reteno.core.data.local.mappers.toDB
+import com.reteno.core.data.local.mappers.updateFromDb
 import com.reteno.core.data.local.sharedpref.SharedPrefsManager
 import com.reteno.core.data.remote.api.ApiClient
 import com.reteno.core.data.remote.api.ApiContract
@@ -221,8 +222,7 @@ internal class IamRepositoryImpl(
                                     it.messageId == remoteMessage.messageId
                                 }
                                 localMessage?.let {
-                                    remoteMessage.lastShowTime = it.lastShowTime
-                                    remoteMessage.showCount = it.showCount
+                                    remoteMessage.updateFromDb(it)
                                 }
                             }
                             continuation.resume(
@@ -298,21 +298,21 @@ internal class IamRepositoryImpl(
     }
 
     override suspend fun saveInAppMessages(inAppMessageList: InAppMessagesList) {
-        /*@formatter:off*/ Logger.i(TAG, "saveInAppMessages(): ", "inAppMessageList = [", inAppMessageList, "]")
-        /*@formatter:on*/
         if (inAppMessageList.isFromRemote) {
+            /*@formatter:off*/ Logger.i(TAG, "saveInAppMessages(): ", "inAppMessageList = [", inAppMessageList, "]")
+            /*@formatter:on*/
             databaseManager.deleteAllInAppMessages()
             databaseManager.insertInAppMessages(inAppMessageList.messages.map { it.toDB() })
             sharedPrefsManager.saveIamEtag(inAppMessageList.etag)
         }
     }
 
-    override suspend fun updateInAppMessage(inAppMessage: InAppMessage) {
-        /*@formatter:off*/ Logger.i(TAG, "updateInAppMessage(): ", "inAppMessage = [", inAppMessage, "]")
+    override suspend fun updateInAppMessages(inAppMessages: List<InAppMessage>) {
+        /*@formatter:off*/ Logger.i(TAG, "updateInAppMessages(): ", "inAppMessages = [", inAppMessages, "]")
         /*@formatter:on*/
-        val messageDb = inAppMessage.toDB()
-        databaseManager.deleteInAppMessage(messageDb)
-        databaseManager.insertInAppMessages(listOf(messageDb))
+        val messages = inAppMessages.map { it.toDB() }
+        databaseManager.deleteInAppMessages(messages)
+        databaseManager.insertInAppMessages(messages)
     }
 
     override suspend fun checkUserInSegments(segmentIds: List<Long>): List<AsyncRulesCheckResult> {

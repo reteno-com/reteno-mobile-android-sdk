@@ -80,8 +80,14 @@ class RuleEventValidator {
     private fun checkContains(paramFromInApp: RuleEventParameter, eventParams: List<Parameter>?): Boolean {
         val paramFromEvent = eventParams?.firstOrNull {
             it.name == paramFromInApp.name
+        } ?: return false
+
+        paramFromInApp.values.forEach{
+            if (paramFromEvent.value?.contains(it) == true) {
+                return true
+            }
         }
-        return paramFromEvent != null
+        return false
     }
 
     private fun checkContainsOneOf(paramFromInApp: RuleEventParameter, eventParams: List<Parameter>?): Boolean {
