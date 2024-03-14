@@ -20,7 +20,11 @@ import com.reteno.core.util.Constants.BROADCAST_ACTION_RETENO_APP_RESUME
 import com.reteno.core.view.iam.IamView
 
 
-class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleCallbacks, Reteno {
+class RetenoImpl @JvmOverloads constructor(
+    application: Application,
+    accessKey: String,
+    private val config: RetenoConfig = RetenoConfig()
+) : RetenoLifecycleCallbacks, Reteno {
 
     init {
         /*@formatter:off*/ Logger.i(TAG, "RetenoImpl(): ", "context = [" , application , "]")
@@ -50,6 +54,7 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
                 clearOldData()
                 contactController.checkIfDeviceRegistered()
                 sendAppResumeBroadcast()
+                pauseInAppMessages(config.isPausedInAppMessages)
                 fetchInAppMessages()
             } catch (t: Throwable) {
                 /*@formatter:off*/ Logger.e(TAG, "init(): ", t)
@@ -253,6 +258,10 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
                 application.sendBroadcast(intent)
             }
         }
+    }
+
+    override fun pauseInAppMessages(isPaused: Boolean) {
+        iamController.pauseInAppMessages(isPaused)
     }
 
     override fun forcePushData() {

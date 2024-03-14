@@ -1,6 +1,7 @@
 package com.reteno.core.data.remote.model.iam.displayrules.targeting
 
 import com.google.gson.JsonObject
+import com.reteno.core.data.remote.model.iam.displayrules.DisplayRulesParsingException
 import com.reteno.core.data.remote.model.iam.displayrules.RuleRelation
 import com.reteno.core.data.remote.model.iam.displayrules.StringOperator
 import com.reteno.core.util.toTimeUnit
@@ -36,7 +37,7 @@ sealed class TargetingRule {
                             null
                         }
                     } else {
-                        null
+                        throw DisplayRulesParsingException()
                     }
                 }
                 OPERAND_EVENT -> {
@@ -74,7 +75,7 @@ sealed class TargetingRule {
                     }
                 }
                 else -> {
-                    null
+                    throw DisplayRulesParsingException()
                 }
             }
         }

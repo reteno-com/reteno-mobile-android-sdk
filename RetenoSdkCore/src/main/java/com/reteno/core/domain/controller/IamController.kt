@@ -25,5 +25,7 @@ internal interface IamController {
 
     fun notifyEventOccurred(event: Event)
 
+    fun pauseInAppMessages(isPaused: Boolean)
+
     val fullHtmlStateFlow: StateFlow<ResultDomain<String>>
 }

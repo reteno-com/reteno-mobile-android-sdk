@@ -80,6 +80,11 @@ interface Reteno {
     fun updatePushPermissionStatus()
 
     /**
+     *
+     */
+    fun pauseInAppMessages(isPaused: Boolean)
+
+    /**
      *  Sends stored data without waiting for a send queue.
      *  But not more often than [com.reteno.core.domain.controller.ScheduleController.Companion.FORCE_PUSH_MIN_DELAY] millis.
      */

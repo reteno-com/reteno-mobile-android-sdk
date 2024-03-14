@@ -1,30 +1,63 @@
 package com.reteno.sample.fragments;
 
+import static kotlinx.coroutines.SupervisorKt.SupervisorJob;
+
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.CompoundButton;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.navigation.NavDirections;
 import androidx.navigation.fragment.NavHostFragment;
 
+import com.reteno.core.RetenoImpl;
+import com.reteno.core.data.repository.ConfigRepository;
+import com.reteno.core.di.ServiceLocator;
+import com.reteno.core.lifecycle.RetenoSessionHandler;
 import com.reteno.sample.BaseFragment;
 import com.reteno.sample.R;
 import com.reteno.sample.databinding.FragmentStartBinding;
 import com.reteno.sample.testscreens.ScreenAdapter;
 import com.reteno.sample.testscreens.ScreenItem;
+import com.reteno.sample.util.FragmentStartSessionListener;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
+
+import kotlinx.coroutines.CoroutineScope;
+import kotlinx.coroutines.Dispatchers;
+import kotlinx.coroutines.Job;
 
 public class FragmentStart extends BaseFragment {
 
     private FragmentStartBinding binding;
+    private ServiceLocator serviceLocator;
+    private RetenoSessionHandler sessionHandler;
+    private FragmentStartSessionListener sessionListener = new FragmentStartSessionListener();
+
 
     public FragmentStart() {
         // Required empty public constructor
+    }
+
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        try {
+            Field field = RetenoImpl.class.getDeclaredField("serviceLocator");
+            field.setAccessible(true);
+            serviceLocator = (ServiceLocator) field.get(getReteno());
+            field.setAccessible(false);
+        } catch (NoSuchFieldException e) {
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        }
+        sessionHandler = serviceLocator.getRetenoSessionHandlerProvider().get();
     }
 
     @Nullable
@@ -56,6 +89,19 @@ public class FragmentStart extends BaseFragment {
         });
 
         binding.recycler.setAdapter(adapter);
+        initInAppPausingSwitcher();
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        sessionListener.stop();
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        sessionListener.start(sessionHandler, binding.tvSessionTime);
     }
 
     private List<ScreenItem> getScreenList() {
@@ -77,5 +123,14 @@ public class FragmentStart extends BaseFragment {
         screens.add(new ScreenItem("Ecom Events", FragmentStartDirections.startToEcomEvents()));
 
         return screens;
+    }
+
+    private void initInAppPausingSwitcher() {
+        binding.swInAppsPause.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                getReteno().pauseInAppMessages(isChecked);
+            }
+        });
     }
 }

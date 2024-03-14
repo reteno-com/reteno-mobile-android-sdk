@@ -1,10 +1,12 @@
 package com.reteno.core.data.repository
 
+import android.util.Log
 import com.google.gson.JsonObject
 import com.reteno.core.R
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerInAppMessages
+import com.reteno.core.data.local.mappers.mapDbToInAppMessages
+import com.reteno.core.data.local.mappers.mapResponseToInAppMessages
 import com.reteno.core.data.local.mappers.toDB
-import com.reteno.core.data.local.mappers.toInAppMessage
 import com.reteno.core.data.local.sharedpref.SharedPrefsManager
 import com.reteno.core.data.remote.api.ApiClient
 import com.reteno.core.data.remote.api.ApiContract
@@ -31,6 +33,7 @@ import com.reteno.core.util.Util
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
+import java.lang.Exception
 import kotlin.coroutines.resume
 
 internal class IamRepositoryImpl(
@@ -206,7 +209,13 @@ internal class IamRepositoryImpl(
                             /*@formatter:on*/
                             val localMessages = databaseManager.getInAppMessages()
                             val remoteMessagesResponse = response.fromJson<InAppMessageListResponse>().messages
-                            val remoteMessages = remoteMessagesResponse.map { it.toInAppMessage() }
+                            var remoteMessages: List<InAppMessage> = emptyList()
+                            try {
+                                remoteMessages =
+                                    remoteMessagesResponse.mapResponseToInAppMessages()
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                            }
                             remoteMessages.forEach {  remoteMessage ->
                                 val localMessage = localMessages.firstOrNull {
                                     it.messageId == remoteMessage.messageId
@@ -240,7 +249,7 @@ internal class IamRepositoryImpl(
                                 val localMessages = databaseManager.getInAppMessages()
                                 continuation.resume(
                                     InAppMessagesList(
-                                        messages = localMessages.map { it.toInAppMessage() },
+                                        messages = localMessages.mapDbToInAppMessages(),
                                         isFromRemote = false
                                     )
                                 )

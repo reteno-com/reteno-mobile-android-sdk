@@ -3,6 +3,7 @@ package com.reteno.core.util
 import com.google.gson.JsonObject
 import com.reteno.core.data.remote.model.iam.displayrules.DisplayRuleType
 import com.reteno.core.data.remote.model.iam.displayrules.DisplayRules
+import com.reteno.core.data.remote.model.iam.displayrules.DisplayRulesParsingException
 import com.reteno.core.data.remote.model.iam.displayrules.RuleRelation
 import com.reteno.core.data.remote.model.iam.displayrules.schedule.ScheduleDisplayRules
 import com.reteno.core.data.remote.model.iam.displayrules.async.AsyncDisplayRules
@@ -28,7 +29,7 @@ object InAppMessageUtil {
     private fun parseFrequencyRules(displayRulesJson: JsonObject): FrequencyDisplayRules {
         val frequencyRules = FrequencyDisplayRules()
         val frequency: JsonObject? = displayRulesJson.getAsJsonObject(DisplayRuleType.FREQUENCY.name)
-
+        throw DisplayRulesParsingException()
         if (frequency != null && frequency.get("enabled")?.asBoolean == true) {
             val predicates = frequency.getAsJsonArray("predicates")
             predicates.forEach { item ->
@@ -98,15 +99,27 @@ object InAppMessageUtil {
 
     private fun parseAsyncRules(displayRulesJson: JsonObject): AsyncDisplayRules? {
         val async: JsonObject? = displayRulesJson.getAsJsonObject(DisplayRuleType.ASYNC.name)
-        val segment = async?.getAsJsonObject("IS_IN_SEGMENT")
-
-        return if (segment != null && segment.get("enabled")?.asBoolean == true) {
-            val segmentId = segment.get("segmentId").asLong
-            AsyncDisplayRules(SegmentRule(segmentId))
-        } else {
-            null
+        val asyncKeys = async?.keySet()
+        val asyncRules = when {
+            asyncKeys == null -> null
+            asyncKeys.isEmpty() -> null
+            asyncKeys.size == 1 -> {
+                val segmentJson = async.getAsJsonObject("IS_IN_SEGMENT")
+                if (segmentJson == null) {
+                    throw DisplayRulesParsingException()
+                }
+                if (segmentJson.get("enabled")?.asBoolean == true) {
+                    val segmentId = segmentJson.get("segmentId").asLong
+                    AsyncDisplayRules(SegmentRule(segmentId))
+                }
+                null
+            }
+            else -> throw DisplayRulesParsingException()
         }
+        return asyncRules
     }
+
+
 
     private fun parseScheduleRules(displayRulesJson: JsonObject): ScheduleDisplayRules? {
         val scheduleRules = ScheduleDisplayRules()

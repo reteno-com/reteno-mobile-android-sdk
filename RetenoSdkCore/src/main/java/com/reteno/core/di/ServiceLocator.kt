@@ -21,6 +21,7 @@ import com.reteno.core.domain.controller.InteractionController
 import com.reteno.core.domain.controller.ScheduleController
 import com.reteno.core.lifecycle.RetenoActivityHelper
 import com.reteno.core.lifecycle.RetenoSessionHandler
+import com.reteno.core.lifecycle.RetenoSessionHandlerImpl
 import com.reteno.core.view.iam.IamView
 import kotlinx.coroutines.Dispatchers
 
@@ -214,7 +215,7 @@ class ServiceLocator(context: Context, accessKey: String) {
 
     private val retenoSessionHandlerProviderInternal =
         RetenoSessionHandlerProvider(sharedPrefsManagerProvider)
-    internal val retenoSessionHandlerProvider: ProviderWeakReference<RetenoSessionHandler>
+    val retenoSessionHandlerProvider: ProviderWeakReference<RetenoSessionHandler>
         get() = retenoSessionHandlerProviderInternal
 
     internal val iamControllerProvider: IamControllerProvider =

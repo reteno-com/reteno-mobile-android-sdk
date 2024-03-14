@@ -1,10 +1,6 @@
 package com.reteno.core.domain.controller
 
 import android.util.Log
-import com.reteno.core.data.remote.OperationQueue
-import com.reteno.core.data.remote.model.iam.displayrules.RuleRelation
-import com.reteno.core.data.remote.model.iam.displayrules.StringOperator
-import com.reteno.core.data.remote.model.iam.displayrules.frequency.FrequencyRule
 import com.reteno.core.data.remote.model.iam.displayrules.frequency.FrequencyRuleValidator
 import com.reteno.core.data.remote.model.iam.displayrules.schedule.ScheduleRuleValidator
 import com.reteno.core.data.remote.model.iam.displayrules.targeting.InAppWithEvent
@@ -23,11 +19,14 @@ import com.reteno.core.view.iam.IamView
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import java.util.concurrent.atomic.AtomicBoolean
 
 internal class IamControllerImpl(
     private val iamRepository: IamRepository,
     private val sessionHandler: RetenoSessionHandler
 ) : IamController {
+
+    private val isPausedInAppMessages = AtomicBoolean(false)
 
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private var interactionId: String? = null
@@ -115,6 +114,7 @@ internal class IamControllerImpl(
     }
 
     override fun getInAppMessages(showMessage: (InAppMessage) -> Unit) {
+        Log.e("ololo","getInAppMessages 1")
         scope.launch {
             try {
                 val messageListModel = iamRepository.getInAppMessages()
@@ -175,6 +175,10 @@ internal class IamControllerImpl(
         tryShowInAppFromList(inAppsMatchingEventParams.map { it.inApp }.toMutableList())
     }
 
+    override fun pauseInAppMessages(isPaused: Boolean) {
+        isPausedInAppMessages.set(isPaused)
+    }
+
     private fun sortMessages(inAppMessages: List<InAppMessage>) {
         val inAppsWithEvents = mutableListOf<InAppWithEvent>()
         val inAppsWithTimer = mutableListOf<InAppWithTime>()
@@ -211,7 +215,7 @@ internal class IamControllerImpl(
     }
 
     private fun tryShowInAppFromList(inAppMessages: MutableList<InAppMessage>) {
-        if (iamView == null || iamView?.isViewShown() == true) return
+        if (iamView == null || iamView?.isViewShown() == true || isPausedInAppMessages.get()) return
 
         val frequencyValidator = FrequencyRuleValidator()
         val scheduleValidator = ScheduleRuleValidator()
@@ -234,20 +238,23 @@ internal class IamControllerImpl(
         frequencyValidator: FrequencyRuleValidator = FrequencyRuleValidator(),
         scheduleValidator: ScheduleRuleValidator = ScheduleRuleValidator()
     ): Boolean {
-        if (iamView == null || iamView?.isViewShown() == true) return false
+        if (iamView == null || iamView?.isViewShown() == true || isPausedInAppMessages.get()) return false
 
         if (checkSegmentRuleMatches(inAppMessage).not()) {
+            Log.e("ololo","segment check failed for ${inAppMessage.messageId}")
             return false
         }
 
         if (!frequencyValidator.checkInAppMatchesFrequencyRules(
                 inAppMessage,
-                sessionHandler.foregroundTimeMillis
+                sessionHandler.getForegroundTimeMillis()
         )) {
+            Log.e("ololo","frequency check failed for ${inAppMessage.messageId}")
             return false
         }
 
         if (!scheduleValidator.checkInAppMatchesScheduleRules(inAppMessage)) {
+            Log.e("ololo","schedule check failed for ${inAppMessage.messageId}")
             return false
         }
 
@@ -256,6 +263,8 @@ internal class IamControllerImpl(
     }
 
     private fun showInApp(inAppMessage: InAppMessage) {
+        if (iamView == null || iamView?.isViewShown() == true || isPausedInAppMessages.get()) return
+
         inAppMessage.notifyShown()
         iamView?.initialize(inAppMessage)
         updateInAppMessage(inAppMessage)

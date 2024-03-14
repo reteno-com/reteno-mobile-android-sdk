@@ -1,6 +1,7 @@
 package com.reteno.core.data.remote.model.iam.displayrules.frequency
 
 import com.google.gson.JsonObject
+import com.reteno.core.data.remote.model.iam.displayrules.DisplayRulesParsingException
 import com.reteno.core.util.toTimeUnit
 import java.util.concurrent.TimeUnit
 
@@ -26,10 +27,10 @@ sealed class FrequencyRule {
             val name = json.get("name").asString
             val isActive = json.get("isActive").asBoolean
 
-            if (name.isNullOrEmpty() || isActive.not()) return null
+            if (isActive.not()) return null
 
             return when (name) {
-                null -> null
+                null -> throw DisplayRulesParsingException()
                 "NO_LIMIT" -> NoLimit
                 "ONCE_PER_APP" -> OncePerApp
                 "ONCE_PER_SESSION" -> OncePerSession
@@ -41,7 +42,7 @@ sealed class FrequencyRule {
                     if (timeUnit != null && interval > 0) {
                         MinInterval(timeUnit.toMillis(interval))
                     } else {
-                        null
+                        throw DisplayRulesParsingException()
                     }
                 }
                 "TIMES_PER_TIME_UNIT" -> {
@@ -52,10 +53,10 @@ sealed class FrequencyRule {
                     if (timeUnit != null && count > 0) {
                         TimesPerTimeUnit(timeUnit, count)
                     } else {
-                        null
+                        throw DisplayRulesParsingException()
                     }
                 }
-                else -> null
+                else -> throw DisplayRulesParsingException()
             }
         }
     }
