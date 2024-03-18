@@ -65,13 +65,13 @@ sealed class TargetingRule {
                     }
 
                     if (eventParams != null && paramsRelation == null) {
-                        return null
+                        throw DisplayRulesParsingException()
                     }
 
                     if (eventName != null) {
                         Event(eventName, paramsRelation ?: RuleRelation.AND, eventParams)
                     } else {
-                        null
+                        throw DisplayRulesParsingException()
                     }
                 }
                 else -> {
