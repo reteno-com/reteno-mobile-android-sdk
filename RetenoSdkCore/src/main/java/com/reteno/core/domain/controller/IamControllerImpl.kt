@@ -199,10 +199,10 @@ internal class IamControllerImpl(
             inAppsWaitingForEvent = inAppsWithEvents
         }
 
-        tryShowInAppFromList(inAppsOnAppStart)
+        tryShowInAppFromList(inAppMessages = inAppsOnAppStart, showingOnAppStart = true)
     }
 
-    private fun tryShowInAppFromList(inAppMessages: MutableList<InAppMessage>) {
+    private fun tryShowInAppFromList(inAppMessages: MutableList<InAppMessage>, showingOnAppStart: Boolean = false) {
         Log.e("ololo","tryShowInAppFromList, inApps paused ${isPausedInAppMessages.get()}")
         if (iamView == null || iamView?.isViewShown() == true || isPausedInAppMessages.get()) return
 
@@ -216,7 +216,12 @@ internal class IamControllerImpl(
 
                 val inAppWithHighestId = inAppMessages.maxBy { it.messageId }
                 Log.e("ololo","try show inapp ${inAppWithHighestId.messageId}")
-                val showedInApp = tryShowInApp(inAppWithHighestId, frequencyValidator, scheduleValidator)
+                val showedInApp = tryShowInApp(
+                    inAppMessage = inAppWithHighestId,
+                    frequencyValidator = frequencyValidator,
+                    scheduleValidator = scheduleValidator,
+                    showingOnAppStart = showingOnAppStart
+                )
 
                 if (showedInApp) {
                     break
@@ -258,7 +263,8 @@ internal class IamControllerImpl(
     private fun tryShowInApp(
         inAppMessage: InAppMessage,
         frequencyValidator: FrequencyRuleValidator = FrequencyRuleValidator(),
-        scheduleValidator: ScheduleRuleValidator = ScheduleRuleValidator()
+        scheduleValidator: ScheduleRuleValidator = ScheduleRuleValidator(),
+        showingOnAppStart: Boolean = false
     ): Boolean {
         if (iamView == null || iamView?.isViewShown() == true || isPausedInAppMessages.get()) return false
 
@@ -268,8 +274,9 @@ internal class IamControllerImpl(
         }
 
         if (!frequencyValidator.checkInAppMatchesFrequencyRules(
-                inAppMessage,
-                sessionHandler.getForegroundTimeMillis()
+                inAppMessage = inAppMessage,
+                sessionTimeMillis = sessionHandler.getForegroundTimeMillis(),
+                showingOnAppStart = showingOnAppStart
         )) {
             Log.e("ololo","frequency check failed for ${inAppMessage.messageId}")
             return false

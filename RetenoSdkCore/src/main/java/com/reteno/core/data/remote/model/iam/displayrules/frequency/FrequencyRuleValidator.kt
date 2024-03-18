@@ -1,10 +1,13 @@
 package com.reteno.core.data.remote.model.iam.displayrules.frequency
 
 import com.reteno.core.data.remote.model.iam.message.InAppMessage
-import java.util.concurrent.TimeUnit
 
 class FrequencyRuleValidator {
-    fun checkInAppMatchesFrequencyRules(inAppMessage: InAppMessage, sessionTimeMillis: Long): Boolean {
+    fun checkInAppMatchesFrequencyRules(
+        inAppMessage: InAppMessage,
+        sessionTimeMillis: Long,
+        showingOnAppStart: Boolean = false
+    ): Boolean {
         val frequencyRules = inAppMessage.displayRules.frequency?.predicates
 
         if (frequencyRules.isNullOrEmpty()) {
@@ -13,7 +16,7 @@ class FrequencyRuleValidator {
 
         var allRulesMatch = true
         frequencyRules.forEach { rule ->
-            if (!checkRuleMatch(rule, inAppMessage, sessionTimeMillis)) {
+            if (!checkRuleMatch(rule, inAppMessage, sessionTimeMillis, showingOnAppStart)) {
                 allRulesMatch = false
                 return@forEach
             }
@@ -22,9 +25,14 @@ class FrequencyRuleValidator {
         return allRulesMatch
     }
 
-    private fun checkRuleMatch(rule: FrequencyRule, inAppMessage: InAppMessage, sessionTimeMillis: Long): Boolean {
+    private fun checkRuleMatch(
+        rule: FrequencyRule,
+        inAppMessage: InAppMessage,
+        sessionTimeMillis: Long,
+        showingOnAppStart: Boolean
+    ): Boolean {
         return when (rule) {
-            FrequencyRule.NoLimit -> true
+            FrequencyRule.NoLimit -> checkCanShowNoLimit(inAppMessage, sessionTimeMillis, showingOnAppStart)
             FrequencyRule.OncePerApp -> checkCanShowOncePerApp(inAppMessage)
             FrequencyRule.OncePerSession -> checkCanShowOncePerSession(inAppMessage, sessionTimeMillis)
             is FrequencyRule.MinInterval -> checkCanShowMinInterval(inAppMessage, rule.intervalMillis)
@@ -33,6 +41,14 @@ class FrequencyRuleValidator {
                 rule.count,
                 rule.timeUnit.toMillis(1)
             )
+        }
+    }
+
+    private fun checkCanShowNoLimit(inAppMessage: InAppMessage, sessionTimeMillis: Long, showingOnAppStart: Boolean): Boolean {
+        return if (showingOnAppStart) {
+            checkCanShowOncePerSession(inAppMessage, sessionTimeMillis)
+        } else {
+            true
         }
     }
 
