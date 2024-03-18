@@ -115,7 +115,6 @@ internal class IamControllerImpl(
     }
 
     override fun getInAppMessages() {
-        Log.e("ololo","getInAppMessages")
         scope.launch {
             try {
                 val messageListModel = iamRepository.getInAppMessages()
@@ -132,7 +131,6 @@ internal class IamControllerImpl(
                     message.content = contents.firstOrNull {
                         it.messageInstanceId == message.messageInstanceId
                     }
-                    Log.e("ololo","found content for ${message.messageId} instance ${message.messageInstanceId}: ${message.content != null}")
                 }
 
                 iamRepository.saveInAppMessages(messageListModel)

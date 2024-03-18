@@ -1,6 +1,5 @@
 package com.reteno.core.data.remote.model.iam.displayrules.targeting
 
-import android.util.Log
 import com.google.gson.JsonObject
 import com.reteno.core.data.remote.model.iam.displayrules.DisplayRulesParsingException
 import com.reteno.core.data.remote.model.iam.displayrules.RuleRelation
@@ -66,14 +65,12 @@ sealed class TargetingRule {
                     }
 
                     if (eventParams != null && paramsRelation == null) {
-                        Log.e("ololo","PARSE ERROR 1")
                         throw DisplayRulesParsingException()
                     }
 
                     if (eventName != null) {
                         Event(eventName, paramsRelation ?: RuleRelation.AND, eventParams)
                     } else {
-                        Log.e("ololo","PARSE ERROR 2")
                         throw DisplayRulesParsingException()
                     }
                 }
