@@ -125,11 +125,6 @@ internal class IamControllerImpl(
                 val contentIds = messagesWithNoContent.map { it.messageInstanceId }
                 val contentsDeferred = async { iamRepository.getInAppMessagesContent(contentIds)}
 
-                val messagesWithSegments = inAppMessages.filter {
-                    it.displayRules.async?.segment?.shouldCheckStatus(sessionHandler.getForegroundTimeMillis()) == true
-                }
-                val segmentIds = messagesWithSegments.mapNotNull { it.displayRules.async?.segment?.segmentId }.distinct()
-
                 updateSegmentStatuses(inAppMessages, updateCacheOnSuccess = messageListModel.isFromRemote.not())
 
                 val contents = contentsDeferred.await()
@@ -232,14 +227,10 @@ internal class IamControllerImpl(
     }
 
     private suspend fun updateSegmentStatuses(inAppMessages: List<InAppMessage>, updateCacheOnSuccess: Boolean = true) {
-        Log.e("ololo","update segment statuses")
         val messagesWithSegments = inAppMessages.filter {
-            val segment = it.displayRules.async?.segment
             val shouldCheck = it.displayRules.async?.segment?.shouldCheckStatus(sessionHandler.getForegroundTimeMillis())
-            Log.e("ololo","shouldCheck $shouldCheck ${it.messageId}, segment $segment")
             shouldCheck == true
         }
-        Log.e("ololo","update segment statuses for ${messagesWithSegments.size}")
         val segmentIds = messagesWithSegments.mapNotNull { it.displayRules.async?.segment?.segmentId }.distinct()
         val segmentResponses = iamRepository.checkUserInSegments(segmentIds)
 
@@ -255,7 +246,6 @@ internal class IamControllerImpl(
                     segment.retryParams = checkResult.error?.toDomain()
                     segment.lastCheckedTimestamp = System.currentTimeMillis()
                     updatedMessages.add(message)
-                    Log.e("ololo","set segment for ${message.messageId}, segment id ${segment.segmentId}: ${segment.isInSegment}")
                 }
             }
         }

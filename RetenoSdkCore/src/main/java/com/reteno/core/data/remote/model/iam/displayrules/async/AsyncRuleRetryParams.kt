@@ -6,13 +6,12 @@ data class AsyncRuleRetryParams(
 ) {
     fun shouldRetry(sessionTimeMillis: Long, lastRetryTime: Long): Boolean {
         return when (statusCode) {
-            DO_NOT_RETRY_WITHOUT_MODIFICATION -> false
             RETRY_BY_GIVEN_TIME -> {
                 retryAfter?.let {
                     System.currentTimeMillis() - lastRetryTime > it
                 } ?: true
             }
-            RETRY_NEXT_SESSION -> {
+            RETRY_NEXT_SESSION, DO_NOT_RETRY_WITHOUT_MODIFICATION -> {
                 System.currentTimeMillis() - lastRetryTime > sessionTimeMillis
             }
             else -> System.currentTimeMillis() - lastRetryTime > STANDARD_RETRY_TIME
