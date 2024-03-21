@@ -146,6 +146,21 @@ internal class SharedPrefsManager {
         return result
     }
 
+    fun saveSessionStartTimestamp(sessionStartTimestamp: Long) {
+        /*@formatter:off*/ Logger.i(TAG, "saveSessionStartTimestamp(): ", "sessionStartTimestamp = [", sessionStartTimestamp, "]")
+        /*@formatter:on*/
+        sharedPreferences.edit()
+            ?.putLong(PREF_KEY_SESSION_START_TIMESTAMP, sessionStartTimestamp)
+            ?.apply()
+    }
+
+    fun getSessionStartTimestamp(): Long {
+        val result = sharedPreferences.getLong(PREF_KEY_SESSION_START_TIMESTAMP, 0L)
+        /*@formatter:off*/ Logger.i(TAG, "getAppStoppedTimestamp(): ", "result = ", result)
+        /*@formatter:on*/
+        return result
+    }
+
     fun saveAppSessionTime(appSessionTime: Long) {
         /*@formatter:off*/ Logger.i(TAG, "saveAppSessionTime(): ", "appSessionTime = [", appSessionTime, "]")
         /*@formatter:on*/
@@ -174,6 +189,7 @@ internal class SharedPrefsManager {
         private const val PREF_KEY_IAM_BASE_HTML_CONTENT = "in_app_messages_base_html_content"
         private const val PREF_KEY_IAM_ETAG = "in_app_e_tag"
         private const val PREF_KEY_APP_STOPPED_TIMESTAMP = "app_stopped_timestamp"
+        private const val PREF_KEY_SESSION_START_TIMESTAMP = "session_start_timestamp"
         private const val PREF_KEY_APP_SESSION_TIME = "session_time"
     }
 }

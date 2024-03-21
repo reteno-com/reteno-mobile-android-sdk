@@ -5,6 +5,7 @@ import com.reteno.core.data.remote.model.iam.message.InAppMessage
 
 interface RetenoSessionHandler {
     fun getForegroundTimeMillis(): Long
+    fun getSessionStartTimestamp(): Long
     fun start()
     fun stop()
     fun scheduleInAppMessages(

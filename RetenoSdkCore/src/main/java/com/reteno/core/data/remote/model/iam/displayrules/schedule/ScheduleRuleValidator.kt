@@ -56,6 +56,7 @@ class ScheduleRuleValidator {
 
         if (now.hour < daysAndTime.fromHours) return false
         if (now.hour == daysAndTime.fromHours && now.minute < daysAndTime.fromMinutes) return false
+        if (daysAndTime.toHours == 0 && daysAndTime.toMinutes == 0) return true
         if (now.hour > daysAndTime.toHours) return false
         if (now.hour == daysAndTime.toHours && now.minute > daysAndTime.toMinutes) return false
 

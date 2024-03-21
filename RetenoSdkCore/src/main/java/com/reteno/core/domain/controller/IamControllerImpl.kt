@@ -231,7 +231,7 @@ internal class IamControllerImpl(
 
     private suspend fun updateSegmentStatuses(inAppMessages: List<InAppMessage>, updateCacheOnSuccess: Boolean = true) {
         val messagesWithSegments = inAppMessages.filter {
-            val shouldCheck = it.displayRules.async?.segment?.shouldCheckStatus(sessionHandler.getForegroundTimeMillis())
+            val shouldCheck = it.displayRules.async?.segment?.shouldCheckStatus(sessionHandler.getSessionStartTimestamp())
             shouldCheck == true
         }
         val segmentIds = messagesWithSegments.mapNotNull { it.displayRules.async?.segment?.segmentId }.distinct()
@@ -273,7 +273,7 @@ internal class IamControllerImpl(
 
         if (!frequencyValidator.checkInAppMatchesFrequencyRules(
                 inAppMessage = inAppMessage,
-                sessionTimeMillis = sessionHandler.getForegroundTimeMillis(),
+                sessionStartTimestamp = sessionHandler.getSessionStartTimestamp(),
                 showingOnAppStart = showingOnAppStart
         )) {
             Log.e("ololo","frequency check failed for ${inAppMessage.messageId}")
@@ -292,6 +292,7 @@ internal class IamControllerImpl(
     private fun showInApp(inAppMessage: InAppMessage) {
         if (iamView == null || iamView?.isViewShown() == true || isPausedInAppMessages.get()) return
 
+        Log.e("ololo","SHOW IN-APP ${inAppMessage.messageId}")
         inAppMessage.notifyShown()
         iamView?.initialize(inAppMessage)
         updateInAppMessage(inAppMessage)

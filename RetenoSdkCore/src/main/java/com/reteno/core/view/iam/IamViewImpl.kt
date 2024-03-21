@@ -146,8 +146,12 @@ internal class IamViewImpl(
         /*@formatter:off*/ Logger.i(TAG, "initialize(): ", "widgetId = [", interactionId, "]")
         /*@formatter:on*/
         try {
-            teardown()
-            iamController.fetchIamFullHtml(interactionId)
+            OperationQueue.addUiOperation {
+                activityHelper.currentActivity?.let {
+                    createIamInActivity(it)
+                }
+                iamController.fetchIamFullHtml(interactionId)
+            }
         } catch (e: Exception) {
             /*@formatter:off*/ Logger.e(TAG, "initialize(): ", e)
             /*@formatter:on*/

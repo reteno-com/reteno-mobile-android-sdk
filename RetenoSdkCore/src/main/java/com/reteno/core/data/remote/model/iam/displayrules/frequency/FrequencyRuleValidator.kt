@@ -5,7 +5,7 @@ import com.reteno.core.data.remote.model.iam.message.InAppMessage
 class FrequencyRuleValidator {
     fun checkInAppMatchesFrequencyRules(
         inAppMessage: InAppMessage,
-        sessionTimeMillis: Long,
+        sessionStartTimestamp: Long,
         showingOnAppStart: Boolean = false
     ): Boolean {
         val frequencyRules = inAppMessage.displayRules.frequency?.predicates
@@ -16,7 +16,7 @@ class FrequencyRuleValidator {
 
         var allRulesMatch = true
         frequencyRules.forEach { rule ->
-            if (!checkRuleMatch(rule, inAppMessage, sessionTimeMillis, showingOnAppStart)) {
+            if (!checkRuleMatch(rule, inAppMessage, sessionStartTimestamp, showingOnAppStart)) {
                 allRulesMatch = false
                 return@forEach
             }
@@ -28,13 +28,13 @@ class FrequencyRuleValidator {
     private fun checkRuleMatch(
         rule: FrequencyRule,
         inAppMessage: InAppMessage,
-        sessionTimeMillis: Long,
+        sessionStartTimestamp: Long,
         showingOnAppStart: Boolean
     ): Boolean {
         return when (rule) {
-            FrequencyRule.NoLimit -> checkCanShowNoLimit(inAppMessage, sessionTimeMillis, showingOnAppStart)
+            FrequencyRule.NoLimit -> checkCanShowNoLimit(inAppMessage, sessionStartTimestamp, showingOnAppStart)
             FrequencyRule.OncePerApp -> checkCanShowOncePerApp(inAppMessage)
-            FrequencyRule.OncePerSession -> checkCanShowOncePerSession(inAppMessage, sessionTimeMillis)
+            FrequencyRule.OncePerSession -> checkCanShowOncePerSession(inAppMessage, sessionStartTimestamp)
             is FrequencyRule.MinInterval -> checkCanShowMinInterval(inAppMessage, rule.intervalMillis)
             is FrequencyRule.TimesPerTimeUnit -> checkCanShowTimesPerTimeUnit(
                 inAppMessage,
@@ -44,9 +44,9 @@ class FrequencyRuleValidator {
         }
     }
 
-    private fun checkCanShowNoLimit(inAppMessage: InAppMessage, sessionTimeMillis: Long, showingOnAppStart: Boolean): Boolean {
+    private fun checkCanShowNoLimit(inAppMessage: InAppMessage, sessionStartTimestamp: Long, showingOnAppStart: Boolean): Boolean {
         return if (showingOnAppStart) {
-            checkCanShowOncePerSession(inAppMessage, sessionTimeMillis)
+            checkCanShowOncePerSession(inAppMessage, sessionStartTimestamp)
         } else {
             true
         }
@@ -56,12 +56,12 @@ class FrequencyRuleValidator {
         return inAppMessage.lastShowTime == null
     }
 
-    private fun checkCanShowOncePerSession(inAppMessage: InAppMessage, sessionTimeMillis: Long): Boolean {
+    private fun checkCanShowOncePerSession(inAppMessage: InAppMessage, sessionStartTimestamp: Long): Boolean {
         val lastShowTime = inAppMessage.lastShowTime
         if (lastShowTime == null) {
             return true
         }
-        return System.currentTimeMillis() - lastShowTime > sessionTimeMillis
+        return lastShowTime < sessionStartTimestamp
     }
 
     private fun checkCanShowMinInterval(inAppMessage: InAppMessage, intervalMillis: Long): Boolean {

@@ -7,12 +7,12 @@ data class SegmentRule(
     var lastCheckedTimestamp: Long? = null
     var retryParams: AsyncRuleRetryParams? = null
 
-    fun shouldCheckStatus(sessionTimeMillis: Long): Boolean {
+    fun shouldCheckStatus(sessionStartTimestamp: Long): Boolean {
         val params = retryParams
         val lastCheckTime = lastCheckedTimestamp
         return when {
             lastCheckTime == null -> true
-            params != null -> params.shouldRetry(sessionTimeMillis, lastCheckTime)
+            params != null -> params.shouldRetry(sessionStartTimestamp, lastCheckTime)
             else -> System.currentTimeMillis() - lastCheckTime > AsyncRuleRetryParams.STANDARD_RETRY_TIME
         }
     }

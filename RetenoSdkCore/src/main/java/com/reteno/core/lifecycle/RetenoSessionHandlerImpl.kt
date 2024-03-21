@@ -13,6 +13,7 @@ import kotlinx.coroutines.launch
 internal class RetenoSessionHandlerImpl(private val sharedPrefsManager: SharedPrefsManager): RetenoSessionHandler {
 
     private var foregroundTimeMillis: Long = 0L
+    private var sessionStartTimestamp: Long = 0L
 
     private var timeSinceResume: Long = 0L
     private var appResumedTimestamp: Long = 0L
@@ -57,6 +58,10 @@ internal class RetenoSessionHandlerImpl(private val sharedPrefsManager: SharedPr
         return foregroundTimeMillis
     }
 
+    override fun getSessionStartTimestamp(): Long {
+        return sessionStartTimestamp
+    }
+
     private fun findNextScheduledMessages() {
         var messages = scheduledMessages
 
@@ -77,10 +82,14 @@ internal class RetenoSessionHandlerImpl(private val sharedPrefsManager: SharedPr
         appResumedTimestamp = System.currentTimeMillis()
         val appStoppedTimestamp = sharedPrefsManager.getAppStoppedTimestamp()
         val pausedTime = appResumedTimestamp - appStoppedTimestamp
-        previousForegroundTime = if (pausedTime > SESSION_RESET_TIME) {
-            0L
+        if (pausedTime > SESSION_RESET_TIME) {
+            previousForegroundTime = 0L
+            sessionStartTimestamp = appResumedTimestamp
+            sharedPrefsManager.saveSessionStartTimestamp(sessionStartTimestamp)
         } else {
-            sharedPrefsManager.getAppSessionTime()
+            previousForegroundTime = sharedPrefsManager.getAppSessionTime()
+            sessionStartTimestamp = sharedPrefsManager.getSessionStartTimestamp()
+            if (sessionStartTimestamp == 0L) sessionStartTimestamp = appStoppedTimestamp
         }
         foregroundTimeMillis = previousForegroundTime
     }
