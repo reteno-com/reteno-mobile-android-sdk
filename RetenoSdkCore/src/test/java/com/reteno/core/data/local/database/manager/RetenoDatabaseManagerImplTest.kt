@@ -30,6 +30,8 @@ class RetenoDatabaseManagerImplTest : BaseRobolectricTest() {
     private lateinit var logEventManager: RetenoDatabaseManagerLogEvent
     @RelaxedMockK
     private lateinit var inAppMessagesManager: RetenoDatabaseManagerInAppMessages
+    @RelaxedMockK
+    private lateinit var inAppInteractionManager: RetenoDatabaseManagerInAppInteraction
 
     private lateinit var SUT: RetenoDatabaseManager
     // endregion helper fields ---------------------------------------------------------------------
@@ -45,7 +47,8 @@ class RetenoDatabaseManagerImplTest : BaseRobolectricTest() {
             recomEventsManager,
             wrappedLinksManager,
             logEventManager,
-            inAppMessagesManager
+            inAppMessagesManager,
+            inAppInteractionManager
         )
     }
 

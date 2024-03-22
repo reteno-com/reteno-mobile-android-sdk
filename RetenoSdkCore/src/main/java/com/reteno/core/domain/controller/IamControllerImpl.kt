@@ -32,7 +32,7 @@ internal class IamControllerImpl(
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private var interactionId: String? = null
     private val _fullHtmlStateFlow: MutableStateFlow<ResultDomain<String>> =
-        MutableStateFlow(ResultDomain.Loading)
+        MutableStateFlow(ResultDomain.Idle)
     override val fullHtmlStateFlow: StateFlow<ResultDomain<String>> = _fullHtmlStateFlow
 
     private var inAppsWaitingForEvent: MutableList<InAppWithEvent>? = null
@@ -105,7 +105,7 @@ internal class IamControllerImpl(
     }
 
     override fun reset() {
-        _fullHtmlStateFlow.value = ResultDomain.Loading
+        _fullHtmlStateFlow.value = ResultDomain.Idle
         interactionId = null
         scope.coroutineContext.cancelChildren()
     }
@@ -201,11 +201,13 @@ internal class IamControllerImpl(
     }
 
     private fun tryShowInAppFromList(inAppMessages: MutableList<InAppMessage>, showingOnAppStart: Boolean = false) {
-        Log.e("ololo","tryShowInAppFromList, inApps paused ${isPausedInAppMessages.get()}")
-        if (iamView == null || iamView?.isViewShown() == true || isPausedInAppMessages.get()) return
+        Log.e("ololo","tryShowInAppFromList ${inAppMessages.size}, can show inapps ${canShowInApp()}")
+        if (canShowInApp().not()) return
 
         scope.launch {
-            updateSegmentStatuses(inAppMessages, updateCacheOnSuccess = true)
+            if (!showingOnAppStart) {
+                updateSegmentStatuses(inAppMessages, updateCacheOnSuccess = true)
+            }
 
             val frequencyValidator = FrequencyRuleValidator()
             val scheduleValidator = ScheduleRuleValidator()
@@ -264,7 +266,7 @@ internal class IamControllerImpl(
         scheduleValidator: ScheduleRuleValidator = ScheduleRuleValidator(),
         showingOnAppStart: Boolean = false
     ): Boolean {
-        if (iamView == null || iamView?.isViewShown() == true || isPausedInAppMessages.get()) return false
+        if (canShowInApp().not()) return false
 
         if (checkSegmentRuleMatches(inAppMessage).not()) {
             Log.e("ololo","segment check failed for ${inAppMessage.messageId}")
@@ -290,7 +292,7 @@ internal class IamControllerImpl(
     }
 
     private fun showInApp(inAppMessage: InAppMessage) {
-        if (iamView == null || iamView?.isViewShown() == true || isPausedInAppMessages.get()) return
+        if (canShowInApp().not()) return
 
         Log.e("ololo","SHOW IN-APP ${inAppMessage.messageId}")
         inAppMessage.notifyShown()
@@ -306,6 +308,10 @@ internal class IamControllerImpl(
 
     private fun checkSegmentRuleMatches(inAppMessage: InAppMessage): Boolean {
         return inAppMessage.displayRules.async?.segment?.isInSegment ?: true
+    }
+
+    private fun canShowInApp(): Boolean {
+        return iamView != null && iamView?.isViewShown() == false && isPausedInAppMessages.get().not() && _fullHtmlStateFlow.value == ResultDomain.Idle
     }
 
     companion object {

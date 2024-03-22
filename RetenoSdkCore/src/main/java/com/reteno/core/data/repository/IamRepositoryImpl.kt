@@ -1,6 +1,5 @@
 package com.reteno.core.data.repository
 
-import android.util.Log
 import com.google.gson.JsonObject
 import com.reteno.core.R
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerInAppMessages

@@ -74,14 +74,15 @@ internal sealed interface ApiContract {
         companion object {
             private const val BASE_URL = "https://mobile-api.reteno.com/api/v1/inapp/"
         }
+
         object BaseHtml: InAppMessages() {
             override val url = "https://statics.esputnik.com/in-app/base.latest.html"
         }
 
-        class GetInnAppWidgetByInteractionId(interactionId:String):InAppMessages(){
+        class GetInnAppWidgetByInteractionId(interactionId:String): InAppMessages(){
             override val url = "${BASE_URL}interactions/$interactionId/message"
-
         }
+
         object WidgetInitFailed: InAppMessages() {
             override val url = "https://site-script.reteno.com/site-script/v1/event"
         }
@@ -99,7 +100,7 @@ internal sealed interface ApiContract {
         }
 
         object RegisterInteraction: InAppMessages() {
-            override val url = "${BASE_URL}interaction"
+            override val url = "https://mobile-api.reteno.com/api/v1/interaction"
         }
     }
 

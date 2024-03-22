@@ -90,7 +90,7 @@ class IamControllerImplTest : BaseRobolectricTest() {
     @Test
     fun given_whenFetchIamFullHtml_thenFullHtmlFlowChangesToSuccess() {
         // Given
-        assertEquals(ResultDomain.Loading, SUT.fullHtmlStateFlow.value)
+        assertEquals(ResultDomain.Idle, SUT.fullHtmlStateFlow.value)
 
         // When
         SUT.fetchIamFullHtml(WIDGET_ID)
@@ -102,7 +102,7 @@ class IamControllerImplTest : BaseRobolectricTest() {
         assertEquals(ResultDomain.Success(FULL_HTML), SUT.fullHtmlStateFlow.value)
 
         SUT.reset()
-        assertEquals(ResultDomain.Loading, SUT.fullHtmlStateFlow.value)
+        assertEquals(ResultDomain.Idle, SUT.fullHtmlStateFlow.value)
     }
 
     @Test
@@ -113,7 +113,7 @@ class IamControllerImplTest : BaseRobolectricTest() {
         }
 
         // Given
-        assertEquals(ResultDomain.Loading, SUT.fullHtmlStateFlow.value)
+        assertEquals(ResultDomain.Idle, SUT.fullHtmlStateFlow.value)
 
         // When
         SUT.fetchIamFullHtml(WIDGET_ID)
@@ -127,13 +127,13 @@ class IamControllerImplTest : BaseRobolectricTest() {
         assert(result.errorBody.contains("TIMEOUT"))
 
         SUT.reset()
-        assertEquals(ResultDomain.Loading, SUT.fullHtmlStateFlow.value)
+        assertEquals(ResultDomain.Idle, SUT.fullHtmlStateFlow.value)
     }
 
     @Test
     fun given_whenReset_thenClearDataSetLoading() {
         // Given
-        assertEquals(ResultDomain.Loading, SUT.fullHtmlStateFlow.value)
+        assertEquals(ResultDomain.Idle, SUT.fullHtmlStateFlow.value)
 
         // When
         SUT.fetchIamFullHtml(WIDGET_ID)
@@ -148,6 +148,6 @@ class IamControllerImplTest : BaseRobolectricTest() {
         // When
         SUT.reset()
         // Then
-        assertEquals(ResultDomain.Loading, SUT.fullHtmlStateFlow.value)
+        assertEquals(ResultDomain.Idle, SUT.fullHtmlStateFlow.value)
     }
 }

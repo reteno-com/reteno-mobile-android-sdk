@@ -17,6 +17,7 @@ import com.reteno.core.data.local.database.schema.DbSchema.DATABASE_NAME
 import com.reteno.core.data.local.database.schema.DbSchema.DATABASE_VERSION
 import com.reteno.core.data.local.database.schema.DeviceSchema
 import com.reteno.core.data.local.database.schema.EventsSchema
+import com.reteno.core.data.local.database.schema.InAppInteractionSchema
 import com.reteno.core.data.local.database.schema.InAppMessageSchema
 import com.reteno.core.data.local.database.schema.InteractionSchema
 import com.reteno.core.data.local.database.schema.LogEventSchema
@@ -144,6 +145,7 @@ internal class RetenoDatabaseImpl(private val context: Context) : RetenoDatabase
         db.execSQL(UserSchema.UserAttributesSchema.SQL_CREATE_TABLE)
         db.execSQL(UserSchema.UserAddressSchema.SQL_CREATE_TABLE)
         db.execSQL(InteractionSchema.SQL_CREATE_TABLE)
+        db.execSQL(InAppInteractionSchema.SQL_CREATE_TABLE)
         db.execSQL(EventsSchema.SQL_CREATE_TABLE)
         db.execSQL(EventsSchema.EventSchema.SQL_CREATE_TABLE)
         db.execSQL(AppInboxSchema.SQL_CREATE_TABLE)

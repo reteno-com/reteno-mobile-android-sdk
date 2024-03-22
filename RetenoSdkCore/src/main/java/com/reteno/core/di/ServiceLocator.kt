@@ -83,6 +83,9 @@ class ServiceLocator(context: Context, accessKey: String) {
     private val retenoDatabaseManagerInAppMessagesProvider =
         RetenoDatabaseManagerInAppMessagesProvider(databaseProvider)
 
+    private val retenoDatabaseManagerInAppInteractionProvider =
+        RetenoDatabaseManagerInAppInteractionProvider(databaseProvider)
+
     internal val retenoDatabaseManagerProvider = RetenoDatabaseManagerProvider(
         retenoDatabaseManagerDeviceProviderInternal,
         retenoDatabaseManagerUserProviderInternal,
@@ -92,7 +95,8 @@ class ServiceLocator(context: Context, accessKey: String) {
         retenoDatabaseManagerRecomEventsProvider,
         retenoDatabaseManagerWrappedLinksProvider,
         retenoDatabaseManagerLogEventProvider,
-        retenoDatabaseManagerInAppMessagesProvider
+        retenoDatabaseManagerInAppMessagesProvider,
+        retenoDatabaseManagerInAppInteractionProvider
     )
 
     /** Repository **/
@@ -122,7 +126,8 @@ class ServiceLocator(context: Context, accessKey: String) {
     private val interactionRepositoryProvider: InteractionRepositoryProvider =
         InteractionRepositoryProvider(
             apiClientProvider,
-            retenoDatabaseManagerInteractionProviderInternal
+            retenoDatabaseManagerInteractionProviderInternal,
+            retenoDatabaseManagerInAppInteractionProvider
         )
 
     private val deeplinkRepositoryProvider: DeeplinkRepositoryProvider =
