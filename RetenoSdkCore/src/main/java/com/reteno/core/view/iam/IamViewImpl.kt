@@ -120,7 +120,7 @@ internal class IamViewImpl(
     }
 
     private fun openUrl(jsEvent: IamJsEvent) {
-        /*@formatter:off*/ Logger.i(TAG, "openUrl(): ", "jsEvent = [", jsEvent, "]")
+        /*@formatter:off*/ Logger.i(TAG, "openUrl(): ", "interactionId = [", interactionId, "], jsEvent = [", jsEvent, "]")
         /*@formatter:on*/
         interactionId?.let { interaction ->
             interactionController.onInteractionIamClick(
@@ -154,7 +154,6 @@ internal class IamViewImpl(
 
 
     override fun initialize(interactionId: String) {
-        this.interactionId = interactionId
         /*@formatter:off*/ Logger.i(TAG, "initialize(): ", "widgetId = [", interactionId, "]")
         /*@formatter:on*/
         try {
@@ -162,6 +161,8 @@ internal class IamViewImpl(
                 if (isViewShown.get()) {
                     teardown()
                 }
+                this.interactionId = interactionId
+                messageInstanceId = null
 
                 OperationQueue.addUiOperation {
                     activityHelper.currentActivity.let { activity ->
@@ -195,6 +196,7 @@ internal class IamViewImpl(
                     createIamInActivity(it)
                 }
                 messageInstanceId = inAppMessage.messageInstanceId
+                interactionId = null
                 iamController.fetchIamFullHtml(inAppMessage.content)
             }
         } catch (e: Exception) {
@@ -370,8 +372,6 @@ internal class IamViewImpl(
         /*@formatter:off*/ Logger.i(TAG, "teardown(): ", "")
         /*@formatter:on*/
         iamController.reset()
-        interactionId = null
-        messageInstanceId = null
 
         OperationQueue.addUiOperation {
             if (this::parentLayout.isInitialized) {
