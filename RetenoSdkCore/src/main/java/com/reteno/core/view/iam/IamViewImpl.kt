@@ -25,8 +25,6 @@ import com.reteno.core.RetenoImpl
 import com.reteno.core.data.remote.OperationQueue
 import com.reteno.core.data.remote.mapper.fromJson
 import com.reteno.core.data.remote.model.iam.message.InAppMessage
-import com.reteno.core.data.remote.model.iam.message.InAppMessageResponse
-import com.reteno.core.data.remote.model.iam.message.InAppMessageContent
 import com.reteno.core.domain.ResultDomain
 import com.reteno.core.domain.controller.IamController
 import com.reteno.core.domain.model.interaction.InAppInteraction
@@ -156,14 +154,16 @@ internal class IamViewImpl(
 
 
     override fun initialize(interactionId: String) {
-        if (isViewShown.get()) return
         this.interactionId = interactionId
         /*@formatter:off*/ Logger.i(TAG, "initialize(): ", "widgetId = [", interactionId, "]")
         /*@formatter:on*/
         try {
             try {
+                if (isViewShown.get()) {
+                    teardown()
+                }
+
                 OperationQueue.addUiOperation {
-                    Log.e("ololo","currentActivity ${activityHelper.currentActivity}")
                     activityHelper.currentActivity.let { activity ->
                         if (activity != null) {
                             initViewOnResume = false
