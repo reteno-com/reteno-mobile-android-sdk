@@ -194,9 +194,18 @@ object Util {
     }
 
     fun parseWithTimeZone(dateTime: String, timeZone: String): ZonedDateTime {
+        // TODO currently we are using Java 11, it does not recognize Kyiv timezone.
+        // After updating java to 17.0.6 or higher this fix should not be required.
+        val timeZoneFixed = if (timeZone.contains("Kyiv")) {
+            Log.e("ololo","FIX TIMEZONE")
+            timeZone.replace("Kyiv", "Kiev")
+        } else {
+            timeZone
+        }
+
         val formatter = DateTimeFormatter
             .ofPattern(patternWithNoSeconds)
-            .withZone(ZoneId.of(timeZone))
+            .withZone(ZoneId.of(timeZoneFixed))
 
         return ZonedDateTime.parse(dateTime, formatter)
     }
