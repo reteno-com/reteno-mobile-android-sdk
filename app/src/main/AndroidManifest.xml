@@ -93,7 +93,7 @@
             </intent-filter>
         </receiver>
 
-        <receiver
+        <!--receiver
             android:name="com.reteno.sample.CustomReceiverInAppData"
             android:enabled="true"
             android:exported="false" >
@@ -101,7 +101,7 @@
             <intent-filter>
                 <action android:name="com.reteno.custom-inapp-data" />
             </intent-filter>
-        </receiver>
+        </receiver-->
 
         <!-- TODO add this to set up your notification icon -->
         <meta-data

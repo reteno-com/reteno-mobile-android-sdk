@@ -1,6 +1,7 @@
 package com.reteno.core.data.repository
 
 import com.reteno.core.base.robolectric.BaseRobolectricTest
+import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerInAppMessages
 import com.reteno.core.data.local.sharedpref.SharedPrefsManager
 import com.reteno.core.data.remote.api.ApiClient
 import com.reteno.core.data.remote.api.ApiContract
@@ -36,13 +37,16 @@ class IamRepositoryImplTest : BaseRobolectricTest() {
     @RelaxedMockK
     private lateinit var sharedPrefsManager: SharedPrefsManager
 
+    @RelaxedMockK
+    private lateinit var databaseManager: RetenoDatabaseManagerInAppMessages
+
     private lateinit var SUT: IamRepository
     // endregion helper fields ---------------------------------------------------------------------
 
     @OptIn(ExperimentalCoroutinesApi::class)
     override fun before() {
         super.before()
-        SUT = IamRepositoryImpl(apiClient, sharedPrefsManager,UnconfinedTestDispatcher())
+        SUT = IamRepositoryImpl(apiClient, sharedPrefsManager, databaseManager, UnconfinedTestDispatcher())
     }
 
     @Test

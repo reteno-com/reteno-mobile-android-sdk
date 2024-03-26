@@ -1,6 +1,7 @@
 package com.reteno.core.data.repository
 
 import com.reteno.core.base.robolectric.BaseRobolectricTest
+import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerInAppInteraction
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerInteraction
 import com.reteno.core.data.local.mappers.toDb
 import com.reteno.core.data.local.model.interaction.InteractionDb
@@ -48,6 +49,8 @@ class InteractionRepositoryImplTest : BaseRobolectricTest() {
     private lateinit var apiClient: ApiClient
     @RelaxedMockK
     private lateinit var databaseManagerInteraction: RetenoDatabaseManagerInteraction
+    @RelaxedMockK
+    private lateinit var databaseManagerInAppInteraction: RetenoDatabaseManagerInAppInteraction
 
     private lateinit var SUT: InteractionRepositoryImpl
     // endregion helper fields ---------------------------------------------------------------------
@@ -55,7 +58,7 @@ class InteractionRepositoryImplTest : BaseRobolectricTest() {
     @Before
     override fun before() {
         super.before()
-        SUT = InteractionRepositoryImpl(apiClient, databaseManagerInteraction)
+        SUT = InteractionRepositoryImpl(apiClient, databaseManagerInteraction, databaseManagerInAppInteraction)
     }
 
     @Test

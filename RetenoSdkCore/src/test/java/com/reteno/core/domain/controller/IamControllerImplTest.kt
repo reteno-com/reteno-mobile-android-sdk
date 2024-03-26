@@ -5,6 +5,7 @@ import com.reteno.core.data.remote.model.iam.widget.WidgetModel
 import com.reteno.core.data.repository.IamRepository
 import com.reteno.core.domain.ResultDomain
 import com.reteno.core.domain.controller.IamControllerImpl.Companion.TIMEOUT
+import com.reteno.core.lifecycle.RetenoSessionHandlerImpl
 import io.mockk.*
 import io.mockk.impl.annotations.RelaxedMockK
 import junit.framework.TestCase.*
@@ -46,6 +47,9 @@ class IamControllerImplTest : BaseRobolectricTest() {
     @RelaxedMockK
     private lateinit var iamRepository: IamRepository
 
+    @RelaxedMockK
+    private lateinit var sessionHandler: RetenoSessionHandlerImpl
+
     private val scheduler = TestCoroutineScheduler()
     private val dispatcher = StandardTestDispatcher(scheduler)
 
@@ -56,7 +60,7 @@ class IamControllerImplTest : BaseRobolectricTest() {
         super.before()
         Dispatchers.setMain(dispatcher)
 
-        SUT = IamControllerImpl(iamRepository)
+        SUT = IamControllerImpl(iamRepository, sessionHandler)
 
         coEvery { iamRepository.getBaseHtml() } coAnswers {
             delay(DELAY_BASE_HTML)
@@ -86,7 +90,7 @@ class IamControllerImplTest : BaseRobolectricTest() {
     @Test
     fun given_whenFetchIamFullHtml_thenFullHtmlFlowChangesToSuccess() {
         // Given
-        assertEquals(ResultDomain.Loading, SUT.fullHtmlStateFlow.value)
+        assertEquals(ResultDomain.Idle, SUT.fullHtmlStateFlow.value)
 
         // When
         SUT.fetchIamFullHtml(WIDGET_ID)
@@ -98,7 +102,7 @@ class IamControllerImplTest : BaseRobolectricTest() {
         assertEquals(ResultDomain.Success(FULL_HTML), SUT.fullHtmlStateFlow.value)
 
         SUT.reset()
-        assertEquals(ResultDomain.Loading, SUT.fullHtmlStateFlow.value)
+        assertEquals(ResultDomain.Idle, SUT.fullHtmlStateFlow.value)
     }
 
     @Test
@@ -109,7 +113,7 @@ class IamControllerImplTest : BaseRobolectricTest() {
         }
 
         // Given
-        assertEquals(ResultDomain.Loading, SUT.fullHtmlStateFlow.value)
+        assertEquals(ResultDomain.Idle, SUT.fullHtmlStateFlow.value)
 
         // When
         SUT.fetchIamFullHtml(WIDGET_ID)
@@ -123,13 +127,13 @@ class IamControllerImplTest : BaseRobolectricTest() {
         assert(result.errorBody.contains("TIMEOUT"))
 
         SUT.reset()
-        assertEquals(ResultDomain.Loading, SUT.fullHtmlStateFlow.value)
+        assertEquals(ResultDomain.Idle, SUT.fullHtmlStateFlow.value)
     }
 
     @Test
     fun given_whenReset_thenClearDataSetLoading() {
         // Given
-        assertEquals(ResultDomain.Loading, SUT.fullHtmlStateFlow.value)
+        assertEquals(ResultDomain.Idle, SUT.fullHtmlStateFlow.value)
 
         // When
         SUT.fetchIamFullHtml(WIDGET_ID)
@@ -144,6 +148,6 @@ class IamControllerImplTest : BaseRobolectricTest() {
         // When
         SUT.reset()
         // Then
-        assertEquals(ResultDomain.Loading, SUT.fullHtmlStateFlow.value)
+        assertEquals(ResultDomain.Idle, SUT.fullHtmlStateFlow.value)
     }
 }

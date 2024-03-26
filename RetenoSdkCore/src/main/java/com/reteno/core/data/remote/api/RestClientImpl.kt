@@ -59,6 +59,7 @@ internal class RestClientImpl(private val restConfig: RestConfig) : RestClient {
         method: HttpMethod,
         apiContract: ApiContract,
         body: String?,
+        headers: Map<String, String>?,
         queryParams: Map<String, String?>?,
         responseCallback: ResponseCallback
     ) {
@@ -69,7 +70,7 @@ internal class RestClientImpl(private val restConfig: RestConfig) : RestClient {
             /*@formatter:off*/ Logger.i(TAG, "makeRequest(): ", "method = [" , method.httpMethodName , "], apiContract = [" , apiContract.url , "], body = [" , body , "], queryParams = [" , queryParams , "], responseCallback = [" , responseCallback , "]")
             /*@formatter:on*/
             urlConnection =
-                defaultHttpConnection(method, urlWithParams, apiContract)
+                defaultHttpConnection(method, urlWithParams, headers, apiContract)
             Logger.i(TAG, "makeRequest(): ", "request, headers: ${urlConnection.requestProperties}")
 
             if (body != null) {
@@ -97,7 +98,7 @@ internal class RestClientImpl(private val restConfig: RestConfig) : RestClient {
 
                 else -> {
                     val response =
-                        urlConnection.errorStream.bufferedReader().use { it.readText() }
+                        urlConnection.errorStream?.bufferedReader()?.use { it.readText() }
                     Logger.i(TAG, "makeRequest(): ", "response: ", response)
                     responseCallback.onFailure(responseCode, response, null)
                 }
@@ -120,6 +121,7 @@ internal class RestClientImpl(private val restConfig: RestConfig) : RestClient {
     private fun defaultHttpConnection(
         method: HttpMethod,
         url: String,
+        headers: Map<String, String>?,
         apiContract: ApiContract
     ): HttpURLConnection {
         val useSsl = url.startsWith("https") // TODO (bs) need to test
@@ -157,6 +159,11 @@ internal class RestClientImpl(private val restConfig: RestConfig) : RestClient {
                 doInput = true
                 setRequestProperty(HEADER_ENCODING, HEADER_ENCODING_VALUE)
                 setChunkedStreamingMode(0)
+            }
+            if (!headers.isNullOrEmpty()) {
+                headers.forEach { (key, value) ->
+                    setRequestProperty(key, value)
+                }
             }
 
             readTimeout = READ_TIMEOUT
