@@ -7,7 +7,6 @@ import android.content.pm.ResolveInfo
 import android.database.sqlite.SQLiteDatabase
 import android.os.Build
 import android.os.Bundle
-import android.util.Log
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GoogleApiAvailability
 import com.reteno.core.RetenoImpl
@@ -20,7 +19,6 @@ import net.sqlcipher.database.SQLiteStatement
 import java.io.*
 import java.text.SimpleDateFormat
 import java.time.Instant
-import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
@@ -197,7 +195,6 @@ object Util {
         // TODO currently we are using Java 11, it does not recognize Kyiv timezone.
         // After updating java to 17.0.6 or higher this fix should not be required.
         val timeZoneFixed = if (timeZone.contains("Kyiv")) {
-            Log.e("ololo","FIX TIMEZONE")
             timeZone.replace("Kyiv", "Kiev")
         } else {
             timeZone

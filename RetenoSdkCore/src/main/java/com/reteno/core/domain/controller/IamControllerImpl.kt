@@ -1,6 +1,5 @@
 package com.reteno.core.domain.controller
 
-import android.util.Log
 import com.reteno.core.data.local.mappers.toDomain
 import com.reteno.core.data.remote.model.iam.displayrules.frequency.FrequencyRuleValidator
 import com.reteno.core.data.remote.model.iam.displayrules.schedule.ScheduleRuleValidator
@@ -142,8 +141,6 @@ internal class IamControllerImpl(
     }
 
     override fun notifyEventOccurred(event: Event) {
-        Log.e("ololo","notifyEventOccurred ${event}")
-
         val inapps = inAppsWaitingForEvent
         if (inapps.isNullOrEmpty()) return
 
@@ -153,9 +150,7 @@ internal class IamControllerImpl(
 
         val validator = RuleEventValidator()
         val inAppsMatchingEventParams = inAppsWithCurrentEvent.filter { inapp ->
-            val result = validator.checkEventMatchesRules(inapp, event)
-            Log.e("ololo","checkEventMatchesRules ${inapp.inApp.messageId} is matching $result")
-            result
+            validator.checkEventMatchesRules(inapp, event)
         }
 
         tryShowInAppFromList(inAppsMatchingEventParams.map { it.inApp }.toMutableList())
@@ -188,7 +183,6 @@ internal class IamControllerImpl(
 
         if (inAppsWithTimer.isNotEmpty()) {
             sessionHandler.scheduleInAppMessages(inAppsWithTimer) { messagesToShow ->
-                Log.e("ololo","show inapp by time: ${messagesToShow.size}")
                 tryShowInAppFromList(messagesToShow.toMutableList())
             }
         }
@@ -201,7 +195,6 @@ internal class IamControllerImpl(
     }
 
     private fun tryShowInAppFromList(inAppMessages: MutableList<InAppMessage>, showingOnAppStart: Boolean = false) {
-        Log.e("ololo","tryShowInAppFromList ${inAppMessages.size}, can show inapps ${canShowInApp()}")
         if (canShowInApp().not()) return
 
         scope.launch {
@@ -215,7 +208,6 @@ internal class IamControllerImpl(
                 if (inAppMessages.isEmpty()) break
 
                 val inAppWithHighestId = inAppMessages.maxBy { it.messageId }
-                Log.e("ololo","try show inapp ${inAppWithHighestId.messageId}")
                 val showedInApp = tryShowInApp(
                     inAppMessage = inAppWithHighestId,
                     frequencyValidator = frequencyValidator,
@@ -269,7 +261,6 @@ internal class IamControllerImpl(
         if (canShowInApp().not()) return false
 
         if (checkSegmentRuleMatches(inAppMessage).not()) {
-            Log.e("ololo","segment check failed for ${inAppMessage.messageId}")
             return false
         }
 
@@ -278,12 +269,10 @@ internal class IamControllerImpl(
                 sessionStartTimestamp = sessionHandler.getSessionStartTimestamp(),
                 showingOnAppStart = showingOnAppStart
         )) {
-            Log.e("ololo","frequency check failed for ${inAppMessage.messageId}")
             return false
         }
 
         if (!scheduleValidator.checkInAppMatchesScheduleRules(inAppMessage)) {
-            Log.e("ololo","schedule check failed for ${inAppMessage.messageId}")
             return false
         }
 
@@ -294,7 +283,6 @@ internal class IamControllerImpl(
     private fun showInApp(inAppMessage: InAppMessage) {
         if (canShowInApp().not()) return
 
-        Log.e("ololo","SHOW IN-APP ${inAppMessage.messageId}")
         inAppMessage.notifyShown()
         iamView?.initialize(inAppMessage)
         updateInAppMessage(inAppMessage)
