@@ -358,7 +358,7 @@ class RestClientImplTest : BaseUnitTest() {
         queryParams: Map<String, String?>? = null,
         responseCallback: ResponseCallback = getCallback()
     ) {
-        restClient.makeRequest(method, url, body, queryParams, responseCallback)
+        restClient.makeRequest(method, url, body, null, queryParams, responseCallback)
     }
 
     private fun generateUriWithParams(params: Map<String, Any>): String {

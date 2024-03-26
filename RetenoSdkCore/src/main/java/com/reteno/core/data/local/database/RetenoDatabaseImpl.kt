@@ -17,6 +17,8 @@ import com.reteno.core.data.local.database.schema.DbSchema.DATABASE_NAME
 import com.reteno.core.data.local.database.schema.DbSchema.DATABASE_VERSION
 import com.reteno.core.data.local.database.schema.DeviceSchema
 import com.reteno.core.data.local.database.schema.EventsSchema
+import com.reteno.core.data.local.database.schema.InAppInteractionSchema
+import com.reteno.core.data.local.database.schema.InAppMessageSchema
 import com.reteno.core.data.local.database.schema.InteractionSchema
 import com.reteno.core.data.local.database.schema.LogEventSchema
 import com.reteno.core.data.local.database.schema.RecomEventsSchema
@@ -143,6 +145,7 @@ internal class RetenoDatabaseImpl(private val context: Context) : RetenoDatabase
         db.execSQL(UserSchema.UserAttributesSchema.SQL_CREATE_TABLE)
         db.execSQL(UserSchema.UserAddressSchema.SQL_CREATE_TABLE)
         db.execSQL(InteractionSchema.SQL_CREATE_TABLE)
+        db.execSQL(InAppInteractionSchema.SQL_CREATE_TABLE)
         db.execSQL(EventsSchema.SQL_CREATE_TABLE)
         db.execSQL(EventsSchema.EventSchema.SQL_CREATE_TABLE)
         db.execSQL(AppInboxSchema.SQL_CREATE_TABLE)
@@ -150,6 +153,8 @@ internal class RetenoDatabaseImpl(private val context: Context) : RetenoDatabase
         db.execSQL(RecomEventsSchema.RecomEventSchema.SQL_CREATE_TABLE)
         db.execSQL(WrappedLinkSchema.SQL_CREATE_TABLE)
         db.execSQL(LogEventSchema.SQL_CREATE_TABLE)
+        db.execSQL(InAppMessageSchema.SQL_CREATE_TABLE)
+        db.execSQL(InAppMessageSchema.SegmentSchema.SQL_CREATE_TABLE)
     }
 
     override fun query(

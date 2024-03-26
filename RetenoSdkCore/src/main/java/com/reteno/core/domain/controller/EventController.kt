@@ -10,16 +10,25 @@ internal class EventController(
     private val eventsRepository: EventsRepository
 ) {
 
+    private var iamController: IamController? = null // TODO debugging solution, this should not be here
+
+    fun setIamController(iamController: IamController) {
+        this.iamController = iamController
+    }
+
     fun trackEvent(event: Event) {
         /*@formatter:off*/ Logger.i(TAG, "trackEvent(): ", "event = [" , event , "]")
         /*@formatter:on*/
         eventsRepository.saveEvent(event)
+        iamController?.notifyEventOccurred(event)
     }
 
     fun trackScreenViewEvent(screenName: String) {
         /*@formatter:off*/ Logger.i(TAG, "trackScreenViewEvent(): ", "screenName = [" , screenName , "]")
         /*@formatter:on*/
-        eventsRepository.saveEvent(Event.ScreenView(screenName))
+        val event = Event.ScreenView(screenName)
+        eventsRepository.saveEvent(event)
+        iamController?.notifyEventOccurred(event)
     }
 
     fun trackEcomEvent(ecomEvent: EcomEvent) {

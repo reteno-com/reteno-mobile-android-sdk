@@ -4,6 +4,7 @@ import android.app.Activity
 import android.app.Application
 import android.content.ComponentName
 import android.content.Intent
+import android.util.Log
 import com.reteno.core.di.ServiceLocator
 import com.reteno.core.domain.controller.ScreenTrackingController
 import com.reteno.core.domain.model.ecom.EcomEvent
@@ -19,7 +20,11 @@ import com.reteno.core.util.Constants.BROADCAST_ACTION_RETENO_APP_RESUME
 import com.reteno.core.view.iam.IamView
 
 
-class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleCallbacks, Reteno {
+class RetenoImpl @JvmOverloads constructor(
+    application: Application,
+    accessKey: String,
+    private val config: RetenoConfig = RetenoConfig()
+) : RetenoLifecycleCallbacks, Reteno {
 
     init {
         /*@formatter:off*/ Logger.i(TAG, "RetenoImpl(): ", "context = [" , application , "]")
@@ -35,6 +40,7 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
     private val scheduleController by lazy { serviceLocator.scheduleControllerProvider.get() }
     private val eventController by lazy { serviceLocator.eventsControllerProvider.get() }
     private val iamController by lazy { serviceLocator.iamControllerProvider.get() }
+    private val sessionHandler by lazy {  serviceLocator.retenoSessionHandlerProvider.get() }
 
     override val appInbox by lazy { serviceLocator.appInboxProvider.get() }
     override val recommendation by lazy { serviceLocator.recommendationProvider.get() }
@@ -47,6 +53,7 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
                 clearOldData()
                 contactController.checkIfDeviceRegistered()
                 sendAppResumeBroadcast()
+                pauseInAppMessages(config.isPausedInAppMessages)
                 fetchInAppMessages()
             } catch (t: Throwable) {
                 /*@formatter:off*/ Logger.e(TAG, "init(): ", t)
@@ -70,7 +77,8 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
         /*@formatter:off*/ Logger.i(TAG, "resume(): ", "activity = [" , activity , "]")
         /*@formatter:on*/
         try {
-            contactController.checkIfDeviceRegistered()
+            contactController.checkIfDeviceRequestSentThisSession()
+            sessionHandler.start()
             startPushScheduler()
             iamView.resume(activity)
         } catch (ex: Throwable) {
@@ -86,6 +94,7 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
         /*@formatter:off*/ Logger.i(TAG, "pause(): ", "activity = [" , activity , "]")
         /*@formatter:on*/
         try {
+            sessionHandler.stop()
             stopPushScheduler()
             iamView.pause(activity)
         } catch (ex: Throwable) {
@@ -103,10 +112,9 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
     }
 
     private fun fetchInAppMessages() {
-        iamController.getInAppMessages { inAppMessages, inAppContents ->
-            iamController.fetchIamFullHtml(inAppContents.last())
-            //iamView.initialize(inAppMessages.first(), inAppContents.first())
-        }
+        iamController.setIamView(iamView)
+        eventController.setIamController(iamController)
+        iamController.getInAppMessages()
     }
 
     private fun sendAppResumeBroadcast() {
@@ -240,6 +248,10 @@ class RetenoImpl(application: Application, accessKey: String) : RetenoLifecycleC
                 application.sendBroadcast(intent)
             }
         }
+    }
+
+    override fun pauseInAppMessages(isPaused: Boolean) {
+        iamController.pauseInAppMessages(isPaused)
     }
 
     override fun forcePushData() {
