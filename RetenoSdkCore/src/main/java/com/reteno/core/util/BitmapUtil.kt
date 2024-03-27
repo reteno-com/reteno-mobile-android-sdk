@@ -3,6 +3,8 @@ package com.reteno.core.util
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Canvas
+import android.graphics.Color
 import android.util.DisplayMetrics
 import android.view.WindowManager
 import com.reteno.core.RetenoImpl
@@ -24,8 +26,14 @@ object BitmapUtil {
     /**
      * Create a scaled bitmap.
      *
+     * Aspect ratio of the source image stays unchanged.
+     * If aspect ratio of a source image doesn't conform to 2:1 rule,
+     * centerInside scale type applied and other areas of an image will be transparent
+     *
+     * @see android.widget.ImageView.ScaleType.CENTER_INSIDE
+     *
      * @param imageUrl The string of URL image.
-     * @return The scaled bitmap.
+     * @return The scaled bitmap with 2:1 aspect ratio.
      */
     fun getScaledBitmap(imageUrl: String): Bitmap? {
         val context = RetenoImpl.application
@@ -42,7 +50,14 @@ object BitmapUtil {
         val pixelsWidth = min(2 * pixelsHeight, displayMetrics.widthPixels)
         var bitmap: Bitmap? = getBitmapFromUrl(imageUrl, pixelsWidth, pixelsHeight)
         try {
-            bitmap = Bitmap.createScaledBitmap(bitmap!!, pixelsWidth, pixelsHeight, true)
+            bitmap = resize(bitmap = bitmap!!, maxWidth = pixelsWidth, maxHeight = pixelsHeight)
+            val targetBitmap = Bitmap.createBitmap(pixelsWidth, pixelsHeight, Bitmap.Config.ARGB_8888)
+            val canvas = Canvas(targetBitmap)
+            canvas.drawColor(Color.TRANSPARENT)
+            val xOffset = (targetBitmap.width - bitmap.width) / 2f
+            val yOffset = (targetBitmap.height - bitmap.height) / 2f
+            canvas.drawBitmap(bitmap, xOffset, yOffset, null)
+            bitmap = targetBitmap
         } catch (e: Exception) {
             Logger.e(TAG, "Failed on scale image $imageUrl to ($pixelsWidth, $pixelsHeight)", e)
         }
