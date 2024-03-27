@@ -10,5 +10,5 @@ internal data class IamJsPayload(
     @SerializedName("reason")
     val reason: String?,
     @SerializedName("customData")
-    val customData: Map<String, String>?
+    val customData: HashMap<String, String>? = null
 )

@@ -63,3 +63,6 @@
 -keep class com.reteno.core.data.remote.model** {
     *;
 }
+-keep class com.reteno.core.features.iam** {
+    *;
+}
