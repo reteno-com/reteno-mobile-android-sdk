@@ -11,6 +11,7 @@ import com.reteno.core.di.provider.database.*
 import com.reteno.core.di.provider.features.AppInboxProvider
 import com.reteno.core.di.provider.features.IamViewProvider
 import com.reteno.core.di.provider.features.RecommendationProvider
+import com.reteno.core.di.provider.features.RetenoSessionHandlerProvider
 import com.reteno.core.di.provider.network.ApiClientProvider
 import com.reteno.core.di.provider.network.RestClientProvider
 import com.reteno.core.di.provider.repository.*
@@ -19,6 +20,8 @@ import com.reteno.core.domain.controller.DeeplinkController
 import com.reteno.core.domain.controller.InteractionController
 import com.reteno.core.domain.controller.ScheduleController
 import com.reteno.core.lifecycle.RetenoActivityHelper
+import com.reteno.core.lifecycle.RetenoSessionHandler
+import com.reteno.core.lifecycle.RetenoSessionHandlerImpl
 import com.reteno.core.view.iam.IamView
 import kotlinx.coroutines.Dispatchers
 
@@ -77,6 +80,12 @@ class ServiceLocator(context: Context, accessKey: String) {
     private val retenoDatabaseManagerWrappedLinksProvider =
         RetenoDatabaseManagerWrappedLinkProvider(databaseProvider)
 
+    private val retenoDatabaseManagerInAppMessagesProvider =
+        RetenoDatabaseManagerInAppMessagesProvider(databaseProvider)
+
+    private val retenoDatabaseManagerInAppInteractionProvider =
+        RetenoDatabaseManagerInAppInteractionProvider(databaseProvider)
+
     internal val retenoDatabaseManagerProvider = RetenoDatabaseManagerProvider(
         retenoDatabaseManagerDeviceProviderInternal,
         retenoDatabaseManagerUserProviderInternal,
@@ -85,7 +94,9 @@ class ServiceLocator(context: Context, accessKey: String) {
         retenoDatabaseManagerAppInboxProviderInternal,
         retenoDatabaseManagerRecomEventsProvider,
         retenoDatabaseManagerWrappedLinksProvider,
-        retenoDatabaseManagerLogEventProvider
+        retenoDatabaseManagerLogEventProvider,
+        retenoDatabaseManagerInAppMessagesProvider,
+        retenoDatabaseManagerInAppInteractionProvider
     )
 
     /** Repository **/
@@ -115,7 +126,8 @@ class ServiceLocator(context: Context, accessKey: String) {
     private val interactionRepositoryProvider: InteractionRepositoryProvider =
         InteractionRepositoryProvider(
             apiClientProvider,
-            retenoDatabaseManagerInteractionProviderInternal
+            retenoDatabaseManagerInteractionProviderInternal,
+            retenoDatabaseManagerInAppInteractionProvider
         )
 
     private val deeplinkRepositoryProvider: DeeplinkRepositoryProvider =
@@ -135,7 +147,12 @@ class ServiceLocator(context: Context, accessKey: String) {
         )
 
     private val iamRepositoryProvider: IamRepositoryProvider =
-        IamRepositoryProvider(apiClientProvider, sharedPrefsManagerProvider, Dispatchers.IO)
+        IamRepositoryProvider(
+            apiClientProvider,
+            sharedPrefsManagerProvider,
+            retenoDatabaseManagerInAppMessagesProvider,
+            Dispatchers.IO
+        )
 
     private val logEventRepositoryProviderInternal: LogEventRepositoryProvider =
         LogEventRepositoryProvider(
@@ -194,15 +211,20 @@ class ServiceLocator(context: Context, accessKey: String) {
             eventsControllerProvider
         )
 
-    private val iamControllerProvider: IamControllerProvider =
-        IamControllerProvider(iamRepositoryProvider)
-
 
     /** Controller dependent **/
     internal val appInboxProvider: AppInboxProvider = AppInboxProvider(appInboxControllerProvider)
 
     internal val recommendationProvider: RecommendationProvider =
         RecommendationProvider(recommendationControllerProvider)
+
+    private val retenoSessionHandlerProviderInternal =
+        RetenoSessionHandlerProvider(sharedPrefsManagerProvider)
+    val retenoSessionHandlerProvider: ProviderWeakReference<RetenoSessionHandler>
+        get() = retenoSessionHandlerProviderInternal
+
+    internal val iamControllerProvider: IamControllerProvider =
+        IamControllerProvider(iamRepositoryProvider, retenoSessionHandlerProviderInternal)
 
     private val iamViewProviderInternal: IamViewProvider =
         IamViewProvider(retenoActivityHelperProviderInternal, iamControllerProvider)

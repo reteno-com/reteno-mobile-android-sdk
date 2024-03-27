@@ -19,14 +19,15 @@ import android.webkit.WebView
 import android.widget.FrameLayout
 import android.widget.PopupWindow
 import androidx.cardview.widget.CardView
-import androidx.core.os.toPersistableBundle
 import androidx.core.widget.PopupWindowCompat
 import com.reteno.core.RetenoApplication
 import com.reteno.core.RetenoImpl
 import com.reteno.core.data.remote.OperationQueue
 import com.reteno.core.data.remote.mapper.fromJson
+import com.reteno.core.data.remote.model.iam.message.InAppMessage
 import com.reteno.core.domain.ResultDomain
 import com.reteno.core.domain.controller.IamController
+import com.reteno.core.domain.model.interaction.InAppInteraction
 import com.reteno.core.domain.model.interaction.InteractionAction
 import com.reteno.core.features.iam.IamJsEvent
 import com.reteno.core.features.iam.IamJsEventType
@@ -41,6 +42,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
+import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
 
 internal class IamViewImpl(
@@ -62,11 +64,14 @@ internal class IamViewImpl(
 
     private val isViewShown = AtomicBoolean(false)
 
-    private lateinit var interactionId: String
+    private var interactionId: String? = null
+    private var messageInstanceId: Long? = null
     private lateinit var parentLayout: FrameLayout
     private lateinit var popupWindow: PopupWindow
     private lateinit var cardView: CardView
     private lateinit var webView: WebView
+
+    private var initViewOnResume = false
 
     private val retenoAndroidHandler: RetenoAndroidHandler = object : RetenoAndroidHandler() {
         override fun onMessagePosted(event: String?) {
@@ -96,26 +101,38 @@ internal class IamViewImpl(
         /*@formatter:off*/ Logger.i(TAG, "onWidgetInitSuccess(): ", "")
         /*@formatter:on*/
         showIamPopupWindowOnceReady(DELAY_UI_ATTEMPTS)
+        messageInstanceId?.let { instanceId ->
+            val newInteractionId = UUID.randomUUID().toString()
+            interactionId = newInteractionId
+            interactionController.onInAppInteraction(InAppInteraction.createOpened(newInteractionId, instanceId))
+        }
     }
 
     private fun onWidgetInitFailed(jsEvent: IamJsEvent) {
         /*@formatter:off*/ Logger.i(TAG, "onWidgetInitFailed(): ", "jsEvent = [", jsEvent, "]")
         /*@formatter:on*/
         iamController.widgetInitFailed(jsEvent)
+        messageInstanceId?.let { instanceId ->
+            val newInteractionId = UUID.randomUUID().toString()
+            interactionId = newInteractionId
+            interactionController.onInAppInteraction(InAppInteraction.createFailed(newInteractionId, instanceId, jsEvent.payload?.reason))
+        }
     }
 
     private fun openUrl(jsEvent: IamJsEvent) {
-        /*@formatter:off*/ Logger.i(TAG, "openUrl(): ", "jsEvent = [", jsEvent, "]")
+        /*@formatter:off*/ Logger.i(TAG, "openUrl(): ", "interactionId = [", interactionId, "], jsEvent = [", jsEvent, "]")
         /*@formatter:on*/
-        interactionController.onInteractionIamClick(
-            interactionId,
-            InteractionAction(
-                jsEvent.type.name,
-                jsEvent.payload?.targetComponentId,
-                jsEvent.payload?.url
+        interactionId?.let { interaction ->
+            interactionController.onInteractionIamClick(
+                interaction,
+                InteractionAction(
+                    jsEvent.type.name,
+                    jsEvent.payload?.targetComponentId,
+                    jsEvent.payload?.url
+                )
             )
-        )
-        scheduleController.forcePush()
+            scheduleController.forcePush()
+        }
 
         jsEvent.payload?.let {
             val isCustomDataSent = tryHandleCustomData(it.url, it.customData)
@@ -131,13 +148,57 @@ internal class IamViewImpl(
         teardown()
     }
 
+    override fun isViewShown(): Boolean {
+        return isViewShown.get()
+    }
+
+
     override fun initialize(interactionId: String) {
-        this.interactionId = interactionId
         /*@formatter:off*/ Logger.i(TAG, "initialize(): ", "widgetId = [", interactionId, "]")
         /*@formatter:on*/
         try {
-            teardown()
-            iamController.fetchIamFullHtml(interactionId)
+            try {
+                if (isViewShown.get()) {
+                    teardown()
+                }
+                this.interactionId = interactionId
+                messageInstanceId = null
+
+                OperationQueue.addUiOperation {
+                    activityHelper.currentActivity.let { activity ->
+                        if (activity != null) {
+                            initViewOnResume = false
+                            createIamInActivity(activity)
+                        } else {
+                            initViewOnResume = true
+                        }
+                    }
+                    iamController.fetchIamFullHtml(interactionId)
+                }
+            } catch (e: Exception) {
+                /*@formatter:off*/ Logger.e(TAG, "initialize(): ", e)
+                /*@formatter:on*/
+            }
+        } catch (e: Exception) {
+            /*@formatter:off*/ Logger.e(TAG, "initialize(): ", e)
+            /*@formatter:on*/
+        }
+    }
+
+    override fun initialize(inAppMessage: InAppMessage) {
+        if (isViewShown.get()) return
+        /*@formatter:off*/ Logger.i(TAG, "initialize(): ", "inAppMessageId = [", inAppMessage.messageId, "], messageInstanceId = [", inAppMessage.messageInstanceId, "]")
+        /*@formatter:on*/
+        try {
+            //teardown()
+            OperationQueue.addUiOperation {
+                activityHelper.currentActivity?.let {
+                    createIamInActivity(it)
+                }
+                messageInstanceId = inAppMessage.messageInstanceId
+                interactionId = null
+                iamController.fetchIamFullHtml(inAppMessage.content)
+            }
         } catch (e: Exception) {
             /*@formatter:off*/ Logger.e(TAG, "initialize(): ", e)
             /*@formatter:on*/
@@ -152,7 +213,11 @@ internal class IamViewImpl(
             return
         }
 
-        createIamInActivity(activity)
+        if (initViewOnResume) {
+            createIamInActivity(activity)
+            initViewOnResume = false
+        }
+
         iamShowScope.launch {
             iamController.fullHtmlStateFlow.collect { result ->
                 ensureActive()
@@ -291,6 +356,8 @@ internal class IamViewImpl(
         PopupWindowCompat.setWindowLayoutType(popupWindow, displayType)
 
         if (activityHelper.canPresentMessages() && activityHelper.isActivityFullyReady()) {
+            /*@formatter:off*/ Logger.i(TAG, "showIamPopupWindow(): ", "Start showing")
+            /*@formatter:on*/
             popupWindow.showAtLocation(
                 activity.window.decorView.rootView,
                 gravity,

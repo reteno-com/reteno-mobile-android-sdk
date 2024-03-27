@@ -3,6 +3,7 @@ package com.reteno.core.domain.controller
 import com.reteno.core.data.repository.ConfigRepository
 import com.reteno.core.data.repository.InteractionRepository
 import com.reteno.core.domain.SchedulerUtils
+import com.reteno.core.domain.model.interaction.InAppInteraction
 import com.reteno.core.domain.model.interaction.Interaction
 import com.reteno.core.domain.model.interaction.InteractionAction
 import com.reteno.core.domain.model.interaction.InteractionStatus
@@ -11,7 +12,7 @@ import com.reteno.core.util.Util
 
 class InteractionController(
     private val configRepository: ConfigRepository,
-    private val interactionRepository: InteractionRepository
+    private val interactionRepository: InteractionRepository,
 ) {
 
     fun onInteractionIamClick(interactionId: String, action: InteractionAction) {
@@ -37,6 +38,12 @@ class InteractionController(
         }
     }
 
+    fun onInAppInteraction(inAppInteraction: InAppInteraction) {
+        /*@formatter:off*/ Logger.i(TAG, "onInAppInteraction(): ", "inAppInteraction = [", inAppInteraction, "]")
+        /*@formatter:on*/
+        interactionRepository.saveAndPushInAppInteraction(inAppInteraction)
+    }
+
     fun pushInteractions() {
         /*@formatter:off*/ Logger.i(TAG, "pushInteractions(): ", "")
         /*@formatter:on*/
@@ -52,6 +59,7 @@ class InteractionController(
         /*@formatter:on*/
         val outdatedTime = SchedulerUtils.getOutdatedTime()
         interactionRepository.clearOldInteractions(outdatedTime)
+        interactionRepository.clearOldInAppInteractions(outdatedTime)
     }
 
     companion object {

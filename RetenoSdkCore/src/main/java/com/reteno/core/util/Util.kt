@@ -7,7 +7,6 @@ import android.content.pm.ResolveInfo
 import android.database.sqlite.SQLiteDatabase
 import android.os.Build
 import android.os.Bundle
-import android.util.Log
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GoogleApiAvailability
 import com.reteno.core.RetenoImpl
@@ -25,6 +24,7 @@ import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import java.util.Locale
+import java.util.concurrent.TimeUnit
 import net.sqlcipher.database.SQLiteDatabase as CipherSQLiteDatabase
 
 fun <T : Any> allElementsNull(vararg elements: T?) = elements.all { it == null }
@@ -96,6 +96,17 @@ fun Bundle?.toStringVerbose(): String {
     return stringBuilder.toString()
 }
 
+fun String?.toTimeUnit(): TimeUnit? {
+    return when (this) {
+        "DAY" -> TimeUnit.DAYS
+        "HOUR" -> TimeUnit.HOURS
+        "MINUTE" -> TimeUnit.MINUTES
+        "SECOND" -> TimeUnit.SECONDS
+        "MILLISECOND" -> TimeUnit.MILLISECONDS
+        else -> null
+    }
+}
+
 fun isRepeatableError(statusCode: Int?): Boolean {
     return statusCode !in 400..499
 }
@@ -120,6 +131,8 @@ object Util {
     private val sqlToTimestampFormat by lazy {
         SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
     }
+
+    private val patternWithNoSeconds = "yyyy-MM-dd'T'HH:mm"
 
     init {
         CoroutineScope(IO).launch {
@@ -176,6 +189,22 @@ object Util {
 
     fun formatSqlDateToTimestamp(sqlDate: String): Long {
         return sqlToTimestampFormat.parse(sqlDate)?.time ?: 0L
+    }
+
+    fun parseWithTimeZone(dateTime: String, timeZone: String): ZonedDateTime {
+        // TODO currently we are using Java 11, it does not recognize Kyiv timezone.
+        // After updating java to 17.0.6 or higher this fix should not be required.
+        val timeZoneFixed = if (timeZone.contains("Kyiv")) {
+            timeZone.replace("Kyiv", "Kiev")
+        } else {
+            timeZone
+        }
+
+        val formatter = DateTimeFormatter
+            .ofPattern(patternWithNoSeconds)
+            .withZone(ZoneId.of(timeZoneFixed))
+
+        return ZonedDateTime.parse(dateTime, formatter)
     }
 
     /**

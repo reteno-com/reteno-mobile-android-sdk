@@ -23,6 +23,8 @@ android {
         minSdk globalConfig.androidMinSdkVersion
         targetSdk globalConfig.androidTargetSdkVersion
 
+        android.buildFeatures.buildConfig true
+
         buildConfigField "String", "API_ACCESS_KEY", appProps['reteno.access-key']
         versionCode System.getenv("BUILD_NUMBER") as Integer ?: globalConfig.versionCode
         versionName globalConfig.versionName
