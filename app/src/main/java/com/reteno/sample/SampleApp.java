@@ -22,7 +22,7 @@ public class SampleApp extends Application implements RetenoApplication {
         retenoInstance = new RetenoImpl(this, BuildConfig.API_ACCESS_KEY);
         ArrayList<String> excludeScreensFromTracking = new ArrayList<String>();
         excludeScreensFromTracking.add("NavHostFragment");
-        retenoInstance.autoScreenTracking(new ScreenTrackingConfig(true, excludeScreensFromTracking));
+        retenoInstance.autoScreenTracking(new ScreenTrackingConfig(false, excludeScreensFromTracking));
     }
 
 
