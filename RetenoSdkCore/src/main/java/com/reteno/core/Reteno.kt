@@ -7,6 +7,7 @@ import com.reteno.core.domain.model.user.User
 import com.reteno.core.domain.model.user.UserAttributesAnonymous
 import com.reteno.core.lifecycle.ScreenTrackingConfig
 import com.reteno.core.features.recommendation.Recommendation
+import com.reteno.core.view.iam.callback.InAppLifecycleCallback
 
 
 interface Reteno {
@@ -80,9 +81,17 @@ interface Reteno {
     fun updatePushPermissionStatus()
 
     /**
-     *
+     * Pause or unpause In-App messages showing during app runtime.
      */
     fun pauseInAppMessages(isPaused: Boolean)
+
+    /**
+     * Add a callback to callbacks each time In-App message is displayed.
+     *
+     * @param inAppLifecycleCallback pass an implementation of [InAppLifecycleCallback] interface
+     * or [null] to stop listening to callbacks.
+     */
+    fun setInAppLifecycleCallback(inAppLifecycleCallback: InAppLifecycleCallback?)
 
     /**
      *  Sends stored data without waiting for a send queue.

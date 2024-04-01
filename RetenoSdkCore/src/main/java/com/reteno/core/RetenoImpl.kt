@@ -4,7 +4,6 @@ import android.app.Activity
 import android.app.Application
 import android.content.ComponentName
 import android.content.Intent
-import android.util.Log
 import com.reteno.core.di.ServiceLocator
 import com.reteno.core.domain.controller.ScreenTrackingController
 import com.reteno.core.domain.model.ecom.EcomEvent
@@ -18,6 +17,7 @@ import com.reteno.core.util.*
 import com.reteno.core.util.Constants.BROADCAST_ACTION_PUSH_PERMISSION_CHANGED
 import com.reteno.core.util.Constants.BROADCAST_ACTION_RETENO_APP_RESUME
 import com.reteno.core.view.iam.IamView
+import com.reteno.core.view.iam.callback.InAppLifecycleCallback
 
 
 class RetenoImpl @JvmOverloads constructor(
@@ -252,6 +252,10 @@ class RetenoImpl @JvmOverloads constructor(
 
     override fun pauseInAppMessages(isPaused: Boolean) {
         iamController.pauseInAppMessages(isPaused)
+    }
+
+    override fun setInAppLifecycleCallback(inAppLifecycleCallback: InAppLifecycleCallback?) {
+        iamView.setInAppLifecycleCallback(inAppLifecycleCallback)
     }
 
     override fun forcePushData() {

@@ -37,6 +37,12 @@ import com.reteno.core.lifecycle.RetenoActivityHelper
 import com.reteno.core.util.Constants
 import com.reteno.core.util.Logger
 import com.reteno.core.util.queryBroadcastReceivers
+import com.reteno.core.view.iam.callback.InAppCloseAction
+import com.reteno.core.view.iam.callback.InAppCloseData
+import com.reteno.core.view.iam.callback.InAppData
+import com.reteno.core.view.iam.callback.InAppErrorData
+import com.reteno.core.view.iam.callback.InAppLifecycleCallback
+import com.reteno.core.view.iam.callback.InAppSource
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancelChildren
@@ -64,7 +70,11 @@ internal class IamViewImpl(
 
     private val isViewShown = AtomicBoolean(false)
 
+    private var inAppLifecycleCallback: InAppLifecycleCallback? = null
+
+    private var inAppSource: InAppSource? = null
     private var interactionId: String? = null
+    private var messageId: Long? = null
     private var messageInstanceId: Long? = null
     private lateinit var parentLayout: FrameLayout
     private lateinit var popupWindow: PopupWindow
@@ -101,6 +111,7 @@ internal class IamViewImpl(
         /*@formatter:off*/ Logger.i(TAG, "onWidgetInitSuccess(): ", "")
         /*@formatter:on*/
         showIamPopupWindowOnceReady(DELAY_UI_ATTEMPTS)
+        inAppLifecycleCallback?.onDisplay(createInAppData())
         messageInstanceId?.let { instanceId ->
             val newInteractionId = UUID.randomUUID().toString()
             interactionId = newInteractionId
@@ -111,6 +122,7 @@ internal class IamViewImpl(
     private fun onWidgetInitFailed(jsEvent: IamJsEvent) {
         /*@formatter:off*/ Logger.i(TAG, "onWidgetInitFailed(): ", "jsEvent = [", jsEvent, "]")
         /*@formatter:on*/
+        inAppLifecycleCallback?.onError(createInAppErrorData())
         iamController.widgetInitFailed(jsEvent)
         messageInstanceId?.let { instanceId ->
             val newInteractionId = UUID.randomUUID().toString()
@@ -145,7 +157,9 @@ internal class IamViewImpl(
     private fun closeWidget(payload: IamJsPayload?) {
         /*@formatter:off*/ Logger.i(TAG, "closeWidget(): ", "payload = [", payload, "]")
         /*@formatter:on*/
+        inAppLifecycleCallback?.beforeClose(createInAppCloseData(InAppCloseAction.CLOSE_BUTTON))
         teardown()
+        inAppLifecycleCallback?.afterClose(createInAppCloseData(InAppCloseAction.CLOSE_BUTTON))
     }
 
     override fun isViewShown(): Boolean {
@@ -162,6 +176,8 @@ internal class IamViewImpl(
                     teardown()
                 }
                 this.interactionId = interactionId
+                inAppSource = InAppSource.PUSH_NOTIFICATION
+                messageId = null
                 messageInstanceId = null
 
                 OperationQueue.addUiOperation {
@@ -173,6 +189,7 @@ internal class IamViewImpl(
                             initViewOnResume = true
                         }
                     }
+                    inAppLifecycleCallback?.beforeDisplay(createInAppData())
                     iamController.fetchIamFullHtml(interactionId)
                 }
             } catch (e: Exception) {
@@ -195,8 +212,11 @@ internal class IamViewImpl(
                 activityHelper.currentActivity?.let {
                     createIamInActivity(it)
                 }
+                messageId = inAppMessage.messageId
                 messageInstanceId = inAppMessage.messageInstanceId
+                inAppSource = InAppSource.DISPLAY_RULES
                 interactionId = null
+                inAppLifecycleCallback?.beforeDisplay(createInAppData())
                 iamController.fetchIamFullHtml(inAppMessage.content)
             }
         } catch (e: Exception) {
@@ -237,6 +257,9 @@ internal class IamViewImpl(
         }
     }
 
+    override fun setInAppLifecycleCallback(inAppLifecycleCallback: InAppLifecycleCallback?) {
+        this.inAppLifecycleCallback = inAppLifecycleCallback
+    }
 
     private fun showIamPopupWindowOnceReady(attempts: Int) {
         /*@formatter:off*/ Logger.i(TAG, "showIamPopupWindowOnceReady(): ", "attempts = [", attempts, "]")
@@ -399,6 +422,16 @@ internal class IamViewImpl(
     private fun tryHandleCustomData(url: String?, customData: Map<String, String>?): Boolean {
         val bundle = Bundle()
         bundle.putString("url", url)
+        inAppSource?.let { source ->
+            bundle.putString("inapp_source", source.name)
+            if (source == InAppSource.PUSH_NOTIFICATION) {
+                interactionId?.let { bundle.putString("inapp_id", it) }
+            } else {
+                messageId?.let { bundle.putString("inapp_id", it.toString()) }
+            }
+
+        }
+
         customData?.entries?.forEach { entry ->
             bundle.putString(entry.key, entry.value)
         }
@@ -434,6 +467,30 @@ internal class IamViewImpl(
         }
     }
 
+    private fun createInAppData(): InAppData {
+        return when (inAppSource) {
+            InAppSource.PUSH_NOTIFICATION -> InAppData(InAppSource.PUSH_NOTIFICATION, interactionId)
+            InAppSource.DISPLAY_RULES -> InAppData(InAppSource.DISPLAY_RULES, messageInstanceId?.toString())
+            else -> InAppData(InAppSource.DISPLAY_RULES, messageInstanceId?.toString())
+        }
+    }
+
+    private fun createInAppCloseData(closeAction: InAppCloseAction): InAppCloseData {
+        return when (inAppSource) {
+            InAppSource.PUSH_NOTIFICATION -> InAppCloseData(InAppSource.PUSH_NOTIFICATION, interactionId, closeAction)
+            InAppSource.DISPLAY_RULES -> InAppCloseData(InAppSource.DISPLAY_RULES, messageInstanceId?.toString(), closeAction)
+            else -> InAppCloseData(InAppSource.DISPLAY_RULES, messageInstanceId?.toString(), closeAction)
+        }
+    }
+
+    private fun createInAppErrorData(): InAppErrorData {
+        return when (inAppSource) {
+            InAppSource.PUSH_NOTIFICATION -> InAppErrorData(InAppSource.PUSH_NOTIFICATION, interactionId, ERROR_MESSAGE)
+            InAppSource.DISPLAY_RULES -> InAppErrorData(InAppSource.DISPLAY_RULES, messageInstanceId?.toString(), ERROR_MESSAGE)
+            else -> InAppErrorData(InAppSource.DISPLAY_RULES, messageInstanceId?.toString(), ERROR_MESSAGE)
+        }
+    }
+
     companion object {
         private val TAG: String = IamViewImpl::class.java.simpleName
 
@@ -443,6 +500,8 @@ internal class IamViewImpl(
         private const val MIME_TYPE = "text/html"
         private const val ENCODING = "base64"
         private const val JS_INTERFACE_NAME = "RetenoAndroidHandler"
+
+        private const val ERROR_MESSAGE = "Failed to load In-App message."
 
         private fun dpToPx(dp: Int): Int {
             return (dp * Resources.getSystem().displayMetrics.density).toInt()
