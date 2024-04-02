@@ -12,7 +12,7 @@ import com.reteno.core.util.Logger
 
 internal class ScreenTrackingController(private val retenoActivityHelper: RetenoActivityHelper, private val eventController: EventController) {
 
-    private var screenTrackingConfig = ScreenTrackingConfig(true)
+    private var screenTrackingConfig = ScreenTrackingConfig(enable = false)
 
     private val fragmentLifecycleCallbacks = object : FragmentManager.FragmentLifecycleCallbacks() {
         override fun onFragmentStarted(fragmentManager: FragmentManager, fragment: Fragment) {
