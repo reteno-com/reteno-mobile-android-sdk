@@ -49,7 +49,7 @@ public class MainActivity extends AppCompatActivity {
         checkPermissions();
         checkDeepLink(getIntent());
         setNavigation(getIntent());
-        createInAppLifecycleListener();
+        //createInAppLifecycleListener(); this is an example of in-app lifecycle callbacks
     }
 
     @Override
