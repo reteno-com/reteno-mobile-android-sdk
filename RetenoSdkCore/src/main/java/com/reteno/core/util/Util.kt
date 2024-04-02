@@ -187,6 +187,10 @@ object Util {
         return formatter.format(this)
     }
 
+    fun String.fromRemote():ZonedDateTime {
+        return ZonedDateTime.parse(this, formatter)
+    }
+
     fun formatSqlDateToTimestamp(sqlDate: String): Long {
         return sqlToTimestampFormat.parse(sqlDate)?.time ?: 0L
     }

@@ -20,6 +20,7 @@ import com.reteno.core.domain.model.event.Event
 import com.reteno.core.domain.model.event.Events
 import com.reteno.core.domain.model.event.Parameter
 import com.reteno.core.util.Logger
+import com.reteno.core.util.Util.formatToRemote
 import io.mockk.every
 import io.mockk.impl.annotations.RelaxedMockK
 import io.mockk.verify
@@ -144,6 +145,57 @@ class EventsRepositoryImplTest : BaseRobolectricTest() {
     }
 
     @Test
+    fun givenValidEventsWithRepeatedCartUpdatedEvent_whenEventsPush_thenOldEventsDiscarded() {
+        // Given
+        val eventDb = getRepeatableCartUpdatedEventsDb()
+        every { databaseManagerEvents.getEvents(any()) } returnsMany listOf(
+            listOf(eventDb),
+            emptyList()
+        )
+        every { apiClient.post(url = any(), jsonBody = any(), responseHandler = any()) } answers {
+            val callback = thirdArg<ResponseCallback>()
+            callback.onSuccess("")
+        }
+        val expectedModelToSend = eventDb.copy(
+            eventList = eventDb.eventList.toMutableList().apply {
+                removeAt(1)
+                removeAt(1)
+            }
+        )
+
+        // When
+        SUT.pushEvents()
+
+        // Then
+        verify(exactly = 1) { apiClient.post(any(), eq(expectedModelToSend.toRemote().toJson()), any()) }
+        verify(exactly = 1) { databaseManagerEvents.deleteEvents(eventDb) }
+        verify(exactly = 1) { PushOperationQueue.nextOperation() }
+        verify(exactly = 0) { PushOperationQueue.removeAllOperations() }
+    }
+
+    @Test
+    fun givenValidEventsWithRepeatedCartUpdatedEvent_whenEventsPush_thenAllInitialEventsAreCleared() {
+        // Given
+        val eventDb = getRepeatableCartUpdatedEventsDb()
+        every { databaseManagerEvents.getEvents(any()) } returnsMany listOf(
+            listOf(eventDb),
+            emptyList()
+        )
+        every { apiClient.post(url = any(), jsonBody = any(), responseHandler = any()) } answers {
+            val callback = thirdArg<ResponseCallback>()
+            callback.onSuccess("")
+        }
+
+        // When
+        SUT.pushEvents()
+
+        // Then
+        verify(exactly = 1) { databaseManagerEvents.deleteEvents(eventDb) }
+        verify(exactly = 1) { PushOperationQueue.nextOperation() }
+        verify(exactly = 0) { PushOperationQueue.removeAllOperations() }
+    }
+
+    @Test
     fun givenValidEvents_whenEventsPushFailedAndErrorIsRepeatable_cancelPushOperations() {
         // Given
         val eventDb = getEventsDb()
@@ -236,6 +288,33 @@ class EventsRepositoryImplTest : BaseRobolectricTest() {
             EventDb(
                 eventTypeKey = EVENT_TYPE_KEY,
                 occurred = OCCURRED,
+                params = listOf(ParameterDb("key", "false"))
+            )
+        )
+    )
+
+    private fun getRepeatableCartUpdatedEventsDb() = EventsDb(
+        deviceId = DEVICE_ID,
+        externalUserId = EXTERNAL_DEVICE_ID,
+        eventList = listOf(
+            EventDb(
+                eventTypeKey = EVENT_TYPE_KEY,
+                occurred = OCCURRED,
+                params = listOf(ParameterDb("key", "false"))
+            ),
+            EventDb(
+                eventTypeKey = RemoteConstants.EcomEvent.EVENT_TYPE_CART_UPDATED,
+                occurred = ZonedDateTime.now().minusHours(2).formatToRemote(),
+                params = listOf(ParameterDb("key", "false"))
+            ),
+            EventDb(
+                eventTypeKey = RemoteConstants.EcomEvent.EVENT_TYPE_CART_UPDATED,
+                occurred = ZonedDateTime.now().minusHours(1).formatToRemote(),
+                params = listOf(ParameterDb("key", "false"))
+            ),
+            EventDb(
+                eventTypeKey = RemoteConstants.EcomEvent.EVENT_TYPE_CART_UPDATED,
+                occurred = ZonedDateTime.now().formatToRemote(),
                 params = listOf(ParameterDb("key", "false"))
             )
         )

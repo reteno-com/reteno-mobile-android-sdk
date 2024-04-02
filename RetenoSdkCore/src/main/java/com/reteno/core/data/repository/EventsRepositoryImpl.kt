@@ -12,11 +12,13 @@ import com.reteno.core.data.remote.mapper.toJson
 import com.reteno.core.data.remote.mapper.toRemote
 import com.reteno.core.domain.ResponseCallback
 import com.reteno.core.domain.model.ecom.EcomEvent
+import com.reteno.core.domain.model.ecom.RemoteConstants
 import com.reteno.core.domain.model.event.Event
 import com.reteno.core.domain.model.logevent.LogLevel
 import com.reteno.core.domain.model.logevent.RetenoLogEvent
 import com.reteno.core.util.Logger
 import com.reteno.core.util.Util.formatToRemote
+import com.reteno.core.util.Util.fromRemote
 import com.reteno.core.util.isNonRepeatableError
 import java.time.ZonedDateTime
 
@@ -25,6 +27,12 @@ internal class EventsRepositoryImpl(
     private val databaseManager: RetenoDatabaseManagerEvents,
     private val configRepository: ConfigRepository
 ) : EventsRepository {
+
+    /**
+     * Types that are mentioned in this list will be pushed to backend with collectLatest principle,
+     * so the most latest item will be included and others are discarded
+     * */
+    private val distinctEventTypes = listOf(RemoteConstants.EcomEvent.EVENT_TYPE_CART_UPDATED)
 
     override fun saveEvent(event: Event) {
         /*@formatter:off*/ Logger.i(TAG, "saveEvent(): ", "event = [" , event , "]")
@@ -68,9 +76,11 @@ internal class EventsRepositoryImpl(
         /*@formatter:off*/ Logger.i(TAG, "pushEvents(): ", "events = [" , events , "]")
         /*@formatter:on*/
 
+        val eventsToSend = events.distinctBy(distinctEventTypes)
+
         apiClient.post(
             ApiContract.MobileApi.Events,
-            events.toRemote().toJson(),
+            eventsToSend.toRemote().toJson(),
             object : ResponseCallback {
 
                 override fun onSuccess(response: String) {
@@ -125,6 +135,24 @@ internal class EventsRepositoryImpl(
                     }
             }
         }
+    }
+
+    /**
+     * Take latest event for types that exist in [types]
+     * @param types - list of types in which only latest event should be selected
+     * */
+    private fun EventsDb.distinctBy(types: List<String>): EventsDb {
+        val distinctEventList = eventList
+            .groupBy { it.eventTypeKey }
+            .mapValues { entry ->
+                if (!types.contains(entry.key)) entry.value
+                listOf(entry.value.maxBy { it.occurred.fromRemote() })
+            }
+            .values
+            .flatten()
+        return copy(
+            eventList = distinctEventList
+        )
     }
 
     companion object {
