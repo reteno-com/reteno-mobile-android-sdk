@@ -17,10 +17,10 @@ import com.reteno.core.lifecycle.RetenoSessionHandler
 import com.reteno.core.util.Logger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.async
-import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -46,6 +46,7 @@ internal class IamControllerImpl(
     override val fullHtmlStateFlow: StateFlow<ResultDomain<String>> = _fullHtmlStateFlow
 
     private var inAppsWaitingForEvent: MutableList<InAppWithEvent>? = null
+    private var htmlJob: Job? = null
 
     private val _inAppMessage = MutableSharedFlow<InAppMessage>()
     override val inAppMessagesFlow: SharedFlow<InAppMessage> = _inAppMessage
@@ -62,7 +63,7 @@ internal class IamControllerImpl(
         this.interactionId = interactionId
         _fullHtmlStateFlow.value = ResultDomain.Loading
 
-        scope.launch {
+        htmlJob = scope.launch {
             try {
                 withTimeout(TIMEOUT) {
                     val baseHtml = async { iamRepository.getBaseHtml() }
@@ -124,7 +125,8 @@ internal class IamControllerImpl(
     override fun reset() {
         _fullHtmlStateFlow.value = ResultDomain.Idle
         interactionId = null
-        scope.coroutineContext.cancelChildren()
+        htmlJob?.cancel()
+        htmlJob = null
     }
 
     override fun getInAppMessages() {
@@ -158,7 +160,7 @@ internal class IamControllerImpl(
         val inapps = inAppsWaitingForEvent
         if (inapps.isNullOrEmpty()) return
 
-        val inAppsWithCurrentEvent = inapps.filter { inapp->
+        val inAppsWithCurrentEvent = inapps.filter { inapp ->
             inapp.event.name == event.eventTypeKey
         }
 
@@ -310,7 +312,7 @@ internal class IamControllerImpl(
     }
 
     private fun canShowInApp(): Boolean {
-        return  isPausedInAppMessages.get().not() && _fullHtmlStateFlow.value == ResultDomain.Idle
+        return isPausedInAppMessages.get().not() && _fullHtmlStateFlow.value == ResultDomain.Idle
     }
 
     companion object {
