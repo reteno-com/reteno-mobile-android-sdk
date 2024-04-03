@@ -2,6 +2,7 @@ package com.reteno.sample;
 
 import static android.Manifest.permission.POST_NOTIFICATIONS;
 
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
@@ -11,6 +12,7 @@ import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.navigation.fragment.NavHostFragment;
@@ -18,6 +20,10 @@ import androidx.navigation.fragment.NavHostFragment;
 import com.google.android.material.snackbar.Snackbar;
 import com.reteno.core.Reteno;
 import com.reteno.core.RetenoApplication;
+import com.reteno.core.view.iam.callback.InAppCloseData;
+import com.reteno.core.view.iam.callback.InAppData;
+import com.reteno.core.view.iam.callback.InAppErrorData;
+import com.reteno.core.view.iam.callback.InAppLifecycleCallback;
 import com.reteno.sample.databinding.ActivityMainBinding;
 
 
@@ -43,6 +49,7 @@ public class MainActivity extends AppCompatActivity {
         checkPermissions();
         checkDeepLink(getIntent());
         setNavigation(getIntent());
+        //createInAppLifecycleListener(); this is an example of in-app lifecycle callbacks
     }
 
     @Override
@@ -50,6 +57,36 @@ public class MainActivity extends AppCompatActivity {
         super.onNewIntent(intent);
         checkDeepLink(intent);
         setNavigation(intent);
+    }
+
+    private void createInAppLifecycleListener() {
+        Context context = this;
+        ((RetenoApplication) getApplication()).getRetenoInstance().setInAppLifecycleCallback(new InAppLifecycleCallback() {
+            @Override
+            public void beforeDisplay(@NonNull InAppData inAppData) {
+                Toast.makeText(context, "beforeDisplay: " + inAppData.getId() + ", " + inAppData.getSource().toString(), Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void onDisplay(@NonNull InAppData inAppData) {
+                Toast.makeText(context, "onDisplay: " + inAppData.getId() + ", " + inAppData.getSource().toString(), Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void beforeClose(@NonNull InAppCloseData closeData) {
+                Toast.makeText(context, "beforeClose: " + closeData.getId() + ", " + closeData.getCloseAction().toString(), Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void afterClose(@NonNull InAppCloseData closeData) {
+                Toast.makeText(context, "afterClose: " + closeData.getId() + ", " + closeData.getCloseAction().toString(), Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void onError(@NonNull InAppErrorData errorData) {
+                Toast.makeText(context, "onError: " + errorData.getId() + ", " + errorData.getErrorMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void checkPermissions() {
