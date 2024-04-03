@@ -25,12 +25,15 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
 import java.util.concurrent.atomic.AtomicBoolean
 
 internal class IamControllerImpl(
     private val iamRepository: IamRepository,
+    eventController: EventController,
     private val sessionHandler: RetenoSessionHandler
 ) : IamController {
 
@@ -46,6 +49,12 @@ internal class IamControllerImpl(
 
     private val _inAppMessage = MutableSharedFlow<InAppMessage>()
     override val inAppMessages: SharedFlow<InAppMessage> = _inAppMessage
+
+    init {
+        eventController.eventFlow
+            .onEach { notifyEventOccurred(it) }
+            .launchIn(scope)
+    }
 
     override fun fetchIamFullHtml(interactionId: String) {
         /*@formatter:off*/ Logger.i(TAG, "fetchIamFullHtml(): ", "widgetId = [", this.interactionId, "]")
@@ -145,7 +154,7 @@ internal class IamControllerImpl(
         }
     }
 
-    override fun notifyEventOccurred(event: Event) {
+    private fun notifyEventOccurred(event: Event) {
         val inapps = inAppsWaitingForEvent
         if (inapps.isNullOrEmpty()) return
 

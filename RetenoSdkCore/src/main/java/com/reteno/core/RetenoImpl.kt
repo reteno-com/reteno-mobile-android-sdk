@@ -112,7 +112,6 @@ class RetenoImpl @JvmOverloads constructor(
     }
 
     private fun fetchInAppMessages() {
-        eventController.setIamController(iamController)
         iamController.getInAppMessages()
     }
 

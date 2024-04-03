@@ -1,27 +1,61 @@
 package com.reteno.core.di
 
 import android.content.Context
-import com.reteno.core.data.local.database.manager.*
+import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerAppInbox
+import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerDevice
+import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerEvents
+import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerInteraction
+import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerUser
 import com.reteno.core.data.repository.ConfigRepository
 import com.reteno.core.data.repository.LogEventRepository
 import com.reteno.core.di.base.ProviderWeakReference
-import com.reteno.core.di.provider.*
-import com.reteno.core.di.provider.controller.*
-import com.reteno.core.di.provider.database.*
+import com.reteno.core.di.provider.DeviceIdHelperProvider
+import com.reteno.core.di.provider.RestConfigProvider
+import com.reteno.core.di.provider.RetenoActivityHelperProvider
+import com.reteno.core.di.provider.SharedPrefsManagerProvider
+import com.reteno.core.di.provider.WorkManagerProvider
+import com.reteno.core.di.provider.controller.AppInboxControllerProvider
+import com.reteno.core.di.provider.controller.ContactControllerProvider
+import com.reteno.core.di.provider.controller.DeeplinkControllerProvider
+import com.reteno.core.di.provider.controller.EventsControllerProvider
+import com.reteno.core.di.provider.controller.IamControllerProvider
+import com.reteno.core.di.provider.controller.InteractionControllerProvider
+import com.reteno.core.di.provider.controller.RecommendationControllerProvider
+import com.reteno.core.di.provider.controller.ScheduleControllerProvider
+import com.reteno.core.di.provider.controller.ScreenTrackingControllerProvider
+import com.reteno.core.di.provider.database.DatabaseProvider
+import com.reteno.core.di.provider.database.RetenoDatabaseManagerAppInboxProvider
+import com.reteno.core.di.provider.database.RetenoDatabaseManagerDeviceProvider
+import com.reteno.core.di.provider.database.RetenoDatabaseManagerEventsProvider
+import com.reteno.core.di.provider.database.RetenoDatabaseManagerInAppInteractionProvider
+import com.reteno.core.di.provider.database.RetenoDatabaseManagerInAppMessagesProvider
+import com.reteno.core.di.provider.database.RetenoDatabaseManagerInteractionProvider
+import com.reteno.core.di.provider.database.RetenoDatabaseManagerLogEventProvider
+import com.reteno.core.di.provider.database.RetenoDatabaseManagerProvider
+import com.reteno.core.di.provider.database.RetenoDatabaseManagerRecomEventsProvider
+import com.reteno.core.di.provider.database.RetenoDatabaseManagerUserProvider
+import com.reteno.core.di.provider.database.RetenoDatabaseManagerWrappedLinkProvider
 import com.reteno.core.di.provider.features.AppInboxProvider
 import com.reteno.core.di.provider.features.IamViewProvider
 import com.reteno.core.di.provider.features.RecommendationProvider
 import com.reteno.core.di.provider.features.RetenoSessionHandlerProvider
 import com.reteno.core.di.provider.network.ApiClientProvider
 import com.reteno.core.di.provider.network.RestClientProvider
-import com.reteno.core.di.provider.repository.*
+import com.reteno.core.di.provider.repository.AppInboxRepositoryProvider
+import com.reteno.core.di.provider.repository.ConfigRepositoryProvider
+import com.reteno.core.di.provider.repository.ContactRepositoryProvider
+import com.reteno.core.di.provider.repository.DeeplinkRepositoryProvider
+import com.reteno.core.di.provider.repository.EventsRepositoryProvider
+import com.reteno.core.di.provider.repository.IamRepositoryProvider
+import com.reteno.core.di.provider.repository.InteractionRepositoryProvider
+import com.reteno.core.di.provider.repository.LogEventRepositoryProvider
+import com.reteno.core.di.provider.repository.RecommendationRepositoryProvider
 import com.reteno.core.domain.controller.ContactController
 import com.reteno.core.domain.controller.DeeplinkController
 import com.reteno.core.domain.controller.InteractionController
 import com.reteno.core.domain.controller.ScheduleController
 import com.reteno.core.lifecycle.RetenoActivityHelper
 import com.reteno.core.lifecycle.RetenoSessionHandler
-import com.reteno.core.lifecycle.RetenoSessionHandlerImpl
 import com.reteno.core.view.iam.IamView
 import kotlinx.coroutines.Dispatchers
 
@@ -223,8 +257,11 @@ class ServiceLocator(context: Context, accessKey: String) {
     val retenoSessionHandlerProvider: ProviderWeakReference<RetenoSessionHandler>
         get() = retenoSessionHandlerProviderInternal
 
-    internal val iamControllerProvider: IamControllerProvider =
-        IamControllerProvider(iamRepositoryProvider, retenoSessionHandlerProviderInternal)
+    internal val iamControllerProvider: IamControllerProvider = IamControllerProvider(
+        iamRepositoryProvider,
+        retenoSessionHandlerProviderInternal,
+        eventsControllerProvider
+    )
 
     private val iamViewProviderInternal: IamViewProvider =
         IamViewProvider(retenoActivityHelperProviderInternal, iamControllerProvider)
