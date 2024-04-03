@@ -86,7 +86,7 @@ internal class IamViewImpl(
     private var initViewOnResume = false
 
     init {
-        iamController.inAppMessages
+        iamController.inAppMessagesFlow
             .onEach { initialize(it) }
             .launchIn(iamShowScope)
     }

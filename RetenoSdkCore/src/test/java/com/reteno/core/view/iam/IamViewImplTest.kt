@@ -4,8 +4,9 @@ import com.reteno.core.base.robolectric.BaseRobolectricTest
 import com.reteno.core.data.remote.model.iam.message.InAppMessage
 import com.reteno.core.domain.controller.IamController
 import com.reteno.core.lifecycle.RetenoActivityHelper
+import io.mockk.every
 import io.mockk.impl.annotations.RelaxedMockK
-import io.mockk.verify
+import kotlinx.coroutines.flow.MutableSharedFlow
 import org.junit.Test
 
 
@@ -31,6 +32,7 @@ class IamViewImplTest : BaseRobolectricTest() {
 
     override fun before() {
         super.before()
+        every { iamController.inAppMessagesFlow } returns MutableSharedFlow()
         SUT = IamViewImpl(activityHelper, iamController)
     }
 

@@ -48,7 +48,7 @@ internal class IamControllerImpl(
     private var inAppsWaitingForEvent: MutableList<InAppWithEvent>? = null
 
     private val _inAppMessage = MutableSharedFlow<InAppMessage>()
-    override val inAppMessages: SharedFlow<InAppMessage> = _inAppMessage
+    override val inAppMessagesFlow: SharedFlow<InAppMessage> = _inAppMessage
 
     init {
         eventController.eventFlow

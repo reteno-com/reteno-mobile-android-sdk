@@ -24,5 +24,5 @@ internal interface IamController {
     fun updateInAppMessage(inAppMessage: InAppMessage)
 
     val fullHtmlStateFlow: StateFlow<ResultDomain<String>>
-    val inAppMessages: SharedFlow<InAppMessage>
+    val inAppMessagesFlow: SharedFlow<InAppMessage>
 }
