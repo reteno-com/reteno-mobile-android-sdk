@@ -47,6 +47,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
@@ -82,6 +84,12 @@ internal class IamViewImpl(
     private lateinit var webView: WebView
 
     private var initViewOnResume = false
+
+    init {
+        iamController.inAppMessages
+            .onEach { initialize(it) }
+            .launchIn(iamShowScope)
+    }
 
     private val retenoAndroidHandler: RetenoAndroidHandler = object : RetenoAndroidHandler() {
         override fun onMessagePosted(event: String?) {
@@ -207,7 +215,8 @@ internal class IamViewImpl(
         /*@formatter:off*/ Logger.i(TAG, "initialize(): ", "inAppMessageId = [", inAppMessage.messageId, "], messageInstanceId = [", inAppMessage.messageInstanceId, "]")
         /*@formatter:on*/
         try {
-            //teardown()
+            inAppMessage.notifyShown()
+            iamController.updateInAppMessage(inAppMessage)
             OperationQueue.addUiOperation {
                 activityHelper.currentActivity?.let {
                     createIamInActivity(it)
