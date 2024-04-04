@@ -15,14 +15,25 @@ import com.reteno.core.domain.model.event.Event
 import com.reteno.core.features.iam.IamJsEvent
 import com.reteno.core.lifecycle.RetenoSessionHandler
 import com.reteno.core.util.Logger
-import com.reteno.core.view.iam.IamView
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeout
 import java.util.concurrent.atomic.AtomicBoolean
 
 internal class IamControllerImpl(
     private val iamRepository: IamRepository,
+    eventController: EventController,
     private val sessionHandler: RetenoSessionHandler
 ) : IamController {
 
@@ -35,8 +46,16 @@ internal class IamControllerImpl(
     override val fullHtmlStateFlow: StateFlow<ResultDomain<String>> = _fullHtmlStateFlow
 
     private var inAppsWaitingForEvent: MutableList<InAppWithEvent>? = null
+    private var htmlJob: Job? = null
 
-    private var iamView: IamView? = null // TODO solution for debug, remove or put this into constructor
+    private val _inAppMessage = MutableSharedFlow<InAppMessage>()
+    override val inAppMessagesFlow: SharedFlow<InAppMessage> = _inAppMessage
+
+    init {
+        eventController.eventFlow
+            .onEach { notifyEventOccurred(it) }
+            .launchIn(scope)
+    }
 
     override fun fetchIamFullHtml(interactionId: String) {
         /*@formatter:off*/ Logger.i(TAG, "fetchIamFullHtml(): ", "widgetId = [", this.interactionId, "]")
@@ -44,7 +63,7 @@ internal class IamControllerImpl(
         this.interactionId = interactionId
         _fullHtmlStateFlow.value = ResultDomain.Loading
 
-        scope.launch {
+        htmlJob = scope.launch {
             try {
                 withTimeout(TIMEOUT) {
                     val baseHtml = async { iamRepository.getBaseHtml() }
@@ -106,11 +125,8 @@ internal class IamControllerImpl(
     override fun reset() {
         _fullHtmlStateFlow.value = ResultDomain.Idle
         interactionId = null
-        scope.coroutineContext.cancelChildren()
-    }
-
-    override fun setIamView(iamView: IamView) {
-        this.iamView = iamView
+        htmlJob?.cancel()
+        htmlJob = null
     }
 
     override fun getInAppMessages() {
@@ -140,11 +156,11 @@ internal class IamControllerImpl(
         }
     }
 
-    override fun notifyEventOccurred(event: Event) {
+    private fun notifyEventOccurred(event: Event) {
         val inapps = inAppsWaitingForEvent
         if (inapps.isNullOrEmpty()) return
 
-        val inAppsWithCurrentEvent = inapps.filter { inapp->
+        val inAppsWithCurrentEvent = inapps.filter { inapp ->
             inapp.event.name == event.eventTypeKey
         }
 
@@ -158,6 +174,12 @@ internal class IamControllerImpl(
 
     override fun pauseInAppMessages(isPaused: Boolean) {
         isPausedInAppMessages.set(isPaused)
+    }
+
+    override fun updateInAppMessage(inAppMessage: InAppMessage) {
+        scope.launch {
+            iamRepository.updateInAppMessages(listOf(inAppMessage))
+        }
     }
 
     private fun sortMessages(inAppMessages: List<InAppMessage>) {
@@ -282,16 +304,7 @@ internal class IamControllerImpl(
 
     private fun showInApp(inAppMessage: InAppMessage) {
         if (canShowInApp().not()) return
-
-        inAppMessage.notifyShown()
-        iamView?.initialize(inAppMessage)
-        updateInAppMessage(inAppMessage)
-    }
-
-    private fun updateInAppMessage(inAppMessage: InAppMessage) {
-        scope.launch {
-            iamRepository.updateInAppMessages(listOf(inAppMessage))
-        }
+        scope.launch { _inAppMessage.emit(inAppMessage) }
     }
 
     private fun checkSegmentRuleMatches(inAppMessage: InAppMessage): Boolean {
@@ -299,7 +312,7 @@ internal class IamControllerImpl(
     }
 
     private fun canShowInApp(): Boolean {
-        return iamView != null && iamView?.isViewShown() == false && isPausedInAppMessages.get().not() && _fullHtmlStateFlow.value == ResultDomain.Idle
+        return isPausedInAppMessages.get().not() && _fullHtmlStateFlow.value == ResultDomain.Idle
     }
 
     companion object {

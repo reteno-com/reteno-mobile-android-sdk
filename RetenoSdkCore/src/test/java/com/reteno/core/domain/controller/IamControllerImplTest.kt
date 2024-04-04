@@ -6,9 +6,8 @@ import com.reteno.core.data.repository.IamRepository
 import com.reteno.core.domain.ResultDomain
 import com.reteno.core.domain.controller.IamControllerImpl.Companion.TIMEOUT
 import com.reteno.core.lifecycle.RetenoSessionHandlerImpl
-import io.mockk.*
+import io.mockk.coEvery
 import io.mockk.impl.annotations.RelaxedMockK
-import junit.framework.TestCase.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
@@ -16,13 +15,8 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestCoroutineScheduler
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
-import org.hamcrest.CoreMatchers.*
-import org.junit.Assert.*
 import org.junit.Assert.assertEquals
 import org.junit.Test
-import org.mockito.ArgumentCaptor.*
-import org.mockito.Mock.*
-import org.mockito.Mockito.*
 
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -50,6 +44,9 @@ class IamControllerImplTest : BaseRobolectricTest() {
     @RelaxedMockK
     private lateinit var sessionHandler: RetenoSessionHandlerImpl
 
+    @RelaxedMockK
+    private lateinit var eventController: EventController
+
     private val scheduler = TestCoroutineScheduler()
     private val dispatcher = StandardTestDispatcher(scheduler)
 
@@ -60,7 +57,7 @@ class IamControllerImplTest : BaseRobolectricTest() {
         super.before()
         Dispatchers.setMain(dispatcher)
 
-        SUT = IamControllerImpl(iamRepository, sessionHandler)
+        SUT = IamControllerImpl(iamRepository, eventController,  sessionHandler)
 
         coEvery { iamRepository.getBaseHtml() } coAnswers {
             delay(DELAY_BASE_HTML)
