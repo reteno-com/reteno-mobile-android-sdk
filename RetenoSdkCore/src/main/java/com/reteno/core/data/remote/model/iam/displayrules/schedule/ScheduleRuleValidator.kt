@@ -47,8 +47,7 @@ class ScheduleRuleValidator {
     ): Boolean {
         if (daysAndTime.daysOfWeek.isNotEmpty()) {
             val currentDay = now.dayOfWeek.name.lowercase()
-            val foundDay = daysAndTime.daysOfWeek.firstOrNull { it == currentDay }
-            if (foundDay == null) return false
+            daysAndTime.daysOfWeek.firstOrNull { it == currentDay } ?: return false
         }
 
         if (daysAndTime.fromHours == 0 && daysAndTime.fromMinutes == 0 &&

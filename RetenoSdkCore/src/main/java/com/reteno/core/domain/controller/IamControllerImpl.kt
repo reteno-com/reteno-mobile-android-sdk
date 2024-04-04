@@ -1,5 +1,6 @@
 package com.reteno.core.domain.controller
 
+import androidx.annotation.VisibleForTesting
 import com.reteno.core.data.local.mappers.toDomain
 import com.reteno.core.data.remote.model.iam.displayrules.frequency.FrequencyRuleValidator
 import com.reteno.core.data.remote.model.iam.displayrules.schedule.ScheduleRuleValidator
@@ -45,7 +46,9 @@ internal class IamControllerImpl(
         MutableStateFlow(ResultDomain.Idle)
     override val fullHtmlStateFlow: StateFlow<ResultDomain<String>> = _fullHtmlStateFlow
 
-    private var inAppsWaitingForEvent: MutableList<InAppWithEvent>? = null
+    @VisibleForTesting
+    var inAppsWaitingForEvent: MutableList<InAppWithEvent>? = null
+        private set
     private var htmlJob: Job? = null
 
     private val _inAppMessage = MutableSharedFlow<InAppMessage>()
