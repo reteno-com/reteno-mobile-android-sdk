@@ -54,10 +54,10 @@ internal class RetenoDatabaseManagerEventsImpl(private val database: RetenoDatab
         }
 
         if (parentRowId == -1L) {
-            val contentValues = ContentValues()
-            contentValues.putEvents(events)
-            parentRowId = database.insert(table = EventsSchema.TABLE_NAME_EVENTS, contentValues = ContentValues(contentValues))
-            contentValues.clear()
+            parentRowId = database.insert(
+                table = EventsSchema.TABLE_NAME_EVENTS,
+                contentValues = ContentValues().apply { putEvents(events) }
+            )
         }
 
         val eventListContentValues = events.eventList.toContentValuesList(parentRowId)
