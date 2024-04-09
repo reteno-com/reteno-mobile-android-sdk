@@ -23,9 +23,14 @@ import io.mockk.justRun
 import io.mockk.verify
 import junit.framework.TestCase.assertEquals
 import junit.framework.TestCase.assertTrue
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert
 import org.junit.Test
 import java.time.ZonedDateTime
+import java.util.concurrent.atomic.AtomicLong
 
 
 class RetenoDatabaseManagerEventsImplTest : BaseRobolectricTest() {
@@ -53,10 +58,20 @@ class RetenoDatabaseManagerEventsImplTest : BaseRobolectricTest() {
 
         private val param1 = ParameterDb(name = EVENT_PARAMS_NAME_1, value = EVENT_PARAMS_VALUE_1)
         private val param2 = ParameterDb(name = EVENT_PARAMS_NAME_2, value = EVENT_PARAMS_VALUE_2)
-        private val event1 = EventDb(rowId = EVENT_ROW_ID_1, eventTypeKey = EVENT_TYPE_KEY_1, occurred = EVENT_OCCURRED_1, params = null)
-        private val event2 = EventDb(rowId = EVENT_ROW_ID_2, eventTypeKey = EVENT_TYPE_KEY_2, occurred = EVENT_OCCURRED_2, params = listOf(
-            param1, param2
-        ))
+        private val event1 = EventDb(
+            rowId = EVENT_ROW_ID_1,
+            eventTypeKey = EVENT_TYPE_KEY_1,
+            occurred = EVENT_OCCURRED_1,
+            params = null
+        )
+        private val event2 = EventDb(
+            rowId = EVENT_ROW_ID_2,
+            eventTypeKey = EVENT_TYPE_KEY_2,
+            occurred = EVENT_OCCURRED_2,
+            params = listOf(
+                param1, param2
+            )
+        )
         private val events = EventsDb(
             deviceId = DEVICE_ID,
             externalUserId = EXTERNAL_USER_ID,
@@ -79,6 +94,7 @@ class RetenoDatabaseManagerEventsImplTest : BaseRobolectricTest() {
 
     @MockK
     private lateinit var cursor: Cursor
+
     @MockK
     private lateinit var cursorChild: Cursor
 
@@ -137,6 +153,44 @@ class RetenoDatabaseManagerEventsImplTest : BaseRobolectricTest() {
     }
 
     @Test
+    fun givenLotsOfValidEventsMultithreaded_whenInsertEvents_thenNoException() = runBlocking {
+        // Given
+        every { cursor.getLongOrNull(COLUMN_INDEX_EVENTS_ID) } returns PARENT_ROW_ID_NOT_FOUND
+
+        val atomic = AtomicLong(0L)
+
+        every { database.insert(EventsSchema.TABLE_NAME_EVENTS, null, any()) } answers {
+            atomic.addAndGet(1)
+        }
+        val testDataSet = buildList {
+            repeat(1000) {
+                val event = EventsDb(
+                    deviceId = DEVICE_ID,
+                    externalUserId = EXTERNAL_USER_ID + it,
+                    eventList = listOf(event1, event2)
+                )
+                add(event to ContentValues().apply { putEvents(event) })
+            }
+        }
+
+        // When
+        testDataSet.map {
+            async(Dispatchers.IO) { SUT.insertEvents(it.first) }
+        }.awaitAll()
+
+        // Then
+        testDataSet.forEach {
+            verify {
+                database.insert(
+                    table = eq(EventsSchema.TABLE_NAME_EVENTS),
+                    nullColumnHack = null,
+                    contentValues = eq(it.second)
+                )
+            }
+        }
+    }
+
+    @Test
     fun givenValidEventsProvidedEventsPresentInDatabase_whenInsertEvents_thenEventsIsSavedToDb() {
         // Given
         mockDatabaseQueryParent()
@@ -174,8 +228,8 @@ class RetenoDatabaseManagerEventsImplTest : BaseRobolectricTest() {
     @Test
     fun givenEventsAvailableInDatabase_whenGetEvents_thenEventsReturned() {
         // Given
-        mockCursorRecordsNumber(cursor,1)
-        mockCursorRecordsNumber(cursorChild,2)
+        mockCursorRecordsNumber(cursor, 1)
+        mockCursorRecordsNumber(cursorChild, 2)
         mockDatabaseQueryParent()
         mockDatabaseQueryChild()
 
@@ -214,8 +268,8 @@ class RetenoDatabaseManagerEventsImplTest : BaseRobolectricTest() {
     @Test
     fun givenEventsParentNotAvailableInDatabase_whenGetEvents_thenEmptyListReturned() {
         // Given
-        mockCursorRecordsNumber(cursor,0)
-        mockCursorRecordsNumber(cursorChild,0)
+        mockCursorRecordsNumber(cursor, 0)
+        mockCursorRecordsNumber(cursorChild, 0)
         mockDatabaseQueryParent()
         mockDatabaseQueryChild()
 
@@ -237,8 +291,8 @@ class RetenoDatabaseManagerEventsImplTest : BaseRobolectricTest() {
     @Test
     fun givenEventsParentNotAvailableEventsChildAvailableInDatabase_whenGetEvents_thenEmptyListReturnedParentEventsRemoved() {
         // Given
-        mockCursorRecordsNumber(cursor,1)
-        mockCursorRecordsNumber(cursorChild,0)
+        mockCursorRecordsNumber(cursor, 1)
+        mockCursorRecordsNumber(cursorChild, 0)
         mockDatabaseQueryParent()
         mockDatabaseQueryChild()
 
@@ -493,7 +547,7 @@ class RetenoDatabaseManagerEventsImplTest : BaseRobolectricTest() {
         val events = EventsDb(
             deviceId = DEVICE_ID,
             externalUserId = EXTERNAL_USER_ID,
-            eventList = listOf(event1.copy(rowId = null), event2.copy(rowId =  null))
+            eventList = listOf(event1.copy(rowId = null), event2.copy(rowId = null))
         )
 
         // When
@@ -513,14 +567,17 @@ class RetenoDatabaseManagerEventsImplTest : BaseRobolectricTest() {
     fun givenOutdatedEventsFoundInDatabase_whenDeleteEventsByTime_thenEventsDeleted() {
         // Given
         val outdatedTime = ZonedDateTime.now().formatToRemote()
-        val whereClauseExpected = "${EventsSchema.EventSchema.COLUMN_EVENT_OCCURRED} < '$outdatedTime'"
+        val whereClauseExpected =
+            "${EventsSchema.EventSchema.COLUMN_EVENT_OCCURRED} < '$outdatedTime'"
 
         mockCursorRecordsNumber(cursor, 2)
-        every { database.query(
-            table = eq(EventsSchema.EventSchema.TABLE_NAME_EVENT),
-            columns = eq(EventsSchema.EventSchema.getAllColumns()),
-            selection = eq(whereClauseExpected)
-        ) } returns cursor
+        every {
+            database.query(
+                table = eq(EventsSchema.EventSchema.TABLE_NAME_EVENT),
+                columns = eq(EventsSchema.EventSchema.getAllColumns()),
+                selection = eq(whereClauseExpected)
+            )
+        } returns cursor
         every { cursor.getEvent() } returns event1 andThen event2
 
         // When
@@ -549,14 +606,17 @@ class RetenoDatabaseManagerEventsImplTest : BaseRobolectricTest() {
     fun givenOutdatedEventsNotFoundInDatabase_whenDeleteEventsByTime_thenEventsNotDeleted() {
         // Given
         val outdatedTime = ZonedDateTime.now().formatToRemote()
-        val whereClauseExpected = "${EventsSchema.EventSchema.COLUMN_EVENT_OCCURRED} < '$outdatedTime'"
+        val whereClauseExpected =
+            "${EventsSchema.EventSchema.COLUMN_EVENT_OCCURRED} < '$outdatedTime'"
 
         mockCursorRecordsNumber(cursor, 0)
-        every { database.query(
-            table = eq(EventsSchema.EventSchema.TABLE_NAME_EVENT),
-            columns = eq(EventsSchema.EventSchema.getAllColumns()),
-            selection = eq(whereClauseExpected)
-        ) } returns cursor
+        every {
+            database.query(
+                table = eq(EventsSchema.EventSchema.TABLE_NAME_EVENT),
+                columns = eq(EventsSchema.EventSchema.getAllColumns()),
+                selection = eq(whereClauseExpected)
+            )
+        } returns cursor
 
         // When
         val deletedEvents: List<EventDb> = SUT.deleteEventsByTime(outdatedTime)
