@@ -191,6 +191,13 @@ object Util {
         return ZonedDateTime.parse(this, formatter)
     }
 
+    internal fun Long.asZonedDateTime(): ZonedDateTime {
+        return ZonedDateTime.ofInstant(
+            Instant.ofEpochMilli(this),
+            ZoneId.systemDefault()
+        )
+    }
+
     fun formatSqlDateToTimestamp(sqlDate: String): Long {
         return sqlToTimestampFormat.parse(sqlDate)?.time ?: 0L
     }

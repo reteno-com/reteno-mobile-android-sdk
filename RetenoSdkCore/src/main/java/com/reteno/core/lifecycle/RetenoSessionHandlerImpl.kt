@@ -3,17 +3,25 @@ package com.reteno.core.lifecycle
 import com.reteno.core.data.local.sharedpref.SharedPrefsManager
 import com.reteno.core.data.remote.model.iam.displayrules.targeting.InAppWithTime
 import com.reteno.core.data.remote.model.iam.message.InAppMessage
+import com.reteno.core.domain.controller.EventController
+import com.reteno.core.domain.model.event.Event
+import com.reteno.core.util.Util.asZonedDateTime
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.util.UUID
 
-internal class RetenoSessionHandlerImpl(private val sharedPrefsManager: SharedPrefsManager): RetenoSessionHandler {
+internal class RetenoSessionHandlerImpl(
+    private val sharedPrefsManager: SharedPrefsManager,
+    private val eventController: EventController
+): RetenoSessionHandler {
 
     private var foregroundTimeMillis: Long = 0L
     private var sessionStartTimestamp: Long = 0L
+    private var sessionId = UUID.randomUUID()
 
     private var timeSinceResume: Long = 0L
     private var appResumedTimestamp: Long = 0L
@@ -62,6 +70,10 @@ internal class RetenoSessionHandlerImpl(private val sharedPrefsManager: SharedPr
         return sessionStartTimestamp
     }
 
+    override fun getSessionId(): UUID {
+        return sessionId
+    }
+
     private fun findNextScheduledMessages() {
         var messages = scheduledMessages
 
@@ -85,10 +97,19 @@ internal class RetenoSessionHandlerImpl(private val sharedPrefsManager: SharedPr
         if (pausedTime > SESSION_RESET_TIME) {
             previousForegroundTime = 0L
             sessionStartTimestamp = appResumedTimestamp
+            sessionId = UUID.randomUUID()
+            eventController.trackEvent(
+                Event.SessionStart(
+                    sessionId.toString(),
+                    sessionStartTimestamp.asZonedDateTime()
+                )
+            )
             sharedPrefsManager.saveSessionStartTimestamp(sessionStartTimestamp)
+            sharedPrefsManager.saveSessionId(sessionId = sessionId.toString())
         } else {
             previousForegroundTime = sharedPrefsManager.getAppSessionTime()
             sessionStartTimestamp = sharedPrefsManager.getSessionStartTimestamp()
+            sessionId = UUID.fromString(sharedPrefsManager.getSessionId())
             if (sessionStartTimestamp == 0L) sessionStartTimestamp = appStoppedTimestamp
         }
         foregroundTimeMillis = previousForegroundTime
