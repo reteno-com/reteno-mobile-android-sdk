@@ -8,10 +8,21 @@ import com.reteno.core.data.remote.api.ConnectionManager
 import com.reteno.core.data.remote.api.HttpMethod
 import com.reteno.core.data.remote.api.RestClientImpl
 import com.reteno.core.domain.ResponseCallback
-import io.mockk.*
+import io.mockk.MockKException
+import io.mockk.every
 import io.mockk.impl.annotations.RelaxedMockK
-import org.junit.*
+import io.mockk.mockk
+import io.mockk.mockkObject
+import io.mockk.mockkStatic
+import io.mockk.spyk
+import io.mockk.unmockkObject
+import io.mockk.unmockkStatic
+import io.mockk.verify
+import org.junit.AfterClass
 import org.junit.Assert.assertEquals
+import org.junit.Before
+import org.junit.BeforeClass
+import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 import org.powermock.reflect.Whitebox
@@ -73,7 +84,7 @@ class RestClientImplTest : BaseUnitTest() {
     @Before
     override fun before() {
         super.before()
-        restClient = RestClientImpl(RestConfig(mockk(relaxed = true), ""))
+        restClient = RestClientImpl(RestConfig(mockk(relaxed = true), ""), platform = "Android")
     }
 
     @Test

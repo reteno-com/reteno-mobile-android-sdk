@@ -6,13 +6,23 @@ import android.provider.Settings
 import com.reteno.core.Reteno
 import com.reteno.core.RetenoApplication
 import com.reteno.core.RetenoImpl
-import com.reteno.core.data.local.database.util.*
+import com.reteno.core.data.local.database.util.getAppInbox
+import com.reteno.core.data.local.database.util.getDevice
+import com.reteno.core.data.local.database.util.getEvent
+import com.reteno.core.data.local.database.util.getInteraction
+import com.reteno.core.data.local.database.util.getRecomEvent
+import com.reteno.core.data.local.database.util.getUser
 import com.reteno.core.data.remote.OperationQueue
 import com.reteno.core.data.remote.PushOperationQueue
 import com.reteno.core.di.ServiceLocator
 import com.reteno.core.util.Logger
 import com.reteno.core.util.Util
-import io.mockk.*
+import io.mockk.every
+import io.mockk.justRun
+import io.mockk.mockk
+import io.mockk.mockkObject
+import io.mockk.mockkStatic
+import io.mockk.spyk
 import java.time.ZonedDateTime
 import java.util.concurrent.Executor
 import java.util.concurrent.Executors
@@ -39,7 +49,7 @@ class RetenoTestApp : Application(), RetenoApplication {
 
         retenoInstance = spyk(RetenoImpl(this, ""))
         every { retenoInstance.getProperty("serviceLocator") } returns spyk(
-            ServiceLocator(this, "")
+            ServiceLocator(this, "", "Android")
         )
     }
 

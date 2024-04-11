@@ -59,7 +59,11 @@ import com.reteno.core.lifecycle.RetenoSessionHandler
 import com.reteno.core.view.iam.IamView
 import kotlinx.coroutines.Dispatchers
 
-class ServiceLocator(context: Context, accessKey: String) {
+class ServiceLocator(
+    context: Context,
+    accessKey: String,
+    platform: String
+) {
 
     private val retenoActivityHelperProviderInternal: RetenoActivityHelperProvider =
         RetenoActivityHelperProvider()
@@ -74,7 +78,7 @@ class ServiceLocator(context: Context, accessKey: String) {
         DeviceIdHelperProvider(sharedPrefsManagerProvider)
     private val restConfigProvider: RestConfigProvider =
         RestConfigProvider(deviceIdHelperProvider, accessKey)
-    private val restClientProvider: RestClientProvider = RestClientProvider(restConfigProvider)
+    private val restClientProvider: RestClientProvider = RestClientProvider(restConfigProvider, platform)
 
     private val apiClientProvider: ApiClientProvider = ApiClientProvider(restClientProvider)
     private val databaseProvider: DatabaseProvider = DatabaseProvider(context)
