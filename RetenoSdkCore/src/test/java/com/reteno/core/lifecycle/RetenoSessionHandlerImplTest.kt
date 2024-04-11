@@ -1,24 +1,19 @@
 package com.reteno.core.lifecycle
 
+import com.reteno.core.base.BaseUnitTest
 import com.reteno.core.data.local.sharedpref.SharedPrefsManager
 import com.reteno.core.domain.controller.EventController
 import com.reteno.core.domain.model.event.Event
-import io.mockk.MockKAnnotations
 import io.mockk.every
 import io.mockk.impl.annotations.RelaxedMockK
 import io.mockk.mockkStatic
-import io.mockk.unmockkAll
 import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
-import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.robolectric.RobolectricTestRunner
-import org.robolectric.annotation.Config
-import org.robolectric.shadows.ShadowLooper
+import org.junit.runners.JUnit4
 import java.time.Instant
 import java.time.ZoneId
 import java.time.ZonedDateTime
@@ -26,29 +21,14 @@ import java.util.UUID
 
 
 @OptIn(ExperimentalCoroutinesApi::class)
-@RunWith(RobolectricTestRunner::class)
-@Config(
-    sdk = [26],
-    packageName = "com.reteno.core",
-    shadows = [ShadowLooper::class]
-)
-internal class RetenoSessionHandlerImplTest {
+@RunWith(JUnit4::class)
+internal class RetenoSessionHandlerImplTest : BaseUnitTest() {
 
     @RelaxedMockK
     lateinit var sharedPrefsManager: SharedPrefsManager
 
     @RelaxedMockK
     lateinit var eventsController: EventController
-
-    @Before
-    fun before() {
-        MockKAnnotations.init(this)
-    }
-
-    @After
-    fun after() {
-        unmockkAll()
-    }
 
     @Test
     fun givenAppStartedLongTImeAgo_whenAppStart_thenSessionIdMatches() = runTest {
@@ -63,7 +43,7 @@ internal class RetenoSessionHandlerImplTest {
         sut.start()
 
         //Then
-        assertEquals(id, sut.getSessionId())
+        assertEquals(id.toString(), sut.getSessionId())
     }
 
     @Test
@@ -79,7 +59,7 @@ internal class RetenoSessionHandlerImplTest {
         verify {
             eventsController.trackEvent(
                 Event.sessionStart(
-                    sut.getSessionId().toString(),
+                    sut.getSessionId(),
                     ZonedDateTime.ofInstant(
                         Instant.ofEpochMilli(sut.getSessionStartTimestamp()),
                         ZoneId.systemDefault()
@@ -100,16 +80,16 @@ internal class RetenoSessionHandlerImplTest {
 
         //Then
         verify {
-            sharedPrefsManager.saveSessionId(sut.getSessionId().toString())
+            sharedPrefsManager.saveSessionId(sut.getSessionId())
         }
     }
 
     @Test
     fun givenAppStartedRecently_whenAppStart_thenSessionIdReused() = runTest {
         //Given
-        val saved = UUID.randomUUID()
+        val saved = UUID.randomUUID().toString()
         every { sharedPrefsManager.getAppStoppedTimestamp() } returns System.currentTimeMillis() - (4 * 60L * 1000L)
-        every { sharedPrefsManager.getSessionId() } returns saved.toString()
+        every { sharedPrefsManager.getSessionId() } returns saved
 
         //When
         val sut = createHandler()
@@ -134,7 +114,7 @@ internal class RetenoSessionHandlerImplTest {
         verify(exactly = 0) {
             eventsController.trackEvent(
                 Event.sessionStart(
-                    sut.getSessionId().toString(),
+                    sut.getSessionId(),
                     ZonedDateTime.ofInstant(
                         Instant.ofEpochMilli(sut.getSessionStartTimestamp()),
                         ZoneId.systemDefault()
