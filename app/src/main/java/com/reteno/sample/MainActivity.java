@@ -18,7 +18,6 @@ import androidx.core.content.ContextCompat;
 import androidx.navigation.fragment.NavHostFragment;
 
 import com.google.android.material.snackbar.Snackbar;
-import com.reteno.core.Reteno;
 import com.reteno.core.RetenoApplication;
 import com.reteno.core.view.iam.callback.InAppCloseData;
 import com.reteno.core.view.iam.callback.InAppData;
@@ -45,7 +44,6 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
-
         checkPermissions();
         checkDeepLink(getIntent());
         setNavigation(getIntent());

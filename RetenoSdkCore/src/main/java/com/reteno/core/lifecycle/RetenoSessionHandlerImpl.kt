@@ -99,7 +99,7 @@ internal class RetenoSessionHandlerImpl(
             sessionStartTimestamp = appResumedTimestamp
             sessionId = UUID.randomUUID()
             eventController.trackEvent(
-                Event.SessionStart(
+                Event.sessionStart(
                     sessionId.toString(),
                     sessionStartTimestamp.asZonedDateTime()
                 )

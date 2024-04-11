@@ -78,7 +78,7 @@ internal class RetenoSessionHandlerImplTest {
         //Then
         verify {
             eventsController.trackEvent(
-                Event.SessionStart(
+                Event.sessionStart(
                     sut.getSessionId().toString(),
                     ZonedDateTime.ofInstant(
                         Instant.ofEpochMilli(sut.getSessionStartTimestamp()),
@@ -133,7 +133,7 @@ internal class RetenoSessionHandlerImplTest {
         //Then
         verify(exactly = 0) {
             eventsController.trackEvent(
-                Event.SessionStart(
+                Event.sessionStart(
                     sut.getSessionId().toString(),
                     ZonedDateTime.ofInstant(
                         Instant.ofEpochMilli(sut.getSessionStartTimestamp()),
