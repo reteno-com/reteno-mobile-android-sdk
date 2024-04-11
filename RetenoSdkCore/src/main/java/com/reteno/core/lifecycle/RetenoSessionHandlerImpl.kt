@@ -21,7 +21,7 @@ internal class RetenoSessionHandlerImpl(
 
     private var foregroundTimeMillis: Long = 0L
     private var sessionStartTimestamp: Long = 0L
-    private var sessionId = UUID.randomUUID()
+    private var sessionId = ""
 
     private var timeSinceResume: Long = 0L
     private var appResumedTimestamp: Long = 0L
@@ -70,7 +70,7 @@ internal class RetenoSessionHandlerImpl(
         return sessionStartTimestamp
     }
 
-    override fun getSessionId(): UUID {
+    override fun getSessionId(): String {
         return sessionId
     }
 
@@ -97,19 +97,19 @@ internal class RetenoSessionHandlerImpl(
         if (pausedTime > SESSION_RESET_TIME) {
             previousForegroundTime = 0L
             sessionStartTimestamp = appResumedTimestamp
-            sessionId = UUID.randomUUID()
+            sessionId = UUID.randomUUID().toString()
             eventController.trackEvent(
                 Event.sessionStart(
-                    sessionId.toString(),
+                    sessionId,
                     sessionStartTimestamp.asZonedDateTime()
                 )
             )
             sharedPrefsManager.saveSessionStartTimestamp(sessionStartTimestamp)
-            sharedPrefsManager.saveSessionId(sessionId = sessionId.toString())
+            sharedPrefsManager.saveSessionId(sessionId = sessionId)
         } else {
             previousForegroundTime = sharedPrefsManager.getAppSessionTime()
             sessionStartTimestamp = sharedPrefsManager.getSessionStartTimestamp()
-            sessionId = UUID.fromString(sharedPrefsManager.getSessionId())
+            sessionId = sharedPrefsManager.getSessionId().orEmpty()
             if (sessionStartTimestamp == 0L) sessionStartTimestamp = appStoppedTimestamp
         }
         foregroundTimeMillis = previousForegroundTime

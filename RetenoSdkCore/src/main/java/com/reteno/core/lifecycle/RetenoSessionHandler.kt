@@ -2,12 +2,11 @@ package com.reteno.core.lifecycle
 
 import com.reteno.core.data.remote.model.iam.displayrules.targeting.InAppWithTime
 import com.reteno.core.data.remote.model.iam.message.InAppMessage
-import java.util.UUID
 
 interface RetenoSessionHandler {
     fun getForegroundTimeMillis(): Long
     fun getSessionStartTimestamp(): Long
-    fun getSessionId(): UUID
+    fun getSessionId(): String
     fun start()
     fun stop()
     fun scheduleInAppMessages(
