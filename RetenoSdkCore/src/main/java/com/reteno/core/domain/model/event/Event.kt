@@ -31,7 +31,7 @@ sealed class Event(
         )
         internal const val SCREEN_VIEW_EVENT_TYPE_KEY = "screenView"
         internal const val SCREEN_VIEW_PARAM_NAME = "screenClass"
-        internal const val SESSION_START_EVENT_TYPE_KEY = "screenView"
+        internal const val SESSION_START_EVENT_TYPE_KEY = "SessionStarted"
         internal const val SESSION_ID_PARAM_NAME = "sessionID"
     }
 }
