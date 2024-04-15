@@ -70,36 +70,37 @@ internal sealed interface ApiContract {
         }
     }
 
-    sealed class InAppMessages: ApiContract {
+    sealed class InAppMessages : ApiContract {
         companion object {
             private const val BASE_URL = "https://mobile-api.reteno.com/api/v1/inapp/"
         }
 
-        object BaseHtml: InAppMessages() {
+        object BaseHtml : InAppMessages() {
             override val url = "https://statics.esputnik.com/in-app/base.latest.html"
         }
 
-        class GetInnAppWidgetByInteractionId(interactionId:String): InAppMessages(){
+        data class GetInnAppWidgetByInteractionId(private val interactionId: String) :
+            InAppMessages() {
             override val url = "${BASE_URL}interactions/$interactionId/message"
         }
 
-        object WidgetInitFailed: InAppMessages() {
+        object WidgetInitFailed : InAppMessages() {
             override val url = "https://site-script.reteno.com/site-script/v1/event"
         }
 
-        object GetInAppMessages: InAppMessages() {
+        object GetInAppMessages : InAppMessages() {
             override val url = "${BASE_URL}messages"
         }
 
-        object GetInAppMessagesContent: InAppMessages() {
+        object GetInAppMessagesContent : InAppMessages() {
             override val url = "${BASE_URL}contents/request"
         }
 
-        object CheckUserInSegments: InAppMessages() {
+        object CheckUserInSegments : InAppMessages() {
             override val url = "${BASE_URL}async-rules/check"
         }
 
-        object RegisterInteraction: InAppMessages() {
+        object RegisterInteraction : InAppMessages() {
             override val url = "https://mobile-api.reteno.com/api/v1/interaction"
         }
     }
