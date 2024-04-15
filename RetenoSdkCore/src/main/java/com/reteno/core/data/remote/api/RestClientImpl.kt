@@ -13,7 +13,10 @@ import java.util.zip.GZIPOutputStream
 import javax.net.ssl.HttpsURLConnection
 import javax.net.ssl.SSLSocketFactory
 
-internal class RestClientImpl(private val restConfig: RestConfig) : RestClient {
+internal class RestClientImpl(
+    private val restConfig: RestConfig,
+    private val platform: String
+) : RestClient {
 
     companion object {
         private val TAG = RestClientImpl::class.java.simpleName
@@ -136,13 +139,13 @@ internal class RestClientImpl(private val restConfig: RestConfig) : RestClient {
             when (apiContract) {
                 is ApiContract.MobileApi -> {
                     setRequestProperty(HEADER_KEY, restConfig.accessKey)
-                    setRequestProperty(HEADER_VERSION, BuildConfig.SDK_VERSION)
+                    setRequestProperty(HEADER_VERSION, "$platform ${BuildConfig.SDK_VERSION}")
                 }
                 is ApiContract.InAppMessages,
                 is ApiContract.AppInbox,
                 is ApiContract.Recommendation -> {
                     setRequestProperty(HEADER_KEY, restConfig.accessKey)
-                    setRequestProperty(HEADER_VERSION, BuildConfig.SDK_VERSION)
+                    setRequestProperty(HEADER_VERSION, "$platform ${BuildConfig.SDK_VERSION}")
                     setRequestProperty(HEADER_DEVICE_ID, restConfig.deviceId.id)
                 }
                 else -> { /* NO-OP */ }

@@ -23,7 +23,7 @@ import com.reteno.core.view.iam.callback.InAppLifecycleCallback
 class RetenoImpl @JvmOverloads constructor(
     application: Application,
     accessKey: String,
-    private val config: RetenoConfig = RetenoConfig()
+    config: RetenoConfig = RetenoConfig(),
 ) : RetenoLifecycleCallbacks, Reteno {
 
     init {
@@ -32,7 +32,7 @@ class RetenoImpl @JvmOverloads constructor(
         Companion.application = application
     }
 
-    val serviceLocator: ServiceLocator = ServiceLocator(application, accessKey)
+    val serviceLocator: ServiceLocator = ServiceLocator(application, accessKey, config.platform)
     private val activityHelper: RetenoActivityHelper by lazy { serviceLocator.retenoActivityHelperProvider.get() }
 
     private val screenTrackingController: ScreenTrackingController by lazy { serviceLocator.screenTrackingControllerProvider.get() }
