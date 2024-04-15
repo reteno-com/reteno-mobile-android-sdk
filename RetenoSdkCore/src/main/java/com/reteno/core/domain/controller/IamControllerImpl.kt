@@ -14,6 +14,7 @@ import com.reteno.core.data.repository.IamRepository
 import com.reteno.core.domain.ResultDomain
 import com.reteno.core.domain.model.event.Event
 import com.reteno.core.features.iam.IamJsEvent
+import com.reteno.core.features.iam.InAppPauseBehaviour
 import com.reteno.core.lifecycle.RetenoSessionHandler
 import com.reteno.core.util.Logger
 import kotlinx.coroutines.CoroutineScope
@@ -39,6 +40,7 @@ internal class IamControllerImpl(
 ) : IamController {
 
     private val isPausedInAppMessages = AtomicBoolean(false)
+    private var pauseBehaviour = InAppPauseBehaviour.SKIP_IN_APPS
 
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private var interactionId: String? = null
@@ -52,6 +54,7 @@ internal class IamControllerImpl(
     private var htmlJob: Job? = null
 
     private val _inAppMessage = MutableSharedFlow<InAppMessage>()
+    private val postponedNotifications = mutableListOf<InAppMessage>()
     override val inAppMessagesFlow: SharedFlow<InAppMessage> = _inAppMessage
 
     init {
@@ -176,12 +179,30 @@ internal class IamControllerImpl(
     }
 
     override fun pauseInAppMessages(isPaused: Boolean) {
+        val wasDisabled = isPausedInAppMessages.get()
         isPausedInAppMessages.set(isPaused)
+        if (wasDisabled && !isPaused) {
+            showPostponedNotifications()
+        }
     }
 
     override fun updateInAppMessage(inAppMessage: InAppMessage) {
         scope.launch {
             iamRepository.updateInAppMessages(listOf(inAppMessage))
+        }
+    }
+
+    override fun setPauseBehaviour(behaviour: InAppPauseBehaviour) {
+        pauseBehaviour = behaviour
+    }
+
+    private fun showPostponedNotifications() {
+        when (pauseBehaviour) {
+            InAppPauseBehaviour.SKIP_IN_APPS -> postponedNotifications.clear()
+            InAppPauseBehaviour.POSTPONE_IN_APPS -> {
+                postponedNotifications.firstOrNull()?.let(::showInApp)
+                postponedNotifications.clear()
+            }
         }
     }
 
@@ -220,8 +241,6 @@ internal class IamControllerImpl(
     }
 
     private fun tryShowInAppFromList(inAppMessages: MutableList<InAppMessage>, showingOnAppStart: Boolean = false) {
-        if (canShowInApp().not()) return
-
         scope.launch {
             if (!showingOnAppStart) {
                 updateSegmentStatuses(inAppMessages, updateCacheOnSuccess = true)
@@ -283,8 +302,6 @@ internal class IamControllerImpl(
         scheduleValidator: ScheduleRuleValidator = ScheduleRuleValidator(),
         showingOnAppStart: Boolean = false
     ): Boolean {
-        if (canShowInApp().not()) return false
-
         if (checkSegmentRuleMatches(inAppMessage).not()) {
             return false
         }
@@ -306,8 +323,14 @@ internal class IamControllerImpl(
     }
 
     private fun showInApp(inAppMessage: InAppMessage) {
-        if (canShowInApp().not()) return
-        scope.launch { _inAppMessage.emit(inAppMessage) }
+        if (canShowInApp()) {
+            scope.launch { _inAppMessage.emit(inAppMessage) }
+        } else {
+            when (pauseBehaviour) {
+                InAppPauseBehaviour.POSTPONE_IN_APPS -> postponedNotifications.add(inAppMessage)
+                else -> {}
+            }
+        }
     }
 
     private fun checkSegmentRuleMatches(inAppMessage: InAppMessage): Boolean {

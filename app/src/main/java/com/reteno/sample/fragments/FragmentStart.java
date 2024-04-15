@@ -1,11 +1,11 @@
 package com.reteno.sample.fragments;
 
-import static kotlinx.coroutines.SupervisorKt.SupervisorJob;
-
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.CompoundButton;
 
 import androidx.annotation.NonNull;
@@ -14,8 +14,8 @@ import androidx.navigation.NavDirections;
 import androidx.navigation.fragment.NavHostFragment;
 
 import com.reteno.core.RetenoImpl;
-import com.reteno.core.data.repository.ConfigRepository;
 import com.reteno.core.di.ServiceLocator;
+import com.reteno.core.features.iam.InAppPauseBehaviour;
 import com.reteno.core.lifecycle.RetenoSessionHandler;
 import com.reteno.sample.BaseFragment;
 import com.reteno.sample.R;
@@ -27,10 +27,6 @@ import com.reteno.sample.util.FragmentStartSessionListener;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
-
-import kotlinx.coroutines.CoroutineScope;
-import kotlinx.coroutines.Dispatchers;
-import kotlinx.coroutines.Job;
 
 public class FragmentStart extends BaseFragment {
 
@@ -90,6 +86,7 @@ public class FragmentStart extends BaseFragment {
 
         binding.recycler.setAdapter(adapter);
         initInAppPausingSwitcher();
+        initPauseBehaviourSwitcher();
     }
 
     @Override
@@ -123,6 +120,21 @@ public class FragmentStart extends BaseFragment {
         screens.add(new ScreenItem("Ecom Events", FragmentStartDirections.startToEcomEvents()));
 
         return screens;
+    }
+
+    private void initPauseBehaviourSwitcher() {
+        binding.spinnerPauseBehaviour.setAdapter(new ArrayAdapter<>(getContext(), android.R.layout.simple_spinner_item, InAppPauseBehaviour.values()));
+        binding.spinnerPauseBehaviour.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
+                getReteno().setInAppMessagesPauseBehaviour(InAppPauseBehaviour.values()[i]);
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> adapterView) {
+
+            }
+        });
     }
 
     private void initInAppPausingSwitcher() {

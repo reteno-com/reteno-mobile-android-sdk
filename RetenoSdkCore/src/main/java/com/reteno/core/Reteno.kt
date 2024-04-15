@@ -1,12 +1,13 @@
 package com.reteno.core
 
-import com.reteno.core.features.appinbox.AppInbox
 import com.reteno.core.domain.model.ecom.EcomEvent
 import com.reteno.core.domain.model.event.Event
 import com.reteno.core.domain.model.user.User
 import com.reteno.core.domain.model.user.UserAttributesAnonymous
-import com.reteno.core.lifecycle.ScreenTrackingConfig
+import com.reteno.core.features.appinbox.AppInbox
+import com.reteno.core.features.iam.InAppPauseBehaviour
 import com.reteno.core.features.recommendation.Recommendation
+import com.reteno.core.lifecycle.ScreenTrackingConfig
 import com.reteno.core.view.iam.callback.InAppLifecycleCallback
 
 
@@ -98,6 +99,15 @@ interface Reteno {
      *  But not more often than [com.reteno.core.domain.controller.ScheduleController.Companion.FORCE_PUSH_MIN_DELAY] millis.
      */
     fun forcePushData()
+
+    /**
+     * Change logic of In-App messages in paused state
+     * Default state is [InAppPauseBehaviour.SKIP_IN_APPS]
+     *
+     * @param behaviour - new behaviour
+     * @see InAppPauseBehaviour for detailed explanation
+     */
+    fun setInAppMessagesPauseBehaviour(behaviour: InAppPauseBehaviour)
 
     companion object {
         private val TAG: String = Reteno::class.java.simpleName
