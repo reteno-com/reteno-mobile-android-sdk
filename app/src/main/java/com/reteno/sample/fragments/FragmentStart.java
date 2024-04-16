@@ -124,6 +124,7 @@ public class FragmentStart extends BaseFragment {
 
     private void initPauseBehaviourSwitcher() {
         binding.spinnerPauseBehaviour.setAdapter(new ArrayAdapter<>(getContext(), android.R.layout.simple_spinner_item, InAppPauseBehaviour.values()));
+        binding.spinnerPauseBehaviour.setSelection(InAppPauseBehaviour.POSTPONE_IN_APPS.ordinal());
         binding.spinnerPauseBehaviour.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {

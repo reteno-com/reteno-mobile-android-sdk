@@ -40,7 +40,7 @@ internal class IamControllerImpl(
 ) : IamController {
 
     private val isPausedInAppMessages = AtomicBoolean(false)
-    private var pauseBehaviour = InAppPauseBehaviour.SKIP_IN_APPS
+    private var pauseBehaviour = InAppPauseBehaviour.POSTPONE_IN_APPS
 
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private var interactionId: String? = null
@@ -143,9 +143,12 @@ internal class IamControllerImpl(
 
                 val messagesWithNoContent = inAppMessages.filter { it.content == null }
                 val contentIds = messagesWithNoContent.map { it.messageInstanceId }
-                val contentsDeferred = async { iamRepository.getInAppMessagesContent(contentIds)}
+                val contentsDeferred = async { iamRepository.getInAppMessagesContent(contentIds) }
 
-                updateSegmentStatuses(inAppMessages, updateCacheOnSuccess = messageListModel.isFromRemote.not())
+                updateSegmentStatuses(
+                    inAppMessages,
+                    updateCacheOnSuccess = messageListModel.isFromRemote.not()
+                )
 
                 val contents = contentsDeferred.await()
                 messagesWithNoContent.forEach { message ->
@@ -211,14 +214,25 @@ internal class IamControllerImpl(
         val inAppsWithTimer = mutableListOf<InAppWithTime>()
         val inAppsOnAppStart = mutableListOf<InAppMessage>()
 
-        inAppMessages.forEach {  message ->
+        inAppMessages.forEach { message ->
             val includeRules = message.displayRules.targeting?.include
             if (includeRules != null) {
                 includeRules.groups.forEach { includeGroup ->
                     includeGroup.conditions.forEach { rule ->
                         when (rule) {
-                            is TargetingRule.TimeSpentInApp -> inAppsWithTimer.add(InAppWithTime(message, rule.timeSpentMillis))
-                            is TargetingRule.Event -> inAppsWithEvents.add(InAppWithEvent(message, rule))
+                            is TargetingRule.TimeSpentInApp -> inAppsWithTimer.add(
+                                InAppWithTime(
+                                    message,
+                                    rule.timeSpentMillis
+                                )
+                            )
+
+                            is TargetingRule.Event -> inAppsWithEvents.add(
+                                InAppWithEvent(
+                                    message,
+                                    rule
+                                )
+                            )
                         }
                     }
                 }
@@ -240,7 +254,10 @@ internal class IamControllerImpl(
         tryShowInAppFromList(inAppMessages = inAppsOnAppStart, showingOnAppStart = true)
     }
 
-    private fun tryShowInAppFromList(inAppMessages: MutableList<InAppMessage>, showingOnAppStart: Boolean = false) {
+    private fun tryShowInAppFromList(
+        inAppMessages: MutableList<InAppMessage>,
+        showingOnAppStart: Boolean = false
+    ) {
         scope.launch {
             if (!showingOnAppStart) {
                 updateSegmentStatuses(inAppMessages, updateCacheOnSuccess = true)
@@ -267,12 +284,17 @@ internal class IamControllerImpl(
         }
     }
 
-    private suspend fun updateSegmentStatuses(inAppMessages: List<InAppMessage>, updateCacheOnSuccess: Boolean = true) {
+    private suspend fun updateSegmentStatuses(
+        inAppMessages: List<InAppMessage>,
+        updateCacheOnSuccess: Boolean = true
+    ) {
         val messagesWithSegments = inAppMessages.filter {
-            val shouldCheck = it.displayRules.async?.segment?.shouldCheckStatus(sessionHandler.getSessionStartTimestamp())
+            val shouldCheck =
+                it.displayRules.async?.segment?.shouldCheckStatus(sessionHandler.getSessionStartTimestamp())
             shouldCheck == true
         }
-        val segmentIds = messagesWithSegments.mapNotNull { it.displayRules.async?.segment?.segmentId }.distinct()
+        val segmentIds =
+            messagesWithSegments.mapNotNull { it.displayRules.async?.segment?.segmentId }.distinct()
         val segmentResponses = iamRepository.checkUserInSegments(segmentIds)
 
         val updatedMessages = mutableListOf<InAppMessage>()
@@ -310,7 +332,8 @@ internal class IamControllerImpl(
                 inAppMessage = inAppMessage,
                 sessionStartTimestamp = sessionHandler.getSessionStartTimestamp(),
                 showingOnAppStart = showingOnAppStart
-        )) {
+            )
+        ) {
             return false
         }
 
@@ -323,14 +346,9 @@ internal class IamControllerImpl(
     }
 
     private fun showInApp(inAppMessage: InAppMessage) {
-        if (canShowInApp()) {
-            scope.launch { _inAppMessage.emit(inAppMessage) }
-        } else {
-            when (pauseBehaviour) {
-                InAppPauseBehaviour.POSTPONE_IN_APPS -> postponedNotifications.add(inAppMessage)
-                else -> {}
-            }
-        }
+        if (isPausedInAppMessages.get()) postponedNotifications.add(inAppMessage)
+        if (!canShowInApp()) return
+        scope.launch { _inAppMessage.emit(inAppMessage) }
     }
 
     private fun checkSegmentRuleMatches(inAppMessage: InAppMessage): Boolean {

@@ -102,7 +102,7 @@ interface Reteno {
 
     /**
      * Change logic of In-App messages in paused state
-     * Default state is [InAppPauseBehaviour.SKIP_IN_APPS]
+     * Default state is [InAppPauseBehaviour.POSTPONE_IN_APPS]
      *
      * @param behaviour - new behaviour
      * @see InAppPauseBehaviour for detailed explanation
