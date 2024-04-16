@@ -24,6 +24,7 @@ import com.reteno.core.domain.ResultDomain
 import com.reteno.core.domain.controller.IamControllerImpl.Companion.TIMEOUT
 import com.reteno.core.domain.model.event.Event
 import com.reteno.core.domain.model.event.Event.Companion.SCREEN_VIEW_EVENT_TYPE_KEY
+import com.reteno.core.features.iam.InAppPauseBehaviour
 import com.reteno.core.lifecycle.RetenoSessionHandlerImpl
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -287,6 +288,137 @@ class IamControllerImplTest : BaseRobolectricTest() {
             assertEquals(
                 results,
                 emptyList<InAppMessage>()
+            )
+            job.cancel()
+        }
+
+    @Test
+    fun givenInAppsWithContent_whenInAppsDisabledWithSkipBehavior_thenDoNotShowInAppsWhenInAppsEnabled() =
+        runTest {
+            // Given
+            val inApps = frequencyInApps(
+                content = InAppMessageContent(
+                    messageInstanceId = 1,
+                    layoutType = "",
+                    model = JsonObject()
+                )
+            )
+            val inAppList = InAppMessagesList(messages = inApps)
+
+            coEvery { iamRepository.getInAppMessages() } returns inAppList
+
+            val results = mutableListOf<InAppMessage>()
+            val job = launch {
+                SUT.inAppMessagesFlow.toList(results)
+            }
+            // When
+            every {
+                anyConstructed<FrequencyRuleValidator>().checkInAppMatchesFrequencyRules(
+                    any(),
+                    any(),
+                    any()
+                )
+            } returns true
+            every { anyConstructed<ScheduleRuleValidator>().checkInAppMatchesScheduleRules(any()) } returns true
+            SUT.setPauseBehaviour(InAppPauseBehaviour.SKIP_IN_APPS)
+            SUT.pauseInAppMessages(true)
+            SUT.getInAppMessages()
+            scheduler.advanceUntilIdle()
+            SUT.pauseInAppMessages(false)
+            scheduler.advanceUntilIdle()
+
+            // Then
+            assertEquals(
+                results,
+                emptyList<InAppMessage>()
+            )
+            job.cancel()
+        }
+
+    @Test
+    fun givenInAppsWithContent_whenInAppsDisabledWithPostponeFirstBehavior_thenShowFirstInAppWhenInAppsEnabled() =
+        runTest {
+            // Given
+            val inApps = frequencyInApps(
+                content = InAppMessageContent(
+                    messageInstanceId = 1,
+                    layoutType = "",
+                    model = JsonObject()
+                )
+            )
+            val inAppList = InAppMessagesList(messages = inApps)
+
+            coEvery { iamRepository.getInAppMessages() } returns inAppList
+
+            val results = mutableListOf<InAppMessage>()
+            val job = launch {
+                SUT.inAppMessagesFlow.toList(results)
+            }
+            // When
+            every {
+                anyConstructed<FrequencyRuleValidator>().checkInAppMatchesFrequencyRules(
+                    any(),
+                    any(),
+                    any()
+                )
+            } returns true
+            every { anyConstructed<ScheduleRuleValidator>().checkInAppMatchesScheduleRules(any()) } returns true
+            SUT.setPauseBehaviour(InAppPauseBehaviour.POSTPONE_IN_APPS)
+            SUT.pauseInAppMessages(true)
+            SUT.getInAppMessages()
+            scheduler.advanceUntilIdle()
+            SUT.pauseInAppMessages(false)
+            scheduler.advanceUntilIdle()
+
+            // Then
+            assertEquals(
+                results,
+                listOf(inApps.maxByOrNull { it.messageId }!!)
+            )
+            job.cancel()
+        }
+
+    @Test
+    fun givenInAppsWithContent_whenInAppsDisabledWithPostponeFirstBehaviorAndOnly4InAppIsAllowed_thenShowThisInAppWhenInAppsEnabled() =
+        runTest {
+            // Given
+            val inApps = frequencyInApps(
+                content = InAppMessageContent(
+                    messageInstanceId = 1,
+                    layoutType = "",
+                    model = JsonObject()
+                )
+            )
+            val inAppList = InAppMessagesList(messages = inApps)
+
+            coEvery { iamRepository.getInAppMessages() } returns inAppList
+
+            val results = mutableListOf<InAppMessage>()
+            val job = launch {
+                SUT.inAppMessagesFlow.toList(results)
+            }
+            // When
+            every {
+                anyConstructed<FrequencyRuleValidator>().checkInAppMatchesFrequencyRules(
+                    any(),
+                    any(),
+                    any()
+                )
+            } answers  {
+                firstArg<InAppMessage>().messageId == 4L
+            }
+            every { anyConstructed<ScheduleRuleValidator>().checkInAppMatchesScheduleRules(any()) } returns true
+            SUT.setPauseBehaviour(InAppPauseBehaviour.POSTPONE_IN_APPS)
+            SUT.pauseInAppMessages(true)
+            SUT.getInAppMessages()
+            scheduler.advanceUntilIdle()
+            SUT.pauseInAppMessages(false)
+            scheduler.advanceUntilIdle()
+
+            // Then
+            assertEquals(
+                results,
+                listOf(inApps.first { it.messageId == 4L })
             )
             job.cancel()
         }

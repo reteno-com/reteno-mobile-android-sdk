@@ -88,7 +88,7 @@ internal class RetenoSessionHandlerImplTest : BaseUnitTest() {
     fun givenAppStartedRecently_whenAppStart_thenSessionIdReused() = runTest {
         //Given
         val saved = UUID.randomUUID().toString()
-        every { sharedPrefsManager.getAppStoppedTimestamp() } returns System.currentTimeMillis() - (4 * 60L * 1000L)
+        every { sharedPrefsManager.getLastInteractionTime() } returns System.currentTimeMillis() - (4 * 60L * 1000L)
         every { sharedPrefsManager.getSessionId() } returns saved
 
         //When
@@ -103,7 +103,7 @@ internal class RetenoSessionHandlerImplTest : BaseUnitTest() {
     fun givenAppStartedRecently_whenAppStart_thenStartNotSend() = runTest {
         //Given
         val saved = UUID.randomUUID()
-        every { sharedPrefsManager.getAppStoppedTimestamp() } returns System.currentTimeMillis() - (4 * 60L * 1000L)
+        every { sharedPrefsManager.getLastInteractionTime() } returns System.currentTimeMillis() - (4 * 60L * 1000L)
         every { sharedPrefsManager.getSessionId() } returns saved.toString()
 
         //When

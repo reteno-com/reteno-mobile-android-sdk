@@ -4,6 +4,7 @@ import com.reteno.core.data.remote.model.iam.message.InAppMessage
 import com.reteno.core.data.remote.model.iam.message.InAppMessageContent
 import com.reteno.core.domain.ResultDomain
 import com.reteno.core.features.iam.IamJsEvent
+import com.reteno.core.features.iam.InAppPauseBehaviour
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 
@@ -22,6 +23,8 @@ internal interface IamController {
     fun pauseInAppMessages(isPaused: Boolean)
 
     fun updateInAppMessage(inAppMessage: InAppMessage)
+
+    fun setPauseBehaviour(behaviour: InAppPauseBehaviour)
 
     val fullHtmlStateFlow: StateFlow<ResultDomain<String>>
     val inAppMessagesFlow: SharedFlow<InAppMessage>

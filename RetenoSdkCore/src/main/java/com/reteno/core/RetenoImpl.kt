@@ -10,6 +10,7 @@ import com.reteno.core.domain.model.ecom.EcomEvent
 import com.reteno.core.domain.model.event.Event
 import com.reteno.core.domain.model.user.User
 import com.reteno.core.domain.model.user.UserAttributesAnonymous
+import com.reteno.core.features.iam.InAppPauseBehaviour
 import com.reteno.core.lifecycle.RetenoActivityHelper
 import com.reteno.core.lifecycle.RetenoLifecycleCallbacks
 import com.reteno.core.lifecycle.ScreenTrackingConfig
@@ -266,6 +267,20 @@ class RetenoImpl @JvmOverloads constructor(
             scheduleController.forcePush()
         } catch (ex: Throwable) {
             /*@formatter:off*/ Logger.e(TAG, "forcePushData(): ", ex)
+            /*@formatter:on*/
+        }
+    }
+
+    override fun setInAppMessagesPauseBehaviour(behaviour: InAppPauseBehaviour) {
+        if (!isOsVersionSupported()) {
+            return
+        }
+        /*@formatter:off*/ Logger.i(TAG, "setInAppMessagesPauseBehaviour(): ", "behaviour = [" , behaviour , "]")
+        /*@formatter:on*/
+        try {
+            iamController.setPauseBehaviour(behaviour)
+        } catch (ex: Throwable) {
+            /*@formatter:off*/ Logger.e(TAG, "setInAppMessagesPauseBehaviour(): behaviour = [$behaviour]", ex)
             /*@formatter:on*/
         }
     }
