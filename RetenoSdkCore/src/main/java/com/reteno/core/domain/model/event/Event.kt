@@ -21,7 +21,17 @@ sealed class Event(
     )
 
     companion object {
+        internal fun sessionStart(
+            sessionId: String,
+            startTime: ZonedDateTime
+        ) = Custom(
+            SESSION_START_EVENT_TYPE_KEY,
+            startTime,
+            listOf(Parameter(SESSION_ID_PARAM_NAME,  sessionId))
+        )
         internal const val SCREEN_VIEW_EVENT_TYPE_KEY = "screenView"
         internal const val SCREEN_VIEW_PARAM_NAME = "screenClass"
+        internal const val SESSION_START_EVENT_TYPE_KEY = "SessionStarted"
+        internal const val SESSION_ID_PARAM_NAME = "sessionID"
     }
 }

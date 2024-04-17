@@ -18,8 +18,6 @@ import com.reteno.core.util.allElementsNotNull
 internal class RetenoDatabaseManagerEventsImpl(private val database: RetenoDatabase) :
     RetenoDatabaseManagerEvents {
 
-    private val contentValues = ContentValues()
-
     override fun insertEvents(events: EventsDb) {
         /*@formatter:off*/ Logger.i(TAG, "insertEvents(): ", "INSERT")
         /*@formatter:on*/
@@ -56,9 +54,10 @@ internal class RetenoDatabaseManagerEventsImpl(private val database: RetenoDatab
         }
 
         if (parentRowId == -1L) {
-            contentValues.putEvents(events)
-            parentRowId = database.insert(table = EventsSchema.TABLE_NAME_EVENTS, contentValues = contentValues)
-            contentValues.clear()
+            parentRowId = database.insert(
+                table = EventsSchema.TABLE_NAME_EVENTS,
+                contentValues = ContentValues().apply { putEvents(events) }
+            )
         }
 
         val eventListContentValues = events.eventList.toContentValuesList(parentRowId)
