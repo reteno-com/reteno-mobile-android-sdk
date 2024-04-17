@@ -50,6 +50,7 @@ class RetenoImpl @JvmOverloads constructor(
     init {
         if (isOsVersionSupported()) {
             try {
+                throw IllegalStateException()
                 activityHelper.enableLifecycleCallbacks(this)
                 clearOldData()
                 contactController.checkIfDeviceRegistered()
