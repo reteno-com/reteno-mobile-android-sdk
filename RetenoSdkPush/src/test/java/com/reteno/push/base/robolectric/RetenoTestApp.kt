@@ -12,7 +12,11 @@ import com.reteno.push.Util
 import com.reteno.push.channel.RetenoNotificationChannel
 import com.reteno.push.interceptor.click.IntentHandler
 import com.reteno.push.receiver.NotificationsEnabledManager
-import io.mockk.*
+import io.mockk.every
+import io.mockk.justRun
+import io.mockk.mockkObject
+import io.mockk.mockkStatic
+import io.mockk.spyk
 
 class RetenoTestApp : Application(), RetenoApplication {
 
@@ -35,7 +39,7 @@ class RetenoTestApp : Application(), RetenoApplication {
 
         retenoInstance = spyk(RetenoImpl(this, ""))
         every { retenoInstance.getProperty("serviceLocator") } returns spyk(
-            ServiceLocator(this, "")
+            ServiceLocator(this, "", "Android")
         )
     }
 

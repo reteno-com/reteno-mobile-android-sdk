@@ -3,17 +3,25 @@ package com.reteno.core.lifecycle
 import com.reteno.core.data.local.sharedpref.SharedPrefsManager
 import com.reteno.core.data.remote.model.iam.displayrules.targeting.InAppWithTime
 import com.reteno.core.data.remote.model.iam.message.InAppMessage
+import com.reteno.core.domain.controller.EventController
+import com.reteno.core.domain.model.event.Event
+import com.reteno.core.util.Util.asZonedDateTime
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.util.UUID
 
-internal class RetenoSessionHandlerImpl(private val sharedPrefsManager: SharedPrefsManager): RetenoSessionHandler {
+internal class RetenoSessionHandlerImpl(
+    private val sharedPrefsManager: SharedPrefsManager,
+    private val eventController: EventController
+): RetenoSessionHandler {
 
     private var foregroundTimeMillis: Long = 0L
     private var sessionStartTimestamp: Long = 0L
+    private var sessionId = ""
 
     private var timeSinceResume: Long = 0L
     private var appResumedTimestamp: Long = 0L
@@ -62,6 +70,10 @@ internal class RetenoSessionHandlerImpl(private val sharedPrefsManager: SharedPr
         return sessionStartTimestamp
     }
 
+    override fun getSessionId(): String {
+        return sessionId
+    }
+
     private fun findNextScheduledMessages() {
         var messages = scheduledMessages
 
@@ -80,15 +92,24 @@ internal class RetenoSessionHandlerImpl(private val sharedPrefsManager: SharedPr
 
     private fun initSession() {
         appResumedTimestamp = System.currentTimeMillis()
-        val appStoppedTimestamp = sharedPrefsManager.getAppStoppedTimestamp()
+        val appStoppedTimestamp = sharedPrefsManager.getLastInteractionTime()
         val pausedTime = appResumedTimestamp - appStoppedTimestamp
         if (pausedTime > SESSION_RESET_TIME) {
             previousForegroundTime = 0L
             sessionStartTimestamp = appResumedTimestamp
+            sessionId = UUID.randomUUID().toString()
+            eventController.trackEvent(
+                Event.sessionStart(
+                    sessionId,
+                    sessionStartTimestamp.asZonedDateTime()
+                )
+            )
             sharedPrefsManager.saveSessionStartTimestamp(sessionStartTimestamp)
+            sharedPrefsManager.saveSessionId(sessionId = sessionId)
         } else {
             previousForegroundTime = sharedPrefsManager.getAppSessionTime()
             sessionStartTimestamp = sharedPrefsManager.getSessionStartTimestamp()
+            sessionId = sharedPrefsManager.getSessionId().orEmpty()
             if (sessionStartTimestamp == 0L) sessionStartTimestamp = appStoppedTimestamp
         }
         foregroundTimeMillis = previousForegroundTime
@@ -97,9 +118,12 @@ internal class RetenoSessionHandlerImpl(private val sharedPrefsManager: SharedPr
     private fun countTime() {
         timeSinceResume = System.currentTimeMillis() - appResumedTimestamp
         foregroundTimeMillis = previousForegroundTime + timeSinceResume
+        //We need to save this values here because onPause may not be called on some devices if app removed from system tray
+        sharedPrefsManager.saveAppSessionTime(foregroundTimeMillis)
+        sharedPrefsManager.saveLastInteractionTime(System.currentTimeMillis())
 
         val nextMessages = closestScheduledMessages
-        if (nextMessages != null && nextMessages.isNotEmpty() && foregroundTimeMillis >= nextMessages.first().time) {
+        if (!nextMessages.isNullOrEmpty() && foregroundTimeMillis >= nextMessages.first().time) {
             scheduledMessages?.removeAll(nextMessages)
             findNextScheduledMessages()
 

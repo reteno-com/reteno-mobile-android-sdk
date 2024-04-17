@@ -5,10 +5,12 @@ import com.reteno.core.data.remote.api.RestClientImpl
 import com.reteno.core.di.base.ProviderWeakReference
 import com.reteno.core.di.provider.RestConfigProvider
 
-internal class RestClientProvider(private val restConfigProvider: RestConfigProvider) :
-    ProviderWeakReference<RestClient>() {
+internal class RestClientProvider(
+    private val restConfigProvider: RestConfigProvider,
+    private val platform: String
+) : ProviderWeakReference<RestClient>() {
 
     override fun create(): RestClient {
-        return RestClientImpl(restConfigProvider.get())
+        return RestClientImpl(restConfigProvider.get(), platform)
     }
 }
