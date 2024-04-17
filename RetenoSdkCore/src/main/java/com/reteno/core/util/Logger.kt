@@ -4,8 +4,9 @@ import android.util.Log
 import com.reteno.core.BuildConfig
 import com.reteno.core.RetenoApplication
 import com.reteno.core.RetenoImpl
-import com.reteno.core.domain.model.logevent.RetenoLogEvent
+import com.reteno.core.di.ServiceLocator
 import com.reteno.core.domain.model.logevent.LogLevel
+import com.reteno.core.domain.model.logevent.RetenoLogEvent
 
 object Logger {
 
@@ -86,20 +87,35 @@ object Logger {
             val packageName = RetenoImpl.application.packageName
             event.bundleId = packageName
 
-            val serviceLocator =
-                ((RetenoImpl.application as RetenoApplication).getRetenoInstance() as RetenoImpl).serviceLocator
-            val configRepository = serviceLocator.configRepositoryProvider.get()
+            val deviceId = runCatching {
+                ((RetenoImpl.application as RetenoApplication).getRetenoInstance() as RetenoImpl)
+                    .serviceLocator
+                    .configRepositoryProvider.get()
+                    .getDeviceId()
+                    .id
+            }.getOrElse { "uninitialized" }
 
-            event.deviceId = configRepository.getDeviceId().id
+            event.deviceId = deviceId
         } catch (ex: Throwable) {
             Log.e(TAG, "setApplicationTags: ", ex)
         }
     }
 
     private fun saveEvent(logEvent: RetenoLogEvent) {
-        val serviceLocator =
-            ((RetenoImpl.application as RetenoApplication).getRetenoInstance() as RetenoImpl).serviceLocator
-        val logEventRepository = serviceLocator.logEventRepositoryProvider.get()
-        logEventRepository.saveLogEvent(logEvent)
+        try {
+            val logEventRepository = runCatching {
+                ((RetenoImpl.application as RetenoApplication).getRetenoInstance() as RetenoImpl)
+                    .serviceLocator
+                    .logEventRepositoryProvider.get()
+            }.getOrElse {
+                //Log event api does not require access key so we can leave this parameter empty
+                ServiceLocator(RetenoImpl.application, "", platform = "Android")
+                    .logEventRepositoryProvider
+                    .get()
+            }
+            logEventRepository.saveLogEvent(logEvent)
+        } catch (e: Exception) {
+            Log.e(TAG, "saveEvent: ", e)
+        }
     }
 }
