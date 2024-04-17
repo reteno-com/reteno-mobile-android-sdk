@@ -5,22 +5,25 @@ import com.reteno.core.domain.SchedulerUtils
 import com.reteno.core.domain.model.ecom.EcomEvent
 import com.reteno.core.domain.model.event.Event
 import com.reteno.core.util.Logger
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
 
 internal class EventController(
     private val eventsRepository: EventsRepository
 ) {
 
-    private var iamController: IamController? = null // TODO debugging solution, this should not be here
-
-    fun setIamController(iamController: IamController) {
-        this.iamController = iamController
-    }
+    private val _eventFlow = MutableSharedFlow<Event>(
+        extraBufferCapacity = 10,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    )
+    val eventFlow: SharedFlow<Event> = _eventFlow
 
     fun trackEvent(event: Event) {
         /*@formatter:off*/ Logger.i(TAG, "trackEvent(): ", "event = [" , event , "]")
         /*@formatter:on*/
         eventsRepository.saveEvent(event)
-        iamController?.notifyEventOccurred(event)
+        _eventFlow.tryEmit(event)
     }
 
     fun trackScreenViewEvent(screenName: String) {
@@ -28,7 +31,7 @@ internal class EventController(
         /*@formatter:on*/
         val event = Event.ScreenView(screenName)
         eventsRepository.saveEvent(event)
-        iamController?.notifyEventOccurred(event)
+        _eventFlow.tryEmit(event)
     }
 
     fun trackEcomEvent(ecomEvent: EcomEvent) {

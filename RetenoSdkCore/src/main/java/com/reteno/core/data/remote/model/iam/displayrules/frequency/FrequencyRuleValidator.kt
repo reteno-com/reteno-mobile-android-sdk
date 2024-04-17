@@ -57,18 +57,12 @@ class FrequencyRuleValidator {
     }
 
     private fun checkCanShowOncePerSession(inAppMessage: InAppMessage, sessionStartTimestamp: Long): Boolean {
-        val lastShowTime = inAppMessage.lastShowTime
-        if (lastShowTime == null) {
-            return true
-        }
+        val lastShowTime = inAppMessage.lastShowTime ?: return true
         return lastShowTime < sessionStartTimestamp
     }
 
     private fun checkCanShowMinInterval(inAppMessage: InAppMessage, intervalMillis: Long): Boolean {
-        val lastShowTime = inAppMessage.lastShowTime
-        if (lastShowTime == null) {
-            return true
-        }
+        val lastShowTime = inAppMessage.lastShowTime ?: return true
         return System.currentTimeMillis() - lastShowTime > intervalMillis
     }
 

@@ -10,6 +10,7 @@ import com.reteno.core.domain.model.ecom.EcomEvent
 import com.reteno.core.domain.model.event.Event
 import com.reteno.core.domain.model.user.User
 import com.reteno.core.domain.model.user.UserAttributesAnonymous
+import com.reteno.core.features.iam.InAppPauseBehaviour
 import com.reteno.core.lifecycle.RetenoActivityHelper
 import com.reteno.core.lifecycle.RetenoLifecycleCallbacks
 import com.reteno.core.lifecycle.ScreenTrackingConfig
@@ -23,7 +24,7 @@ import com.reteno.core.view.iam.callback.InAppLifecycleCallback
 class RetenoImpl @JvmOverloads constructor(
     application: Application,
     accessKey: String,
-    private val config: RetenoConfig = RetenoConfig()
+    config: RetenoConfig = RetenoConfig(),
 ) : RetenoLifecycleCallbacks, Reteno {
 
     init {
@@ -32,7 +33,7 @@ class RetenoImpl @JvmOverloads constructor(
         Companion.application = application
     }
 
-    val serviceLocator: ServiceLocator = ServiceLocator(application, accessKey)
+    val serviceLocator: ServiceLocator = ServiceLocator(application, accessKey, config.platform)
     private val activityHelper: RetenoActivityHelper by lazy { serviceLocator.retenoActivityHelperProvider.get() }
 
     private val screenTrackingController: ScreenTrackingController by lazy { serviceLocator.screenTrackingControllerProvider.get() }
@@ -112,8 +113,6 @@ class RetenoImpl @JvmOverloads constructor(
     }
 
     private fun fetchInAppMessages() {
-        iamController.setIamView(iamView)
-        eventController.setIamController(iamController)
         iamController.getInAppMessages()
     }
 
@@ -268,6 +267,20 @@ class RetenoImpl @JvmOverloads constructor(
             scheduleController.forcePush()
         } catch (ex: Throwable) {
             /*@formatter:off*/ Logger.e(TAG, "forcePushData(): ", ex)
+            /*@formatter:on*/
+        }
+    }
+
+    override fun setInAppMessagesPauseBehaviour(behaviour: InAppPauseBehaviour) {
+        if (!isOsVersionSupported()) {
+            return
+        }
+        /*@formatter:off*/ Logger.i(TAG, "setInAppMessagesPauseBehaviour(): ", "behaviour = [" , behaviour , "]")
+        /*@formatter:on*/
+        try {
+            iamController.setPauseBehaviour(behaviour)
+        } catch (ex: Throwable) {
+            /*@formatter:off*/ Logger.e(TAG, "setInAppMessagesPauseBehaviour(): behaviour = [$behaviour]", ex)
             /*@formatter:on*/
         }
     }

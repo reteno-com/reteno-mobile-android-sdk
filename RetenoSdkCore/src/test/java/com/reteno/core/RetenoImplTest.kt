@@ -1,6 +1,7 @@
 package com.reteno.core
 
 import android.app.Activity
+import android.app.Application
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.ContextWrapper
@@ -12,6 +13,7 @@ import com.reteno.core.base.robolectric.BaseRobolectricTest
 import com.reteno.core.di.ServiceLocator
 import com.reteno.core.domain.controller.ContactController
 import com.reteno.core.domain.controller.EventController
+import com.reteno.core.domain.controller.IamController
 import com.reteno.core.domain.controller.ScheduleController
 import com.reteno.core.domain.controller.ScreenTrackingController
 import com.reteno.core.domain.model.ecom.EcomEvent
@@ -22,6 +24,7 @@ import com.reteno.core.domain.model.user.User
 import com.reteno.core.domain.model.user.UserAttributesAnonymous
 import com.reteno.core.domain.model.user.UserCustomField
 import com.reteno.core.features.appinbox.AppInboxImpl
+import com.reteno.core.lifecycle.RetenoActivityHelper
 import com.reteno.core.lifecycle.ScreenTrackingConfig
 import com.reteno.core.lifecycle.ScreenTrackingTrigger
 import com.reteno.core.util.Constants
@@ -129,6 +132,12 @@ class RetenoImplTest : BaseRobolectricTest() {
     @RelaxedMockK
     private lateinit var iamView: IamView
 
+    @RelaxedMockK
+    private lateinit var iamController: IamController
+
+    @RelaxedMockK
+    private lateinit var activityHelper: RetenoActivityHelper
+
     private val retenoImpl by lazy { RetenoImpl(application, "") }
 
     private var contextWrapper: ContextWrapper? = null
@@ -143,6 +152,8 @@ class RetenoImplTest : BaseRobolectricTest() {
         every { anyConstructed<ServiceLocator>().scheduleControllerProvider.get() } returns scheduleController
         every { anyConstructed<ServiceLocator>().iamViewProvider.get() } returns iamView
         every { anyConstructed<ServiceLocator>().eventsControllerProvider.get() } returns eventController
+        every { anyConstructed<ServiceLocator>().iamControllerProvider.get() } returns iamController
+        every { anyConstructed<ServiceLocator>().retenoActivityHelperProvider.get() } returns activityHelper
         every { anyConstructed<ServiceLocator>().appInboxProvider.get() } returns inbox
         every { anyConstructed<ServiceLocator>().screenTrackingControllerProvider.get() } returns screenTrackingController
 
@@ -565,7 +576,7 @@ class RetenoImplTest : BaseRobolectricTest() {
         every { anyConstructed<ServiceLocator>().eventsControllerProvider.get() } returns eventController
         every { anyConstructed<ServiceLocator>().appInboxProvider.get() } returns inbox
         every { anyConstructed<ServiceLocator>().screenTrackingControllerProvider.get() } returns screenTrackingController
-        mockQueryBroadcastReceivers()
+        mockQueryBroadcastReceivers(application)
         val receiver =
             object : BroadcastReceiver() {
                 override fun onReceive(context: Context?, intent: Intent?) {
@@ -585,8 +596,24 @@ class RetenoImplTest : BaseRobolectricTest() {
         assertTrue(transcript.contains(TRANSCRIPT_RESUME_RECEIVED))
     }
 
+    @Test
+    fun whenRetenoInit_thenGetInAppNotifications() {
+        //Given
+        val application = mockk<Application>()
+        mockQueryBroadcastReceivers(application)
+        every { anyConstructed<ServiceLocator>().scheduleControllerProvider.get() } returns scheduleController
+        every { contactController.checkIfDeviceRegistered() } returns Unit
+        every { scheduleController.clearOldData() } returns Unit
+        every { application.sendBroadcast(any()) } returns Unit
+        //When
+        RetenoImpl(application, "")
+
+        //Then
+        verify(exactly = 1) { iamController.getInAppMessages() }
+    }
+
     // region helper methods -----------------------------------------------------------------------
-    private fun mockQueryBroadcastReceivers() {
+    private fun mockQueryBroadcastReceivers(application: Application) {
         val mockResolveInfo = mockk<ResolveInfo>(relaxed = true).apply {
             activityInfo = ActivityInfo().apply {
                 packageName = "packageName"
