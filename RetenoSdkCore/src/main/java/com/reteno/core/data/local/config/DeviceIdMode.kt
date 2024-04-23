@@ -1,5 +1,8 @@
 package com.reteno.core.data.local.config
 
+import com.reteno.core.RetenoConfig
+import com.reteno.core.identification.UserIdProvider
+
 enum class DeviceIdMode {
 
     /**
@@ -28,5 +31,12 @@ enum class DeviceIdMode {
      * Generates a random UUID and saves it to local storage.
      * Is rotated on app storage clean
      */
-    RANDOM_UUID
+    RANDOM_UUID,
+
+    /**
+     * Uses the Id provided by user
+     *
+     * Uses [UserIdProvider] from [RetenoConfig] as an Id provider
+     */
+    CLIENT_UUID
 }

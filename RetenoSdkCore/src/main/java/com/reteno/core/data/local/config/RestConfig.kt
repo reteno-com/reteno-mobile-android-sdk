@@ -2,13 +2,17 @@ package com.reteno.core.data.local.config
 
 import com.reteno.core.util.Logger
 
-internal class RestConfig(private val deviceIdHelper: DeviceIdHelper, internal val accessKey: String) {
+internal class RestConfig(
+    private val deviceIdHelper: DeviceIdHelper,
+    internal val accessKey: String,
+    initIdMode: DeviceIdMode
+) {
 
     internal var deviceId: DeviceId = DeviceId("")
         private set
 
     init {
-        initDeviceId(DeviceIdMode.ANDROID_ID)
+        initDeviceId(initIdMode)
     }
 
     private fun initDeviceId(deviceIdMode: DeviceIdMode) {

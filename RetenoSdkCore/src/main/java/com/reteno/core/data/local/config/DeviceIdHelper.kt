@@ -4,9 +4,22 @@ import android.provider.Settings
 import com.google.android.gms.appset.AppSet
 import com.reteno.core.RetenoImpl
 import com.reteno.core.data.local.sharedpref.SharedPrefsManager
+import com.reteno.core.identification.UserIdProvider
 import com.reteno.core.util.Logger
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
-internal class DeviceIdHelper(private val sharedPrefsManager: SharedPrefsManager) {
+internal class DeviceIdHelper(
+    private val sharedPrefsManager: SharedPrefsManager,
+    private val userIdProvider: UserIdProvider?
+) {
+
+    private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
     internal fun withDeviceIdMode(
         currentDeviceId: DeviceId,
@@ -25,13 +38,14 @@ internal class DeviceIdHelper(private val sharedPrefsManager: SharedPrefsManager
                     /*@formatter:off*/ Logger.i(TAG, "initDeviceId(): ", "deviceIdMode = [", deviceIdMode, "]", " deviceId = [", deviceId, "]")
                     /*@formatter:on*/
                     onDeviceIdChanged(currentDeviceId.copy(id = deviceId, mode = deviceIdMode))
-                } catch (ex: java.lang.Exception) {
+                } catch (ex: Exception) {
                     /*@formatter:off*/ Logger.e(TAG, "initDeviceId(): DeviceIdMode.ANDROID_ID", ex)
                     /*@formatter:on*/
                     withDeviceIdMode(currentDeviceId, DeviceIdMode.RANDOM_UUID, onDeviceIdChanged)
                     return
                 }
             }
+
             DeviceIdMode.APP_SET_ID -> {
                 try {
                     val client = AppSet.getClient(context)
@@ -42,19 +56,62 @@ internal class DeviceIdHelper(private val sharedPrefsManager: SharedPrefsManager
                     }.addOnFailureListener {
                         /*@formatter:off*/ Logger.i(TAG, "initDeviceId(): ", "deviceIdMode = [", deviceIdMode, "]", " failed trying ANDROID_ID")
                         /*@formatter:on*/
-                        withDeviceIdMode(currentDeviceId, DeviceIdMode.RANDOM_UUID, onDeviceIdChanged)
+                        withDeviceIdMode(
+                            currentDeviceId,
+                            DeviceIdMode.RANDOM_UUID,
+                            onDeviceIdChanged
+                        )
                     }
-                } catch (ex: java.lang.Exception) {
+                } catch (ex: Exception) {
                     /*@formatter:off*/ Logger.e(TAG, "initDeviceId(): DeviceIdMode.APP_SET_ID", ex)
                     /*@formatter:on*/
                     withDeviceIdMode(currentDeviceId, DeviceIdMode.RANDOM_UUID, onDeviceIdChanged)
                 }
             }
+
             DeviceIdMode.RANDOM_UUID -> {
                 val newId = sharedPrefsManager.getDeviceIdUuid()
                 onDeviceIdChanged(currentDeviceId.copy(id = newId, mode = deviceIdMode))
                 /*@formatter:off*/ Logger.i(TAG, "initDeviceId(): ", "deviceIdMode = [", deviceIdMode, "]", " deviceId = [", newId, "]")
                 /*@formatter:on*/
+            }
+
+            DeviceIdMode.CLIENT_UUID -> {
+                if (userIdProvider == null) {
+                    /*@formatter:off*/ Logger.i(TAG, "initDeviceId(): ", "deviceIdMode = [", deviceIdMode, "]", " failed trying DeviceIdProvider is null")
+                    /*@formatter:on*/
+                    withDeviceIdMode(
+                        currentDeviceId,
+                        DeviceIdMode.RANDOM_UUID,
+                        onDeviceIdChanged
+                    )
+                    return
+                }
+                scope.launch {
+                    try {
+                        var deviceId: String? = null
+                        while (deviceId == null && isActive) {
+                            deviceId = userIdProvider.getUserId()
+                            delay(60L)
+                        }
+                        withContext(Dispatchers.Main) {
+                            /*@formatter:off*/ Logger.i(TAG, "initDeviceId(): ", "deviceIdMode = [", deviceIdMode, "]", " deviceId = [", deviceId, "]")
+                            /*@formatter:on*/
+                            onDeviceIdChanged(
+                                currentDeviceId.copy(
+                                    id = requireNotNull(deviceId),
+                                    mode = deviceIdMode
+                                )
+                            )
+                        }
+                    } catch (e: Exception) {
+                        withDeviceIdMode(
+                            currentDeviceId,
+                            DeviceIdMode.RANDOM_UUID,
+                            onDeviceIdChanged
+                        )
+                    }
+                }
             }
         }
     }

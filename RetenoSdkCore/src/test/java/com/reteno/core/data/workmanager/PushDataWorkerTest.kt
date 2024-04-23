@@ -2,28 +2,40 @@ package com.reteno.core.data.workmanager
 
 import android.content.Context
 import android.util.Log
-import androidx.work.*
+import androidx.work.Configuration
+import androidx.work.Constraints
 import androidx.work.ListenableWorker.Result
+import androidx.work.NetworkType
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkInfo
+import androidx.work.WorkManager
 import androidx.work.testing.TestWorkerBuilder
 import androidx.work.testing.WorkManagerTestInitHelper
+import com.reteno.core.RetenoImpl
 import com.reteno.core.base.robolectric.BaseRobolectricTest
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManager
+import com.reteno.core.di.ServiceLocator
 import com.reteno.core.domain.controller.ScheduleController
 import com.reteno.core.lifecycle.RetenoActivityHelper
+import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.impl.annotations.RelaxedMockK
+import io.mockk.mockk
 import io.mockk.verify
 import junit.framework.TestCase.assertEquals
 import junit.framework.TestCase.assertNotNull
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.runTest
 import org.hamcrest.CoreMatchers.`is`
 import org.hamcrest.MatcherAssert.assertThat
 import org.junit.Test
-import java.util.*
+import java.util.UUID
 import java.util.concurrent.Executor
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class PushDataWorkerTest : BaseRobolectricTest() {
 
     // region helper fields ------------------------------------------------------------------------
@@ -36,30 +48,22 @@ class PushDataWorkerTest : BaseRobolectricTest() {
     @RelaxedMockK
     private lateinit var databaseManager: RetenoDatabaseManager
 
+    @RelaxedMockK
+    private lateinit var serviceLocator: ServiceLocator
+
+    @RelaxedMockK
+    private lateinit var retenoImpl: RetenoImpl
+
     private var executor: Executor? = null
     private lateinit var workUuid: UUID
 
     private var SUT: PushDataWorker? = null
     // endregion helper fields ---------------------------------------------------------------------
 
-    override fun before() {
-        super.before()
-        every { reteno.serviceLocator.scheduleControllerProvider.get() } returns scheduleController
-        every { reteno.serviceLocator.retenoActivityHelperProvider.get() } returns retenoActivityHelper
-        every { reteno.serviceLocator.retenoDatabaseManagerProvider.get() } returns databaseManager
-
-        executor = Executors.newSingleThreadExecutor()
-        assertNotNull(executor)
-        initializeWorkManager(application, executor!!)
-        workUuid = PushDataWorker.enqueuePeriodicWork(WorkManager.getInstance(application))
-
-        SUT = TestWorkerBuilder<PushDataWorker>(application, executor!!).build()
-        assertNotNull(SUT)
-    }
-
     @Test
-    fun givenAppInForeground_whenDoWork_thenNothingPushedAndPeriodicWorkContinues() {
+    fun givenAppInForeground_whenDoWork_thenNothingPushedAndPeriodicWorkContinues() = runTest {
         // Given
+        mockInitials()
         mockAppInForeground()
 
         // When
@@ -74,42 +78,47 @@ class PushDataWorkerTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun givenDatabaseEmptyAndAppInBackground_whenDoWork_thenNothingPushedAndPeriodicWorkIsCancelled() {
-        // Given
-        mockDatabaseEmpty(true)
-        mockAppInBackground()
+    fun givenDatabaseEmptyAndAppInBackground_whenDoWork_thenNothingPushedAndPeriodicWorkIsCancelled() =
+        runTest {
+            // Given
+            mockInitials()
+            mockDatabaseEmpty(true)
+            mockAppInBackground()
 
-        // When
-        val result = SUT!!.doWork()
+            // When
+            val result = SUT!!.doWork()
 
-        // Then
-        verify(exactly = 0) { scheduleController.forcePush() }
-        assertThat(result, `is`(Result.failure()))
+            // Then
+            verify(exactly = 0) { scheduleController.forcePush() }
+            assertThat(result, `is`(Result.failure()))
 
-        val workState = WorkManager.getInstance(application).getWorkInfoById(workUuid).get()
-        assertEquals(WorkInfo.State.CANCELLED, workState.state)
-    }
-
-    @Test
-    fun givenDatabaseNotEmptyAndAppInBackground_whenDoWork_thenForcePushTriggeredAndPeriodicWorkContinues() {
-        // Given
-        mockDatabaseEmpty(false)
-        mockAppInBackground()
-
-        // When
-        val result = SUT!!.doWork()
-
-        // Then
-        verify(exactly = 1) { scheduleController.forcePush() }
-        assertThat(result, `is`(Result.success()))
-
-        val workState = WorkManager.getInstance(application).getWorkInfoById(workUuid).get()
-        assertEquals(WorkInfo.State.ENQUEUED, workState.state)
-    }
+            val workState = WorkManager.getInstance(application).getWorkInfoById(workUuid).get()
+            assertEquals(WorkInfo.State.CANCELLED, workState.state)
+        }
 
     @Test
-    fun givenConstraintsSatisfied_whenWorkEnqueued_thenWorkIsRunning() {
+    fun givenDatabaseNotEmptyAndAppInBackground_whenDoWork_thenForcePushTriggeredAndPeriodicWorkContinues() =
+        runTest {
+            // Given
+            mockInitials()
+            mockDatabaseEmpty(false)
+            mockAppInBackground()
+
+            // When
+            val result = SUT!!.doWork()
+
+            // Then
+            verify(exactly = 1) { scheduleController.forcePush() }
+            assertThat(result, `is`(Result.success()))
+
+            val workState = WorkManager.getInstance(application).getWorkInfoById(workUuid).get()
+            assertEquals(WorkInfo.State.ENQUEUED, workState.state)
+        }
+
+    @Test
+    fun givenConstraintsSatisfied_whenWorkEnqueued_thenWorkIsRunning() = runTest {
         // Given
+        mockInitials()
         val workManager = WorkManager.getInstance(application)
         val testDriver = WorkManagerTestInitHelper.getTestDriver(application)!!
         val constraints = Constraints.Builder()
@@ -133,8 +142,9 @@ class PushDataWorkerTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun givenConstraintsNotSatisfied_whenWorkEnqueued_thenWorkIsEnqueued() {
+    fun givenConstraintsNotSatisfied_whenWorkEnqueued_thenWorkIsEnqueued() = runTest {
         // Given
+        mockInitials()
         val workManager = WorkManager.getInstance(application)
         val testDriver = WorkManagerTestInitHelper.getTestDriver(application)!!
         val constraints = Constraints.Builder()
@@ -156,6 +166,22 @@ class PushDataWorkerTest : BaseRobolectricTest() {
     }
 
     // region helper methods -----------------------------------------------------------------------
+    private fun mockInitials() {
+        application.retenoMock = retenoImpl
+        coEvery { retenoImpl.serviceLocator } returns serviceLocator
+        every { serviceLocator.scheduleControllerProvider.get() } returns scheduleController
+        every { serviceLocator.retenoActivityHelperProvider.get() } returns retenoActivityHelper
+        every { serviceLocator.retenoDatabaseManagerProvider.get() } returns databaseManager
+
+        executor = Executors.newSingleThreadExecutor()
+        assertNotNull(executor)
+        initializeWorkManager(application, executor!!)
+        workUuid = PushDataWorker.enqueuePeriodicWork(WorkManager.getInstance(application))
+
+        SUT = TestWorkerBuilder<PushDataWorker>(application, executor!!).build()
+        assertNotNull(SUT)
+    }
+
     private fun initializeWorkManager(context: Context, executor: Executor) {
         val config: Configuration = Configuration.Builder()
             .setMinimumLoggingLevel(Log.DEBUG)
@@ -174,6 +200,10 @@ class PushDataWorkerTest : BaseRobolectricTest() {
 
     private fun mockDatabaseEmpty(isEmpty: Boolean) {
         every { databaseManager.isDatabaseEmpty() } returns isEmpty
+    }
+
+    private fun createReteno(): RetenoImpl {
+        return mockk()
     }
     // endregion helper methods --------------------------------------------------------------------
 }

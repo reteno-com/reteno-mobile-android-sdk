@@ -19,6 +19,8 @@ import com.reteno.core.util.Constants.BROADCAST_ACTION_PUSH_PERMISSION_CHANGED
 import com.reteno.core.util.Constants.BROADCAST_ACTION_RETENO_APP_RESUME
 import com.reteno.core.view.iam.IamView
 import com.reteno.core.view.iam.callback.InAppLifecycleCallback
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 
 
 class RetenoImpl @JvmOverloads constructor(
@@ -33,7 +35,8 @@ class RetenoImpl @JvmOverloads constructor(
         Companion.application = application
     }
 
-    val serviceLocator: ServiceLocator = ServiceLocator(application, accessKey, config.platform)
+    val serviceLocator: ServiceLocator =
+        ServiceLocator(application, accessKey, config.platform, config.userIdProvider)
     private val activityHelper: RetenoActivityHelper by lazy { serviceLocator.retenoActivityHelperProvider.get() }
 
     private val screenTrackingController: ScreenTrackingController by lazy { serviceLocator.screenTrackingControllerProvider.get() }
@@ -41,26 +44,15 @@ class RetenoImpl @JvmOverloads constructor(
     private val scheduleController by lazy { serviceLocator.scheduleControllerProvider.get() }
     private val eventController by lazy { serviceLocator.eventsControllerProvider.get() }
     private val iamController by lazy { serviceLocator.iamControllerProvider.get() }
-    private val sessionHandler by lazy {  serviceLocator.retenoSessionHandlerProvider.get() }
+    private val sessionHandler by lazy { serviceLocator.retenoSessionHandlerProvider.get() }
 
     override val appInbox by lazy { serviceLocator.appInboxProvider.get() }
     override val recommendation by lazy { serviceLocator.recommendationProvider.get() }
     private val iamView: IamView by lazy { serviceLocator.iamViewProvider.get() }
+    private var asyncScope: CoroutineScope = config.asyncScope
 
     init {
-        if (isOsVersionSupported()) {
-            try {
-                activityHelper.enableLifecycleCallbacks(this)
-                clearOldData()
-                contactController.checkIfDeviceRegistered()
-                sendAppResumeBroadcast()
-                pauseInAppMessages(config.isPausedInAppMessages)
-                fetchInAppMessages()
-            } catch (t: Throwable) {
-                /*@formatter:off*/ Logger.e(TAG, "init(): ", t)
-                /*@formatter:on*/
-            }
-        }
+        initSdk(config)
     }
 
     override fun start(activity: Activity) {
@@ -282,6 +274,24 @@ class RetenoImpl @JvmOverloads constructor(
         } catch (ex: Throwable) {
             /*@formatter:off*/ Logger.e(TAG, "setInAppMessagesPauseBehaviour(): behaviour = [$behaviour]", ex)
             /*@formatter:on*/
+        }
+    }
+
+    private fun initSdk(config: RetenoConfig) {
+        if (isOsVersionSupported()) {
+            activityHelper.enableLifecycleCallbacks(this@RetenoImpl)
+            clearOldData()
+            asyncScope.launch {
+                try {
+                    contactController.checkIfDeviceRegistered()
+                    sendAppResumeBroadcast()
+                    pauseInAppMessages(config.isPausedInAppMessages)
+                    fetchInAppMessages()
+                } catch (t: Throwable) {
+                    /*@formatter:off*/ Logger.e(TAG, "init(): ", t)
+                    /*@formatter:on*/
+                }
+            }
         }
     }
 
