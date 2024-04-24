@@ -11,7 +11,6 @@ import android.database.sqlite.SQLiteException
 import android.database.sqlite.SQLiteOpenHelper
 import android.os.SystemClock
 import android.util.Log
-import com.reteno.core.BuildConfig
 import com.reteno.core.data.local.database.schema.AppInboxSchema
 import com.reteno.core.data.local.database.schema.DbSchema.DATABASE_NAME
 import com.reteno.core.data.local.database.schema.DbSchema.DATABASE_VERSION
@@ -25,40 +24,35 @@ import com.reteno.core.data.local.database.schema.RecomEventsSchema
 import com.reteno.core.data.local.database.schema.UserSchema
 import com.reteno.core.data.local.database.schema.WrappedLinkSchema
 import com.reteno.core.util.Logger
-import com.reteno.core.util.SqlStateEncrypt
 import com.reteno.core.util.Util
-import kotlinx.coroutines.Dispatchers.IO
-import kotlinx.coroutines.runBlocking
-import java.io.IOException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 
 internal class RetenoDatabaseImpl(private val context: Context) : RetenoDatabase,
     SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
 
-    //TODO Delete this code when instructed to remove the sqlcipher library.
+    private val writableSQLDatabase: SQLiteDatabase by lazy { writableDatabase }
+    private val coroutineScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+
     init {
-        runBlocking(IO) {
-            if (Util.getDatabaseState(
-                    context,
-                    context.getDatabasePath(DATABASE_NAME)
-                ) == SqlStateEncrypt.ENCRYPTED
-            ) {
-                try {
-                    Util.decrypt(
-                        context,
-                        context.getDatabasePath(DATABASE_NAME),
-                        BuildConfig.SQL_PASSWORD.toByteArray()
-                    )
-                    /*@formatter:off*/ Logger.d(TAG, "RetenoDatabaseImpl.init{}" , "DB converted from sqlCipher")
+        dropDatabaseIfEncrypted()
+    }
+
+    private fun dropDatabaseIfEncrypted() {
+        coroutineScope.launch {
+            synchronized(LOCK) {
+                if (Util.isEncryptedDatabase(context, DATABASE_NAME)) {
+                    /*@formatter:off*/ Logger.i(TAG, "dropDatabaseIfEncrypted(): ", "Database was encrypted. Dropping database...")
                     /*@formatter:on*/
-                } catch (ioe: IOException) {
-                    /*@formatter:off*/ Logger.e(TAG, "RetenoDatabaseImpl.init{}" , ioe)
+                    context.deleteDatabase(DATABASE_NAME)
+                    /*@formatter:off*/ Logger.i(TAG, "dropDatabaseIfEncrypted(): ", "Database deleted.")
                     /*@formatter:on*/
                 }
             }
         }
     }
-
-    private val writableSQLDatabase: SQLiteDatabase by lazy { writableDatabase }
 
     override fun onOpen(db: SQLiteDatabase?) {
         /*@formatter:off*/ Logger.i(TAG, "onOpen(): ", "db = [" , db , "]")
