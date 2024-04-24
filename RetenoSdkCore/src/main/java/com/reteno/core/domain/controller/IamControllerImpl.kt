@@ -31,6 +31,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -195,7 +196,9 @@ internal class IamControllerImpl(
 
     override fun updateInAppMessage(inAppMessage: InAppMessage) {
         scope.launch {
-            iamRepository.updateInAppMessages(listOf(inAppMessage))
+            withContext(Dispatchers.IO) {
+                iamRepository.updateInAppMessages(listOf(inAppMessage))
+            }
         }
     }
 
