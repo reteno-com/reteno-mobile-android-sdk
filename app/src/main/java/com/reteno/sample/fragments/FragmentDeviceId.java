@@ -78,6 +78,8 @@ public class FragmentDeviceId extends BaseFragment {
         DeviceIdMode mode = DeviceIdInternal.INSTANCE.getModeInternal(configRepository.getDeviceId());
         binding.tvCurrentDeviceIdMode.setText(mode.toString());
         binding.tvCurrentDeviceId.setText(id);
+        binding.etDeviceId.setText(AppSharedPreferencesManager.getDeviceId(requireContext()));
+        binding.etDeviceIdMillis.setText(String.valueOf(AppSharedPreferencesManager.getDeviceIdDelay(requireContext())));
         binding.tvExternalId.setText(externalId);
         configRepository.getFcmToken(str -> {
                     binding.etFcmToken.setText(str);
@@ -101,6 +103,26 @@ public class FragmentDeviceId extends BaseFragment {
             AppSharedPreferencesManager.saveExternalId(view.getContext(), "");
             getReteno().setUserAttributes("");
             binding.etExternalId.setText("");
+            refreshUi();
+        });
+        binding.tilDeviceId.setStartIconOnClickListener(v -> {
+            String deviceId = binding.etDeviceId.getText().toString();
+            AppSharedPreferencesManager.saveDeviceId(view.getContext(), deviceId);
+            refreshUi();
+        });
+        binding.tilDeviceId.setEndIconOnClickListener(v -> {
+            AppSharedPreferencesManager.saveDeviceId(view.getContext(), "");
+            binding.etDeviceId.setText("");
+            refreshUi();
+        });
+        binding.tilDeviceIdFetchDelay.setStartIconOnClickListener(v -> {
+            String deviceIdMillis = binding.etDeviceIdMillis.getText().toString();
+            AppSharedPreferencesManager.saveDeviceIdDelay(view.getContext(), Integer.parseInt(deviceIdMillis));
+            refreshUi();
+        });
+        binding.tilDeviceIdFetchDelay.setEndIconOnClickListener(v -> {
+            AppSharedPreferencesManager.saveDeviceIdDelay(view.getContext(), 0);
+            binding.etDeviceId.setText("");
             refreshUi();
         });
     }
