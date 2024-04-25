@@ -23,6 +23,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.async
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -30,6 +31,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -53,7 +55,10 @@ internal class IamControllerImpl(
         private set
     private var htmlJob: Job? = null
 
-    private val _inAppMessage = MutableSharedFlow<InAppMessage>()
+    private val _inAppMessage = MutableSharedFlow<InAppMessage>(
+        extraBufferCapacity = 10,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    )
     private val postponedNotifications = mutableListOf<InAppMessage>()
     override val inAppMessagesFlow: SharedFlow<InAppMessage> = _inAppMessage
 
@@ -191,7 +196,9 @@ internal class IamControllerImpl(
 
     override fun updateInAppMessage(inAppMessage: InAppMessage) {
         scope.launch {
-            iamRepository.updateInAppMessages(listOf(inAppMessage))
+            withContext(Dispatchers.IO) {
+                iamRepository.updateInAppMessages(listOf(inAppMessage))
+            }
         }
     }
 

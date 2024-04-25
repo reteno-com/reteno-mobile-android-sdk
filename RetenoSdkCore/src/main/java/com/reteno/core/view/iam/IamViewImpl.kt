@@ -85,12 +85,6 @@ internal class IamViewImpl(
 
     private var initViewOnResume = false
 
-    init {
-        iamController.inAppMessagesFlow
-            .onEach { initialize(it) }
-            .launchIn(iamShowScope)
-    }
-
     private val retenoAndroidHandler: RetenoAndroidHandler = object : RetenoAndroidHandler() {
         override fun onMessagePosted(event: String?) {
             /*@formatter:off*/ Logger.i(TAG, "onMessagePosted(): ", "event = [", event, "]")
@@ -246,6 +240,10 @@ internal class IamViewImpl(
             createIamInActivity(activity)
             initViewOnResume = false
         }
+
+        iamController.inAppMessagesFlow
+            .onEach { initialize(it) }
+            .launchIn(iamShowScope)
 
         iamShowScope.launch {
             iamController.fullHtmlStateFlow.collect { result ->
