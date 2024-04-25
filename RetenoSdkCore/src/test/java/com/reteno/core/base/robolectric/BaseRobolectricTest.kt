@@ -60,9 +60,8 @@ abstract class BaseRobolectricTest {
         return RetenoImpl(
             application = application,
             accessKey = "Some key",
-            config = RetenoConfig().apply {
-                asyncScope = CoroutineScope(StandardTestDispatcher(testScheduler))
-            }
+            config = RetenoConfig(),
+            asyncScope = CoroutineScope(StandardTestDispatcher(testScheduler))
         ).also {
             application.retenoMock = it
         }

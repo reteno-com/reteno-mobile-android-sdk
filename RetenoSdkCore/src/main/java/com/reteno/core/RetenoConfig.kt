@@ -1,9 +1,6 @@
 package com.reteno.core
 
 import com.reteno.core.identification.UserIdProvider
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 
 /**
  * @param isPausedInAppMessages - indicates paused/resumed state for in-app messages
@@ -17,5 +14,4 @@ class RetenoConfig @JvmOverloads constructor(
     val userIdProvider: UserIdProvider? = null
 ) {
     var platform: String = "Android"
-    internal var asyncScope: CoroutineScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 }

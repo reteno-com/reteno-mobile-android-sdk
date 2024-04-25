@@ -20,13 +20,16 @@ import com.reteno.core.util.Constants.BROADCAST_ACTION_RETENO_APP_RESUME
 import com.reteno.core.view.iam.IamView
 import com.reteno.core.view.iam.callback.InAppLifecycleCallback
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 
 
-class RetenoImpl @JvmOverloads constructor(
+class RetenoImpl internal constructor(
     application: Application,
     accessKey: String,
-    config: RetenoConfig = RetenoConfig(),
+    config: RetenoConfig,
+    private val asyncScope: CoroutineScope
 ) : RetenoLifecycleCallbacks, Reteno {
 
     init {
@@ -49,11 +52,22 @@ class RetenoImpl @JvmOverloads constructor(
     override val appInbox by lazy { serviceLocator.appInboxProvider.get() }
     override val recommendation by lazy { serviceLocator.recommendationProvider.get() }
     private val iamView: IamView by lazy { serviceLocator.iamViewProvider.get() }
-    private var asyncScope: CoroutineScope = config.asyncScope
 
     init {
         initSdk(config)
     }
+
+    @JvmOverloads
+    constructor(
+        application: Application,
+        accessKey: String,
+        config: RetenoConfig = RetenoConfig()
+    ) : this(
+        application = application,
+        accessKey = accessKey,
+        config = config,
+        asyncScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+    )
 
     override fun start(activity: Activity) {
         if (!isOsVersionSupported()) {
