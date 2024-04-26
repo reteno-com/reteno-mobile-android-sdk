@@ -18,7 +18,7 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="This is a screen to test DeviceId functionality. \nSetting APP_SET_ID is performed asynchronously.\nIf APP_SET_ID is selected pull-to-refresh and update UI" />
+            android:text="This is a screen to test DeviceId functionality. \nSetting APP_SET_ID is performed asynchronously.\nIf APP_SET_ID is selected pull-to-refresh and update UI. You can customize device ID and emulate its asynchronous loading by changing delay time(Note that changing deviceId and delay will will work on the next launch of the app" />
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -52,6 +52,41 @@
                 android:layout_height="wrap_content"
                 android:textStyle="bold" />
         </LinearLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilDeviceId"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Set Device ID here"
+            app:endIconDrawable="@drawable/ic_delete"
+            app:endIconMode="custom"
+            app:endIconTint="@android:color/holo_red_dark"
+            app:startIconDrawable="@drawable/ic_ok"
+            app:startIconTint="@android:color/holo_green_dark">
+
+            <EditText
+                android:id="@+id/etDeviceId"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilDeviceIdFetchDelay"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Set Device ID return delay here(in millis)"
+            app:endIconDrawable="@drawable/ic_delete"
+            app:endIconMode="custom"
+            app:endIconTint="@android:color/holo_red_dark"
+            app:startIconDrawable="@drawable/ic_ok"
+            app:startIconTint="@android:color/holo_green_dark">
+
+            <EditText
+                android:id="@+id/etDeviceIdMillis"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="numberDecimal"/>
+        </com.google.android.material.textfield.TextInputLayout>
 
         <LinearLayout
             android:layout_width="match_parent"

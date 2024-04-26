@@ -9,11 +9,14 @@ import com.reteno.core.domain.controller.EventController
 import com.reteno.core.domain.controller.ScreenTrackingController
 import io.mockk.impl.annotations.RelaxedMockK
 import io.mockk.verify
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.TestScope
 import org.junit.Test
 import org.robolectric.Robolectric
 import org.robolectric.android.controller.ActivityController
 
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class RetenoActivityHelperFragmentTest : BaseRobolectricTest() {
     // region helper fields ------------------------------------------------------------------------
     private lateinit var screenTrackingController: ScreenTrackingController
@@ -34,6 +37,7 @@ class RetenoActivityHelperFragmentTest : BaseRobolectricTest() {
     override fun before() {
         super.before()
         SUT = RetenoActivityHelperImpl()
+        TestScope().createReteno()
         activityController = Robolectric.buildActivity(Activity::class.java).setup()
         SUT.enableLifecycleCallbacks(retenoLifecycleCallbacks)
 

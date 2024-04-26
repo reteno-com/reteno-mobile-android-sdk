@@ -1,10 +1,14 @@
 package com.reteno.core.base.robolectric
 
 import androidx.test.core.app.ApplicationProvider
-import com.reteno.core.RetenoApplication
+import com.reteno.core.RetenoConfig
 import com.reteno.core.RetenoImpl
 import com.reteno.core.data.local.database.util.*
 import io.mockk.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
 import org.junit.After
 import org.junit.Before
 import org.junit.runner.RunWith
@@ -12,6 +16,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.shadows.ShadowLooper
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
 @Config(
     sdk = [26],
@@ -25,9 +30,9 @@ abstract class BaseRobolectricTest {
     protected val application by lazy {
         ApplicationProvider.getApplicationContext() as RetenoTestApp
     }
-    protected val reteno by lazy {
-        (application as RetenoApplication).getRetenoInstance() as RetenoImpl
-    }
+
+    protected val reteno: RetenoImpl
+        get() = requireNotNull(application.retenoMock)
 
     @Before
     @Throws(Exception::class)
@@ -47,6 +52,18 @@ abstract class BaseRobolectricTest {
 
     @After
     open fun after() {
+        application.retenoMock = mockk()
         // Nothing here yet
+    }
+
+    protected fun TestScope.createReteno(): RetenoImpl {
+        return RetenoImpl(
+            application = application,
+            accessKey = "Some key",
+            config = RetenoConfig(),
+            asyncScope = CoroutineScope(StandardTestDispatcher(testScheduler))
+        ).also {
+            application.retenoMock = it
+        }
     }
 }
