@@ -1,6 +1,6 @@
 package com.reteno.core
 
-import com.reteno.core.identification.UserIdProvider
+import com.reteno.core.identification.DeviceIdProvider
 
 /**
  * @param isPausedInAppMessages - indicates paused/resumed state for in-app messages
@@ -11,7 +11,7 @@ import com.reteno.core.identification.UserIdProvider
  * */
 class RetenoConfig @JvmOverloads constructor(
     var isPausedInAppMessages: Boolean = false,
-    val userIdProvider: UserIdProvider? = null
+    val userIdProvider: DeviceIdProvider? = null
 ) {
     var platform: String = "Android"
 }

@@ -4,7 +4,7 @@ import android.provider.Settings
 import com.google.android.gms.appset.AppSet
 import com.reteno.core.RetenoImpl
 import com.reteno.core.data.local.sharedpref.SharedPrefsManager
-import com.reteno.core.identification.UserIdProvider
+import com.reteno.core.identification.DeviceIdProvider
 import com.reteno.core.util.Logger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -16,7 +16,7 @@ import kotlinx.coroutines.withContext
 
 internal class DeviceIdHelper(
     private val sharedPrefsManager: SharedPrefsManager,
-    private val userIdProvider: UserIdProvider?
+    private val userIdProvider: DeviceIdProvider?
 ) {
 
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
@@ -91,7 +91,7 @@ internal class DeviceIdHelper(
                     try {
                         var deviceId: String? = null
                         while (deviceId == null && isActive) {
-                            deviceId = userIdProvider.getUserId()
+                            deviceId = userIdProvider.getDeviceId()
                             delay(60L)
                         }
                         withContext(Dispatchers.Main) {

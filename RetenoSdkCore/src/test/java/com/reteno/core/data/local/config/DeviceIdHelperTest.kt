@@ -3,7 +3,7 @@ package com.reteno.core.data.local.config
 import com.reteno.core.base.robolectric.BaseRobolectricTest
 import com.reteno.core.base.robolectric.Constants.DEVICE_ID_ANDROID
 import com.reteno.core.data.local.sharedpref.SharedPrefsManager
-import com.reteno.core.identification.UserIdProvider
+import com.reteno.core.identification.DeviceIdProvider
 import io.mockk.MockKAnnotations
 import io.mockk.every
 import io.mockk.impl.annotations.RelaxedMockK
@@ -28,7 +28,7 @@ class DeviceIdHelperTest : BaseRobolectricTest() {
     @RelaxedMockK
     private lateinit var sharedPrefsManager: SharedPrefsManager
 
-    private var userIdProvider: UserIdProvider? = null
+    private var userIdProvider: DeviceIdProvider? = null
     // endregion helper fields ---------------------------------------------------------------------
 
     private lateinit var SUT: DeviceIdHelper

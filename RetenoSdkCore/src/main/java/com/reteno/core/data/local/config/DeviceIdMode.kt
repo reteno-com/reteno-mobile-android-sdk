@@ -1,7 +1,7 @@
 package com.reteno.core.data.local.config
 
 import com.reteno.core.RetenoConfig
-import com.reteno.core.identification.UserIdProvider
+import com.reteno.core.identification.DeviceIdProvider
 
 enum class DeviceIdMode {
 
@@ -36,7 +36,7 @@ enum class DeviceIdMode {
     /**
      * Uses the Id provided by user
      *
-     * Uses [UserIdProvider] from [RetenoConfig] as an Id provider
+     * Uses [DeviceIdProvider] from [RetenoConfig] as an Id provider
      */
     CLIENT_UUID
 }

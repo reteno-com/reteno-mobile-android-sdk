@@ -54,7 +54,7 @@ import com.reteno.core.domain.controller.ContactController
 import com.reteno.core.domain.controller.DeeplinkController
 import com.reteno.core.domain.controller.InteractionController
 import com.reteno.core.domain.controller.ScheduleController
-import com.reteno.core.identification.UserIdProvider
+import com.reteno.core.identification.DeviceIdProvider
 import com.reteno.core.lifecycle.RetenoActivityHelper
 import com.reteno.core.lifecycle.RetenoSessionHandler
 import com.reteno.core.view.iam.IamView
@@ -64,7 +64,7 @@ class ServiceLocator(
     context: Context,
     accessKey: String,
     platform: String,
-    userIdProvider: UserIdProvider? = null
+    userIdProvider: DeviceIdProvider? = null
 ) {
 
     private val retenoActivityHelperProviderInternal: RetenoActivityHelperProvider =

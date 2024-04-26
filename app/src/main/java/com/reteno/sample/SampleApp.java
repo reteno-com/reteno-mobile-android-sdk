@@ -9,7 +9,7 @@ import com.reteno.core.Reteno;
 import com.reteno.core.RetenoApplication;
 import com.reteno.core.RetenoConfig;
 import com.reteno.core.RetenoImpl;
-import com.reteno.core.identification.UserIdProvider;
+import com.reteno.core.identification.DeviceIdProvider;
 import com.reteno.core.lifecycle.ScreenTrackingConfig;
 import com.reteno.sample.util.AppSharedPreferencesManager;
 
@@ -28,8 +28,8 @@ public class SampleApp extends Application implements RetenoApplication {
         retenoInstance.autoScreenTracking(new ScreenTrackingConfig(false, excludeScreensFromTracking));
     }
 
-    private UserIdProvider createProvider() {
-        UserIdProvider provider = null;
+    private DeviceIdProvider createProvider() {
+        DeviceIdProvider provider = null;
         int deviceIdDelay = AppSharedPreferencesManager.getDeviceIdDelay(this);
         String deviceId = AppSharedPreferencesManager.getDeviceId(this);
         if (!deviceId.isEmpty()) {
