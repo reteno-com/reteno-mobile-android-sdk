@@ -127,7 +127,7 @@ internal class RetenoSessionHandlerImpl(
             scheduledMessages?.removeAll(nextMessages)
             findNextScheduledMessages()
 
-            if (nextMessages.first().time <= foregroundTimeMillis + TIME_COUNTER_DELAY) { // check it is not too late to show inApp
+            if (foregroundTimeMillis <= nextMessages.first().time + TIME_COUNTER_DELAY) { // check it is not too late to show inApp
                 showInApp?.invoke(nextMessages.map { it.inApp })
             }
         }

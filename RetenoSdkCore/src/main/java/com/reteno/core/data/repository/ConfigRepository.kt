@@ -5,6 +5,7 @@ import com.reteno.core.data.local.config.DeviceId
 interface ConfigRepository {
     fun setExternalUserId(externalId: String?)
     fun getDeviceId(): DeviceId
+    suspend fun awaitForDeviceId(): DeviceId
     fun saveFcmToken(token: String)
     fun getFcmToken(callback: (String) -> Unit)
     fun saveDefaultNotificationChannel(channel: String)

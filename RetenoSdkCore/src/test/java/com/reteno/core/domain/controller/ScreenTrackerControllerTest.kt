@@ -3,8 +3,6 @@ package com.reteno.core.domain.controller
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.testing.launchFragmentInContainer
 import androidx.lifecycle.Lifecycle
-import androidx.test.core.app.ApplicationProvider
-import com.reteno.core.RetenoImpl
 import com.reteno.core.base.robolectric.BaseRobolectricTest
 import com.reteno.core.di.ServiceLocator
 import com.reteno.core.lifecycle.RetenoActivityHelper
@@ -15,11 +13,15 @@ import io.mockk.every
 import io.mockk.impl.annotations.RelaxedMockK
 import io.mockk.mockkConstructor
 import io.mockk.unmockkConstructor
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runTest
 import org.junit.AfterClass
 import org.junit.BeforeClass
 import org.junit.Test
 
 //Integrational test for ScreenTrackerController
+@OptIn(ExperimentalCoroutinesApi::class)
 class ScreenTrackerControllerTest : BaseRobolectricTest() {
 
     companion object {
@@ -40,16 +42,21 @@ class ScreenTrackerControllerTest : BaseRobolectricTest() {
 
     @RelaxedMockK
     private lateinit var eventController: EventController
+
+    @RelaxedMockK
+    private lateinit var contactController: ContactController
     //endregion helper fields
 
     @Test
-    fun givenInit_whenFragmentOpens_thenEventNotRecorded() {
+    fun givenInit_whenFragmentOpens_thenEventNotRecorded() = runTest {
         //Given
         val helper = RetenoActivityHelperImpl()
         val controller = createController(helper)
         every { anyConstructed<ServiceLocator>().screenTrackingControllerProvider.get() } returns controller
         every { anyConstructed<ServiceLocator>().retenoActivityHelperProvider.get() } returns helper
-        val reteno = RetenoImpl(ApplicationProvider.getApplicationContext(), "Some key")
+        every { anyConstructed<ServiceLocator>().contactControllerProvider.get() } returns contactController
+        val reteno = createReteno()
+        advanceUntilIdle()
         //When
         val scenario = launchFragmentInContainer<Fragment>(initialState = Lifecycle.State.CREATED)
         scenario.onFragment {
@@ -60,13 +67,15 @@ class ScreenTrackerControllerTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun givenAutoScreenTrackingEnabled_whenFragmentOpens_thenEventNotRecorded() {
+    fun givenAutoScreenTrackingEnabled_whenFragmentOpens_thenEventRecorded() = runTest {
         //Given
         val helper = RetenoActivityHelperImpl()
         val controller = createController(helper)
         every { anyConstructed<ServiceLocator>().screenTrackingControllerProvider.get() } returns controller
         every { anyConstructed<ServiceLocator>().retenoActivityHelperProvider.get() } returns helper
-        val reteno = RetenoImpl(ApplicationProvider.getApplicationContext(), "Some key")
+        every { anyConstructed<ServiceLocator>().contactControllerProvider.get() } returns contactController
+        val reteno = createReteno()
+        advanceUntilIdle()
         reteno.autoScreenTracking(ScreenTrackingConfig(true))
         //When
         val scenario = launchFragmentInContainer<Fragment>(initialState = Lifecycle.State.CREATED)

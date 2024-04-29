@@ -2,6 +2,7 @@ package com.reteno.core.data
 
 import android.net.Uri
 import com.reteno.core.base.BaseUnitTest
+import com.reteno.core.data.local.config.DeviceIdMode
 import com.reteno.core.data.local.config.RestConfig
 import com.reteno.core.data.remote.api.ApiContract
 import com.reteno.core.data.remote.api.ConnectionManager
@@ -84,7 +85,13 @@ class RestClientImplTest : BaseUnitTest() {
     @Before
     override fun before() {
         super.before()
-        restClient = RestClientImpl(RestConfig(mockk(relaxed = true), ""), platform = "Android")
+        restClient = RestClientImpl(
+            RestConfig(
+                mockk(relaxed = true),
+                "",
+                initIdMode = DeviceIdMode.ANDROID_ID
+            ), platform = "Android"
+        )
     }
 
     @Test
@@ -254,7 +261,12 @@ class RestClientImplTest : BaseUnitTest() {
         // Given
         val inputStream = ByteArrayInputStream(TEST_RESPONSE.toByteArray())
         val spyCallback = spyk<ResponseCallback>()
-        every { spyCallback.onSuccess(any(), any()) } answers { spyCallback.onSuccess(secondArg<String>()) }
+        every {
+            spyCallback.onSuccess(
+                any(),
+                any()
+            )
+        } answers { spyCallback.onSuccess(secondArg<String>()) }
 
         every { httpURLConnection.responseCode } returns HttpURLConnection.HTTP_OK
         every { httpURLConnection.inputStream } returns inputStream
@@ -279,7 +291,12 @@ class RestClientImplTest : BaseUnitTest() {
         // Given
         val inputStream = ByteArrayInputStream(TEST_RESPONSE.toByteArray())
         val spyCallback = spyk<ResponseCallback>()
-        every { spyCallback.onSuccess(any(), any()) } answers { spyCallback.onSuccess(secondArg<String>()) }
+        every {
+            spyCallback.onSuccess(
+                any(),
+                any()
+            )
+        } answers { spyCallback.onSuccess(secondArg<String>()) }
 
         every { httpURLConnection.responseCode } returns HttpURLConnection.HTTP_MOVED_PERM
         every { httpURLConnection.inputStream } returns inputStream
