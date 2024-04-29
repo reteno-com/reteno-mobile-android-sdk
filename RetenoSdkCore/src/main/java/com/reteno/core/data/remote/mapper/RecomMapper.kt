@@ -16,7 +16,7 @@ internal fun RecomRequest.toRemote() = RecomRequestRemote(
     products = products,
     category = category,
     fields = fields,
-    filters = filters?.toRemote()
+    filters = filters?.map { it.toRemote() }
 )
 
 internal fun RecomFilter.toRemote() = RecomFilterRemote(
