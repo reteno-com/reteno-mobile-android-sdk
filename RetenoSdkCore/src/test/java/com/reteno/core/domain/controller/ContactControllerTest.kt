@@ -18,6 +18,7 @@ import io.mockk.impl.annotations.RelaxedMockK
 import io.mockk.mockkObject
 import io.mockk.unmockkObject
 import io.mockk.verify
+import kotlinx.coroutines.test.runTest
 import org.junit.AfterClass
 import org.junit.BeforeClass
 import org.junit.Test
@@ -364,7 +365,7 @@ class ContactControllerTest : BaseUnitTest() {
     }
 
     @Test
-    fun givenIsDeviceRegisteredFalse_whenCheckIfDeviceRegistered_thenSaveDeviceDataCalled() {
+    fun givenIsDeviceRegisteredFalse_whenCheckIfDeviceRegistered_thenSaveDeviceDataCalled() = runTest {
         // Given
         every { configRepository.isDeviceRegistered() } returns false
         every { configRepository.getFcmToken(any()) } answers {
@@ -386,7 +387,7 @@ class ContactControllerTest : BaseUnitTest() {
     }
 
     @Test
-    fun givenIsDeviceRegisteredTrue_whenCheckIfDeviceRegistered_thenSaveDeviceDataNotCalled() {
+    fun givenIsDeviceRegisteredTrue_whenCheckIfDeviceRegistered_thenSaveDeviceDataNotCalled() = runTest {
         // Given
         every { configRepository.isDeviceRegistered() } returns true
 

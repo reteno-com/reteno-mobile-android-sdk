@@ -6,6 +6,9 @@ import com.reteno.core.data.local.config.DeviceId
 import com.reteno.core.data.local.config.RestConfig
 import com.reteno.core.data.local.sharedpref.SharedPrefsManager
 import com.reteno.core.util.Logger
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlin.coroutines.coroutineContext
 
 
 internal class ConfigRepositoryImpl(
@@ -18,6 +21,13 @@ internal class ConfigRepositoryImpl(
     }
 
     override fun getDeviceId(): DeviceId = restConfig.deviceId
+
+    override suspend fun awaitForDeviceId(): DeviceId {
+        while (coroutineContext.isActive && restConfig.deviceId.id == "") {
+            delay(30L)
+        }
+        return restConfig.deviceId
+    }
 
     override fun saveFcmToken(token: String) {
         sharedPrefsManager.saveFcmToken(token)
