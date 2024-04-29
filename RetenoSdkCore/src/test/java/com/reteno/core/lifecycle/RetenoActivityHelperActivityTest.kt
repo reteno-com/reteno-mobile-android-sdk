@@ -2,16 +2,18 @@ package com.reteno.core.lifecycle
 
 import android.app.Activity
 import com.reteno.core.base.robolectric.BaseRobolectricTest
-import com.reteno.core.domain.controller.EventController
 import io.mockk.impl.annotations.RelaxedMockK
 import io.mockk.verify
 import junit.framework.TestCase.assertFalse
 import junit.framework.TestCase.assertTrue
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import org.robolectric.Robolectric
 import org.robolectric.android.controller.ActivityController
 
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class RetenoActivityHelperActivityTest : BaseRobolectricTest() {
 
     // region helper fields ------------------------------------------------------------------------
@@ -28,11 +30,13 @@ class RetenoActivityHelperActivityTest : BaseRobolectricTest() {
         super.before()
         SUT = RetenoActivityHelperImpl()
         activityController = Robolectric.buildActivity(Activity::class.java).setup()
-        SUT.enableLifecycleCallbacks(retenoLifecycleCallbacks)
     }
 
     @Test
-    fun whenActivityResumed_thenLifecycleCallbackResumeCalled() {
+    fun whenActivityResumed_thenLifecycleCallbackResumeCalled() = runTest {
+        //Given
+        createReteno()
+        SUT.enableLifecycleCallbacks(retenoLifecycleCallbacks)
         // When
         activityController.start().resume()
 
@@ -41,7 +45,10 @@ class RetenoActivityHelperActivityTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun whenActivityPaused_thenLifecycleCallbackPauseCalled() {
+    fun whenActivityPaused_thenLifecycleCallbackPauseCalled() = runTest {
+        //Given
+        createReteno()
+        SUT.enableLifecycleCallbacks(retenoLifecycleCallbacks)
         // When
         activityController.start().resume().pause()
 
@@ -50,7 +57,10 @@ class RetenoActivityHelperActivityTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun whenActivityStopped_thenLifecycleCallbackStopCalled() {
+    fun whenActivityStopped_thenLifecycleCallbackStopCalled() = runTest {
+        //Given
+        createReteno()
+        SUT.enableLifecycleCallbacks(retenoLifecycleCallbacks)
         // When
         activityController.start().resume().pause().stop()
 
@@ -59,7 +69,10 @@ class RetenoActivityHelperActivityTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun whenActivityIsStarted_thenCanPresentMessagesFalse() {
+    fun whenActivityIsStarted_thenCanPresentMessagesFalse() = runTest {
+        //Given
+        createReteno()
+        SUT.enableLifecycleCallbacks(retenoLifecycleCallbacks)
         // When
         activityController.start()
 
@@ -68,7 +81,10 @@ class RetenoActivityHelperActivityTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun whenActivityIsResumed_thenCanPresentMessagesTrue() {
+    fun whenActivityIsResumed_thenCanPresentMessagesTrue() = runTest {
+        //Given
+        createReteno()
+        SUT.enableLifecycleCallbacks(retenoLifecycleCallbacks)
         // When
         activityController.start().resume()
 
@@ -77,7 +93,10 @@ class RetenoActivityHelperActivityTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun whenActivityIsPaused_thenCanPresentMessagesFalse() {
+    fun whenActivityIsPaused_thenCanPresentMessagesFalse() = runTest {
+        //Given
+        createReteno()
+        SUT.enableLifecycleCallbacks(retenoLifecycleCallbacks)
         // When
         activityController.start().resume().pause()
 
@@ -86,7 +105,10 @@ class RetenoActivityHelperActivityTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun whenActivityIsStopped_thenCanPresentMessagesFalse() {
+    fun whenActivityIsStopped_thenCanPresentMessagesFalse() = runTest {
+        //Given
+        createReteno()
+        SUT.enableLifecycleCallbacks(retenoLifecycleCallbacks)
         // When
         activityController.start().resume().pause().stop()
 

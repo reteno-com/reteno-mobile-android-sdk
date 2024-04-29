@@ -12,7 +12,6 @@ ext.testDependencies = dependencyGroup {
 
     androidx()
     json()
-    sqlCipher()
     workManager()
 
     testImplementation 'com.google.firebase:firebase-messaging-ktx:23.1.0'
@@ -56,11 +55,6 @@ ext.androidx = dependencyGroup {
 
 ext.json = dependencyGroup {
     testImplementation 'org.json:json:20180813'
-}
-
-ext.sqlCipher = dependencyGroup {
-    testImplementation "net.zetetic:android-database-sqlcipher:4.5.2"
-    testImplementation "androidx.sqlite:sqlite:2.2.0"
 }
 
 ext.workManager = dependencyGroup {

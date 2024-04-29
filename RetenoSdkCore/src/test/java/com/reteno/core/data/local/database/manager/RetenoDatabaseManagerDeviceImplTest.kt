@@ -22,6 +22,7 @@ import io.mockk.impl.annotations.RelaxedMockK
 import io.mockk.justRun
 import io.mockk.verify
 import junit.framework.TestCase.assertTrue
+import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Test
@@ -235,7 +236,7 @@ class RetenoDatabaseManagerDeviceImplTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun givenDeviceCorruptedInDatabaseAndRowIdNotDetected_whenGetDevice_thenExceptionIsLogged() {
+    fun givenDeviceCorruptedInDatabaseAndRowIdNotDetected_whenGetDevice_thenExceptionIsLogged() = runTest {
         // Given
         mockCursorRecordsNumber(1)
         mockDatabaseQuery()

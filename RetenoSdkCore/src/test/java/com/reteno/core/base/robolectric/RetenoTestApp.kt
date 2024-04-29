@@ -14,7 +14,6 @@ import com.reteno.core.data.local.database.util.getRecomEvent
 import com.reteno.core.data.local.database.util.getUser
 import com.reteno.core.data.remote.OperationQueue
 import com.reteno.core.data.remote.PushOperationQueue
-import com.reteno.core.di.ServiceLocator
 import com.reteno.core.util.Logger
 import com.reteno.core.util.Util
 import io.mockk.every
@@ -22,7 +21,6 @@ import io.mockk.justRun
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.mockkStatic
-import io.mockk.spyk
 import java.time.ZonedDateTime
 import java.util.concurrent.Executor
 import java.util.concurrent.Executors
@@ -30,8 +28,8 @@ import java.util.concurrent.ScheduledExecutorService
 
 class RetenoTestApp : Application(), RetenoApplication {
 
-    private lateinit var retenoInstance: Reteno
     internal val scheduler: ScheduledExecutorService = mockStaticScheduler()
+    internal var retenoMock: RetenoImpl = mockk()
 
     init {
         mockStaticLogger()
@@ -46,15 +44,10 @@ class RetenoTestApp : Application(), RetenoApplication {
     override fun onCreate() {
         super.onCreate()
         Settings.Secure.putString(contentResolver, Settings.Secure.ANDROID_ID, Constants.DEVICE_ID_ANDROID)
-
-        retenoInstance = spyk(RetenoImpl(this, ""))
-        every { retenoInstance.getProperty("serviceLocator") } returns spyk(
-            ServiceLocator(this, "", "Android")
-        )
     }
 
     override fun getRetenoInstance(): Reteno {
-        return retenoInstance
+        return retenoMock
     }
 
     private fun mockStaticLogger() {
