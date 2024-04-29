@@ -13,16 +13,15 @@ import com.reteno.core.domain.SchedulerUtils
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import java.io.BufferedReader
 import java.io.ByteArrayOutputStream
 import java.io.FileInputStream
 import java.io.IOException
 import java.io.InputStream
 import java.io.InputStreamReader
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.withContext
-import net.sqlcipher.database.SQLiteStatement
 import java.text.SimpleDateFormat
 import java.time.Instant
 import java.time.ZoneId
@@ -33,7 +32,6 @@ import java.util.Locale
 import java.util.concurrent.TimeUnit
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.coroutineContext
-import net.sqlcipher.database.SQLiteDatabase as CipherSQLiteDatabase
 
 fun <T : Any> allElementsNull(vararg elements: T?) = elements.all { it == null }
 
