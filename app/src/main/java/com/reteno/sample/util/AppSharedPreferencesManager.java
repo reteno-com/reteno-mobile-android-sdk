@@ -10,6 +10,8 @@ public class AppSharedPreferencesManager {
 
     public static final String PREF_KEY_DEVICE_ID_MODE = "DEVICE_ID_MODE";
     public static final String PREF_KEY_EXTERNAL_ID = "EXTERNAL_ID";
+    private static String PREF_KEY_DEVICE_ID = "KEY_DEVICE_ID";
+    private static String PREF_KEY_DEVICE_ID_DELAY = "KEY_DEVICE_ID_DELAY";
 
     public static void saveDeviceIdMode(Context context, DeviceIdMode deviceIdMode) {
         getPrefs(context).edit().putString(PREF_KEY_DEVICE_ID_MODE, deviceIdMode.toString()).apply();
@@ -30,5 +32,21 @@ public class AppSharedPreferencesManager {
 
     public static String getExternalId(Context context) {
         return getPrefs(context).getString(PREF_KEY_EXTERNAL_ID, "");
+    }
+
+    public static void saveDeviceId(Context context, String deviceId) {
+        getPrefs(context).edit().putString(PREF_KEY_DEVICE_ID, deviceId).apply();
+    }
+
+    public static String getDeviceId(Context context) {
+        return getPrefs(context).getString(PREF_KEY_DEVICE_ID, "");
+    }
+
+    public static void saveDeviceIdDelay(Context context, int delay) {
+        getPrefs(context).edit().putInt(PREF_KEY_DEVICE_ID_DELAY, delay).apply();
+    }
+
+    public static int getDeviceIdDelay(Context context) {
+        return getPrefs(context).getInt(PREF_KEY_DEVICE_ID_DELAY, 0);
     }
 }

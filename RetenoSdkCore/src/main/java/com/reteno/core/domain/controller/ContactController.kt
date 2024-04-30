@@ -1,6 +1,5 @@
 package com.reteno.core.domain.controller
 
-import android.util.Log
 import com.reteno.core.data.repository.ConfigRepository
 import com.reteno.core.data.repository.ContactRepository
 import com.reteno.core.domain.Validator
@@ -15,6 +14,7 @@ class ContactController(
     private val configRepository: ConfigRepository
 ) {
 
+    @Volatile
     private var isDeviceSentThisSession = false
 
     fun setExternalUserId(id: String?) {
@@ -78,11 +78,12 @@ class ContactController(
         contactRepository.pushUserData()
     }
 
-    fun checkIfDeviceRegistered() {
+    suspend fun checkIfDeviceRegistered() {
         /*@formatter:off*/ Logger.i(TAG, "checkIfDeviceRegistered(): ")
         /*@formatter:on*/
         if (!configRepository.isDeviceRegistered()) {
             isDeviceSentThisSession = true
+            configRepository.awaitForDeviceId()
             configRepository.getFcmToken {
                 onNewContact(it, toParallelWork = false)
             }

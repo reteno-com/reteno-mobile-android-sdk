@@ -1,6 +1,3 @@
--keep class net.sqlcipher.** { *; }
--keep class net.sqlcipher.database.** { *; }
-
 
 ### Gson ProGuard and R8 rules which are relevant for all users
 ### This file is automatically recognized by ProGuard and R8, see https://developer.android.com/build/shrink-code#configuration-files
