@@ -7,20 +7,39 @@ import com.reteno.core.RetenoImpl
 import com.reteno.core.data.repository.ConfigRepository
 import com.reteno.core.domain.model.event.Event
 import com.reteno.core.lifecycle.RetenoSessionHandler
+import com.reteno.core.lifecycle.RetenoSessionHandler.SessionEvent
 import com.reteno.core.util.Logger
+import com.reteno.core.util.Util.asZonedDateTime
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.time.Duration.Companion.milliseconds
 
-internal class AppLifecycleController(
+class AppLifecycleController internal constructor(
     private val configRepository: ConfigRepository,
     private val eventController: EventController,
     private val sessionHandler: RetenoSessionHandler,
-    isLifecycleEventTrackingEnabled: Boolean
+    isLifecycleEventTrackingEnabled: Boolean,
+    scope: CoroutineScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 ) {
 
     private val isLifecycleEventTrackingEnabled = AtomicBoolean(isLifecycleEventTrackingEnabled)
     private var wasBackgrounded = false
     private var appOpenedTimestamp = System.currentTimeMillis()
+
+    init {
+        sessionHandler.sessionEventFlow
+            .onEach { handleSessionEvent(it) }
+            .launchIn(scope)
+        configRepository.notificationState
+            .drop(1)
+            .onEach { notifyNotificationsStateChanged(it) }
+            .launchIn(scope)
+    }
 
     @MainThread
     fun start() {
@@ -65,6 +84,8 @@ internal class AppLifecycleController(
         when {
             savedAppVersion.isEmpty() -> {
                 trackLifecycleEvent(Event.applicationInstall(version, code))
+                configRepository.saveAppVersion(version)
+                configRepository.saveAppBuildNumber(code)
             }
 
             savedAppVersion != version -> {
@@ -81,6 +102,33 @@ internal class AppLifecycleController(
             }
         }
     }
+
+    private fun notifyNotificationsStateChanged(notificationsEnabled: Boolean) {
+        val event = if (notificationsEnabled) {
+            Event.notificationsEnabled()
+        } else {
+            Event.notificationsDisabled()
+        }
+        trackLifecycleEvent(event = event)
+    }
+
+    private fun handleSessionEvent(event: SessionEvent) {
+        when (event) {
+            is SessionEvent.SessionEndEvent -> trackLifecycleEvent(
+                Event.sessionEnd(
+                    event.sessionId,
+                    event.endTime.asZonedDateTime(),
+                    event.durationInMillis.milliseconds.inWholeSeconds.toInt(),
+                    event.openCount,
+                    event.bgCount
+                )
+            )
+            is SessionEvent.SessionStartEvent -> trackLifecycleEvent(
+                Event.sessionStart(event.sessionId, event.startTime.asZonedDateTime())
+            )
+        }
+    }
+
 
     private fun trackLifecycleEvent(event: Event) {
         if (isLifecycleEventTrackingEnabled.get()) {

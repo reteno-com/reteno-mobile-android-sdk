@@ -1,8 +1,12 @@
 package com.reteno.core.data.repository
 
 import com.reteno.core.data.local.config.DeviceId
+import kotlinx.coroutines.flow.Flow
 
 interface ConfigRepository {
+
+    val notificationState: Flow<Boolean>
+
     fun setExternalUserId(externalId: String?)
     fun getDeviceId(): DeviceId
     suspend fun awaitForDeviceId(): DeviceId

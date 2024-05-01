@@ -69,9 +69,22 @@ sealed class Event(
             typeKey = LIFECYCLE_EVENT_APP_BACKGROUNDED,
             dateOccurred = ZonedDateTime.now(),
             listOf(
-                Parameter(APPLICATION_OPENED_TIME_PARAM_NAME, applicationOpenedTime.asZonedDateTime().formatToRemote()),
+                Parameter(
+                    APPLICATION_OPENED_TIME_PARAM_NAME,
+                    applicationOpenedTime.asZonedDateTime().formatToRemote()
+                ),
                 Parameter(SECONDS_IN_FOREGROUND_PARAM_NAME, secondsInForeground.toString())
             )
+        )
+
+        internal fun notificationsEnabled() = Custom(
+            typeKey = LIFECYCLE_EVENT_PUSH_SUBSCRIBED,
+            dateOccurred = ZonedDateTime.now(),
+        )
+
+        internal fun notificationsDisabled() = Custom(
+            typeKey = LIFECYCLE_EVENT_PUSH_UNSUBSCRIBED,
+            dateOccurred = ZonedDateTime.now(),
         )
 
         internal fun sessionStart(
@@ -83,9 +96,32 @@ sealed class Event(
             listOf(Parameter(SESSION_ID_PARAM_NAME, sessionId))
         )
 
+        internal fun sessionEnd(
+            sessionId: String,
+            endTime: ZonedDateTime,
+            durationInSeconds: Int,
+            openCount: Int,
+            bgCount: Int
+        ) = Custom(
+            SESSION_END_EVENT_TYPE_KEY,
+            ZonedDateTime.now(),
+            listOf(
+                Parameter(SESSION_ID_PARAM_NAME, sessionId),
+                Parameter(END_TIME_PARAM_NAME, endTime.formatToRemote()),
+                Parameter(DURATION_IN_SECONDS_PARAM_NAME, durationInSeconds.toString()),
+                Parameter(OPENED_COUNT_PARAM_NAME, openCount.toString()),
+                Parameter(BG_COUNT_PARAM_NAME, bgCount.toString())
+            ),
+        )
+
         internal const val SCREEN_VIEW_EVENT_TYPE_KEY = "screenView"
         internal const val SCREEN_VIEW_PARAM_NAME = "screenClass"
         internal const val SESSION_START_EVENT_TYPE_KEY = "SessionStarted"
+        internal const val SESSION_END_EVENT_TYPE_KEY = "SessionEnded"
+        internal const val END_TIME_PARAM_NAME = "endTime"
+        internal const val DURATION_IN_SECONDS_PARAM_NAME = "durationInSeconds"
+        internal const val OPENED_COUNT_PARAM_NAME = "applicationOpenedCount"
+        internal const val BG_COUNT_PARAM_NAME = "applicationBackgroundedCount"
         internal const val SESSION_ID_PARAM_NAME = "sessionID"
         internal const val LIFECYCLE_EVENT_APP_INSTALLED = "ApplicationInstalled"
         internal const val APP_VERSION_PARAM_NAME = "version"
@@ -98,5 +134,7 @@ sealed class Event(
         internal const val LIFECYCLE_EVENT_APP_BACKGROUNDED = "ApplicationBackgrounded"
         internal const val APPLICATION_OPENED_TIME_PARAM_NAME = "applicationOpenedTime"
         internal const val SECONDS_IN_FOREGROUND_PARAM_NAME = "secondsInForeground"
+        internal const val LIFECYCLE_EVENT_PUSH_SUBSCRIBED = "PushNotificationsSubscribed"
+        internal const val LIFECYCLE_EVENT_PUSH_UNSUBSCRIBED = "PushNotificationsUnsubscribed"
     }
 }

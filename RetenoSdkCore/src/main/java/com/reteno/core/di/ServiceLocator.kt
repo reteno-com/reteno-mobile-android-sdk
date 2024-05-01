@@ -66,7 +66,7 @@ class ServiceLocator(
     accessKey: String,
     platform: String,
     userIdProvider: DeviceIdProvider? = null,
-    isLifecycleTrackingEnabled: Boolean
+    isLifecycleTrackingEnabled: Boolean = true
 ) {
 
     private val retenoActivityHelperProviderInternal: RetenoActivityHelperProvider =
@@ -254,12 +254,6 @@ class ServiceLocator(
             eventsControllerProvider
         )
 
-    internal val appLifecycleControllerProvider = AppLifecycleControllerProvider(
-        configRepository = configRepositoryProviderInternal,
-        eventController = eventsControllerProvider,
-        isLifecycleEventsEnabled = isLifecycleTrackingEnabled
-    )
-
 
     /** Controller dependent **/
     internal val appInboxProvider: AppInboxProvider = AppInboxProvider(appInboxControllerProvider)
@@ -268,7 +262,7 @@ class ServiceLocator(
         RecommendationProvider(recommendationControllerProvider)
 
     private val retenoSessionHandlerProviderInternal =
-        RetenoSessionHandlerProvider(sharedPrefsManagerProvider, eventsControllerProvider)
+        RetenoSessionHandlerProvider(sharedPrefsManagerProvider)
     val retenoSessionHandlerProvider: ProviderWeakReference<RetenoSessionHandler>
         get() = retenoSessionHandlerProviderInternal
 
@@ -276,6 +270,13 @@ class ServiceLocator(
         iamRepositoryProvider,
         retenoSessionHandlerProviderInternal,
         eventsControllerProvider
+    )
+
+    internal val appLifecycleControllerProvider = AppLifecycleControllerProvider(
+        configRepository = configRepositoryProviderInternal,
+        eventController = eventsControllerProvider,
+        isLifecycleEventsEnabled = isLifecycleTrackingEnabled,
+        sessionHandlerProvider = retenoSessionHandlerProviderInternal
     )
 
     private val iamViewProviderInternal: IamViewProvider =

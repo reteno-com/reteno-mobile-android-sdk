@@ -3,21 +3,26 @@ package com.reteno.core.lifecycle
 import com.reteno.core.data.local.sharedpref.SharedPrefsManager
 import com.reteno.core.data.remote.model.iam.displayrules.targeting.InAppWithTime
 import com.reteno.core.data.remote.model.iam.message.InAppMessage
-import com.reteno.core.domain.controller.EventController
-import com.reteno.core.domain.model.event.Event
-import com.reteno.core.util.Util.asZonedDateTime
+import com.reteno.core.lifecycle.RetenoSessionHandler.SessionEvent
+import com.reteno.core.lifecycle.RetenoSessionHandler.SessionEvent.SessionStartEvent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
 import java.util.UUID
 
 internal class RetenoSessionHandlerImpl(
-    private val sharedPrefsManager: SharedPrefsManager,
-    private val eventController: EventController
-): RetenoSessionHandler {
+    private val sharedPrefsManager: SharedPrefsManager
+) : RetenoSessionHandler {
+
+    override val sessionEventFlow = MutableSharedFlow<SessionEvent>(
+        extraBufferCapacity = 2,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    )
 
     private var foregroundTimeMillis: Long = 0L
     private var sessionStartTimestamp: Long = 0L
@@ -47,6 +52,7 @@ internal class RetenoSessionHandlerImpl(
     }
 
     override fun stop() {
+        sharedPrefsManager.saveBackgroundCount(sharedPrefsManager.getBackgroundCount() + 1)
         appPausedTimestamp = System.currentTimeMillis()
         sharedPrefsManager.saveAppSessionTime(foregroundTimeMillis)
         sharedPrefsManager.saveAppStoppedTimestamp(appPausedTimestamp)
@@ -54,7 +60,10 @@ internal class RetenoSessionHandlerImpl(
         job = null
     }
 
-    override fun scheduleInAppMessages(messages: MutableList<InAppWithTime>, onTimeMatch: (List<InAppMessage>) -> Unit) {
+    override fun scheduleInAppMessages(
+        messages: MutableList<InAppWithTime>,
+        onTimeMatch: (List<InAppMessage>) -> Unit
+    ) {
         if (messages.isEmpty()) return
 
         showInApp = onTimeMatch
@@ -95,17 +104,21 @@ internal class RetenoSessionHandlerImpl(
         val appStoppedTimestamp = sharedPrefsManager.getLastInteractionTime()
         val pausedTime = appResumedTimestamp - appStoppedTimestamp
         if (pausedTime > SESSION_RESET_TIME) {
+            sessionEventFlow.tryEmit(
+                SessionEvent.SessionEndEvent(
+                    sharedPrefsManager.getSessionId().orEmpty(),
+                    System.currentTimeMillis(),
+                    sharedPrefsManager.getSessionStartTimestamp(),
+                    sharedPrefsManager.getOpenCount(),
+                    sharedPrefsManager.getBackgroundCount()
+                )
+            )
             previousForegroundTime = 0L
             sessionStartTimestamp = appResumedTimestamp
             sessionId = UUID.randomUUID().toString()
-            eventController.trackEvent(
-                Event.sessionStart(
-                    sessionId,
-                    sessionStartTimestamp.asZonedDateTime()
-                )
-            )
             sharedPrefsManager.saveSessionStartTimestamp(sessionStartTimestamp)
             sharedPrefsManager.saveSessionId(sessionId = sessionId)
+            sessionEventFlow.tryEmit(SessionStartEvent(sessionId, sessionStartTimestamp))
         } else {
             previousForegroundTime = sharedPrefsManager.getAppSessionTime()
             sessionStartTimestamp = sharedPrefsManager.getSessionStartTimestamp()
@@ -113,6 +126,7 @@ internal class RetenoSessionHandlerImpl(
             if (sessionStartTimestamp == 0L) sessionStartTimestamp = appStoppedTimestamp
         }
         foregroundTimeMillis = previousForegroundTime
+        sharedPrefsManager.saveOpenCount(sharedPrefsManager.getOpenCount() + 1)
     }
 
     private fun countTime() {

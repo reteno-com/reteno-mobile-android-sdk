@@ -253,6 +253,36 @@ internal class SharedPrefsManager {
             ?.apply()
     }
 
+    fun getOpenCount(): Int {
+        val result = sharedPreferences.getInt(PREF_KEY_APP_OPEN_COUNT, 0)
+        /*@formatter:off*/ Logger.i(TAG, "getOpenCount(): ", "result = ", result)
+        /*@formatter:on*/
+        return result
+    }
+
+    fun saveOpenCount(count: Int) {
+        /*@formatter:off*/ Logger.i(TAG, "saveOpenCount(): ", "count = [", count, "]")
+        /*@formatter:on*/
+        sharedPreferences.edit()
+            ?.putInt(PREF_KEY_APP_OPEN_COUNT, count)
+            ?.apply()
+    }
+
+    fun getBackgroundCount(): Int {
+        val result = sharedPreferences.getInt(PREF_KEY_APP_BG_COUNT, 0)
+        /*@formatter:off*/ Logger.i(TAG, "getBackgroundCount(): ", "result = ", result)
+        /*@formatter:on*/
+        return result
+    }
+
+    fun saveBackgroundCount(count: Int) {
+        /*@formatter:off*/ Logger.i(TAG, "saveBackgroundCount(): ", "count = [", count, "]")
+        /*@formatter:on*/
+        sharedPreferences.edit()
+            ?.putInt(PREF_KEY_APP_BG_COUNT, count)
+            ?.apply()
+    }
+
     companion object {
         private val TAG: String = SharedPrefsManager::class.java.simpleName
 
@@ -273,5 +303,7 @@ internal class SharedPrefsManager {
         private const val PREF_KEY_FIRST_LAUNCH = "first_launch"
         private const val PREF_KEY_APP_VERSION = "app_version"
         private const val PREF_KEY_APP_BUILD_NUMBER = "app_build_number"
+        private const val PREF_KEY_APP_OPEN_COUNT = "open_count"
+        private const val PREF_KEY_APP_BG_COUNT = "background_count"
     }
 }

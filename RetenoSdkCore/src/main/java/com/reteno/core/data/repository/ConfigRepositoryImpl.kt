@@ -7,6 +7,7 @@ import com.reteno.core.data.local.config.RestConfig
 import com.reteno.core.data.local.sharedpref.SharedPrefsManager
 import com.reteno.core.util.Logger
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.isActive
 import kotlin.coroutines.coroutineContext
 
@@ -15,6 +16,8 @@ internal class ConfigRepositoryImpl(
     private val sharedPrefsManager: SharedPrefsManager,
     private val restConfig: RestConfig
 ) : ConfigRepository {
+
+    override val notificationState = MutableStateFlow(sharedPrefsManager.isNotificationsEnabled())
 
     init {
         trackFirstLaunch()
@@ -85,6 +88,7 @@ internal class ConfigRepositoryImpl(
         sharedPrefsManager.getDefaultNotificationChannel()
 
     override fun saveNotificationsEnabled(enabled: Boolean) {
+        notificationState.value = enabled
         sharedPrefsManager.saveNotificationsEnabled(enabled)
     }
 
