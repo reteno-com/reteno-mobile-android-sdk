@@ -67,6 +67,22 @@ interface Reteno {
     fun logScreenView(screenName: String)
 
     /**
+     *  Enable/Disable automatic tracking app lifecycle events, which includes:
+     *
+     *  ApplicationInstalled
+     *  ApplicationUpdated
+     *  ApplicationOpened
+     *  ApplicationBackgrounded
+     *  PushNotificationsSubscribed
+     *  PushNotificationsUnsubscribed
+     *  SessionStarted
+     *  SessionEnded
+     *
+     *  @param isEnabled - enable/disable automatic lifecycle event tracking
+     */
+    fun enableLifecycleEvents(isEnabled: Boolean)
+
+    /**
      * Enable/disable automatic screen tracking.
      * Screen view event happens on Fragment's onStart() by default lifecycle callback.
      * @see com.reteno.core.lifecycle.ScreenTrackingConfig for additional configuration

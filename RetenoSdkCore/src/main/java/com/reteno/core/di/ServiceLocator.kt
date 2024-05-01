@@ -15,6 +15,7 @@ import com.reteno.core.di.provider.RetenoActivityHelperProvider
 import com.reteno.core.di.provider.SharedPrefsManagerProvider
 import com.reteno.core.di.provider.WorkManagerProvider
 import com.reteno.core.di.provider.controller.AppInboxControllerProvider
+import com.reteno.core.di.provider.controller.AppLifecycleControllerProvider
 import com.reteno.core.di.provider.controller.ContactControllerProvider
 import com.reteno.core.di.provider.controller.DeeplinkControllerProvider
 import com.reteno.core.di.provider.controller.EventsControllerProvider
@@ -64,7 +65,8 @@ class ServiceLocator(
     context: Context,
     accessKey: String,
     platform: String,
-    userIdProvider: DeviceIdProvider? = null
+    userIdProvider: DeviceIdProvider? = null,
+    isLifecycleTrackingEnabled: Boolean
 ) {
 
     private val retenoActivityHelperProviderInternal: RetenoActivityHelperProvider =
@@ -80,7 +82,8 @@ class ServiceLocator(
         DeviceIdHelperProvider(sharedPrefsManagerProvider, userIdProvider)
     private val restConfigProvider: RestConfigProvider =
         RestConfigProvider(deviceIdHelperProvider, accessKey, userIdProvider != null)
-    private val restClientProvider: RestClientProvider = RestClientProvider(restConfigProvider, platform)
+    private val restClientProvider: RestClientProvider =
+        RestClientProvider(restConfigProvider, platform)
 
     private val apiClientProvider: ApiClientProvider = ApiClientProvider(restClientProvider)
     private val databaseProvider: DatabaseProvider = DatabaseProvider(context)
@@ -250,6 +253,12 @@ class ServiceLocator(
             retenoActivityHelperProviderInternal,
             eventsControllerProvider
         )
+
+    internal val appLifecycleControllerProvider = AppLifecycleControllerProvider(
+        configRepository = configRepositoryProviderInternal,
+        eventController = eventsControllerProvider,
+        isLifecycleEventsEnabled = isLifecycleTrackingEnabled
+    )
 
 
     /** Controller dependent **/

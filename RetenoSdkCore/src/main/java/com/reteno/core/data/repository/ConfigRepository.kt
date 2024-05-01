@@ -16,4 +16,9 @@ interface ConfigRepository {
 
     fun saveDeviceRegistered(registered: Boolean)
     fun isDeviceRegistered(): Boolean
+    fun isFirstLaunch(): Boolean
+    fun getAppVersion(): String
+    fun saveAppVersion(version: String)
+    fun getAppBuildNumber(): Long
+    fun saveAppBuildNumber(number: Long)
 }

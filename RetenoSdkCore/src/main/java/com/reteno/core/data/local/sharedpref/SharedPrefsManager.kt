@@ -208,6 +208,51 @@ internal class SharedPrefsManager {
         return result
     }
 
+    fun isFirstLaunch(): Boolean {
+        val result = sharedPreferences.getBoolean(PREF_KEY_FIRST_LAUNCH, true)
+        /*@formatter:off*/ Logger.i(TAG, "isFirstLaunch(): ", "result = ", result)
+        /*@formatter:on*/
+        return result
+    }
+
+    fun setFirstLaunch(isFirstLaunch: Boolean) {
+        /*@formatter:off*/ Logger.i(TAG, "setFirstLaunch(): ", "isFirstLaunch = [", isFirstLaunch, "]")
+        /*@formatter:on*/
+        sharedPreferences.edit()
+            ?.putBoolean(PREF_KEY_FIRST_LAUNCH, isFirstLaunch)
+            ?.apply()
+    }
+
+    fun getAppVersion(): String {
+        val result = sharedPreferences.getString(PREF_KEY_APP_VERSION, "")
+        /*@formatter:off*/ Logger.i(TAG, "getAppVersion(): ", "result = ", result)
+        /*@formatter:on*/
+        return result.orEmpty()
+    }
+
+    fun saveAppVersion(version: String) {
+        /*@formatter:off*/ Logger.i(TAG, "saveAppVersion(): ", "version = [", version, "]")
+        /*@formatter:on*/
+        sharedPreferences.edit()
+            ?.putString(PREF_KEY_APP_VERSION, version)
+            ?.apply()
+    }
+
+    fun getAppBuildNumber(): Long {
+        val result = sharedPreferences.getLong(PREF_KEY_APP_BUILD_NUMBER, 0L)
+        /*@formatter:off*/ Logger.i(TAG, "getAppBuildNumber(): ", "result = ", result)
+        /*@formatter:on*/
+        return result
+    }
+
+    fun saveAppBuildNumber(number: Long) {
+        /*@formatter:off*/ Logger.i(TAG, "saveAppBuildNumber(): ", "version = [", number, "]")
+        /*@formatter:on*/
+        sharedPreferences.edit()
+            ?.putLong(PREF_KEY_APP_BUILD_NUMBER, number)
+            ?.apply()
+    }
+
     companion object {
         private val TAG: String = SharedPrefsManager::class.java.simpleName
 
@@ -225,5 +270,8 @@ internal class SharedPrefsManager {
         private const val PREF_KEY_SESSION_START_TIMESTAMP = "session_start_timestamp"
         private const val PREF_KEY_SESSION_ID = "session_id"
         private const val PREF_KEY_APP_SESSION_TIME = "session_time"
+        private const val PREF_KEY_FIRST_LAUNCH = "first_launch"
+        private const val PREF_KEY_APP_VERSION = "app_version"
+        private const val PREF_KEY_APP_BUILD_NUMBER = "app_build_number"
     }
 }

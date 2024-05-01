@@ -11,6 +11,7 @@ import com.reteno.core.identification.DeviceIdProvider
  * */
 class RetenoConfig @JvmOverloads constructor(
     var isPausedInAppMessages: Boolean = false,
+    val isLifecycleEventsEnabled: Boolean = true,
     val userIdProvider: DeviceIdProvider? = null
 ) {
     var platform: String = "Android"

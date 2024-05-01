@@ -39,7 +39,7 @@ class RetenoImpl internal constructor(
     }
 
     val serviceLocator: ServiceLocator =
-        ServiceLocator(application, accessKey, config.platform, config.userIdProvider)
+        ServiceLocator(application, accessKey, config.platform, config.userIdProvider, config.isLifecycleEventsEnabled)
     private val activityHelper: RetenoActivityHelper by lazy { serviceLocator.retenoActivityHelperProvider.get() }
 
     private val screenTrackingController: ScreenTrackingController by lazy { serviceLocator.screenTrackingControllerProvider.get() }
@@ -48,6 +48,7 @@ class RetenoImpl internal constructor(
     private val eventController by lazy { serviceLocator.eventsControllerProvider.get() }
     private val iamController by lazy { serviceLocator.iamControllerProvider.get() }
     private val sessionHandler by lazy { serviceLocator.retenoSessionHandlerProvider.get() }
+    private val appLifecycleController by lazy { serviceLocator.appLifecycleControllerProvider.get() }
 
     override val appInbox by lazy { serviceLocator.appInboxProvider.get() }
     override val recommendation by lazy { serviceLocator.recommendationProvider.get() }
@@ -86,6 +87,7 @@ class RetenoImpl internal constructor(
         try {
             contactController.checkIfDeviceRequestSentThisSession()
             sessionHandler.start()
+            appLifecycleController.start()
             startPushScheduler()
             iamView.resume(activity)
         } catch (ex: Throwable) {
@@ -102,6 +104,7 @@ class RetenoImpl internal constructor(
         /*@formatter:on*/
         try {
             sessionHandler.stop()
+            appLifecycleController.stop()
             stopPushScheduler()
             iamView.pause(activity)
         } catch (ex: Throwable) {
@@ -229,6 +232,20 @@ class RetenoImpl internal constructor(
         }
     }
 
+    override fun enableLifecycleEvents(isEnabled: Boolean) {
+        if (!isOsVersionSupported()) {
+            return
+        }
+        /*@formatter:off*/ Logger.i(TAG, "enableLifecycleEvents(): ", "isEnabled = [" , isEnabled , "]")
+        /*@formatter:on*/
+        try {
+            appLifecycleController.enableLifecycleEvents(isEnabled)
+        } catch (ex: Throwable) {
+            /*@formatter:off*/ Logger.e(TAG, "enableLifecycleEvents(): isEnabled = [$isEnabled]", ex)
+            /*@formatter:on*/
+        }
+    }
+
     override fun autoScreenTracking(config: ScreenTrackingConfig) {
         if (!isOsVersionSupported()) {
             return
@@ -295,6 +312,7 @@ class RetenoImpl internal constructor(
         if (isOsVersionSupported()) {
             activityHelper.enableLifecycleCallbacks(this@RetenoImpl)
             clearOldData()
+            initMetadata()
             asyncScope.launch {
                 try {
                     contactController.checkIfDeviceRegistered()
@@ -307,6 +325,10 @@ class RetenoImpl internal constructor(
                 }
             }
         }
+    }
+
+    private fun initMetadata() {
+        appLifecycleController.initMetadata()
     }
 
     private fun clearOldData() {
