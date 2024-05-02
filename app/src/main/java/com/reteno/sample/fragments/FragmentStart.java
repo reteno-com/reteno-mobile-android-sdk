@@ -112,6 +112,7 @@ public class FragmentStart extends BaseFragment {
         screens.add(new ScreenItem("Custom Data", R.id.start_to_custom_data, getArguments()));
         screens.add(new ScreenItem("Database", FragmentStartDirections.startToDatabase()));
         screens.add(new ScreenItem("Custom event", FragmentStartDirections.startToCustomEvent()));
+        screens.add(new ScreenItem("App lifecycle events", FragmentStartDirections.startToAppLifecycleEvents()));
         screens.add(new ScreenItem("Force push", FragmentStartDirections.startToForcePush()));
         screens.add(new ScreenItem("Screen tracking", FragmentStartDirections.startToScreenTracking()));
         screens.add(new ScreenItem("App Inbox", FragmentStartDirections.startToAppInbox()));

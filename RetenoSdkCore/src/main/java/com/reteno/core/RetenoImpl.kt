@@ -8,6 +8,7 @@ import com.reteno.core.di.ServiceLocator
 import com.reteno.core.domain.controller.ScreenTrackingController
 import com.reteno.core.domain.model.ecom.EcomEvent
 import com.reteno.core.domain.model.event.Event
+import com.reteno.core.domain.model.event.LifecycleTrackingOptions
 import com.reteno.core.domain.model.user.User
 import com.reteno.core.domain.model.user.UserAttributesAnonymous
 import com.reteno.core.features.iam.InAppPauseBehaviour
@@ -39,7 +40,7 @@ class RetenoImpl internal constructor(
     }
 
     val serviceLocator: ServiceLocator =
-        ServiceLocator(application, accessKey, config.platform, config.userIdProvider, config.isLifecycleEventsEnabled)
+        ServiceLocator(application, accessKey, config.platform, config.userIdProvider, config.lifecycleTrackingOptions)
     private val activityHelper: RetenoActivityHelper by lazy { serviceLocator.retenoActivityHelperProvider.get() }
 
     private val screenTrackingController: ScreenTrackingController by lazy { serviceLocator.screenTrackingControllerProvider.get() }
@@ -232,16 +233,16 @@ class RetenoImpl internal constructor(
         }
     }
 
-    override fun enableLifecycleEvents(isEnabled: Boolean) {
+    override fun setLifecycleEventConfig(lifecycleEventConfig: LifecycleTrackingOptions) {
         if (!isOsVersionSupported()) {
             return
         }
-        /*@formatter:off*/ Logger.i(TAG, "enableLifecycleEvents(): ", "isEnabled = [" , isEnabled , "]")
+        /*@formatter:off*/ Logger.i(TAG, "setLifecycleEventConfig(): ", "lifecycleEventConfig = [" , lifecycleEventConfig , "]")
         /*@formatter:on*/
         try {
-            appLifecycleController.enableLifecycleEvents(isEnabled)
+            appLifecycleController.setLifecycleEventConfig(lifecycleEventConfig)
         } catch (ex: Throwable) {
-            /*@formatter:off*/ Logger.e(TAG, "enableLifecycleEvents(): isEnabled = [$isEnabled]", ex)
+            /*@formatter:off*/ Logger.e(TAG, "setLifecycleEventConfig(): lifecycleEventConfig = [$lifecycleEventConfig]", ex)
             /*@formatter:on*/
         }
     }

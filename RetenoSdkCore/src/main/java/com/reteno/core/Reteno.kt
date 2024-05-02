@@ -2,6 +2,7 @@ package com.reteno.core
 
 import com.reteno.core.domain.model.ecom.EcomEvent
 import com.reteno.core.domain.model.event.Event
+import com.reteno.core.domain.model.event.LifecycleTrackingOptions
 import com.reteno.core.domain.model.user.User
 import com.reteno.core.domain.model.user.UserAttributesAnonymous
 import com.reteno.core.features.appinbox.AppInbox
@@ -67,20 +68,25 @@ interface Reteno {
     fun logScreenView(screenName: String)
 
     /**
-     *  Enable/Disable automatic tracking app lifecycle events, which includes:
+     * Method to alter the behavior of automatic app lifecycle event tracking
      *
-     *  ApplicationInstalled
-     *  ApplicationUpdated
-     *  ApplicationOpened
-     *  ApplicationBackgrounded
-     *  PushNotificationsSubscribed
-     *  PushNotificationsUnsubscribed
-     *  SessionStarted
-     *  SessionEnded
+     * The AppLifecycle category:
+     *      ApplicationInstalled
+     *      ApplicationUpdated
+     *      ApplicationOpened
+     *      ApplicationBackgrounded
      *
-     *  @param isEnabled - enable/disable automatic lifecycle event tracking
+     * The PushSubsription category:
+     *      PushNotificationsSubscribed
+     *      PushNotificationsUnsubscribed
+     *
+     * The Sessions category:
+     *      SessionStarted
+     *      SessionEnded
+     *
+     *  @param lifecycleTrackingOptions - options that controls enabled state of events above
      */
-    fun enableLifecycleEvents(isEnabled: Boolean)
+    fun setLifecycleEventConfig(lifecycleTrackingOptions: LifecycleTrackingOptions)
 
     /**
      * Enable/disable automatic screen tracking.

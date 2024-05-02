@@ -53,6 +53,9 @@
         <action
             android:id="@+id/start_to_ecomEvents"
             app:destination="@id/app_navigation_ecom_events" />
+        <action
+            android:id="@+id/start_to_appLifecycleEvents"
+            app:destination="@id/fragmentAppLifecycleEvents" />
     </fragment>
 
     <fragment
@@ -126,6 +129,12 @@
         android:name="com.reteno.sample.fragments.FragmentRecommendationsPost"
         android:label="fragment_recommendations_post"
         tools:layout="@layout/fragment_recommendations_post" />
+
+    <fragment
+        android:id="@+id/fragmentAppLifecycleEvents"
+        android:name="com.reteno.sample.fragments.FragmentAppLifecycleEvents"
+        android:label="fragment_app_lifecycle_events"
+        tools:layout="@layout/fragment_app_lifecycle_events" />
 
     <include app:graph="@navigation/nav_graph_ecom_events" />
     <include app:graph="@navigation/nav_graph_database" />

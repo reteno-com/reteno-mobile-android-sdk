@@ -51,10 +51,12 @@ import com.reteno.core.di.provider.repository.IamRepositoryProvider
 import com.reteno.core.di.provider.repository.InteractionRepositoryProvider
 import com.reteno.core.di.provider.repository.LogEventRepositoryProvider
 import com.reteno.core.di.provider.repository.RecommendationRepositoryProvider
+import com.reteno.core.domain.controller.AppLifecycleController
 import com.reteno.core.domain.controller.ContactController
 import com.reteno.core.domain.controller.DeeplinkController
 import com.reteno.core.domain.controller.InteractionController
 import com.reteno.core.domain.controller.ScheduleController
+import com.reteno.core.domain.model.event.LifecycleTrackingOptions
 import com.reteno.core.identification.DeviceIdProvider
 import com.reteno.core.lifecycle.RetenoActivityHelper
 import com.reteno.core.lifecycle.RetenoSessionHandler
@@ -66,7 +68,7 @@ class ServiceLocator(
     accessKey: String,
     platform: String,
     userIdProvider: DeviceIdProvider? = null,
-    isLifecycleTrackingEnabled: Boolean = true
+    lifecycleTrackingOptions: LifecycleTrackingOptions = LifecycleTrackingOptions.ALL
 ) {
 
     private val retenoActivityHelperProviderInternal: RetenoActivityHelperProvider =
@@ -272,12 +274,15 @@ class ServiceLocator(
         eventsControllerProvider
     )
 
-    internal val appLifecycleControllerProvider = AppLifecycleControllerProvider(
+    private val appLifecycleControllerProviderInternal = AppLifecycleControllerProvider(
         configRepository = configRepositoryProviderInternal,
         eventController = eventsControllerProvider,
-        isLifecycleEventsEnabled = isLifecycleTrackingEnabled,
+        lifecycleTrackingOptions = lifecycleTrackingOptions,
         sessionHandlerProvider = retenoSessionHandlerProviderInternal
     )
+
+    val appLifecycleControllerProvider: ProviderWeakReference<AppLifecycleController>
+        get() = appLifecycleControllerProviderInternal
 
     private val iamViewProviderInternal: IamViewProvider =
         IamViewProvider(retenoActivityHelperProviderInternal, iamControllerProvider)

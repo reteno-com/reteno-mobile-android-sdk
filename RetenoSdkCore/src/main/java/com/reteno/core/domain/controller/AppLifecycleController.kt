@@ -6,30 +6,32 @@ import androidx.annotation.MainThread
 import com.reteno.core.RetenoImpl
 import com.reteno.core.data.repository.ConfigRepository
 import com.reteno.core.domain.model.event.Event
+import com.reteno.core.domain.model.event.LifecycleEvent
+import com.reteno.core.domain.model.event.LifecycleTrackingOptions
 import com.reteno.core.lifecycle.RetenoSessionHandler
 import com.reteno.core.lifecycle.RetenoSessionHandler.SessionEvent
 import com.reteno.core.util.Logger
 import com.reteno.core.util.Util.asZonedDateTime
+import com.reteno.core.util.Util.toTypeMap
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
-import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.time.Duration.Companion.milliseconds
 
 class AppLifecycleController internal constructor(
     private val configRepository: ConfigRepository,
     private val eventController: EventController,
     private val sessionHandler: RetenoSessionHandler,
-    isLifecycleEventTrackingEnabled: Boolean,
+    lifecycleTrackingOptions: LifecycleTrackingOptions,
     scope: CoroutineScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 ) {
 
-    private val isLifecycleEventTrackingEnabled = AtomicBoolean(isLifecycleEventTrackingEnabled)
     private var wasBackgrounded = false
     private var appOpenedTimestamp = System.currentTimeMillis()
+    private var lifecycleEventConfig = lifecycleTrackingOptions.toTypeMap()
 
     init {
         sessionHandler.sessionEventFlow
@@ -59,10 +61,10 @@ class AppLifecycleController internal constructor(
         )
     }
 
-    fun enableLifecycleEvents(isEnabled: Boolean) {
-        /*@formatter:off*/ Logger.i(TAG, "enableLifecycleEvents(): ", "isEnabled = [" , isEnabled , "]")
+    fun setLifecycleEventConfig(lifecycleEventConfig: LifecycleTrackingOptions) {
+        /*@formatter:off*/ Logger.i(TAG, "setLifecycleEventConfig(): ", "lifecycleEventConfig = [" , lifecycleEventConfig , "]")
         /*@formatter:on*/
-        isLifecycleEventTrackingEnabled.set(isEnabled)
+        this.lifecycleEventConfig = lifecycleEventConfig.toTypeMap()
     }
 
     fun initMetadata() {
@@ -109,7 +111,7 @@ class AppLifecycleController internal constructor(
         } else {
             Event.notificationsDisabled()
         }
-        trackLifecycleEvent(event = event)
+        trackLifecycleEvent(event)
     }
 
     private fun handleSessionEvent(event: SessionEvent) {
@@ -130,9 +132,9 @@ class AppLifecycleController internal constructor(
     }
 
 
-    private fun trackLifecycleEvent(event: Event) {
-        if (isLifecycleEventTrackingEnabled.get()) {
-            eventController.trackEvent(event)
+    private fun trackLifecycleEvent(lifecycleEvent: LifecycleEvent) {
+        if (lifecycleEventConfig.getOrElse(lifecycleEvent.type) { false }) {
+            eventController.trackEvent(lifecycleEvent.event)
         }
     }
 
