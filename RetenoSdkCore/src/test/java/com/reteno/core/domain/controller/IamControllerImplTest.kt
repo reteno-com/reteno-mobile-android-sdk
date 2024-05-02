@@ -33,16 +33,18 @@ import io.mockk.impl.annotations.RelaxedMockK
 import io.mockk.mockkConstructor
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.TestCoroutineScheduler
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.currentTime
 import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.test.setMain
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import java.util.concurrent.TimeUnit
@@ -76,19 +78,12 @@ class IamControllerImplTest : BaseRobolectricTest() {
     @RelaxedMockK
     private lateinit var eventController: EventController
 
-    private val scheduler = TestCoroutineScheduler()
-    private val dispatcher = StandardTestDispatcher(scheduler)
-
     private val eventFlow = MutableSharedFlow<Event>()
-
-    private lateinit var SUT: IamControllerImpl
     // endregion helper fields ---------------------------------------------------------------------
 
     override fun before() {
         super.before()
-        Dispatchers.setMain(dispatcher)
         coEvery { eventController.eventFlow } returns eventFlow
-        SUT = IamControllerImpl(iamRepository, eventController, sessionHandler)
 
         coEvery { iamRepository.getBaseHtml() } coAnswers {
             delay(DELAY_BASE_HTML)
@@ -109,82 +104,107 @@ class IamControllerImplTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun given_whenFetchIamFullHtml_thenShouldLoadDataConcurrently() {
+    fun given_whenFetchIamFullHtml_thenShouldLoadDataConcurrently() = runTest {
+        val sut = createController()
         // When
-        SUT.fetchIamFullHtml(WIDGET_ID)
-        scheduler.advanceUntilIdle()
+        sut.fetchIamFullHtml(WIDGET_ID)
+        advanceUntilIdle()
 
         // Then
-        assertEquals(DELAY_BASE_HTML, scheduler.currentTime)
+        assertEquals(DELAY_BASE_HTML, currentTime)
+        coroutineContext.cancelChildren()
     }
 
     @Test
-    fun given_whenFetchIamFullHtml_thenFullHtmlFlowChangesToSuccess() {
+    fun given_whenContrillerInit_thenBaseHtmlShouldBeFetched() = runTest {
+        //Given
+        val flow = MutableSharedFlow<Event>()
+        coEvery { iamRepository.getBaseHtml() } returns ""
+        coEvery { eventController.eventFlow } returns flow
+        // When
+        createController()
+
+        advanceUntilIdle()
+        // Then
+        coVerify { iamRepository.getBaseHtml() }
+
+        coroutineContext.cancelChildren()
+    }
+
+    @Test
+    fun given_whenFetchIamFullHtml_thenFullHtmlFlowChangesToSuccess() = runTest {
+        val sut = createController()
         // Given
-        assertEquals(ResultDomain.Idle, SUT.fullHtmlStateFlow.value)
+        assertEquals(ResultDomain.Idle, sut.fullHtmlStateFlow.value)
 
         // When
-        SUT.fetchIamFullHtml(WIDGET_ID)
+        sut.fetchIamFullHtml(WIDGET_ID)
 
         // Then
-        scheduler.advanceTimeBy(DELAY_BASE_HTML)
-        assertEquals(ResultDomain.Loading, SUT.fullHtmlStateFlow.value)
-        scheduler.runCurrent()
-        assertEquals(ResultDomain.Success(FULL_HTML), SUT.fullHtmlStateFlow.value)
+        advanceTimeBy(DELAY_BASE_HTML)
+        assertEquals(ResultDomain.Loading, sut.fullHtmlStateFlow.value)
+        runCurrent()
+        assertEquals(ResultDomain.Success(FULL_HTML), sut.fullHtmlStateFlow.value)
 
-        SUT.reset()
-        assertEquals(ResultDomain.Idle, SUT.fullHtmlStateFlow.value)
+        sut.reset()
+        assertEquals(ResultDomain.Idle, sut.fullHtmlStateFlow.value)
+        coroutineContext.cancelChildren()
     }
 
     @Test
-    fun given_whenFetchIamFullHtmlTimeoutReached_thenFullHtmlFlowChangesToError() {
+    fun given_whenFetchIamFullHtmlTimeoutReached_thenFullHtmlFlowChangesToError() = runTest {
+        val sut = createController()
         coEvery { iamRepository.getBaseHtml() } coAnswers {
             delay(TIMEOUT)
             BASE_HTML_CONTENT
         }
 
         // Given
-        assertEquals(ResultDomain.Idle, SUT.fullHtmlStateFlow.value)
+        assertEquals(ResultDomain.Idle, sut.fullHtmlStateFlow.value)
 
         // When
-        SUT.fetchIamFullHtml(WIDGET_ID)
+        sut.fetchIamFullHtml(WIDGET_ID)
 
         // Then
-        scheduler.advanceTimeBy(TIMEOUT)
-        assertEquals(ResultDomain.Loading, SUT.fullHtmlStateFlow.value)
-        scheduler.runCurrent()
-        assert(SUT.fullHtmlStateFlow.value is ResultDomain.Error)
-        val result = SUT.fullHtmlStateFlow.value as ResultDomain.Error
+        advanceTimeBy(TIMEOUT)
+        assertEquals(ResultDomain.Loading, sut.fullHtmlStateFlow.value)
+        runCurrent()
+        assert(sut.fullHtmlStateFlow.value is ResultDomain.Error)
+        val result = sut.fullHtmlStateFlow.value as ResultDomain.Error
         assert(result.errorBody.contains("TIMEOUT"))
 
-        SUT.reset()
-        assertEquals(ResultDomain.Idle, SUT.fullHtmlStateFlow.value)
+        sut.reset()
+        assertEquals(ResultDomain.Idle, sut.fullHtmlStateFlow.value)
+        coroutineContext.cancelChildren()
     }
 
     @Test
-    fun given_whenReset_thenClearDataSetLoading() {
+    fun given_whenReset_thenClearDataSetLoading() = runTest {
+        val sut = createController()
         // Given
-        assertEquals(ResultDomain.Idle, SUT.fullHtmlStateFlow.value)
+        assertEquals(ResultDomain.Idle, sut.fullHtmlStateFlow.value)
 
         // When
-        SUT.fetchIamFullHtml(WIDGET_ID)
-        scheduler.advanceTimeBy(DELAY_BASE_HTML)
+        sut.fetchIamFullHtml(WIDGET_ID)
+        advanceTimeBy(DELAY_BASE_HTML)
 
         // Then
-        assertEquals(ResultDomain.Loading, SUT.fullHtmlStateFlow.value)
+        assertEquals(ResultDomain.Loading, sut.fullHtmlStateFlow.value)
         // When
-        scheduler.runCurrent()
+        runCurrent()
         // Then
-        assertEquals(ResultDomain.Success(FULL_HTML), SUT.fullHtmlStateFlow.value)
+        assertEquals(ResultDomain.Success(FULL_HTML), sut.fullHtmlStateFlow.value)
         // When
-        SUT.reset()
+        sut.reset()
         // Then
-        assertEquals(ResultDomain.Idle, SUT.fullHtmlStateFlow.value)
+        assertEquals(ResultDomain.Idle, sut.fullHtmlStateFlow.value)
+        coroutineContext.cancelChildren()
     }
 
     @Test
-    fun givenInAppsWithNoContent_whenGetInAppMessages_thenMessagesWithoutContentShouldBeFetchedFromBackend() {
+    fun givenInAppsWithNoContent_whenGetInAppMessages_thenMessagesWithoutContentShouldBeFetchedFromBackend() = runTest {
         // Given
+        val sut = createController()
         val flow = MutableSharedFlow<Event>()
         val inApps = frequencyInApps(content = null)
         val inAppList = InAppMessagesList(messages = inApps)
@@ -204,19 +224,21 @@ class IamControllerImplTest : BaseRobolectricTest() {
         }
 
         // When
-        SUT.pauseInAppMessages(false)
-        SUT.getInAppMessages()
-        scheduler.advanceUntilIdle()
+        sut.pauseInAppMessages(false)
+        sut.getInAppMessages()
+        advanceUntilIdle()
 
         // Then
         coVerify { iamRepository.getInAppMessagesContent(inApps.map { it.messageInstanceId }) }
         coVerify { iamRepository.saveInAppMessages(eq(inAppList)) }
+        coroutineContext.cancelChildren()
     }
 
     @Test
     fun givenInAppsWithContent_whenGetInAppMessagesThatMathesRules_thenShowMostRecentMessage() =
         runTest {
             // Given
+            val sut = createController()
             val inApps = frequencyInApps(
                 content = InAppMessageContent(
                     messageInstanceId = 1,
@@ -238,11 +260,11 @@ class IamControllerImplTest : BaseRobolectricTest() {
 
             val results = mutableListOf<InAppMessage>()
             val job = launch {
-                SUT.inAppMessagesFlow.toList(results)
+                sut.inAppMessagesFlow.toList(results)
             }
             // When
-            SUT.getInAppMessages()
-            scheduler.advanceUntilIdle()
+            sut.getInAppMessages()
+            advanceUntilIdle()
 
             // Then
             assertEquals(
@@ -250,12 +272,14 @@ class IamControllerImplTest : BaseRobolectricTest() {
                 inApps.maxBy { it.messageId }
             )
             job.cancel()
+            coroutineContext.cancelChildren()
         }
 
     @Test
     fun givenInAppsWithContent_whenInAppsDisabled_thenDoNotShowInApps() =
         runTest {
             // Given
+            val sut = createController()
             val inApps = frequencyInApps(
                 content = InAppMessageContent(
                     messageInstanceId = 1,
@@ -277,12 +301,12 @@ class IamControllerImplTest : BaseRobolectricTest() {
 
             val results = mutableListOf<InAppMessage>()
             val job = launch {
-                SUT.inAppMessagesFlow.toList(results)
+                sut.inAppMessagesFlow.toList(results)
             }
             // When
-            SUT.pauseInAppMessages(true)
-            SUT.getInAppMessages()
-            scheduler.advanceUntilIdle()
+            sut.pauseInAppMessages(true)
+            sut.getInAppMessages()
+            advanceUntilIdle()
 
             // Then
             assertEquals(
@@ -290,12 +314,14 @@ class IamControllerImplTest : BaseRobolectricTest() {
                 emptyList<InAppMessage>()
             )
             job.cancel()
+            coroutineContext.cancelChildren()
         }
 
     @Test
     fun givenInAppsWithContent_whenInAppsDisabledWithSkipBehavior_thenDoNotShowInAppsWhenInAppsEnabled() =
         runTest {
             // Given
+            val sut = createController()
             val inApps = frequencyInApps(
                 content = InAppMessageContent(
                     messageInstanceId = 1,
@@ -309,7 +335,7 @@ class IamControllerImplTest : BaseRobolectricTest() {
 
             val results = mutableListOf<InAppMessage>()
             val job = launch {
-                SUT.inAppMessagesFlow.toList(results)
+                sut.inAppMessagesFlow.toList(results)
             }
             // When
             every {
@@ -320,12 +346,12 @@ class IamControllerImplTest : BaseRobolectricTest() {
                 )
             } returns true
             every { anyConstructed<ScheduleRuleValidator>().checkInAppMatchesScheduleRules(any()) } returns true
-            SUT.setPauseBehaviour(InAppPauseBehaviour.SKIP_IN_APPS)
-            SUT.pauseInAppMessages(true)
-            SUT.getInAppMessages()
-            scheduler.advanceUntilIdle()
-            SUT.pauseInAppMessages(false)
-            scheduler.advanceUntilIdle()
+            sut.setPauseBehaviour(InAppPauseBehaviour.SKIP_IN_APPS)
+            sut.pauseInAppMessages(true)
+            sut.getInAppMessages()
+            advanceUntilIdle()
+            sut.pauseInAppMessages(false)
+            advanceUntilIdle()
 
             // Then
             assertEquals(
@@ -333,12 +359,14 @@ class IamControllerImplTest : BaseRobolectricTest() {
                 emptyList<InAppMessage>()
             )
             job.cancel()
+            coroutineContext.cancelChildren()
         }
 
     @Test
     fun givenInAppsWithContent_whenInAppsDisabledWithPostponeFirstBehavior_thenShowFirstInAppWhenInAppsEnabled() =
         runTest {
             // Given
+            val sut = createController()
             val inApps = frequencyInApps(
                 content = InAppMessageContent(
                     messageInstanceId = 1,
@@ -352,7 +380,7 @@ class IamControllerImplTest : BaseRobolectricTest() {
 
             val results = mutableListOf<InAppMessage>()
             val job = launch {
-                SUT.inAppMessagesFlow.toList(results)
+                sut.inAppMessagesFlow.toList(results)
             }
             // When
             every {
@@ -363,12 +391,12 @@ class IamControllerImplTest : BaseRobolectricTest() {
                 )
             } returns true
             every { anyConstructed<ScheduleRuleValidator>().checkInAppMatchesScheduleRules(any()) } returns true
-            SUT.setPauseBehaviour(InAppPauseBehaviour.POSTPONE_IN_APPS)
-            SUT.pauseInAppMessages(true)
-            SUT.getInAppMessages()
-            scheduler.advanceUntilIdle()
-            SUT.pauseInAppMessages(false)
-            scheduler.advanceUntilIdle()
+            sut.setPauseBehaviour(InAppPauseBehaviour.POSTPONE_IN_APPS)
+            sut.pauseInAppMessages(true)
+            sut.getInAppMessages()
+            advanceUntilIdle()
+            sut.pauseInAppMessages(false)
+            advanceUntilIdle()
 
             // Then
             assertEquals(
@@ -376,12 +404,14 @@ class IamControllerImplTest : BaseRobolectricTest() {
                 listOf(inApps.maxByOrNull { it.messageId }!!)
             )
             job.cancel()
+            coroutineContext.cancelChildren()
         }
 
     @Test
     fun givenInAppsWithContent_whenInAppsDisabledWithPostponeFirstBehaviorAndOnly4InAppIsAllowed_thenShowThisInAppWhenInAppsEnabled() =
         runTest {
             // Given
+            val sut = createController()
             val inApps = frequencyInApps(
                 content = InAppMessageContent(
                     messageInstanceId = 1,
@@ -395,7 +425,7 @@ class IamControllerImplTest : BaseRobolectricTest() {
 
             val results = mutableListOf<InAppMessage>()
             val job = launch {
-                SUT.inAppMessagesFlow.toList(results)
+                sut.inAppMessagesFlow.toList(results)
             }
             // When
             every {
@@ -404,16 +434,16 @@ class IamControllerImplTest : BaseRobolectricTest() {
                     any(),
                     any()
                 )
-            } answers  {
+            } answers {
                 firstArg<InAppMessage>().messageId == 4L
             }
             every { anyConstructed<ScheduleRuleValidator>().checkInAppMatchesScheduleRules(any()) } returns true
-            SUT.setPauseBehaviour(InAppPauseBehaviour.POSTPONE_IN_APPS)
-            SUT.pauseInAppMessages(true)
-            SUT.getInAppMessages()
-            scheduler.advanceUntilIdle()
-            SUT.pauseInAppMessages(false)
-            scheduler.advanceUntilIdle()
+            sut.setPauseBehaviour(InAppPauseBehaviour.POSTPONE_IN_APPS)
+            sut.pauseInAppMessages(true)
+            sut.getInAppMessages()
+            advanceUntilIdle()
+            sut.pauseInAppMessages(false)
+            advanceUntilIdle()
 
             // Then
             assertEquals(
@@ -421,12 +451,14 @@ class IamControllerImplTest : BaseRobolectricTest() {
                 listOf(inApps.first { it.messageId == 4L })
             )
             job.cancel()
+            coroutineContext.cancelChildren()
         }
 
     @Test
     fun givenInAppsWithContent_whenGetInAppMessagesWithEventTargetRule_thenWaitingListIsFilled() =
         runTest {
             // Given
+            val sut = createController()
             val flow = MutableSharedFlow<Event>()
             val inApps = frequencyInApps(
                 content = InAppMessageContent(
@@ -442,20 +474,22 @@ class IamControllerImplTest : BaseRobolectricTest() {
             coEvery { iamRepository.getInAppMessages() } returns inAppList
 
             // When
-            SUT.getInAppMessages()
-            scheduler.advanceUntilIdle()
+            sut.getInAppMessages()
+            advanceUntilIdle()
 
             // Then
             assertEquals(
-                SUT.inAppsWaitingForEvent?.map { it.inApp },
+                sut.inAppsWaitingForEvent?.map { it.inApp },
                 inApps
             )
+            coroutineContext.cancelChildren()
         }
 
     @Test
     fun givenFilledEventWaitingList_whenEventHappened_thenInAppEmitted() =
         runTest {
             // Given
+            val sut = createController()
             val inApps = frequencyInApps(
                 content = InAppMessageContent(
                     messageInstanceId = 1,
@@ -466,15 +500,20 @@ class IamControllerImplTest : BaseRobolectricTest() {
             )
             val inAppList = InAppMessagesList(messages = inApps)
             coEvery { iamRepository.getInAppMessages() } returns inAppList
-            every { anyConstructed<RuleEventValidator>().checkEventMatchesRules(any(), any()) } returns true
+            every {
+                anyConstructed<RuleEventValidator>().checkEventMatchesRules(
+                    any(),
+                    any()
+                )
+            } returns true
 
             val results = mutableListOf<InAppMessage>()
             val job = launch {
-                SUT.inAppMessagesFlow.toList(results)
+                sut.inAppMessagesFlow.toList(results)
             }
 
             // When
-            SUT.getInAppMessages()
+            sut.getInAppMessages()
 
             advanceUntilIdle()
 
@@ -488,9 +527,14 @@ class IamControllerImplTest : BaseRobolectricTest() {
                 inApps.last() //InApp with largest id in dataset
             )
             job.cancel()
+            coroutineContext.cancelChildren()
         }
 
     //region utils
+
+    private fun TestScope.createController(): IamControllerImpl {
+        return IamControllerImpl(iamRepository, eventController, sessionHandler, this)
+    }
 
     private fun createEventDisplayRule() = TargetingDisplayRules(
         include = TargetingRuleGroup(
