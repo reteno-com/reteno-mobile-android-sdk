@@ -79,8 +79,19 @@
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:gravity="center"
-                    android:text="RecomFilter is not supported by backend yet" />
+                    android:text="Filters should be written in comma separated style. Each filter should be deivided by semicolon(;) symbol. For example: \n FilterName1,FilterValue1,FilterValue2;FilterName2,FilterValue3,FilterValue4"/>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/tilFilters"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Filters">
+
+                    <EditText
+                        android:id="@+id/etFilters"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content" />
+                </com.google.android.material.textfield.TextInputLayout>
 
                 <Button
                     android:id="@+id/btnFetch"
