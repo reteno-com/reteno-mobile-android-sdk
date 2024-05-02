@@ -19,10 +19,6 @@ internal class ConfigRepositoryImpl(
 
     override val notificationState = MutableStateFlow(sharedPrefsManager.isNotificationsEnabled())
 
-    init {
-        trackFirstLaunch()
-    }
-
     override fun setExternalUserId(externalId: String?) {
         restConfig.setExternalUserId(externalId)
     }
@@ -101,8 +97,6 @@ internal class ConfigRepositoryImpl(
     override fun isDeviceRegistered(): Boolean =
         sharedPrefsManager.isDeviceRegistered()
 
-    override fun isFirstLaunch(): Boolean = sharedPrefsManager.isFirstLaunch()
-
     override fun getAppVersion(): String = sharedPrefsManager.getAppVersion()
 
     override fun saveAppVersion(version: String) {
@@ -113,10 +107,6 @@ internal class ConfigRepositoryImpl(
 
     override fun saveAppBuildNumber(number: Long) {
         sharedPrefsManager.saveAppBuildNumber(number)
-    }
-
-    private fun trackFirstLaunch() {
-        sharedPrefsManager.setFirstLaunch(sharedPrefsManager.isDeviceRegistered())
     }
 
     companion object {

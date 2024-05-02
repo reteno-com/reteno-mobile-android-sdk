@@ -78,7 +78,7 @@ class AppLifecycleController internal constructor(
             } else {
                 pInfo.versionCode.toLong()
             }
-            pInfo.versionName to versionCode
+            pInfo.versionName.orEmpty() to versionCode
         } catch (e: PackageManager.NameNotFoundException) {
             e.printStackTrace()
             "" to 0L

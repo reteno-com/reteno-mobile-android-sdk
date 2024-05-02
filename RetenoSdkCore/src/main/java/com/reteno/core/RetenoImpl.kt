@@ -233,16 +233,16 @@ class RetenoImpl internal constructor(
         }
     }
 
-    override fun setLifecycleEventConfig(lifecycleEventConfig: LifecycleTrackingOptions) {
+    override fun setLifecycleEventConfig(lifecycleTrackingOptions: LifecycleTrackingOptions) {
         if (!isOsVersionSupported()) {
             return
         }
-        /*@formatter:off*/ Logger.i(TAG, "setLifecycleEventConfig(): ", "lifecycleEventConfig = [" , lifecycleEventConfig , "]")
+        /*@formatter:off*/ Logger.i(TAG, "setLifecycleEventConfig(): ", "lifecycleEventConfig = [" , lifecycleTrackingOptions , "]")
         /*@formatter:on*/
         try {
-            appLifecycleController.setLifecycleEventConfig(lifecycleEventConfig)
+            appLifecycleController.setLifecycleEventConfig(lifecycleTrackingOptions)
         } catch (ex: Throwable) {
-            /*@formatter:off*/ Logger.e(TAG, "setLifecycleEventConfig(): lifecycleEventConfig = [$lifecycleEventConfig]", ex)
+            /*@formatter:off*/ Logger.e(TAG, "setLifecycleEventConfig(): lifecycleEventConfig = [$lifecycleTrackingOptions]", ex)
             /*@formatter:on*/
         }
     }

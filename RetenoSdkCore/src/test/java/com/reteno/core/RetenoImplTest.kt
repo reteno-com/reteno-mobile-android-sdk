@@ -11,6 +11,7 @@ import android.content.pm.ActivityInfo
 import android.content.pm.ResolveInfo
 import com.reteno.core.base.robolectric.BaseRobolectricTest
 import com.reteno.core.di.ServiceLocator
+import com.reteno.core.domain.controller.AppLifecycleController
 import com.reteno.core.domain.controller.ContactController
 import com.reteno.core.domain.controller.EventController
 import com.reteno.core.domain.controller.IamController
@@ -144,6 +145,9 @@ class RetenoImplTest : BaseRobolectricTest() {
     @RelaxedMockK
     private lateinit var activityHelper: RetenoActivityHelper
 
+    @RelaxedMockK
+    private lateinit var appLifeController: AppLifecycleController
+
     private var contextWrapper: ContextWrapper? = null
 
     private val transcript: MutableList<String> = mutableListOf()
@@ -160,6 +164,7 @@ class RetenoImplTest : BaseRobolectricTest() {
         every { anyConstructed<ServiceLocator>().retenoActivityHelperProvider.get() } returns activityHelper
         every { anyConstructed<ServiceLocator>().appInboxProvider.get() } returns inbox
         every { anyConstructed<ServiceLocator>().screenTrackingControllerProvider.get() } returns screenTrackingController
+        every { anyConstructed<ServiceLocator>().appLifecycleControllerProvider.get() } returns appLifeController
 
         contextWrapper = ContextWrapper(application)
         assertNotNull(contextWrapper)
