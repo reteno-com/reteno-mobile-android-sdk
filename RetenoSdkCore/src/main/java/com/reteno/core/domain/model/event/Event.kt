@@ -113,7 +113,10 @@ sealed class Event(
             Custom(
                 SESSION_START_EVENT_TYPE_KEY,
                 startTime,
-                listOf(Parameter(SESSION_ID_PARAM_NAME, sessionId))
+                listOf(
+                    Parameter(SESSION_ID_PARAM_NAME, sessionId),
+                    Parameter(SESSION_START_TIME_PARAM_NAME, startTime.formatToRemote())
+                )
             )
         )
 
@@ -140,6 +143,7 @@ sealed class Event(
 
         internal const val SCREEN_VIEW_EVENT_TYPE_KEY = "screenView"
         internal const val SCREEN_VIEW_PARAM_NAME = "screenClass"
+        internal const val SESSION_START_TIME_PARAM_NAME = "startTime"
         internal const val SESSION_START_EVENT_TYPE_KEY = "SessionStarted"
         internal const val SESSION_END_EVENT_TYPE_KEY = "SessionEnded"
         internal const val END_TIME_PARAM_NAME = "endTime"
