@@ -15,6 +15,7 @@ import com.reteno.core.di.provider.RetenoActivityHelperProvider
 import com.reteno.core.di.provider.SharedPrefsManagerProvider
 import com.reteno.core.di.provider.WorkManagerProvider
 import com.reteno.core.di.provider.controller.AppInboxControllerProvider
+import com.reteno.core.di.provider.controller.AppLifecycleControllerProvider
 import com.reteno.core.di.provider.controller.ContactControllerProvider
 import com.reteno.core.di.provider.controller.DeeplinkControllerProvider
 import com.reteno.core.di.provider.controller.EventsControllerProvider
@@ -50,10 +51,12 @@ import com.reteno.core.di.provider.repository.IamRepositoryProvider
 import com.reteno.core.di.provider.repository.InteractionRepositoryProvider
 import com.reteno.core.di.provider.repository.LogEventRepositoryProvider
 import com.reteno.core.di.provider.repository.RecommendationRepositoryProvider
+import com.reteno.core.domain.controller.AppLifecycleController
 import com.reteno.core.domain.controller.ContactController
 import com.reteno.core.domain.controller.DeeplinkController
 import com.reteno.core.domain.controller.InteractionController
 import com.reteno.core.domain.controller.ScheduleController
+import com.reteno.core.domain.model.event.LifecycleTrackingOptions
 import com.reteno.core.identification.DeviceIdProvider
 import com.reteno.core.lifecycle.RetenoActivityHelper
 import com.reteno.core.lifecycle.RetenoSessionHandler
@@ -64,7 +67,8 @@ class ServiceLocator(
     context: Context,
     accessKey: String,
     platform: String,
-    userIdProvider: DeviceIdProvider? = null
+    userIdProvider: DeviceIdProvider? = null,
+    lifecycleTrackingOptions: LifecycleTrackingOptions = LifecycleTrackingOptions.ALL
 ) {
 
     private val retenoActivityHelperProviderInternal: RetenoActivityHelperProvider =
@@ -80,7 +84,8 @@ class ServiceLocator(
         DeviceIdHelperProvider(sharedPrefsManagerProvider, userIdProvider)
     private val restConfigProvider: RestConfigProvider =
         RestConfigProvider(deviceIdHelperProvider, accessKey, userIdProvider != null)
-    private val restClientProvider: RestClientProvider = RestClientProvider(restConfigProvider, platform)
+    private val restClientProvider: RestClientProvider =
+        RestClientProvider(restConfigProvider, platform)
 
     private val apiClientProvider: ApiClientProvider = ApiClientProvider(restClientProvider)
     private val databaseProvider: DatabaseProvider = DatabaseProvider(context)
@@ -259,7 +264,7 @@ class ServiceLocator(
         RecommendationProvider(recommendationControllerProvider)
 
     private val retenoSessionHandlerProviderInternal =
-        RetenoSessionHandlerProvider(sharedPrefsManagerProvider, eventsControllerProvider)
+        RetenoSessionHandlerProvider(sharedPrefsManagerProvider)
     val retenoSessionHandlerProvider: ProviderWeakReference<RetenoSessionHandler>
         get() = retenoSessionHandlerProviderInternal
 
@@ -268,6 +273,16 @@ class ServiceLocator(
         retenoSessionHandlerProviderInternal,
         eventsControllerProvider
     )
+
+    private val appLifecycleControllerProviderInternal = AppLifecycleControllerProvider(
+        configRepository = configRepositoryProviderInternal,
+        eventController = eventsControllerProvider,
+        lifecycleTrackingOptions = lifecycleTrackingOptions,
+        sessionHandlerProvider = retenoSessionHandlerProviderInternal
+    )
+
+    val appLifecycleControllerProvider: ProviderWeakReference<AppLifecycleController>
+        get() = appLifecycleControllerProviderInternal
 
     private val iamViewProviderInternal: IamViewProvider =
         IamViewProvider(retenoActivityHelperProviderInternal, iamControllerProvider)

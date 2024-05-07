@@ -41,6 +41,7 @@ class RetenoTestApp : Application(), RetenoApplication {
         every { retenoInstance.getProperty("serviceLocator") } returns spyk(
             ServiceLocator(this, "", "Android")
         )
+
     }
 
     override fun getRetenoInstance(): Reteno {
