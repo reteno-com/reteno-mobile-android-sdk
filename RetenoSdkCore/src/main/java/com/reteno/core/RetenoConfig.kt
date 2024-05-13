@@ -10,11 +10,13 @@ import com.reteno.core.identification.DeviceIdProvider
  * @property platform - current platform name (Note that this property is mutable for multiplatform usage
  * and it should not be changed in other use cases).
  * @property lifecycleTrackingOptions - behavior of automatic app lifecycle event tracking, see [Reteno.setLifecycleEventConfig] to learn more
+ * @property accessKey - reteno access key
  * */
-class RetenoConfig @JvmOverloads constructor(
+data class RetenoConfig @JvmOverloads constructor(
     var isPausedInAppMessages: Boolean = false,
     val userIdProvider: DeviceIdProvider? = null,
-    val lifecycleTrackingOptions: LifecycleTrackingOptions = LifecycleTrackingOptions.ALL
+    val lifecycleTrackingOptions: LifecycleTrackingOptions = LifecycleTrackingOptions.ALL,
+    val accessKey: String = ""
 ) {
     var platform: String = "Android"
 }

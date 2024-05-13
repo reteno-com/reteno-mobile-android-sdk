@@ -24,24 +24,6 @@ class RetenoNotificationClickedReceiver : BroadcastReceiver() {
         ((RetenoImpl.application as RetenoApplication).getRetenoInstance() as RetenoImpl)
     }
 
-    // Don't move out of lazy delegate as Robolectric tests will fail
-    // https://github.com/robolectric/robolectric/issues/4308
-    private val interactionController by lazy {
-        reteno.serviceLocator.interactionControllerProvider.get()
-    }
-
-    private val deeplinkController by lazy {
-        reteno.serviceLocator.deeplinkControllerProvider.get()
-    }
-
-    private val scheduleController by lazy {
-        reteno.serviceLocator.scheduleControllerProvider.get()
-    }
-
-    private val iamView by lazy {
-        reteno.serviceLocator.iamViewProvider.get()
-    }
-
     override fun onReceive(context: Context, intent: Intent?) {
         if (!isOsVersionSupported()) {
             return
@@ -49,27 +31,30 @@ class RetenoNotificationClickedReceiver : BroadcastReceiver() {
         /*@formatter:off*/ Logger.i(TAG, "onReceive(): ", "notification clicked. Context = [" , context , "], intent.extras = [" , intent?.extras.toStringVerbose() , "]")
         /*@formatter:on*/
         try {
-            sendInteractionStatus(intent)
-            handleIntent(context, intent)
+            sendInteractionStatus(reteno, intent)
+            handleIntent(context, reteno, intent)
         } catch (ex: Throwable) {
             /*@formatter:off*/ Logger.e(TAG, "onReceive(): ", ex)
             /*@formatter:on*/
         }
     }
 
-    private fun sendInteractionStatus(intent: Intent?) {
+    private fun sendInteractionStatus(reteno: RetenoImpl, intent: Intent?) {
         if (intent?.extras?.getString(Constants.KEY_ES_IAM) != "1") {
 
             intent?.extras?.getString(Constants.KEY_ES_INTERACTION_ID)?.let { interactionId ->
                 /*@formatter:off*/ Logger.i(TAG, "sendInteractionStatus(): ", "intent = [", intent, "]")
                 /*@formatter:on*/
+                val interactionController =
+                    reteno.serviceLocator.interactionControllerProvider.get()
+                val scheduleController = reteno.serviceLocator.scheduleControllerProvider.get()
                 interactionController.onInteraction(interactionId, InteractionStatus.CLICKED)
                 scheduleController.forcePush()
             }
         }
     }
 
-    private fun handleIntent(context: Context, intent: Intent?) {
+    private fun handleIntent(context: Context, reteno: RetenoImpl, intent: Intent?) {
         /*@formatter:off*/ Logger.i(TAG, "handleIntent(): ", "context = [", context, "], intent = [", intent, "]")
         /*@formatter:on*/
         intent?.extras?.let { bundle ->
@@ -83,7 +68,7 @@ class RetenoNotificationClickedReceiver : BroadcastReceiver() {
 
             IntentHandler.getDeepLinkIntent(bundle)?.let { deeplinkIntent ->
                 val (linkWrapped, linkUnwrapped) = Util.getLinkFromBundle(bundle)
-
+                val deeplinkController = reteno.serviceLocator.deeplinkControllerProvider.get()
                 deeplinkController.deeplinkClicked(linkWrapped, linkUnwrapped)
                 launchDeeplink(context, deeplinkIntent)
             } ?: launchApp(context, intent)
@@ -120,6 +105,7 @@ class RetenoNotificationClickedReceiver : BroadcastReceiver() {
         bundle.getString(Constants.KEY_ES_IAM)
             .takeIf { it == "1" }
             ?.run {
+                val iamView = reteno.serviceLocator.iamViewProvider.get()
                 bundle.getString(Constants.KEY_ES_INTERACTION_ID)?.let(iamView::initialize)
             }
     }

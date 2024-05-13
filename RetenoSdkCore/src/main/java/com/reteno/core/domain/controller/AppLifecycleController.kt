@@ -90,7 +90,7 @@ class AppLifecycleController internal constructor(
                 configRepository.saveAppBuildNumber(code)
             }
 
-            savedAppVersion != version -> {
+            savedAppVersion != version || savedAppBuild != code -> {
                 trackLifecycleEvent(
                     Event.applicationUpdate(
                         version = version,

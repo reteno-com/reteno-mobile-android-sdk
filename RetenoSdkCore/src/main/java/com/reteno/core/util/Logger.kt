@@ -3,8 +3,10 @@ package com.reteno.core.util
 import android.util.Log
 import com.reteno.core.BuildConfig
 import com.reteno.core.RetenoApplication
+import com.reteno.core.RetenoConfig
 import com.reteno.core.RetenoImpl
 import com.reteno.core.di.ServiceLocator
+import com.reteno.core.di.provider.RetenoConfigProvider
 import com.reteno.core.domain.model.logevent.LogLevel
 import com.reteno.core.domain.model.logevent.RetenoLogEvent
 
@@ -109,7 +111,7 @@ object Logger {
                     .logEventRepositoryProvider.get()
             }.getOrElse {
                 //Log event api does not require access key so we can leave this parameter empty
-                ServiceLocator(RetenoImpl.application, "", platform = "Android")
+                ServiceLocator(RetenoImpl.application, RetenoConfigProvider(RetenoConfig().apply { platform = "Android" }))
                     .logEventRepositoryProvider
                     .get()
             }

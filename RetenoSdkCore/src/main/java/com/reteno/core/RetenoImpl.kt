@@ -5,6 +5,7 @@ import android.app.Application
 import android.content.ComponentName
 import android.content.Intent
 import com.reteno.core.di.ServiceLocator
+import com.reteno.core.di.provider.RetenoConfigProvider
 import com.reteno.core.domain.controller.ScreenTrackingController
 import com.reteno.core.domain.model.ecom.EcomEvent
 import com.reteno.core.domain.model.event.Event
@@ -21,16 +22,22 @@ import com.reteno.core.util.Constants.BROADCAST_ACTION_RETENO_APP_RESUME
 import com.reteno.core.view.iam.IamView
 import com.reteno.core.view.iam.callback.InAppLifecycleCallback
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlin.coroutines.Continuation
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
 
 
-class RetenoImpl internal constructor(
+class RetenoImpl(
     application: Application,
-    accessKey: String,
     config: RetenoConfig,
-    private val asyncScope: CoroutineScope
+    private val asyncScope: CoroutineScope,
+    private val delayInitialization: Boolean
 ) : RetenoLifecycleCallbacks, Reteno {
 
     init {
@@ -39,8 +46,8 @@ class RetenoImpl internal constructor(
         Companion.application = application
     }
 
-    val serviceLocator: ServiceLocator =
-        ServiceLocator(application, accessKey, config.platform, config.userIdProvider, config.lifecycleTrackingOptions)
+    private val configProvider = RetenoConfigProvider(config)
+    val serviceLocator: ServiceLocator = ServiceLocator(application, configProvider)
     private val activityHelper: RetenoActivityHelper by lazy { serviceLocator.retenoActivityHelperProvider.get() }
 
     private val screenTrackingController: ScreenTrackingController by lazy { serviceLocator.screenTrackingControllerProvider.get() }
@@ -55,6 +62,13 @@ class RetenoImpl internal constructor(
     override val recommendation by lazy { serviceLocator.recommendationProvider.get() }
     private val iamView: IamView by lazy { serviceLocator.iamViewProvider.get() }
 
+    @Volatile
+    private var initContinuation: Continuation<RetenoConfig>? = null
+    private var initDeferred: Deferred<Unit>? = null
+
+    val isInitialized: Boolean
+        get() = initDeferred?.isCompleted == true || initDeferred == null
+
     init {
         initSdk(config)
     }
@@ -66,22 +80,32 @@ class RetenoImpl internal constructor(
         config: RetenoConfig = RetenoConfig()
     ) : this(
         application = application,
-        accessKey = accessKey,
-        config = config,
-        asyncScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+        config = config.copy(accessKey = accessKey),
+        asyncScope = CoroutineScope(Dispatchers.IO + SupervisorJob()),
+        delayInitialization = false
     )
 
-    override fun start(activity: Activity) {
+    /**
+     * This constructor is created for delayed initialization of deviceId, do not use it unless
+     * you actually need to provide API key and config later on in the app */
+    constructor(application: Application) : this(
+        application = application,
+        delayInitialization = true,
+        config = RetenoConfig(),
+        asyncScope = CoroutineScope(Dispatchers.IO + SupervisorJob()),
+    )
+
+    override fun start(activity: Activity) = awaitInit {
         if (!isOsVersionSupported()) {
-            return
+            return@awaitInit
         }
         /*@formatter:off*/ Logger.i(TAG, "start(): ", "activity = [", activity, "]")
         /*@formatter:on*/
     }
 
-    override fun resume(activity: Activity) {
+    override fun resume(activity: Activity) = awaitInit {
         if (!isOsVersionSupported()) {
-            return
+            return@awaitInit
         }
         /*@formatter:off*/ Logger.i(TAG, "resume(): ", "activity = [" , activity , "]")
         /*@formatter:on*/
@@ -97,9 +121,9 @@ class RetenoImpl internal constructor(
         }
     }
 
-    override fun pause(activity: Activity) {
+    override fun pause(activity: Activity) = awaitInit {
         if (!isOsVersionSupported()) {
-            return
+            return@awaitInit
         }
         /*@formatter:off*/ Logger.i(TAG, "pause(): ", "activity = [" , activity , "]")
         /*@formatter:on*/
@@ -114,9 +138,9 @@ class RetenoImpl internal constructor(
         }
     }
 
-    override fun stop(activity: Activity) {
+    override fun stop(activity: Activity) = awaitInit {
         if (!isOsVersionSupported()) {
-            return
+            return@awaitInit
         }
         /*@formatter:off*/ Logger.i(TAG, "stop(): ", "activity = [", activity, "]")
         /*@formatter:on*/
@@ -139,9 +163,9 @@ class RetenoImpl internal constructor(
     }
 
     @Throws(java.lang.IllegalArgumentException::class)
-    override fun setUserAttributes(externalUserId: String) {
+    override fun setUserAttributes(externalUserId: String) = awaitInit {
         if (!isOsVersionSupported()) {
-            return
+            return@awaitInit
         }
         /*@formatter:off*/ Logger.i(TAG, "setUserAttributes(): ", "externalUserId = [" , externalUserId , "]")
         /*@formatter:on*/
@@ -156,9 +180,9 @@ class RetenoImpl internal constructor(
     }
 
     @Throws(java.lang.IllegalArgumentException::class)
-    override fun setUserAttributes(externalUserId: String, user: User?) {
+    override fun setUserAttributes(externalUserId: String, user: User?) = awaitInit {
         if (!isOsVersionSupported()) {
-            return
+            return@awaitInit
         }
         /*@formatter:off*/ Logger.i(TAG, "setUserAttributes(): ", "externalUserId = [" , externalUserId , "], used = [" , user , "]")
         /*@formatter:on*/
@@ -177,9 +201,9 @@ class RetenoImpl internal constructor(
         }
     }
 
-    override fun setAnonymousUserAttributes(userAttributes: UserAttributesAnonymous) {
+    override fun setAnonymousUserAttributes(userAttributes: UserAttributesAnonymous) = awaitInit {
         if (!isOsVersionSupported()) {
-            return
+            return@awaitInit
         }
         /*@formatter:off*/ Logger.i(TAG, "setAnonymousUserAttributes(): ", "userAttributes = [", userAttributes, "]")
         /*@formatter:on*/
@@ -191,9 +215,9 @@ class RetenoImpl internal constructor(
         }
     }
 
-    override fun logEvent(event: Event) {
+    override fun logEvent(event: Event) = awaitInit {
         if (!isOsVersionSupported()) {
-            return
+            return@awaitInit
         }
         /*@formatter:off*/ Logger.i(TAG, "logEvent(): ", "eventType = [" , event.eventTypeKey , "], date = [" , event.occurred , "], parameters = [" , event.params , "]")
         /*@formatter:on*/
@@ -205,9 +229,9 @@ class RetenoImpl internal constructor(
         }
     }
 
-    override fun logEcommerceEvent(ecomEvent: EcomEvent) {
+    override fun logEcommerceEvent(ecomEvent: EcomEvent) = awaitInit {
         if (!isOsVersionSupported()) {
-            return
+            return@awaitInit
         }
         /*@formatter:off*/ Logger.i(TAG, "logEcommerceEvent(): ", "ecomEvent = [" , ecomEvent , "]")
         /*@formatter:on*/
@@ -219,9 +243,9 @@ class RetenoImpl internal constructor(
         }
     }
 
-    override fun logScreenView(screenName: String) {
+    override fun logScreenView(screenName: String) = awaitInit {
         if (!isOsVersionSupported()) {
-            return
+            return@awaitInit
         }
         /*@formatter:off*/ Logger.i(TAG, "logScreenView(): ", "screenName = [" , screenName , "]")
         /*@formatter:on*/
@@ -233,23 +257,24 @@ class RetenoImpl internal constructor(
         }
     }
 
-    override fun setLifecycleEventConfig(lifecycleTrackingOptions: LifecycleTrackingOptions) {
-        if (!isOsVersionSupported()) {
-            return
-        }
-        /*@formatter:off*/ Logger.i(TAG, "setLifecycleEventConfig(): ", "lifecycleEventConfig = [" , lifecycleTrackingOptions , "]")
+    override fun setLifecycleEventConfig(lifecycleTrackingOptions: LifecycleTrackingOptions) =
+        awaitInit {
+            if (!isOsVersionSupported()) {
+                return@awaitInit
+            }
+            /*@formatter:off*/ Logger.i(TAG, "setLifecycleEventConfig(): ", "lifecycleEventConfig = [" , lifecycleTrackingOptions , "]")
         /*@formatter:on*/
-        try {
-            appLifecycleController.setLifecycleEventConfig(lifecycleTrackingOptions)
-        } catch (ex: Throwable) {
-            /*@formatter:off*/ Logger.e(TAG, "setLifecycleEventConfig(): lifecycleEventConfig = [$lifecycleTrackingOptions]", ex)
+            try {
+                appLifecycleController.setLifecycleEventConfig(lifecycleTrackingOptions)
+            } catch (ex: Throwable) {
+                /*@formatter:off*/ Logger.e(TAG, "setLifecycleEventConfig(): lifecycleEventConfig = [$lifecycleTrackingOptions]", ex)
             /*@formatter:on*/
+            }
         }
-    }
 
-    override fun autoScreenTracking(config: ScreenTrackingConfig) {
+    override fun autoScreenTracking(config: ScreenTrackingConfig) = awaitInit {
         if (!isOsVersionSupported()) {
-            return
+            return@awaitInit
         }
         /*@formatter:off*/ Logger.i(TAG, "autoScreenTracking(): ", "config = [" , config , "]")
         /*@formatter:on*/
@@ -281,9 +306,9 @@ class RetenoImpl internal constructor(
         iamView.setInAppLifecycleCallback(inAppLifecycleCallback)
     }
 
-    override fun forcePushData() {
+    override fun forcePushData() = awaitInit {
         if (!isOsVersionSupported()) {
-            return
+            return@awaitInit
         }
         /*@formatter:off*/ Logger.i(TAG, "forcePushData(): ", "")
         /*@formatter:on*/
@@ -295,9 +320,9 @@ class RetenoImpl internal constructor(
         }
     }
 
-    override fun setInAppMessagesPauseBehaviour(behaviour: InAppPauseBehaviour) {
+    override fun setInAppMessagesPauseBehaviour(behaviour: InAppPauseBehaviour) = awaitInit {
         if (!isOsVersionSupported()) {
-            return
+            return@awaitInit
         }
         /*@formatter:off*/ Logger.i(TAG, "setInAppMessagesPauseBehaviour(): ", "behaviour = [" , behaviour , "]")
         /*@formatter:on*/
@@ -309,22 +334,48 @@ class RetenoImpl internal constructor(
         }
     }
 
+    override fun initWith(config: RetenoConfig) {
+        if (initContinuation == null) throw IllegalStateException("RetenoSDK was already initialized")
+        initContinuation?.resume(config)
+        initContinuation = null
+    }
+
+    override fun onNewFcmToken(token: String) = awaitInit {
+        contactController.onNewFcmToken(token)
+    }
+
     private fun initSdk(config: RetenoConfig) {
         if (isOsVersionSupported()) {
             activityHelper.enableLifecycleCallbacks(this@RetenoImpl)
-            clearOldData()
-            initMetadata()
-            asyncScope.launch {
-                try {
-                    contactController.checkIfDeviceRegistered()
-                    sendAppResumeBroadcast()
-                    pauseInAppMessages(config.isPausedInAppMessages)
-                    fetchInAppMessages()
-                } catch (t: Throwable) {
-                    /*@formatter:off*/ Logger.e(TAG, "init(): ", t)
-                    /*@formatter:on*/
+            if (delayInitialization) {
+                initDeferred = asyncScope.async {
+                    withContext(Dispatchers.Main) {
+                        val result = suspendCoroutine {
+                            initContinuation = it
+                        }
+                        start(result)
+                    }
+                }
+            } else {
+                asyncScope.launch {
+                    start(config)
                 }
             }
+        }
+    }
+
+    private suspend fun start(config: RetenoConfig) {
+        configProvider.setConfig(config)
+        clearOldData()
+        initMetadata()
+        try {
+            contactController.checkIfDeviceRegistered()
+            sendAppResumeBroadcast()
+            pauseInAppMessages(config.isPausedInAppMessages)
+            fetchInAppMessages()
+        } catch (t: Throwable) {
+            /*@formatter:off*/ Logger.e(TAG, "init(): ", t)
+            /*@formatter:on*/
         }
     }
 
@@ -355,6 +406,17 @@ class RetenoImpl internal constructor(
         } catch (ex: Throwable) {
             /*@formatter:off*/ Logger.e(TAG, "testCrash(): ", ex)
             /*@formatter:on*/
+        }
+    }
+
+    private inline fun awaitInit(crossinline operation: () -> Unit) {
+        if (initDeferred?.isCompleted == false) {
+            asyncScope.launch(Dispatchers.Main) {
+                initDeferred?.await()
+                operation()
+            }
+        } else {
+            operation()
         }
     }
 
