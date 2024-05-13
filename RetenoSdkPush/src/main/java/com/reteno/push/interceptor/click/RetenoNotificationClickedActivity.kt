@@ -20,18 +20,6 @@ class RetenoNotificationClickedActivity : Activity() {
     private val reteno by lazy {
         ((RetenoImpl.application as RetenoApplication).getRetenoInstance() as RetenoImpl)
     }
-    private val interactionController by lazy {
-        reteno.serviceLocator.interactionControllerProvider.get()
-    }
-    private val deeplinkController by lazy {
-        reteno.serviceLocator.deeplinkControllerProvider.get()
-    }
-    private val scheduleController by lazy {
-        reteno.serviceLocator.scheduleControllerProvider.get()
-    }
-    private val iamView by lazy {
-        reteno.serviceLocator.iamViewProvider.get()
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -57,8 +45,8 @@ class RetenoNotificationClickedActivity : Activity() {
             intent?.extras?.getString(Constants.KEY_ES_INTERACTION_ID)?.let { interactionId ->
                 /*@formatter:off*/ Logger.i(TAG, "sendInteractionStatus(): ", "intent = [", intent, "]")
                 /*@formatter:on*/
-                interactionController.onInteraction(interactionId, InteractionStatus.CLICKED)
-                scheduleController.forcePush()
+                reteno.recordInteraction(interactionId, InteractionStatus.CLICKED)
+                reteno.forcePushData()
             }
         }
     }
@@ -77,7 +65,7 @@ class RetenoNotificationClickedActivity : Activity() {
 
             IntentHandler.getDeepLinkIntent(bundle)?.let { deeplinkIntent ->
                 val (linkWrapped, linkUnwrapped) = Util.getLinkFromBundle(bundle)
-                deeplinkController.deeplinkClicked(linkWrapped, linkUnwrapped)
+                RetenoImpl.instance.deeplinkClicked(linkWrapped, linkUnwrapped)
                 launchDeeplink(deeplinkIntent)
             } ?: launchApp(intent)
         } ?: launchApp(intent)
@@ -116,7 +104,7 @@ class RetenoNotificationClickedActivity : Activity() {
         bundle.getString(Constants.KEY_ES_IAM)
             .takeIf { it == "1" }
             ?.run {
-                bundle.getString(Constants.KEY_ES_INTERACTION_ID)?.let(iamView::initialize)
+                bundle.getString(Constants.KEY_ES_INTERACTION_ID)?.let(RetenoImpl.instance::initializeIamView)
             }
     }
 

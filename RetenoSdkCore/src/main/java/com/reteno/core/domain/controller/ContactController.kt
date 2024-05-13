@@ -17,6 +17,10 @@ class ContactController(
     @Volatile
     private var isDeviceSentThisSession = false
 
+    fun getDeviceId(): String {
+        return configRepository.getDeviceId().id
+    }
+
     fun setExternalUserId(id: String?) {
         /*@formatter:off*/ Logger.i(TAG, "setExternalUserId(): ", "id = [" , id , "]")
         /*@formatter:on*/
@@ -139,6 +143,14 @@ class ContactController(
     fun setExternalIdAndUserData(externalUserId: String, user: User?) {
         setExternalUserId(externalUserId)
         setUserData(user)
+    }
+
+    fun saveDefaultNotificationChannel(channel: String) {
+        configRepository.saveDefaultNotificationChannel(channel)
+    }
+
+    fun getDefaultNotificationChannel(): String {
+        return configRepository.getDefaultNotificationChannel()
     }
 
     companion object {

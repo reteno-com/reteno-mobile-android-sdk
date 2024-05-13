@@ -3,7 +3,6 @@ package com.reteno.push.channel
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
-import com.reteno.core.RetenoApplication
 import com.reteno.core.RetenoImpl
 import com.reteno.core.data.remote.mapper.fromJson
 import com.reteno.core.data.remote.mapper.fromJsonOrNull
@@ -86,27 +85,12 @@ internal object RetenoNotificationChannel {
     private fun configureDefaultNotificationChannel(channel: String) {
         channel.takeUnless { it.isEmpty() }?.let {
             try {
-                storeDefaultNotificationChannel(it)
+                RetenoImpl.instance.saveDefaultNotificationChannel(channel)
             } catch (t: Throwable) {
                 /*@formatter:off*/ Logger.e(TAG, "configureDefaultNotificationChannel(): ", t)
                 /*@formatter:on*/
             }
         }
-    }
-
-    /**
-     * Stores default notification channel id.
-     *
-     * @param channel Channel configuration to store.
-     */
-    private fun storeDefaultNotificationChannel(channel: String) {
-        val configRepository =
-            ((RetenoImpl.application as RetenoApplication).getRetenoInstance() as RetenoImpl)
-                .serviceLocator
-                .configRepositoryProvider
-                .get()
-
-        configRepository.saveDefaultNotificationChannel(channel)
     }
 
     /**
@@ -117,13 +101,7 @@ internal object RetenoNotificationChannel {
     private fun retrieveDefaultNotificationChannelData(): NotificationChannelData {
         val defaultChannelOrNull: NotificationChannelData? =
             try {
-                val configRepository =
-                    ((RetenoImpl.application as RetenoApplication).getRetenoInstance() as RetenoImpl)
-                        .serviceLocator
-                        .configRepositoryProvider
-                        .get()
-
-                val jsonChannel = configRepository.getDefaultNotificationChannel()
+                val jsonChannel = RetenoImpl.instance.getDefaultNotificationChannel()
                 jsonChannel.fromJsonOrNull()
             } catch (e: Exception) {
                 /*@formatter:off*/ Logger.d(TAG, "retrieveDefaultNotificationChannelData(): Failed to read saved DefaultChannelId ", e)

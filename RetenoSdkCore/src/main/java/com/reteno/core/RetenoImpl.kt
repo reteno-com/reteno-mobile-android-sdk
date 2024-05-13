@@ -10,6 +10,8 @@ import com.reteno.core.domain.controller.ScreenTrackingController
 import com.reteno.core.domain.model.ecom.EcomEvent
 import com.reteno.core.domain.model.event.Event
 import com.reteno.core.domain.model.event.LifecycleTrackingOptions
+import com.reteno.core.domain.model.interaction.InteractionStatus
+import com.reteno.core.domain.model.logevent.RetenoLogEvent
 import com.reteno.core.domain.model.user.User
 import com.reteno.core.domain.model.user.UserAttributesAnonymous
 import com.reteno.core.features.iam.InAppPauseBehaviour
@@ -38,7 +40,7 @@ class RetenoImpl(
     config: RetenoConfig,
     private val asyncScope: CoroutineScope,
     private val delayInitialization: Boolean
-) : RetenoLifecycleCallbacks, Reteno {
+) : RetenoLifecycleCallbacks, Reteno, RetenoInternalFacade {
 
     init {
         /*@formatter:off*/ Logger.i(TAG, "RetenoImpl(): ", "context = [" , application , "]")
@@ -47,6 +49,7 @@ class RetenoImpl(
     }
 
     private val configProvider = RetenoConfigProvider(config)
+    //TODO make this property private
     val serviceLocator: ServiceLocator = ServiceLocator(application, configProvider)
     private val activityHelper: RetenoActivityHelper by lazy { serviceLocator.retenoActivityHelperProvider.get() }
 
@@ -57,6 +60,9 @@ class RetenoImpl(
     private val iamController by lazy { serviceLocator.iamControllerProvider.get() }
     private val sessionHandler by lazy { serviceLocator.retenoSessionHandlerProvider.get() }
     private val appLifecycleController by lazy { serviceLocator.appLifecycleControllerProvider.get() }
+    private val interactionController by lazy { serviceLocator.interactionControllerProvider.get() }
+    private val databaseManager by lazy { serviceLocator.retenoDatabaseManagerProvider.get() }
+    private val deeplinkController by lazy { serviceLocator.deeplinkControllerProvider.get() }
 
     override val appInbox by lazy { serviceLocator.appInboxProvider.get() }
     override val recommendation by lazy { serviceLocator.recommendationProvider.get() }
@@ -113,7 +119,7 @@ class RetenoImpl(
             contactController.checkIfDeviceRequestSentThisSession()
             sessionHandler.start()
             appLifecycleController.start()
-            startPushScheduler()
+            startScheduler()
             iamView.resume(activity)
         } catch (ex: Throwable) {
             /*@formatter:off*/ Logger.e(TAG, "resume(): ", ex)
@@ -257,6 +263,20 @@ class RetenoImpl(
         }
     }
 
+    override fun logRetenoEvent(event: RetenoLogEvent) = awaitInit {
+        if (!isOsVersionSupported()) {
+            return@awaitInit
+        }
+        /*@formatter:off*/ Logger.i(TAG, "logRetenoEvent(): ", "event = [" , event , "]")
+        /*@formatter:on*/
+        try {
+            eventController.trackRetenoEvent(event)
+        } catch (ex: Throwable) {
+            /*@formatter:off*/ Logger.e(TAG, "logRetenoEvent(): event = [$event]", ex)
+            /*@formatter:on*/
+        }
+    }
+
     override fun setLifecycleEventConfig(lifecycleTrackingOptions: LifecycleTrackingOptions) =
         awaitInit {
             if (!isOsVersionSupported()) {
@@ -341,7 +361,123 @@ class RetenoImpl(
     }
 
     override fun onNewFcmToken(token: String) = awaitInit {
-        contactController.onNewFcmToken(token)
+        if (!isOsVersionSupported()) {
+            return@awaitInit
+        }
+        /*@formatter:off*/ Logger.i(TAG, "onNewFcmToken(): ", "token = [" , token , "]")
+        /*@formatter:on*/
+        try {
+            contactController.onNewFcmToken(token)
+        } catch (ex: Throwable) {
+            /*@formatter:off*/ Logger.e(TAG, "onNewFcmToken(): token = [$token]", ex)
+            /*@formatter:on*/
+        }
+    }
+
+    override fun recordInteraction(id: String, status: InteractionStatus) = awaitInit {
+        if (!isOsVersionSupported()) {
+            return@awaitInit
+        }
+        /*@formatter:off*/ Logger.i(TAG, "recordInteraction(): ", "status = [" , status , "]")
+        /*@formatter:on*/
+        try {
+            interactionController.onInteraction(id, status)
+        } catch (ex: Throwable) {
+            /*@formatter:off*/ Logger.e(TAG, "recordInteraction(): status = [$status]", ex)
+            /*@formatter:on*/
+        }
+    }
+
+    override fun canPresentMessages(): Boolean {
+        if (!isOsVersionSupported()) {
+            return false
+        }
+        /*@formatter:off*/ Logger.i(TAG, "canPresentMessages(): ")
+        /*@formatter:on*/
+        return try {
+            activityHelper.canPresentMessages()
+        } catch (ex: Throwable) {
+            /*@formatter:off*/ Logger.e(TAG, "canPresentMessages(): ", ex)
+            /*@formatter:on*/
+            false
+        }
+    }
+
+    override fun getDeviceId(): String {
+        if (!isOsVersionSupported()) {
+            return ""
+        }
+        val result = try {
+            contactController.getDeviceId()
+        } catch (ex: Throwable) {
+            /*@formatter:off*/ Logger.e(TAG, "getDeviceId(): ", ex)
+            /*@formatter:on*/
+            ""
+        }
+        /*@formatter:off*/ Logger.i(TAG, "getDeviceId(): $result")
+        /*@formatter:on*/
+        return result
+    }
+
+    override fun isDatabaseEmpty(): Boolean {
+        if (!isOsVersionSupported()) {
+            return true
+        }
+        val result = try {
+            databaseManager.isDatabaseEmpty()
+        } catch (ex: Throwable) {
+            /*@formatter:off*/ Logger.e(TAG, "isDatabaseEmpty(): ", ex)
+            /*@formatter:on*/
+            true
+        }
+        /*@formatter:off*/ Logger.i(TAG, "isDatabaseEmpty(): $result")
+        /*@formatter:on*/
+        return result
+    }
+
+    override fun initializeIamView(interactionId: String) = awaitInit {
+        if (!isOsVersionSupported()) {
+            return@awaitInit
+        }
+        /*@formatter:off*/ Logger.i(TAG, "initializeIamView(): ", "interactionId = [" , interactionId , "]")
+        /*@formatter:on*/
+        try {
+            iamView.initialize(interactionId)
+        } catch (ex: Throwable) {
+            /*@formatter:off*/ Logger.e(TAG, "initializeIamView(): interactionId = [$interactionId]", ex)
+            /*@formatter:on*/
+        }
+    }
+
+    override fun getDefaultNotificationChannel(): String {
+        return contactController.getDefaultNotificationChannel()
+    }
+
+    override fun saveDefaultNotificationChannel(channel: String) {
+        contactController.saveDefaultNotificationChannel(channel)
+    }
+
+    override fun startScheduler() {
+        scheduleController.startScheduler()
+    }
+
+    override fun notificationsEnabled(enabled: Boolean) {
+        contactController.notificationsEnabled(enabled)
+    }
+
+    override fun deeplinkClicked(linkWrapped: String, linkUnwrapped: String) {
+        deeplinkController.deeplinkClicked(linkWrapped, linkUnwrapped)
+    }
+
+    private inline fun awaitInit(crossinline operation: () -> Unit) {
+        if (initDeferred?.isCompleted == false) {
+            asyncScope.launch(Dispatchers.Main) {
+                initDeferred?.await()
+                operation()
+            }
+        } else {
+            operation()
+        }
     }
 
     private fun initSdk(config: RetenoConfig) {
@@ -387,10 +523,6 @@ class RetenoImpl(
         scheduleController.clearOldData()
     }
 
-    private fun startPushScheduler() {
-        scheduleController.startScheduler()
-    }
-
     private fun stopPushScheduler() {
         scheduleController.stopScheduler()
     }
@@ -409,21 +541,13 @@ class RetenoImpl(
         }
     }
 
-    private inline fun awaitInit(crossinline operation: () -> Unit) {
-        if (initDeferred?.isCompleted == false) {
-            asyncScope.launch(Dispatchers.Main) {
-                initDeferred?.await()
-                operation()
-            }
-        } else {
-            operation()
-        }
-    }
-
     companion object {
         private val TAG: String = RetenoImpl::class.java.simpleName
 
         lateinit var application: Application
             private set
+
+        val instance: RetenoImpl
+            get() = (application as RetenoApplication).getRetenoInstance() as RetenoImpl
     }
 }

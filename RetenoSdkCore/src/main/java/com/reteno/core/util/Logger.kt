@@ -2,11 +2,7 @@ package com.reteno.core.util
 
 import android.util.Log
 import com.reteno.core.BuildConfig
-import com.reteno.core.RetenoApplication
-import com.reteno.core.RetenoConfig
 import com.reteno.core.RetenoImpl
-import com.reteno.core.di.ServiceLocator
-import com.reteno.core.di.provider.RetenoConfigProvider
 import com.reteno.core.domain.model.logevent.LogLevel
 import com.reteno.core.domain.model.logevent.RetenoLogEvent
 
@@ -90,11 +86,7 @@ object Logger {
             event.bundleId = packageName
 
             val deviceId = runCatching {
-                ((RetenoImpl.application as RetenoApplication).getRetenoInstance() as RetenoImpl)
-                    .serviceLocator
-                    .configRepositoryProvider.get()
-                    .getDeviceId()
-                    .id
+                RetenoImpl.instance.getDeviceId()
             }.getOrElse { "uninitialized" }
 
             event.deviceId = deviceId
@@ -105,17 +97,7 @@ object Logger {
 
     private fun saveEvent(logEvent: RetenoLogEvent) {
         try {
-            val logEventRepository = runCatching {
-                ((RetenoImpl.application as RetenoApplication).getRetenoInstance() as RetenoImpl)
-                    .serviceLocator
-                    .logEventRepositoryProvider.get()
-            }.getOrElse {
-                //Log event api does not require access key so we can leave this parameter empty
-                ServiceLocator(RetenoImpl.application, RetenoConfigProvider(RetenoConfig().apply { platform = "Android" }))
-                    .logEventRepositoryProvider
-                    .get()
-            }
-            logEventRepository.saveLogEvent(logEvent)
+            RetenoImpl.instance.logRetenoEvent(logEvent)
         } catch (e: Exception) {
             Log.e(TAG, "saveEvent: ", e)
         }

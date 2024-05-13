@@ -140,11 +140,6 @@ interface Reteno {
      */
     fun initWith(config: RetenoConfig)
 
-    /**
-     * Method invoked by SDK itself when Firebase token changes
-     * */
-    fun onNewFcmToken(token: String)
-
     companion object {
         private val TAG: String = Reteno::class.java.simpleName
     }

@@ -97,12 +97,9 @@ class RetenoNotificationService(
 
         if (channelEnabled && permissionsGranted) {
             data.getString(KEY_ES_INTERACTION_ID)?.let { interactionId ->
-                val serviceLocator = (reteno as RetenoImpl).serviceLocator
-                val interactionController = serviceLocator.interactionControllerProvider.get()
-                val scheduleController = serviceLocator.scheduleControllerProvider.get()
-
-                interactionController.onInteraction(interactionId, InteractionStatus.DELIVERED)
-                scheduleController.forcePush()
+                val retenoImpl = reteno as RetenoImpl
+                retenoImpl.recordInteraction(interactionId, InteractionStatus.DELIVERED)
+                retenoImpl.forcePushData()
             }
         }
     }

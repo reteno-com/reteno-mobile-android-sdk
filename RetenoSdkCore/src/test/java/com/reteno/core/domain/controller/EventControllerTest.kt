@@ -2,13 +2,18 @@ package com.reteno.core.domain.controller
 
 import com.reteno.core.base.robolectric.BaseRobolectricTest
 import com.reteno.core.data.repository.EventsRepository
+import com.reteno.core.data.repository.LogEventRepository
 import com.reteno.core.domain.SchedulerUtils
 import com.reteno.core.domain.model.ecom.EcomEvent
 import com.reteno.core.domain.model.event.Event
 import com.reteno.core.domain.model.event.Event.Companion.SCREEN_VIEW_EVENT_TYPE_KEY
 import com.reteno.core.domain.model.event.Event.Companion.SCREEN_VIEW_PARAM_NAME
-import io.mockk.*
+import io.mockk.every
 import io.mockk.impl.annotations.RelaxedMockK
+import io.mockk.justRun
+import io.mockk.mockk
+import io.mockk.slot
+import io.mockk.verify
 import junit.framework.TestCase.assertEquals
 import org.junit.Before
 import org.junit.Test
@@ -29,6 +34,9 @@ class EventControllerTest : BaseRobolectricTest() {
     @RelaxedMockK
     private lateinit var eventsRepository: EventsRepository
 
+    @RelaxedMockK
+    private lateinit var logEventRepository: LogEventRepository
+
     private lateinit var SUT: EventController
     // endregion helper fields ---------------------------------------------------------------------
 
@@ -36,7 +44,7 @@ class EventControllerTest : BaseRobolectricTest() {
     override fun before() {
         super.before()
 
-        SUT = EventController(eventsRepository)
+        SUT = EventController(eventsRepository, logEventRepository)
     }
 
     @Test

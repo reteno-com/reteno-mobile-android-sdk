@@ -227,7 +227,7 @@ class ServiceLocator(
         get() = interactionControllerProviderInternal
 
     internal val eventsControllerProvider: EventsControllerProvider =
-        EventsControllerProvider(eventsRepositoryProvider)
+        EventsControllerProvider(eventsRepositoryProvider, logEventRepositoryProviderInternal)
 
     private val appInboxControllerProvider: AppInboxControllerProvider =
         AppInboxControllerProvider(appInboxRepositoryProvider)
@@ -280,8 +280,12 @@ class ServiceLocator(
     val appLifecycleControllerProvider: ProviderWeakReference<AppLifecycleController>
         get() = appLifecycleControllerProviderInternal
 
-    private val iamViewProviderInternal: IamViewProvider =
-        IamViewProvider(retenoActivityHelperProviderInternal, iamControllerProvider)
+    private val iamViewProviderInternal: IamViewProvider = IamViewProvider(
+        retenoActivityHelperProviderInternal,
+        iamControllerProvider,
+        interactionControllerProviderInternal,
+        scheduleControllerProvider
+    )
 
     val iamViewProvider: ProviderWeakReference<IamView> =
         iamViewProviderInternal
