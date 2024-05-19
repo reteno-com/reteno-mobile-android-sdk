@@ -1,9 +1,13 @@
 package com.reteno.push.base.robolectric
 
 import androidx.test.core.app.ApplicationProvider
-import com.reteno.core.RetenoApplication
+import com.reteno.core.RetenoConfig
 import com.reteno.core.RetenoImpl
 import io.mockk.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
 import org.junit.After
 import org.junit.Before
 import org.junit.runner.RunWith
@@ -11,6 +15,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.shadows.ShadowLooper
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
 @Config(
     sdk = [26],
@@ -22,9 +27,6 @@ abstract class BaseRobolectricTest {
 
     protected val application by lazy {
         ApplicationProvider.getApplicationContext() as RetenoTestApp
-    }
-    protected val reteno by lazy {
-        (application as RetenoApplication).getRetenoInstance() as RetenoImpl
     }
 
     @Before
@@ -45,6 +47,17 @@ abstract class BaseRobolectricTest {
 
     @After
     open fun after() {
-        // Nothing here yet
+        application.retenoMock = mockk()
+    }
+
+    protected fun TestScope.createReteno(): RetenoImpl {
+        return RetenoImpl(
+            application = application,
+            config = RetenoConfig(),
+            asyncScope = CoroutineScope(StandardTestDispatcher(testScheduler)),
+            delayInitialization = false
+        ).also {
+            application.retenoMock = it
+        }
     }
 }

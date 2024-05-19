@@ -131,6 +131,15 @@ interface Reteno {
      */
     fun setInAppMessagesPauseBehaviour(behaviour: InAppPauseBehaviour)
 
+    /**
+     * Method for finishing delayed initialization of RetenoSDK, this method is utilized mainly in
+     * cross-platform SDK wrappers, so use it only if you actually need it
+     *
+     * @param config - supply config to the SDK
+     * @throws IllegalStateException - indicates that sdk was already initialized before
+     */
+    fun initWith(config: RetenoConfig)
+
     companion object {
         private val TAG: String = Reteno::class.java.simpleName
     }

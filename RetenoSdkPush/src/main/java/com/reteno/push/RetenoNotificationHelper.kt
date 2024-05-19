@@ -1,6 +1,7 @@
 package com.reteno.push
 
 import android.app.PendingIntent
+import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -52,17 +53,17 @@ import java.net.URL
 import java.util.Random
 
 
-internal object RetenoNotificationHelper {
+internal class RetenoNotificationHelper(private val context: Context) {
 
     private val TAG: String = RetenoNotificationHelper::class.java.simpleName
 
-    private const val RETENO_DEFAULT_PUSH_ICON = "reteno_default_push_icon"
+    companion object {
+        private const val RETENO_DEFAULT_PUSH_ICON = "reteno_default_push_icon"
 
-    private const val NOTIFICATION_ID_DEFAULT = 1
+        private const val NOTIFICATION_ID_DEFAULT = 1
+    }
 
-    @JvmStatic
     internal fun getNotificationBuilderCompat(bundle: Bundle): NotificationCompat.Builder {
-        val context = RetenoImpl.application
         /*@formatter:off*/ Logger.i(TAG, "getNotificationBuilderCompat(): ", "context = [" , context , "], bundle = [" , bundle.toStringVerbose() , "]")
         /*@formatter:on*/
         val icon = getNotificationIcon()
@@ -116,7 +117,6 @@ internal object RetenoNotificationHelper {
         return builder
     }
 
-    @JvmStatic
     internal fun getNotificationId(bundle: Bundle): Int {
         val notificationIdString: String? = bundle.getString(KEY_ES_INTERACTION_ID)
         // FIXME notification id is calculated by hashCode() function on "es_interaction_id" string. Collisions may appear
@@ -127,7 +127,6 @@ internal object RetenoNotificationHelper {
     }
 
     private fun getNotificationIconColor(): Int {
-        val context = RetenoImpl.application
 
         val metadata = context.getApplicationMetaData()
         val customIconColorResName = context.resources.getString(R.string.notification_icon_color)
@@ -135,7 +134,6 @@ internal object RetenoNotificationHelper {
     }
 
     private fun getNotificationIcon(): Int {
-        val context = RetenoImpl.application
 
         val metadata = context.getApplicationMetaData()
         val customIconResName = context.resources.getString(R.string.notification_icon)
@@ -157,7 +155,6 @@ internal object RetenoNotificationHelper {
      */
     private fun getDefaultNotificationIcon(): Int {
         return try {
-            val context = RetenoImpl.application
 
             val resources = context.resources
             resources.getIdentifier(RETENO_DEFAULT_PUSH_ICON, "drawable", context.packageName)
@@ -167,7 +164,6 @@ internal object RetenoNotificationHelper {
     }
 
     private fun getNotificationTitle(bundle: Bundle): String {
-        val context = RetenoImpl.application
         val title = bundle.getString(KEY_ES_TITLE) ?: context.getAppName()
         /*@formatter:off*/ Logger.i(TAG, "getNotificationName(): ", "context = [" , context , "], bundle = [" , bundle , "] title = [", title, "]")
         /*@formatter:on*/
@@ -193,7 +189,7 @@ internal object RetenoNotificationHelper {
         var bigPicture: Bitmap? = null
         // BigPictureStyle support requires API 16 and higher.
         if (!TextUtils.isEmpty(imageUrl)) {
-            bigPicture = BitmapUtil.getScaledBitmap(imageUrl)
+            bigPicture = BitmapUtil.getScaledBitmap(context, imageUrl)
             if (bigPicture == null) {
                 /*@formatter:off*/ Logger.i(TAG, "getNotificationBigPictureBitmap(): ", "Failed to download image for push notification;", " imageUrl = [" , imageUrl , "]")
                 /*@formatter:on*/
@@ -238,7 +234,6 @@ internal object RetenoNotificationHelper {
     private fun getImageCarouselRemoteViews(bundle: Bundle): RemoteViews? {
         val imageUrlList = getCarouselImageUrlList(bundle) ?: return null
 
-        val context = RetenoImpl.application
         val expandedView = RemoteViews(context.packageName, R.layout.image_carousel)
 
         for (imageUrl in imageUrlList) {
@@ -280,7 +275,6 @@ internal object RetenoNotificationHelper {
     }
 
     private fun createPendingIntent(message: Bundle): PendingIntent {
-        val context = RetenoImpl.application
 
         if (BuildUtil.shouldDisableTrampolines()) {
             val intent: Intent =
@@ -304,7 +298,6 @@ internal object RetenoNotificationHelper {
     }
 
     private fun createActivityIntent(bundle: Bundle): Intent {
-        val context = RetenoImpl.application
         val intent = Intent(context, RetenoNotificationClickedActivity::class.java)
         intent.putExtras(bundle)
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -312,7 +305,6 @@ internal object RetenoNotificationHelper {
     }
 
     private fun createBroadcastIntent(bundle: Bundle): Intent {
-        val context = RetenoImpl.application
         val intent = Intent(context, RetenoNotificationClickedReceiver::class.java)
         intent.putExtras(bundle)
         return intent
@@ -320,7 +312,6 @@ internal object RetenoNotificationHelper {
 
     private fun createDeleteIntent(data: Bundle): PendingIntent? {
         try {
-            val context = RetenoImpl.application
             val receiver = RetenoImpl.application.getApplicationMetaData()
                 .getString(Constants.META_DATA_KEY_CUSTOM_RECEIVER_NOTIFICATION_DELETED)
             receiver?.let { receiverClassName ->

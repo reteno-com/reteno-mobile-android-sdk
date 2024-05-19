@@ -1,7 +1,6 @@
 package com.reteno.push.receiver
 
 import android.content.Context
-import com.reteno.core.RetenoApplication
 import com.reteno.core.RetenoImpl
 import com.reteno.core.util.Logger
 import com.reteno.push.channel.RetenoNotificationChannel
@@ -18,11 +17,8 @@ internal object NotificationsEnabledManager {
         val defaultChannelEnabled =
             RetenoNotificationChannel.isNotificationChannelEnabled(context, DEFAULT_CHANNEL_ID)
 
-        val reteno = ((RetenoImpl.application as RetenoApplication).getRetenoInstance() as RetenoImpl)
-        val contactController = reteno.serviceLocator.contactControllerProvider.get()
-        contactController.notificationsEnabled(notificationsEnabled && defaultChannelEnabled)
-
-        val scheduleController = reteno.serviceLocator.scheduleControllerProvider.get()
-        scheduleController.startScheduler()
+        val reteno = RetenoImpl.instance
+        reteno.notificationsEnabled(notificationsEnabled && defaultChannelEnabled)
+        reteno.startScheduler()
     }
 }

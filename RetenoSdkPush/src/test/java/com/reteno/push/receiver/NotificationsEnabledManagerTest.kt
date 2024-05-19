@@ -1,5 +1,6 @@
 package com.reteno.push.receiver
 
+import com.reteno.core.di.ServiceLocator
 import com.reteno.core.domain.controller.ContactController
 import com.reteno.core.domain.controller.ScheduleController
 import com.reteno.push.base.robolectric.BaseRobolectricTest
@@ -7,11 +8,36 @@ import com.reteno.push.channel.RetenoNotificationChannel
 import io.mockk.every
 import io.mockk.impl.annotations.RelaxedMockK
 import io.mockk.justRun
+import io.mockk.mockkConstructor
+import io.mockk.mockkStatic
+import io.mockk.unmockkConstructor
+import io.mockk.unmockkStatic
 import io.mockk.verify
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.runTest
+import org.junit.AfterClass
+import org.junit.BeforeClass
 import org.junit.Test
 
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class NotificationsEnabledManagerTest : BaseRobolectricTest() {
+
+    companion object {
+        @JvmStatic
+        @BeforeClass
+        fun beforeClass() {
+            mockkStatic("com.reteno.core.util.UtilKt")
+            mockkConstructor(ServiceLocator::class)
+        }
+
+        @JvmStatic
+        @AfterClass
+        fun afterClass() {
+            unmockkStatic("com.reteno.core.util.UtilKt")
+            unmockkConstructor(ServiceLocator::class)
+        }
+    }
 
     // region helper fields ------------------------------------------------------------------------
     @RelaxedMockK
@@ -27,12 +53,13 @@ class NotificationsEnabledManagerTest : BaseRobolectricTest() {
     override fun before() {
         super.before()
 
-        every { reteno.serviceLocator.contactControllerProvider.get() } returns contactController
-        every { reteno.serviceLocator.scheduleControllerProvider.get() } returns scheduleController
+        every { anyConstructed<ServiceLocator>().contactControllerProvider.get() } returns contactController
+        every { anyConstructed<ServiceLocator>().scheduleControllerProvider.get() } returns scheduleController
     }
 
     @Test
-    fun whenOnCheckState_thenScheduleControllerStart() {
+    fun whenOnCheckState_thenScheduleControllerStart() = runTest {
+        createReteno()
         // Given
         every { RetenoNotificationChannel.isNotificationsEnabled(any()) } returns true
         every { RetenoNotificationChannel.isNotificationChannelEnabled(any(), any()) } returns true
@@ -46,7 +73,8 @@ class NotificationsEnabledManagerTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun givenNotificationsDisabledChannelDisabled_whenOnCheckState_thenContactControllerNotificationsEnabledFalse() {
+    fun givenNotificationsDisabledChannelDisabled_whenOnCheckState_thenContactControllerNotificationsEnabledFalse() = runTest {
+        createReteno()
         // Given
         every { RetenoNotificationChannel.isNotificationsEnabled(any()) } returns false
         every { RetenoNotificationChannel.isNotificationChannelEnabled(any(), any()) } returns false
@@ -60,7 +88,8 @@ class NotificationsEnabledManagerTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun givenNotificationsDisabledChannelEnabled_whenOnCheckState_thenContactControllerNotificationsEnabledFalse() {
+    fun givenNotificationsDisabledChannelEnabled_whenOnCheckState_thenContactControllerNotificationsEnabledFalse() = runTest {
+        createReteno()
         // Given
         every { RetenoNotificationChannel.isNotificationsEnabled(any()) } returns false
         every { RetenoNotificationChannel.isNotificationChannelEnabled(any(), any()) } returns true
@@ -74,7 +103,8 @@ class NotificationsEnabledManagerTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun givenNotificationsEnabledChannelDisabled_whenOnCheckState_thenContactControllerNotificationsEnabledFalse() {
+    fun givenNotificationsEnabledChannelDisabled_whenOnCheckState_thenContactControllerNotificationsEnabledFalse() = runTest {
+        createReteno()
         // Given
         every { RetenoNotificationChannel.isNotificationsEnabled(any()) } returns true
         every { RetenoNotificationChannel.isNotificationChannelEnabled(any(), any()) } returns false
@@ -88,7 +118,8 @@ class NotificationsEnabledManagerTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun givenNotificationsEnabledChannelEnabled_whenOnCheckState_thenContactControllerNotificationsEnabledTrue() {
+    fun givenNotificationsEnabledChannelEnabled_whenOnCheckState_thenContactControllerNotificationsEnabledTrue() = runTest {
+        createReteno()
         // Given
         every { RetenoNotificationChannel.isNotificationsEnabled(any()) } returns true
         every { RetenoNotificationChannel.isNotificationChannelEnabled(any(), any()) } returns true
