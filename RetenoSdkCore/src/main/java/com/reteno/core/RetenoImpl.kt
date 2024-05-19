@@ -30,6 +30,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
@@ -488,7 +489,9 @@ class RetenoImpl(
                     val result = suspendCoroutine {
                         initContinuation = it
                     }
-                    start(result)
+                    withContext(Dispatchers.Main) {
+                        start(result)
+                    }
                 }
             } else {
                 syncScope.launch {
