@@ -37,7 +37,7 @@ class RetenoActivityHelperFragmentTest : BaseRobolectricTest() {
     override fun before() {
         super.before()
         SUT = RetenoActivityHelperImpl()
-        TestScope().createReteno()
+        TestScope().createRetenoAndAdvanceInit()
         activityController = Robolectric.buildActivity(Activity::class.java).setup()
         SUT.enableLifecycleCallbacks(retenoLifecycleCallbacks)
 

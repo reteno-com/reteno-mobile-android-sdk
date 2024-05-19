@@ -3,6 +3,9 @@ package com.reteno.core.domain.controller
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.annotation.MainThread
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleObserver
+import androidx.lifecycle.OnLifecycleEvent
 import com.reteno.core.RetenoImpl
 import com.reteno.core.data.repository.ConfigRepository
 import com.reteno.core.domain.model.event.Event
@@ -27,9 +30,10 @@ class AppLifecycleController internal constructor(
     private val sessionHandler: RetenoSessionHandler,
     lifecycleTrackingOptions: LifecycleTrackingOptions,
     scope: CoroutineScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
-) {
+) : LifecycleObserver {
 
     private var wasBackgrounded = false
+    private var isStarted = false
     private var appOpenedTimestamp = System.currentTimeMillis()
     private var lifecycleEventConfig = lifecycleTrackingOptions.toTypeMap()
 
@@ -44,14 +48,20 @@ class AppLifecycleController internal constructor(
     }
 
     @MainThread
+    @OnLifecycleEvent(Lifecycle.Event.ON_START)
     fun start() {
+        if (isStarted) return
+        isStarted = true
         trackLifecycleEvent(Event.applicationOpen(wasBackgrounded))
         appOpenedTimestamp = System.currentTimeMillis()
         wasBackgrounded = false
     }
 
     @MainThread
+    @OnLifecycleEvent(Lifecycle.Event.ON_STOP)
     fun stop() {
+        if (!isStarted) return
+        isStarted = false
         wasBackgrounded = true
         trackLifecycleEvent(
             Event.applicationBackgrounded(
@@ -125,6 +135,7 @@ class AppLifecycleController internal constructor(
                     event.bgCount
                 )
             )
+
             is SessionEvent.SessionStartEvent -> trackLifecycleEvent(
                 Event.sessionStart(event.sessionId, event.startTime.asZonedDateTime())
             )

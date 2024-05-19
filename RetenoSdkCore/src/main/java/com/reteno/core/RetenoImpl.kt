@@ -4,6 +4,7 @@ import android.app.Activity
 import android.app.Application
 import android.content.ComponentName
 import android.content.Intent
+import androidx.lifecycle.ProcessLifecycleOwner
 import com.reteno.core.di.ServiceLocator
 import com.reteno.core.di.provider.RetenoConfigProvider
 import com.reteno.core.domain.controller.ScreenTrackingController
@@ -38,7 +39,7 @@ import kotlin.coroutines.suspendCoroutine
 class RetenoImpl(
     application: Application,
     config: RetenoConfig,
-    private val asyncScope: CoroutineScope,
+    private val syncScope: CoroutineScope,
     private val delayInitialization: Boolean
 ) : RetenoLifecycleCallbacks, Reteno, RetenoInternalFacade {
 
@@ -49,6 +50,7 @@ class RetenoImpl(
     }
 
     private val configProvider = RetenoConfigProvider(config)
+
     //TODO make this property private
     val serviceLocator: ServiceLocator = ServiceLocator(application, configProvider)
     private val activityHelper: RetenoActivityHelper by lazy { serviceLocator.retenoActivityHelperProvider.get() }
@@ -87,7 +89,7 @@ class RetenoImpl(
     ) : this(
         application = application,
         config = config.copy(accessKey = accessKey),
-        asyncScope = CoroutineScope(Dispatchers.IO + SupervisorJob()),
+        syncScope = CoroutineScope(Dispatchers.Main + SupervisorJob()),
         delayInitialization = false
     )
 
@@ -98,7 +100,7 @@ class RetenoImpl(
         application = application,
         delayInitialization = true,
         config = RetenoConfig(),
-        asyncScope = CoroutineScope(Dispatchers.IO + SupervisorJob()),
+        syncScope = CoroutineScope(Dispatchers.IO + SupervisorJob()),
     )
 
     override fun start(activity: Activity) = awaitInit {
@@ -135,7 +137,6 @@ class RetenoImpl(
         /*@formatter:on*/
         try {
             sessionHandler.stop()
-            appLifecycleController.stop()
             stopPushScheduler()
             iamView.pause(activity)
         } catch (ex: Throwable) {
@@ -471,7 +472,7 @@ class RetenoImpl(
 
     private inline fun awaitInit(crossinline operation: () -> Unit) {
         if (initDeferred?.isCompleted == false) {
-            asyncScope.launch(Dispatchers.Main) {
+            syncScope.launch(Dispatchers.Main) {
                 initDeferred?.await()
                 operation()
             }
@@ -484,16 +485,16 @@ class RetenoImpl(
         if (isOsVersionSupported()) {
             activityHelper.enableLifecycleCallbacks(this@RetenoImpl)
             if (delayInitialization) {
-                initDeferred = asyncScope.async {
+                initDeferred = syncScope.async {
+                    val result = suspendCoroutine {
+                        initContinuation = it
+                    }
                     withContext(Dispatchers.Main) {
-                        val result = suspendCoroutine {
-                            initContinuation = it
-                        }
                         start(result)
                     }
                 }
             } else {
-                asyncScope.launch {
+                syncScope.launch {
                     start(config)
                 }
             }
@@ -501,6 +502,7 @@ class RetenoImpl(
     }
 
     private suspend fun start(config: RetenoConfig) {
+        ProcessLifecycleOwner.get().lifecycle.addObserver(appLifecycleController)
         configProvider.setConfig(config)
         clearOldData()
         initMetadata()
