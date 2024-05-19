@@ -180,7 +180,7 @@ class RetenoImplTest : BaseRobolectricTest() {
     @Test
     fun givenExternalIdValid_whenSetUserAttributes_thenInteractWithController() = runTest {
         // Given
-        val retenoImpl = createReteno()
+        val retenoImpl = createRetenoAndAdvanceInit()
         // When
         retenoImpl.setUserAttributes(externalUserId = EXTERNAL_USER_ID)
 
@@ -198,7 +198,7 @@ class RetenoImplTest : BaseRobolectricTest() {
     fun givenExternalIdNotNullAndUserNull_whenSetUserAttributes_thenInteractWithController() =
         runTest {
             // Given
-            val retenoImpl = createReteno()
+            val retenoImpl = createRetenoAndAdvanceInit()
             // When
             retenoImpl.setUserAttributes(EXTERNAL_USER_ID, null)
 
@@ -216,7 +216,7 @@ class RetenoImplTest : BaseRobolectricTest() {
         runTest {
             // Given
             val userFull = getUserFull()
-            val retenoImpl = createReteno()
+            val retenoImpl = createRetenoAndAdvanceInit()
 
             // When
             retenoImpl.setUserAttributes(EXTERNAL_USER_ID, userFull)
@@ -232,7 +232,7 @@ class RetenoImplTest : BaseRobolectricTest() {
         every { contactController.setExternalIdAndUserData(any(), any()) } throws EXCEPTION
 
         val userFull = getUserFull()
-        val retenoImpl = createReteno()
+        val retenoImpl = createRetenoAndAdvanceInit()
 
         // When
         val exceptionThrownOutsideSdk = try {
@@ -258,7 +258,7 @@ class RetenoImplTest : BaseRobolectricTest() {
         // Given
         val expectedException =
             IllegalArgumentException("externalUserId should not be null or blank")
-        val retenoImpl = createReteno()
+        val retenoImpl = createRetenoAndAdvanceInit()
         // When
         val actualException = try {
             retenoImpl.setUserAttributes(" ")
@@ -277,7 +277,7 @@ class RetenoImplTest : BaseRobolectricTest() {
         runTest {
             // Given
             val userAttributesAnonymous = getUserAttributesAnonymous()
-            val retenoImpl = createReteno()
+            val retenoImpl = createRetenoAndAdvanceInit()
 
             // When
             retenoImpl.setAnonymousUserAttributes(userAttributesAnonymous)
@@ -298,7 +298,7 @@ class RetenoImplTest : BaseRobolectricTest() {
         // Given
         every { contactController.setAnonymousUserAttributes(any()) } throws EXCEPTION
         val userAttributesAnonymous = getUserAttributesAnonymous()
-        val retenoImpl = createReteno()
+        val retenoImpl = createRetenoAndAdvanceInit()
 
         // When
         val exceptionThrownOutsideSdk = try {
@@ -323,7 +323,7 @@ class RetenoImplTest : BaseRobolectricTest() {
     fun whenLogEvent_thenInteractWithEventController() = runTest {
         // Given
         val event = getCustomEvent()
-        val retenoImpl = createReteno()
+        val retenoImpl = createRetenoAndAdvanceInit()
 
         // When
         retenoImpl.logEvent(event)
@@ -338,7 +338,7 @@ class RetenoImplTest : BaseRobolectricTest() {
         // Given
         every { eventController.trackEvent(any()) } throws EXCEPTION
         val event = getCustomEvent()
-        val retenoImpl = createReteno()
+        val retenoImpl = createRetenoAndAdvanceInit()
 
         // When
         val exceptionThrownOutsideSdk = try {
@@ -362,7 +362,7 @@ class RetenoImplTest : BaseRobolectricTest() {
     @Test
     fun whenLogScreenView_thenInteractWithEventController() = runTest {
         // Given
-        val retenoImpl = createReteno()
+        val retenoImpl = createRetenoAndAdvanceInit()
         // When
         retenoImpl.logScreenView(TRACK_SCREEN_NAME)
 
@@ -374,7 +374,7 @@ class RetenoImplTest : BaseRobolectricTest() {
     fun givenExceptionThrown_whenLogScreenView_thenExceptionSentToLogger() = runTest {
         // Given
         every { eventController.trackScreenViewEvent(any()) } throws EXCEPTION
-        val retenoImpl = createReteno()
+        val retenoImpl = createRetenoAndAdvanceInit()
 
         // When
         val exceptionThrownOutsideSdk = try {
@@ -399,7 +399,7 @@ class RetenoImplTest : BaseRobolectricTest() {
     fun whenLogEcomEvent_thenInteractWithEventController() = runTest {
         // Given
         val ecomEvent = getEcomEvent()
-        val retenoImpl = createReteno()
+        val retenoImpl = createRetenoAndAdvanceInit()
 
         // When
         retenoImpl.logEcommerceEvent(ecomEvent)
@@ -413,7 +413,7 @@ class RetenoImplTest : BaseRobolectricTest() {
         // Given
         every { eventController.trackEcomEvent(any()) } throws EXCEPTION
         val ecomEvent = getEcomEvent()
-        val retenoImpl = createReteno()
+        val retenoImpl = createRetenoAndAdvanceInit()
 
         // When
         val exceptionThrownOutsideSdk = try {
@@ -438,7 +438,7 @@ class RetenoImplTest : BaseRobolectricTest() {
     fun whenAutoScreenTracking_thenInteractWithActivityHelper() = runTest {
         // Given
         val config = getScreenTrackingConfig()
-        val retenoImpl = createReteno()
+        val retenoImpl = createRetenoAndAdvanceInit()
 
         // When
         retenoImpl.autoScreenTracking(config)
@@ -452,7 +452,7 @@ class RetenoImplTest : BaseRobolectricTest() {
         // Given
         every { screenTrackingController.autoScreenTracking(any()) } throws EXCEPTION
         val config = getScreenTrackingConfig()
-        val retenoImpl = createReteno()
+        val retenoImpl = createRetenoAndAdvanceInit()
 
         // When
         val exceptionThrownOutsideSdk = try {
@@ -476,7 +476,7 @@ class RetenoImplTest : BaseRobolectricTest() {
     @Test
     fun whenResumeApp_thenStartScheduler() = runTest {
         //Given
-        val retenoImpl = createReteno()
+        val retenoImpl = createRetenoAndAdvanceInit()
 
         // When
         val activity: Activity = mockk()
@@ -494,7 +494,7 @@ class RetenoImplTest : BaseRobolectricTest() {
     @Test
     fun whenResumeApp_thenCalledClearOleEvents() = runTest {
         // Given
-        val retenoImpl = createReteno()
+        val retenoImpl = createRetenoAndAdvanceInit()
         // When
         retenoImpl.resume(mockk())
 
@@ -508,7 +508,7 @@ class RetenoImplTest : BaseRobolectricTest() {
     fun givenExceptionThrown_whenResumeApp_thenExceptionSentToLogger() = runTest {
         // Given
         every { scheduleController.startScheduler() } throws EXCEPTION
-        val retenoImpl = createReteno()
+        val retenoImpl = createRetenoAndAdvanceInit()
 
         // When
         val exceptionThrownOutsideSdk = try {
@@ -532,7 +532,7 @@ class RetenoImplTest : BaseRobolectricTest() {
     @Test
     fun whenPauseApp_thenStopScheduler() = runTest {
         //Given
-        val retenoImpl = createReteno()
+        val retenoImpl = createRetenoAndAdvanceInit()
         // When
         val activity: Activity = mockk()
         retenoImpl.pause(activity)
@@ -546,7 +546,7 @@ class RetenoImplTest : BaseRobolectricTest() {
     fun givenExceptionThrown_whenPauseApp_thenExceptionSentToLogger() = runTest {
         // Given
         every { scheduleController.stopScheduler() } throws EXCEPTION
-        val retenoImpl = createReteno()
+        val retenoImpl = createRetenoAndAdvanceInit()
         // When
         val exceptionThrownOutsideSdk = try {
             retenoImpl.pause(mockk())
@@ -569,7 +569,7 @@ class RetenoImplTest : BaseRobolectricTest() {
     @Test
     fun whenForcePush_thenCallScheduleController() = runTest {
         //Given
-        val retenoImpl = createReteno()
+        val retenoImpl = createRetenoAndAdvanceInit()
         // When
         retenoImpl.forcePushData()
 
@@ -581,7 +581,7 @@ class RetenoImplTest : BaseRobolectricTest() {
     fun givenExceptionThrown_whenForcePush_thenExceptionSentToLogger() = runTest {
         // Given
         every { scheduleController.forcePush() } throws EXCEPTION
-        val retenoImpl = createReteno()
+        val retenoImpl = createRetenoAndAdvanceInit()
         // When
         val exceptionThrownOutsideSdk = try {
             retenoImpl.forcePushData()
@@ -631,7 +631,7 @@ class RetenoImplTest : BaseRobolectricTest() {
             IntentFilter(Constants.BROADCAST_ACTION_RETENO_APP_RESUME)
         )
 
-        val retenoImpl = createReteno()
+        val retenoImpl = createRetenoAndAdvanceInit()
 
         advanceUntilIdle()
 
@@ -653,7 +653,7 @@ class RetenoImplTest : BaseRobolectricTest() {
         every { scheduleController.clearOldData() } returns Unit
         every { application.sendBroadcast(any()) } returns Unit
         //When
-        createReteno()
+        createRetenoAndAdvanceInit()
 
         advanceUntilIdle()
 

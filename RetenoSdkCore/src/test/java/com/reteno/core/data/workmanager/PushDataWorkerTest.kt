@@ -189,7 +189,7 @@ class PushDataWorkerTest : BaseRobolectricTest() {
         every { anyConstructed<ServiceLocator>().scheduleControllerProvider.get() } returns scheduleController
         every { anyConstructed<ServiceLocator>().retenoActivityHelperProvider.get() } returns retenoActivityHelper
         every { anyConstructed<ServiceLocator>().retenoDatabaseManagerProvider.get() } returns databaseManager
-        createReteno()
+        createRetenoAndAdvanceInit()
 
         executor = Executors.newSingleThreadExecutor()
         assertNotNull(executor)

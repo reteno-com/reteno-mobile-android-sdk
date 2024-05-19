@@ -7,6 +7,8 @@ import com.reteno.core.domain.model.device.Device
 import com.reteno.core.domain.model.user.User
 import com.reteno.core.domain.model.user.UserAttributesAnonymous
 import com.reteno.core.util.Logger
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 
 class ContactController(
@@ -87,7 +89,9 @@ class ContactController(
         /*@formatter:on*/
         if (!configRepository.isDeviceRegistered()) {
             isDeviceSentThisSession = true
-            configRepository.awaitForDeviceId()
+            withContext(Dispatchers.IO) {
+                configRepository.awaitForDeviceId()
+            }
             configRepository.getFcmToken {
                 onNewContact(it, toParallelWork = false)
             }

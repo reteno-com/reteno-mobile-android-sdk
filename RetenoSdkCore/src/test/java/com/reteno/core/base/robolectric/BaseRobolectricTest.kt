@@ -9,6 +9,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.advanceUntilIdle
 import org.junit.After
 import org.junit.Before
 import org.junit.runner.RunWith
@@ -57,14 +58,15 @@ abstract class BaseRobolectricTest {
         // Nothing here yet
     }
 
-    protected fun TestScope.createReteno(): RetenoImpl {
+    protected fun TestScope.createRetenoAndAdvanceInit(): RetenoImpl {
         return RetenoImpl(
             application = application,
             config = RetenoConfig(),
-            asyncScope = CoroutineScope(StandardTestDispatcher(testScheduler)),
+            syncScope = CoroutineScope(StandardTestDispatcher(testScheduler)),
             delayInitialization = false
         ).also {
             application.retenoMock = it
+            advanceUntilIdle()
         }
     }
 }

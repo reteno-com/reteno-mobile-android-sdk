@@ -194,7 +194,7 @@ class AppLifecycleControllerTest : BaseRobolectricTest() {
 
     @Test
     fun given_AppVersionNotExist_whenInit_thenAppInstallEventLogged() = runTest {
-        createReteno()
+        createRetenoAndAdvanceInit()
         coEvery { sessionHandler.sessionEventFlow } returns MutableSharedFlow()
         coEvery { configRepository.notificationState } returns MutableSharedFlow()
         coEvery { configRepository.getAppVersion() } returns ""
@@ -225,7 +225,7 @@ class AppLifecycleControllerTest : BaseRobolectricTest() {
 
     @Test
     fun given_AppVersionExist_whenInitWithNewVersion_thenAppUpdateEventLogged() = runTest {
-        createReteno()
+        createRetenoAndAdvanceInit()
         coEvery { sessionHandler.sessionEventFlow } returns MutableSharedFlow()
         coEvery { configRepository.notificationState } returns MutableSharedFlow()
         coEvery { configRepository.getAppVersion() } returns "1.0.0"
@@ -256,7 +256,7 @@ class AppLifecycleControllerTest : BaseRobolectricTest() {
 
     @Test
     fun given_AppVersionExist_whenInitWithNewVersionCode_thenAppUpdateEventLogged() = runTest {
-        createReteno()
+        createRetenoAndAdvanceInit()
         coEvery { sessionHandler.sessionEventFlow } returns MutableSharedFlow()
         coEvery { configRepository.notificationState } returns MutableSharedFlow()
         coEvery { configRepository.getAppVersion() } returns "1.0.0"
@@ -427,7 +427,7 @@ class AppLifecycleControllerTest : BaseRobolectricTest() {
 
     @Test
     fun given_AppVersionNotExist_whenInitAndEventDisabled_thenAppInstallEventLogged() = runTest {
-        createReteno()
+        createRetenoAndAdvanceInit()
         coEvery { sessionHandler.sessionEventFlow } returns MutableSharedFlow()
         coEvery { configRepository.notificationState } returns MutableSharedFlow()
         coEvery { configRepository.getAppVersion() } returns ""
@@ -460,7 +460,7 @@ class AppLifecycleControllerTest : BaseRobolectricTest() {
 
     @Test
     fun given_AppVersionExist_whenInitWithNewVersionAndEventDisabled_thenAppUpdateEventLogged() = runTest {
-        createReteno()
+        createRetenoAndAdvanceInit()
         coEvery { sessionHandler.sessionEventFlow } returns MutableSharedFlow()
         coEvery { configRepository.notificationState } returns MutableSharedFlow()
         coEvery { configRepository.getAppVersion() } returns "1.0.0"
@@ -493,7 +493,7 @@ class AppLifecycleControllerTest : BaseRobolectricTest() {
 
     @Test
     fun given_AppVersionExist_whenInitWithNewVersionCodeAndEventDisabled_thenAppUpdateEventLogged() = runTest {
-        createReteno()
+        createRetenoAndAdvanceInit()
         coEvery { sessionHandler.sessionEventFlow } returns MutableSharedFlow()
         coEvery { configRepository.notificationState } returns MutableSharedFlow()
         coEvery { configRepository.getAppVersion() } returns "1.0.0"
