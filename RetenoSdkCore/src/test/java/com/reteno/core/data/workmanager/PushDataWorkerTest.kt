@@ -17,17 +17,23 @@ import com.reteno.core.data.local.database.manager.RetenoDatabaseManager
 import com.reteno.core.di.ServiceLocator
 import com.reteno.core.domain.controller.ScheduleController
 import com.reteno.core.lifecycle.RetenoActivityHelper
-import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.impl.annotations.RelaxedMockK
 import io.mockk.mockk
+import io.mockk.mockkConstructor
+import io.mockk.mockkStatic
+import io.mockk.unmockkConstructor
+import io.mockk.unmockkStatic
 import io.mockk.verify
 import junit.framework.TestCase.assertEquals
 import junit.framework.TestCase.assertNotNull
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.hamcrest.CoreMatchers.`is`
 import org.hamcrest.MatcherAssert.assertThat
+import org.junit.AfterClass
+import org.junit.BeforeClass
 import org.junit.Test
 import java.util.UUID
 import java.util.concurrent.Executor
@@ -37,6 +43,22 @@ import java.util.concurrent.TimeUnit
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class PushDataWorkerTest : BaseRobolectricTest() {
+
+    companion object {
+        @JvmStatic
+        @BeforeClass
+        fun beforeClass() {
+            mockkStatic("com.reteno.core.util.UtilKt")
+            mockkConstructor(ServiceLocator::class)
+        }
+
+        @JvmStatic
+        @AfterClass
+        fun afterClass() {
+            unmockkStatic("com.reteno.core.util.UtilKt")
+            unmockkConstructor(ServiceLocator::class)
+        }
+    }
 
     // region helper fields ------------------------------------------------------------------------
     @RelaxedMockK
@@ -50,9 +72,6 @@ class PushDataWorkerTest : BaseRobolectricTest() {
 
     @RelaxedMockK
     private lateinit var serviceLocator: ServiceLocator
-
-    @RelaxedMockK
-    private lateinit var retenoImpl: RetenoImpl
 
     private var executor: Executor? = null
     private lateinit var workUuid: UUID
@@ -166,12 +185,11 @@ class PushDataWorkerTest : BaseRobolectricTest() {
     }
 
     // region helper methods -----------------------------------------------------------------------
-    private fun mockInitials() {
-        application.retenoMock = retenoImpl
-        coEvery { retenoImpl.serviceLocator } returns serviceLocator
-        every { serviceLocator.scheduleControllerProvider.get() } returns scheduleController
-        every { serviceLocator.retenoActivityHelperProvider.get() } returns retenoActivityHelper
-        every { serviceLocator.retenoDatabaseManagerProvider.get() } returns databaseManager
+    private fun TestScope.mockInitials() {
+        every { anyConstructed<ServiceLocator>().scheduleControllerProvider.get() } returns scheduleController
+        every { anyConstructed<ServiceLocator>().retenoActivityHelperProvider.get() } returns retenoActivityHelper
+        every { anyConstructed<ServiceLocator>().retenoDatabaseManagerProvider.get() } returns databaseManager
+        createRetenoAndAdvanceInit()
 
         executor = Executors.newSingleThreadExecutor()
         assertNotNull(executor)

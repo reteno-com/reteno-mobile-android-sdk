@@ -15,7 +15,8 @@ class RetenoNotificationHelperTest: BaseRobolectricTest() {
         val bundle = Bundle()
 
         val expectedChannelId = NOTIFICATION_ID_DEFAULT
-        val channelId = RetenoNotificationHelper.getNotificationId(bundle)
+        val helper = RetenoNotificationHelper(application)
+        val channelId = helper.getNotificationId(bundle)
         assertEquals(expectedChannelId, channelId)
     }
 
@@ -27,7 +28,8 @@ class RetenoNotificationHelperTest: BaseRobolectricTest() {
         val bundle = Bundle().apply {
             putString(Constants.KEY_ES_INTERACTION_ID, interactionId)
         }
-        val channelId = RetenoNotificationHelper.getNotificationId(bundle)
+        val helper = RetenoNotificationHelper(application)
+        val channelId = helper.getNotificationId(bundle)
         assertEquals(expectedChannelId, channelId)
     }
 

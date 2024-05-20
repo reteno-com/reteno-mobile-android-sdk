@@ -1,16 +1,19 @@
 package com.reteno.core.domain.controller
 
 import com.reteno.core.data.repository.EventsRepository
+import com.reteno.core.data.repository.LogEventRepository
 import com.reteno.core.domain.SchedulerUtils
 import com.reteno.core.domain.model.ecom.EcomEvent
 import com.reteno.core.domain.model.event.Event
+import com.reteno.core.domain.model.logevent.RetenoLogEvent
 import com.reteno.core.util.Logger
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 
 internal class EventController(
-    private val eventsRepository: EventsRepository
+    private val eventsRepository: EventsRepository,
+    private val logEventRepository: LogEventRepository
 ) {
 
     private val _eventFlow = MutableSharedFlow<Event>(
@@ -51,6 +54,12 @@ internal class EventController(
         /*@formatter:on*/
         val outdatedTime = SchedulerUtils.getOutdatedTime()
         eventsRepository.clearOldEvents(outdatedTime)
+    }
+
+    fun trackRetenoEvent(event: RetenoLogEvent) {
+        /*@formatter:off*/ Logger.i(TAG, "trackRetenoEvent(): ", "event = [" , event , "]")
+        /*@formatter:on*/
+        logEventRepository.saveLogEvent(event)
     }
 
     companion object {

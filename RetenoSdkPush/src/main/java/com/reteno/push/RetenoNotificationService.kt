@@ -5,7 +5,7 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import com.reteno.core.RetenoApplication
+import com.reteno.core.Reteno
 import com.reteno.core.RetenoImpl
 import com.reteno.core.domain.model.interaction.InteractionStatus
 import com.reteno.core.util.Constants
@@ -18,19 +18,18 @@ import com.reteno.push.channel.RetenoNotificationChannel
 import com.reteno.push.receiver.NotificationsEnabledManager
 
 
-class RetenoNotificationService {
+class RetenoNotificationService(
+    private val context: Context,
+    private val reteno: Reteno
+) {
 
-    private val reteno =
-        ((RetenoImpl.application as RetenoApplication).getRetenoInstance() as RetenoImpl)
-    private val serviceLocator = reteno.serviceLocator
-    private val contactController = serviceLocator.contactControllerProvider.get()
-    private val interactionController = serviceLocator.interactionControllerProvider.get()
-    private val scheduleController = serviceLocator.scheduleControllerProvider.get()
+    private val notificationHelper = RetenoNotificationHelper(context)
 
     fun onNewToken(token: String) {
         /*@formatter:off*/ Logger.i(TAG, "onNewToken(): ", "token = [" , token , "]")
         /*@formatter:on*/
-        contactController.onNewFcmToken(token)
+        val retenoImpl = reteno as RetenoImpl
+        retenoImpl.onNewFcmToken(token)
     }
 
     fun handleNotification(data: Bundle) {
@@ -49,10 +48,10 @@ class RetenoNotificationService {
         /*@formatter:off*/ Logger.i(TAG, "handleRetenoNotification(): ", "data = [" , data.toString() , "]")
         /*@formatter:on*/
         Util.tryToSendToCustomReceiverPushReceived(data)
-        RetenoNotificationChannel.createDefaultChannel(RetenoImpl.application)
+        RetenoNotificationChannel.createDefaultChannel(context)
         showNotification(data)
         handleInteractionStatus(data)
-        NotificationsEnabledManager.onCheckState(RetenoImpl.application)
+        NotificationsEnabledManager.onCheckState(context)
     }
 
     private fun sendCustomPushBroadcast(bundle: Bundle) {
@@ -62,11 +61,11 @@ class RetenoNotificationService {
             .setFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES)
             .putExtras(bundle)
 
-        val infoList = RetenoImpl.application.queryBroadcastReceivers(intent)
+        val infoList = context.queryBroadcastReceivers(intent)
         for (info in infoList) {
             info?.activityInfo?.let {
                 intent.component = ComponentName(it.packageName, it.name)
-                RetenoImpl.application.sendBroadcast(intent)
+                context.sendBroadcast(intent)
             }
         }
     }
@@ -74,13 +73,12 @@ class RetenoNotificationService {
     private fun showNotification(data: Bundle) {
         /*@formatter:off*/ Logger.i(TAG, "showNotification(): ", "data = [" , data.toStringVerbose() , "]")
         /*@formatter:on*/
-        val context = RetenoImpl.application
-        val id = RetenoNotificationHelper.getNotificationId(data)
+        val id = notificationHelper.getNotificationId(data)
 
         // Pass the Id for closing notifications after clicking on action buttons
         data.putInt(KEY_NOTIFICATION_ID, id)
 
-        val builder = RetenoNotificationHelper.getNotificationBuilderCompat(data)
+        val builder = notificationHelper.getNotificationBuilderCompat(data)
         val notificationManager =
             context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.notify(id, builder.build())
@@ -91,16 +89,17 @@ class RetenoNotificationService {
         /*@formatter:on*/
         val channelEnabled =
             RetenoNotificationChannel.isNotificationChannelEnabled(
-                RetenoImpl.application,
+                context,
                 RetenoNotificationChannel.DEFAULT_CHANNEL_ID
             )
         val permissionsGranted =
-            RetenoNotificationChannel.isNotificationsEnabled(RetenoImpl.application)
+            RetenoNotificationChannel.isNotificationsEnabled(context)
 
         if (channelEnabled && permissionsGranted) {
             data.getString(KEY_ES_INTERACTION_ID)?.let { interactionId ->
-                interactionController.onInteraction(interactionId, InteractionStatus.DELIVERED)
-                scheduleController.forcePush()
+                val retenoImpl = reteno as RetenoImpl
+                retenoImpl.recordInteraction(interactionId, InteractionStatus.DELIVERED)
+                retenoImpl.forcePushData()
             }
         }
     }
