@@ -8,8 +8,7 @@ import com.reteno.core.domain.controller.ContactController
 internal class ContactControllerProvider(
     private val contactRepositoryProvider: ContactRepositoryProvider,
     private val configRepositoryProvider: ConfigRepositoryProvider
-) :
-    ProviderWeakReference<ContactController>() {
+) : ProviderWeakReference<ContactController>() {
 
     override fun create(): ContactController {
         return ContactController(

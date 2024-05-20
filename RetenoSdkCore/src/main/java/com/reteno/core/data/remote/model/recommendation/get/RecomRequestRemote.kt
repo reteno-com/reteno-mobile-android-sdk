@@ -10,5 +10,5 @@ internal data class RecomRequestRemote @JvmOverloads constructor(
     @SerializedName("fields")
     val fields: List<String>? = null,
     @SerializedName("filters")
-    val filters: RecomFilterRemote? = null
+    val filters: List<RecomFilterRemote>? = null
 )

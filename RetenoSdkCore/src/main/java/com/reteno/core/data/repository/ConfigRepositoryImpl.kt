@@ -7,6 +7,7 @@ import com.reteno.core.data.local.config.RestConfig
 import com.reteno.core.data.local.sharedpref.SharedPrefsManager
 import com.reteno.core.util.Logger
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.isActive
 import kotlin.coroutines.coroutineContext
 
@@ -15,6 +16,8 @@ internal class ConfigRepositoryImpl(
     private val sharedPrefsManager: SharedPrefsManager,
     private val restConfig: RestConfig
 ) : ConfigRepository {
+
+    override val notificationState = MutableStateFlow(sharedPrefsManager.isNotificationsEnabled())
 
     override fun setExternalUserId(externalId: String?) {
         restConfig.setExternalUserId(externalId)
@@ -81,6 +84,7 @@ internal class ConfigRepositoryImpl(
         sharedPrefsManager.getDefaultNotificationChannel()
 
     override fun saveNotificationsEnabled(enabled: Boolean) {
+        notificationState.value = enabled
         sharedPrefsManager.saveNotificationsEnabled(enabled)
     }
 
@@ -92,6 +96,18 @@ internal class ConfigRepositoryImpl(
 
     override fun isDeviceRegistered(): Boolean =
         sharedPrefsManager.isDeviceRegistered()
+
+    override fun getAppVersion(): String = sharedPrefsManager.getAppVersion()
+
+    override fun saveAppVersion(version: String) {
+        sharedPrefsManager.saveAppVersion(version)
+    }
+
+    override fun getAppBuildNumber(): Long = sharedPrefsManager.getAppBuildNumber()
+
+    override fun saveAppBuildNumber(number: Long) {
+        sharedPrefsManager.saveAppBuildNumber(number)
+    }
 
     companion object {
         private val TAG: String = ConfigRepositoryImpl::class.java.simpleName

@@ -10,12 +10,11 @@ import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GoogleApiAvailability
 import com.reteno.core.RetenoImpl
 import com.reteno.core.domain.SchedulerUtils
+import com.reteno.core.domain.model.event.LifecycleEventType
+import com.reteno.core.domain.model.event.LifecycleTrackingOptions
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.withContext
 import java.io.BufferedReader
 import java.io.ByteArrayOutputStream
 import java.io.FileInputStream
@@ -30,8 +29,6 @@ import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import java.util.Locale
 import java.util.concurrent.TimeUnit
-import kotlin.coroutines.CoroutineContext
-import kotlin.coroutines.coroutineContext
 
 fun <T : Any> allElementsNull(vararg elements: T?) = elements.all { it == null }
 
@@ -277,25 +274,16 @@ object Util {
         }
         return isEncrypted
     }
-}
 
-suspend fun <T> Mutex.withReentrantLock(block: suspend () -> T): T {
-    val key = ReentrantMutexContextKey(this)
-    // call block directly when this mutex is already locked in the context
-    if (coroutineContext[key] != null) return block()
-    // otherwise add it to the context and lock the mutex
-    return withContext(ReentrantMutexContextElement(key)) {
-        withLock { block() }
+    fun LifecycleTrackingOptions.toTypeMap():Map<LifecycleEventType, Boolean> {
+        return mapOf(
+            LifecycleEventType.APP_LIFECYCLE to appLifecycleEnabled,
+            LifecycleEventType.PUSH to pushSubscriptionEnabled,
+            LifecycleEventType.SESSION to sessionEventsEnabled
+        )
     }
 }
 
-class ReentrantMutexContextElement(
-    override val key: ReentrantMutexContextKey
-) : CoroutineContext.Element
-
-data class ReentrantMutexContextKey(
-    val mutex: Mutex
-) : CoroutineContext.Key<ReentrantMutexContextElement>
 
 const val TAG = "Util"
 const val PROP_KEY_DEBUG_VIEW = "debug.com.reteno.debug.view"

@@ -38,13 +38,13 @@ import java.util.concurrent.atomic.AtomicBoolean
 internal class IamControllerImpl(
     private val iamRepository: IamRepository,
     eventController: EventController,
-    private val sessionHandler: RetenoSessionHandler
+    private val sessionHandler: RetenoSessionHandler,
+    private val scope: CoroutineScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 ) : IamController {
 
     private val isPausedInAppMessages = AtomicBoolean(false)
     private var pauseBehaviour = InAppPauseBehaviour.POSTPONE_IN_APPS
 
-    private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private var interactionId: String? = null
     private val _fullHtmlStateFlow: MutableStateFlow<ResultDomain<String>> =
         MutableStateFlow(ResultDomain.Idle)
@@ -66,6 +66,7 @@ internal class IamControllerImpl(
         eventController.eventFlow
             .onEach { notifyEventOccurred(it) }
             .launchIn(scope)
+        preloadHtml()
     }
 
     override fun fetchIamFullHtml(interactionId: String) {
@@ -364,6 +365,10 @@ internal class IamControllerImpl(
 
     private fun canShowInApp(): Boolean {
         return isPausedInAppMessages.get().not() && _fullHtmlStateFlow.value == ResultDomain.Idle
+    }
+
+    private fun preloadHtml() = scope.launch {
+        iamRepository.getBaseHtml()
     }
 
     companion object {

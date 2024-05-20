@@ -7,6 +7,7 @@ import com.reteno.core.data.local.config.DeviceId
 import com.reteno.core.data.local.config.DeviceIdMode
 import com.reteno.core.data.local.config.RestConfig
 import com.reteno.core.data.local.sharedpref.SharedPrefsManager
+import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
 import io.mockk.impl.annotations.RelaxedMockK
@@ -61,6 +62,9 @@ class ConfigRepositoryImplTest : BaseUnitTest() {
 
     override fun before() {
         super.before()
+        coEvery { sharedPrefsManager.isNotificationsEnabled() } returns false
+        coEvery { sharedPrefsManager.isDeviceRegistered() } returns false
+        coEvery { sharedPrefsManager.setFirstLaunch(any()) } returns Unit
         SUT = ConfigRepositoryImpl(sharedPrefsManager, restConfig)
     }
 

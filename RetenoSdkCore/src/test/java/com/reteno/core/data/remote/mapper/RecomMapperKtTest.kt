@@ -52,7 +52,7 @@ class RecomMapperKtTest : BaseUnitTest() {
         val expectedRecomFilterRemote = getRecomFilterRemote()
 
         // When
-        val actualRecomFilterRemote = recomFilter.toRemote()
+        val actualRecomFilterRemote = recomFilter.map { it.toRemote() }
 
         // Then
         assertEquals(expectedRecomFilterRemote, actualRecomFilterRemote)
@@ -113,14 +113,18 @@ class RecomMapperKtTest : BaseUnitTest() {
     }
 
     // region helper methods -----------------------------------------------------------------------
-    private fun getRecomFilter() = RecomFilter(
-        name = RECOM_FILTER_NAME,
-        values = RECOM_FILTER_VALUES
+    private fun getRecomFilter() = listOf(
+        RecomFilter(
+            name = RECOM_FILTER_NAME,
+            values = RECOM_FILTER_VALUES
+        )
     )
 
-    private fun getRecomFilterRemote() = RecomFilterRemote(
-        name = RECOM_FILTER_NAME,
-        values = RECOM_FILTER_VALUES
+    private fun getRecomFilterRemote() = listOf(
+        RecomFilterRemote(
+            name = RECOM_FILTER_NAME,
+            values = RECOM_FILTER_VALUES
+        )
     )
 
     private fun getRecomRequest() = RecomRequest(

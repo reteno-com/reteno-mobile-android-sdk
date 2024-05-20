@@ -1,12 +1,18 @@
 package com.reteno.core.data.workmanager
 
 import android.content.Context
-import androidx.work.*
-import com.reteno.core.RetenoApplication
+import androidx.work.Constraints
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.NetworkType
+import androidx.work.PeriodicWorkRequest
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
+import androidx.work.Worker
+import androidx.work.WorkerParameters
 import com.reteno.core.RetenoImpl
 import com.reteno.core.util.Logger
 import com.reteno.core.util.Util
-import java.util.*
+import java.util.UUID
 import java.util.concurrent.TimeUnit
 
 internal class PushDataWorker(context: Context, params: WorkerParameters) :
@@ -25,10 +31,7 @@ internal class PushDataWorker(context: Context, params: WorkerParameters) :
     }
 
     private fun doWorkActual(): Result {
-        val serviceLocator =
-            ((applicationContext as RetenoApplication).getRetenoInstance() as RetenoImpl).serviceLocator
-        val activityHelper = serviceLocator.retenoActivityHelperProvider.get()
-        val isForeground = activityHelper.canPresentMessages()
+        val isForeground = RetenoImpl.instance.canPresentMessages()
         return if (isForeground) {
             /*@formatter:off*/ Logger.i(TAG, "doWork(): ", "App is in foreground, nothing to do")
             /*@formatter:on*/
@@ -37,8 +40,7 @@ internal class PushDataWorker(context: Context, params: WorkerParameters) :
         } else {
             /*@formatter:off*/ Logger.i(TAG, "doWork(): ", "App is in background")
             /*@formatter:on*/
-            val databaseManager = serviceLocator.retenoDatabaseManagerProvider.get()
-            if (databaseManager.isDatabaseEmpty()) {
+            if (RetenoImpl.instance.isDatabaseEmpty()) {
                 /*@formatter:off*/ Logger.i(TAG, "doWork(): ", "Database is empty, nothing to do, cancelling periodic work")
                 /*@formatter:on*/
                 WorkManager.getInstance(applicationContext).cancelUniqueWork(PUSH_DATA_WORK_NAME)
@@ -46,8 +48,7 @@ internal class PushDataWorker(context: Context, params: WorkerParameters) :
             } else {
                 /*@formatter:off*/ Logger.i(TAG, "doWork(): ", "Database has data, sending to server")
                 /*@formatter:on*/
-                val scheduleController = serviceLocator.scheduleControllerProvider.get()
-                scheduleController.forcePush()
+                RetenoImpl.instance.forcePushData()
                 Result.success()
             }
         }

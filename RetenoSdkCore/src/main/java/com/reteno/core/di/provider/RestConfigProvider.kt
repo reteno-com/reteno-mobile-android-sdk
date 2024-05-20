@@ -6,13 +6,13 @@ import com.reteno.core.di.base.ProviderWeakReference
 
 internal class RestConfigProvider(
     private val deviceIdHelperProvider: DeviceIdHelperProvider,
-    private val accessKey: String,
-    private val isUserProviderExist: Boolean
+    private val configProvider: RetenoConfigProvider
 ) : ProviderWeakReference<RestConfig>() {
 
     override fun create(): RestConfig {
+        val isUserProviderExist = configProvider.get().userIdProvider != null
         val deviceIdMode = if (isUserProviderExist) DeviceIdMode.CLIENT_UUID
         else DeviceIdMode.ANDROID_ID
-        return RestConfig(deviceIdHelperProvider.get(), accessKey, deviceIdMode)
+        return RestConfig(deviceIdHelperProvider.get(), configProvider.get().accessKey, deviceIdMode)
     }
 }

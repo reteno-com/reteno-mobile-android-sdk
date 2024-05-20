@@ -2,6 +2,7 @@ package com.reteno.core
 
 import com.reteno.core.domain.model.ecom.EcomEvent
 import com.reteno.core.domain.model.event.Event
+import com.reteno.core.domain.model.event.LifecycleTrackingOptions
 import com.reteno.core.domain.model.user.User
 import com.reteno.core.domain.model.user.UserAttributesAnonymous
 import com.reteno.core.features.appinbox.AppInbox
@@ -67,6 +68,27 @@ interface Reteno {
     fun logScreenView(screenName: String)
 
     /**
+     * Method to alter the behavior of automatic app lifecycle event tracking
+     *
+     * The AppLifecycle category:
+     *      ApplicationInstalled
+     *      ApplicationUpdated
+     *      ApplicationOpened
+     *      ApplicationBackgrounded
+     *
+     * The PushSubsription category:
+     *      PushNotificationsSubscribed
+     *      PushNotificationsUnsubscribed
+     *
+     * The Sessions category:
+     *      SessionStarted
+     *      SessionEnded
+     *
+     *  @param lifecycleTrackingOptions - options that controls enabled state of events above
+     */
+    fun setLifecycleEventConfig(lifecycleTrackingOptions: LifecycleTrackingOptions)
+
+    /**
      * Enable/disable automatic screen tracking.
      * Screen view event happens on Fragment's onStart() by default lifecycle callback.
      * @see com.reteno.core.lifecycle.ScreenTrackingConfig for additional configuration
@@ -108,6 +130,15 @@ interface Reteno {
      * @see InAppPauseBehaviour for detailed explanation
      */
     fun setInAppMessagesPauseBehaviour(behaviour: InAppPauseBehaviour)
+
+    /**
+     * Method for finishing delayed initialization of RetenoSDK, this method is utilized mainly in
+     * cross-platform SDK wrappers, so use it only if you actually need it
+     *
+     * @param config - supply config to the SDK
+     * @throws IllegalStateException - indicates that sdk was already initialized before
+     */
+    fun initWith(config: RetenoConfig)
 
     companion object {
         private val TAG: String = Reteno::class.java.simpleName

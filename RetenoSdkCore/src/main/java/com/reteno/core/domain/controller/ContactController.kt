@@ -7,6 +7,8 @@ import com.reteno.core.domain.model.device.Device
 import com.reteno.core.domain.model.user.User
 import com.reteno.core.domain.model.user.UserAttributesAnonymous
 import com.reteno.core.util.Logger
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 
 class ContactController(
@@ -16,6 +18,10 @@ class ContactController(
 
     @Volatile
     private var isDeviceSentThisSession = false
+
+    fun getDeviceId(): String {
+        return configRepository.getDeviceId().id
+    }
 
     fun setExternalUserId(id: String?) {
         /*@formatter:off*/ Logger.i(TAG, "setExternalUserId(): ", "id = [" , id , "]")
@@ -83,7 +89,9 @@ class ContactController(
         /*@formatter:on*/
         if (!configRepository.isDeviceRegistered()) {
             isDeviceSentThisSession = true
-            configRepository.awaitForDeviceId()
+            withContext(Dispatchers.IO) {
+                configRepository.awaitForDeviceId()
+            }
             configRepository.getFcmToken {
                 onNewContact(it, toParallelWork = false)
             }
@@ -139,6 +147,14 @@ class ContactController(
     fun setExternalIdAndUserData(externalUserId: String, user: User?) {
         setExternalUserId(externalUserId)
         setUserData(user)
+    }
+
+    fun saveDefaultNotificationChannel(channel: String) {
+        configRepository.saveDefaultNotificationChannel(channel)
+    }
+
+    fun getDefaultNotificationChannel(): String {
+        return configRepository.getDefaultNotificationChannel()
     }
 
     companion object {
