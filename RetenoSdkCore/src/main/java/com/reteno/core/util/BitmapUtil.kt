@@ -7,7 +7,6 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.util.DisplayMetrics
 import android.view.WindowManager
-import com.reteno.core.RetenoImpl
 import java.io.IOException
 import java.io.InputStream
 import java.net.URL
@@ -35,8 +34,7 @@ object BitmapUtil {
      * @param imageUrl The string of URL image.
      * @return The scaled bitmap with 2:1 aspect ratio.
      */
-    fun getScaledBitmap(imageUrl: String): Bitmap? {
-        val context = RetenoImpl.application
+    fun getScaledBitmap(context: Context, imageUrl: String): Bitmap? {
         /*@formatter:off*/ Logger.i(TAG, "getScaledBitmap(): ", "context = [" , context , "], imageUrl = [" , imageUrl , "]")
         /*@formatter:on*/
 

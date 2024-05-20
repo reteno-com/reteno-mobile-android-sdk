@@ -3,7 +3,7 @@ package com.reteno.push.interceptor.click
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import com.reteno.core.RetenoImpl
+import com.reteno.core.di.ServiceLocator
 import com.reteno.core.domain.controller.DeeplinkController
 import com.reteno.core.domain.controller.InteractionController
 import com.reteno.core.domain.controller.ScheduleController
@@ -18,18 +18,25 @@ import io.mockk.every
 import io.mockk.impl.annotations.RelaxedMockK
 import io.mockk.justRun
 import io.mockk.mockk
-import io.mockk.mockkObject
-import io.mockk.unmockkObject
+import io.mockk.mockkConstructor
+import io.mockk.mockkStatic
+import io.mockk.unmockkConstructor
+import io.mockk.unmockkStatic
 import io.mockk.verify
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.runTest
+import org.junit.AfterClass
 import org.junit.Assert
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
+import org.junit.BeforeClass
 import org.junit.Test
 import org.robolectric.Robolectric.buildActivity
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @Config(sdk = [26])
 class RetenoNotificationClickedActivityTest : BaseRobolectricTest() {
 
@@ -37,6 +44,20 @@ class RetenoNotificationClickedActivityTest : BaseRobolectricTest() {
     companion object {
         private const val DEEPLINK_WRAPPED = "https://wrapped.com"
         private const val DEEPLINK_UNWRAPPED = "https://unwrapped.com"
+
+        @JvmStatic
+        @BeforeClass
+        fun beforeClass() {
+            mockkStatic("com.reteno.core.util.UtilKt")
+            mockkConstructor(ServiceLocator::class)
+        }
+
+        @JvmStatic
+        @AfterClass
+        fun afterClass() {
+            unmockkStatic("com.reteno.core.util.UtilKt")
+            unmockkConstructor(ServiceLocator::class)
+        }
     }
     // endregion constants -------------------------------------------------------------------------
 
@@ -57,14 +78,14 @@ class RetenoNotificationClickedActivityTest : BaseRobolectricTest() {
 
     override fun before() {
         super.before()
-        every { reteno.serviceLocator.interactionControllerProvider.get() } returns interactionController
-        every { reteno.serviceLocator.deeplinkControllerProvider.get() } returns deeplinkController
-        every { reteno.serviceLocator.scheduleControllerProvider.get() } returns scheduleController
+        every { anyConstructed<ServiceLocator>().interactionControllerProvider.get() } returns interactionController
+        every { anyConstructed<ServiceLocator>().deeplinkControllerProvider.get() } returns deeplinkController
+        every { anyConstructed<ServiceLocator>().scheduleControllerProvider.get() } returns scheduleController
     }
 
     @Test
-    fun saveInteraction_extrasIsNotNull() {
-        mockkObject(RetenoImpl)
+    fun saveInteraction_extrasIsNotNull() = runTest {
+        val reteno = createReteno()
         val interactionId = "interaction_id"
 
         val extra = Bundle().apply {
@@ -81,8 +102,6 @@ class RetenoNotificationClickedActivityTest : BaseRobolectricTest() {
         verify { interactionController.onInteraction(eq(interactionId), InteractionStatus.CLICKED) }
         verify(exactly = 1) { scheduleController.forcePush() }
         assertTrue(activity.isFinishing)
-
-        unmockkObject(RetenoImpl)
     }
 
     @Test
@@ -119,7 +138,8 @@ class RetenoNotificationClickedActivityTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun launchDeepLink() {
+    fun launchDeepLink() = runTest {
+        val reteno = createReteno()
         val deepLink = "com.reteno.example"
         val intent = Intent()
         intent.putExtra(Constants.KEY_ES_LINK_UNWRAPPED, deepLink)
@@ -179,7 +199,8 @@ class RetenoNotificationClickedActivityTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun givenPushWithCustomDataDeeplinkReceived_whenNotificationClicked_thenCustomDataDeliveredToLaunchActivity() {
+    fun givenPushWithCustomDataDeeplinkReceived_whenNotificationClicked_thenCustomDataDeliveredToLaunchActivity() = runTest {
+        val reteno = createReteno()
         // Given
         val customDataKey = "customDataKey"
         val customDataValue = "customDataValue"
@@ -212,7 +233,8 @@ class RetenoNotificationClickedActivityTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun givenPushWithIam_whenNotificationClicked_thenIamViewInitializeCalled() {
+    fun givenPushWithIam_whenNotificationClicked_thenIamViewInitializeCalled() = runTest {
+        val reteno = createReteno()
         // Given
         val iamView = mockk<IamView>(relaxed = true)
         val iamWidgetId = "123"

@@ -1,6 +1,8 @@
 package com.reteno.push.receiver
 
-import android.app.NotificationManager.*
+import android.app.NotificationManager.ACTION_APP_BLOCK_STATE_CHANGED
+import android.app.NotificationManager.ACTION_NOTIFICATION_CHANNEL_BLOCK_STATE_CHANGED
+import android.app.NotificationManager.ACTION_NOTIFICATION_CHANNEL_GROUP_BLOCK_STATE_CHANGED
 import android.content.ContextWrapper
 import android.content.Intent
 import com.reteno.core.util.Constants
@@ -19,7 +21,6 @@ class NotificationChannelStateChangeReceiverTest : BaseRobolectricTest() {
     // endregion helper fields ---------------------------------------------------------------------
 
     private var SUT: NotificationChannelStateChangeReceiver? = null
-
 
     override fun before() {
         super.before()

@@ -11,11 +11,11 @@ package com.reteno.core.domain.model.recommendation.get
  * @property products product IDs for product-based algorithms
  * @property category product category key for category-based algorithms
  * @property fields fields to return in response. If fields is null - all fields in the model returned
- * @property filters additional algorithm filters map. Filters are not supported yet. Reserved for the future.
+ * @property filters additional algorithm filters map.
  */
 data class RecomRequest @JvmOverloads constructor(
     val products: List<String>?,
     val category: String?,
     val fields: List<String>? = null,
-    val filters: RecomFilter? = null
+    val filters: List<RecomFilter>? = null
 )

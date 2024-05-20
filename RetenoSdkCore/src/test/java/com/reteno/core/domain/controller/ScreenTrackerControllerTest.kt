@@ -55,7 +55,7 @@ class ScreenTrackerControllerTest : BaseRobolectricTest() {
         every { anyConstructed<ServiceLocator>().screenTrackingControllerProvider.get() } returns controller
         every { anyConstructed<ServiceLocator>().retenoActivityHelperProvider.get() } returns helper
         every { anyConstructed<ServiceLocator>().contactControllerProvider.get() } returns contactController
-        val reteno = createReteno()
+        val reteno = createRetenoAndAdvanceInit()
         advanceUntilIdle()
         //When
         val scenario = launchFragmentInContainer<Fragment>(initialState = Lifecycle.State.CREATED)
@@ -74,7 +74,7 @@ class ScreenTrackerControllerTest : BaseRobolectricTest() {
         every { anyConstructed<ServiceLocator>().screenTrackingControllerProvider.get() } returns controller
         every { anyConstructed<ServiceLocator>().retenoActivityHelperProvider.get() } returns helper
         every { anyConstructed<ServiceLocator>().contactControllerProvider.get() } returns contactController
-        val reteno = createReteno()
+        val reteno = createRetenoAndAdvanceInit()
         advanceUntilIdle()
         reteno.autoScreenTracking(ScreenTrackingConfig(true))
         //When

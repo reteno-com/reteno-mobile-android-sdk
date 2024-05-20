@@ -20,13 +20,14 @@ import android.widget.FrameLayout
 import android.widget.PopupWindow
 import androidx.cardview.widget.CardView
 import androidx.core.widget.PopupWindowCompat
-import com.reteno.core.RetenoApplication
 import com.reteno.core.RetenoImpl
 import com.reteno.core.data.remote.OperationQueue
 import com.reteno.core.data.remote.mapper.fromJson
 import com.reteno.core.data.remote.model.iam.message.InAppMessage
 import com.reteno.core.domain.ResultDomain
 import com.reteno.core.domain.controller.IamController
+import com.reteno.core.domain.controller.InteractionController
+import com.reteno.core.domain.controller.ScheduleController
 import com.reteno.core.domain.model.interaction.InAppInteraction
 import com.reteno.core.domain.model.interaction.InteractionAction
 import com.reteno.core.features.iam.IamJsEvent
@@ -56,18 +57,9 @@ import java.util.concurrent.atomic.AtomicBoolean
 internal class IamViewImpl(
     private val activityHelper: RetenoActivityHelper,
     private val iamController: IamController,
+    private val interactionController: InteractionController,
+    private val scheduleController: ScheduleController
 ) : IamView {
-
-    private val reteno by lazy {
-        ((RetenoImpl.application as RetenoApplication).getRetenoInstance() as RetenoImpl)
-    }
-    private val interactionController by lazy {
-        reteno.serviceLocator.interactionControllerProvider.get()
-    }
-    private val scheduleController by lazy {
-        reteno.serviceLocator.scheduleControllerProvider.get()
-    }
-
     private val iamShowScope = CoroutineScope(Dispatchers.Main.immediate)
 
     private val isViewShown = AtomicBoolean(false)

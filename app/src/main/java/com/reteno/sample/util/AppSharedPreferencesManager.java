@@ -10,8 +10,10 @@ public class AppSharedPreferencesManager {
 
     public static final String PREF_KEY_DEVICE_ID_MODE = "DEVICE_ID_MODE";
     public static final String PREF_KEY_EXTERNAL_ID = "EXTERNAL_ID";
-    private static String PREF_KEY_DEVICE_ID = "KEY_DEVICE_ID";
-    private static String PREF_KEY_DEVICE_ID_DELAY = "KEY_DEVICE_ID_DELAY";
+    private static final String PREF_KEY_DEVICE_ID = "KEY_DEVICE_ID";
+    private static final String PREF_KEY_DEVICE_ID_DELAY = "KEY_DEVICE_ID_DELAY";
+
+    private static final String PREF_KEY_DELAY_NEXT_LAUNCH = "KEY_DELAY_NEXT_LAUNCH";
 
     public static void saveDeviceIdMode(Context context, DeviceIdMode deviceIdMode) {
         getPrefs(context).edit().putString(PREF_KEY_DEVICE_ID_MODE, deviceIdMode.toString()).apply();
@@ -48,5 +50,13 @@ public class AppSharedPreferencesManager {
 
     public static int getDeviceIdDelay(Context context) {
         return getPrefs(context).getInt(PREF_KEY_DEVICE_ID_DELAY, 0);
+    }
+
+    public static void setDelayLaunch(Context context, boolean shouldDelay) {
+        getPrefs(context).edit().putBoolean(PREF_KEY_DELAY_NEXT_LAUNCH, shouldDelay).apply();
+    }
+
+    public static boolean getShouldDelayLaunch(Context context) {
+        return getPrefs(context).getBoolean(PREF_KEY_DELAY_NEXT_LAUNCH, false);
     }
 }

@@ -21,6 +21,8 @@ class FragmentStartSessionListener {
     fun start(sessionHandler: RetenoSessionHandler, textView: TextView) {
         this.textView = textView
         this.sessionHandler = sessionHandler
+        job?.cancel()
+        job = null
 
         job = scope.launch {
             while (true) {
