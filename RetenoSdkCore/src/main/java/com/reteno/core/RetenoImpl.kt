@@ -2,7 +2,9 @@ package com.reteno.core
 
 import android.app.Activity
 import android.app.Application
+import android.app.usage.UsageStatsManager
 import android.content.ComponentName
+import android.content.Context
 import android.content.Intent
 import androidx.lifecycle.ProcessLifecycleOwner
 import com.reteno.core.di.ServiceLocator
@@ -502,8 +504,8 @@ class RetenoImpl(
     }
 
     private suspend fun start(config: RetenoConfig) {
-        ProcessLifecycleOwner.get().lifecycle.addObserver(appLifecycleController)
         configProvider.setConfig(config)
+        ProcessLifecycleOwner.get().lifecycle.addObserver(appLifecycleController)
         clearOldData()
         initMetadata()
         try {
