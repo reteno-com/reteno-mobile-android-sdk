@@ -78,7 +78,7 @@ class AppLifecycleControllerTest : BaseRobolectricTest() {
             eventController.trackEvent(
                 eventMatcher(
                     Event.applicationBackgrounded(
-                        startTime.milliseconds.inWholeSeconds,
+                        startTime,
                         2
                     ).event
                 )

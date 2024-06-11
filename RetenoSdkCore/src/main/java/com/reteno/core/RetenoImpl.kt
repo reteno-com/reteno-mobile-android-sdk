@@ -122,7 +122,6 @@ class RetenoImpl(
         try {
             contactController.checkIfDeviceRequestSentThisSession()
             sessionHandler.start()
-            appLifecycleController.start()
             startScheduler()
             iamView.resume(activity)
         } catch (ex: Throwable) {
