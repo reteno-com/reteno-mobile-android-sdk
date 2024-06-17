@@ -2,7 +2,16 @@ package com.reteno.core.util
 
 import android.util.Log
 import com.reteno.core.BuildConfig
+import com.reteno.core.RetenoConfig
 import com.reteno.core.RetenoImpl
+import com.reteno.core.di.ServiceLocator
+import com.reteno.core.di.provider.RestConfigProvider
+import com.reteno.core.di.provider.RetenoConfigProvider
+import com.reteno.core.di.provider.database.DatabaseProvider
+import com.reteno.core.di.provider.database.RetenoDatabaseManagerLogEventProvider
+import com.reteno.core.di.provider.network.ApiClientProvider
+import com.reteno.core.di.provider.network.RestClientProvider
+import com.reteno.core.di.provider.repository.LogEventRepositoryProvider
 import com.reteno.core.domain.model.logevent.LogLevel
 import com.reteno.core.domain.model.logevent.RetenoLogEvent
 
@@ -97,7 +106,14 @@ object Logger {
 
     private fun saveEvent(logEvent: RetenoLogEvent) {
         try {
-            RetenoImpl.instance.logRetenoEvent(logEvent)
+            runCatching {
+                RetenoImpl.instance.logRetenoEvent(logEvent)
+            }.onFailure {
+                ServiceLocator(RetenoImpl.application, RetenoConfigProvider(RetenoConfig()))
+                    .eventsControllerProvider
+                    .get()
+                    .trackRetenoEvent(logEvent)
+            }
         } catch (e: Exception) {
             Log.e(TAG, "saveEvent: ", e)
         }
