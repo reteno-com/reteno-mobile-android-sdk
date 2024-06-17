@@ -31,6 +31,7 @@ import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.Continuation
@@ -203,6 +204,10 @@ class RetenoImpl(
 
         try {
             contactController.setExternalIdAndUserData(externalUserId, user)
+            syncScope.launch {
+                delay(5000L) //There is a requirement to refresh segmentation in 5 sec after user change his attributes
+                iamController.refreshSegmentation()
+            }
         } catch (ex: Throwable) {
             /*@formatter:off*/ Logger.e(TAG, "setUserAttributes(): externalUserId = [$externalUserId], user = [$user]", ex)
             /*@formatter:on*/

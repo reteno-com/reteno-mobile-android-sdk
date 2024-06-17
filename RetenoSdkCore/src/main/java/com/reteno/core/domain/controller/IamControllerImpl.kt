@@ -171,6 +171,18 @@ internal class IamControllerImpl(
         }
     }
 
+    override fun refreshSegmentation() {
+        scope.launch {
+            val messageListModel = iamRepository.getInAppMessages()
+            val inAppMessages = messageListModel.messages
+
+            updateSegmentStatuses(
+                inAppMessages,
+                updateCacheOnSuccess = messageListModel.isFromRemote.not()
+            )
+        }
+    }
+
     private fun notifyEventOccurred(event: Event) {
         val inapps = inAppsWaitingForEvent
         if (inapps.isNullOrEmpty()) return
@@ -297,9 +309,7 @@ internal class IamControllerImpl(
         updateCacheOnSuccess: Boolean = true
     ) {
         val messagesWithSegments = inAppMessages.filter {
-            val shouldCheck =
-                it.displayRules.async?.segment?.shouldCheckStatus(sessionHandler.getSessionStartTimestamp())
-            shouldCheck == true
+            it.displayRules.async?.segment != null
         }
         val segmentIds =
             messagesWithSegments.mapNotNull { it.displayRules.async?.segment?.segmentId }.distinct()
