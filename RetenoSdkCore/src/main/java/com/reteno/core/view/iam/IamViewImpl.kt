@@ -75,7 +75,7 @@ internal class IamViewImpl(
     private lateinit var cardView: CardView
     private lateinit var webView: WebView
 
-    private var initViewOnResume = false
+    private var initViewOnResume = true
 
     private val retenoAndroidHandler: RetenoAndroidHandler = object : RetenoAndroidHandler() {
         override fun onMessagePosted(event: String?) {

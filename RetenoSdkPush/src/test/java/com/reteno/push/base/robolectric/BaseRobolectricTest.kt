@@ -8,6 +8,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.advanceUntilIdle
 import org.junit.After
 import org.junit.Before
 import org.junit.runner.RunWith
@@ -58,6 +59,7 @@ abstract class BaseRobolectricTest {
             delayInitialization = false
         ).also {
             application.retenoMock = it
+            advanceUntilIdle()
         }
     }
 }

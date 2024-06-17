@@ -65,7 +65,7 @@ class AppLifecycleController internal constructor(
         wasBackgrounded = true
         trackLifecycleEvent(
             Event.applicationBackgrounded(
-                appOpenedTimestamp.milliseconds.inWholeSeconds,
+                appOpenedTimestamp,
                 sessionHandler.getForegroundTimeMillis().milliseconds.inWholeSeconds
             )
         )
