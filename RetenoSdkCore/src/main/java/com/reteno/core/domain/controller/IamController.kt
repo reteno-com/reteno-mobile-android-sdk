@@ -26,6 +26,8 @@ internal interface IamController {
 
     fun setPauseBehaviour(behaviour: InAppPauseBehaviour)
 
+    fun refreshSegmentation()
+
     val fullHtmlStateFlow: StateFlow<ResultDomain<String>>
     val inAppMessagesFlow: SharedFlow<InAppMessage>
 }

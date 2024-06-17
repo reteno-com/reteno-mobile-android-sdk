@@ -11,6 +11,7 @@ import io.mockk.impl.annotations.RelaxedMockK
 import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import org.robolectric.Robolectric
 import org.robolectric.android.controller.ActivityController
@@ -19,7 +20,6 @@ import org.robolectric.android.controller.ActivityController
 @OptIn(ExperimentalCoroutinesApi::class)
 class RetenoActivityHelperFragmentTest : BaseRobolectricTest() {
     // region helper fields ------------------------------------------------------------------------
-    private lateinit var screenTrackingController: ScreenTrackingController
 
     @RelaxedMockK
     private lateinit var eventController: EventController
@@ -28,33 +28,27 @@ class RetenoActivityHelperFragmentTest : BaseRobolectricTest() {
     private lateinit var retenoLifecycleCallbacks: RetenoLifecycleCallbacks
 
     private lateinit var activityController: ActivityController<Activity>
-    private lateinit var fragmentScenario: FragmentScenario<TestFragment>
 
-    private lateinit var SUT: RetenoActivityHelper
     // endregion helper fields ---------------------------------------------------------------------
 
 
     override fun before() {
         super.before()
-        SUT = RetenoActivityHelperImpl()
-        TestScope().createRetenoAndAdvanceInit()
         activityController = Robolectric.buildActivity(Activity::class.java).setup()
-        SUT.enableLifecycleCallbacks(retenoLifecycleCallbacks)
-
-        // Disable screenTracking to prevent eventController calls for the first Fragment start
-        screenTrackingController = ScreenTrackingController(SUT, eventController)
-        screenTrackingController.autoScreenTracking(ScreenTrackingConfig(false))
-        // First fragment start
-        fragmentScenario = launchFragmentInContainer(initialState = Lifecycle.State.INITIALIZED)
     }
 
     @Test
-    fun givenScreenTrackingDisabled_whenFragmentStarted_thenScreenViewNotTracked() {
+    fun givenScreenTrackingDisabled_whenFragmentStarted_thenScreenViewNotTracked() = runTest {
+        createRetenoAndAdvanceInit()
         // Given
+        val sut = createSUT()
+        sut.enableLifecycleCallbacks(retenoLifecycleCallbacks)
+        val screenTrackingController = ScreenTrackingController(sut, eventController)
         val config = ScreenTrackingConfig(false)
         screenTrackingController.autoScreenTracking(config)
 
         // When
+        val fragmentScenario = launchFragmentInContainer<TestFragment>(initialState = Lifecycle.State.INITIALIZED)
         fragmentScenario.moveToState(Lifecycle.State.CREATED)
         fragmentScenario.moveToState(Lifecycle.State.STARTED)
 
@@ -63,12 +57,17 @@ class RetenoActivityHelperFragmentTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun givenScreenTrackingEnabled_whenFragmentStarted_thenScreenViewNotTracked() {
+    fun givenScreenTrackingEnabled_whenFragmentStarted_thenScreenViewNotTracked() = runTest {
+        createRetenoAndAdvanceInit()
         // Given
+        val sut = createSUT()
+        sut.enableLifecycleCallbacks(retenoLifecycleCallbacks)
+        val screenTrackingController = ScreenTrackingController(sut, eventController)
         val config = ScreenTrackingConfig(true)
         screenTrackingController.autoScreenTracking(config)
 
         // When
+        val fragmentScenario = launchFragmentInContainer<TestFragment>(initialState = Lifecycle.State.INITIALIZED)
         fragmentScenario.moveToState(Lifecycle.State.CREATED)
         fragmentScenario.moveToState(Lifecycle.State.STARTED)
 
@@ -77,12 +76,17 @@ class RetenoActivityHelperFragmentTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun givenScreenTrackingOnResume_whenFragmentStarted_thenScreenViewNotTracked() {
+    fun givenScreenTrackingOnResume_whenFragmentStarted_thenScreenViewNotTracked() = runTest {
+        createRetenoAndAdvanceInit()
         // Given
+        val sut = createSUT()
+        sut.enableLifecycleCallbacks(retenoLifecycleCallbacks)
+        val screenTrackingController = ScreenTrackingController(sut, eventController)
         val config = ScreenTrackingConfig(enable = true, trigger = ScreenTrackingTrigger.ON_RESUME)
         screenTrackingController.autoScreenTracking(config)
 
         // When
+        val fragmentScenario = launchFragmentInContainer<TestFragment>(initialState = Lifecycle.State.INITIALIZED)
         fragmentScenario.moveToState(Lifecycle.State.CREATED)
         fragmentScenario.moveToState(Lifecycle.State.STARTED)
 
@@ -91,12 +95,17 @@ class RetenoActivityHelperFragmentTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun givenScreenTrackingOnResume_whenFragmentResumed_thenScreenViewTracked() {
+    fun givenScreenTrackingOnResume_whenFragmentResumed_thenScreenViewTracked() = runTest {
+        createRetenoAndAdvanceInit()
         // Given
+        val sut = createSUT()
+        sut.enableLifecycleCallbacks(retenoLifecycleCallbacks)
+        val screenTrackingController = ScreenTrackingController(sut, eventController)
         val config = ScreenTrackingConfig(enable = true, trigger = ScreenTrackingTrigger.ON_RESUME)
         screenTrackingController.autoScreenTracking(config)
 
         // When
+        val fragmentScenario = launchFragmentInContainer<TestFragment>(initialState = Lifecycle.State.INITIALIZED)
         fragmentScenario.moveToState(Lifecycle.State.CREATED)
         fragmentScenario.moveToState(Lifecycle.State.STARTED)
         fragmentScenario.moveToState(Lifecycle.State.RESUMED)
@@ -106,12 +115,17 @@ class RetenoActivityHelperFragmentTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun givenScreenExcluded_whenFragmentStarted_thenScreenViewNotTracked() {
+    fun givenScreenExcluded_whenFragmentStarted_thenScreenViewNotTracked() = runTest {
+        createRetenoAndAdvanceInit()
         // Given
+        val sut = createSUT()
+        sut.enableLifecycleCallbacks(retenoLifecycleCallbacks)
+        val screenTrackingController = ScreenTrackingController(sut, eventController)
         val config = ScreenTrackingConfig(enable = true, excludeScreens = listOf(TestFragment::class.java.simpleName))
         screenTrackingController.autoScreenTracking(config)
 
         // When
+        val fragmentScenario = launchFragmentInContainer<TestFragment>(initialState = Lifecycle.State.INITIALIZED)
         fragmentScenario.moveToState(Lifecycle.State.CREATED)
         fragmentScenario.moveToState(Lifecycle.State.STARTED)
 
@@ -120,12 +134,17 @@ class RetenoActivityHelperFragmentTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun givenScreenExcluded_whenFragmentResumed_thenScreenViewNotTracked() {
+    fun givenScreenExcluded_whenFragmentResumed_thenScreenViewNotTracked() = runTest {
+        createRetenoAndAdvanceInit()
         // Given
+        val sut = createSUT()
+        sut.enableLifecycleCallbacks(retenoLifecycleCallbacks)
+        val screenTrackingController = ScreenTrackingController(sut, eventController)
         val config = ScreenTrackingConfig(enable = true, excludeScreens = listOf(TestFragment::class.java.simpleName))
         screenTrackingController.autoScreenTracking(config)
 
         // When
+        val fragmentScenario = launchFragmentInContainer<TestFragment>(initialState = Lifecycle.State.INITIALIZED)
         fragmentScenario.moveToState(Lifecycle.State.CREATED)
         fragmentScenario.moveToState(Lifecycle.State.STARTED)
         fragmentScenario.moveToState(Lifecycle.State.RESUMED)
@@ -133,4 +152,6 @@ class RetenoActivityHelperFragmentTest : BaseRobolectricTest() {
         // Then
         verify(exactly = 0) { eventController.trackScreenViewEvent(TestFragment::class.java.simpleName) }
     }
+
+    private fun createSUT() = RetenoActivityHelperImpl()
 }

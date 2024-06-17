@@ -21,7 +21,8 @@ internal class RetenoSessionHandlerImpl(
 
     override val sessionEventFlow = MutableSharedFlow<SessionEvent>(
         extraBufferCapacity = 2,
-        onBufferOverflow = BufferOverflow.DROP_OLDEST
+        onBufferOverflow = BufferOverflow.DROP_OLDEST,
+        replay = 2
     )
 
     private var foregroundTimeMillis: Long = 0L
@@ -104,15 +105,19 @@ internal class RetenoSessionHandlerImpl(
         val appStoppedTimestamp = sharedPrefsManager.getLastInteractionTime()
         val pausedTime = appResumedTimestamp - appStoppedTimestamp
         if (pausedTime > SESSION_RESET_TIME) {
-            sessionEventFlow.tryEmit(
-                SessionEvent.SessionEndEvent(
-                    sharedPrefsManager.getSessionId().orEmpty(),
-                    System.currentTimeMillis(),
-                    sharedPrefsManager.getSessionStartTimestamp(),
-                    sharedPrefsManager.getOpenCount(),
-                    sharedPrefsManager.getBackgroundCount()
+            if (appStoppedTimestamp != 0L) {
+                sessionEventFlow.tryEmit(
+                    SessionEvent.SessionEndEvent(
+                        sharedPrefsManager.getSessionId().orEmpty(),
+                        System.currentTimeMillis(),
+                        appStoppedTimestamp - sharedPrefsManager.getSessionStartTimestamp(),
+                        sharedPrefsManager.getOpenCount(),
+                        sharedPrefsManager.getBackgroundCount()
+                    )
                 )
-            )
+            }
+            sharedPrefsManager.saveOpenCount(0)
+            sharedPrefsManager.saveBackgroundCount(0)
             previousForegroundTime = 0L
             sessionStartTimestamp = appResumedTimestamp
             sessionId = UUID.randomUUID().toString()
