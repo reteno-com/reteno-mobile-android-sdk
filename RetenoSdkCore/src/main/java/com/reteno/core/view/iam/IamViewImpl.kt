@@ -343,6 +343,7 @@ internal class IamViewImpl(
             domStorageEnabled = true
             databaseEnabled = true
         }
+        webView.setBackgroundColor(Color.TRANSPARENT)
         return webView
     }
 
