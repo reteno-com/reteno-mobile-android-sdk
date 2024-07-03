@@ -57,6 +57,16 @@ public class MainActivity extends AppCompatActivity {
         setNavigation(intent);
     }
 
+    @Override
+    protected void onStart() {
+        super.onStart();
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+    }
+
     private void createInAppLifecycleListener() {
         Context context = this;
         ((RetenoApplication) getApplication()).getRetenoInstance().setInAppLifecycleCallback(new InAppLifecycleCallback() {

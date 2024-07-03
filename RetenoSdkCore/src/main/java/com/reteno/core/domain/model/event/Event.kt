@@ -141,6 +141,14 @@ sealed class Event(
             )
         )
 
+        internal fun permissionDialogDisplayed() = LifecycleEvent(
+            LifecycleEventType.PUSH,
+            Custom(
+                LIFECYCLE_EVENT_PUSH_PERMISSION,
+                ZonedDateTime.now()
+            )
+        )
+
         internal const val SCREEN_VIEW_EVENT_TYPE_KEY = "screenView"
         internal const val SCREEN_VIEW_PARAM_NAME = "screenClass"
         internal const val SESSION_START_TIME_PARAM_NAME = "startTime"
@@ -164,5 +172,6 @@ sealed class Event(
         internal const val SECONDS_IN_FOREGROUND_PARAM_NAME = "secondsInForeground"
         internal const val LIFECYCLE_EVENT_PUSH_SUBSCRIBED = "PushNotificationsSubscribed"
         internal const val LIFECYCLE_EVENT_PUSH_UNSUBSCRIBED = "PushNotificationsUnsubscribed"
+        internal const val LIFECYCLE_EVENT_PUSH_PERMISSION = "PushNotificationsPermissionAsked"
     }
 }

@@ -17,7 +17,7 @@ internal class ConfigRepositoryImpl(
     private val restConfig: RestConfig
 ) : ConfigRepository {
 
-    override val notificationState = MutableStateFlow(sharedPrefsManager.isNotificationsEnabled())
+    override val notificationState = MutableStateFlow<Boolean?>(null)
 
     override fun setExternalUserId(externalId: String?) {
         restConfig.setExternalUserId(externalId)
