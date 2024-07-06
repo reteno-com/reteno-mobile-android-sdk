@@ -91,7 +91,7 @@ class ApiClientImplTest : BaseRobolectricTest() {
     @Test
     fun whenPostSyncCalled_thenMakeRequestCalledWithCorrectParams() {
         // When
-        SUT.postSync(url, JSON_BODY, responseHandler)
+        SUT.postSync(url, JSON_BODY, retryCount = 0, responseHandler)
 
         // Then
         verify(exactly = 0) { OperationQueue.addOperation(any()) }

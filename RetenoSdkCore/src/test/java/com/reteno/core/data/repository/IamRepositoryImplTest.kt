@@ -380,13 +380,14 @@ class IamRepositoryImplTest : BaseRobolectricTest() {
 
             // When
             coEvery {
-                apiClient.post(
+                apiClient.postWithRetry(
                     url = ApiContract.InAppMessages.GetInAppMessagesContent,
                     jsonBody = any(),
+                    retryCount = any(),
                     responseHandler = any()
                 )
             } coAnswers {
-                val callback = thirdArg<ResponseCallback>()
+                val callback = arg<ResponseCallback>(3)
                 callback.onSuccess(response.toJson())
             }
             val result = SUT.getInAppMessagesContent(listOf(12L))
@@ -408,13 +409,14 @@ class IamRepositoryImplTest : BaseRobolectricTest() {
 
             // When
             coEvery {
-                apiClient.post(
+                apiClient.postWithRetry(
                     url = ApiContract.InAppMessages.GetInAppMessagesContent,
                     jsonBody = any(),
+                    retryCount = any(),
                     responseHandler = any()
                 )
             } coAnswers {
-                val callback = thirdArg<ResponseCallback>()
+                val callback = arg<ResponseCallback>(3)
                 callback.onFailure(400, null, null)
             }
             val result = SUT.getInAppMessagesContent(listOf(12L))

@@ -12,17 +12,33 @@ internal class ApiClientImpl(private val restClient: RestClient) : ApiClient {
     }
 
     override fun putSync(url: ApiContract, jsonBody: String, responseHandler: ResponseCallback) {
-        restClient.makeRequest(HttpMethod.PUT, url, jsonBody, null, null,  responseHandler)
+        restClient.makeRequest(HttpMethod.PUT, url, jsonBody, null, null,  responseCallback = responseHandler)
     }
 
     override fun post(url: ApiContract, jsonBody: String, responseHandler: ResponseCallback) {
         OperationQueue.addOperation {
-            postSync(url, jsonBody, responseHandler)
+            postSync(url, jsonBody, responseHandler = responseHandler)
         }
     }
 
-    override fun postSync(url: ApiContract, jsonBody: String, responseHandler: ResponseCallback) {
-        restClient.makeRequest(HttpMethod.POST, url, jsonBody, null, null, responseHandler)
+    override fun postWithRetry(
+        url: ApiContract,
+        jsonBody: String,
+        retryCount: Int,
+        responseHandler: ResponseCallback
+    ) {
+        OperationQueue.addOperation {
+            postSync(url, jsonBody, retryCount = retryCount, responseHandler = responseHandler)
+        }
+    }
+
+    override fun postSync(
+        url: ApiContract,
+        jsonBody: String,
+        retryCount: Int,
+        responseHandler: ResponseCallback
+    ) {
+        restClient.makeRequest(HttpMethod.POST, url, jsonBody, null, null, retryCount, responseHandler)
     }
 
     override fun get(
@@ -50,7 +66,7 @@ internal class ApiClientImpl(private val restClient: RestClient) : ApiClient {
         queryParams: Map<String, String?>?,
         responseHandler: ResponseCallback
     ) {
-        restClient.makeRequest(HttpMethod.GET, url, null,  headers, queryParams, responseHandler)
+        restClient.makeRequest(HttpMethod.GET, url, null,  headers, queryParams, responseCallback = responseHandler)
     }
 
     override fun getSync(
@@ -76,6 +92,6 @@ internal class ApiClientImpl(private val restClient: RestClient) : ApiClient {
         queryParams: Map<String, String?>?,
         responseHandler: ResponseCallback
     ) {
-        restClient.makeRequest(HttpMethod.HEAD, url, null, null,  queryParams, responseHandler)
+        restClient.makeRequest(HttpMethod.HEAD, url, null, null,  queryParams, responseCallback = responseHandler)
     }
 }
