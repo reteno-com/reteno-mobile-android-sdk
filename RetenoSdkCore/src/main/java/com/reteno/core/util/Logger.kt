@@ -30,32 +30,32 @@ object Logger {
 
     @JvmStatic
     fun v(tag: String, methodName: String, vararg arguments: Any?) {
-        val message = buildMessage(methodName, arguments)
         if (BuildConfig.DEBUG || Util.isDebugView()) {
+            val message = buildMessage(methodName, arguments)
             Log.v(tag, message)
         }
     }
 
     @JvmStatic
     fun d(tag: String, methodName: String, vararg arguments: Any?) {
-        val message = buildMessage(methodName, arguments)
         if (BuildConfig.DEBUG || Util.isDebugView()) {
+            val message = buildMessage(methodName, arguments)
             Log.d(tag, message)
         }
     }
 
     @JvmStatic
     fun i(tag: String, methodName: String, vararg arguments: Any?) {
-        val message = buildMessage(methodName, arguments)
         if (BuildConfig.DEBUG || Util.isDebugView()) {
+            val message = buildMessage(methodName, arguments)
             Log.i(tag, message)
         }
     }
 
     @JvmStatic
     fun w(tag: String, methodName: String, vararg arguments: Any?) {
-        val message = buildMessage(methodName, arguments)
         if (BuildConfig.DEBUG || Util.isDebugView()) {
+            val message = buildMessage(methodName, arguments)
             Log.w(tag, message)
         }
     }

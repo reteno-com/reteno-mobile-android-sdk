@@ -64,6 +64,7 @@ internal class RestClientImpl(
         body: String?,
         headers: Map<String, String>?,
         queryParams: Map<String, String?>?,
+        retryCount: Int,
         responseCallback: ResponseCallback
     ) {
         var urlConnection: HttpURLConnection? = null
@@ -80,25 +81,35 @@ internal class RestClientImpl(
                 attachBody(urlConnection, body)
             }
             urlConnection.connect()
-            val headers: Map<String, List<String>> = urlConnection.headerFields
+            val headerFiles: Map<String, List<String>> = urlConnection.headerFields
             Logger.i(TAG, "makeRequest(): ", "connect, headers: $headers")
 
             val responseCode = urlConnection.responseCode
             Logger.i(TAG, "makeRequest(): ", "responseCode: ", responseCode)
 
-            when (responseCode) {
-                200 -> {
+            when {
+                responseCode == 200 -> {
                     val response = urlConnection.inputStream.bufferedReader().use { it.readText() }
                     Logger.i(TAG, "makeRequest(): ", "response: ", response)
-                    responseCallback.onSuccess(headers, response)
+                    responseCallback.onSuccess(headerFiles, response)
                 }
 
-                301, 302 -> {
+                responseCode == 301 || responseCode == 302 -> {
                     val response = urlConnection.inputStream.bufferedReader().use { it.readText() }
                     Logger.i(TAG, "makeRequest(): ", "response: ", response)
-                    responseCallback.onSuccess(headers, response)
+                    responseCallback.onSuccess(headerFiles, response)
                 }
-
+                (responseCode >= 500 || responseCode == 408) && retryCount != 0 -> {
+                    makeRequest(
+                        method,
+                        apiContract,
+                        body,
+                        headers,
+                        queryParams,
+                        retryCount - 1,
+                        responseCallback
+                    )
+                }
                 else -> {
                     val response =
                         urlConnection.errorStream?.bufferedReader()?.use { it.readText() }

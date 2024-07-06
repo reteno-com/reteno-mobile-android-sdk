@@ -23,6 +23,7 @@ internal interface RestClient {
         body: String?,
         headers: Map<String, String>? = null,
         queryParams: Map<String, String?>? = null,
+        retryCount:Int = 0,
         responseCallback: ResponseCallback
     )
 }

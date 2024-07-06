@@ -269,9 +269,10 @@ internal class IamRepositoryImpl(
 
         return withContext(coroutineDispatcher) {
             suspendCancellableCoroutine { continuation ->
-                apiClient.post(
+                apiClient.postWithRetry(
                     url = ApiContract.InAppMessages.GetInAppMessagesContent,
                     jsonBody = InAppMessagesContentRequest(messageInstanceIds).toJson(),
+                    retryCount = 3,
                     responseHandler = object : ResponseCallback {
                         override fun onSuccess(response: String) {
                             /*@formatter:off*/ Logger.i(TAG, "getInAppMessagesContent(): onSuccess(): ", "response = [", response, "]")
