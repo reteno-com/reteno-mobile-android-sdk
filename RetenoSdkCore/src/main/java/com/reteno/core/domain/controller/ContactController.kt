@@ -114,9 +114,9 @@ class ContactController(
         /*@formatter:off*/ Logger.i(TAG, "notificationsEnabled(): ", "notificationsEnabled = [" , notificationsEnabled , "]")
         /*@formatter:on*/
         val currentState = configRepository.isNotificationsEnabled()
+        configRepository.saveNotificationsEnabled(notificationsEnabled)
         if (notificationsEnabled != currentState) {
             isDeviceSentThisSession = true
-            configRepository.saveNotificationsEnabled(notificationsEnabled)
             configRepository.getFcmToken {
                 onNewContact(it, notificationsEnabled = notificationsEnabled)
             }

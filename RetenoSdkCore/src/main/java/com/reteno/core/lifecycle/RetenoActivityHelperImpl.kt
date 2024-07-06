@@ -2,7 +2,10 @@ package com.reteno.core.lifecycle
 
 import android.annotation.TargetApi
 import android.app.Activity
+import android.app.ActivityManager
 import android.app.Application.ActivityLifecycleCallbacks
+import android.content.Context
+import android.os.Build
 import android.os.Bundle
 import com.reteno.core.RetenoImpl
 import com.reteno.core.util.BuildUtil
