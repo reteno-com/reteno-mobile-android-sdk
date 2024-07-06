@@ -342,6 +342,10 @@ internal class IamControllerImpl(
         scheduleValidator: ScheduleRuleValidator = ScheduleRuleValidator(),
         showingOnAppStart: Boolean = false
     ): Boolean {
+        val content = inAppMessage.content
+        if (content == null || content.model.isJsonNull) {
+            return false
+        }
         if (checkSegmentRuleMatches(inAppMessage).not()) {
             return false
         }

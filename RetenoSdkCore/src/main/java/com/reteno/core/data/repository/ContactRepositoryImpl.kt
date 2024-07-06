@@ -72,9 +72,9 @@ internal class ContactRepositoryImpl(
         /*@formatter:off*/ Logger.i(TAG, "pushDeviceData(): ", "device = [" , requestModel , "]")
         /*@formatter:on*/
         apiClient.postSync(
-            ApiContract.MobileApi.Device,
-            requestModel.toJson(),
-            object : ResponseCallback {
+            url = ApiContract.MobileApi.Device,
+            jsonBody = requestModel.toJson(),
+            responseHandler = object : ResponseCallback {
                 override fun onSuccess(response: String) {
                     /*@formatter:off*/ Logger.i(TAG, "onSuccess(): ", "response = [" , response , "]")
                     /*@formatter:on*/
