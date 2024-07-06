@@ -312,7 +312,7 @@ class ContactControllerTest : BaseUnitTest() {
     }
 
     @Test
-    fun givenNotificationsDisabled_whenDisableNotifications_thenNothingChanged() {
+    fun givenNotificationsDisabled_whenDisableNotifications_thenEventResend_butDeviceIsNotUpdated() {
         // Given
         val pushSubscribed = false
         every { configRepository.isNotificationsEnabled() } returns false
@@ -321,12 +321,12 @@ class ContactControllerTest : BaseUnitTest() {
         SUT.notificationsEnabled(pushSubscribed)
 
         // Then
-        verify(exactly = 0) { configRepository.saveNotificationsEnabled(any()) }
+        verify(exactly = 1) { configRepository.saveNotificationsEnabled(any()) }
         verify(exactly = 0) { contactRepository.saveDeviceData(any()) }
     }
 
     @Test
-    fun givenNotificationsEnabled_whenEnableNotifications_thenNothingChanged() {
+    fun givenNotificationsEnabled_whenEnableNotifications_thenEventResend_butDeviceIsNotUpdated() {
         // Given
         val pushSubscribed = true
         every { configRepository.isNotificationsEnabled() } returns true
@@ -335,7 +335,7 @@ class ContactControllerTest : BaseUnitTest() {
         SUT.notificationsEnabled(pushSubscribed)
 
         // Then
-        verify(exactly = 0) { configRepository.saveNotificationsEnabled(any()) }
+        verify(exactly = 1) { configRepository.saveNotificationsEnabled(any()) }
         verify(exactly = 0) { contactRepository.saveDeviceData(any()) }
     }
 

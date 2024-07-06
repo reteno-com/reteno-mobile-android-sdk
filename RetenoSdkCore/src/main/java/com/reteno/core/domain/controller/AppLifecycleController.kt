@@ -1,5 +1,8 @@
 package com.reteno.core.domain.controller
 
+import android.app.Activity
+import android.app.ActivityManager
+import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.annotation.MainThread
@@ -11,6 +14,10 @@ import com.reteno.core.data.repository.ConfigRepository
 import com.reteno.core.domain.model.event.Event
 import com.reteno.core.domain.model.event.LifecycleEvent
 import com.reteno.core.domain.model.event.LifecycleTrackingOptions
+import com.reteno.core.lifecycle.RetenoActivityHelper
+import com.reteno.core.lifecycle.RetenoActivityHelperImpl
+import com.reteno.core.lifecycle.RetenoLifecycleCallBacksAdapter
+import com.reteno.core.lifecycle.RetenoLifecycleCallbacks
 import com.reteno.core.lifecycle.RetenoSessionHandler
 import com.reteno.core.lifecycle.RetenoSessionHandler.SessionEvent
 import com.reteno.core.util.Logger
@@ -20,6 +27,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlin.time.Duration.Companion.milliseconds
@@ -28,6 +36,7 @@ class AppLifecycleController internal constructor(
     private val configRepository: ConfigRepository,
     private val eventController: EventController,
     private val sessionHandler: RetenoSessionHandler,
+    activityHelper: RetenoActivityHelper,
     lifecycleTrackingOptions: LifecycleTrackingOptions,
     scope: CoroutineScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 ) : LifecycleObserver {
@@ -36,15 +45,17 @@ class AppLifecycleController internal constructor(
     private var isStarted = false
     private var appOpenedTimestamp = System.currentTimeMillis()
     private var lifecycleEventConfig = lifecycleTrackingOptions.toTypeMap()
+    private val lifecycleCallbacks = RetenoLifecycleCallBacksAdapter(onPause = ::onActivityPause)
 
     init {
         sessionHandler.sessionEventFlow
             .onEach { handleSessionEvent(it) }
             .launchIn(scope)
         configRepository.notificationState
-            .drop(1)
+            .filterNotNull()
             .onEach { notifyNotificationsStateChanged(it) }
             .launchIn(scope)
+        activityHelper.registerActivityLifecycleCallbacks(TAG, lifecycleCallbacks)
     }
 
     @MainThread
@@ -115,6 +126,21 @@ class AppLifecycleController internal constructor(
         }
     }
 
+    private fun onActivityPause(activity: Activity) {
+        runCatching {
+            val activityManager =
+                (activity.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager)
+            val topComponentInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                activityManager.appTasks.first().taskInfo.topActivity
+            } else {
+                activityManager.getRunningTasks(1)[0].topActivity
+            }
+            if (topComponentInfo?.packageName == PERMISSION_DIALOG_PACKAGE) {
+                trackLifecycleEvent(Event.permissionDialogDisplayed())
+            }
+        }
+    }
+
     private fun notifyNotificationsStateChanged(notificationsEnabled: Boolean) {
         val event = if (notificationsEnabled) {
             Event.notificationsEnabled()
@@ -150,6 +176,7 @@ class AppLifecycleController internal constructor(
     }
 
     companion object {
+        private const val PERMISSION_DIALOG_PACKAGE = "com.google.android.permissioncontroller"
         private val TAG: String = AppLifecycleController::class.java.simpleName
     }
 }

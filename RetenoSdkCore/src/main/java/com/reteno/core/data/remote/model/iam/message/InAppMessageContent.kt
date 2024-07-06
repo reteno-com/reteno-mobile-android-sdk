@@ -13,4 +13,8 @@ data class InAppMessageContent(
 
     @SerializedName("model")
     val model: JsonElement
-)
+) {
+    override fun toString(): String {
+        return "InAppMessageContent(messageInstanceId=$messageInstanceId, layoutType=$layoutType, model=*removed for memory optimization*"
+    }
+}
