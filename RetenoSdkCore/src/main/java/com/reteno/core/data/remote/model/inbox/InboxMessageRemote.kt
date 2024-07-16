@@ -19,4 +19,6 @@ internal data class InboxMessageRemote(
     val title: String,
     @SerializedName("category")
     val category: String?,
+    @SerializedName("customData")
+    val customData: Map<String, String>?
 )
