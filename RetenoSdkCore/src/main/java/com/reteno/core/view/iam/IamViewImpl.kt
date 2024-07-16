@@ -33,6 +33,7 @@ import com.reteno.core.domain.model.interaction.InteractionAction
 import com.reteno.core.features.iam.IamJsEvent
 import com.reteno.core.features.iam.IamJsEventType
 import com.reteno.core.features.iam.IamJsPayload
+import com.reteno.core.features.iam.InAppPauseBehaviour
 import com.reteno.core.features.iam.RetenoAndroidHandler
 import com.reteno.core.lifecycle.RetenoActivityHelper
 import com.reteno.core.util.Constants
@@ -77,6 +78,10 @@ internal class IamViewImpl(
 
     private var initViewOnResume = true
 
+    private var pauseIncomingPushInApps = AtomicBoolean(false)
+    private var lastPushInteractionId: String? = null
+    private var pauseBehaviour = InAppPauseBehaviour.POSTPONE_IN_APPS
+
     private val retenoAndroidHandler: RetenoAndroidHandler = object : RetenoAndroidHandler() {
         override fun onMessagePosted(event: String?) {
             /*@formatter:off*/ Logger.i(TAG, "onMessagePosted(): ", "event = [", event, "]")
@@ -101,6 +106,22 @@ internal class IamViewImpl(
         }
     }
 
+    override fun pauseIncomingPushInApps(isPaused: Boolean) {
+        if (pauseIncomingPushInApps.getAndSet(isPaused) && !isPaused) {
+            lastPushInteractionId?.let {
+                initialize(it)
+                lastPushInteractionId = null
+            }
+        }
+    }
+
+    override fun setPauseBehaviour(behaviour: InAppPauseBehaviour) {
+        pauseBehaviour = behaviour
+        if (pauseBehaviour == InAppPauseBehaviour.SKIP_IN_APPS) {
+            lastPushInteractionId = null
+        }
+    }
+
     private fun onWidgetInitSuccess() {
         /*@formatter:off*/ Logger.i(TAG, "onWidgetInitSuccess(): ", "")
         /*@formatter:on*/
@@ -109,7 +130,12 @@ internal class IamViewImpl(
         messageInstanceId?.let { instanceId ->
             val newInteractionId = UUID.randomUUID().toString()
             interactionId = newInteractionId
-            interactionController.onInAppInteraction(InAppInteraction.createOpened(newInteractionId, instanceId))
+            interactionController.onInAppInteraction(
+                InAppInteraction.createOpened(
+                    newInteractionId,
+                    instanceId
+                )
+            )
         }
     }
 
@@ -121,7 +147,13 @@ internal class IamViewImpl(
         messageInstanceId?.let { instanceId ->
             val newInteractionId = UUID.randomUUID().toString()
             interactionId = newInteractionId
-            interactionController.onInAppInteraction(InAppInteraction.createFailed(newInteractionId, instanceId, jsEvent.payload?.reason))
+            interactionController.onInAppInteraction(
+                InAppInteraction.createFailed(
+                    newInteractionId,
+                    instanceId,
+                    jsEvent.payload?.reason
+                )
+            )
         }
     }
 
@@ -164,6 +196,12 @@ internal class IamViewImpl(
     override fun initialize(interactionId: String) {
         /*@formatter:off*/ Logger.i(TAG, "initialize(): ", "widgetId = [", interactionId, "]")
         /*@formatter:on*/
+        if (pauseIncomingPushInApps.get()) {
+            if (pauseBehaviour == InAppPauseBehaviour.POSTPONE_IN_APPS) {
+                lastPushInteractionId = interactionId
+            }
+            return
+        }
         try {
             try {
                 if (isViewShown.get()) {
@@ -366,7 +404,7 @@ internal class IamViewImpl(
         /*@formatter:on*/
 //        val encodedHtml = Base64.encodeToString(fullHtml.toByteArray(), Base64.NO_PADDING)
 //        webView.loadData(encodedHtml, MIME_TYPE, ENCODING)
-        webView.loadDataWithBaseURL("",fullHtml, MIME_TYPE,"UTF-8","")
+        webView.loadDataWithBaseURL("", fullHtml, MIME_TYPE, "UTF-8", "")
         webView.addJavascriptInterface(retenoAndroidHandler, JS_INTERFACE_NAME)
     }
 
@@ -470,24 +508,56 @@ internal class IamViewImpl(
     private fun createInAppData(): InAppData {
         return when (inAppSource) {
             InAppSource.PUSH_NOTIFICATION -> InAppData(InAppSource.PUSH_NOTIFICATION, interactionId)
-            InAppSource.DISPLAY_RULES -> InAppData(InAppSource.DISPLAY_RULES, messageInstanceId?.toString())
+            InAppSource.DISPLAY_RULES -> InAppData(
+                InAppSource.DISPLAY_RULES,
+                messageInstanceId?.toString()
+            )
+
             else -> InAppData(InAppSource.DISPLAY_RULES, messageInstanceId?.toString())
         }
     }
 
     private fun createInAppCloseData(closeAction: InAppCloseAction): InAppCloseData {
         return when (inAppSource) {
-            InAppSource.PUSH_NOTIFICATION -> InAppCloseData(InAppSource.PUSH_NOTIFICATION, interactionId, closeAction)
-            InAppSource.DISPLAY_RULES -> InAppCloseData(InAppSource.DISPLAY_RULES, messageInstanceId?.toString(), closeAction)
-            else -> InAppCloseData(InAppSource.DISPLAY_RULES, messageInstanceId?.toString(), closeAction)
+            InAppSource.PUSH_NOTIFICATION -> InAppCloseData(
+                InAppSource.PUSH_NOTIFICATION,
+                interactionId,
+                closeAction
+            )
+
+            InAppSource.DISPLAY_RULES -> InAppCloseData(
+                InAppSource.DISPLAY_RULES,
+                messageInstanceId?.toString(),
+                closeAction
+            )
+
+            else -> InAppCloseData(
+                InAppSource.DISPLAY_RULES,
+                messageInstanceId?.toString(),
+                closeAction
+            )
         }
     }
 
     private fun createInAppErrorData(): InAppErrorData {
         return when (inAppSource) {
-            InAppSource.PUSH_NOTIFICATION -> InAppErrorData(InAppSource.PUSH_NOTIFICATION, interactionId, ERROR_MESSAGE)
-            InAppSource.DISPLAY_RULES -> InAppErrorData(InAppSource.DISPLAY_RULES, messageInstanceId?.toString(), ERROR_MESSAGE)
-            else -> InAppErrorData(InAppSource.DISPLAY_RULES, messageInstanceId?.toString(), ERROR_MESSAGE)
+            InAppSource.PUSH_NOTIFICATION -> InAppErrorData(
+                InAppSource.PUSH_NOTIFICATION,
+                interactionId,
+                ERROR_MESSAGE
+            )
+
+            InAppSource.DISPLAY_RULES -> InAppErrorData(
+                InAppSource.DISPLAY_RULES,
+                messageInstanceId?.toString(),
+                ERROR_MESSAGE
+            )
+
+            else -> InAppErrorData(
+                InAppSource.DISPLAY_RULES,
+                messageInstanceId?.toString(),
+                ERROR_MESSAGE
+            )
         }
     }
 

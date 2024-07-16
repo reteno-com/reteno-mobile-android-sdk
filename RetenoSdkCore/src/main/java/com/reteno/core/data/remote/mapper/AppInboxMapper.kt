@@ -21,6 +21,7 @@ internal fun InboxMessageRemote.toDomain(): AppInboxMessage {
         linkUrl = linkUrl,
         isNewMessage = isNewMessage,
         title = title,
-        category = category
+        category = category,
+        customData = customData
     )
 }

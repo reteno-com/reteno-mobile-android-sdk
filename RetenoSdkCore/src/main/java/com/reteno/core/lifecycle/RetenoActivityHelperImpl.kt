@@ -26,6 +26,10 @@ internal class RetenoActivityHelperImpl : RetenoActivityHelper {
      * Whether any of the activities are paused.
      */
     private var isActivityPaused = false
+    /**
+     * Retrieves if the activity is ready to be changed.
+     */
+    private var isReadyForTransition = false
 
     // keeps current activity while app is in foreground
     override var currentActivity: Activity? = null
@@ -67,6 +71,12 @@ internal class RetenoActivityHelperImpl : RetenoActivityHelper {
         }
     }
 
+    private fun onActivityPreCreated(activity: Activity) {
+        /*@formatter:off*/ Logger.i(TAG, "onActivityPreCreated(): ", "activity = [" , activity , "]")
+        /*@formatter:on*/
+        isReadyForTransition = true
+    }
+
 
     private fun onStart(activity: Activity) {
         /*@formatter:off*/ Logger.i(TAG, "onStart(): ", "activity = [" , activity , "]")
@@ -78,6 +88,7 @@ internal class RetenoActivityHelperImpl : RetenoActivityHelper {
         /*@formatter:off*/ Logger.i(TAG, "onResume(): ", "activity = [" , activity , "]")
         /*@formatter:on*/
         isActivityPaused = false
+        isReadyForTransition = false
         currentActivity = activity
         notifyLifecycleCallbacksResumed(activity)
     }
@@ -158,7 +169,7 @@ internal class RetenoActivityHelperImpl : RetenoActivityHelper {
      * Checks whether activity is in foreground.
      */
     override fun canPresentMessages(): Boolean =
-        currentActivity != null && !currentActivity!!.isFinishing && !isActivityPaused
+        currentActivity != null && !currentActivity!!.isFinishing && !isActivityPaused && !isReadyForTransition
 
     // Ensures the Activity is fully ready by;
     //   1. Ensure it is attached to a top-level Window by checking if it has an IBinder
@@ -189,6 +200,15 @@ internal class RetenoActivityHelperImpl : RetenoActivityHelper {
     }
 
     open inner class RetenoActivityLifecycleCallbacks : ActivityLifecycleCallbacks {
+
+        override fun onActivityPreCreated(activity: Activity, savedInstanceState: Bundle?) {
+            try {
+                onActivityPreCreated(activity)
+            } catch (t: Throwable) {
+                /*@formatter:off*/ Logger.e(TAG, "onActivityPreCreated(): ", t)
+                /*@formatter:on*/
+            }
+        }
         override fun onActivityStopped(activity: Activity) {
             try {
                 onStop(activity)

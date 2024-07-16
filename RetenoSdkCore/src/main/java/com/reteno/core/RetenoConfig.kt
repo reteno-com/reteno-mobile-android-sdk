@@ -5,6 +5,7 @@ import com.reteno.core.identification.DeviceIdProvider
 
 /**
  * @param isPausedInAppMessages - indicates paused/resumed state for in-app messages
+ * @param isPausedPushInAppMessages - indicates paused/resumed state for in-app messages from push notifications
  * @param userIdProvider Provider that will return custom userId. In case if id provided with a delay,
  * Reteno SDK will wait till id is going to be non-null then will initialize itself
  * @property platform - current platform name (Note that this property is mutable for multiplatform usage
@@ -13,10 +14,11 @@ import com.reteno.core.identification.DeviceIdProvider
  * @property accessKey - reteno access key
  * */
 data class RetenoConfig @JvmOverloads constructor(
-    var isPausedInAppMessages: Boolean = false,
+    val isPausedInAppMessages: Boolean = false,
     val userIdProvider: DeviceIdProvider? = null,
     val lifecycleTrackingOptions: LifecycleTrackingOptions = LifecycleTrackingOptions.ALL,
-    val accessKey: String = ""
+    val accessKey: String = "",
+    val isPausedPushInAppMessages: Boolean = false,
 ) {
     var platform: String = "Android"
 }
