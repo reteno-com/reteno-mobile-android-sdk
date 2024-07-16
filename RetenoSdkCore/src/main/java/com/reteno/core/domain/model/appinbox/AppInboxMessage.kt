@@ -8,5 +8,6 @@ data class AppInboxMessage(
     val content: String?,
     val imageUrl: String?,
     val linkUrl: String?,
-    val category: String?
+    val category: String?,
+    val customData: Map<String, String>?
 )

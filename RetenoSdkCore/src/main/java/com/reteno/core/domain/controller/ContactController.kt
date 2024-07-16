@@ -23,6 +23,10 @@ class ContactController(
         return configRepository.getDeviceId().id
     }
 
+    suspend fun awaitDeviceId(): String {
+        return configRepository.awaitForDeviceId().id
+    }
+
     fun setExternalUserId(id: String?) {
         /*@formatter:off*/ Logger.i(TAG, "setExternalUserId(): ", "id = [" , id , "]")
         /*@formatter:on*/
