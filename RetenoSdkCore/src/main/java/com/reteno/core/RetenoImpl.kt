@@ -6,6 +6,7 @@ import android.app.usage.UsageStatsManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.ProcessLifecycleOwner
 import com.reteno.core.di.ServiceLocator
 import com.reteno.core.di.provider.RetenoConfigProvider
@@ -26,9 +27,11 @@ import com.reteno.core.util.Constants.BROADCAST_ACTION_PUSH_PERMISSION_CHANGED
 import com.reteno.core.util.Constants.BROADCAST_ACTION_RETENO_APP_RESUME
 import com.reteno.core.view.iam.IamView
 import com.reteno.core.view.iam.callback.InAppLifecycleCallback
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
@@ -42,7 +45,8 @@ import kotlin.coroutines.suspendCoroutine
 class RetenoImpl(
     application: Application,
     config: RetenoConfig,
-    private val syncScope: CoroutineScope,
+    private val mainDispatcher: CoroutineDispatcher,
+    private val ioDispatcher: CoroutineDispatcher,
     private val delayInitialization: Boolean
 ) : RetenoLifecycleCallbacks, Reteno, RetenoInternalFacade {
 
@@ -53,6 +57,7 @@ class RetenoImpl(
     }
 
     private val configProvider = RetenoConfigProvider(config)
+    private val syncScope = CoroutineScope(mainDispatcher + SupervisorJob())
 
     //TODO make this property private
     val serviceLocator: ServiceLocator = ServiceLocator(application, configProvider)
@@ -75,6 +80,7 @@ class RetenoImpl(
 
     @Volatile
     private var initContinuation: Continuation<RetenoConfig>? = null
+    @Volatile
     private var initDeferred: Deferred<Unit>? = null
 
     val isInitialized: Boolean
@@ -92,7 +98,8 @@ class RetenoImpl(
     ) : this(
         application = application,
         config = config.copy(accessKey = accessKey),
-        syncScope = CoroutineScope(Dispatchers.Main + SupervisorJob()),
+        mainDispatcher = Dispatchers.Main,
+        ioDispatcher = Dispatchers.IO,
         delayInitialization = false
     )
 
@@ -103,7 +110,8 @@ class RetenoImpl(
         application = application,
         delayInitialization = true,
         config = RetenoConfig(),
-        syncScope = CoroutineScope(Dispatchers.IO + SupervisorJob()),
+        mainDispatcher = Dispatchers.Main,
+        ioDispatcher = Dispatchers.IO,
     )
 
     override fun start(activity: Activity) = awaitInit {
@@ -459,16 +467,11 @@ class RetenoImpl(
         }
         /*@formatter:off*/ Logger.i(TAG, "initializeIamView(): ", "interactionId = [" , interactionId , "]")
         /*@formatter:on*/
-        syncScope.launch {
-            withContext(Dispatchers.IO) {
-                contactController.awaitDeviceId()
-            }
-            try {
-                iamView.initialize(interactionId)
-            } catch (ex: Throwable) {
-                /*@formatter:off*/ Logger.e(TAG, "initializeIamView(): interactionId = [$interactionId]", ex)
+        try {
+            iamView.initialize(interactionId)
+        } catch (ex: Throwable) {
+            /*@formatter:off*/ Logger.e(TAG, "initializeIamView(): interactionId = [$interactionId]", ex)
             /*@formatter:on*/
-            }
         }
     }
 
@@ -494,7 +497,7 @@ class RetenoImpl(
 
     private inline fun awaitInit(crossinline operation: () -> Unit) {
         if (initDeferred?.isCompleted == false) {
-            syncScope.launch(Dispatchers.Main) {
+            syncScope.launch(mainDispatcher) {
                 initDeferred?.await()
                 operation()
             }
@@ -507,23 +510,23 @@ class RetenoImpl(
         if (isOsVersionSupported()) {
             activityHelper.enableLifecycleCallbacks(this@RetenoImpl)
             if (delayInitialization) {
-                initDeferred = syncScope.async {
+                initDeferred = syncScope.async(ioDispatcher) {
                     val result = suspendCoroutine {
                         initContinuation = it
                     }
-                    withContext(Dispatchers.Main) {
+                    withContext(mainDispatcher) {
                         start(result)
                     }
                 }
             } else {
-                initDeferred = syncScope.async {
+                initDeferred = syncScope.async(ioDispatcher) {
                     start(config)
                 }
             }
         }
     }
 
-    private suspend fun start(config: RetenoConfig) = withContext(Dispatchers.Main) {
+    private suspend fun start(config: RetenoConfig) = withContext(mainDispatcher) {
         configProvider.setConfig(config)
         ProcessLifecycleOwner.get().lifecycle.addObserver(appLifecycleController)
         clearOldData()
