@@ -1,5 +1,6 @@
 package com.reteno.core.base.robolectric
 
+import androidx.annotation.VisibleForTesting
 import androidx.test.core.app.ApplicationProvider
 import com.reteno.core.RetenoConfig
 import com.reteno.core.RetenoImpl
@@ -7,8 +8,12 @@ import com.reteno.core.data.local.database.util.*
 import io.mockk.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import org.junit.After
 import org.junit.Before
@@ -62,11 +67,14 @@ abstract class BaseRobolectricTest {
         return RetenoImpl(
             application = application,
             config = RetenoConfig(),
-            syncScope = CoroutineScope(StandardTestDispatcher(testScheduler)),
+            mainDispatcher = StandardTestDispatcher(testScheduler),
+            ioDispatcher = StandardTestDispatcher(testScheduler),
             delayInitialization = false
         ).also {
             application.retenoMock = it
-            advanceUntilIdle()
+            while (!it.isInitialized) {
+                advanceUntilIdle()
+            }
         }
     }
 }

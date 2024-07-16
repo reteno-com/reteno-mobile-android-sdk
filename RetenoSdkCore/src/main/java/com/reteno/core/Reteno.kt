@@ -109,6 +109,28 @@ interface Reteno {
     fun pauseInAppMessages(isPaused: Boolean)
 
     /**
+     * Pause or unpause In-App messages showing during app runtime.
+     *
+     * This allows to delay messages from push to be displayed after some initial app logic, for example
+     * splash screen or login.
+     *
+     * Last InApp from push notification will be saved and displayed after [pausePushInAppMessages] will be called
+     * again with false argument
+     *
+     * @param isPaused - true to pause, false to unpause
+     */
+    fun pausePushInAppMessages(isPaused: Boolean)
+
+    /**
+     * Change logic of push In-App messages in paused state
+     * Default state is [InAppPauseBehaviour.POSTPONE_IN_APPS]
+     *
+     * @param behaviour - new behaviour
+     * @see InAppPauseBehaviour for detailed explanation
+     */
+    fun setPushInAppMessagesPauseBehaviour(behaviour: InAppPauseBehaviour)
+
+    /**
      * Add a callback to callbacks each time In-App message is displayed.
      *
      * @param inAppLifecycleCallback pass an implementation of [InAppLifecycleCallback] interface

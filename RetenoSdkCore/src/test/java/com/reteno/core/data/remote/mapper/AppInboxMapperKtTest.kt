@@ -24,6 +24,7 @@ class AppInboxMapperKtTest : BaseUnitTest() {
         private const val IS_NEW_MESSAGE = true
         private const val TITLE = "TITLE"
         private const val CATEGORY = "CATEGORY"
+        private val CUSTOM_DATA = mapOf("custom_key" to "custom_value")
     }
     // endregion constants -------------------------------------------------------------------------
 
@@ -95,7 +96,8 @@ class AppInboxMapperKtTest : BaseUnitTest() {
         linkUrl = LINK_URL,
         isNewMessage = IS_NEW_MESSAGE,
         title = TITLE,
-        category = CATEGORY
+        category = CATEGORY,
+        customData = CUSTOM_DATA
     )
 
     private fun getAppInboxMessageDomain() = AppInboxMessage(
@@ -106,7 +108,8 @@ class AppInboxMapperKtTest : BaseUnitTest() {
         linkUrl = LINK_URL,
         isNewMessage = IS_NEW_MESSAGE,
         title = TITLE,
-        category = CATEGORY
+        category = CATEGORY,
+        customData = CUSTOM_DATA
     )
     // endregion helper methods --------------------------------------------------------------------
 }
