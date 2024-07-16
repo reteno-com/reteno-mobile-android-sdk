@@ -313,7 +313,7 @@ class RetenoImpl(
         }
     }
 
-    override fun updatePushPermissionStatus() {
+    override fun updatePushPermissionStatus() = awaitInit {
         val intent =
             Intent(BROADCAST_ACTION_PUSH_PERMISSION_CHANGED).setFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES)
         val infoList = application.queryBroadcastReceivers(intent)
@@ -325,11 +325,19 @@ class RetenoImpl(
         }
     }
 
-    override fun pauseInAppMessages(isPaused: Boolean) {
+    override fun pauseInAppMessages(isPaused: Boolean) = awaitInit {
         iamController.pauseInAppMessages(isPaused)
     }
 
-    override fun setInAppLifecycleCallback(inAppLifecycleCallback: InAppLifecycleCallback?) {
+    override fun pausePushInAppMessages(isPaused: Boolean) = awaitInit {
+        iamView.pauseIncomingPushInApps(isPaused)
+    }
+
+    override fun setPushInAppMessagesPauseBehaviour(behaviour: InAppPauseBehaviour) = awaitInit {
+        iamView.setPauseBehaviour(behaviour)
+    }
+
+    override fun setInAppLifecycleCallback(inAppLifecycleCallback: InAppLifecycleCallback?) = awaitInit {
         iamView.setInAppLifecycleCallback(inAppLifecycleCallback)
     }
 
@@ -362,7 +370,10 @@ class RetenoImpl(
     }
 
     override fun initWith(config: RetenoConfig) {
-        if (initContinuation == null) throw IllegalStateException("RetenoSDK was already initialized")
+        if (initContinuation == null) {
+            Logger.i(TAG, "RetenoSDK was already initialized, skipping")
+            return
+        }
         initContinuation?.resume(config)
         initContinuation = null
     }
@@ -448,11 +459,16 @@ class RetenoImpl(
         }
         /*@formatter:off*/ Logger.i(TAG, "initializeIamView(): ", "interactionId = [" , interactionId , "]")
         /*@formatter:on*/
-        try {
-            iamView.initialize(interactionId)
-        } catch (ex: Throwable) {
-            /*@formatter:off*/ Logger.e(TAG, "initializeIamView(): interactionId = [$interactionId]", ex)
+        syncScope.launch {
+            withContext(Dispatchers.IO) {
+                contactController.awaitDeviceId()
+            }
+            try {
+                iamView.initialize(interactionId)
+            } catch (ex: Throwable) {
+                /*@formatter:off*/ Logger.e(TAG, "initializeIamView(): interactionId = [$interactionId]", ex)
             /*@formatter:on*/
+            }
         }
     }
 
@@ -500,14 +516,14 @@ class RetenoImpl(
                     }
                 }
             } else {
-                syncScope.launch {
+                initDeferred = syncScope.async {
                     start(config)
                 }
             }
         }
     }
 
-    private suspend fun start(config: RetenoConfig) {
+    private suspend fun start(config: RetenoConfig) = withContext(Dispatchers.Main) {
         configProvider.setConfig(config)
         ProcessLifecycleOwner.get().lifecycle.addObserver(appLifecycleController)
         clearOldData()
