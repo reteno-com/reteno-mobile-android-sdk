@@ -1,6 +1,7 @@
 package com.reteno.sample.fragments.inbox;
 
 import android.view.LayoutInflater;
+import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
@@ -65,12 +66,24 @@ public class InboxMessageAdapter extends ListAdapter<AppInboxMessage, InboxMessa
                 });
             }
 
+            int visibility;
+            if (inbox.getImageUrl() != null && !inbox.getImageUrl().isEmpty()) {
+                visibility = View.VISIBLE;
+            } else {
+                visibility = View.GONE;
+            }
+            binding.imageView.setVisibility(visibility);
             if (inbox.getImageUrl() != null && !inbox.getImageUrl().isEmpty()) {
                 Glide.with(binding.imageView)
                         .load(inbox.getImageUrl())
                         .into(binding.imageView);
             }
 
+            String customData = "empty";
+            if (inbox.getCustomData() != null && !inbox.getCustomData().isEmpty()) {
+                customData = inbox.getCustomData().toString();
+            }
+            binding.tvCustomData.setText(customData);
         }
     }
 

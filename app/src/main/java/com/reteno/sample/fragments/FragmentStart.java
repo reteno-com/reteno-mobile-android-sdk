@@ -132,15 +132,25 @@ public class FragmentStart extends BaseFragment {
 
             }
         });
+
+        binding.spinnerPushPauseBehaviour.setAdapter(new ArrayAdapter<>(getContext(), android.R.layout.simple_spinner_item, InAppPauseBehaviour.values()));
+        binding.spinnerPushPauseBehaviour.setSelection(InAppPauseBehaviour.POSTPONE_IN_APPS.ordinal());
+        binding.spinnerPushPauseBehaviour.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
+                getReteno().setPushInAppMessagesPauseBehaviour(InAppPauseBehaviour.values()[i]);
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> adapterView) {
+
+            }
+        });
     }
 
     private void initInAppPausingSwitcher() {
-        binding.swInAppsPause.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                getReteno().pauseInAppMessages(isChecked);
-            }
-        });
+        binding.swInAppsPause.setOnCheckedChangeListener((buttonView, isChecked) -> getReteno().pauseInAppMessages(isChecked));
+        binding.swPushInAppsPause.setOnCheckedChangeListener((buttonView, isChecked) -> getReteno().pausePushInAppMessages(isChecked));
     }
 
     private void awaitInit() {
