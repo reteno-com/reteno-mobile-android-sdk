@@ -70,6 +70,15 @@
             app:layout_constraintTop_toBottomOf="@+id/imageView"
             tools:text="Content" />
 
+        <TextView
+            android:id="@+id/tvCustomData"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/tvContent"
+            tools:text="Content" />
+
         <Button
             android:id="@+id/btnMarkAsOpened"
             android:layout_width="match_parent"
@@ -77,7 +86,7 @@
             android:text="Mark as opened"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/tvContent" />
+            app:layout_constraintTop_toBottomOf="@+id/tvCustomData" />
 
 
     </androidx.constraintlayout.widget.ConstraintLayout>

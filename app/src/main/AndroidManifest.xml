@@ -22,11 +22,6 @@
             android:name=".MainActivity"
             android:exported="true"
             android:launchMode="singleTop">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
 
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
@@ -55,7 +50,16 @@
 
         <activity
             android:name=".SecondActivity"
-            android:exported="true" />
+            android:exported="false"/>
+
+        <activity android:name=".SplashActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
 
         <!-- TODO add this to listen to PushReceived events -->
         <receiver
@@ -93,7 +97,7 @@
             </intent-filter>
         </receiver>
 
-        <!--receiver
+        <receiver
             android:name="com.reteno.sample.CustomReceiverInAppData"
             android:enabled="true"
             android:exported="false" >
@@ -101,7 +105,7 @@
             <intent-filter>
                 <action android:name="com.reteno.custom-inapp-data" />
             </intent-filter>
-        </receiver-->
+        </receiver>
 
         <!-- TODO add this to set up your notification icon -->
         <meta-data

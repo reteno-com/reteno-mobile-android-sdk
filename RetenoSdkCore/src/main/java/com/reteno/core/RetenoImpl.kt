@@ -535,6 +535,7 @@ class RetenoImpl(
             contactController.checkIfDeviceRegistered()
             sendAppResumeBroadcast()
             pauseInAppMessages(config.isPausedInAppMessages)
+            pausePushInAppMessages(config.isPausedPushInAppMessages)
             fetchInAppMessages()
         } catch (t: Throwable) {
             /*@formatter:off*/ Logger.e(TAG, "init(): ", t)
