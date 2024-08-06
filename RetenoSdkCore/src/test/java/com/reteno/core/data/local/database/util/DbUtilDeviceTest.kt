@@ -15,6 +15,8 @@ import com.reteno.core.util.Util
 import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -98,6 +100,7 @@ class DbUtilDeviceTest : BaseRobolectricTest() {
             languageCode = LANGUAGE_CODE,
             timeZone = TIME_ZONE,
             advertisingId = ADVERTISING_ID,
+            isSynchronizedWithBackend = SYNCHRONIZED_WITH_BACKEND,
             phone = PHONE,
             email = EMAIL
         )
@@ -114,6 +117,7 @@ class DbUtilDeviceTest : BaseRobolectricTest() {
             DeviceSchema.COLUMN_LANGUAGE_CODE,
             DeviceSchema.COLUMN_TIMEZONE,
             DeviceSchema.COLUMN_ADVERTISING_ID,
+            DeviceSchema.COLUMN_SYNCHRONIZED_WITH_BACKEND,
             DeviceSchema.COLUMN_EMAIL,
             DeviceSchema.COLUMN_PHONE
         )
@@ -135,6 +139,7 @@ class DbUtilDeviceTest : BaseRobolectricTest() {
         assertEquals(LANGUAGE_CODE, contentValues.get(DeviceSchema.COLUMN_LANGUAGE_CODE))
         assertEquals(TIME_ZONE, contentValues.get(DeviceSchema.COLUMN_TIMEZONE))
         assertEquals(ADVERTISING_ID, contentValues.get(DeviceSchema.COLUMN_ADVERTISING_ID))
+        assertEquals(SYNCHRONIZED_WITH_BACKEND.toString(), contentValues.get(DeviceSchema.COLUMN_SYNCHRONIZED_WITH_BACKEND))
         assertEquals(EMAIL, contentValues.get(DeviceSchema.COLUMN_EMAIL))
         assertEquals(PHONE, contentValues.get(DeviceSchema.COLUMN_PHONE))
     }
@@ -171,8 +176,10 @@ class DbUtilDeviceTest : BaseRobolectricTest() {
         assertEquals(expectedDevice, actualDevice)
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
-    fun givenCursorWithDeviceIdOnly_whenGetDevice_thenDeviceReturned() {
+    fun givenCursorWithDeviceIdOnly_whenGetDevice_thenDeviceReturned() = runTest {
+        createRetenoAndAdvanceInit()
         // Given
         mockDeviceDeviceIdOnly()
 
