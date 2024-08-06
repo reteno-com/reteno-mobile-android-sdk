@@ -83,6 +83,13 @@ public class FragmentStart extends BaseFragment {
     }
 
     @Override
+    public void onDestroyView() {
+        binding.recycler.setAdapter(null);
+        binding = null;
+        super.onDestroyView();
+    }
+
+    @Override
     public void onPause() {
         super.onPause();
         sessionListener.stop();

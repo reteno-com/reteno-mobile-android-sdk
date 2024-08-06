@@ -103,7 +103,9 @@ class ContactControllerTest : BaseUnitTest() {
             deviceId: String,
             externalUserId: String?,
             pushToken: String?,
-            pushSubscribed: Boolean? = null
+            pushSubscribed: Boolean? = null,
+            email: String? = null,
+            phone: String? = null
         ) = Device(
             deviceId = deviceId,
             externalUserId = externalUserId,
@@ -116,7 +118,9 @@ class ContactControllerTest : BaseUnitTest() {
             appVersion = null,
             languageCode = null,
             timeZone = null,
-            advertisingId = null
+            advertisingId = null,
+            email = email,
+            phone = phone
         )
     }
     // endregion constants -------------------------------------------------------------------------
@@ -169,7 +173,12 @@ class ContactControllerTest : BaseUnitTest() {
 
         // Then
         val expectedDevice =
-            Device.createDevice(DEVICE_ID_ANDROID, EXTERNAL_DEVICE_ID, FCM_TOKEN_NEW, configRepository.isNotificationsEnabled())
+            Device.createDevice(
+                DEVICE_ID_ANDROID,
+                EXTERNAL_DEVICE_ID,
+                FCM_TOKEN_NEW,
+                configRepository.isNotificationsEnabled()
+            )
         verify(exactly = 1) { contactRepository.saveDeviceData(eq(expectedDevice), eq(false)) }
     }
 
@@ -226,7 +235,12 @@ class ContactControllerTest : BaseUnitTest() {
 
         // Then
         verify(exactly = 1) { configRepository.saveFcmToken(FCM_TOKEN_NEW) }
-        val expectedDevice = Device.createDevice(DEVICE_ID_ANDROID, null, FCM_TOKEN_NEW, configRepository.isNotificationsEnabled())
+        val expectedDevice = Device.createDevice(
+            DEVICE_ID_ANDROID,
+            null,
+            FCM_TOKEN_NEW,
+            configRepository.isNotificationsEnabled()
+        )
         verify(exactly = 1) { contactRepository.saveDeviceData(expectedDevice, false) }
     }
 
@@ -365,38 +379,45 @@ class ContactControllerTest : BaseUnitTest() {
     }
 
     @Test
-    fun givenIsDeviceRegisteredFalse_whenCheckIfDeviceRegistered_thenSaveDeviceDataCalled() = runTest {
-        // Given
-        every { configRepository.isDeviceRegistered() } returns false
-        every { configRepository.getFcmToken(any()) } answers {
-            val callback = arg<((String) -> Unit)>(0)
-            callback.invoke(FCM_TOKEN_NEW)
+    fun givenIsDeviceRegisteredFalse_whenCheckIfDeviceRegistered_thenSaveDeviceDataCalled() =
+        runTest {
+            // Given
+            every { configRepository.isDeviceRegistered() } returns false
+            every { configRepository.getFcmToken(any()) } answers {
+                val callback = arg<((String) -> Unit)>(0)
+                callback.invoke(FCM_TOKEN_NEW)
+            }
+            every { configRepository.getDeviceId() } returns DeviceId(
+                DEVICE_ID_ANDROID,
+                EXTERNAL_DEVICE_ID
+            )
+            val expectedDevice =
+                createDevice(
+                    DEVICE_ID_ANDROID,
+                    EXTERNAL_DEVICE_ID,
+                    FCM_TOKEN_NEW,
+                    configRepository.isNotificationsEnabled()
+                )
+
+            // When
+            SUT.checkIfDeviceRegistered()
+
+            // Then
+            verify(exactly = 1) { contactRepository.saveDeviceData(expectedDevice, false) }
         }
-        every { configRepository.getDeviceId() } returns DeviceId(
-            DEVICE_ID_ANDROID,
-            EXTERNAL_DEVICE_ID
-        )
-        val expectedDevice =
-            createDevice(DEVICE_ID_ANDROID, EXTERNAL_DEVICE_ID, FCM_TOKEN_NEW, configRepository.isNotificationsEnabled())
-
-        // When
-        SUT.checkIfDeviceRegistered()
-
-        // Then
-        verify(exactly = 1) { contactRepository.saveDeviceData(expectedDevice, false) }
-    }
 
     @Test
-    fun givenIsDeviceRegisteredTrue_whenCheckIfDeviceRegistered_thenSaveDeviceDataNotCalled() = runTest {
-        // Given
-        every { configRepository.isDeviceRegistered() } returns true
+    fun givenIsDeviceRegisteredTrue_whenCheckIfDeviceRegistered_thenSaveDeviceDataNotCalled() =
+        runTest {
+            // Given
+            every { configRepository.isDeviceRegistered() } returns true
 
-        // When
-        SUT.checkIfDeviceRegistered()
+            // When
+            SUT.checkIfDeviceRegistered()
 
-        // Then
-        verify(exactly = 0) { contactRepository.saveDeviceData(any()) }
-    }
+            // Then
+            verify(exactly = 0) { contactRepository.saveDeviceData(any()) }
+        }
 
     @Test
     fun givenValidAnonymousUserAttributes_whenSetAnonymousUserAttributes_thenRepositorySaveAnonymousUserData() {

@@ -11,4 +11,5 @@ interface ContactRepository {
     fun pushUserData()
 
     fun deleteSynchedDevices()
+    fun getLatestDevice(): Device?
 }
