@@ -83,6 +83,8 @@ class RetenoImpl(
     @Volatile
     private var initDeferred: Deferred<Unit>? = null
 
+    private var isStarted: Boolean = false
+
     val isInitialized: Boolean
         get() = initDeferred?.isCompleted == true || initDeferred == null
 
@@ -120,6 +122,8 @@ class RetenoImpl(
         }
         /*@formatter:off*/ Logger.i(TAG, "start(): ", "activity = [", activity, "]")
         /*@formatter:on*/
+        isStarted = true
+        fetchInAppMessages()
     }
 
     override fun resume(activity: Activity) = awaitInit {
@@ -159,6 +163,7 @@ class RetenoImpl(
         if (!isOsVersionSupported()) {
             return@awaitInit
         }
+        isStarted = false
         /*@formatter:off*/ Logger.i(TAG, "stop(): ", "activity = [", activity, "]")
         /*@formatter:on*/
     }
@@ -212,9 +217,11 @@ class RetenoImpl(
 
         try {
             contactController.setExternalIdAndUserData(externalUserId, user)
-            syncScope.launch {
-                delay(5000L) //There is a requirement to refresh segmentation in 5 sec after user change his attributes
-                iamController.refreshSegmentation()
+            if (isStarted) {
+                syncScope.launch {
+                    delay(5000L) //There is a requirement to refresh segmentation in 5 sec after user change his attributes
+                    iamController.refreshSegmentation()
+                }
             }
         } catch (ex: Throwable) {
             /*@formatter:off*/ Logger.e(TAG, "setUserAttributes(): externalUserId = [$externalUserId], user = [$user]", ex)
@@ -536,7 +543,6 @@ class RetenoImpl(
             sendAppResumeBroadcast()
             pauseInAppMessages(config.isPausedInAppMessages)
             pausePushInAppMessages(config.isPausedPushInAppMessages)
-            fetchInAppMessages()
         } catch (t: Throwable) {
             /*@formatter:off*/ Logger.e(TAG, "init(): ", t)
             /*@formatter:on*/
