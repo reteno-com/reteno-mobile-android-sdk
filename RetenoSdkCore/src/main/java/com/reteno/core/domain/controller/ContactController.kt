@@ -160,7 +160,7 @@ class ContactController(
     }
 
     fun setExternalIdAndUserData(externalUserId: String, user: User?) {
-        setExternalUserId(externalUserId)
+        setExternalUserId(externalUserId, pushContact = false)
         setUserData(user)
         configRepository.getFcmToken { token ->
             onNewContact(
