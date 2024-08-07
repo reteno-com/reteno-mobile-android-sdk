@@ -1,6 +1,7 @@
 package com.reteno.core.domain.controller
 
 import androidx.annotation.VisibleForTesting
+import com.reteno.core.RetenoImpl
 import com.reteno.core.data.local.mappers.toDomain
 import com.reteno.core.data.remote.model.iam.displayrules.frequency.FrequencyRuleValidator
 import com.reteno.core.data.remote.model.iam.displayrules.schedule.ScheduleRuleValidator
@@ -19,6 +20,7 @@ import com.reteno.core.lifecycle.RetenoSessionHandler
 import com.reteno.core.util.Logger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.TimeoutCancellationException
@@ -35,6 +37,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import java.util.concurrent.atomic.AtomicBoolean
 
+@OptIn(ExperimentalCoroutinesApi::class)
 internal class IamControllerImpl(
     private val iamRepository: IamRepository,
     eventController: EventController,
@@ -56,7 +59,7 @@ internal class IamControllerImpl(
     private var htmlJob: Job? = null
 
     private val _inAppMessage = MutableSharedFlow<InAppMessage>(
-        extraBufferCapacity = 10,
+        extraBufferCapacity = 2,
         onBufferOverflow = BufferOverflow.DROP_OLDEST
     )
     private val postponedNotifications = mutableListOf<InAppMessage>()
@@ -166,20 +169,24 @@ internal class IamControllerImpl(
                 iamRepository.saveInAppMessages(messageListModel)
                 sortMessages(inAppMessages)
             } catch (e: Exception) {
-                e.printStackTrace()
+                Logger.e(TAG, "getInAppMessages():", e)
             }
         }
     }
 
     override fun refreshSegmentation() {
         scope.launch {
-            val messageListModel = iamRepository.getInAppMessages()
-            val inAppMessages = messageListModel.messages
+            try {
+                val messageListModel = iamRepository.getInAppMessages()
+                val inAppMessages = messageListModel.messages
 
-            updateSegmentStatuses(
-                inAppMessages,
-                updateCacheOnSuccess = messageListModel.isFromRemote.not()
-            )
+                updateSegmentStatuses(
+                    inAppMessages,
+                    updateCacheOnSuccess = messageListModel.isFromRemote.not()
+                )
+            }catch (e: Exception) {
+                Logger.e(TAG, "refreshSegmentation():", e)
+            }
         }
     }
 

@@ -11,6 +11,7 @@ import com.reteno.core.data.remote.OperationQueue
 import com.reteno.core.data.remote.PushOperationQueue
 import com.reteno.core.data.remote.api.ApiClient
 import com.reteno.core.data.remote.api.ApiContract
+import com.reteno.core.data.remote.mapper.toDevice
 import com.reteno.core.data.remote.mapper.toJson
 import com.reteno.core.data.remote.mapper.toRemote
 import com.reteno.core.data.remote.model.device.DeviceRemote
@@ -37,6 +38,16 @@ internal class ContactRepositoryImpl(
         } else {
             OperationQueue.addOperation { onSaveDeviceData(device) }
         }
+    }
+
+    override fun getLatestDevice(): Device? {
+        val devices = databaseManagerDevice.getDevices()
+        val latestDevice = devices.filter { it.isSynchronizedWithBackend != BooleanDb.TRUE  }
+            .maxByOrNull {
+                it.createdAt
+            }
+
+        return latestDevice?.toDevice()
     }
 
     override fun saveUserData(user: User, toParallelWork: Boolean) {

@@ -27,7 +27,7 @@ class ContactController(
         return configRepository.awaitForDeviceId().id
     }
 
-    fun setExternalUserId(id: String?) {
+    fun setExternalUserId(id: String?, pushContact: Boolean = true): Boolean {
         /*@formatter:off*/ Logger.i(TAG, "setExternalUserId(): ", "id = [" , id , "]")
         /*@formatter:on*/
 
@@ -35,21 +35,27 @@ class ContactController(
         if (oldDeviceId.externalId != id) {
             isDeviceSentThisSession = true
             configRepository.setExternalUserId(id)
-            configRepository.getFcmToken {
-                onNewContact(it, toParallelWork = false)
+            if (pushContact) {
+                configRepository.getFcmToken {
+                    onNewContact(it, toParallelWork = false)
+                }
             }
+            return true
         }
+        return false
     }
 
-    fun setUserData(user: User?) {
+    fun setUserData(user: User?): Boolean {
         /*@formatter:off*/ Logger.i(TAG, "setUserData(): ", "user = [" , user , "]")
         /*@formatter:on*/
 
         user?.let { userTmp ->
             Validator.validateUser(userTmp)?.let {
                 contactRepository.saveUserData(it, toParallelWork = false)
+                return true
             } ?: Logger.captureMessage("ContactController.setUserData(): user = [$userTmp]")
         }
+        return false
     }
 
     fun setAnonymousUserAttributes(attributes: UserAttributesAnonymous) {
@@ -129,6 +135,8 @@ class ContactController(
 
     private fun onNewContact(
         fcmToken: String,
+        email: String? = null,
+        phone: String? = null,
         notificationsEnabled: Boolean? = null,
         toParallelWork: Boolean = true
     ) {
@@ -138,10 +146,13 @@ class ContactController(
             /*@formatter:off*/ Logger.i(TAG, "onNewContact(): ", "token AVAILABLE")
             /*@formatter:on*/
             val deviceId = configRepository.getDeviceId()
+            val latestDevice = contactRepository.getLatestDevice()
             val contact = Device.createDevice(
                 deviceId = deviceId.id,
                 externalUserId = deviceId.externalId,
                 pushToken = fcmToken,
+                email = email ?: latestDevice?.email,
+                phone = phone ?: latestDevice?.phone,
                 pushSubscribed = notificationsEnabled ?: configRepository.isNotificationsEnabled()
             )
             contactRepository.saveDeviceData(contact, toParallelWork)
@@ -149,8 +160,16 @@ class ContactController(
     }
 
     fun setExternalIdAndUserData(externalUserId: String, user: User?) {
-        setExternalUserId(externalUserId)
+        setExternalUserId(externalUserId, pushContact = false)
         setUserData(user)
+        configRepository.getFcmToken { token ->
+            onNewContact(
+                token,
+                email = user?.userAttributes?.email,
+                phone = user?.userAttributes?.phone,
+                toParallelWork = false
+            )
+        }
     }
 
     fun saveDefaultNotificationChannel(channel: String) {

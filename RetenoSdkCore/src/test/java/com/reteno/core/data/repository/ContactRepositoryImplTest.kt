@@ -439,7 +439,9 @@ class ContactRepositoryImplTest : BaseRobolectricTest() {
         appVersion = null,
         languageCode = null,
         timeZone = null,
-        advertisingId = null
+        advertisingId = null,
+        email = null,
+        phone = null
     )
 
     private fun getDeviceDb() = DeviceDb(
@@ -454,7 +456,9 @@ class ContactRepositoryImplTest : BaseRobolectricTest() {
         appVersion = null,
         languageCode = null,
         timeZone = null,
-        advertisingId = null
+        advertisingId = null,
+        email = null,
+        phone = null
     )
     // endregion helper methods --------------------------------------------------------------------
 }
