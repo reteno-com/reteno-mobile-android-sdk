@@ -164,7 +164,6 @@ class ContactControllerTest : BaseUnitTest() {
     @Test
     fun givenPushTokenAvailable_whenSetExternalDeviceId_thenContactSent() {
         // Given
-        every { contactRepository.getLatestDevice() } returns null
         every { configRepository.getFcmToken(any()) } answers {
             val callback = arg<((String) -> Unit)>(0)
             callback.invoke(FCM_TOKEN_NEW)
@@ -234,7 +233,6 @@ class ContactControllerTest : BaseUnitTest() {
             val callback = arg<((String) -> Unit)>(0)
             callback.invoke(FCM_TOKEN_NEW + "different")
         }
-        every { contactRepository.getLatestDevice() } returns null
         every { configRepository.getDeviceId() } returns DeviceId(DEVICE_ID_ANDROID, null)
 
         // When
@@ -312,7 +310,6 @@ class ContactControllerTest : BaseUnitTest() {
         // Given
         val pushSubscribed = true
         every { configRepository.isNotificationsEnabled() } returns false
-        every { contactRepository.getLatestDevice() } returns null
         every { configRepository.getFcmToken(any()) } answers {
             val callback = arg<((String) -> Unit)>(0)
             callback.invoke(FCM_TOKEN_NEW)
@@ -365,7 +362,6 @@ class ContactControllerTest : BaseUnitTest() {
     fun givenNotificationsEnabled_whenDisableNotifications_thenDeviceSaved() {
         // Given
         val pushSubscribed = false
-        every { contactRepository.getLatestDevice() } returns null
         every { configRepository.isNotificationsEnabled() } returns true
         every { configRepository.getFcmToken(any()) } answers {
             val callback = arg<((String) -> Unit)>(0)
@@ -391,7 +387,6 @@ class ContactControllerTest : BaseUnitTest() {
     fun givenIsDeviceRegisteredFalse_whenCheckIfDeviceRegistered_thenSaveDeviceDataCalled() =
         runTest {
             // Given
-            every { contactRepository.getLatestDevice() } returns null
             every { configRepository.isDeviceRegistered() } returns false
             every { configRepository.getFcmToken(any()) } answers {
                 val callback = arg<((String) -> Unit)>(0)

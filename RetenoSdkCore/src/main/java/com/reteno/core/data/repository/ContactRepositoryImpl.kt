@@ -40,16 +40,6 @@ internal class ContactRepositoryImpl(
         }
     }
 
-    override fun getLatestDevice(): Device? {
-        val devices = databaseManagerDevice.getDevices()
-        val latestDevice = devices.filter { it.isSynchronizedWithBackend == BooleanDb.TRUE  }
-            .maxByOrNull {
-                it.createdAt
-            }
-
-        return latestDevice?.toDevice()
-    }
-
     override fun saveUserData(user: User, toParallelWork: Boolean) {
         /*@formatter:off*/ Logger.i(TAG, "saveUserData(): ", "user = [" , user , "]")
         /*@formatter:on*/
