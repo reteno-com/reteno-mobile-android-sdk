@@ -21,7 +21,9 @@ data class Device(
     val appVersion: String?,
     val languageCode: String?,
     val timeZone: String?,
-    val advertisingId: String?
+    val advertisingId: String?,
+    val email: String?,
+    val phone: String?
 ) {
     companion object {
         private val TAG: String = Device::class.java.simpleName
@@ -32,7 +34,9 @@ data class Device(
             externalUserId: String? = null,
             pushToken: String? = null,
             pushSubscribed: Boolean? = null,
-            advertisingId: String? = null
+            advertisingId: String? = null,
+            email: String? = null,
+            phone: String? = null
         ): Device {
             val device = Device(
                 deviceId = deviceId,
@@ -46,7 +50,9 @@ data class Device(
                 appVersion = DeviceInfo.fetchAppVersion(),
                 languageCode = fetchLanguageCode(),
                 timeZone = fetchTimeZone(),
-                advertisingId = advertisingId
+                advertisingId = advertisingId,
+                email = email,
+                phone = phone
             )
             /*@formatter:off*/ Logger.i(TAG, "createDevice(): ", "deviceId = [" , deviceId , "], externalUserId = [" , externalUserId , "], pushToken = [" , pushToken , "], advertisingId = [" , advertisingId , "]")
             /*@formatter:on*/

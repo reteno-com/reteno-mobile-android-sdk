@@ -283,6 +283,51 @@ internal class SharedPrefsManager {
             ?.apply()
     }
 
+    fun saveExternalUserId(id: String?) {
+        /*@formatter:off*/ Logger.i(TAG, "saveExternalDeviceId(): ", "id = [", id, "]")
+        /*@formatter:on*/
+        sharedPreferences.edit()
+            ?.putString(PREF_KEY_EXTERNAL_DEVICE_ID, id)
+            ?.apply()
+    }
+
+    fun getExternalUserId(): String? {
+        val result = sharedPreferences.getString(PREF_KEY_EXTERNAL_DEVICE_ID, "")
+        /*@formatter:off*/ Logger.i(TAG, "getExternalDeviceId(): ", "result = ", result)
+        /*@formatter:on*/
+        return result
+    }
+
+    fun saveDevicePhone(phone: String?) {
+        /*@formatter:off*/ Logger.i(TAG, "saveDevicePhone(): ", "saveDevicePhone = [", phone, "]")
+        /*@formatter:on*/
+        sharedPreferences.edit()
+            ?.putString(PREF_KEY_DEVICE_PHONE, phone)
+            ?.apply()
+    }
+
+    fun getPhone(): String? {
+        val result = sharedPreferences.getString(PREF_KEY_DEVICE_PHONE, "")
+        /*@formatter:off*/ Logger.i(TAG, "getPhone(): ", "result = ", result)
+        /*@formatter:on*/
+        return result
+    }
+
+    fun saveDeviceEmail(email: String?) {
+        /*@formatter:off*/ Logger.i(TAG, "saveDeviceEmail(): ", "saveDevicePhone = [", email, "]")
+        /*@formatter:on*/
+        sharedPreferences.edit()
+            ?.putString(PREF_KEY_DEVICE_EMAIL, email)
+            ?.apply()
+    }
+
+    fun getEmail(): String? {
+        val result = sharedPreferences.getString(PREF_KEY_DEVICE_EMAIL, "")
+        /*@formatter:off*/ Logger.i(TAG, "getEmail(): ", "result = ", result)
+        /*@formatter:on*/
+        return result
+    }
+
     companion object {
         private val TAG: String = SharedPrefsManager::class.java.simpleName
 
@@ -305,5 +350,8 @@ internal class SharedPrefsManager {
         private const val PREF_KEY_APP_BUILD_NUMBER = "app_build_number"
         private const val PREF_KEY_APP_OPEN_COUNT = "open_count"
         private const val PREF_KEY_APP_BG_COUNT = "background_count"
+        private const val PREF_KEY_EXTERNAL_DEVICE_ID = "external_user_id"
+        private const val PREF_KEY_DEVICE_PHONE = "device_phone"
+        private const val PREF_KEY_DEVICE_EMAIL = "device_email"
     }
 }

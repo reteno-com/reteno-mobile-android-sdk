@@ -32,6 +32,8 @@ class DeviceMapperKtTest : BaseUnitTest() {
         private const val LANGUAGE_CODE = "valueLanguageCode"
         private const val TIME_ZONE = "valueTimeZone"
         private const val ADVERTISING_ID = "valueAdvertisingId"
+        private const val EMAIL = "valueEmail"
+        private const val PHONE = "valuePhone"
     }
     // endregion constants -------------------------------------------------------------------------
 
@@ -87,7 +89,9 @@ class DeviceMapperKtTest : BaseUnitTest() {
         appVersion = APP_VERSION,
         languageCode = LANGUAGE_CODE,
         timeZone = TIME_ZONE,
-        advertisingId = ADVERTISING_ID
+        advertisingId = ADVERTISING_ID,
+        email = EMAIL,
+        phone = PHONE
     )
 
     private fun getDeviceRemote() = DeviceRemote(
@@ -102,7 +106,9 @@ class DeviceMapperKtTest : BaseUnitTest() {
         appVersion = APP_VERSION,
         languageCode = LANGUAGE_CODE,
         timeZone = TIME_ZONE,
-        advertisingId = ADVERTISING_ID
+        advertisingId = ADVERTISING_ID,
+        phone = PHONE,
+        email = EMAIL
     )
     // endregion helper methods --------------------------------------------------------------------
 }

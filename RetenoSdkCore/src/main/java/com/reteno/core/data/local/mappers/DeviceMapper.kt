@@ -19,7 +19,9 @@ internal fun Device.toDb() = DeviceDb(
     appVersion = appVersion,
     languageCode = languageCode,
     timeZone = timeZone,
-    advertisingId = advertisingId
+    advertisingId = advertisingId,
+    email = email,
+    phone = phone
 )
 
 internal fun DeviceOS.toDb(): DeviceOsDb =

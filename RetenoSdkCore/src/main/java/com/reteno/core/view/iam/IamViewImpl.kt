@@ -109,7 +109,9 @@ internal class IamViewImpl(
     override fun pauseIncomingPushInApps(isPaused: Boolean) {
         if (pauseIncomingPushInApps.getAndSet(isPaused) && !isPaused) {
             lastPushInteractionId?.let {
-                initialize(it)
+                if (pauseBehaviour == InAppPauseBehaviour.POSTPONE_IN_APPS) {
+                    showIamPopupWindowOnceReady(DELAY_UI_ATTEMPTS)
+                }
                 lastPushInteractionId = null
             }
         }
@@ -125,6 +127,7 @@ internal class IamViewImpl(
     private fun onWidgetInitSuccess() {
         /*@formatter:off*/ Logger.i(TAG, "onWidgetInitSuccess(): ", "")
         /*@formatter:on*/
+        if (checkPauseState()) return
         showIamPopupWindowOnceReady(DELAY_UI_ATTEMPTS)
         inAppLifecycleCallback?.onDisplay(createInAppData())
         messageInstanceId?.let { instanceId ->
@@ -196,14 +199,11 @@ internal class IamViewImpl(
     override fun initialize(interactionId: String) {
         /*@formatter:off*/ Logger.i(TAG, "initialize(): ", "widgetId = [", interactionId, "]")
         /*@formatter:on*/
-        if (pauseIncomingPushInApps.get()) {
-            if (pauseBehaviour == InAppPauseBehaviour.POSTPONE_IN_APPS) {
-                lastPushInteractionId = interactionId
-            }
-            return
-        }
         try {
             try {
+                if (pauseIncomingPushInApps.get() && pauseBehaviour == InAppPauseBehaviour.SKIP_IN_APPS) {
+                    return
+                }
                 if (isViewShown.get()) {
                     teardown()
                 }
@@ -296,6 +296,14 @@ internal class IamViewImpl(
 
     override fun setInAppLifecycleCallback(inAppLifecycleCallback: InAppLifecycleCallback?) {
         this.inAppLifecycleCallback = inAppLifecycleCallback
+    }
+
+    private fun checkPauseState(): Boolean {
+        return pauseIncomingPushInApps.get().also {
+            if (it) {
+                lastPushInteractionId = interactionId
+            }
+        }
     }
 
     private fun showIamPopupWindowOnceReady(attempts: Int) {

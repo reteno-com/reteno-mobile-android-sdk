@@ -27,5 +27,9 @@ internal data class DeviceRemote(
     @SerializedName("timeZone")
     val timeZone: String?,
     @SerializedName("advertisingId")
-    val advertisingId: String?
+    val advertisingId: String?,
+    @SerializedName("phone")
+    val phone: String?,
+    @SerializedName("email")
+    val email: String?
 )

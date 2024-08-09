@@ -79,7 +79,7 @@ class ServiceLocator(
     private val deviceIdHelperProvider: DeviceIdHelperProvider =
         DeviceIdHelperProvider(sharedPrefsManagerProvider, configProvider)
     private val restConfigProvider: RestConfigProvider =
-        RestConfigProvider(deviceIdHelperProvider, configProvider)
+        RestConfigProvider(sharedPrefsManagerProvider, deviceIdHelperProvider, configProvider)
     private val restClientProvider: RestClientProvider =
         RestClientProvider(restConfigProvider, configProvider)
 
