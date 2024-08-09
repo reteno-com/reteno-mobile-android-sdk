@@ -17,12 +17,12 @@ import com.reteno.core.util.Logger
 internal class RetenoDatabaseManagerDeviceImpl(private val database: RetenoDatabase) :
     RetenoDatabaseManagerDevice {
 
-    private val contentValues = ContentValues()
 
     override fun insertDevice(device: DeviceDb) {
         /*@formatter:off*/ Logger.i(TAG, "insertDevice(): ", "device = [", device, "]")
         /*@formatter:on*/
 
+        val contentValues = ContentValues()
         contentValues.putDevice(device)
         database.insert(table = DeviceSchema.TABLE_NAME_DEVICE, contentValues = contentValues)
         contentValues.clear()

@@ -160,7 +160,7 @@ public class UserWriteFragment extends BaseDatabaseDialogFragment {
 
     private void sendUserData(String externalId, User user) {
         DeviceId deviceId = getDeviceId();
-        deviceId = deviceId.copy(DeviceIdInternal.INSTANCE.getIdInternal(deviceId), externalId, DeviceIdInternal.INSTANCE.getModeInternal(deviceId));
+        deviceId = deviceId.copy(DeviceIdInternal.INSTANCE.getIdInternal(deviceId), externalId, DeviceIdInternal.INSTANCE.getModeInternal(deviceId), user.getUserAttributes().getEmail(), user.getUserAttributes().getPhone());
 
         UserDb userDb = UserMappersKt.toDb(user, deviceId);
         databaseManager.insertUser(userDb);

@@ -25,6 +25,8 @@ fun ContentValues.putDevice(device: DeviceDb) {
     put(DeviceSchema.COLUMN_TIMEZONE, device.timeZone)
     put(DeviceSchema.COLUMN_ADVERTISING_ID, device.advertisingId)
     put(DeviceSchema.COLUMN_SYNCHRONIZED_WITH_BACKEND, device.isSynchronizedWithBackend?.toString())
+    put(DeviceSchema.COLUMN_EMAIL, device.email)
+    put(DeviceSchema.COLUMN_PHONE, device.phone)
 }
 
 fun Cursor.getDevice(): DeviceDb? {
@@ -45,6 +47,8 @@ fun Cursor.getDevice(): DeviceDb? {
     val advertisingId = getStringOrNull(getColumnIndex(DeviceSchema.COLUMN_ADVERTISING_ID))
     val synchronizedWithBackendString = getStringOrNull(getColumnIndex(DeviceSchema.COLUMN_SYNCHRONIZED_WITH_BACKEND))
     val synchronizedWithBackend: BooleanDb? = BooleanDb.fromString(synchronizedWithBackendString)
+    val phone = getStringOrNull(getColumnIndex(DeviceSchema.COLUMN_PHONE))
+    val email = getStringOrNull(getColumnIndex(DeviceSchema.COLUMN_EMAIL))
 
     return if (deviceId == null || createdAt == null) {
         null
@@ -64,7 +68,9 @@ fun Cursor.getDevice(): DeviceDb? {
             languageCode = languageCode,
             timeZone = timeZone,
             advertisingId = advertisingId,
-            isSynchronizedWithBackend = synchronizedWithBackend
+            isSynchronizedWithBackend = synchronizedWithBackend,
+            email = email,
+            phone = phone
         )
     }
 }

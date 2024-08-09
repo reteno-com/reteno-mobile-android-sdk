@@ -644,7 +644,7 @@ class RetenoImplTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun whenRetenoInit_thenGetInAppNotifications() = runTest {
+    fun whenRetenoStart_thenGetInAppNotifications() = runTest {
         //Given
         val application = mockk<Application>()
         mockQueryBroadcastReceivers(application)
@@ -653,9 +653,11 @@ class RetenoImplTest : BaseRobolectricTest() {
         every { scheduleController.clearOldData() } returns Unit
         every { application.sendBroadcast(any()) } returns Unit
         //When
-        createRetenoAndAdvanceInit()
+        val reteno = createRetenoAndAdvanceInit()
 
         advanceUntilIdle()
+
+        reteno.start(mockk())
 
         //Then
         verify(exactly = 1) { iamController.getInAppMessages() }

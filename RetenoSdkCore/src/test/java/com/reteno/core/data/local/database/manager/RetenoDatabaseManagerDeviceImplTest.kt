@@ -51,6 +51,8 @@ class RetenoDatabaseManagerDeviceImplTest : BaseRobolectricTest() {
         private const val LANGUAGE_CODE = "valueLanguageCode"
         private const val TIME_ZONE = "valueTimeZone"
         private const val ADVERTISING_ID = "valueAdvertisingId"
+        private const val EMAIL = "valueEmail"
+        private const val PHONE = "valuePhone"
 
         private const val COLUMN_INDEX_TIMESTAMP = 1
         private const val COLUMN_INDEX_DEVICE_ROW_ID = 2
@@ -65,6 +67,8 @@ class RetenoDatabaseManagerDeviceImplTest : BaseRobolectricTest() {
         private const val COLUMN_INDEX_LANGUAGE_CODE = 11
         private const val COLUMN_INDEX_TIME_ZONE = 12
         private const val COLUMN_INDEX_ADVERTISING_ID = 13
+        private const val COLUMN_INDEX_EMAIL = 14
+        private const val COLUMN_INDEX_PHONE = 15
 
 
         private val device1 = DeviceDb(
@@ -80,7 +84,9 @@ class RetenoDatabaseManagerDeviceImplTest : BaseRobolectricTest() {
             appVersion = null,
             languageCode = null,
             timeZone = null,
-            advertisingId = null
+            advertisingId = null,
+            email = null,
+            phone = null
         )
 
         private val device2 = DeviceDb(
@@ -96,7 +102,9 @@ class RetenoDatabaseManagerDeviceImplTest : BaseRobolectricTest() {
             appVersion = APP_VERSION,
             languageCode = LANGUAGE_CODE,
             timeZone = TIME_ZONE,
-            advertisingId = ADVERTISING_ID
+            advertisingId = ADVERTISING_ID,
+            email = EMAIL,
+            phone = PHONE
         )
     }
     // endregion constants -------------------------------------------------------------------------
@@ -352,6 +360,8 @@ class RetenoDatabaseManagerDeviceImplTest : BaseRobolectricTest() {
         every { cursor.getColumnIndex(DeviceSchema.COLUMN_LANGUAGE_CODE) } returns COLUMN_INDEX_LANGUAGE_CODE
         every { cursor.getColumnIndex(DeviceSchema.COLUMN_TIMEZONE) } returns COLUMN_INDEX_TIME_ZONE
         every { cursor.getColumnIndex(DeviceSchema.COLUMN_ADVERTISING_ID) } returns COLUMN_INDEX_ADVERTISING_ID
+        every { cursor.getColumnIndex(DeviceSchema.COLUMN_EMAIL) } returns COLUMN_INDEX_EMAIL
+        every { cursor.getColumnIndex(DeviceSchema.COLUMN_PHONE) } returns COLUMN_INDEX_PHONE
 
     }
 
