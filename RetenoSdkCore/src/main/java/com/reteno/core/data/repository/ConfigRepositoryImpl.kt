@@ -23,6 +23,14 @@ internal class ConfigRepositoryImpl(
         restConfig.setExternalUserId(externalId)
     }
 
+    override fun setUserEmail(email: String?) {
+        restConfig.setDeviceEmail(email)
+    }
+
+    override fun setUserPhone(phone: String?) {
+        restConfig.setDevicePhone(phone)
+    }
+
     override fun getDeviceId(): DeviceId = restConfig.deviceId
 
     override suspend fun awaitForDeviceId(): DeviceId {

@@ -15,6 +15,8 @@ import com.reteno.core.util.Util
 import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -39,6 +41,8 @@ class DbUtilDeviceTest : BaseRobolectricTest() {
         private const val TIME_ZONE = "valueTimeZone"
         private const val ADVERTISING_ID = "valueAdvertisingId"
         private val SYNCHRONIZED_WITH_BACKEND = BooleanDb.FALSE
+        private const val EMAIL = "valueEmail"
+        private const val PHONE = "valuePhone"
 
         private const val COLUMN_INDEX_ROW_ID = 1
         private const val COLUMN_INDEX_TIMESTAMP = 2
@@ -55,6 +59,8 @@ class DbUtilDeviceTest : BaseRobolectricTest() {
         private const val COLUMN_INDEX_TIME_ZONE = 13
         private const val COLUMN_INDEX_ADVERTISING_ID = 14
         private const val COLUMN_INDEX_SYNCHRONIZED_WITH_BACKEND = 15
+        private const val COLUMN_INDEX_EMAIL = 16
+        private const val COLUMN_INDEX_PHONE = 17
     }
     // endregion constants -------------------------------------------------------------------------
 
@@ -93,7 +99,10 @@ class DbUtilDeviceTest : BaseRobolectricTest() {
             appVersion = APP_VERSION,
             languageCode = LANGUAGE_CODE,
             timeZone = TIME_ZONE,
-            advertisingId = ADVERTISING_ID
+            advertisingId = ADVERTISING_ID,
+            isSynchronizedWithBackend = SYNCHRONIZED_WITH_BACKEND,
+            phone = PHONE,
+            email = EMAIL
         )
         val keySet = arrayOf(
             DeviceSchema.COLUMN_DEVICE_ID,
@@ -108,7 +117,9 @@ class DbUtilDeviceTest : BaseRobolectricTest() {
             DeviceSchema.COLUMN_LANGUAGE_CODE,
             DeviceSchema.COLUMN_TIMEZONE,
             DeviceSchema.COLUMN_ADVERTISING_ID,
-            DeviceSchema.COLUMN_SYNCHRONIZED_WITH_BACKEND
+            DeviceSchema.COLUMN_SYNCHRONIZED_WITH_BACKEND,
+            DeviceSchema.COLUMN_EMAIL,
+            DeviceSchema.COLUMN_PHONE
         )
 
         // When
@@ -128,6 +139,9 @@ class DbUtilDeviceTest : BaseRobolectricTest() {
         assertEquals(LANGUAGE_CODE, contentValues.get(DeviceSchema.COLUMN_LANGUAGE_CODE))
         assertEquals(TIME_ZONE, contentValues.get(DeviceSchema.COLUMN_TIMEZONE))
         assertEquals(ADVERTISING_ID, contentValues.get(DeviceSchema.COLUMN_ADVERTISING_ID))
+        assertEquals(SYNCHRONIZED_WITH_BACKEND.toString(), contentValues.get(DeviceSchema.COLUMN_SYNCHRONIZED_WITH_BACKEND))
+        assertEquals(EMAIL, contentValues.get(DeviceSchema.COLUMN_EMAIL))
+        assertEquals(PHONE, contentValues.get(DeviceSchema.COLUMN_PHONE))
     }
 
     @Test
@@ -150,7 +164,9 @@ class DbUtilDeviceTest : BaseRobolectricTest() {
             languageCode = LANGUAGE_CODE,
             timeZone = TIME_ZONE,
             advertisingId = ADVERTISING_ID,
-            isSynchronizedWithBackend = SYNCHRONIZED_WITH_BACKEND
+            isSynchronizedWithBackend = SYNCHRONIZED_WITH_BACKEND,
+            email = EMAIL,
+            phone = PHONE
         )
 
         // When
@@ -160,8 +176,10 @@ class DbUtilDeviceTest : BaseRobolectricTest() {
         assertEquals(expectedDevice, actualDevice)
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
-    fun givenCursorWithDeviceIdOnly_whenGetDevice_thenDeviceReturned() {
+    fun givenCursorWithDeviceIdOnly_whenGetDevice_thenDeviceReturned() = runTest {
+        createRetenoAndAdvanceInit()
         // Given
         mockDeviceDeviceIdOnly()
 
@@ -180,7 +198,9 @@ class DbUtilDeviceTest : BaseRobolectricTest() {
             languageCode = null,
             timeZone = null,
             advertisingId = null,
-            isSynchronizedWithBackend = null
+            isSynchronizedWithBackend = null,
+            email = null,
+            phone = null
         )
 
         // When
@@ -210,6 +230,8 @@ class DbUtilDeviceTest : BaseRobolectricTest() {
         every { cursor.getStringOrNull(COLUMN_INDEX_TIME_ZONE) } returns TIME_ZONE
         every { cursor.getStringOrNull(COLUMN_INDEX_ADVERTISING_ID) } returns ADVERTISING_ID
         every { cursor.getStringOrNull(COLUMN_INDEX_SYNCHRONIZED_WITH_BACKEND) } returns SYNCHRONIZED_WITH_BACKEND.toString()
+        every { cursor.getStringOrNull(COLUMN_INDEX_EMAIL) } returns EMAIL
+        every { cursor.getStringOrNull(COLUMN_INDEX_PHONE) } returns PHONE
     }
 
     private fun mockDeviceDeviceIdOnly() {
@@ -232,6 +254,8 @@ class DbUtilDeviceTest : BaseRobolectricTest() {
         every { cursor.getStringOrNull(COLUMN_INDEX_TIME_ZONE) } returns null
         every { cursor.getStringOrNull(COLUMN_INDEX_ADVERTISING_ID) } returns null
         every { cursor.getStringOrNull(COLUMN_INDEX_SYNCHRONIZED_WITH_BACKEND) } returns null
+        every { cursor.getStringOrNull(COLUMN_INDEX_EMAIL) } returns null
+        every { cursor.getStringOrNull(COLUMN_INDEX_PHONE) } returns null
     }
 
     private fun mockColumnIndexes() {
@@ -250,6 +274,8 @@ class DbUtilDeviceTest : BaseRobolectricTest() {
         every { cursor.getColumnIndex(DeviceSchema.COLUMN_TIMEZONE) } returns COLUMN_INDEX_TIME_ZONE
         every { cursor.getColumnIndex(DeviceSchema.COLUMN_ADVERTISING_ID) } returns COLUMN_INDEX_ADVERTISING_ID
         every { cursor.getColumnIndex(DeviceSchema.COLUMN_SYNCHRONIZED_WITH_BACKEND) } returns COLUMN_INDEX_SYNCHRONIZED_WITH_BACKEND
+        every { cursor.getColumnIndex(DeviceSchema.COLUMN_EMAIL) } returns COLUMN_INDEX_EMAIL
+        every { cursor.getColumnIndex(DeviceSchema.COLUMN_PHONE) } returns COLUMN_INDEX_PHONE
     }
     // endregion helper methods --------------------------------------------------------------------
 }

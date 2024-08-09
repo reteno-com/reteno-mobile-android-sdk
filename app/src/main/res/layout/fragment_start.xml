@@ -44,6 +44,39 @@
             app:layout_constraintTop_toTopOf="@id/swInAppsPause" />
 
         <TextView
+            android:id="@+id/tvPausePushInApps"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="12dp"
+            android:layout_marginTop="16dp"
+            android:text="Pause push In-App messages"
+            android:textSize="18sp"
+            app:layout_constraintEnd_toStartOf="@id/swInAppsPause"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tvPauseBehaviour" />
+
+        <TextView
+            android:id="@+id/tvPushPauseBehaviour"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="12dp"
+            android:layout_marginTop="16dp"
+            android:text="In-App Push Pause Behaviour"
+            android:textSize="18sp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tvPausePushInApps" />
+
+        <androidx.appcompat.widget.AppCompatSpinner
+            android:id="@+id/spinnerPushPauseBehaviour"
+            android:layout_width="0dp"
+            android:layout_marginStart="16dp"
+            android:layout_height="wrap_content"
+            app:layout_constraintStart_toEndOf="@id/tvPushPauseBehaviour"
+            app:layout_constraintBottom_toBottomOf="@id/tvPushPauseBehaviour"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="@id/tvPushPauseBehaviour" />
+
+        <TextView
             android:id="@+id/tvPauseBehaviour"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -56,8 +89,10 @@
 
         <androidx.appcompat.widget.AppCompatSpinner
             android:id="@+id/spinnerPauseBehaviour"
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
+            android:layout_marginStart="16dp"
             android:layout_height="wrap_content"
+            app:layout_constraintStart_toEndOf="@id/tvPauseBehaviour"
             app:layout_constraintBottom_toBottomOf="@id/tvPauseBehaviour"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="@id/tvPauseBehaviour" />
@@ -70,12 +105,22 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toBottomOf="@id/tvSessionTimeTitle" />
 
+        <androidx.appcompat.widget.SwitchCompat
+            android:id="@+id/swPushInAppsPause"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="12dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="@id/tvPausePushInApps"
+            app:layout_constraintBottom_toBottomOf="@id/tvPausePushInApps"/>
+
         <FrameLayout
             android:id="@+id/flInit"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/spinnerPauseBehaviour">
+            app:layout_constraintTop_toBottomOf="@id/tvPushPauseBehaviour">
 
             <CheckBox
                 android:id="@+id/cbDelayNextLaunch"

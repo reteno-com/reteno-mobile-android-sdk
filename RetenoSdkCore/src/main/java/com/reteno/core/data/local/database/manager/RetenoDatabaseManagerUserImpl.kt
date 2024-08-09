@@ -19,25 +19,26 @@ import com.reteno.core.util.Logger
 internal class RetenoDatabaseManagerUserImpl(private val database: RetenoDatabase) :
     RetenoDatabaseManagerUser {
 
-    private val contentValues = ContentValues()
-
     override fun insertUser(user: UserDb) {
-        /*@formatter:off*/ Logger.i(TAG, "insertUser(): ", "user = [", user, "]")
-        /*@formatter:on*/
+        synchronized(this) {
+            /*@formatter:off*/ Logger.i(TAG, "insertUser(): ", "user = [", user, "]")
+            /*@formatter:on*/
 
-        contentValues.putUser(user)
-        val rowId = database.insert(table = UserSchema.TABLE_NAME_USER, contentValues = contentValues)
-        contentValues.clear()
-
-        user.userAttributes?.let { userAttrs ->
-            contentValues.putUserAttributes(rowId, userAttrs)
-            database.insert(table = UserSchema.UserAttributesSchema.TABLE_NAME_USER_ATTRIBUTES, contentValues = contentValues)
+            val contentValues = ContentValues()
+            contentValues.putUser(user)
+            val rowId = database.insert(table = UserSchema.TABLE_NAME_USER, contentValues = contentValues)
             contentValues.clear()
 
-            userAttrs.address?.let { userAddress ->
-                contentValues.putUserAddress(rowId, userAddress)
-                database.insert(table = UserSchema.UserAddressSchema.TABLE_NAME_USER_ADDRESS, contentValues = contentValues)
+            user.userAttributes?.let { userAttrs ->
+                contentValues.putUserAttributes(rowId, userAttrs)
+                database.insert(table = UserSchema.UserAttributesSchema.TABLE_NAME_USER_ATTRIBUTES, contentValues = contentValues)
                 contentValues.clear()
+
+                userAttrs.address?.let { userAddress ->
+                    contentValues.putUserAddress(rowId, userAddress)
+                    database.insert(table = UserSchema.UserAddressSchema.TABLE_NAME_USER_ADDRESS, contentValues = contentValues)
+                    contentValues.clear()
+                }
             }
         }
     }

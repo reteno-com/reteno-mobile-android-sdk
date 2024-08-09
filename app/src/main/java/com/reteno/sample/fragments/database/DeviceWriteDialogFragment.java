@@ -74,6 +74,8 @@ public class DeviceWriteDialogFragment extends BaseDatabaseDialogFragment {
                     DeviceIdInternal.INSTANCE.getExternalIdInternal(deviceId),
                     token,
                     null,
+                    null,
+                    null,
                     null
             );
 
@@ -88,6 +90,8 @@ public class DeviceWriteDialogFragment extends BaseDatabaseDialogFragment {
             binding.etLanguageCode.setText(device.getLanguageCode());
             binding.etTimeZone.setText(device.getTimeZone());
             binding.etAdvertisingId.setText(device.getAdvertisingId());
+            binding.etPhone.setText(device.getPhone());
+            binding.etEmail.setText(device.getEmail());
             return Unit.INSTANCE;
         });
     }
@@ -123,7 +127,9 @@ public class DeviceWriteDialogFragment extends BaseDatabaseDialogFragment {
                     Util.getTextOrNull(binding.etLanguageCode),
                     Util.getTextOrNull(binding.etTimeZone),
                     Util.getTextOrNull(binding.etAdvertisingId),
-                    null
+                    null,
+                    Util.getTextOrNull(binding.etEmail),
+                    Util.getTextOrNull(binding.etPhone)
             );
 
             databaseManager.insertDevice(device);

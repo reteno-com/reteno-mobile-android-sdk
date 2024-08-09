@@ -17,5 +17,7 @@ data class DeviceDb(
     val languageCode: String?,
     val timeZone: String?,
     val advertisingId: String?,
-    val isSynchronizedWithBackend: BooleanDb? = null
+    val isSynchronizedWithBackend: BooleanDb? = null,
+    val email: String?,
+    val phone: String?
 )

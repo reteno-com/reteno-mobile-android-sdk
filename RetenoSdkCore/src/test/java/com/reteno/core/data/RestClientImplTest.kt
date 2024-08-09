@@ -88,8 +88,9 @@ class RestClientImplTest : BaseUnitTest() {
         restClient = RestClientImpl(
             RestConfig(
                 mockk(relaxed = true),
+                mockk(relaxed = true),
                 "",
-                initIdMode = DeviceIdMode.ANDROID_ID
+                initIdMode = DeviceIdMode.ANDROID_ID,
             ), platform = "Android"
         )
     }

@@ -126,6 +126,24 @@ internal class DeviceIdHelper(
         return currentDeviceId.copy(externalId = externalId)
     }
 
+    internal fun withEmail(
+        currentDeviceId: DeviceId,
+        email: String?
+    ): DeviceId {
+        /*@formatter:off*/ Logger.i(TAG, "withEmail(): ", "currentDeviceId = [" , currentDeviceId , "], email = [" , email , "]")
+        /*@formatter:on*/
+        return currentDeviceId.copy(email = email)
+    }
+
+    internal fun withPhone(
+        currentDeviceId: DeviceId,
+        phone: String?
+    ): DeviceId {
+        /*@formatter:off*/ Logger.i(TAG, "withPhone(): ", "currentDeviceId = [" , currentDeviceId , "], phone = [" , phone , "]")
+        /*@formatter:on*/
+        return currentDeviceId.copy(phone = phone)
+    }
+
     companion object {
         private val TAG: String = DeviceIdHelper::class.java.simpleName
     }
