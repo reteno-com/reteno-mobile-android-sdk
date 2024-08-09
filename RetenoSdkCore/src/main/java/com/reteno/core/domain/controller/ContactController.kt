@@ -52,6 +52,8 @@ class ContactController(
         user?.let { userTmp ->
             Validator.validateUser(userTmp)?.let {
                 contactRepository.saveUserData(it, toParallelWork = false)
+                configRepository.setUserEmail(it.userAttributes?.email)
+                configRepository.setUserPhone(it.userAttributes?.phone)
                 return true
             } ?: Logger.captureMessage("ContactController.setUserData(): user = [$userTmp]")
         }
@@ -135,8 +137,6 @@ class ContactController(
 
     private fun onNewContact(
         fcmToken: String,
-        email: String? = null,
-        phone: String? = null,
         notificationsEnabled: Boolean? = null,
         toParallelWork: Boolean = true
     ) {
@@ -146,13 +146,12 @@ class ContactController(
             /*@formatter:off*/ Logger.i(TAG, "onNewContact(): ", "token AVAILABLE")
             /*@formatter:on*/
             val deviceId = configRepository.getDeviceId()
-            val latestDevice = contactRepository.getLatestDevice()
             val contact = Device.createDevice(
                 deviceId = deviceId.id,
                 externalUserId = deviceId.externalId,
                 pushToken = fcmToken,
-                email = email ?: latestDevice?.email,
-                phone = phone ?: latestDevice?.phone,
+                email = deviceId.email,
+                phone = deviceId.phone,
                 pushSubscribed = notificationsEnabled ?: configRepository.isNotificationsEnabled()
             )
             contactRepository.saveDeviceData(contact, toParallelWork)
@@ -163,12 +162,7 @@ class ContactController(
         setExternalUserId(externalUserId, pushContact = false)
         setUserData(user)
         configRepository.getFcmToken { token ->
-            onNewContact(
-                token,
-                email = user?.userAttributes?.email,
-                phone = user?.userAttributes?.phone,
-                toParallelWork = false
-            )
+            onNewContact(token, toParallelWork = false)
         }
     }
 

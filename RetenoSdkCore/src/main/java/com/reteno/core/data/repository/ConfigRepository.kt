@@ -8,6 +8,8 @@ interface ConfigRepository {
     val notificationState: Flow<Boolean?>
 
     fun setExternalUserId(externalId: String?)
+    fun setUserPhone(phone: String?)
+    fun setUserEmail(email: String?)
     fun getDeviceId(): DeviceId
     suspend fun awaitForDeviceId(): DeviceId
     fun saveFcmToken(token: String)
