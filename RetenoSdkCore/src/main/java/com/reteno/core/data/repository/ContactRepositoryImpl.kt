@@ -66,6 +66,7 @@ internal class ContactRepositoryImpl(
         val requestModel = createDeviceRequestModel(latestDevice, latestSynchedDevice)
 
         if (requestModel == null) {
+            PushOperationQueue.addOperation { pushUserData() }
             PushOperationQueue.nextOperation()
             return
         }
@@ -87,7 +88,7 @@ internal class ContactRepositoryImpl(
                     if (databaseManagerDevice.getDeviceCount() > 0) {
                         pushDeviceData()
                     } else {
-                        PushOperationQueue.nextOperation()
+                        PushOperationQueue.addOperation { pushUserData() } //User data should be pushed only after device update
                     }
                 }
 
@@ -187,7 +188,6 @@ internal class ContactRepositoryImpl(
 
     private fun onSaveUserData(user: User) {
         databaseManagerUser.insertUser(user.toDb(configRepository.getDeviceId()))
-        pushUserData()
     }
 
     private fun createDeviceRequestModel(latestDevice: DeviceDb?, latestSynchedDevice: DeviceDb?): DeviceRemote? {
