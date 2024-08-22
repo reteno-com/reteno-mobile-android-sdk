@@ -289,7 +289,7 @@ class ContactRepositoryImplTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun whenSaveUserAttributes_thenInsertDbAndPush() {
+    fun whenSaveUserAttributes_thenInsertDb() {
         // Given
         val user = getUser()
         every { configRepository.getDeviceId() } returns mockk(relaxed = true)
@@ -303,7 +303,6 @@ class ContactRepositoryImplTest : BaseRobolectricTest() {
         SUT.saveUserData(user)
 
         // Then
-        verify(exactly = 1) { apiClient.post(any(), any(), any()) }
         verify { databaseManagerUser.insertUser(userDb) }
     }
 
