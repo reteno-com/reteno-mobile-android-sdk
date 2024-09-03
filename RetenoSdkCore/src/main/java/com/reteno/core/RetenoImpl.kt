@@ -6,6 +6,7 @@ import android.app.usage.UsageStatsManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.os.Bundle
 import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.ProcessLifecycleOwner
 import com.reteno.core.di.ServiceLocator
@@ -206,6 +207,7 @@ class RetenoImpl(
         if (!isOsVersionSupported()) {
             return@awaitInit
         }
+
         /*@formatter:off*/ Logger.i(TAG, "setUserAttributes(): ", "externalUserId = [" , externalUserId , "], used = [" , user , "]")
         /*@formatter:on*/
         if (externalUserId.isBlank()) {

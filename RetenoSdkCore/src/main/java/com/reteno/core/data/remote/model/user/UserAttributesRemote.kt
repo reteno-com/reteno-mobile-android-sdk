@@ -82,4 +82,21 @@ internal data class UserAttributesRemote(
             null
         }
     }
+
+    fun createAccModel(olderModel: UserAttributesRemote?): UserAttributesRemote {
+        if (olderModel == null || olderModel == this) return copy()
+
+        val result = copy()
+
+        result.phone = result.phone ?: olderModel.phone
+        result.email = result.email ?: olderModel.email
+        result.firstName = result.firstName ?: olderModel.firstName
+        result.lastName = result.lastName ?: olderModel.lastName
+        result.languageCode = result.languageCode ?: olderModel.languageCode
+        result.timeZone = result.timeZone ?: olderModel.timeZone
+        result.address = result.address ?: olderModel.address
+        result.fields = olderModel.fields.orEmpty().toSet().plus(result.fields.orEmpty().toSet()).toList()
+
+        return result
+    }
 }
