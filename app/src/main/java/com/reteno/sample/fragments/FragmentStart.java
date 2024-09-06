@@ -107,9 +107,6 @@ public class FragmentStart extends BaseFragment {
         if (sessionHandler != null) {
             sessionListener.start(sessionHandler, binding.tvSessionTime);
         }
-        for (int i = 0; i < 30; i++) {
-            RetenoImpl.Companion.getInstance().logEvent(new Event.Custom("event:" + i, ZonedDateTime.now(), new ArrayList<>()));
-        }
     }
 
     private List<ScreenItem> getScreenList() {
