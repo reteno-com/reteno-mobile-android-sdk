@@ -65,7 +65,6 @@ internal class ContactRepositoryImpl(
         val requestModel = createDeviceRequestModel(latestDevice, latestSynchedDevice)
 
         if (requestModel == null) {
-            PushOperationQueue.addOperation { pushUserData() }
             PushOperationQueue.nextOperation()
             return
         }
