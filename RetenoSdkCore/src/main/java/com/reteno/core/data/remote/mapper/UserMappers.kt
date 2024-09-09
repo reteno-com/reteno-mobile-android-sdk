@@ -29,6 +29,38 @@ internal fun UserAttributesDb.toRemote() = UserAttributesRemote(
     fields = fields?.map { it.toRemote() }
 )
 
+internal fun UserRemote.toDb() = UserDb(
+    deviceId = deviceId,
+    externalUserId = externalUserId,
+    userAttributes = userAttributes?.toDb(),
+    subscriptionKeys = subscriptionKeys,
+    groupNamesInclude = groupNamesInclude,
+    groupNamesExclude = groupNamesExclude
+)
+
+internal fun UserAttributesRemote.toDb() = UserAttributesDb(
+    phone = phone,
+    email = email,
+    firstName = firstName,
+    lastName = lastName,
+    languageCode = languageCode,
+    timeZone = timeZone,
+    address = address?.toDb(),
+    fields = fields?.map { it.toDb() }
+)
+
+internal fun UserCustomFieldRemote.toDb() = UserCustomFieldDb(
+    key = key,
+    value = value
+)
+
+internal fun AddressRemote.toDb() = AddressDb(
+    region = region,
+    town = town,
+    address = address,
+    postcode = postcode
+)
+
 internal fun UserCustomFieldDb.toRemote() = UserCustomFieldRemote(
     key = key,
     value = value
