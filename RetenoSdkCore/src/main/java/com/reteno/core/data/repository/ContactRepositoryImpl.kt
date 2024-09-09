@@ -1,6 +1,5 @@
 package com.reteno.core.data.repository
 
-import android.util.Log
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerDevice
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerUser
 import com.reteno.core.data.local.mappers.toDb
@@ -11,7 +10,7 @@ import com.reteno.core.data.remote.OperationQueue
 import com.reteno.core.data.remote.PushOperationQueue
 import com.reteno.core.data.remote.api.ApiClient
 import com.reteno.core.data.remote.api.ApiContract
-import com.reteno.core.data.remote.mapper.toDevice
+import com.reteno.core.data.remote.mapper.toDb
 import com.reteno.core.data.remote.mapper.toJson
 import com.reteno.core.data.remote.mapper.toRemote
 import com.reteno.core.data.remote.model.device.DeviceRemote
@@ -53,12 +52,12 @@ internal class ContactRepositoryImpl(
     override fun pushDeviceData() {
         val devices: List<DeviceDb> = databaseManagerDevice.getDevices()
 
-        val latestDevice = devices.filter { it.isSynchronizedWithBackend != BooleanDb.TRUE  }
+        val latestDevice = devices.filter { it.isSynchronizedWithBackend != BooleanDb.TRUE }
             .maxByOrNull {
                 it.createdAt
             }
 
-        val latestSynchedDevice = devices.filter { it.isSynchronizedWithBackend == BooleanDb.TRUE  }
+        val latestSynchedDevice = devices.filter { it.isSynchronizedWithBackend == BooleanDb.TRUE }
             .maxByOrNull {
                 it.createdAt
             }
@@ -66,7 +65,6 @@ internal class ContactRepositoryImpl(
         val requestModel = createDeviceRequestModel(latestDevice, latestSynchedDevice)
 
         if (requestModel == null) {
-            PushOperationQueue.addOperation { pushUserData() }
             PushOperationQueue.nextOperation()
             return
         }
@@ -113,19 +111,17 @@ internal class ContactRepositoryImpl(
     override fun pushUserData() {
         val users: List<UserDb> = databaseManagerUser.getUsers()
 
-        val latestUser = users.filter { it.isSynchronizedWithBackend != BooleanDb.TRUE  }
+        val latestUsers = users.filter { it.isSynchronizedWithBackend != BooleanDb.TRUE }
+
+        val latestSynchedUser = users.filter { it.isSynchronizedWithBackend == BooleanDb.TRUE }
             .maxByOrNull {
                 it.createdAt
             }
 
-        val latestSynchedUser = users.filter { it.isSynchronizedWithBackend == BooleanDb.TRUE  }
-            .maxByOrNull {
-                it.createdAt
-            }
-
-        val requestModel = createUserRequestModel(latestUser, latestSynchedUser)
+        val requestModel = createUserRequestModel(latestUsers, latestSynchedUser)
 
         if (requestModel == null) {
+            databaseManagerUser.deleteUsers(latestUsers)
             PushOperationQueue.nextOperation()
             return
         }
@@ -140,9 +136,7 @@ internal class ContactRepositoryImpl(
                     /*@formatter:off*/ Logger.i(TAG, "onSuccess(): ", "response = [" , response , "]")
                     /*@formatter:on*/
                     databaseManagerUser.deleteUsers(users)
-                    latestUser?.let {
-                        databaseManagerUser.insertUser(it.copy(isSynchronizedWithBackend = BooleanDb.TRUE))
-                    }
+                    databaseManagerUser.insertUser(requestModel.toDb().copy(isSynchronizedWithBackend = BooleanDb.TRUE))
                     PushOperationQueue.nextOperation()
                 }
 
@@ -151,9 +145,7 @@ internal class ContactRepositoryImpl(
                     /*@formatter:on*/
                     if (isNonRepeatableError(statusCode)) {
                         databaseManagerUser.deleteUsers(users)
-                        latestUser?.let {
-                            databaseManagerUser.insertUser(it.copy(isSynchronizedWithBackend = BooleanDb.TRUE))
-                        }
+                        databaseManagerUser.insertUser(requestModel.toDb().copy(isSynchronizedWithBackend = BooleanDb.TRUE))
                     } else {
                         PushOperationQueue.removeAllOperations()
                     }
@@ -164,7 +156,7 @@ internal class ContactRepositoryImpl(
 
     override fun deleteSynchedDevices() {
         val devices: List<DeviceDb> = databaseManagerDevice.getDevices()
-        val synchedDevices = devices.filter { it.isSynchronizedWithBackend == BooleanDb.TRUE  }
+        val synchedDevices = devices.filter { it.isSynchronizedWithBackend == BooleanDb.TRUE }
         if (synchedDevices.isNotEmpty()) {
             databaseManagerDevice.deleteDevices(synchedDevices)
         }
@@ -173,7 +165,13 @@ internal class ContactRepositoryImpl(
     private fun onSaveDeviceData(device: Device) {
         val newDevice: DeviceDb = device.toDb()
         val savedDevices: List<DeviceDb> = databaseManagerDevice.getDevices()
-        val mappedSavedDevices = savedDevices.map { it.copy(rowId = null, createdAt = 0L, isSynchronizedWithBackend = null) }
+        val mappedSavedDevices = savedDevices.map {
+            it.copy(
+                rowId = null,
+                createdAt = 0L,
+                isSynchronizedWithBackend = null
+            )
+        }
 
         if (mappedSavedDevices.contains(newDevice).not()) {
             databaseManagerDevice.insertDevice(device.toDb())
@@ -190,7 +188,10 @@ internal class ContactRepositoryImpl(
         databaseManagerUser.insertUser(user.toDb(configRepository.getDeviceId()))
     }
 
-    private fun createDeviceRequestModel(latestDevice: DeviceDb?, latestSynchedDevice: DeviceDb?): DeviceRemote? {
+    private fun createDeviceRequestModel(
+        latestDevice: DeviceDb?,
+        latestSynchedDevice: DeviceDb?
+    ): DeviceRemote? {
         if (latestDevice == null) return null
 
         val latestDeviceRemote = latestDevice.toRemote()
@@ -216,26 +217,35 @@ internal class ContactRepositoryImpl(
         }
     }
 
-    private fun createUserRequestModel(latestUser: UserDb?, latestSynchedUser: UserDb?): UserRemote? {
-        if (latestUser == null) return null
+    private fun createUserRequestModel(
+        usersToPush: List<UserDb>,
+        latestSynchedUser: UserDb?
+    ): UserRemote? {
+        if (usersToPush.isEmpty()) return null
 
-        val latestUserRemote = latestUser.toRemote()
+        val sorted = usersToPush.sortedBy { it.createdAt }
+        val firstCreatedDate = sorted.first().createdAt
+        val combinedUser = sorted
+            .map { it.toRemote() }
+            .reduce { acc, userDb ->
+                userDb.createAccModel(acc)
+            }
 
         if (latestSynchedUser == null) {
             /*@formatter:off*/ Logger.i(TAG, "pushUserData(): ", "No saved user found, pushing new user.")
             /*@formatter:on*/
-            return latestUserRemote
+            return combinedUser
         }
 
-        if (Util.isTimestampOutdated(latestSynchedUser.createdAt, latestUser.createdAt)) {
+        if (Util.isTimestampOutdated(latestSynchedUser.createdAt, firstCreatedDate)) {
             /*@formatter:off*/ Logger.i(TAG, "pushUserData(): ", "Saved user is outdated, pushing new user.")
             /*@formatter:on*/
-            return latestUserRemote
+            return combinedUser
         }
 
         val latestSynchedUserRemote = latestSynchedUser.toRemote()
 
-        return latestUserRemote.createDiffModel(latestSynchedUserRemote)
+        return combinedUser.createDiffModel(latestSynchedUserRemote)
     }
 
     companion object {
