@@ -44,7 +44,7 @@ internal class EventsRepositoryImpl(
             externalUserId = deviceId.externalId,
             eventList = listOf(event.toDb())
         )
-        OperationQueue.addParallelOperation {
+        OperationQueue.addOperation {
             databaseManager.insertEvents(events)
         }
     }
@@ -59,7 +59,7 @@ internal class EventsRepositoryImpl(
             externalUserId = deviceId.externalId,
             eventList = listOf(ecomEvent.toDb())
         )
-        OperationQueue.addParallelOperation {
+        OperationQueue.addOperation {
             databaseManager.insertEvents(events)
         }
     }

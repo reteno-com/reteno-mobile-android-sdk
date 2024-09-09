@@ -327,7 +327,7 @@ class ContactControllerTest : BaseUnitTest() {
 
         // Then
         verify(exactly = 1) { configRepository.saveNotificationsEnabled(pushSubscribed) }
-        verify(exactly = 1) { contactRepository.saveDeviceData(expectedDevice) }
+        verify(exactly = 1) { contactRepository.saveDeviceData(expectedDevice, any()) }
     }
 
     @Test
@@ -380,7 +380,7 @@ class ContactControllerTest : BaseUnitTest() {
 
         // Then
         verify(exactly = 1) { configRepository.saveNotificationsEnabled(pushSubscribed) }
-        verify(exactly = 1) { contactRepository.saveDeviceData(expectedDevice) }
+        verify(exactly = 1) { contactRepository.saveDeviceData(expectedDevice, any()) }
     }
 
     @Test
@@ -435,7 +435,7 @@ class ContactControllerTest : BaseUnitTest() {
         SUT.setAnonymousUserAttributes(anonymousUserAttributes)
 
         // Then
-        verify(exactly = 1) { contactRepository.saveUserData(eq(expectedUserData)) }
+        verify(exactly = 1) { contactRepository.saveUserData(eq(expectedUserData), any()) }
     }
 
     @Test
