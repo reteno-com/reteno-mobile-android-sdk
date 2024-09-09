@@ -55,6 +55,19 @@ internal data class UserRemote(
         }
     }
 
+    fun createAccModel(olderModel: UserRemote?): UserRemote {
+        if (olderModel == null || olderModel == this) return copy()
+
+        val result = copy()
+
+        result.userAttributes = userAttributes?.createAccModel(olderModel.userAttributes)
+        result.subscriptionKeys = result.subscriptionKeys?: olderModel.subscriptionKeys
+        result.groupNamesInclude = result.groupNamesInclude?: olderModel.groupNamesInclude
+        result.groupNamesExclude = result.groupNamesExclude?: olderModel.groupNamesExclude
+
+        return result
+    }
+
     private fun areListsSame(firstList: List<Any>?, secondList: List<Any>?): Boolean {
         if (firstList == null && secondList == null) return true
 

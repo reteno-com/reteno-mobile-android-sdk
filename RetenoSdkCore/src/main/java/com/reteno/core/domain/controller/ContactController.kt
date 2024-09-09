@@ -68,7 +68,7 @@ class ContactController(
             Validator.validateAnonymousUserAttributes(attributes)
         validAttributes?.let {
             val userData = User(it.toUserAttributes())
-            contactRepository.saveUserData(userData)
+            contactRepository.saveUserData(userData, toParallelWork = false)
         } ?: Logger.captureMessage("setAnonymousUserAttributes(): attributes = [$attributes]")
     }
 
@@ -138,7 +138,7 @@ class ContactController(
     private fun onNewContact(
         fcmToken: String,
         notificationsEnabled: Boolean? = null,
-        toParallelWork: Boolean = true
+        toParallelWork: Boolean = false
     ) {
         /*@formatter:off*/ Logger.i(TAG, "onNewContact(): ", "fcmToken = [", fcmToken, "], notificationsEnabled = [", notificationsEnabled, "]")
         /*@formatter:on*/
