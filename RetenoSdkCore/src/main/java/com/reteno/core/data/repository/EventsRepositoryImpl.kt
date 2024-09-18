@@ -146,7 +146,7 @@ internal class EventsRepositoryImpl(
             .groupBy { it.eventTypeKey }
             .mapValues { entry ->
                 if (!types.contains(entry.key)) entry.value
-                listOf(entry.value.maxBy { it.occurred.fromRemote() })
+                else listOf(entry.value.maxBy { it.occurred.fromRemote() })
             }
             .values
             .flatten()
