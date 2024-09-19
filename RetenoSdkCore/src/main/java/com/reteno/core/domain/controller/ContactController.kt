@@ -145,17 +145,17 @@ class ContactController(
         if (fcmToken.isNotEmpty()) {
             /*@formatter:off*/ Logger.i(TAG, "onNewContact(): ", "token AVAILABLE")
             /*@formatter:on*/
-            val deviceId = configRepository.getDeviceId()
-            val contact = Device.createDevice(
-                deviceId = deviceId.id,
-                externalUserId = deviceId.externalId,
-                pushToken = fcmToken,
-                email = deviceId.email,
-                phone = deviceId.phone,
-                pushSubscribed = notificationsEnabled ?: configRepository.isNotificationsEnabled()
-            )
-            contactRepository.saveDeviceData(contact, toParallelWork)
         }
+        val deviceId = configRepository.getDeviceId()
+        val contact = Device.createDevice(
+            deviceId = deviceId.id,
+            externalUserId = deviceId.externalId,
+            pushToken = fcmToken,
+            email = deviceId.email,
+            phone = deviceId.phone,
+            pushSubscribed = notificationsEnabled ?: configRepository.isNotificationsEnabled()
+        )
+        contactRepository.saveDeviceData(contact, toParallelWork)
     }
 
     fun setExternalIdAndUserData(externalUserId: String, user: User?) {

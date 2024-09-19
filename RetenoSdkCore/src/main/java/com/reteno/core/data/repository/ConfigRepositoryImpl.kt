@@ -50,7 +50,7 @@ internal class ConfigRepositoryImpl(
             ?.let { callback.invoke(it) }
             ?: run {
                 getAndSaveFreshFcmToken { token ->
-                    token?.takeIf { it.isNotEmpty() }?.let { callback.invoke(it) }
+                    callback.invoke(token.orEmpty())
                 }
             }
     }
@@ -64,6 +64,7 @@ internal class ConfigRepositoryImpl(
                 if (!task.isSuccessful) {
                     /*@formatter:off*/Logger.d(TAG, "Fetching FCM registration token failed", task.exception ?: Throwable(""))
                     /*@formatter:on*/
+                    callback.invoke(null)
                     return@OnCompleteListener
                 }
 
