@@ -6,7 +6,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
-import android.widget.CompoundButton;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -15,16 +14,11 @@ import androidx.navigation.fragment.NavHostFragment;
 
 import com.reteno.core.RetenoImpl;
 import com.reteno.core.di.ServiceLocator;
-import com.reteno.core.domain.model.event.Event;
-import com.reteno.core.domain.model.user.UserAttributes;
-import com.reteno.core.domain.model.user.UserAttributesAnonymous;
-import com.reteno.core.domain.model.user.UserCustomField;
 import com.reteno.core.features.iam.InAppPauseBehaviour;
 import com.reteno.core.lifecycle.RetenoSessionHandler;
 import com.reteno.sample.BaseFragment;
 import com.reteno.sample.R;
 import com.reteno.sample.databinding.FragmentStartBinding;
-import com.reteno.sample.test.UserFactory;
 import com.reteno.sample.testscreens.ScreenAdapter;
 import com.reteno.sample.testscreens.ScreenItem;
 import com.reteno.sample.util.AppSharedPreferencesManager;
@@ -32,7 +26,6 @@ import com.reteno.sample.util.FragmentStartSessionListener;
 import com.reteno.sample.util.RetenoInitListener;
 
 import java.lang.reflect.Field;
-import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 

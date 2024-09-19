@@ -62,7 +62,6 @@ Follow our setup guide to integrate the Reteno SDK with your app.
 
 ```groovy
 android.useAndroidX=true
-android.enableJetifier=true
 ```
 
 ### Step2: Determine Compiler for Java Code
