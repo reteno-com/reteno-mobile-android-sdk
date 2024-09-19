@@ -71,10 +71,31 @@ internal class IamViewImpl(
     private var interactionId: String? = null
     private var messageId: Long? = null
     private var messageInstanceId: Long? = null
-    private lateinit var parentLayout: FrameLayout
-    private lateinit var popupWindow: PopupWindow
-    private lateinit var cardView: CardView
-    private lateinit var webView: WebView
+    private var _parentLayout: FrameLayout? = null
+    private var _popupWindow: PopupWindow? = null
+    private var _cardView: CardView? = null
+    private var _webView: WebView? = null
+
+    private var parentLayout: FrameLayout
+        get() = requireNotNull(_parentLayout)
+        set(value) {
+            _parentLayout = value
+        }
+    private var popupWindow: PopupWindow
+        get() = requireNotNull(_popupWindow)
+        set(value) {
+            _popupWindow = value
+        }
+    private var cardView: CardView
+        get() = requireNotNull(_cardView)
+        set(value) {
+            _cardView = value
+        }
+    private var webView: WebView
+        get() = requireNotNull(_webView)
+        set(value) {
+            _webView = value
+        }
 
     private var initViewOnResume = true
 
@@ -443,10 +464,10 @@ internal class IamViewImpl(
         iamController.reset()
 
         OperationQueue.addUiOperation {
-            if (this::parentLayout.isInitialized) {
+            if (_parentLayout != null) {
                 parentLayout.removeAllViews()
             }
-            if (this::popupWindow.isInitialized) {
+            if (_popupWindow != null) {
                 try {
                     popupWindow.dismiss()
                 } catch (e: Exception) {
@@ -454,13 +475,17 @@ internal class IamViewImpl(
                     /*@formatter:on*/
                 }
             }
-            if (this::cardView.isInitialized) {
+            if (_cardView != null) {
                 cardView.removeAllViews()
             }
-            if (this::webView.isInitialized) {
+            if (_webView != null) {
                 webView.removeAllViews()
                 webView.removeJavascriptInterface(JS_INTERFACE_NAME)
             }
+            _parentLayout = null
+            _popupWindow = null
+            _cardView = null
+            _webView = null
             isViewShown.set(false)
         }
     }
