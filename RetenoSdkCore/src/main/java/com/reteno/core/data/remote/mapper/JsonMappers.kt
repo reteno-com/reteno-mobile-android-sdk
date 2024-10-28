@@ -10,7 +10,7 @@ import java.lang.reflect.Type
 
 internal fun Any.toJson(): String = Gson().toJson(this)
 
-internal fun Any?.toJsonOrNull(): String? = this?.let(Gson()::toJson)
+fun Any?.toJsonOrNull(): String? = this?.let(Gson()::toJson)
 
 inline fun <reified T> String.fromJson(): T =
     Gson().fromJson(this, T::class.java)

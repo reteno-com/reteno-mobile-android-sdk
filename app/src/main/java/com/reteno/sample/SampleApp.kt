@@ -1,65 +1,65 @@
-package com.reteno.sample;
+package com.reteno.sample
 
+import android.app.Application
+import android.os.Handler
+import com.reteno.core.Reteno
+import com.reteno.core.RetenoApplication
+import com.reteno.core.RetenoConfig
+import com.reteno.core.RetenoImpl
+import com.reteno.core.domain.model.event.LifecycleTrackingOptions.Companion.ALL
+import com.reteno.core.identification.DeviceIdProvider
+import com.reteno.core.lifecycle.ScreenTrackingConfig
+import com.reteno.sample.util.AppSharedPreferencesManager.getDeviceId
+import com.reteno.sample.util.AppSharedPreferencesManager.getDeviceIdDelay
+import com.reteno.sample.util.AppSharedPreferencesManager.getShouldDelayLaunch
+import com.reteno.sample.util.AppSharedPreferencesManager.setDelayLaunch
 
-import android.app.Application;
-import android.os.Handler;
-
-import androidx.annotation.NonNull;
-
-import com.reteno.core.Reteno;
-import com.reteno.core.RetenoApplication;
-import com.reteno.core.RetenoConfig;
-import com.reteno.core.RetenoImpl;
-import com.reteno.core.domain.model.event.LifecycleTrackingOptions;
-import com.reteno.core.identification.DeviceIdProvider;
-import com.reteno.core.lifecycle.ScreenTrackingConfig;
-import com.reteno.sample.util.AppSharedPreferencesManager;
-
-import java.util.ArrayList;
-
-public class SampleApp extends Application implements RetenoApplication {
-
-    private Reteno retenoInstance;
-
-    @Override
-    public void onCreate() {
-        super.onCreate();
-        if (AppSharedPreferencesManager.getShouldDelayLaunch(this)) {
-            AppSharedPreferencesManager.setDelayLaunch(this, false);
-            retenoInstance = new RetenoImpl(this);
-            Handler handler = new Handler();
-            handler.postDelayed(() -> {
-                retenoInstance.initWith(new RetenoConfig(false, createProvider(), LifecycleTrackingOptions.Companion.getALL(), BuildConfig.API_ACCESS_KEY));
-            }, 3000L);
+class SampleApp : Application(), RetenoApplication {
+    private var retenoInstance: Reteno? = null
+    override fun onCreate() {
+        super.onCreate()
+        if (getShouldDelayLaunch(this)) {
+            setDelayLaunch(this, false)
+            val instance = RetenoImpl(this)
+            retenoInstance = instance
+            val handler = Handler()
+            handler.postDelayed({
+                instance.initWith(
+                    RetenoConfig(
+                        false,
+                        createProvider(),
+                        ALL,
+                        BuildConfig.API_ACCESS_KEY
+                    )
+                )
+            }, 3000L)
         } else {
-            retenoInstance = new RetenoImpl(this, BuildConfig.API_ACCESS_KEY, new RetenoConfig(false, createProvider()));
+            retenoInstance =
+                RetenoImpl(this, BuildConfig.API_ACCESS_KEY, RetenoConfig(false, createProvider()))
         }
-        ArrayList<String> excludeScreensFromTracking = new ArrayList<String>();
-        excludeScreensFromTracking.add("NavHostFragment");
-        retenoInstance.autoScreenTracking(new ScreenTrackingConfig(false, excludeScreensFromTracking));
+        val excludeScreensFromTracking = ArrayList<String>()
+        excludeScreensFromTracking.add("NavHostFragment")
+        retenoInstance?.autoScreenTracking(ScreenTrackingConfig(false, excludeScreensFromTracking))
     }
 
-    private DeviceIdProvider createProvider() {
-        DeviceIdProvider provider = null;
-        int deviceIdDelay = AppSharedPreferencesManager.getDeviceIdDelay(this);
-        String deviceId = AppSharedPreferencesManager.getDeviceId(this);
-        if (!deviceId.isEmpty()) {
-            long startTime = System.currentTimeMillis();
-            provider = () -> {
+    private fun createProvider(): DeviceIdProvider? {
+        var provider: DeviceIdProvider? = null
+        val deviceIdDelay = getDeviceIdDelay(this)
+        val deviceId = getDeviceId(this)
+        if (!deviceId!!.isEmpty()) {
+            val startTime = System.currentTimeMillis()
+            provider = DeviceIdProvider {
                 if (System.currentTimeMillis() - startTime > deviceIdDelay) {
-                    return deviceId;
+                    return@DeviceIdProvider deviceId
                 } else {
-                    return null;
+                    return@DeviceIdProvider null
                 }
-            };
+            }
         }
-        return provider;
+        return provider
     }
 
-
-    @NonNull
-    @Override
-    public Reteno getRetenoInstance() {
-        return retenoInstance;
+    override fun getRetenoInstance(): Reteno {
+        return retenoInstance!!
     }
 }

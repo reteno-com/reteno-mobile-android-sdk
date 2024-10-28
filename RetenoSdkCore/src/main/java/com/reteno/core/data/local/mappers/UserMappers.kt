@@ -10,7 +10,7 @@ import com.reteno.core.domain.model.user.User
 import com.reteno.core.domain.model.user.UserAttributes
 import com.reteno.core.domain.model.user.UserCustomField
 
-internal fun User.toDb(deviceId: DeviceId) = UserDb(
+fun User.toDb(deviceId: DeviceId) = UserDb(
     deviceId = deviceId.id,
     externalUserId = deviceId.externalId,
     userAttributes = userAttributes?.toDb(),
