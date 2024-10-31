@@ -62,6 +62,8 @@ class FragmentStart : BaseFragment() {
 
     override fun onDestroyView() {
         binding!!.recycler.adapter = null
+        binding!!.spinnerPauseBehaviour.onItemSelectedListener = null
+        binding!!.spinnerPushPauseBehaviour.onItemSelectedListener = null
         binding = null
         super.onDestroyView()
     }
@@ -128,7 +130,7 @@ class FragmentStart : BaseFragment() {
             object : AdapterView.OnItemSelectedListener {
                 override fun onItemSelected(
                     adapterView: AdapterView<*>?,
-                    view: View,
+                    view: View?,
                     i: Int,
                     l: Long
                 ) {
@@ -147,7 +149,7 @@ class FragmentStart : BaseFragment() {
             object : AdapterView.OnItemSelectedListener {
                 override fun onItemSelected(
                     adapterView: AdapterView<*>?,
-                    view: View,
+                    view: View?,
                     i: Int,
                     l: Long
                 ) {
