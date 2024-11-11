@@ -13,6 +13,7 @@ internal class AppInboxImpl(
     override fun getAppInboxMessages(
         page: Int?,
         pageSize: Int?,
+        status: AppInboxStatus?,
         callback: RetenoResultCallback<AppInboxMessages>
     ) {
         if (!isOsVersionSupported()) {
@@ -21,7 +22,7 @@ internal class AppInboxImpl(
         /*@formatter:off*/ Logger.i(TAG, "getAppInboxMessages(): ", "page = [", page, "], pageSize = [", pageSize, "], callback = [", callback, "]")
         /*@formatter:on*/
         try {
-            appInboxController.getAppInboxMessages(page, pageSize, callback)
+            appInboxController.getAppInboxMessages(page, pageSize, status, callback)
         } catch (ex: Throwable) {
             Logger.e(TAG, "getAppInboxMessages(): ", ex)
         }

@@ -2,6 +2,7 @@ package com.reteno.core.data.repository
 
 import com.reteno.core.domain.callback.appinbox.RetenoResultCallback
 import com.reteno.core.domain.model.appinbox.AppInboxMessages
+import com.reteno.core.features.appinbox.AppInboxStatus
 import java.time.ZonedDateTime
 
 internal interface AppInboxRepository {
@@ -11,6 +12,7 @@ internal interface AppInboxRepository {
     fun getMessages(
         page: Int? = null,
         pageSize: Int? = null,
+        status: AppInboxStatus? = null,
         resultCallback: RetenoResultCallback<AppInboxMessages>
     )
     fun getMessagesCount(resultCallback: RetenoResultCallback<Int>)

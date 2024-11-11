@@ -6,9 +6,13 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
 import android.widget.Toast
 import com.reteno.core.domain.callback.appinbox.RetenoResultCallback
 import com.reteno.core.domain.model.appinbox.AppInboxMessages
+import com.reteno.core.features.appinbox.AppInboxStatus
+import com.reteno.core.features.iam.InAppPauseBehaviour
 import com.reteno.sample.BaseFragment
 import com.reteno.sample.databinding.FragmentAppInboxBinding
 import com.reteno.sample.fragments.inbox.InboxMessageAdapter.InboxItemClick
@@ -18,6 +22,7 @@ class FragmentAppInbox : BaseFragment() {
 
     private var binding: FragmentAppInboxBinding? = null
     private var adapter: InboxMessageAdapter? = null
+    private var selectedStatus: AppInboxStatus? = null
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -48,6 +53,30 @@ class FragmentAppInbox : BaseFragment() {
             }
         })
         binding!!.rvInboxMessages.adapter = adapter
+
+        val items = listOf(
+            null,
+            *AppInboxStatus.values()
+        )
+        binding!!.spinnerStatus.adapter = ArrayAdapter(
+            requireContext(),
+            android.R.layout.simple_spinner_item,
+            items
+        )
+        binding!!.spinnerStatus.setSelection(0)
+        binding!!.spinnerStatus.onItemSelectedListener =
+            object : AdapterView.OnItemSelectedListener {
+                override fun onItemSelected(
+                    adapterView: AdapterView<*>?,
+                    view: View?,
+                    i: Int,
+                    l: Long
+                ) {
+                    selectedStatus = items[i]
+                }
+
+                override fun onNothingSelected(adapterView: AdapterView<*>?) {}
+            }
     }
 
     private fun setListeners() {
@@ -85,6 +114,7 @@ class FragmentAppInbox : BaseFragment() {
         reteno.appInbox.getAppInboxMessages(
             page,
             pageSize,
+            selectedStatus,
             object : RetenoResultCallback<AppInboxMessages> {
                 override fun onSuccess(result: AppInboxMessages) {
                     adapter!!.submitList(result.messages)
