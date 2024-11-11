@@ -58,10 +58,14 @@ class FragmentAppInbox : BaseFragment() {
             null,
             *AppInboxStatus.values()
         )
+        val strValues = listOf(
+            "ALL",
+            *AppInboxStatus.values().map { it.str }.toTypedArray()
+        )
         binding!!.spinnerStatus.adapter = ArrayAdapter(
             requireContext(),
             android.R.layout.simple_spinner_item,
-            items
+            strValues
         )
         binding!!.spinnerStatus.setSelection(0)
         binding!!.spinnerStatus.onItemSelectedListener =
