@@ -491,6 +491,7 @@ internal class IamViewImpl(
     }
 
     private fun tryHandleCustomData(url: String?, customData: Map<String, String>?): Boolean {
+        if (customData.isNullOrEmpty()) return false
         val bundle = Bundle()
         bundle.putString("url", url)
         inAppSource?.let { source ->
