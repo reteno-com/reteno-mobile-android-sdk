@@ -16,7 +16,12 @@ interface AppInbox {
      *  @see com.reteno.core.domain.model.appinbox.AppInboxMessage
      *  @see com.reteno.core.domain.model.appinbox.AppInboxMessages
      */
-    fun getAppInboxMessages(page: Int? = null, pageSize: Int? = null, callback: RetenoResultCallback<AppInboxMessages>)
+    fun getAppInboxMessages(
+        page: Int? = null,
+        pageSize: Int? = null,
+        status: AppInboxStatus? = null,
+        callback: RetenoResultCallback<AppInboxMessages>
+    )
 
     /**
      * Obtain AppInbox messages count once.
