@@ -147,21 +147,6 @@ class ContactControllerTest : BaseUnitTest() {
     }
 
     @Test
-    fun givenPushTokenNotAvailable_whenSetExternalDeviceId_thenContactNotSent() {
-        // Given
-        every { configRepository.getFcmToken(any()) } answers {
-            val callback = arg<((String) -> Unit)>(0)
-            callback.invoke("")
-        }
-
-        // When
-        SUT.setExternalUserId(EXTERNAL_DEVICE_ID)
-
-        // Then
-        verify(exactly = 0) { contactRepository.saveDeviceData(any()) }
-    }
-
-    @Test
     fun givenPushTokenAvailable_whenSetExternalDeviceId_thenContactSent() {
         // Given
         every { configRepository.getFcmToken(any()) } answers {

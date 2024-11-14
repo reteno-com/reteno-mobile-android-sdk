@@ -1,6 +1,6 @@
 package com.reteno.core.domain.model.user
 
-data class UserAttributes(
+data class UserAttributes @JvmOverloads constructor(
 
     val phone: String? = null,
 

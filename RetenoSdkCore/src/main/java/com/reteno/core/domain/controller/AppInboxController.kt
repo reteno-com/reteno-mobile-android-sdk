@@ -4,6 +4,7 @@ import com.reteno.core.data.repository.AppInboxRepository
 import com.reteno.core.domain.SchedulerUtils
 import com.reteno.core.domain.callback.appinbox.RetenoResultCallback
 import com.reteno.core.domain.model.appinbox.AppInboxMessages
+import com.reteno.core.features.appinbox.AppInboxStatus
 import com.reteno.core.util.Logger
 
 internal class AppInboxController(private val appInboxRepository: AppInboxRepository) {
@@ -11,11 +12,12 @@ internal class AppInboxController(private val appInboxRepository: AppInboxReposi
     fun getAppInboxMessages(
         page: Int? = null,
         pageSize: Int? = null,
+        status: AppInboxStatus? = null,
         messagesResultCallback: RetenoResultCallback<AppInboxMessages>
     ) {
         /*@formatter:off*/ Logger.i(TAG, "getAppInboxMessages(): ", "page = [" , page , "], pageSize = [" , pageSize , "], messagesResultCallback = [" , messagesResultCallback , "]") 
         /*@formatter:on*/
-        appInboxRepository.getMessages(page, pageSize, messagesResultCallback)
+        appInboxRepository.getMessages(page, pageSize, status, messagesResultCallback)
     }
 
     fun getMessagesCount(countResultCallback: RetenoResultCallback<Int>) {

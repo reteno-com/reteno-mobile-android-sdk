@@ -8,6 +8,7 @@ import com.reteno.core.data.remote.api.ApiClient
 import com.reteno.core.data.remote.api.ApiContract
 import com.reteno.core.data.remote.api.ApiContract.AppInbox.Companion.QUERY_PAGE
 import com.reteno.core.data.remote.api.ApiContract.AppInbox.Companion.QUERY_PAGE_SIZE
+import com.reteno.core.data.remote.api.ApiContract.AppInbox.Companion.QUERY_STATUS
 import com.reteno.core.data.remote.mapper.fromJson
 import com.reteno.core.data.remote.mapper.toDomain
 import com.reteno.core.data.remote.mapper.toJson
@@ -17,6 +18,7 @@ import com.reteno.core.data.remote.model.inbox.InboxMessagesRemote
 import com.reteno.core.domain.ResponseCallback
 import com.reteno.core.domain.callback.appinbox.RetenoResultCallback
 import com.reteno.core.domain.model.appinbox.AppInboxMessages
+import com.reteno.core.features.appinbox.AppInboxStatus
 import com.reteno.core.util.Logger
 import com.reteno.core.util.RetenoThreadFactory
 import com.reteno.core.util.Util.formatToRemote
@@ -89,13 +91,15 @@ internal class AppInboxRepositoryImpl(
     override fun getMessages(
         page: Int?,
         pageSize: Int?,
+        status: AppInboxStatus?,
         resultCallback: RetenoResultCallback<AppInboxMessages>
     ) {
         /*@formatter:off*/ Logger.i(TAG, "getMessages(): ", "page = [" , page , "], pageSize = [" , pageSize , "], resultCallback = [" , resultCallback , "]")
         /*@formatter:on*/
         val queryParams = mapOf(
             QUERY_PAGE to page?.toString(),
-            QUERY_PAGE_SIZE to pageSize?.toString()
+            QUERY_PAGE_SIZE to pageSize?.toString(),
+            QUERY_STATUS to status?.str
         )
 
         apiClient.get(ApiContract.AppInbox.Messages, queryParams, object : ResponseCallback {

@@ -8,7 +8,7 @@ import com.reteno.core.domain.model.event.Events
 import com.reteno.core.domain.model.event.Parameter
 import com.reteno.core.util.Util.formatToRemote
 
-internal fun Events.toDb() = EventsDb(
+fun Events.toDb() = EventsDb(
     deviceId = deviceId,
     externalUserId = externalUserId,
     eventList = eventList.map { it.toDb() }
