@@ -50,16 +50,17 @@
         android:layout_height="wrap_content"
         android:gravity="center"
         android:text="Leave blank to download all messages.\nPage = 1 for first"
+        app:layout_constraintBottom_toTopOf="@+id/etPage"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintBottom_toTopOf="@+id/etPage" />
+        app:layout_constraintStart_toStartOf="parent" />
 
     <EditText
         android:id="@+id/etPage"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
         android:hint="Page"
-        app:layout_constraintBottom_toTopOf="@+id/btnGetMessage"
+        app:layout_constraintBottom_toTopOf="@+id/spinnerStatus"
         app:layout_constraintEnd_toStartOf="@+id/etPageSize"
         app:layout_constraintStart_toStartOf="parent" />
 
@@ -67,10 +68,34 @@
         android:id="@+id/etPageSize"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
         android:hint="Page size"
-        app:layout_constraintBottom_toTopOf="@+id/btnGetMessage"
+        app:layout_constraintBottom_toTopOf="@+id/spinnerStatus"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@+id/etPage" />
+
+    <TextView
+        android:id="@+id/tvStatus"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="8dp"
+        android:text="Status"
+        android:textSize="18sp"
+        app:layout_constraintBottom_toTopOf="@id/btnGetMessage"
+        app:layout_constraintEnd_toStartOf="@id/spinnerStatus"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <androidx.appcompat.widget.AppCompatSpinner
+        android:id="@+id/spinnerStatus"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginBottom="8dp"
+        app:layout_constraintBottom_toBottomOf="@id/tvStatus"
+        app:layout_constraintBottom_toTopOf="@id/btnGetMessage"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@id/tvStatus" />
 
     <Button
         android:id="@+id/btnGetMessage"
