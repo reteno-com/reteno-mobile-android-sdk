@@ -8,6 +8,9 @@ import io.mockk.impl.annotations.RelaxedMockK
 import io.mockk.mockk
 import io.mockk.verify
 import org.junit.Test
+import java.time.ZoneId
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
 import java.util.concurrent.ScheduledExecutorService
 
 class ScheduleControllerImplTest : BaseRobolectricTest() {
@@ -125,6 +128,14 @@ class ScheduleControllerImplTest : BaseRobolectricTest() {
         verify { appInboxController.clearOldMessagesStatus() }
         verify { recommendationController.clearOldRecommendations() }
         verify { deeplinkController.clearOldDeeplinks() }
+    }
+
+    @Test
+    fun test() {
+        val formatter = DateTimeFormatter
+            .ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'")
+            .withZone(ZoneId.of("UTC"))
+        println(formatter.format(ZonedDateTime.now()))
     }
 
 }

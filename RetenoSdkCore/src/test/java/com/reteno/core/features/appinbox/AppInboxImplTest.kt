@@ -26,8 +26,8 @@ class AppInboxImplTest : BaseUnitTest() {
     @Test
     fun whenGetAppInboxMessagesCalled_thenCallMirroredToController() = runTest {
         val sut = createSUT()
-        every { controller.getAppInboxMessages(any(), any(), any()) } answers {
-            thirdArg<RetenoResultCallback<AppInboxMessages>>().onSuccess(
+        every { controller.getAppInboxMessages(any(), any(), any(), any()) } answers {
+            arg<RetenoResultCallback<AppInboxMessages>>(3).onSuccess(
                 AppInboxMessages(
                     emptyList(),
                     totalPages = 0
@@ -35,7 +35,7 @@ class AppInboxImplTest : BaseUnitTest() {
             )
         }
 
-        sut.getAppInboxMessages(0, 20, object : RetenoResultCallback<AppInboxMessages> {
+        sut.getAppInboxMessages(0, 20, null, object : RetenoResultCallback<AppInboxMessages> {
             override fun onSuccess(result: AppInboxMessages) {
 
             }
@@ -44,14 +44,14 @@ class AppInboxImplTest : BaseUnitTest() {
             }
         })
 
-        verify { controller.getAppInboxMessages(any(), any(), any()) }
+        verify { controller.getAppInboxMessages(any(), any(), any(), any()) }
     }
 
     @Test
     fun whenGetAppInboxMessagesResponseSuccess_thenCallbackSuccessInvoked() = runTest {
         val sut = createSUT()
-        every { controller.getAppInboxMessages(any(), any(), any()) } answers {
-            thirdArg<RetenoResultCallback<AppInboxMessages>>().onSuccess(
+        every { controller.getAppInboxMessages(any(), any(), any(), any()) } answers {
+            arg<RetenoResultCallback<AppInboxMessages>>(3).onSuccess(
                 AppInboxMessages(
                     emptyList(),
                     totalPages = 0
@@ -60,7 +60,7 @@ class AppInboxImplTest : BaseUnitTest() {
         }
 
         var response: AppInboxMessages? = null
-        sut.getAppInboxMessages(0, 20, object : RetenoResultCallback<AppInboxMessages> {
+        sut.getAppInboxMessages(0, 20, null, object : RetenoResultCallback<AppInboxMessages> {
             override fun onSuccess(result: AppInboxMessages) {
                 response = result
             }
@@ -81,8 +81,8 @@ class AppInboxImplTest : BaseUnitTest() {
     @Test
     fun whenGetAppInboxMessagesResponseError_thenCallbackErrorInvoked() = runTest {
         val sut = createSUT()
-        every { controller.getAppInboxMessages(any(), any(), any()) } answers {
-            thirdArg<RetenoResultCallback<AppInboxMessages>>().onFailure(
+        every { controller.getAppInboxMessages(any(), any(), any(), any()) } answers {
+            arg<RetenoResultCallback<AppInboxMessages>>(3).onFailure(
                 400,
                 null,
                 IllegalArgumentException()
@@ -90,7 +90,7 @@ class AppInboxImplTest : BaseUnitTest() {
         }
 
         var response: Throwable? = null
-        sut.getAppInboxMessages(0, 20, object : RetenoResultCallback<AppInboxMessages> {
+        sut.getAppInboxMessages(0, 20, null, object : RetenoResultCallback<AppInboxMessages> {
             override fun onSuccess(result: AppInboxMessages) {
                 response = null
             }

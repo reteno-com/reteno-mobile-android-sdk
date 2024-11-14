@@ -5,6 +5,7 @@ import com.reteno.core.domain.callback.appinbox.RetenoResultCallback
 import com.reteno.core.domain.controller.AppInboxController
 import com.reteno.core.domain.model.appinbox.AppInboxMessages
 import com.reteno.core.features.appinbox.AppInboxImpl
+import com.reteno.core.features.appinbox.AppInboxStatus
 import io.mockk.MockKAnnotations
 import io.mockk.impl.annotations.RelaxedMockK
 import io.mockk.mockk
@@ -17,6 +18,7 @@ class AppInboxImplTest: BaseUnitTest() {
     private companion object {
         private const val PAGE = 2
         private const val PAGE_SIZE = 12
+        private val STATUS = AppInboxStatus.OPENED
         private const val MESSAGE_ID = "dsdg-4352-sdgsdg-3525-sdggse"
     }
     // endregion constants -------------------------------------------------------------------------
@@ -40,13 +42,14 @@ class AppInboxImplTest: BaseUnitTest() {
         val callback = mockk<RetenoResultCallback<AppInboxMessages>>()
 
         // When
-        inbox.getAppInboxMessages(PAGE, PAGE_SIZE, callback)
+        inbox.getAppInboxMessages(PAGE, PAGE_SIZE, STATUS, callback)
 
         // Then
         verify(exactly = 1) {
             appInboxController.getAppInboxMessages(
                 eq(PAGE),
                 eq(PAGE_SIZE),
+                eq(STATUS),
                 callback
             )
         }
@@ -58,11 +61,12 @@ class AppInboxImplTest: BaseUnitTest() {
         val callback = mockk<RetenoResultCallback<AppInboxMessages>>()
 
         // When
-        inbox.getAppInboxMessages(null, null, callback)
+        inbox.getAppInboxMessages(null, null, null, callback)
 
         // Then
         verify(exactly = 1) {
             appInboxController.getAppInboxMessages(
+                null,
                 null,
                 null,
                 callback

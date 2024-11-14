@@ -41,6 +41,7 @@ internal sealed interface ApiContract {
             private const val BASE_URL = "https://mobile-api.reteno.com/api/v1/appinbox/"
             const val QUERY_PAGE = "page"
             const val QUERY_PAGE_SIZE = "pageSize"
+            const val QUERY_STATUS = "status"
         }
 
         object MessagesCount : AppInbox() {

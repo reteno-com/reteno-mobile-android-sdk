@@ -16,6 +16,7 @@ import com.reteno.core.data.remote.model.inbox.InboxMessagesRemote
 import com.reteno.core.domain.ResponseCallback
 import com.reteno.core.domain.callback.appinbox.RetenoResultCallback
 import com.reteno.core.domain.model.appinbox.AppInboxMessages
+import com.reteno.core.features.appinbox.AppInboxStatus
 import com.reteno.core.util.Logger
 import com.reteno.core.util.Util
 import io.mockk.*
@@ -38,6 +39,7 @@ class AppInboxRepositoryImplTest : BaseRobolectricTest() {
         private val INBOX_STATUS = AppInboxMessageStatusDb.OPENED
         private const val PAGE = 2
         private const val PAGE_SIZE = 12
+        private val STATUS = AppInboxStatus.UNOPENED
 
         private const val ERROR_CODE = 400
         private const val ERROR_CODE_REPEATABLE = 500
@@ -317,7 +319,8 @@ class AppInboxRepositoryImplTest : BaseRobolectricTest() {
         val resultJson = "{}"
         val queryParams = mapOf(
             ApiContract.AppInbox.QUERY_PAGE to PAGE.toString(),
-            ApiContract.AppInbox.QUERY_PAGE_SIZE to PAGE_SIZE.toString()
+            ApiContract.AppInbox.QUERY_PAGE_SIZE to PAGE_SIZE.toString(),
+            ApiContract.AppInbox.QUERY_STATUS to STATUS.str
         )
 
         every { apiClient.get(any(), any(), any()) } answers {
@@ -327,7 +330,7 @@ class AppInboxRepositoryImplTest : BaseRobolectricTest() {
         every { any<InboxMessagesRemote>().toDomain() } returns inboxMessages
 
         // When
-        inboxRepository.getMessages(PAGE, PAGE_SIZE, retenoCallback)
+        inboxRepository.getMessages(PAGE, PAGE_SIZE, STATUS, retenoCallback)
 
         // Then
         verify(exactly = 1) { OperationQueue.addUiOperation(any()) }
@@ -350,7 +353,8 @@ class AppInboxRepositoryImplTest : BaseRobolectricTest() {
         val resultJson = "{}"
         val queryParams = mapOf(
             ApiContract.AppInbox.QUERY_PAGE to null,
-            ApiContract.AppInbox.QUERY_PAGE_SIZE to null
+            ApiContract.AppInbox.QUERY_PAGE_SIZE to null,
+            ApiContract.AppInbox.QUERY_STATUS to null
         )
 
         every { apiClient.get(any(), any(), any()) } answers {
@@ -360,7 +364,7 @@ class AppInboxRepositoryImplTest : BaseRobolectricTest() {
         every { any<InboxMessagesRemote>().toDomain() } returns inboxMessages
 
         // When
-        inboxRepository.getMessages(null, null, retenoCallback)
+        inboxRepository.getMessages(null, null, null, retenoCallback)
 
         // Then
         verify(exactly = 1) { OperationQueue.addUiOperation(any()) }
@@ -381,7 +385,8 @@ class AppInboxRepositoryImplTest : BaseRobolectricTest() {
         val retenoCallback = mockk<RetenoResultCallback<AppInboxMessages>>(relaxed = true)
         val queryParams = mapOf(
             ApiContract.AppInbox.QUERY_PAGE to null,
-            ApiContract.AppInbox.QUERY_PAGE_SIZE to null
+            ApiContract.AppInbox.QUERY_PAGE_SIZE to null,
+            ApiContract.AppInbox.QUERY_STATUS to null
         )
 
         every { apiClient.get(any(), any(), any()) } answers {
@@ -390,7 +395,7 @@ class AppInboxRepositoryImplTest : BaseRobolectricTest() {
         }
 
         // When
-        inboxRepository.getMessages(null, null, retenoCallback)
+        inboxRepository.getMessages(null, null, null, retenoCallback)
 
         // Then
         verify(exactly = 1) { OperationQueue.addUiOperation(any()) }
