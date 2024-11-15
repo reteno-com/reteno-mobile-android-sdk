@@ -37,7 +37,6 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import java.util.concurrent.atomic.AtomicBoolean
 
-@OptIn(ExperimentalCoroutinesApi::class)
 internal class IamControllerImpl(
     private val iamRepository: IamRepository,
     eventController: EventController,
@@ -48,7 +47,6 @@ internal class IamControllerImpl(
     private val isPausedInAppMessages = AtomicBoolean(false)
     private var pauseBehaviour = InAppPauseBehaviour.POSTPONE_IN_APPS
 
-    private var interactionId: String? = null
     private val _fullHtmlStateFlow: MutableStateFlow<ResultDomain<String>> =
         MutableStateFlow(ResultDomain.Idle)
     override val fullHtmlStateFlow: StateFlow<ResultDomain<String>> = _fullHtmlStateFlow
@@ -73,9 +71,8 @@ internal class IamControllerImpl(
     }
 
     override fun fetchIamFullHtml(interactionId: String) {
-        /*@formatter:off*/ Logger.i(TAG, "fetchIamFullHtml(): ", "widgetId = [", this.interactionId, "]")
+        /*@formatter:off*/ Logger.i(TAG, "fetchIamFullHtml(): ", "widgetId = [", interactionId, "]")
         /*@formatter:on*/
-        this.interactionId = interactionId
         _fullHtmlStateFlow.value = ResultDomain.Loading
 
         htmlJob = scope.launch {
@@ -100,13 +97,13 @@ internal class IamControllerImpl(
                 }
             } catch (e: TimeoutCancellationException) {
                 _fullHtmlStateFlow.value =
-                    ResultDomain.Error("fetchIamFullHtml(): widgetId = [${this@IamControllerImpl.interactionId}] TIMEOUT")
+                    ResultDomain.Error("fetchIamFullHtml(): widgetId = [${interactionId}] TIMEOUT")
             }
         }
     }
 
     override fun fetchIamFullHtml(messageContent: InAppMessageContent?) {
-        /*@formatter:off*/ Logger.i(TAG, "fetchIamFullHtml(): ", "widgetId = [", this.interactionId, "]")
+        /*@formatter:off*/ Logger.i(TAG, "fetchIamFullHtml(): ", "widgetId = [", messageContent?.messageInstanceId, "]")
         /*@formatter:on*/
         _fullHtmlStateFlow.value = ResultDomain.Loading
 
@@ -124,22 +121,19 @@ internal class IamControllerImpl(
                 }
             } catch (e: TimeoutCancellationException) {
                 _fullHtmlStateFlow.value =
-                    ResultDomain.Error("fetchIamFullHtml(): widgetId = [${this@IamControllerImpl.interactionId}] TIMEOUT")
+                    ResultDomain.Error("fetchIamFullHtml(): widgetId = [${messageContent?.messageInstanceId}] TIMEOUT")
             }
         }
     }
 
-    override fun widgetInitFailed(jsEvent: IamJsEvent) {
-        /*@formatter:off*/ Logger.i(TAG, "widgetInitFailed(): ", "widgetId = [", interactionId, "], jsEvent = [", jsEvent, "]")
+    override fun widgetInitFailed(tenantId: String, jsEvent: IamJsEvent) {
+        /*@formatter:off*/ Logger.i(TAG, "widgetInitFailed(): ", "widgetId = [", tenantId, "], jsEvent = [", jsEvent, "]")
         /*@formatter:on*/
-        interactionId?.let {
-            iamRepository.widgetInitFailed(it, jsEvent)
-        }
+        iamRepository.widgetInitFailed(tenantId, jsEvent)
     }
 
     override fun reset() {
         _fullHtmlStateFlow.value = ResultDomain.Idle
-        interactionId = null
         htmlJob?.cancel()
         htmlJob = null
     }
@@ -184,7 +178,7 @@ internal class IamControllerImpl(
                     inAppMessages,
                     updateCacheOnSuccess = messageListModel.isFromRemote.not()
                 )
-            }catch (e: Exception) {
+            } catch (e: Exception) {
                 Logger.e(TAG, "refreshSegmentation():", e)
             }
         }
