@@ -1,5 +1,7 @@
 package com.reteno.core.domain.model.appinbox
 
+import com.reteno.core.features.appinbox.AppInboxStatus
+
 data class AppInboxMessage(
     val id: String,
     val title: String,
@@ -9,5 +11,6 @@ data class AppInboxMessage(
     val imageUrl: String?,
     val linkUrl: String?,
     val category: String?,
+    val status: AppInboxStatus?,
     val customData: Map<String, String>?
 )
