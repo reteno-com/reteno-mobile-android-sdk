@@ -39,6 +39,7 @@ class InboxMessageAdapter(private val itemClick: InboxItemClick) :
             binding.tvData.text = inbox.createdDate
             binding.tvCategory.text = inbox.category
             binding.tvContent.text = inbox.content
+            binding.tvStatus.text = inbox.status?.str
             binding.btnMarkAsOpened.setOnClickListener {
                 itemClick.onOpenedClicked(inbox.id)
             }
