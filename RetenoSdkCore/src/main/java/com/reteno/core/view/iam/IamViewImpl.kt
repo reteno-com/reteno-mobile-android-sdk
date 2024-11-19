@@ -167,7 +167,8 @@ internal class IamViewImpl(
         /*@formatter:off*/ Logger.i(TAG, "onWidgetInitFailed(): ", "jsEvent = [", jsEvent, "]")
         /*@formatter:on*/
         inAppLifecycleCallback?.onError(createInAppErrorData())
-        iamController.widgetInitFailed(jsEvent)
+        val tenantId = (interactionId ?: messageInstanceId?.toString()).orEmpty()
+        iamController.widgetInitFailed(tenantId, jsEvent)
         messageInstanceId?.let { instanceId ->
             val newInteractionId = UUID.randomUUID().toString()
             interactionId = newInteractionId
@@ -179,6 +180,7 @@ internal class IamViewImpl(
                 )
             )
         }
+        teardown()
     }
 
     private fun openUrl(jsEvent: IamJsEvent) {
@@ -462,7 +464,9 @@ internal class IamViewImpl(
         /*@formatter:off*/ Logger.i(TAG, "teardown(): ", "")
         /*@formatter:on*/
         iamController.reset()
-
+        interactionId = null
+        messageId = null
+        messageInstanceId = null
         OperationQueue.addUiOperation {
             if (_parentLayout != null) {
                 parentLayout.removeAllViews()
@@ -504,7 +508,7 @@ internal class IamViewImpl(
 
         }
 
-        customData?.entries?.forEach { entry ->
+        customData.entries?.forEach { entry ->
             bundle.putString(entry.key, entry.value)
         }
 

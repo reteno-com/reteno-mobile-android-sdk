@@ -14,7 +14,7 @@ internal interface IamController {
 
     fun fetchIamFullHtml(messageContent: InAppMessageContent?)
 
-    fun widgetInitFailed(jsEvent: IamJsEvent)
+    fun widgetInitFailed(tenantId:String, jsEvent: IamJsEvent)
 
     fun reset()
 
