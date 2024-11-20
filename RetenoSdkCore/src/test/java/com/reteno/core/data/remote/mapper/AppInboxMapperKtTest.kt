@@ -2,9 +2,11 @@ package com.reteno.core.data.remote.mapper
 
 import com.reteno.core.base.BaseUnitTest
 import com.reteno.core.data.remote.model.inbox.InboxMessageRemote
+import com.reteno.core.data.remote.model.inbox.InboxMessageStatusRemote
 import com.reteno.core.data.remote.model.inbox.InboxMessagesRemote
 import com.reteno.core.domain.model.appinbox.AppInboxMessage
 import com.reteno.core.domain.model.appinbox.AppInboxMessages
+import com.reteno.core.features.appinbox.AppInboxStatus
 import junit.framework.TestCase.assertEquals
 import org.junit.Test
 
@@ -97,6 +99,7 @@ class AppInboxMapperKtTest : BaseUnitTest() {
         isNewMessage = IS_NEW_MESSAGE,
         title = TITLE,
         category = CATEGORY,
+        status = InboxMessageStatusRemote.UNOPENED,
         customData = CUSTOM_DATA
     )
 
@@ -109,6 +112,7 @@ class AppInboxMapperKtTest : BaseUnitTest() {
         isNewMessage = IS_NEW_MESSAGE,
         title = TITLE,
         category = CATEGORY,
+        status = AppInboxStatus.UNOPENED,
         customData = CUSTOM_DATA
     )
     // endregion helper methods --------------------------------------------------------------------

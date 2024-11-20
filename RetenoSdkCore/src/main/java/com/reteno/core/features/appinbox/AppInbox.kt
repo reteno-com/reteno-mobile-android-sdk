@@ -10,6 +10,7 @@ interface AppInbox {
      *
      *  @param page - order number of requested page. If null will be returned all messages.
      *  @param pageSize - messages count per page. If null will be returned all messages.
+     *  @param status - message status filter. If null, all messages will be return without status filtering
      *  @param callback - returns result for this operations.
      *
      *  @see RetenoResultCallback
