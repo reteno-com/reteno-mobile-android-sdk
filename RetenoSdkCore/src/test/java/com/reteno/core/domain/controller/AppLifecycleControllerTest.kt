@@ -13,11 +13,13 @@ import com.reteno.core.util.Util
 import com.reteno.core.util.Util.asZonedDateTime
 import io.mockk.MockKVerificationScope
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.impl.annotations.RelaxedMockK
 import io.mockk.unmockkObject
 import io.mockk.unmockkStatic
 import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.TestScope
@@ -83,6 +85,21 @@ class AppLifecycleControllerTest : BaseRobolectricTest() {
 
         verify {
             scheduleController.clearOldData()
+        }
+    }
+
+
+    @Test
+    fun given_whenContrillerInit_thenBaseHtmlShouldBeFetched() = runTest {
+        coEvery { sessionHandler.sessionEventFlow } returns MutableSharedFlow()
+        coEvery { configRepository.notificationState } returns MutableSharedFlow()
+
+        val sut = createSUT(LifecycleTrackingOptions.ALL)
+
+        sut.start()
+
+        verify {
+            iamController.preloadHtml()
         }
     }
 
