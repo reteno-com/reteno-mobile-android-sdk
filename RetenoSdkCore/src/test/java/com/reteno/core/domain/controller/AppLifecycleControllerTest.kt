@@ -46,6 +46,12 @@ class AppLifecycleControllerTest : BaseRobolectricTest() {
     @RelaxedMockK
     private lateinit var activityHelper: RetenoActivityHelper
 
+    @RelaxedMockK
+    private lateinit var scheduleController: ScheduleController
+
+    @RelaxedMockK
+    private lateinit var iamController: IamController
+
     override fun before() {
         super.before()
         unmockkStatic(ZonedDateTime::class)
@@ -64,6 +70,19 @@ class AppLifecycleControllerTest : BaseRobolectricTest() {
 
         verify {
             eventController.trackEvent(eventMatcher(Event.applicationOpen(false).event))
+        }
+    }
+
+    @Test
+    fun whenApplicationOpen_thenOldEventsCleared() = runTest {
+        coEvery { sessionHandler.sessionEventFlow } returns MutableSharedFlow()
+        coEvery { configRepository.notificationState } returns MutableSharedFlow()
+        val sut = createSUT(LifecycleTrackingOptions.ALL)
+
+        sut.start()
+
+        verify {
+            scheduleController.clearOldData()
         }
     }
 
@@ -542,6 +561,8 @@ class AppLifecycleControllerTest : BaseRobolectricTest() {
             sessionHandler = sessionHandler,
             lifecycleTrackingOptions = lifecycleTrackingOptions,
             scope = backgroundScope,
-            activityHelper = activityHelper
+            activityHelper = activityHelper,
+            scheduleController = scheduleController,
+            iamController = iamController
         )
 }

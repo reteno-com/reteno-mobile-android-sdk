@@ -67,7 +67,6 @@ internal class IamControllerImpl(
         eventController.eventFlow
             .onEach { notifyEventOccurred(it) }
             .launchIn(scope)
-        preloadHtml()
     }
 
     override fun fetchIamFullHtml(interactionId: String) {
@@ -218,6 +217,12 @@ internal class IamControllerImpl(
 
     override fun setPauseBehaviour(behaviour: InAppPauseBehaviour) {
         pauseBehaviour = behaviour
+    }
+
+    override fun preloadHtml() {
+        scope.launch {
+            iamRepository.getBaseHtml()
+        }
     }
 
     private fun showPostponedNotifications() {
@@ -382,9 +387,6 @@ internal class IamControllerImpl(
         return isPausedInAppMessages.get().not() && _fullHtmlStateFlow.value == ResultDomain.Idle
     }
 
-    private fun preloadHtml() = scope.launch {
-        iamRepository.getBaseHtml()
-    }
 
     companion object {
         private val TAG: String = IamControllerImpl::class.java.simpleName

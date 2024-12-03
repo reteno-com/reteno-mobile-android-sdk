@@ -8,6 +8,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import androidx.annotation.VisibleForTesting
+import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
 import com.reteno.core.di.ServiceLocator
 import com.reteno.core.di.provider.RetenoConfigProvider
@@ -48,7 +49,8 @@ class RetenoImpl(
     config: RetenoConfig,
     private val mainDispatcher: CoroutineDispatcher,
     private val ioDispatcher: CoroutineDispatcher,
-    private val delayInitialization: Boolean
+    private val delayInitialization: Boolean,
+    private val appLifecycleOwner: LifecycleOwner
 ) : RetenoLifecycleCallbacks, Reteno, RetenoInternalFacade {
 
     init {
@@ -103,7 +105,8 @@ class RetenoImpl(
         config = config.copy(accessKey = accessKey),
         mainDispatcher = Dispatchers.Main,
         ioDispatcher = Dispatchers.IO,
-        delayInitialization = false
+        delayInitialization = false,
+        appLifecycleOwner = ProcessLifecycleOwner.get()
     )
 
     /**
@@ -115,7 +118,21 @@ class RetenoImpl(
         config = RetenoConfig(),
         mainDispatcher = Dispatchers.Main,
         ioDispatcher = Dispatchers.IO,
+        appLifecycleOwner = ProcessLifecycleOwner.get()
     )
+
+    private suspend fun start(config: RetenoConfig) = withContext(mainDispatcher) {
+        configProvider.setConfig(config)
+        appLifecycleOwner.lifecycle.addObserver(appLifecycleController)
+        try {
+            contactController.checkIfDeviceRegistered()
+            pauseInAppMessages(config.isPausedInAppMessages)
+            pausePushInAppMessages(config.isPausedPushInAppMessages)
+        } catch (t: Throwable) {
+            /*@formatter:off*/ Logger.e(TAG, "init(): ", t)
+            /*@formatter:on*/
+        }
+    }
 
     override fun start(activity: Activity) = awaitInit {
         if (!isOsVersionSupported()) {
@@ -171,18 +188,6 @@ class RetenoImpl(
 
     private fun fetchInAppMessages() {
         iamController.getInAppMessages()
-    }
-
-    private fun sendAppResumeBroadcast() {
-        val intent =
-            Intent(BROADCAST_ACTION_RETENO_APP_RESUME).setFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES)
-        val infoList = application.queryBroadcastReceivers(intent)
-        for (info in infoList) {
-            info?.activityInfo?.let {
-                intent.component = ComponentName(it.packageName, it.name)
-                application.sendBroadcast(intent)
-            }
-        }
     }
 
     @Throws(java.lang.IllegalArgumentException::class)
@@ -533,30 +538,6 @@ class RetenoImpl(
                 }
             }
         }
-    }
-
-    private suspend fun start(config: RetenoConfig) = withContext(mainDispatcher) {
-        configProvider.setConfig(config)
-        ProcessLifecycleOwner.get().lifecycle.addObserver(appLifecycleController)
-        clearOldData()
-        initMetadata()
-        try {
-            contactController.checkIfDeviceRegistered()
-            sendAppResumeBroadcast()
-            pauseInAppMessages(config.isPausedInAppMessages)
-            pausePushInAppMessages(config.isPausedPushInAppMessages)
-        } catch (t: Throwable) {
-            /*@formatter:off*/ Logger.e(TAG, "init(): ", t)
-            /*@formatter:on*/
-        }
-    }
-
-    private fun initMetadata() {
-        appLifecycleController.initMetadata()
-    }
-
-    private fun clearOldData() {
-        scheduleController.clearOldData()
     }
 
     private fun stopPushScheduler() {
