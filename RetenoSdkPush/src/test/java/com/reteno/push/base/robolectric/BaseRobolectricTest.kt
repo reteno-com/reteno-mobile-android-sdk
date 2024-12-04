@@ -1,18 +1,15 @@
 package com.reteno.push.base.robolectric
 
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.testing.TestLifecycleOwner
 import androidx.test.core.app.ApplicationProvider
 import com.reteno.core.RetenoConfig
 import com.reteno.core.RetenoImpl
 import io.mockk.*
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
-import kotlinx.coroutines.test.runCurrent
 import org.junit.After
 import org.junit.Before
 import org.junit.runner.RunWith
@@ -55,13 +52,16 @@ abstract class BaseRobolectricTest {
         application.retenoMock = mockk()
     }
 
-    protected fun TestScope.createReteno(): RetenoImpl {
+    protected fun TestScope.createReteno(
+        lifecycleOwner: LifecycleOwner = TestLifecycleOwner()
+    ): RetenoImpl {
         return RetenoImpl(
             application = application,
             config = RetenoConfig(),
             mainDispatcher = StandardTestDispatcher(testScheduler),
             ioDispatcher = StandardTestDispatcher(testScheduler),
-            delayInitialization = false
+            delayInitialization = false,
+            appLifecycleOwner = lifecycleOwner
         ).also {
             application.retenoMock = it
             while (!it.isInitialized) {

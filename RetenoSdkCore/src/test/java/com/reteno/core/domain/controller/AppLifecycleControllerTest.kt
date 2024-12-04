@@ -13,11 +13,13 @@ import com.reteno.core.util.Util
 import com.reteno.core.util.Util.asZonedDateTime
 import io.mockk.MockKVerificationScope
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.impl.annotations.RelaxedMockK
 import io.mockk.unmockkObject
 import io.mockk.unmockkStatic
 import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.TestScope
@@ -46,6 +48,12 @@ class AppLifecycleControllerTest : BaseRobolectricTest() {
     @RelaxedMockK
     private lateinit var activityHelper: RetenoActivityHelper
 
+    @RelaxedMockK
+    private lateinit var scheduleController: ScheduleController
+
+    @RelaxedMockK
+    private lateinit var iamController: IamController
+
     override fun before() {
         super.before()
         unmockkStatic(ZonedDateTime::class)
@@ -64,6 +72,34 @@ class AppLifecycleControllerTest : BaseRobolectricTest() {
 
         verify {
             eventController.trackEvent(eventMatcher(Event.applicationOpen(false).event))
+        }
+    }
+
+    @Test
+    fun whenApplicationOpen_thenOldEventsCleared() = runTest {
+        coEvery { sessionHandler.sessionEventFlow } returns MutableSharedFlow()
+        coEvery { configRepository.notificationState } returns MutableSharedFlow()
+        val sut = createSUT(LifecycleTrackingOptions.ALL)
+
+        sut.start()
+
+        verify {
+            scheduleController.clearOldData()
+        }
+    }
+
+
+    @Test
+    fun given_whenContrillerInit_thenBaseHtmlShouldBeFetched() = runTest {
+        coEvery { sessionHandler.sessionEventFlow } returns MutableSharedFlow()
+        coEvery { configRepository.notificationState } returns MutableSharedFlow()
+
+        val sut = createSUT(LifecycleTrackingOptions.ALL)
+
+        sut.start()
+
+        verify {
+            iamController.preloadHtml()
         }
     }
 
@@ -542,6 +578,8 @@ class AppLifecycleControllerTest : BaseRobolectricTest() {
             sessionHandler = sessionHandler,
             lifecycleTrackingOptions = lifecycleTrackingOptions,
             scope = backgroundScope,
-            activityHelper = activityHelper
+            activityHelper = activityHelper,
+            scheduleController = scheduleController,
+            iamController = iamController
         )
 }

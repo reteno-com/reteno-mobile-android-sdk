@@ -116,22 +116,6 @@ class IamControllerImplTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun given_whenContrillerInit_thenBaseHtmlShouldBeFetched() = runTest {
-        //Given
-        val flow = MutableSharedFlow<Event>()
-        coEvery { iamRepository.getBaseHtml() } returns ""
-        coEvery { eventController.eventFlow } returns flow
-        // When
-        createController()
-
-        advanceUntilIdle()
-        // Then
-        coVerify { iamRepository.getBaseHtml() }
-
-        coroutineContext.cancelChildren()
-    }
-
-    @Test
     fun given_whenFetchIamFullHtml_thenFullHtmlFlowChangesToSuccess() = runTest {
         val sut = createController()
         // Given

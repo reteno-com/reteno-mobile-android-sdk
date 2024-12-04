@@ -275,7 +275,9 @@ class ServiceLocator(
         eventController = eventsControllerProvider,
         configProvider = configProvider,
         sessionHandlerProvider = retenoSessionHandlerProviderInternal,
-        activityHelperProvider = retenoActivityHelperProviderInternal
+        activityHelperProvider = retenoActivityHelperProviderInternal,
+        scheduleControllerProvider = scheduleControllerProvider,
+        iamControllerProvider = iamControllerProvider
     )
 
     val appLifecycleControllerProvider: ProviderWeakReference<AppLifecycleController>

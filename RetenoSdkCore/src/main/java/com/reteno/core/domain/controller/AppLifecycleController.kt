@@ -2,7 +2,9 @@ package com.reteno.core.domain.controller
 
 import android.app.Activity
 import android.app.ActivityManager
+import android.content.ComponentName
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.annotation.MainThread
@@ -15,18 +17,17 @@ import com.reteno.core.domain.model.event.Event
 import com.reteno.core.domain.model.event.LifecycleEvent
 import com.reteno.core.domain.model.event.LifecycleTrackingOptions
 import com.reteno.core.lifecycle.RetenoActivityHelper
-import com.reteno.core.lifecycle.RetenoActivityHelperImpl
 import com.reteno.core.lifecycle.RetenoLifecycleCallBacksAdapter
-import com.reteno.core.lifecycle.RetenoLifecycleCallbacks
 import com.reteno.core.lifecycle.RetenoSessionHandler
 import com.reteno.core.lifecycle.RetenoSessionHandler.SessionEvent
+import com.reteno.core.util.Constants
 import com.reteno.core.util.Logger
 import com.reteno.core.util.Util.asZonedDateTime
 import com.reteno.core.util.Util.toTypeMap
+import com.reteno.core.util.queryBroadcastReceivers
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -36,6 +37,8 @@ class AppLifecycleController internal constructor(
     private val configRepository: ConfigRepository,
     private val eventController: EventController,
     private val sessionHandler: RetenoSessionHandler,
+    private val scheduleController: ScheduleController,
+    private val iamController: IamController,
     activityHelper: RetenoActivityHelper,
     lifecycleTrackingOptions: LifecycleTrackingOptions,
     scope: CoroutineScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
@@ -61,6 +64,10 @@ class AppLifecycleController internal constructor(
     @MainThread
     @OnLifecycleEvent(Lifecycle.Event.ON_START)
     fun start() {
+        sendAppResumeBroadcast()
+        scheduleController.clearOldData()
+        initMetadata()
+        iamController.preloadHtml()
         if (isStarted) return
         isStarted = true
         trackLifecycleEvent(Event.applicationOpen(wasBackgrounded))
@@ -172,6 +179,18 @@ class AppLifecycleController internal constructor(
     private fun trackLifecycleEvent(lifecycleEvent: LifecycleEvent) {
         if (lifecycleEventConfig.getOrElse(lifecycleEvent.type) { false }) {
             eventController.trackEvent(lifecycleEvent.event)
+        }
+    }
+
+    private fun sendAppResumeBroadcast() {
+        val intent =
+            Intent(Constants.BROADCAST_ACTION_RETENO_APP_RESUME).setFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES)
+        val infoList = RetenoImpl.application.queryBroadcastReceivers(intent)
+        for (info in infoList) {
+            info?.activityInfo?.let {
+                intent.component = ComponentName(it.packageName, it.name)
+                RetenoImpl.application.sendBroadcast(intent)
+            }
         }
     }
 
