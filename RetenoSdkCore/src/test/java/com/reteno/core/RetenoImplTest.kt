@@ -9,6 +9,8 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.ActivityInfo
 import android.content.pm.ResolveInfo
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.testing.TestLifecycleOwner
 import com.reteno.core.base.robolectric.BaseRobolectricTest
 import com.reteno.core.di.ServiceLocator
 import com.reteno.core.domain.controller.AppLifecycleController
@@ -492,19 +494,6 @@ class RetenoImplTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun whenResumeApp_thenCalledClearOleEvents() = runTest {
-        // Given
-        val retenoImpl = createRetenoAndAdvanceInit()
-        // When
-        retenoImpl.resume(mockk())
-
-        advanceUntilIdle()
-
-        // Then
-        verify(exactly = 1) { scheduleController.clearOldData() }
-    }
-
-    @Test
     fun givenExceptionThrown_whenResumeApp_thenExceptionSentToLogger() = runTest {
         // Given
         every { scheduleController.startScheduler() } throws EXCEPTION
@@ -610,7 +599,7 @@ class RetenoImplTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun whenAppResume_thenBroadcastSent() = runTest {
+    fun whenAppStart_thenBroadcastSent() = runTest {
         // Given
         mockkConstructor(ServiceLocator::class)
         every { anyConstructed<ServiceLocator>().contactControllerProvider.get() } returns contactController
@@ -631,12 +620,13 @@ class RetenoImplTest : BaseRobolectricTest() {
             IntentFilter(Constants.BROADCAST_ACTION_RETENO_APP_RESUME)
         )
 
-        val retenoImpl = createRetenoAndAdvanceInit()
+        val lifecycleOwner = TestLifecycleOwner(initialState = Lifecycle.State.CREATED)
+        val retenoImpl = createRetenoAndAdvanceInit(lifecycleOwner)
 
         advanceUntilIdle()
-
         // When
-        retenoImpl.resume(mockk())
+
+        lifecycleOwner.handleLifecycleEvent(Lifecycle.Event.ON_START)
 
         // Then
         ShadowLooper.shadowMainLooper().idle()
