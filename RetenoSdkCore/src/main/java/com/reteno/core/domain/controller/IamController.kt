@@ -28,6 +28,8 @@ internal interface IamController {
 
     fun refreshSegmentation()
 
+    fun preloadHtml()
+
     val fullHtmlStateFlow: StateFlow<ResultDomain<String>>
     val inAppMessagesFlow: SharedFlow<InAppMessage>
 }
