@@ -239,7 +239,7 @@ internal class IamViewImpl(
                     activityHelper.currentActivity.let { activity ->
                         if (activity != null) {
                             initViewOnResume = false
-                            createIamInActivity(activity)
+                            createIam(activity)
                         } else {
                             initViewOnResume = true
                         }
@@ -266,7 +266,7 @@ internal class IamViewImpl(
             iamController.updateInAppMessage(inAppMessage)
             OperationQueue.addUiOperation {
                 activityHelper.currentActivity?.let {
-                    createIamInActivity(it)
+                    createIam(it)
                 }
                 messageId = inAppMessage.messageId
                 messageInstanceId = inAppMessage.messageInstanceId
@@ -290,7 +290,7 @@ internal class IamViewImpl(
         }
 
         if (initViewOnResume) {
-            createIamInActivity(activity)
+            createIam(activity)
             initViewOnResume = false
         }
 
@@ -347,13 +347,14 @@ internal class IamViewImpl(
         }
     }
 
-    private fun createIamInActivity(activity: Activity) {
+    private fun createIam(activity: Activity) {
         /*@formatter:off*/ Logger.i(TAG, "createIamInActivity(): ", "activity = [", activity, "]")
         /*@formatter:on*/
-        parentLayout = FrameLayout(activity)
+        val applicationContext = activity.applicationContext
+        parentLayout = FrameLayout(applicationContext)
         popupWindow = createPopupWindow(parentLayout)
-        cardView = createCardView(activity)
-        webView = createWebView(activity)
+        cardView = createCardView(applicationContext)
+        webView = createWebView(applicationContext)
 
         addCardViewToParentLayout()
         addWebViewToCardView()
@@ -394,10 +395,10 @@ internal class IamViewImpl(
         return cardView
     }
 
-    private fun createWebView(activity: Activity): WebView {
-        /*@formatter:off*/ Logger.i(TAG, "createWebView(): ", "activity = [", activity, "]")
+    private fun createWebView(context: Context): WebView {
+        /*@formatter:off*/ Logger.i(TAG, "createWebView(): ", "context = [", context, "]")
         /*@formatter:on*/
-        val webView = WebView(activity)
+        val webView = WebView(context)
         webView.webChromeClient = object : WebChromeClient() {
             override fun onConsoleMessage(consoleMessage: ConsoleMessage): Boolean {
                 Log.d(
