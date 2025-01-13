@@ -292,7 +292,7 @@ internal class SharedPrefsManager {
     }
 
     fun getExternalUserId(): String? {
-        val result = sharedPreferences.getString(PREF_KEY_EXTERNAL_DEVICE_ID, "")
+        val result = sharedPreferences.getString(PREF_KEY_EXTERNAL_DEVICE_ID, null)
         /*@formatter:off*/ Logger.i(TAG, "getExternalDeviceId(): ", "result = ", result)
         /*@formatter:on*/
         return result
@@ -307,7 +307,7 @@ internal class SharedPrefsManager {
     }
 
     fun getPhone(): String? {
-        val result = sharedPreferences.getString(PREF_KEY_DEVICE_PHONE, "")
+        val result = sharedPreferences.getString(PREF_KEY_DEVICE_PHONE, null)
         /*@formatter:off*/ Logger.i(TAG, "getPhone(): ", "result = ", result)
         /*@formatter:on*/
         return result
@@ -322,7 +322,7 @@ internal class SharedPrefsManager {
     }
 
     fun getEmail(): String? {
-        val result = sharedPreferences.getString(PREF_KEY_DEVICE_EMAIL, "")
+        val result = sharedPreferences.getString(PREF_KEY_DEVICE_EMAIL, null)
         /*@formatter:off*/ Logger.i(TAG, "getEmail(): ", "result = ", result)
         /*@formatter:on*/
         return result
