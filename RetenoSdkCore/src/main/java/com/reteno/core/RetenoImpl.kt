@@ -2,14 +2,11 @@ package com.reteno.core
 
 import android.app.Activity
 import android.app.Application
-import android.app.usage.UsageStatsManager
 import android.content.ComponentName
-import android.content.Context
 import android.content.Intent
-import android.os.Bundle
-import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
+import androidx.work.WorkManager
 import com.reteno.core.di.ServiceLocator
 import com.reteno.core.di.provider.RetenoConfigProvider
 import com.reteno.core.domain.controller.ScreenTrackingController
@@ -26,14 +23,12 @@ import com.reteno.core.lifecycle.RetenoLifecycleCallbacks
 import com.reteno.core.lifecycle.ScreenTrackingConfig
 import com.reteno.core.util.*
 import com.reteno.core.util.Constants.BROADCAST_ACTION_PUSH_PERMISSION_CHANGED
-import com.reteno.core.util.Constants.BROADCAST_ACTION_RETENO_APP_RESUME
 import com.reteno.core.view.iam.IamView
 import com.reteno.core.view.iam.callback.InAppLifecycleCallback
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
@@ -528,15 +523,28 @@ class RetenoImpl(
                     val result = suspendCoroutine {
                         initContinuation = it
                     }
+                    preventANR()
                     withContext(mainDispatcher) {
                         start(result)
                     }
                 }
             } else {
                 initDeferred = syncScope.async(ioDispatcher) {
+                    preventANR()
                     start(config)
                 }
             }
+        }
+    }
+
+    private fun preventANR() {
+        runCatching {
+            //Trick to wait for sharedPrefs initialization on background thread to prevent ANR
+            serviceLocator.sharedPrefsManagerProvider.get().getEmail()
+            //Init workmanager singleton instance
+            WorkManager.getInstance(application)
+        }.getOrElse {
+            Logger.e(TAG, "preventANR(): ", it)
         }
     }
 

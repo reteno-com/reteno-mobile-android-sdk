@@ -72,7 +72,7 @@ class ServiceLocator(
     val retenoActivityHelperProvider: ProviderWeakReference<RetenoActivityHelper>
         get() = retenoActivityHelperProviderInternal
 
-    private val sharedPrefsManagerProvider: SharedPrefsManagerProvider =
+    internal val sharedPrefsManagerProvider: SharedPrefsManagerProvider =
         SharedPrefsManagerProvider()
     private val workManagerProvider: WorkManagerProvider = WorkManagerProvider(context)
 
