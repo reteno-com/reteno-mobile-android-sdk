@@ -5,7 +5,6 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import com.reteno.core.RetenoApplication
 import com.reteno.core.RetenoImpl
 import com.reteno.core.domain.model.interaction.InteractionStatus
 import com.reteno.core.util.Logger
@@ -18,12 +17,6 @@ import com.reteno.push.Util.closeNotification
 
 class RetenoNotificationClickedReceiver : BroadcastReceiver() {
 
-    // Don't move out of lazy delegate as Robolectric tests will fail
-    // https://github.com/robolectric/robolectric/issues/4308
-    private val reteno by lazy {
-        ((RetenoImpl.application as RetenoApplication).getRetenoInstance() as RetenoImpl)
-    }
-
     override fun onReceive(context: Context, intent: Intent?) {
         if (!isOsVersionSupported()) {
             return
@@ -31,8 +24,8 @@ class RetenoNotificationClickedReceiver : BroadcastReceiver() {
         /*@formatter:off*/ Logger.i(TAG, "onReceive(): ", "notification clicked. Context = [" , context , "], intent.extras = [" , intent?.extras.toStringVerbose() , "]")
         /*@formatter:on*/
         try {
-            sendInteractionStatus(reteno, intent)
-            handleIntent(context, reteno, intent)
+            sendInteractionStatus(RetenoImpl.instance, intent)
+            handleIntent(context, RetenoImpl.instance, intent)
         } catch (ex: Throwable) {
             /*@formatter:off*/ Logger.e(TAG, "onReceive(): ", ex)
             /*@formatter:on*/

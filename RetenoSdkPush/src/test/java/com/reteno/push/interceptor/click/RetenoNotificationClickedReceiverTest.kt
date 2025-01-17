@@ -136,7 +136,7 @@ class RetenoNotificationClickedReceiverTest : BaseRobolectricTest() {
         every { context.packageManager.getLaunchIntentForPackage(any()) } returns null
         every { context.packageName } returns "com.reteno.example"
         every { application.applicationContext } returns context
-        every { RetenoImpl.application } returns application
+        every { RetenoImpl.instance.application } returns application
 
         receiver!!.onReceive(context, Intent())
 

@@ -1,5 +1,6 @@
 package com.reteno.core.data.repository
 
+import android.content.Context
 import com.google.gson.JsonObject
 import com.reteno.core.R
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerInAppMessages
@@ -37,6 +38,7 @@ import java.lang.Exception
 import kotlin.coroutines.resume
 
 internal class IamRepositoryImpl(
+    private val context: Context,
     private val apiClient: ApiClient,
     private val sharedPrefsManager: SharedPrefsManager,
     private val databaseManager: RetenoDatabaseManagerInAppMessages,
@@ -155,7 +157,7 @@ internal class IamRepositoryImpl(
                         ) {
                             /*@formatter:off*/ Logger.i(TAG, "getWidgetRemote(): onFailure(): ", "statusCode = [", statusCode, "], response = [", response, "], throwable = [", throwable, "]")
                             /*@formatter:on*/
-                            continuation.resume(WidgetModel(WIDGET))
+                            continuation.resume(WidgetModel(Util.readFromRaw(context, R.raw.widget) ?: ""))
 //                            continuation.resumeWithException()
                         }
                     }
@@ -357,6 +359,5 @@ internal class IamRepositoryImpl(
         private const val IN_APP_NO_CHANGES_CODE = 304
         private const val HEADER_ETAG_RESPONSE = "ETag"
         private const val HEADER_ETAG_REQUEST = "If-None-Match"
-        private val WIDGET = Util.readFromRaw(R.raw.widget) ?: ""
     }
 }

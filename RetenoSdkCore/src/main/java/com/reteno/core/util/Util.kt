@@ -8,6 +8,7 @@ import android.os.Build
 import android.os.Bundle
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GoogleApiAvailability
+import com.reteno.core.Reteno
 import com.reteno.core.RetenoImpl
 import com.reteno.core.domain.SchedulerUtils
 import com.reteno.core.domain.model.event.LifecycleEventType
@@ -35,7 +36,7 @@ fun <T : Any> allElementsNull(vararg elements: T?) = elements.all { it == null }
 fun <T : Any> allElementsNotNull(vararg elements: T?) = elements.all { it != null }
 
 internal fun isGooglePlayServicesAvailable(): Boolean {
-    val context = RetenoImpl.application
+    val context = RetenoImpl.instance.application
     val googleApiAvailability = GoogleApiAvailability.getInstance()
     val resultCode = googleApiAvailability.isGooglePlayServicesAvailable(context)
     return resultCode == ConnectionResult.SUCCESS
@@ -145,8 +146,7 @@ object Util {
     }
 
     @JvmStatic
-    fun readFromRaw(rawResourceId: Int): String? {
-        val context = RetenoImpl.application
+    fun readFromRaw(context: Context, rawResourceId: Int): String? {
         /*@formatter:off*/ Logger.i(TAG, "readFromRaw(): ", "context = [" , context , "], rawResourceId = [" , rawResourceId , "]")
         /*@formatter:on*/
 

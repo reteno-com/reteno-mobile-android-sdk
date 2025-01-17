@@ -11,6 +11,7 @@ import androidx.annotation.MainThread
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleObserver
 import androidx.lifecycle.OnLifecycleEvent
+import com.reteno.core.Reteno
 import com.reteno.core.RetenoImpl
 import com.reteno.core.data.repository.ConfigRepository
 import com.reteno.core.domain.model.event.Event
@@ -99,8 +100,7 @@ class AppLifecycleController internal constructor(
         val savedAppVersion = configRepository.getAppVersion()
         val savedAppBuild = configRepository.getAppBuildNumber()
         val (version, code) = try {
-            val packageName = RetenoImpl.application.packageName
-            val pInfo = RetenoImpl.application.packageManager.getPackageInfo(packageName, 0)
+            val pInfo = configRepository.getAppPackageInfo()
             val versionCode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                 pInfo.longVersionCode
             } else {
@@ -185,11 +185,11 @@ class AppLifecycleController internal constructor(
     private fun sendAppResumeBroadcast() {
         val intent =
             Intent(Constants.BROADCAST_ACTION_RETENO_APP_RESUME).setFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES)
-        val infoList = RetenoImpl.application.queryBroadcastReceivers(intent)
+        val infoList = RetenoImpl.instance.application.queryBroadcastReceivers(intent)
         for (info in infoList) {
             info?.activityInfo?.let {
                 intent.component = ComponentName(it.packageName, it.name)
-                RetenoImpl.application.sendBroadcast(intent)
+                RetenoImpl.instance.application.sendBroadcast(intent)
             }
         }
     }
