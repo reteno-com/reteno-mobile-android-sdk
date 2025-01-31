@@ -52,8 +52,7 @@ class DeviceWriteDialogFragment : BaseDatabaseDialogFragment() {
     }
 
     private fun initUi() {
-        val reteno = (requireActivity().application as SampleApp).getRetenoInstance()
-        val retenoImpl = reteno as RetenoImpl
+        val retenoImpl = RetenoImpl.instance
         val deviceId = retenoImpl.serviceLocator.configRepositoryProvider.get().getDeviceId()
         retenoImpl.serviceLocator.configRepositoryProvider.get().getFcmToken { token: String? ->
             val device = createDevice(

@@ -200,7 +200,7 @@ class IamRepositoryImplTest : BaseRobolectricTest() {
             // Given
             createRepository(StandardTestDispatcher(testScheduler))
             val interactionId = "widgetIdHere"
-            val expected = WidgetModel(Util.readFromRaw(R.raw.widget) ?: "")
+            val expected = WidgetModel(Util.readFromRaw(application, R.raw.widget) ?: "")
 
             // When
             coEvery {
@@ -559,6 +559,7 @@ class IamRepositoryImplTest : BaseRobolectricTest() {
 
     private fun createRepository(dispatcher: CoroutineDispatcher) {
         SUT = IamRepositoryImpl(
+            application,
             apiClient,
             sharedPrefsManager,
             databaseManager,

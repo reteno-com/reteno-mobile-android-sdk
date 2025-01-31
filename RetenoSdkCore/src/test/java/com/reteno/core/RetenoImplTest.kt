@@ -592,7 +592,7 @@ class RetenoImplTest : BaseRobolectricTest() {
 
     @Test
     fun getAppInbox() = runTest {
-        val retenoImpl = RetenoImpl(mockk(), "")
+        val retenoImpl = createRetenoAndAdvanceInit()
 
         val result = retenoImpl.appInbox
         assertEquals(inbox, result)
@@ -622,8 +622,6 @@ class RetenoImplTest : BaseRobolectricTest() {
 
         val lifecycleOwner = TestLifecycleOwner(initialState = Lifecycle.State.CREATED)
         val retenoImpl = createRetenoAndAdvanceInit(lifecycleOwner)
-
-        advanceUntilIdle()
         // When
 
         lifecycleOwner.handleLifecycleEvent(Lifecycle.Event.ON_START)
@@ -644,8 +642,6 @@ class RetenoImplTest : BaseRobolectricTest() {
         every { application.sendBroadcast(any()) } returns Unit
         //When
         val reteno = createRetenoAndAdvanceInit()
-
-        advanceUntilIdle()
 
         reteno.start(mockk())
 

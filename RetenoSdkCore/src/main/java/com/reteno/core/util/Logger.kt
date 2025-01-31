@@ -2,6 +2,7 @@ package com.reteno.core.util
 
 import android.util.Log
 import com.reteno.core.BuildConfig
+import com.reteno.core.Reteno
 import com.reteno.core.RetenoConfig
 import com.reteno.core.RetenoImpl
 import com.reteno.core.di.ServiceLocator
@@ -91,7 +92,7 @@ object Logger {
 
     private fun fillEventData(event: RetenoLogEvent) {
         try {
-            val packageName = RetenoImpl.application.packageName
+            val packageName = RetenoImpl.instance.application.packageName
             event.bundleId = packageName
 
             val deviceId = runCatching {
@@ -109,7 +110,7 @@ object Logger {
             runCatching {
                 RetenoImpl.instance.logRetenoEvent(logEvent)
             }.onFailure {
-                ServiceLocator(RetenoImpl.application, RetenoConfigProvider(RetenoConfig()))
+                ServiceLocator(RetenoImpl.instance.application, RetenoConfigProvider(RetenoConfig()))
                     .eventsControllerProvider
                     .get()
                     .trackRetenoEvent(logEvent)

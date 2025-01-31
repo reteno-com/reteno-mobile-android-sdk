@@ -1,5 +1,6 @@
 package com.reteno.core.domain.controller
 
+import android.content.pm.PackageInfo
 import androidx.test.core.app.ApplicationProvider
 import com.reteno.core.base.robolectric.BaseRobolectricTest
 import com.reteno.core.base.robolectric.RetenoTestApp
@@ -239,15 +240,12 @@ class AppLifecycleControllerTest : BaseRobolectricTest() {
         coEvery { configRepository.notificationState } returns MutableSharedFlow()
         coEvery { configRepository.getAppVersion() } returns ""
         coEvery { configRepository.getAppBuildNumber() } returns 0
-
+        coEvery { configRepository.getAppPackageInfo() } returns PackageInfo().apply {
+            versionName = "1.0.0"
+            versionCode = 1
+        }
 
         val sut = createSUT(LifecycleTrackingOptions.ALL)
-        val app = ApplicationProvider.getApplicationContext<RetenoTestApp>()
-        shadowOf(app.packageManager).getInternalMutablePackageInfo(app.packageName).versionCode = 1
-        shadowOf(app.packageManager).getInternalMutablePackageInfo(app.packageName).versionName =
-            "1.0.0"
-        val pinfo = app.packageManager.getPackageInfo(app.packageName, 0)
-
         sut.initMetadata()
 
         verify {
@@ -258,8 +256,8 @@ class AppLifecycleControllerTest : BaseRobolectricTest() {
             )
         }
         verify {
-            configRepository.saveAppVersion(pinfo.versionName)
-            configRepository.saveAppBuildNumber(pinfo.versionCode.toLong())
+            configRepository.saveAppVersion("1.0.0")
+            configRepository.saveAppBuildNumber(1)
         }
     }
 
@@ -270,15 +268,12 @@ class AppLifecycleControllerTest : BaseRobolectricTest() {
         coEvery { configRepository.notificationState } returns MutableSharedFlow()
         coEvery { configRepository.getAppVersion() } returns "1.0.0"
         coEvery { configRepository.getAppBuildNumber() } returns 0
-
+        coEvery { configRepository.getAppPackageInfo() } returns PackageInfo().apply {
+            versionName = "1.0.1"
+            versionCode = 2
+        }
 
         val sut = createSUT(LifecycleTrackingOptions.ALL)
-        val app = ApplicationProvider.getApplicationContext<RetenoTestApp>()
-        shadowOf(app.packageManager).getInternalMutablePackageInfo(app.packageName).versionCode = 2
-        shadowOf(app.packageManager).getInternalMutablePackageInfo(app.packageName).versionName =
-            "1.0.1"
-        val pinfo = app.packageManager.getPackageInfo(app.packageName, 0)
-
         sut.initMetadata()
 
         verify {
@@ -289,8 +284,8 @@ class AppLifecycleControllerTest : BaseRobolectricTest() {
             )
         }
         verify {
-            configRepository.saveAppVersion(pinfo.versionName)
-            configRepository.saveAppBuildNumber(pinfo.versionCode.toLong())
+            configRepository.saveAppVersion("1.0.1")
+            configRepository.saveAppBuildNumber(2)
         }
     }
 
@@ -301,13 +296,13 @@ class AppLifecycleControllerTest : BaseRobolectricTest() {
         coEvery { configRepository.notificationState } returns MutableSharedFlow()
         coEvery { configRepository.getAppVersion() } returns "1.0.0"
         coEvery { configRepository.getAppBuildNumber() } returns 0
+        coEvery { configRepository.getAppPackageInfo() } returns PackageInfo().apply {
+            versionName = "1.0.0"
+            versionCode = 2
+        }
 
 
         val sut = createSUT(LifecycleTrackingOptions.ALL)
-        val app = ApplicationProvider.getApplicationContext<RetenoTestApp>()
-        shadowOf(app.packageManager).getInternalMutablePackageInfo(app.packageName).versionCode = 2
-        shadowOf(app.packageManager).getInternalMutablePackageInfo(app.packageName).versionName = "1.0.0"
-        val pinfo = app.packageManager.getPackageInfo(app.packageName, 0)
 
         sut.initMetadata()
 
@@ -319,8 +314,8 @@ class AppLifecycleControllerTest : BaseRobolectricTest() {
             )
         }
         verify {
-            configRepository.saveAppVersion(pinfo.versionName)
-            configRepository.saveAppBuildNumber(pinfo.versionCode.toLong())
+            configRepository.saveAppVersion("1.0.0")
+            configRepository.saveAppBuildNumber(2L)
         }
     }
 
@@ -472,17 +467,15 @@ class AppLifecycleControllerTest : BaseRobolectricTest() {
         coEvery { configRepository.notificationState } returns MutableSharedFlow()
         coEvery { configRepository.getAppVersion() } returns ""
         coEvery { configRepository.getAppBuildNumber() } returns 0
-
+        coEvery { configRepository.getAppPackageInfo() } returns PackageInfo().apply {
+            versionName = "1.0.0"
+            versionCode = 1
+        }
 
         val sut = createSUT(LifecycleTrackingOptions(
             appLifecycleEnabled = false
         ))
         val app = ApplicationProvider.getApplicationContext<RetenoTestApp>()
-        shadowOf(app.packageManager).getInternalMutablePackageInfo(app.packageName).versionCode = 1
-        shadowOf(app.packageManager).getInternalMutablePackageInfo(app.packageName).versionName =
-            "1.0.0"
-        val pinfo = app.packageManager.getPackageInfo(app.packageName, 0)
-
         sut.initMetadata()
 
         verify(exactly = 0) {
@@ -493,8 +486,8 @@ class AppLifecycleControllerTest : BaseRobolectricTest() {
             )
         }
         verify {
-            configRepository.saveAppVersion(pinfo.versionName)
-            configRepository.saveAppBuildNumber(pinfo.versionCode.toLong())
+            configRepository.saveAppVersion("1.0.0")
+            configRepository.saveAppBuildNumber(1L)
         }
     }
 
@@ -504,17 +497,16 @@ class AppLifecycleControllerTest : BaseRobolectricTest() {
         coEvery { sessionHandler.sessionEventFlow } returns MutableSharedFlow()
         coEvery { configRepository.notificationState } returns MutableSharedFlow()
         coEvery { configRepository.getAppVersion() } returns "1.0.0"
+        coEvery { configRepository.getAppPackageInfo() } returns PackageInfo().apply {
+            versionName = "1.0.1"
+            versionCode = 2
+        }
         coEvery { configRepository.getAppBuildNumber() } returns 0
 
 
         val sut = createSUT(LifecycleTrackingOptions(
             appLifecycleEnabled = false
         ))
-        val app = ApplicationProvider.getApplicationContext<RetenoTestApp>()
-        shadowOf(app.packageManager).getInternalMutablePackageInfo(app.packageName).versionCode = 2
-        shadowOf(app.packageManager).getInternalMutablePackageInfo(app.packageName).versionName =
-            "1.0.1"
-        val pinfo = app.packageManager.getPackageInfo(app.packageName, 0)
 
         sut.initMetadata()
 
@@ -526,8 +518,8 @@ class AppLifecycleControllerTest : BaseRobolectricTest() {
             )
         }
         verify {
-            configRepository.saveAppVersion(pinfo.versionName)
-            configRepository.saveAppBuildNumber(pinfo.versionCode.toLong())
+            configRepository.saveAppVersion("1.0.1")
+            configRepository.saveAppBuildNumber(2L)
         }
     }
 
@@ -538,16 +530,14 @@ class AppLifecycleControllerTest : BaseRobolectricTest() {
         coEvery { configRepository.notificationState } returns MutableSharedFlow()
         coEvery { configRepository.getAppVersion() } returns "1.0.0"
         coEvery { configRepository.getAppBuildNumber() } returns 0
-
+        coEvery { configRepository.getAppPackageInfo() } returns PackageInfo().apply {
+            versionName = "1.0.0"
+            versionCode = 2
+        }
 
         val sut = createSUT(LifecycleTrackingOptions(
             appLifecycleEnabled = false
         ))
-        val app = ApplicationProvider.getApplicationContext<RetenoTestApp>()
-        shadowOf(app.packageManager).getInternalMutablePackageInfo(app.packageName).versionCode = 2
-        shadowOf(app.packageManager).getInternalMutablePackageInfo(app.packageName).versionName =
-            "1.0.0"
-        val pinfo = app.packageManager.getPackageInfo(app.packageName, 0)
 
         sut.initMetadata()
 
@@ -559,8 +549,8 @@ class AppLifecycleControllerTest : BaseRobolectricTest() {
             )
         }
         verify {
-            configRepository.saveAppVersion(pinfo.versionName)
-            configRepository.saveAppBuildNumber(pinfo.versionCode.toLong())
+            configRepository.saveAppVersion("1.0.0")
+            configRepository.saveAppBuildNumber(2L)
         }
     }
 

@@ -73,11 +73,11 @@ class ServiceLocator(
         get() = retenoActivityHelperProviderInternal
 
     internal val sharedPrefsManagerProvider: SharedPrefsManagerProvider =
-        SharedPrefsManagerProvider()
+        SharedPrefsManagerProvider(context)
     private val workManagerProvider: WorkManagerProvider = WorkManagerProvider(context)
 
     private val deviceIdHelperProvider: DeviceIdHelperProvider =
-        DeviceIdHelperProvider(sharedPrefsManagerProvider, configProvider)
+        DeviceIdHelperProvider(context, sharedPrefsManagerProvider, configProvider)
     private val restConfigProvider: RestConfigProvider =
         RestConfigProvider(sharedPrefsManagerProvider, deviceIdHelperProvider, configProvider)
     private val restClientProvider: RestClientProvider =
@@ -143,6 +143,7 @@ class ServiceLocator(
     /** Repository **/
     private val configRepositoryProviderInternal: ConfigRepositoryProvider =
         ConfigRepositoryProvider(
+            context,
             sharedPrefsManagerProvider,
             restConfigProvider
         )
@@ -189,6 +190,7 @@ class ServiceLocator(
 
     private val iamRepositoryProvider: IamRepositoryProvider =
         IamRepositoryProvider(
+            context,
             apiClientProvider,
             sharedPrefsManagerProvider,
             retenoDatabaseManagerInAppMessagesProvider,

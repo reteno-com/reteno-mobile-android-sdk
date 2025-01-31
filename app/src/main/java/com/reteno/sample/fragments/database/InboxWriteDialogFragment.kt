@@ -50,8 +50,7 @@ class InboxWriteDialogFragment : BaseDatabaseDialogFragment() {
             val messageId = Util.getTextOrNull(
                 binding!!.etInteractionId
             )
-            val reteno = (requireActivity().application as SampleApp).getRetenoInstance()
-            val retenoImpl = reteno as RetenoImpl
+            val retenoImpl = RetenoImpl.instance
             val deviceIdModel =
                 retenoImpl.serviceLocator.configRepositoryProvider.get().getDeviceId()
             val deviceId = deviceIdModel.getIdInternal()
