@@ -2,7 +2,7 @@ package com.reteno.fcm
 
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
-import com.reteno.core.RetenoApplication
+import com.reteno.core.Reteno
 import com.reteno.core.util.Logger
 import com.reteno.core.util.isOsVersionSupported
 import com.reteno.push.Constants
@@ -12,7 +12,7 @@ open class RetenoFirebaseMessagingService : FirebaseMessagingService() {
 
     // TODO move to serviceProvider if number of object allocations grow
     private val pushService: RetenoNotificationService by lazy {
-        RetenoNotificationService(this, (application as RetenoApplication).getRetenoInstance())
+        RetenoNotificationService(this, Reteno.instance)
     }
     private val handler: RetenoFirebaseServiceHandler by lazy {
         RetenoFirebaseServiceHandler(pushService)

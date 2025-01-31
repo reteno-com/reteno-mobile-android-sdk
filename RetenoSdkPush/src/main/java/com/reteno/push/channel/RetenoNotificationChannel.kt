@@ -53,7 +53,7 @@ internal object RetenoNotificationChannel {
         /*@formatter:off*/ Logger.i(TAG, "createDefaultChannel(): ", "context = [" , context , "]")
         /*@formatter:on*/
 
-        val channelData = retrieveDefaultNotificationChannelData()
+        val channelData = retrieveDefaultNotificationChannelData(context)
         DEFAULT_CHANNEL_ID = channelData.id
 
         val channel = NotificationChannel(
@@ -98,7 +98,7 @@ internal object RetenoNotificationChannel {
      *
      * @return The stored default channel or null.
      */
-    private fun retrieveDefaultNotificationChannelData(): NotificationChannelData {
+    private fun retrieveDefaultNotificationChannelData(context: Context): NotificationChannelData {
         val defaultChannelOrNull: NotificationChannelData? =
             try {
                 val jsonChannel = RetenoImpl.instance.getDefaultNotificationChannel()
@@ -111,7 +111,7 @@ internal object RetenoNotificationChannel {
 
 
         return defaultChannelOrNull ?: try {
-            val defaultJson = Util.readFromRaw(R.raw.default_channel) ?: ""
+            val defaultJson = Util.readFromRaw(context, R.raw.default_channel) ?: ""
 
             configureDefaultNotificationChannel(defaultJson)
             defaultJson.fromJson<NotificationChannelData>()

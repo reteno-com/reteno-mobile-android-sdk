@@ -1,5 +1,7 @@
 package com.reteno.core.data.repository
 
+import android.content.Context
+import android.content.pm.PackageInfo
 import com.google.android.gms.tasks.OnCompleteListener
 import com.google.firebase.messaging.FirebaseMessaging
 import com.reteno.core.data.local.config.DeviceId
@@ -13,6 +15,7 @@ import kotlin.coroutines.coroutineContext
 
 
 internal class ConfigRepositoryImpl(
+    private val context: Context,
     private val sharedPrefsManager: SharedPrefsManager,
     private val restConfig: RestConfig
 ) : ConfigRepository {
@@ -116,6 +119,14 @@ internal class ConfigRepositoryImpl(
 
     override fun saveAppBuildNumber(number: Long) {
         sharedPrefsManager.saveAppBuildNumber(number)
+    }
+
+    override fun getAppPackageInfo(): PackageInfo {
+        return context.packageManager.getPackageInfo(getAppPackageName(), 0)
+    }
+
+    override fun getAppPackageName(): String {
+        return context.packageName
     }
 
     companion object {

@@ -20,6 +20,7 @@ import android.widget.FrameLayout
 import android.widget.PopupWindow
 import androidx.cardview.widget.CardView
 import androidx.core.widget.PopupWindowCompat
+import com.reteno.core.Reteno
 import com.reteno.core.RetenoImpl
 import com.reteno.core.data.remote.OperationQueue
 import com.reteno.core.data.remote.mapper.fromJson
@@ -509,7 +510,7 @@ internal class IamViewImpl(
 
         }
 
-        customData.entries?.forEach { entry ->
+        customData.entries.forEach { entry ->
             bundle.putString(entry.key, entry.value)
         }
 
@@ -517,12 +518,12 @@ internal class IamViewImpl(
             Intent(Constants.BROADCAST_ACTION_CUSTOM_INAPP_DATA).setFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES)
         intent.putExtras(bundle)
 
-        val infoList = RetenoImpl.application.queryBroadcastReceivers(intent)
+        val infoList = RetenoImpl.instance.application.queryBroadcastReceivers(intent)
         var customDataSent = false
         for (info in infoList) {
             info?.activityInfo?.let {
                 intent.component = ComponentName(it.packageName, it.name)
-                RetenoImpl.application.sendBroadcast(intent)
+                RetenoImpl.instance.application.sendBroadcast(intent)
                 customDataSent = true
             }
         }

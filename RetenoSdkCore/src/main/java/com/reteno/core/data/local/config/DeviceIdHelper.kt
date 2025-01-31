@@ -1,7 +1,9 @@
 package com.reteno.core.data.local.config
 
+import android.content.Context
 import android.provider.Settings
 import com.google.android.gms.appset.AppSet
+import com.reteno.core.Reteno
 import com.reteno.core.RetenoImpl
 import com.reteno.core.data.local.sharedpref.SharedPrefsManager
 import com.reteno.core.identification.DeviceIdProvider
@@ -15,6 +17,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 internal class DeviceIdHelper(
+    private val context: Context,
     private val sharedPrefsManager: SharedPrefsManager,
     private val userIdProvider: DeviceIdProvider?
 ) {
@@ -26,7 +29,6 @@ internal class DeviceIdHelper(
         deviceIdMode: DeviceIdMode,
         onDeviceIdChanged: (DeviceId) -> Unit
     ) {
-        val context = RetenoImpl.application
 
         when (deviceIdMode) {
             DeviceIdMode.ANDROID_ID -> {

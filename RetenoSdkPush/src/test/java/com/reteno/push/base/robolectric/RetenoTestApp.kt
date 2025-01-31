@@ -3,7 +3,6 @@ package com.reteno.push.base.robolectric
 import android.app.Application
 import android.provider.Settings
 import com.reteno.core.Reteno
-import com.reteno.core.RetenoApplication
 import com.reteno.core.RetenoImpl
 import com.reteno.core.util.BuildUtil
 import com.reteno.core.util.Logger
@@ -16,7 +15,7 @@ import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.mockkStatic
 
-class RetenoTestApp : Application(), RetenoApplication {
+class RetenoTestApp : Application() {
 
     internal var retenoMock: RetenoImpl = mockk()
 
@@ -33,10 +32,6 @@ class RetenoTestApp : Application(), RetenoApplication {
     override fun onCreate() {
         super.onCreate()
         Settings.Secure.putString(contentResolver, Settings.Secure.ANDROID_ID, Constants.DEVICE_ID_ANDROID)
-    }
-
-    override fun getRetenoInstance(): Reteno {
-        return retenoMock
     }
 
     private fun mockLogger() {

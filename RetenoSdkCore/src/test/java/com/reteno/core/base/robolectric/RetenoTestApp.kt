@@ -4,7 +4,6 @@ import android.app.Application
 import android.database.Cursor
 import android.provider.Settings
 import com.reteno.core.Reteno
-import com.reteno.core.RetenoApplication
 import com.reteno.core.RetenoImpl
 import com.reteno.core.data.local.database.util.getAppInbox
 import com.reteno.core.data.local.database.util.getDevice
@@ -26,7 +25,7 @@ import java.util.concurrent.Executor
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 
-class RetenoTestApp : Application(), RetenoApplication {
+class RetenoTestApp : Application() {
 
     internal val scheduler: ScheduledExecutorService = mockStaticScheduler()
     internal var retenoMock: RetenoImpl = mockk()
@@ -44,10 +43,6 @@ class RetenoTestApp : Application(), RetenoApplication {
     override fun onCreate() {
         super.onCreate()
         Settings.Secure.putString(contentResolver, Settings.Secure.ANDROID_ID, Constants.DEVICE_ID_ANDROID)
-    }
-
-    override fun getRetenoInstance(): Reteno {
-        return retenoMock
     }
 
     private fun mockStaticLogger() {
