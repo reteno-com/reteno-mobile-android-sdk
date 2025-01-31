@@ -3,6 +3,7 @@ package com.reteno.core.util
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.core.content.pm.PackageInfoCompat
+import com.reteno.core.Reteno
 import com.reteno.core.RetenoImpl
 
 object DeviceInfo {
@@ -31,7 +32,7 @@ object DeviceInfo {
 
     internal fun fetchAppVersion(): String? =
         try {
-            val context = RetenoImpl.application
+            val context = RetenoImpl.instance.application
 
             val pInfo = if (Build.VERSION.SDK_INT >= 33) {
                 context.packageManager.getPackageInfo(

@@ -4,7 +4,6 @@ import android.app.Activity
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.os.Bundle
-import com.reteno.core.RetenoApplication
 import com.reteno.core.RetenoImpl
 import com.reteno.core.domain.model.interaction.InteractionStatus
 import com.reteno.core.util.Logger
@@ -16,10 +15,6 @@ import com.reteno.push.Util
 import com.reteno.push.Util.closeNotification
 
 class RetenoNotificationClickedActivity : Activity() {
-
-    private val reteno by lazy {
-        ((RetenoImpl.application as RetenoApplication).getRetenoInstance() as RetenoImpl)
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -45,6 +40,7 @@ class RetenoNotificationClickedActivity : Activity() {
             intent?.extras?.getString(Constants.KEY_ES_INTERACTION_ID)?.let { interactionId ->
                 /*@formatter:off*/ Logger.i(TAG, "sendInteractionStatus(): ", "intent = [", intent, "]")
                 /*@formatter:on*/
+                val reteno = RetenoImpl.instance
                 reteno.recordInteraction(interactionId, InteractionStatus.CLICKED)
                 reteno.forcePushData()
             }

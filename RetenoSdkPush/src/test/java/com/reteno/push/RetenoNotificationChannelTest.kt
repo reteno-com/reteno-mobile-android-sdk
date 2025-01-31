@@ -56,7 +56,7 @@ class RetenoNotificationChannelTest : BaseRobolectricTest() {
     @Before
     override fun before() {
         super.before()
-        every { BuildUtil.getTargetSdkVersion() } returns 26
+        every { BuildUtil.getTargetSdkVersion(any()) } returns 26
 
         contextMock = mockk()
         notificationManager = mockk()
@@ -79,7 +79,7 @@ class RetenoNotificationChannelTest : BaseRobolectricTest() {
     @Throws(Exception::class)
     fun givenMissingJsonConfig_whenCreateDefaultChannel_thenFallbackDefaultChannelCreated() {
         // Given
-        every { Util.readFromRaw(any<Int>()) } throws Exception("Resource not found exception")
+        every { Util.readFromRaw(any(), any<Int>()) } throws Exception("Resource not found exception")
 
         val expectedChannel = NotificationChannel(
             RetenoNotificationChannel.DEFAULT_CHANNEL_ID,
@@ -133,7 +133,7 @@ class RetenoNotificationChannelTest : BaseRobolectricTest() {
                 "\"bypass_dnd\":false," +
                 "\"show_badge\":true" +
                 "}"
-        every { Util.readFromRaw(any()) } returns channelJson
+        every { Util.readFromRaw(any(), any()) } returns channelJson
 
         val expectedChannel = NotificationChannel(
             "defaultId",
@@ -186,7 +186,7 @@ class RetenoNotificationChannelTest : BaseRobolectricTest() {
                 "\"bypass_dnd\":true," +
                 "\"show_badge\":false" +
                 "}"
-        every { Util.readFromRaw(any()) } returns configJson
+        every { Util.readFromRaw(any(), any()) } returns configJson
 
         val expectedChannel = NotificationChannel(
             "SomeIdSetByClient",

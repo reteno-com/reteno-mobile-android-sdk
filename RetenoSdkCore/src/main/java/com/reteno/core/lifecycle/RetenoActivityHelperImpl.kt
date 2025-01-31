@@ -3,10 +3,12 @@ package com.reteno.core.lifecycle
 import android.annotation.TargetApi
 import android.app.Activity
 import android.app.ActivityManager
+import android.app.Application
 import android.app.Application.ActivityLifecycleCallbacks
 import android.content.Context
 import android.os.Build
 import android.os.Bundle
+import com.reteno.core.Reteno
 import com.reteno.core.RetenoImpl
 import com.reteno.core.util.BuildUtil
 import com.reteno.core.util.Logger
@@ -38,15 +40,17 @@ internal class RetenoActivityHelperImpl : RetenoActivityHelper {
     // keeps the last activity while app is in background, onDestroy will clear it
     private var lastForegroundActivity: Activity? = null
 
-    override fun enableLifecycleCallbacks(callbacks: RetenoLifecycleCallbacks) {
-        val app = RetenoImpl.application
-        /*@formatter:off*/ Logger.i(TAG, "enableLifecycleCallbacks(): ", "callbacks = [" , callbacks , "], app = [" , app , "]")
+    override fun enableLifecycleCallbacks(
+        application: Application,
+        callbacks: RetenoLifecycleCallbacks
+    ) {
+        /*@formatter:off*/ Logger.i(TAG, "enableLifecycleCallbacks(): ", "callbacks = [" , callbacks , "], app = [" , application , "]")
         /*@formatter:on*/
-        registerActivityLifecycleCallbacks(app.getAppName(), callbacks)
-        if (BuildUtil.shouldDisableTrampolines()) {
-            app.registerActivityLifecycleCallbacks(NoTrampolinesLifecycleCallbacks())
+        registerActivityLifecycleCallbacks(application.getAppName(), callbacks)
+        if (BuildUtil.shouldDisableTrampolines(application)) {
+            application.registerActivityLifecycleCallbacks(NoTrampolinesLifecycleCallbacks())
         } else {
-            app.registerActivityLifecycleCallbacks(RetenoActivityLifecycleCallbacks())
+            application.registerActivityLifecycleCallbacks(RetenoActivityLifecycleCallbacks())
         }
     }
 

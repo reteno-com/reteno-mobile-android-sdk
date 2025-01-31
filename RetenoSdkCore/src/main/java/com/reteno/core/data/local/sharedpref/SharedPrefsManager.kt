@@ -3,20 +3,23 @@ package com.reteno.core.data.local.sharedpref
 import android.content.Context
 import android.content.SharedPreferences
 import com.reteno.core.R
+import com.reteno.core.Reteno
 import com.reteno.core.RetenoImpl
 import com.reteno.core.util.Logger
 import com.reteno.core.util.Util
 import java.util.UUID
 
 
-internal class SharedPrefsManager {
+internal class SharedPrefsManager(
+    private val context: Context
+) {
 
-    private val context = RetenoImpl.application
-
-    private val sharedPreferences: SharedPreferences = context.getSharedPreferences(
-        SHARED_PREF_NAME,
-        Context.MODE_PRIVATE
-    )
+    private val sharedPreferences: SharedPreferences by lazy {
+        context.getSharedPreferences(
+            SHARED_PREF_NAME,
+            Context.MODE_PRIVATE
+        )
+    }
 
     fun getDeviceIdUuid(): String {
         val currentDeviceId = sharedPreferences.getString(PREF_KEY_DEVICE_ID, "")
@@ -111,7 +114,7 @@ internal class SharedPrefsManager {
 
     fun getIamBaseHtmlContent(): String {
         val result = sharedPreferences.getString(PREF_KEY_IAM_BASE_HTML_CONTENT, null)
-            ?: Util.readFromRaw(R.raw.base_html)
+            ?: Util.readFromRaw(context, R.raw.base_html)
             ?: ""
         /*@formatter:off*/ Logger.i(TAG, "getIamBaseHtmlContent(): ", "result = ", result)
         /*@formatter:on*/

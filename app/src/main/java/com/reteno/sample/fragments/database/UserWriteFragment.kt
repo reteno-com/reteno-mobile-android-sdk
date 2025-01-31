@@ -161,8 +161,7 @@ class UserWriteFragment : BaseDatabaseDialogFragment() {
     }
 
     private fun getDeviceId(): DeviceId {
-        val reteno = (requireActivity().application as SampleApp).getRetenoInstance()
-        val retenoImpl = reteno as RetenoImpl
+        val retenoImpl = RetenoImpl.instance
         return retenoImpl.serviceLocator.configRepositoryProvider.get().getDeviceId()
     }
 }

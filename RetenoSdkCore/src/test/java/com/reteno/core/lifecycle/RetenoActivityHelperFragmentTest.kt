@@ -42,7 +42,7 @@ class RetenoActivityHelperFragmentTest : BaseRobolectricTest() {
         createRetenoAndAdvanceInit()
         // Given
         val sut = createSUT()
-        sut.enableLifecycleCallbacks(retenoLifecycleCallbacks)
+        sut.enableLifecycleCallbacks(activityController.get().application, retenoLifecycleCallbacks)
         val screenTrackingController = ScreenTrackingController(sut, eventController)
         val config = ScreenTrackingConfig(false)
         screenTrackingController.autoScreenTracking(config)
@@ -61,7 +61,7 @@ class RetenoActivityHelperFragmentTest : BaseRobolectricTest() {
         createRetenoAndAdvanceInit()
         // Given
         val sut = createSUT()
-        sut.enableLifecycleCallbacks(retenoLifecycleCallbacks)
+        sut.enableLifecycleCallbacks(activityController.get().application, retenoLifecycleCallbacks)
         val screenTrackingController = ScreenTrackingController(sut, eventController)
         val config = ScreenTrackingConfig(true)
         screenTrackingController.autoScreenTracking(config)
@@ -80,7 +80,7 @@ class RetenoActivityHelperFragmentTest : BaseRobolectricTest() {
         createRetenoAndAdvanceInit()
         // Given
         val sut = createSUT()
-        sut.enableLifecycleCallbacks(retenoLifecycleCallbacks)
+        sut.enableLifecycleCallbacks(activityController.get().application, retenoLifecycleCallbacks)
         val screenTrackingController = ScreenTrackingController(sut, eventController)
         val config = ScreenTrackingConfig(enable = true, trigger = ScreenTrackingTrigger.ON_RESUME)
         screenTrackingController.autoScreenTracking(config)
@@ -99,7 +99,7 @@ class RetenoActivityHelperFragmentTest : BaseRobolectricTest() {
         createRetenoAndAdvanceInit()
         // Given
         val sut = createSUT()
-        sut.enableLifecycleCallbacks(retenoLifecycleCallbacks)
+        sut.enableLifecycleCallbacks(activityController.get().application, retenoLifecycleCallbacks)
         val screenTrackingController = ScreenTrackingController(sut, eventController)
         val config = ScreenTrackingConfig(enable = true, trigger = ScreenTrackingTrigger.ON_RESUME)
         screenTrackingController.autoScreenTracking(config)
@@ -119,7 +119,7 @@ class RetenoActivityHelperFragmentTest : BaseRobolectricTest() {
         createRetenoAndAdvanceInit()
         // Given
         val sut = createSUT()
-        sut.enableLifecycleCallbacks(retenoLifecycleCallbacks)
+        sut.enableLifecycleCallbacks(activityController.get().application, retenoLifecycleCallbacks)
         val screenTrackingController = ScreenTrackingController(sut, eventController)
         val config = ScreenTrackingConfig(enable = true, excludeScreens = listOf(TestFragment::class.java.simpleName))
         screenTrackingController.autoScreenTracking(config)
@@ -138,7 +138,7 @@ class RetenoActivityHelperFragmentTest : BaseRobolectricTest() {
         createRetenoAndAdvanceInit()
         // Given
         val sut = createSUT()
-        sut.enableLifecycleCallbacks(retenoLifecycleCallbacks)
+        sut.enableLifecycleCallbacks(activityController.get().application, retenoLifecycleCallbacks)
         val screenTrackingController = ScreenTrackingController(sut, eventController)
         val config = ScreenTrackingConfig(enable = true, excludeScreens = listOf(TestFragment::class.java.simpleName))
         screenTrackingController.autoScreenTracking(config)

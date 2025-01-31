@@ -276,7 +276,7 @@ internal class RetenoNotificationHelper(private val context: Context) {
 
     private fun createPendingIntent(message: Bundle): PendingIntent {
 
-        if (BuildUtil.shouldDisableTrampolines()) {
+        if (BuildUtil.shouldDisableTrampolines(context)) {
             val intent: Intent =
                 createActivityIntent(message)
             return PendingIntent.getActivity(
@@ -312,7 +312,7 @@ internal class RetenoNotificationHelper(private val context: Context) {
 
     private fun createDeleteIntent(data: Bundle): PendingIntent? {
         try {
-            val receiver = RetenoImpl.application.getApplicationMetaData()
+            val receiver = context.getApplicationMetaData()
                 .getString(Constants.META_DATA_KEY_CUSTOM_RECEIVER_NOTIFICATION_DELETED)
             receiver?.let { receiverClassName ->
                 val intent = Intent()

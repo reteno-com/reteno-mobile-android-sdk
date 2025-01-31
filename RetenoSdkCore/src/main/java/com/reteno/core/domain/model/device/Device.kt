@@ -2,6 +2,7 @@ package com.reteno.core.domain.model.device
 
 import android.content.Context
 import android.telephony.TelephonyManager
+import com.reteno.core.Reteno
 import com.reteno.core.RetenoImpl
 import com.reteno.core.util.DeviceInfo
 import com.reteno.core.util.Logger
@@ -61,7 +62,7 @@ data class Device(
 
 
         internal fun fetchDeviceCategory(): DeviceCategory {
-            val context = RetenoImpl.application
+            val context = RetenoImpl.instance.application
             val telephonyManager =
                 context.applicationContext.getSystemService(Context.TELEPHONY_SERVICE) as? TelephonyManager
 
