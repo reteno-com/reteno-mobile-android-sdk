@@ -77,7 +77,7 @@ internal sealed interface ApiContract {
         }
 
         object BaseHtml : InAppMessages() {
-            override val url = "https://statics.esputnik.com/in-app/base.latest.html"
+            override val url = "https://statics.reteno.com/in-app/base.9e567a4a0e6f85abfba198e0bbc8ff2ec0dc1f7f.html"
         }
 
         data class GetInnAppWidgetByInteractionId(private val interactionId: String) :

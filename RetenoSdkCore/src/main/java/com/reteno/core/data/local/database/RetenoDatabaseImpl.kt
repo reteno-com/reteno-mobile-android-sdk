@@ -18,6 +18,7 @@ import com.reteno.core.data.local.database.schema.DeviceSchema
 import com.reteno.core.data.local.database.schema.EventsSchema
 import com.reteno.core.data.local.database.schema.InAppInteractionSchema
 import com.reteno.core.data.local.database.schema.InAppMessageSchema
+import com.reteno.core.data.local.database.schema.InAppMessageSchema.TABLE_NAME_IN_APP_MESSAGE
 import com.reteno.core.data.local.database.schema.InteractionSchema
 import com.reteno.core.data.local.database.schema.LogEventSchema
 import com.reteno.core.data.local.database.schema.RecomEventsSchema
@@ -129,6 +130,20 @@ internal class RetenoDatabaseImpl(private val context: Context) : RetenoDatabase
                 /*@formatter:on*/
                 db.execSQL(DeviceSchema.SQL_UPGRADE_TABLE_VERSION_8_EMAIL)
                 db.execSQL(DeviceSchema.SQL_UPGRADE_TABLE_VERSION_8_PHONE)
+            } catch (e: SQLiteException) {
+                if (e.toString().startsWith("duplicate column name")) {
+                    /*@formatter:off*/ Logger.e(TAG, "onUpgrade(): Ignoring this exception", e)
+                    /*@formatter:on*/
+                } else {
+                    throw e
+                }
+            }
+        }
+        if (oldVersion < 9) {
+            try {
+                /*@formatter:off*/ Logger.i(TAG, "onUpgrade(): start update table \"${TABLE_NAME_IN_APP_MESSAGE}\"", " old DB version = ",oldVersion,", newVersion = ",newVersion )
+                /*@formatter:on*/
+                db.execSQL(InAppMessageSchema.SQL_UPGRADE_TABLE_VERSION_9)
             } catch (e: SQLiteException) {
                 if (e.toString().startsWith("duplicate column name")) {
                     /*@formatter:off*/ Logger.e(TAG, "onUpgrade(): Ignoring this exception", e)

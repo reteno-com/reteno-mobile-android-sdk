@@ -51,7 +51,7 @@ internal class IamRepositoryImpl(
         val versionRemote = getBaseHtmlVersionRemote() ?: BASE_HTML_VERSION_DEFAULT
         val versionLocal = sharedPrefsManager.getIamBaseHtmlVersion() ?: BASE_HTML_VERSION_DEFAULT
 
-        val baseHtmlContent = if (versionRemote == versionLocal) {
+        val baseHtmlContent = if (false) {
             sharedPrefsManager.getIamBaseHtmlContent()
         } else {
             val baseHtmlContentRemote =

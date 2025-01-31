@@ -5,26 +5,14 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.res.Resources
-import android.graphics.Color
-import android.graphics.drawable.ColorDrawable
 import android.net.Uri
 import android.os.Bundle
-import android.util.Log
-import android.view.Gravity
-import android.view.ViewGroup.LayoutParams
-import android.view.WindowManager
-import android.webkit.ConsoleMessage
-import android.webkit.WebChromeClient
-import android.webkit.WebView
-import android.widget.FrameLayout
-import android.widget.PopupWindow
-import androidx.cardview.widget.CardView
-import androidx.core.widget.PopupWindowCompat
 import com.reteno.core.Reteno
 import com.reteno.core.RetenoImpl
 import com.reteno.core.data.remote.OperationQueue
 import com.reteno.core.data.remote.mapper.fromJson
 import com.reteno.core.data.remote.model.iam.message.InAppMessage
+import com.reteno.core.data.remote.model.iam.message.InAppMessageContent.InAppLayoutType
 import com.reteno.core.domain.ResultDomain
 import com.reteno.core.domain.controller.IamController
 import com.reteno.core.domain.controller.InteractionController
@@ -46,6 +34,7 @@ import com.reteno.core.view.iam.callback.InAppData
 import com.reteno.core.view.iam.callback.InAppErrorData
 import com.reteno.core.view.iam.callback.InAppLifecycleCallback
 import com.reteno.core.view.iam.callback.InAppSource
+import com.reteno.core.view.iam.container.IamContainer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancelChildren
@@ -72,33 +61,7 @@ internal class IamViewImpl(
     private var interactionId: String? = null
     private var messageId: Long? = null
     private var messageInstanceId: Long? = null
-    private var _parentLayout: FrameLayout? = null
-    private var _popupWindow: PopupWindow? = null
-    private var _cardView: CardView? = null
-    private var _webView: WebView? = null
-
-    private var parentLayout: FrameLayout
-        get() = requireNotNull(_parentLayout)
-        set(value) {
-            _parentLayout = value
-        }
-    private var popupWindow: PopupWindow
-        get() = requireNotNull(_popupWindow)
-        set(value) {
-            _popupWindow = value
-        }
-    private var cardView: CardView
-        get() = requireNotNull(_cardView)
-        set(value) {
-            _cardView = value
-        }
-    private var webView: WebView
-        get() = requireNotNull(_webView)
-        set(value) {
-            _webView = value
-        }
-
-    private var initViewOnResume = true
+    private var iamContainer: IamContainer? = null
 
     private var pauseIncomingPushInApps = AtomicBoolean(false)
     private var lastPushInteractionId: String? = null
@@ -237,14 +200,7 @@ internal class IamViewImpl(
                 messageInstanceId = null
 
                 OperationQueue.addUiOperation {
-                    activityHelper.currentActivity.let { activity ->
-                        if (activity != null) {
-                            initViewOnResume = false
-                            createIam(activity)
-                        } else {
-                            initViewOnResume = true
-                        }
-                    }
+                    createIam(RetenoImpl.instance.application, InAppLayoutType.FULL)
                     inAppLifecycleCallback?.beforeDisplay(createInAppData())
                     iamController.fetchIamFullHtml(interactionId)
                 }
@@ -266,9 +222,7 @@ internal class IamViewImpl(
             inAppMessage.notifyShown()
             iamController.updateInAppMessage(inAppMessage)
             OperationQueue.addUiOperation {
-                activityHelper.currentActivity?.let {
-                    createIam(it)
-                }
+                createIam(RetenoImpl.instance.application, inAppMessage.content?.layoutType ?: InAppLayoutType.FULL)
                 messageId = inAppMessage.messageId
                 messageInstanceId = inAppMessage.messageInstanceId
                 inAppSource = InAppSource.DISPLAY_RULES
@@ -290,11 +244,6 @@ internal class IamViewImpl(
             return
         }
 
-        if (initViewOnResume) {
-            createIam(activity)
-            initViewOnResume = false
-        }
-
         iamController.inAppMessagesFlow
             .onEach { initialize(it) }
             .launchIn(iamShowScope)
@@ -303,7 +252,7 @@ internal class IamViewImpl(
             iamController.fullHtmlStateFlow.collect { result ->
                 ensureActive()
                 if (result is ResultDomain.Success) {
-                    uploadHtmlIntoWebView(result.body)
+                    iamContainer?.attachHtml(retenoAndroidHandler, result.body)
                 }
             }
         }
@@ -314,7 +263,7 @@ internal class IamViewImpl(
         /*@formatter:on*/
         iamShowScope.coroutineContext.cancelChildren()
         if (isViewShown.get()) {
-            popupWindow.dismiss()
+            iamContainer?.dismiss()
         }
     }
 
@@ -339,7 +288,7 @@ internal class IamViewImpl(
 
         if (activityHelper.canPresentMessages() && activityHelper.isActivityFullyReady()) {
             OperationQueue.addUiOperation {
-                activityHelper.currentActivity?.let(::showIamPopupWindow)
+                activityHelper.currentActivity?.let(::showIamContainer)
             }
         } else {
             OperationQueue.addOperationAfterDelay({
@@ -348,116 +297,17 @@ internal class IamViewImpl(
         }
     }
 
-    private fun createIam(activity: Activity) {
-        /*@formatter:off*/ Logger.i(TAG, "createIamInActivity(): ", "activity = [", activity, "]")
+    private fun createIam(context: Context, type: InAppLayoutType) {
+        /*@formatter:off*/ Logger.i(TAG, "createIamInActivity(): ", "context = [", context, "]")
         /*@formatter:on*/
-        val applicationContext = activity.applicationContext
-        parentLayout = FrameLayout(applicationContext)
-        popupWindow = createPopupWindow(parentLayout)
-        cardView = createCardView(applicationContext)
-        webView = createWebView(applicationContext)
-
-        addCardViewToParentLayout()
-        addWebViewToCardView()
+        iamContainer = IamContainer.create(context, type)
     }
 
-    private fun createPopupWindow(parentLayout: FrameLayout): PopupWindow {
-        /*@formatter:off*/ Logger.i(TAG, "createPopupWindow(): ", "parentLayout = [", parentLayout, "]")
-        /*@formatter:on*/
-        val popupWindow = PopupWindow(
-            parentLayout,
-            WindowManager.LayoutParams.MATCH_PARENT,
-            WindowManager.LayoutParams.MATCH_PARENT,
-            true
-        )
-
-        popupWindow.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
-        popupWindow.isTouchable = true
-        // Required for getting fullscreen under notches working in portrait mode
-        popupWindow.isClippingEnabled = false
-        return popupWindow
-    }
-
-    private fun createCardView(context: Context): CardView {
-        /*@formatter:off*/ Logger.i(TAG, "createCardView(): ", "context = [", context, "]")
-        /*@formatter:on*/
-        val cardView = CardView(context)
-        cardView.layoutParams =
-            FrameLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
-
-        // Set the initial elevation of the CardView to 0dp if using Android 6 API 23
-        //  Fixes bug when animating a elevated CardView class
-        cardView.cardElevation = dpToPx(5).toFloat()
-        cardView.radius = dpToPx(8).toFloat()
-        cardView.clipChildren = false
-        cardView.clipToPadding = false
-        cardView.preventCornerOverlap = false
-        cardView.setCardBackgroundColor(Color.TRANSPARENT)
-        return cardView
-    }
-
-    private fun createWebView(context: Context): WebView {
-        /*@formatter:off*/ Logger.i(TAG, "createWebView(): ", "context = [", context, "]")
-        /*@formatter:on*/
-        val webView = WebView(context)
-        webView.webChromeClient = object : WebChromeClient() {
-            override fun onConsoleMessage(consoleMessage: ConsoleMessage): Boolean {
-                Log.d(
-                    "WEB VIEW TAG",
-                    consoleMessage.message() + " -- From line " + consoleMessage.lineNumber() + " of " + consoleMessage.sourceId()
-                )
-                return true
-            }
-        }
-        webView.settings.apply {
-            javaScriptEnabled = true
-            domStorageEnabled = true
-            databaseEnabled = true
-        }
-        webView.setBackgroundColor(Color.TRANSPARENT)
-        return webView
-    }
-
-    private fun addCardViewToParentLayout() {
-        /*@formatter:off*/ Logger.i(TAG, "addCardViewToParentLayout(): ", "")
-        /*@formatter:on*/
-        parentLayout.clipChildren = false
-        parentLayout.clipToPadding = false
-        parentLayout.addView(cardView, LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
-    }
-
-    private fun addWebViewToCardView() {
-        /*@formatter:off*/ Logger.i(TAG, "addWebViewToCardView(): ", "")
-        /*@formatter:on*/
-        cardView.addView(webView, LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
-    }
-
-    private fun uploadHtmlIntoWebView(fullHtml: String) {
-        /*@formatter:off*/ Logger.i(TAG, "uploadHtmlIntoWebView(): ")
-        /*@formatter:on*/
-//        val encodedHtml = Base64.encodeToString(fullHtml.toByteArray(), Base64.NO_PADDING)
-//        webView.loadData(encodedHtml, MIME_TYPE, ENCODING)
-        webView.loadDataWithBaseURL("", fullHtml, MIME_TYPE, "UTF-8", "")
-        webView.addJavascriptInterface(retenoAndroidHandler, JS_INTERFACE_NAME)
-    }
-
-    private fun showIamPopupWindow(activity: Activity) {
+    private fun showIamContainer(activity: Activity) {
         /*@formatter:off*/ Logger.i(TAG, "showIamPopupWindow(): ", "activity = [", activity, "]")
         /*@formatter:on*/
-        val gravity = Gravity.CENTER_HORIZONTAL or Gravity.TOP
-        val displayType = WindowManager.LayoutParams.TYPE_APPLICATION_PANEL
-
-        PopupWindowCompat.setWindowLayoutType(popupWindow, displayType)
-
         if (activityHelper.canPresentMessages() && activityHelper.isActivityFullyReady()) {
-            /*@formatter:off*/ Logger.i(TAG, "showIamPopupWindow(): ", "Start showing")
-            /*@formatter:on*/
-            popupWindow.showAtLocation(
-                activity.window.decorView.rootView,
-                gravity,
-                0,
-                0
-            )
+            iamContainer?.show(activity)
             isViewShown.set(true)
         }
     }
@@ -470,28 +320,8 @@ internal class IamViewImpl(
         messageId = null
         messageInstanceId = null
         OperationQueue.addUiOperation {
-            if (_parentLayout != null) {
-                parentLayout.removeAllViews()
-            }
-            if (_popupWindow != null) {
-                try {
-                    popupWindow.dismiss()
-                } catch (e: Exception) {
-                    /*@formatter:off*/ Logger.e(TAG, "teardown(): popupWindow.dismiss() ", e)
-                    /*@formatter:on*/
-                }
-            }
-            if (_cardView != null) {
-                cardView.removeAllViews()
-            }
-            if (_webView != null) {
-                webView.removeAllViews()
-                webView.removeJavascriptInterface(JS_INTERFACE_NAME)
-            }
-            _parentLayout = null
-            _popupWindow = null
-            _cardView = null
-            _webView = null
+            iamContainer?.destroy()
+            iamContainer = null
             isViewShown.set(false)
         }
     }
@@ -607,13 +437,12 @@ internal class IamViewImpl(
         private const val DELAY_UI_MS = 200L
         private const val DELAY_UI_ATTEMPTS = 150
 
-        private const val MIME_TYPE = "text/html"
         private const val ENCODING = "base64"
-        private const val JS_INTERFACE_NAME = "RetenoAndroidHandler"
+        internal const val JS_INTERFACE_NAME = "RetenoAndroidHandler"
 
         private const val ERROR_MESSAGE = "Failed to load In-App message."
 
-        private fun dpToPx(dp: Int): Int {
+        fun dpToPx(dp: Int): Int {
             return (dp * Resources.getSystem().displayMetrics.density).toInt()
         }
     }

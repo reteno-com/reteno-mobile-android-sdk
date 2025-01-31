@@ -11,6 +11,8 @@ import com.reteno.core.data.remote.model.iam.displayrules.async.AsyncRulesCheckE
 import com.reteno.core.data.remote.model.iam.displayrules.async.SegmentRule
 import com.reteno.core.data.remote.model.iam.message.InAppMessage
 import com.reteno.core.data.remote.model.iam.message.InAppMessageContent
+import com.reteno.core.data.remote.model.iam.message.InAppMessageContent.InAppLayoutParams
+import com.reteno.core.data.remote.model.iam.message.InAppMessageContent.InAppLayoutType
 import com.reteno.core.data.remote.model.iam.message.InAppMessageResponse
 import com.reteno.core.util.InAppMessageUtil
 import com.reteno.core.util.toTimeUnit
@@ -38,7 +40,8 @@ internal fun InAppMessageDb.toInAppMessage(): InAppMessage {
     val content = if (model != null && layoutType != null) {
         InAppMessageContent(
             messageInstanceId = messageInstanceId,
-            layoutType = layoutType,
+            layoutType = InAppLayoutType.from(layoutType),
+            layoutParams = position?.let { InAppLayoutParams(InAppLayoutParams.Position.from(position)) },
             model = model.fromJson<JsonElement>()
         )
     } else null
@@ -79,8 +82,9 @@ internal fun InAppMessage.toDB(): InAppMessageDb {
         messageId = messageId,
         messageInstanceId = messageInstanceId,
         displayRules = displayRulesJson.toString(),
-        layoutType = content?.layoutType,
+        layoutType = content?.layoutType?.key,
         model = content?.model?.toString(),
+        position = content?.layoutParams?.position?.key,
         lastShowTime = lastShowTime,
         showCount = showCount
     )
