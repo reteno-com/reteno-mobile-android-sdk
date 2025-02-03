@@ -74,8 +74,7 @@ class EventWriteDialogFragment : BaseDatabaseDialogFragment() {
     }
 
     private fun getEventData():Events {
-        val reteno = (requireActivity().application as SampleApp).getRetenoInstance()
-        val retenoImpl = reteno as RetenoImpl
+        val retenoImpl = RetenoImpl.instance
         val deviceIdModel = retenoImpl.serviceLocator.configRepositoryProvider.get().getDeviceId()
         val deviceId = deviceIdModel.getIdInternal()
         val externalUserId = Util.getTextOrNull(binding!!.etExternalUserId)

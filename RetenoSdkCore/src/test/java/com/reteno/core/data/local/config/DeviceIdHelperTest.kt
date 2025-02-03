@@ -7,6 +7,7 @@ import com.reteno.core.identification.DeviceIdProvider
 import io.mockk.MockKAnnotations
 import io.mockk.every
 import io.mockk.impl.annotations.RelaxedMockK
+import io.mockk.mockk
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Test
@@ -38,7 +39,7 @@ class DeviceIdHelperTest : BaseRobolectricTest() {
         super.before()
         MockKAnnotations.init(this)
 
-        SUT = DeviceIdHelper(sharedPrefsManager, userIdProvider)
+        SUT = DeviceIdHelper(application, sharedPrefsManager, userIdProvider)
     }
 
     @Test

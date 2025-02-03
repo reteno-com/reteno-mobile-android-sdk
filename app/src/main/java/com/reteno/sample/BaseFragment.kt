@@ -5,5 +5,5 @@ import com.reteno.core.Reteno
 
 abstract class BaseFragment : Fragment() {
     val reteno: Reteno
-        get() = (requireActivity().application as SampleApp).getRetenoInstance()
+        get() = Reteno.instance
 }

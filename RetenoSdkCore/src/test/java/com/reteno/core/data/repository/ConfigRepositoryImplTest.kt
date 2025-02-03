@@ -65,7 +65,7 @@ class ConfigRepositoryImplTest : BaseUnitTest() {
         coEvery { sharedPrefsManager.isNotificationsEnabled() } returns false
         coEvery { sharedPrefsManager.isDeviceRegistered() } returns false
         coEvery { sharedPrefsManager.setFirstLaunch(any()) } returns Unit
-        SUT = ConfigRepositoryImpl(sharedPrefsManager, restConfig)
+        SUT = ConfigRepositoryImpl(mockk(), sharedPrefsManager, restConfig)
     }
 
     @Test

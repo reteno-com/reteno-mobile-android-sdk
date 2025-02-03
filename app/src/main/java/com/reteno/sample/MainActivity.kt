@@ -17,7 +17,7 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.navigation.fragment.NavHostFragment
 import com.google.android.material.snackbar.Snackbar
-import com.reteno.core.RetenoApplication
+import com.reteno.core.RetenoImpl
 import com.reteno.core.view.iam.callback.InAppCloseData
 import com.reteno.core.view.iam.callback.InAppData
 import com.reteno.core.view.iam.callback.InAppErrorData
@@ -31,7 +31,7 @@ class MainActivity : AppCompatActivity() {
             ActivityResultContracts.RequestPermission(),
             ActivityResultCallback<Boolean> { isGranted: Boolean ->
                 if (isGranted) {
-                    (applicationContext as RetenoApplication).getRetenoInstance()
+                    RetenoImpl.instance
                         .updatePushPermissionStatus()
                     Toast.makeText(this, "Permission granted", Toast.LENGTH_SHORT).show()
                 } else {
@@ -57,7 +57,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun createInAppLifecycleListener() {
         val context: Context = this
-        (application as RetenoApplication).getRetenoInstance()
+        RetenoImpl.instance
             .setInAppLifecycleCallback(object : InAppLifecycleCallback {
                 override fun beforeDisplay(inAppData: InAppData) {
                     Toast.makeText(

@@ -25,36 +25,27 @@ import com.reteno.core.util.*
 import com.reteno.core.util.Constants.BROADCAST_ACTION_PUSH_PERMISSION_CHANGED
 import com.reteno.core.view.iam.IamView
 import com.reteno.core.view.iam.callback.InAppLifecycleCallback
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlin.coroutines.Continuation
-import kotlin.coroutines.resume
-import kotlin.coroutines.suspendCoroutine
 
 
 class RetenoImpl(
-    application: Application,
-    config: RetenoConfig,
-    private val mainDispatcher: CoroutineDispatcher,
-    private val ioDispatcher: CoroutineDispatcher,
-    private val delayInitialization: Boolean,
-    private val appLifecycleOwner: LifecycleOwner
+    val application: Application,
+    private val mainDispatcher: CoroutineDispatcher = Dispatchers.Main,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    private val appLifecycleOwner: LifecycleOwner = ProcessLifecycleOwner.get()
 ) : RetenoLifecycleCallbacks, Reteno, RetenoInternalFacade {
 
-    init {
-        /*@formatter:off*/ Logger.i(TAG, "RetenoImpl(): ", "context = [" , application , "]")
-        /*@formatter:on*/
-        Companion.application = application
-    }
-
-    private val configProvider = RetenoConfigProvider(config)
+    private val initWaitCondition = CompletableDeferred<Unit>()
+    private val anrWaitCondition = CompletableDeferred<Unit>()
+    private val configProvider = RetenoConfigProvider(RetenoConfig())
     private val syncScope = CoroutineScope(mainDispatcher + SupervisorJob())
 
     //TODO make this property private
@@ -76,56 +67,69 @@ class RetenoImpl(
     override val recommendation by lazy { serviceLocator.recommendationProvider.get() }
     private val iamView: IamView by lazy { serviceLocator.iamViewProvider.get() }
 
-    @Volatile
-    private var initContinuation: Continuation<RetenoConfig>? = null
-    @Volatile
-    private var initDeferred: Deferred<Unit>? = null
-
     private var isStarted: Boolean = false
 
     val isInitialized: Boolean
-        get() = initDeferred?.isCompleted == true || initDeferred == null
+        get() = initWaitCondition.isCompleted
 
     init {
-        initSdk(config)
+        initSdk()
     }
 
-    @JvmOverloads
-    constructor(
-        application: Application,
-        accessKey: String,
-        config: RetenoConfig = RetenoConfig()
-    ) : this(
-        application = application,
-        config = config.copy(accessKey = accessKey),
-        mainDispatcher = Dispatchers.Main,
-        ioDispatcher = Dispatchers.IO,
-        delayInitialization = false,
-        appLifecycleOwner = ProcessLifecycleOwner.get()
-    )
+    override fun initWith(config: RetenoConfig) {
+        if (isInitialized) {
+            Logger.i(TAG, "RetenoSDK was already initialized, skipping")
+            return
+        }
+        syncScope.launch(mainDispatcher) {
+            anrWaitCondition.await()
+            applyConfig(config)
+            initWaitCondition.complete(Unit)
+        }
+    }
 
-    /**
-     * This constructor is created for delayed initialization of deviceId, do not use it unless
-     * you actually need to provide API key and config later on in the app */
-    constructor(application: Application) : this(
-        application = application,
-        delayInitialization = true,
-        config = RetenoConfig(),
-        mainDispatcher = Dispatchers.Main,
-        ioDispatcher = Dispatchers.IO,
-        appLifecycleOwner = ProcessLifecycleOwner.get()
-    )
-
-    private suspend fun start(config: RetenoConfig) = withContext(mainDispatcher) {
-        configProvider.setConfig(config)
-        appLifecycleOwner.lifecycle.addObserver(appLifecycleController)
+    private suspend fun applyConfig(config: RetenoConfig) = withContext(mainDispatcher) {
         try {
+            configProvider.setConfig(config)
+            appLifecycleOwner.lifecycle.addObserver(appLifecycleController)
             contactController.checkIfDeviceRegistered()
             pauseInAppMessages(config.isPausedInAppMessages)
             pausePushInAppMessages(config.isPausedPushInAppMessages)
         } catch (t: Throwable) {
             /*@formatter:off*/ Logger.e(TAG, "init(): ", t)
             /*@formatter:on*/
+        }
+    }
+
+    private inline fun awaitInit(crossinline operation: () -> Unit) {
+        if (!isInitialized) {
+            syncScope.launch(mainDispatcher) {
+                initWaitCondition.await()
+                operation()
+            }
+        } else {
+            operation()
+        }
+    }
+
+    private fun initSdk() {
+        if (isOsVersionSupported()) {
+            activityHelper.enableLifecycleCallbacks(application, this@RetenoImpl)
+            syncScope.launch(ioDispatcher) {
+                preventANR()
+                anrWaitCondition.complete(Unit)
+            }
+        }
+    }
+
+    private fun preventANR() {
+        runCatching {
+            //Trick to wait for sharedPrefs initialization on background thread to prevent ANR
+            serviceLocator.sharedPrefsManagerProvider.get().getEmail()
+            //Init workmanager singleton instance
+            WorkManager.getInstance(application)
+        }.getOrElse {
+            Logger.e(TAG, "preventANR(): ", it)
         }
     }
 
@@ -354,9 +358,10 @@ class RetenoImpl(
         iamView.setPauseBehaviour(behaviour)
     }
 
-    override fun setInAppLifecycleCallback(inAppLifecycleCallback: InAppLifecycleCallback?) = awaitInit {
-        iamView.setInAppLifecycleCallback(inAppLifecycleCallback)
-    }
+    override fun setInAppLifecycleCallback(inAppLifecycleCallback: InAppLifecycleCallback?) =
+        awaitInit {
+            iamView.setInAppLifecycleCallback(inAppLifecycleCallback)
+        }
 
     override fun forcePushData() = awaitInit {
         if (!isOsVersionSupported()) {
@@ -384,15 +389,6 @@ class RetenoImpl(
             /*@formatter:off*/ Logger.e(TAG, "setInAppMessagesPauseBehaviour(): behaviour = [$behaviour]", ex)
             /*@formatter:on*/
         }
-    }
-
-    override fun initWith(config: RetenoConfig) {
-        if (initContinuation == null) {
-            Logger.i(TAG, "RetenoSDK was already initialized, skipping")
-            return
-        }
-        initContinuation?.resume(config)
-        initContinuation = null
     }
 
     override fun onNewFcmToken(token: String) = awaitInit {
@@ -504,50 +500,6 @@ class RetenoImpl(
         deeplinkController.deeplinkClicked(linkWrapped, linkUnwrapped)
     }
 
-    private inline fun awaitInit(crossinline operation: () -> Unit) {
-        if (initDeferred?.isCompleted == false) {
-            syncScope.launch(mainDispatcher) {
-                initDeferred?.await()
-                operation()
-            }
-        } else {
-            operation()
-        }
-    }
-
-    private fun initSdk(config: RetenoConfig) {
-        if (isOsVersionSupported()) {
-            activityHelper.enableLifecycleCallbacks(this@RetenoImpl)
-            if (delayInitialization) {
-                initDeferred = syncScope.async(ioDispatcher) {
-                    val result = suspendCoroutine {
-                        initContinuation = it
-                    }
-                    preventANR()
-                    withContext(mainDispatcher) {
-                        start(result)
-                    }
-                }
-            } else {
-                initDeferred = syncScope.async(ioDispatcher) {
-                    preventANR()
-                    start(config)
-                }
-            }
-        }
-    }
-
-    private fun preventANR() {
-        runCatching {
-            //Trick to wait for sharedPrefs initialization on background thread to prevent ANR
-            serviceLocator.sharedPrefsManagerProvider.get().getEmail()
-            //Init workmanager singleton instance
-            WorkManager.getInstance(application)
-        }.getOrElse {
-            Logger.e(TAG, "preventANR(): ", it)
-        }
-    }
-
     private fun stopPushScheduler() {
         scheduleController.stopScheduler()
     }
@@ -569,10 +521,11 @@ class RetenoImpl(
     companion object {
         private val TAG: String = RetenoImpl::class.java.simpleName
 
-        lateinit var application: Application
-            private set
-
         val instance: RetenoImpl
-            get() = (application as RetenoApplication).getRetenoInstance() as RetenoImpl
+            get() = Reteno.instance as RetenoImpl
+
+        fun swapInstance(instance: RetenoImpl) {
+            Reteno.instanceInternal = instance
+        }
     }
 }

@@ -1,5 +1,6 @@
 package com.reteno.core
 
+import android.app.Application
 import com.reteno.core.domain.model.ecom.EcomEvent
 import com.reteno.core.domain.model.event.Event
 import com.reteno.core.domain.model.event.LifecycleTrackingOptions
@@ -164,5 +165,25 @@ interface Reteno {
 
     companion object {
         private val TAG: String = Reteno::class.java.simpleName
+
+        @Volatile
+        internal var instanceInternal: RetenoImpl? = null
+
+        val instance: Reteno
+            get() = requireNotNull(instanceInternal) { "Trying to access Reteno instance before Application.onCreate()" }
+
+        internal fun create(application: Application) {
+            instanceInternal = RetenoImpl(application)
+        }
+
+        /**
+         * Method for finishing initialization of RetenoSDK
+         *
+         * @param config - supply config to the SDK
+         * @throws IllegalStateException - indicates that sdk was already initialized before
+         */
+        fun initWith(config: RetenoConfig) {
+            instance.initWith(config)
+        }
     }
 }

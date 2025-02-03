@@ -3,6 +3,7 @@ package com.reteno.core.base.robolectric
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.test.core.app.ApplicationProvider
+import com.reteno.core.Reteno
 import com.reteno.core.RetenoConfig
 import com.reteno.core.RetenoImpl
 import com.reteno.core.data.local.database.util.*
@@ -64,12 +65,12 @@ abstract class BaseRobolectricTest {
     ): RetenoImpl {
         return RetenoImpl(
             application = application,
-            config = RetenoConfig(),
             mainDispatcher = StandardTestDispatcher(testScheduler),
             ioDispatcher = StandardTestDispatcher(testScheduler),
-            delayInitialization = false,
             appLifecycleOwner = lifecycleOwner
         ).also {
+            RetenoImpl.swapInstance(it)
+            Reteno.initWith(RetenoConfig())
             application.retenoMock = it
             while (!it.isInitialized) {
                 advanceUntilIdle()

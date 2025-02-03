@@ -1,7 +1,10 @@
 package com.reteno.core.util
 
+import android.app.Application
 import android.app.PendingIntent
+import android.content.Context
 import android.os.Build
+import com.reteno.core.Reteno
 import com.reteno.core.RetenoImpl
 
 object BuildUtil {
@@ -14,8 +17,8 @@ object BuildUtil {
      *
      * @return True if notification trampolines are not supported.
      */
-    fun shouldDisableTrampolines(): Boolean {
-        return Build.VERSION.SDK_INT >= 31 && getTargetSdkVersion() >= 31
+    fun shouldDisableTrampolines(context: Context): Boolean {
+        return Build.VERSION.SDK_INT >= 31 && getTargetSdkVersion(context) >= 31
     }
 
     /**
@@ -23,9 +26,9 @@ object BuildUtil {
      *
      * @return Target SDK version.
      */
-    fun getTargetSdkVersion(): Int {
+    fun getTargetSdkVersion(context: Context): Int {
         if (targetSdk == -1) {
-            targetSdk = RetenoImpl.application.applicationInfo.targetSdkVersion
+            targetSdk = context.applicationInfo.targetSdkVersion
         }
         return targetSdk
     }
