@@ -76,7 +76,7 @@ class RetenoImpl(
         initSdk()
     }
 
-    override fun initWith(config: RetenoConfig) {
+    override fun setConfig(config: RetenoConfig) {
         if (isInitialized) {
             Logger.i(TAG, "RetenoSDK was already initialized, skipping")
             return
