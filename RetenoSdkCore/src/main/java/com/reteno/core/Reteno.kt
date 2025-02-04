@@ -161,7 +161,7 @@ interface Reteno {
      * @param config - supply config to the SDK
      * @throws IllegalStateException - indicates that sdk was already initialized before
      */
-    fun initWith(config: RetenoConfig)
+    fun setConfig(config: RetenoConfig)
 
     companion object {
         private val TAG: String = Reteno::class.java.simpleName
@@ -169,6 +169,7 @@ interface Reteno {
         @Volatile
         internal var instanceInternal: RetenoImpl? = null
 
+        @JvmStatic
         val instance: Reteno
             get() = requireNotNull(instanceInternal) { "Trying to access Reteno instance before Application.onCreate()" }
 
@@ -182,8 +183,9 @@ interface Reteno {
          * @param config - supply config to the SDK
          * @throws IllegalStateException - indicates that sdk was already initialized before
          */
+        @JvmStatic
         fun initWith(config: RetenoConfig) {
-            instance.initWith(config)
+            instance.setConfig(config)
         }
     }
 }

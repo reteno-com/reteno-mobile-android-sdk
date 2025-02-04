@@ -21,20 +21,20 @@ class SampleApp : Application() {
             handler.postDelayed({
                 Reteno.initWith(
                     RetenoConfig(
-                        false,
-                        createProvider(),
-                        ALL,
-                        BuildConfig.API_ACCESS_KEY
+                        accessKey = BuildConfig.API_ACCESS_KEY,
+                        isPausedInAppMessages = false,
+                        userIdProvider = createProvider(),
+                        lifecycleTrackingOptions = ALL
                     )
                 )
             }, 3000L)
         } else {
             Reteno.initWith(
                 RetenoConfig(
-                    false,
-                    createProvider(),
-                    ALL,
-                    BuildConfig.API_ACCESS_KEY
+                    accessKey = BuildConfig.API_ACCESS_KEY,
+                    isPausedInAppMessages = false,
+                    userIdProvider = createProvider(),
+                    lifecycleTrackingOptions = ALL
                 )
             )
         }
