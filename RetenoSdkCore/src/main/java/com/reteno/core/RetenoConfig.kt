@@ -14,10 +14,10 @@ import com.reteno.core.identification.DeviceIdProvider
  * @property accessKey - reteno access key
  * */
 data class RetenoConfig @JvmOverloads constructor(
+    val accessKey: String = "",
     val isPausedInAppMessages: Boolean = false,
     val userIdProvider: DeviceIdProvider? = null,
     val lifecycleTrackingOptions: LifecycleTrackingOptions = LifecycleTrackingOptions.ALL,
-    val accessKey: String = "",
     val isPausedPushInAppMessages: Boolean = false,
 ) {
     var platform: String = "Android"
