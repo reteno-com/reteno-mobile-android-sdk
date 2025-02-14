@@ -15,15 +15,20 @@ import android.widget.FrameLayout
 import android.widget.PopupWindow
 import androidx.cardview.widget.CardView
 import androidx.core.widget.PopupWindowCompat
+import com.reteno.core.domain.controller.IamFetchResult
 import com.reteno.core.features.iam.RetenoAndroidHandler
 import com.reteno.core.util.Logger
 import com.reteno.core.view.iam.IamViewImpl
 
-internal class FullscreenIamContainer(context: Context) : IamContainer {
+internal class FullscreenIamContainer(
+    context: Context,
+    jsInterface: RetenoAndroidHandler,
+    private val iamFetchResult: IamFetchResult
+) : IamContainer {
     private val parentLayout = FrameLayout(context.applicationContext)
     private val popupWindow = createPopupWindow(parentLayout)
     private val cardView = createCardView(context.applicationContext)
-    private val webView = createWebView(context.applicationContext)
+    private val webView = createWebView(context.applicationContext, jsInterface)
 
     init {
         addCardViewToParentLayout()
@@ -91,7 +96,7 @@ internal class FullscreenIamContainer(context: Context) : IamContainer {
         return cardView
     }
 
-    private fun createWebView(context: Context): WebView {
+    private fun createWebView(context: Context, jsInterface: RetenoAndroidHandler): WebView {
         /*@formatter:off*/ Logger.i(TAG, "createWebView(): ", "context = [", context, "]")
         /*@formatter:on*/
         val webView = WebView(context)
@@ -110,14 +115,9 @@ internal class FullscreenIamContainer(context: Context) : IamContainer {
             databaseEnabled = true
         }
         webView.setBackgroundColor(Color.TRANSPARENT)
+        webView.addJavascriptInterface(jsInterface, IamViewImpl.JS_INTERFACE_NAME)
+        webView.loadDataWithBaseURL("", iamFetchResult.fullHtml, "text/html", "UTF-8", "")
         return webView
-    }
-
-    override fun attachHtml(handler: RetenoAndroidHandler, html: String) {
-        /*@formatter:off*/ Logger.i(TAG, "uploadHtmlIntoWebView(): ")
-        /*@formatter:on*/
-        webView.loadDataWithBaseURL("", html, "text/html", "UTF-8", "")
-        webView.addJavascriptInterface(handler, IamViewImpl.JS_INTERFACE_NAME)
     }
 
     override fun dismiss() {
@@ -153,6 +153,9 @@ internal class FullscreenIamContainer(context: Context) : IamContainer {
             0,
             0
         )
+    }
+
+    override fun onHeightDefined(newHeight: Int) {
     }
 
     companion object {

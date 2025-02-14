@@ -2,19 +2,17 @@ package com.reteno.core.view.iam
 
 import android.app.Activity
 import android.content.ComponentName
-import android.content.Context
 import android.content.Intent
 import android.content.res.Resources
 import android.net.Uri
 import android.os.Bundle
-import com.reteno.core.Reteno
 import com.reteno.core.RetenoImpl
 import com.reteno.core.data.remote.OperationQueue
 import com.reteno.core.data.remote.mapper.fromJson
 import com.reteno.core.data.remote.model.iam.message.InAppMessage
-import com.reteno.core.data.remote.model.iam.message.InAppMessageContent.InAppLayoutType
 import com.reteno.core.domain.ResultDomain
 import com.reteno.core.domain.controller.IamController
+import com.reteno.core.domain.controller.IamFetchResult
 import com.reteno.core.domain.controller.InteractionController
 import com.reteno.core.domain.controller.ScheduleController
 import com.reteno.core.domain.model.interaction.InAppInteraction
@@ -77,7 +75,16 @@ internal class IamViewImpl(
                     IamJsEventType.WIDGET_INIT_FAILED,
                     IamJsEventType.WIDGET_RUNTIME_ERROR -> onWidgetInitFailed(jsEvent)
 
-                    IamJsEventType.WIDGET_INIT_SUCCESS -> onWidgetInitSuccess()
+                    IamJsEventType.WIDGET_INIT_SUCCESS -> {
+                        val height = jsEvent.payload?.contentHeight
+                        if (height != null) {
+                            OperationQueue.addUiOperation {
+                                val intHeight = height.filter { it.isDigit() }.toInt()
+                                iamContainer?.onHeightDefined(dpToPx(intHeight))
+                            }
+                        }
+                        onWidgetInitSuccess()
+                    }
 
                     IamJsEventType.CLICK,
                     IamJsEventType.OPEN_URL -> openUrl(jsEvent)
@@ -200,7 +207,6 @@ internal class IamViewImpl(
                 messageInstanceId = null
 
                 OperationQueue.addUiOperation {
-                    createIam(RetenoImpl.instance.application, InAppLayoutType.FULL)
                     inAppLifecycleCallback?.beforeDisplay(createInAppData())
                     iamController.fetchIamFullHtml(interactionId)
                 }
@@ -222,7 +228,6 @@ internal class IamViewImpl(
             inAppMessage.notifyShown()
             iamController.updateInAppMessage(inAppMessage)
             OperationQueue.addUiOperation {
-                createIam(RetenoImpl.instance.application, inAppMessage.content?.layoutType ?: InAppLayoutType.FULL)
                 messageId = inAppMessage.messageId
                 messageInstanceId = inAppMessage.messageInstanceId
                 inAppSource = InAppSource.DISPLAY_RULES
@@ -252,10 +257,23 @@ internal class IamViewImpl(
             iamController.fullHtmlStateFlow.collect { result ->
                 ensureActive()
                 if (result is ResultDomain.Success) {
-                    iamContainer?.attachHtml(retenoAndroidHandler, result.body)
+                    createIamContainer(result)
                 }
             }
         }
+    }
+
+    private fun createIamContainer(result: ResultDomain.Success<IamFetchResult>) {
+        iamContainer = IamContainer.create(
+            context = RetenoImpl.instance.application,
+            jsInterface = retenoAndroidHandler,
+            iamFetchResult = result.body,
+            dismissListener = {
+                inAppLifecycleCallback?.beforeClose(createInAppCloseData(InAppCloseAction.DISMISSED))
+                teardown()
+                inAppLifecycleCallback?.afterClose(createInAppCloseData(InAppCloseAction.DISMISSED))
+            }
+        )
     }
 
     override fun pause(activity: Activity) {
@@ -295,12 +313,6 @@ internal class IamViewImpl(
                 showIamPopupWindowOnceReady(attempts - 1)
             }, DELAY_UI_MS)
         }
-    }
-
-    private fun createIam(context: Context, type: InAppLayoutType) {
-        /*@formatter:off*/ Logger.i(TAG, "createIamInActivity(): ", "context = [", context, "]")
-        /*@formatter:on*/
-        iamContainer = IamContainer.create(context, type)
     }
 
     private fun showIamContainer(activity: Activity) {

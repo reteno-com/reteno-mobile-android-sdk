@@ -1,7 +1,6 @@
 package com.reteno.core.data.repository
 
 import android.content.Context
-import com.google.gson.JsonObject
 import com.reteno.core.R
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerInAppMessages
 import com.reteno.core.data.local.mappers.mapDbToInAppMessages
@@ -22,9 +21,9 @@ import com.reteno.core.data.remote.model.iam.initfailed.IamJsWidgetInitiFailed
 import com.reteno.core.data.remote.model.iam.initfailed.Payload
 import com.reteno.core.data.remote.model.iam.message.InAppMessage
 import com.reteno.core.data.remote.model.iam.message.InAppMessageContent
+import com.reteno.core.data.remote.model.iam.message.InAppMessageListResponse
 import com.reteno.core.data.remote.model.iam.message.InAppMessagesContentRequest
 import com.reteno.core.data.remote.model.iam.message.InAppMessagesContentResponse
-import com.reteno.core.data.remote.model.iam.message.InAppMessageListResponse
 import com.reteno.core.data.remote.model.iam.message.InAppMessagesList
 import com.reteno.core.data.remote.model.iam.widget.WidgetModel
 import com.reteno.core.domain.ResponseCallback
@@ -34,7 +33,6 @@ import com.reteno.core.util.Util
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
-import java.lang.Exception
 import kotlin.coroutines.resume
 
 internal class IamRepositoryImpl(
@@ -51,7 +49,7 @@ internal class IamRepositoryImpl(
         val versionRemote = getBaseHtmlVersionRemote() ?: BASE_HTML_VERSION_DEFAULT
         val versionLocal = sharedPrefsManager.getIamBaseHtmlVersion() ?: BASE_HTML_VERSION_DEFAULT
 
-        val baseHtmlContent = if (false) {
+        val baseHtmlContent = if (versionRemote == versionLocal) {
             sharedPrefsManager.getIamBaseHtmlContent()
         } else {
             val baseHtmlContentRemote =
@@ -141,12 +139,7 @@ internal class IamRepositoryImpl(
                             /*@formatter:off*/ Logger.i(TAG, "getWidgetRemote(): onSuccess(): ", "response = [", response, "]")
                             /*@formatter:on*/
                             continuation.resume(
-                                response.fromJson<JsonObject>().run {
-                                    WidgetModel(
-                                        get("model").toString(),
-                                        get("personalisation").toString(),
-                                    )
-                                }
+                                response.fromJson<WidgetModel>()
                             )
                         }
 
@@ -157,8 +150,14 @@ internal class IamRepositoryImpl(
                         ) {
                             /*@formatter:off*/ Logger.i(TAG, "getWidgetRemote(): onFailure(): ", "statusCode = [", statusCode, "], response = [", response, "], throwable = [", throwable, "]")
                             /*@formatter:on*/
-                            continuation.resume(WidgetModel(Util.readFromRaw(context, R.raw.widget) ?: ""))
-//                            continuation.resumeWithException()
+                            continuation.resume(
+                                WidgetModel(
+                                    model = (Util.readFromRaw(context, R.raw.widget) ?: "").fromJson(),
+                                    layoutParams = null,
+                                    layoutType = InAppMessageContent.InAppLayoutType.FULL,
+                                    personalization = null
+                                )
+                            )
                         }
                     }
                 )
@@ -195,7 +194,7 @@ internal class IamRepositoryImpl(
         return withContext(coroutineDispatcher) {
             val etag = sharedPrefsManager.getIamEtag()
             val headersWithEtag: Map<String, String>? = if (etag != null) {
-                mapOf(HEADER_ETAG_REQUEST to etag)
+                null
             } else {
                 null
             }
@@ -206,11 +205,15 @@ internal class IamRepositoryImpl(
                     headers = headersWithEtag,
                     queryParams = null,
                     responseHandler = object : ResponseCallback {
-                        override fun onSuccess(headers: Map<String, List<String>>, response: String) {
+                        override fun onSuccess(
+                            headers: Map<String, List<String>>,
+                            response: String
+                        ) {
                             /*@formatter:off*/ Logger.i(TAG, "getInAppMessages(): onSuccess(): ", "response = [", response, "], headers = [", headers.toString(), "]")
                             /*@formatter:on*/
                             val localMessages = databaseManager.getInAppMessages()
-                            val remoteMessagesResponse = response.fromJson<InAppMessageListResponse>().messages
+                            val remoteMessagesResponse =
+                                response.fromJson<InAppMessageListResponse>().messages
                             var remoteMessages: List<InAppMessage> = emptyList()
                             try {
                                 remoteMessages =
@@ -218,7 +221,7 @@ internal class IamRepositoryImpl(
                             } catch (e: Exception) {
                                 e.printStackTrace()
                             }
-                            remoteMessages.forEach {  remoteMessage ->
+                            remoteMessages.forEach { remoteMessage ->
                                 val localMessage = localMessages.firstOrNull {
                                     it.messageId == remoteMessage.messageId
                                 }

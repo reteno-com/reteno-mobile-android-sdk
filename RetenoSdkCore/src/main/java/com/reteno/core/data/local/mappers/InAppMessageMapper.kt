@@ -5,7 +5,6 @@ import com.google.gson.JsonObject
 import com.reteno.core.data.local.model.iam.InAppMessageDb
 import com.reteno.core.data.local.model.iam.SegmentDb
 import com.reteno.core.data.remote.mapper.fromJson
-import com.reteno.core.data.remote.model.iam.displayrules.DisplayRulesParsingException
 import com.reteno.core.data.remote.model.iam.displayrules.async.AsyncRuleRetryParams
 import com.reteno.core.data.remote.model.iam.displayrules.async.AsyncRulesCheckError
 import com.reteno.core.data.remote.model.iam.displayrules.async.SegmentRule
@@ -59,7 +58,7 @@ internal fun InAppMessageDb.toInAppMessage(): InAppMessage {
     segment?.let {
         val resultSegment = result.displayRules.async?.segment
         if (resultSegment != null && resultSegment.segmentId == it.segmentId) {
-            result.displayRules.async?.segment = it.toDomain()
+            result.displayRules.async.segment = it.toDomain()
         }
     }
 
