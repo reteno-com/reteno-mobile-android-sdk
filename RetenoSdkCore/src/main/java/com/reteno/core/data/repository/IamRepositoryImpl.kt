@@ -152,7 +152,7 @@ internal class IamRepositoryImpl(
                             /*@formatter:on*/
                             continuation.resume(
                                 WidgetModel(
-                                    model = (Util.readFromRaw(context, R.raw.widget) ?: "").fromJson(),
+                                    model = (Util.readFromRaw(context, R.raw.widget) ?: "{}").fromJson(),
                                     layoutParams = null,
                                     layoutType = InAppMessageContent.InAppLayoutType.FULL,
                                     personalization = null

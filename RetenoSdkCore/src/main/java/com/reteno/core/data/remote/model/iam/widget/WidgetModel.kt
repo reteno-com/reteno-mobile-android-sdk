@@ -6,7 +6,7 @@ import com.reteno.core.data.remote.model.iam.message.InAppMessageContent
 
 data class WidgetModel(
     @SerializedName("layoutType")
-    val layoutType: InAppMessageContent.InAppLayoutType,
+    val layoutType: InAppMessageContent.InAppLayoutType?,
 
     @SerializedName("layoutParams")
     val layoutParams: InAppMessageContent.InAppLayoutParams?,

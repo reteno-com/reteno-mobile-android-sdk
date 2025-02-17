@@ -97,7 +97,7 @@ internal class IamControllerImpl(
                     _fullHtmlStateFlow.value = ResultDomain.Success(
                         IamFetchResult(
                             fullHtml = fullHtml,
-                            layoutType = widgetModel.layoutType,
+                            layoutType = widgetModel.layoutType ?: InAppLayoutType.FULL,
                             layoutParams = widgetModel.layoutParams ?: InAppLayoutParams(Position.TOP)
                         )
                     )
