@@ -102,7 +102,7 @@ internal class IamViewImpl(
         if (pauseIncomingPushInApps.getAndSet(isPaused) && !isPaused) {
             lastPushInteractionId?.let {
                 if (pauseBehaviour == InAppPauseBehaviour.POSTPONE_IN_APPS) {
-                    showIamPopupWindowOnceReady(DELAY_UI_ATTEMPTS)
+                    showIamOnceReady(DELAY_UI_ATTEMPTS)
                 }
                 lastPushInteractionId = null
             }
@@ -120,7 +120,7 @@ internal class IamViewImpl(
         /*@formatter:off*/ Logger.i(TAG, "onWidgetInitSuccess(): ", "")
         /*@formatter:on*/
         if (checkPauseState()) return
-        showIamPopupWindowOnceReady(DELAY_UI_ATTEMPTS)
+        showIamOnceReady(DELAY_UI_ATTEMPTS)
         inAppLifecycleCallback?.onDisplay(createInAppData())
         messageInstanceId?.let { instanceId ->
             val newInteractionId = UUID.randomUUID().toString()
@@ -245,7 +245,7 @@ internal class IamViewImpl(
         /*@formatter:off*/ Logger.i(TAG, "resume(): ", "activity = [", activity, "]")
         /*@formatter:on*/
         if (isViewShown.get()) {
-            showIamPopupWindowOnceReady(DELAY_UI_ATTEMPTS)
+            showIamOnceReady(DELAY_UI_ATTEMPTS)
             return
         }
 
@@ -297,7 +297,7 @@ internal class IamViewImpl(
         }
     }
 
-    private fun showIamPopupWindowOnceReady(attempts: Int) {
+    private fun showIamOnceReady(attempts: Int) {
         /*@formatter:off*/ Logger.i(TAG, "showIamPopupWindowOnceReady(): ", "attempts = [", attempts, "]")
         /*@formatter:on*/
         if (attempts < 0) {
@@ -310,7 +310,7 @@ internal class IamViewImpl(
             }
         } else {
             OperationQueue.addOperationAfterDelay({
-                showIamPopupWindowOnceReady(attempts - 1)
+                showIamOnceReady(attempts - 1)
             }, DELAY_UI_MS)
         }
     }
@@ -449,7 +449,6 @@ internal class IamViewImpl(
         private const val DELAY_UI_MS = 200L
         private const val DELAY_UI_ATTEMPTS = 150
 
-        private const val ENCODING = "base64"
         internal const val JS_INTERFACE_NAME = "RetenoAndroidHandler"
 
         private const val ERROR_MESSAGE = "Failed to load In-App message."
