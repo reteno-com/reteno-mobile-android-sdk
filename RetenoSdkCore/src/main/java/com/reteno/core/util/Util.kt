@@ -8,7 +8,6 @@ import android.os.Build
 import android.os.Bundle
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GoogleApiAvailability
-import com.reteno.core.Reteno
 import com.reteno.core.RetenoImpl
 import com.reteno.core.domain.SchedulerUtils
 import com.reteno.core.domain.model.event.LifecycleEventType
@@ -112,7 +111,7 @@ fun String?.toTimeUnit(): TimeUnit? {
 }
 
 fun isRepeatableError(statusCode: Int?): Boolean {
-    return statusCode !in 400..499
+    return statusCode == 429 || statusCode !in 400..499
 }
 
 fun isNonRepeatableError(statusCode: Int?) = !isRepeatableError(statusCode)

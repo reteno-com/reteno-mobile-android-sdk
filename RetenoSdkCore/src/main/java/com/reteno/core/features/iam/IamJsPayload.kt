@@ -9,6 +9,8 @@ internal data class IamJsPayload(
     val url: String?,
     @SerializedName("reason")
     val reason: String?,
+    @SerializedName("contentHeight")
+    val contentHeight: String?,
     @SerializedName("customData")
     val customData: HashMap<String, String>? = null
 )

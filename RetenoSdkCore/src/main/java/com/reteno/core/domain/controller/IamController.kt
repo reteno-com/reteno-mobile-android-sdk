@@ -30,6 +30,6 @@ internal interface IamController {
 
     fun preloadHtml()
 
-    val fullHtmlStateFlow: StateFlow<ResultDomain<String>>
+    val fullHtmlStateFlow: StateFlow<ResultDomain<IamFetchResult>>
     val inAppMessagesFlow: SharedFlow<InAppMessage>
 }

@@ -1,6 +1,8 @@
 package com.reteno.core.domain.controller
 
+import com.google.gson.Gson
 import com.google.gson.JsonObject
+import com.google.gson.annotations.SerializedName
 import com.reteno.core.base.robolectric.BaseRobolectricTest
 import com.reteno.core.data.remote.model.iam.displayrules.DisplayRules
 import com.reteno.core.data.remote.model.iam.displayrules.RuleRelation
@@ -17,6 +19,9 @@ import com.reteno.core.data.remote.model.iam.displayrules.targeting.TargetingRul
 import com.reteno.core.data.remote.model.iam.displayrules.targeting.TargetingRuleGroup
 import com.reteno.core.data.remote.model.iam.message.InAppMessage
 import com.reteno.core.data.remote.model.iam.message.InAppMessageContent
+import com.reteno.core.data.remote.model.iam.message.InAppMessageContent.InAppLayoutParams
+import com.reteno.core.data.remote.model.iam.message.InAppMessageContent.InAppLayoutParams.Position
+import com.reteno.core.data.remote.model.iam.message.InAppMessageContent.InAppLayoutType
 import com.reteno.core.data.remote.model.iam.message.InAppMessagesList
 import com.reteno.core.data.remote.model.iam.widget.WidgetModel
 import com.reteno.core.data.repository.IamRepository
@@ -53,10 +58,15 @@ import java.util.concurrent.TimeUnit
 @OptIn(ExperimentalCoroutinesApi::class)
 class IamControllerImplTest : BaseRobolectricTest() {
 
+    class TestContent(
+        @SerializedName("widgetContent")
+        val widgetContent: Int = 1
+    )
+
     // region constants ----------------------------------------------------------------------------
     companion object {
         private const val WIDGET_ID = "widgetId"
-        private const val WIDGET = "widgetContent"
+        private const val WIDGET = "{\"widgetContent\":1}"
         private const val BASE_HTML_PREFIX = "BaseHtmlContentPrefix"
         private const val BASE_HTML_SUFFIX = "BaseHtmlContentSuffix"
         private const val BASE_HTML_CONTENT = "$BASE_HTML_PREFIX\${documentModel}$BASE_HTML_SUFFIX"
@@ -91,7 +101,12 @@ class IamControllerImplTest : BaseRobolectricTest() {
         }
         coEvery { iamRepository.getWidgetRemote(any()) } coAnswers {
             delay(DELAY_WIDGET)
-            WidgetModel(WIDGET)
+            WidgetModel(
+                layoutType = InAppLayoutType.FULL,
+                layoutParams = null,
+                model = Gson().toJsonTree(TestContent()),
+                personalization = null
+            )
         }
         mockkConstructor(FrequencyRuleValidator::class)
         mockkConstructor(ScheduleRuleValidator::class)
@@ -128,7 +143,13 @@ class IamControllerImplTest : BaseRobolectricTest() {
         advanceTimeBy(DELAY_BASE_HTML)
         assertEquals(ResultDomain.Loading, sut.fullHtmlStateFlow.value)
         runCurrent()
-        assertEquals(ResultDomain.Success(FULL_HTML), sut.fullHtmlStateFlow.value)
+        assertEquals(ResultDomain.Success(
+            IamFetchResult(
+                fullHtml = FULL_HTML,
+                layoutParams = InAppLayoutParams(Position.TOP),
+                layoutType = InAppLayoutType.FULL
+            )
+        ), sut.fullHtmlStateFlow.value)
 
         sut.reset()
         assertEquals(ResultDomain.Idle, sut.fullHtmlStateFlow.value)
@@ -177,7 +198,13 @@ class IamControllerImplTest : BaseRobolectricTest() {
         // When
         runCurrent()
         // Then
-        assertEquals(ResultDomain.Success(FULL_HTML), sut.fullHtmlStateFlow.value)
+        assertEquals(ResultDomain.Success(
+            IamFetchResult(
+                fullHtml = FULL_HTML,
+                layoutParams = InAppLayoutParams(Position.TOP),
+                layoutType = InAppLayoutType.FULL
+            )
+        ), sut.fullHtmlStateFlow.value)
         // When
         sut.reset()
         // Then
@@ -200,8 +227,9 @@ class IamControllerImplTest : BaseRobolectricTest() {
                 add(
                     InAppMessageContent(
                         messageInstanceId = 1,
-                        layoutType = "",
-                        model = JsonObject()
+                        layoutType = InAppLayoutType.FULL,
+                        model = JsonObject(),
+                        layoutParams = null
                     )
                 )
             }
@@ -226,8 +254,9 @@ class IamControllerImplTest : BaseRobolectricTest() {
             val inApps = frequencyInApps(
                 content = InAppMessageContent(
                     messageInstanceId = 1,
-                    layoutType = "",
-                    model = JsonObject()
+                    layoutType = InAppLayoutType.FULL,
+                    model = JsonObject(),
+                    layoutParams = null
                 )
             )
             val inAppList = InAppMessagesList(messages = inApps)
@@ -267,8 +296,9 @@ class IamControllerImplTest : BaseRobolectricTest() {
             val inApps = frequencyInApps(
                 content = InAppMessageContent(
                     messageInstanceId = 1,
-                    layoutType = "",
-                    model = JsonObject()
+                    layoutType = InAppLayoutType.FULL,
+                    model = JsonObject(),
+                    layoutParams = null
                 )
             )
             val inAppList = InAppMessagesList(messages = inApps)
@@ -309,8 +339,9 @@ class IamControllerImplTest : BaseRobolectricTest() {
             val inApps = frequencyInApps(
                 content = InAppMessageContent(
                     messageInstanceId = 1,
-                    layoutType = "",
-                    model = JsonObject()
+                    layoutType = InAppLayoutType.FULL,
+                    model = JsonObject(),
+                    layoutParams = null
                 )
             )
             val inAppList = InAppMessagesList(messages = inApps)
@@ -354,8 +385,9 @@ class IamControllerImplTest : BaseRobolectricTest() {
             val inApps = frequencyInApps(
                 content = InAppMessageContent(
                     messageInstanceId = 1,
-                    layoutType = "",
-                    model = JsonObject()
+                    layoutType = InAppLayoutType.FULL,
+                    model = JsonObject(),
+                    layoutParams = null
                 )
             )
             val inAppList = InAppMessagesList(messages = inApps)
@@ -399,8 +431,9 @@ class IamControllerImplTest : BaseRobolectricTest() {
             val inApps = frequencyInApps(
                 content = InAppMessageContent(
                     messageInstanceId = 1,
-                    layoutType = "",
-                    model = JsonObject()
+                    layoutType = InAppLayoutType.FULL,
+                    model = JsonObject(),
+                    layoutParams = null
                 )
             )
             val inAppList = InAppMessagesList(messages = inApps)
@@ -447,8 +480,9 @@ class IamControllerImplTest : BaseRobolectricTest() {
             val inApps = frequencyInApps(
                 content = InAppMessageContent(
                     messageInstanceId = 1,
-                    layoutType = "",
-                    model = JsonObject()
+                    layoutType = InAppLayoutType.FULL,
+                    model = JsonObject(),
+                    layoutParams = null
                 ),
                 targeting = createEventDisplayRule()
             )
@@ -477,8 +511,9 @@ class IamControllerImplTest : BaseRobolectricTest() {
             val inApps = frequencyInApps(
                 content = InAppMessageContent(
                     messageInstanceId = 1,
-                    layoutType = "",
-                    model = JsonObject()
+                    layoutType = InAppLayoutType.FULL,
+                    model = JsonObject(),
+                    layoutParams = null
                 ),
                 targeting = createEventDisplayRule()
             )

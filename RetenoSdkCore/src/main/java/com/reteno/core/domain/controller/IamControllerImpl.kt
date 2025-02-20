@@ -1,7 +1,6 @@
 package com.reteno.core.domain.controller
 
 import androidx.annotation.VisibleForTesting
-import com.reteno.core.RetenoImpl
 import com.reteno.core.data.local.mappers.toDomain
 import com.reteno.core.data.remote.model.iam.displayrules.frequency.FrequencyRuleValidator
 import com.reteno.core.data.remote.model.iam.displayrules.schedule.ScheduleRuleValidator
@@ -11,6 +10,9 @@ import com.reteno.core.data.remote.model.iam.displayrules.targeting.RuleEventVal
 import com.reteno.core.data.remote.model.iam.displayrules.targeting.TargetingRule
 import com.reteno.core.data.remote.model.iam.message.InAppMessage
 import com.reteno.core.data.remote.model.iam.message.InAppMessageContent
+import com.reteno.core.data.remote.model.iam.message.InAppMessageContent.InAppLayoutParams
+import com.reteno.core.data.remote.model.iam.message.InAppMessageContent.InAppLayoutParams.Position
+import com.reteno.core.data.remote.model.iam.message.InAppMessageContent.InAppLayoutType
 import com.reteno.core.data.repository.IamRepository
 import com.reteno.core.domain.ResultDomain
 import com.reteno.core.domain.model.event.Event
@@ -20,7 +22,6 @@ import com.reteno.core.lifecycle.RetenoSessionHandler
 import com.reteno.core.util.Logger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.TimeoutCancellationException
@@ -47,9 +48,9 @@ internal class IamControllerImpl(
     private val isPausedInAppMessages = AtomicBoolean(false)
     private var pauseBehaviour = InAppPauseBehaviour.POSTPONE_IN_APPS
 
-    private val _fullHtmlStateFlow: MutableStateFlow<ResultDomain<String>> =
+    private val _fullHtmlStateFlow: MutableStateFlow<ResultDomain<IamFetchResult>> =
         MutableStateFlow(ResultDomain.Idle)
-    override val fullHtmlStateFlow: StateFlow<ResultDomain<String>> = _fullHtmlStateFlow
+    override val fullHtmlStateFlow: StateFlow<ResultDomain<IamFetchResult>> = _fullHtmlStateFlow
 
     @VisibleForTesting
     var inAppsWaitingForEvent: MutableList<InAppWithEvent>? = null
@@ -80,19 +81,26 @@ internal class IamControllerImpl(
                     val baseHtml = async { iamRepository.getBaseHtml() }
                     val widget = async { iamRepository.getWidgetRemote(interactionId) }
 
-                    val fullHtml = baseHtml.await().run {
-                        widget.await().let { widgetModel ->
-                            var text = this
-                            widgetModel.model?.let {
-                                text = text.replace(KEY_DOCUMENT_MODEL, it)
-                            }
-                            widgetModel.personalization?.let {
-                                text = text.replace(KEY_PERSONALISATION, it)
-                            }
-                            text
+                    val base = baseHtml.await()
+                    val widgetModel = widget.await()
+
+                    val fullHtml = base.run {
+                        var text = this
+                        widgetModel.model?.let {
+                            text = text.replace(KEY_DOCUMENT_MODEL, it.toString())
                         }
+                        widgetModel.personalization?.let {
+                            text = text.replace(KEY_PERSONALISATION, it.toString())
+                        }
+                        text
                     }
-                    _fullHtmlStateFlow.value = ResultDomain.Success(fullHtml)
+                    _fullHtmlStateFlow.value = ResultDomain.Success(
+                        IamFetchResult(
+                            fullHtml = fullHtml,
+                            layoutType = widgetModel.layoutType ?: InAppLayoutType.FULL,
+                            layoutParams = widgetModel.layoutParams ?: InAppLayoutParams(Position.TOP)
+                        )
+                    )
                 }
             } catch (e: TimeoutCancellationException) {
                 _fullHtmlStateFlow.value =
@@ -116,7 +124,13 @@ internal class IamControllerImpl(
                     text = text.replace(KEY_DOCUMENT_MODEL, widgetModel)
                     text = text.replace(KEY_PERSONALISATION, "{}")
 
-                    _fullHtmlStateFlow.value = ResultDomain.Success(text)
+                    _fullHtmlStateFlow.value = ResultDomain.Success(
+                        IamFetchResult(
+                            fullHtml = text,
+                            layoutType = messageContent?.layoutType?: InAppLayoutType.FULL,
+                            layoutParams = messageContent?.layoutParams ?: InAppLayoutParams(Position.TOP)
+                        )
+                    )
                 }
             } catch (e: TimeoutCancellationException) {
                 _fullHtmlStateFlow.value =

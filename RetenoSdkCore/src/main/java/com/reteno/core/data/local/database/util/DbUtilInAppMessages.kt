@@ -79,6 +79,7 @@ fun Cursor.getInAppMessage(): InAppMessageDb? {
     val showCount = getLongOrNull(getColumnIndex(InAppMessageSchema.COLUMN_IAM_SHOW_COUNT)) ?: 0L
     val layoutType = getStringOrNull(getColumnIndex(InAppMessageSchema.COLUMN_IAM_LAYOUT_TYPE))
     val model = getStringOrNull(getColumnIndex(InAppMessageSchema.COLUMN_IAM_MODEL))
+    val position = getStringOrNull(getColumnIndex(InAppMessageSchema.COLUMN_IAM_POSITION))
 
     val result = if (createdAt == null || messageId == null || messageInstanceId == null || displayRules == null) {
         null
@@ -92,7 +93,8 @@ fun Cursor.getInAppMessage(): InAppMessageDb? {
             lastShowTime = lastShowTime,
             showCount = showCount,
             layoutType = layoutType,
-            model = model
+            model = model,
+            position = position
         )
     }
 
