@@ -2,7 +2,6 @@ package com.reteno.core.data.remote.model.iam.message
 
 import com.google.gson.JsonElement
 import com.google.gson.annotations.SerializedName
-import org.json.JSONObject
 
 data class InAppMessageContent(
     @SerializedName("messageInstanceId")
@@ -22,7 +21,13 @@ data class InAppMessageContent(
         FULL("FULL"),
 
         @SerializedName("SLIDE_UP")
-        SLIDE_UP("SLIDE_UP");
+        SLIDE_UP("SLIDE_UP"),
+
+        @SerializedName("BOTTOM_BAR")
+        BOTTOM_BAR("BOTTOM_BAR"),
+
+        @SerializedName("POP_UP")
+        POP_UP("POP_UP");
 
         companion object {
             fun from(key: String): InAppLayoutType {
