@@ -14,11 +14,12 @@ import com.reteno.core.util.Util
 fun ContentValues.putInAppMessage(inApp: InAppMessageDb) {
     put(InAppMessageSchema.COLUMN_IAM_ID, inApp.messageId)
     put(InAppMessageSchema.COLUMN_IAM_INSTANCE_ID, inApp.messageInstanceId)
-    put(InAppMessageSchema.COLUMN_IAM_DISPLAY_RULES, inApp.displayRules.toString())
+    put(InAppMessageSchema.COLUMN_IAM_DISPLAY_RULES, inApp.displayRules)
     put(InAppMessageSchema.COLUMN_IAM_LAST_SHOW_TIME, inApp.lastShowTime)
     put(InAppMessageSchema.COLUMN_IAM_SHOW_COUNT, inApp.showCount)
     put(InAppMessageSchema.COLUMN_IAM_LAYOUT_TYPE, inApp.layoutType)
     put(InAppMessageSchema.COLUMN_IAM_MODEL, inApp.model.toString())
+    put(InAppMessageSchema.COLUMN_IAM_POSITION, inApp.position)
 }
 
 fun ContentValues.putSegment(parentRowId: Long, segment: SegmentDb) {

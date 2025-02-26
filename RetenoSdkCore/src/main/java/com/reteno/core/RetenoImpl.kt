@@ -29,7 +29,6 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -139,8 +138,10 @@ class RetenoImpl(
         }
         /*@formatter:off*/ Logger.i(TAG, "start(): ", "activity = [", activity, "]")
         /*@formatter:on*/
-        isStarted = true
-        fetchInAppMessages()
+        if (!isStarted) {
+            isStarted = true
+            fetchInAppMessages()
+        }
     }
 
     override fun resume(activity: Activity) = awaitInit {
