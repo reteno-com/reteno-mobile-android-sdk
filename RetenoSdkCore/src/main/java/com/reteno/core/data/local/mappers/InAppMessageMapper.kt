@@ -40,7 +40,7 @@ internal fun InAppMessageDb.toInAppMessage(): InAppMessage {
         InAppMessageContent(
             messageInstanceId = messageInstanceId,
             layoutType = InAppLayoutType.from(layoutType),
-            layoutParams = position?.let { InAppLayoutParams(InAppLayoutParams.Position.from(position)) },
+            layoutParams = position?.let { InAppLayoutParams(InAppLayoutParams.Position.from(it)) },
             model = model.fromJson<JsonElement>()
         )
     } else null

@@ -37,7 +37,8 @@ data class InAppMessageContent(
     }
 
     data class InAppLayoutParams(
-        val position: Position
+        @SerializedName("position")
+        val position: Position?
     ) {
         enum class Position(val key: String) {
             @SerializedName("TOP")

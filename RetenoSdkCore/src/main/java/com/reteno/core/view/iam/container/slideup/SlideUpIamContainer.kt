@@ -59,7 +59,8 @@ internal class SlideUpIamContainer(
                 CoordinatorLayout.LayoutParams.WRAP_CONTENT
             ).apply {
                 behavior = swipe
-                gravity = when (fetchResult.layoutParams.position) {
+                val position = fetchResult.layoutParams.position ?: Position.TOP
+                gravity = when (position) {
                     Position.TOP -> Gravity.TOP
                     Position.BOTTOM -> Gravity.BOTTOM
                 }
@@ -126,7 +127,8 @@ internal class SlideUpIamContainer(
                 )
             )
             webView.doOnLayout {
-                when (fetchResult.layoutParams.position) {
+                val position = fetchResult.layoutParams.position ?: Position.TOP
+                when (position) {
                     Position.TOP -> {
                         webView.translationY = -webView.height.toFloat()
                         webView.animate()
