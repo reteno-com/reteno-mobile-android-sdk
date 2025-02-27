@@ -6,7 +6,6 @@ import android.content.ComponentName
 import android.content.Intent
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
-import androidx.work.WorkManager
 import com.reteno.core.di.ServiceLocator
 import com.reteno.core.di.provider.RetenoConfigProvider
 import com.reteno.core.domain.controller.ScreenTrackingController
@@ -81,6 +80,7 @@ class RetenoImpl(
             Logger.i(TAG, "RetenoSDK was already initialized, skipping")
             return
         }
+        Logger.i(TAG, "setConfig()")
         configProvider.setConfig(config)
         syncScope.launch(mainDispatcher) {
             anrWaitCondition.await()
@@ -127,7 +127,7 @@ class RetenoImpl(
             //Trick to wait for sharedPrefs initialization on background thread to prevent ANR
             serviceLocator.sharedPrefsManagerProvider.get().getEmail()
             //Init workmanager singleton instance
-            WorkManager.getInstance(application)
+            serviceLocator.initWorkManager()
         }.getOrElse {
             Logger.e(TAG, "preventANR(): ", it)
         }
