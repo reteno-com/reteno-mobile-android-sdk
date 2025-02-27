@@ -33,6 +33,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.util.concurrent.atomic.AtomicBoolean
 
 
 class RetenoImpl(
@@ -66,7 +67,7 @@ class RetenoImpl(
     override val recommendation by lazy { serviceLocator.recommendationProvider.get() }
     private val iamView: IamView by lazy { serviceLocator.iamViewProvider.get() }
 
-    private var isStarted: Boolean = false
+    private var isStarted: AtomicBoolean = AtomicBoolean(false)
 
     val isInitialized: Boolean
         get() = initWaitCondition.isCompleted
@@ -80,6 +81,7 @@ class RetenoImpl(
             Logger.i(TAG, "RetenoSDK was already initialized, skipping")
             return
         }
+        configProvider.setConfig(config)
         syncScope.launch(mainDispatcher) {
             anrWaitCondition.await()
             applyConfig(config)
@@ -89,7 +91,6 @@ class RetenoImpl(
 
     private suspend fun applyConfig(config: RetenoConfig) = withContext(mainDispatcher) {
         try {
-            configProvider.setConfig(config)
             appLifecycleOwner.lifecycle.addObserver(appLifecycleController)
             contactController.checkIfDeviceRegistered()
             pauseInAppMessages(config.isPausedInAppMessages)
@@ -138,9 +139,8 @@ class RetenoImpl(
         }
         /*@formatter:off*/ Logger.i(TAG, "start(): ", "activity = [", activity, "]")
         /*@formatter:on*/
-        if (!isStarted) {
-            isStarted = true
-            fetchInAppMessages()
+        if (!isStarted.getAndSet(true)) {
+            iamController.getInAppMessages()
         }
     }
 
@@ -181,13 +181,9 @@ class RetenoImpl(
         if (!isOsVersionSupported()) {
             return@awaitInit
         }
-        isStarted = false
+        isStarted.set(false)
         /*@formatter:off*/ Logger.i(TAG, "stop(): ", "activity = [", activity, "]")
         /*@formatter:on*/
-    }
-
-    private fun fetchInAppMessages() {
-        iamController.getInAppMessages()
     }
 
     @Throws(java.lang.IllegalArgumentException::class)
@@ -224,7 +220,7 @@ class RetenoImpl(
 
         try {
             contactController.setExternalIdAndUserData(externalUserId, user)
-            if (isStarted) {
+            if (isStarted.get()) {
                 syncScope.launch {
                     delay(5000L) //There is a requirement to refresh segmentation in 5 sec after user change his attributes
                     iamController.refreshSegmentation()

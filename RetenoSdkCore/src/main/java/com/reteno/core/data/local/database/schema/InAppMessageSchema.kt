@@ -24,7 +24,7 @@ object InAppMessageSchema {
                 "$COLUMN_IAM_LAST_SHOW_TIME INTEGER, " +
                 "$COLUMN_IAM_SHOW_COUNT INTEGER NOT NULL, " +
                 "$COLUMN_IAM_LAYOUT_TYPE TEXT, " +
-                "$COLUMN_IAM_MODEL TEXT" +
+                "$COLUMN_IAM_MODEL TEXT, " +
                 "$COLUMN_IAM_POSITION TEXT" +
                 ")"
 
