@@ -46,7 +46,7 @@ class FrequencyRuleValidator {
 
     private fun checkCanShowNoLimit(inAppMessage: InAppMessage, sessionStartTimestamp: Long, showingOnAppStart: Boolean): Boolean {
         return if (showingOnAppStart) {
-true//            checkCanShowOncePerSession(inAppMessage, sessionStartTimestamp)
+            checkCanShowOncePerSession(inAppMessage, sessionStartTimestamp)
         } else {
             true
         }
