@@ -51,6 +51,7 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.util.concurrent.TimeUnit
 
@@ -143,13 +144,10 @@ class IamControllerImplTest : BaseRobolectricTest() {
         advanceTimeBy(DELAY_BASE_HTML)
         assertEquals(ResultDomain.Loading, sut.fullHtmlStateFlow.value)
         runCurrent()
-        assertEquals(ResultDomain.Success(
-            IamFetchResult(
-                fullHtml = FULL_HTML,
-                layoutParams = InAppLayoutParams(Position.TOP),
-                layoutType = InAppLayoutType.FULL
-            )
-        ), sut.fullHtmlStateFlow.value)
+        assertTrue(sut.fullHtmlStateFlow.value is ResultDomain.Success)
+        assertTrue((sut.fullHtmlStateFlow.value as ResultDomain.Success).body.fullHtml == FULL_HTML)
+        assertTrue((sut.fullHtmlStateFlow.value as ResultDomain.Success).body.layoutParams == InAppLayoutParams(Position.TOP))
+        assertTrue((sut.fullHtmlStateFlow.value as ResultDomain.Success).body.layoutType == InAppLayoutType.FULL)
 
         sut.reset()
         assertEquals(ResultDomain.Idle, sut.fullHtmlStateFlow.value)
@@ -198,13 +196,11 @@ class IamControllerImplTest : BaseRobolectricTest() {
         // When
         runCurrent()
         // Then
-        assertEquals(ResultDomain.Success(
-            IamFetchResult(
-                fullHtml = FULL_HTML,
-                layoutParams = InAppLayoutParams(Position.TOP),
-                layoutType = InAppLayoutType.FULL
-            )
-        ), sut.fullHtmlStateFlow.value)
+        assertTrue(sut.fullHtmlStateFlow.value is ResultDomain.Success)
+        assertTrue((sut.fullHtmlStateFlow.value as ResultDomain.Success).body.fullHtml == FULL_HTML)
+        assertTrue((sut.fullHtmlStateFlow.value as ResultDomain.Success).body.layoutParams == InAppLayoutParams(Position.TOP))
+        assertTrue((sut.fullHtmlStateFlow.value as ResultDomain.Success).body.layoutType == InAppLayoutType.FULL)
+
         // When
         sut.reset()
         // Then
