@@ -20,7 +20,7 @@ public class SwipeDismissBehavior<V extends View> extends CoordinatorLayout.Beha
     public static final int STATE_SETTLING = 2;
     public static final int SWIPE_DIRECTION_START_TO_END = 0;
     public static final int SWIPE_DIRECTION_END_TO_START = 1;
-    public static final int SWIPE_DIRECTION_ANY = 2;
+    public static final int SWIPE_DIRECTION_HORIZONTAL = 2;
     private static final float DEFAULT_DRAG_DISMISS_THRESHOLD = 0.5F;
     private static final float DEFAULT_ALPHA_START_DISTANCE = 0.0F;
     private static final float DEFAULT_ALPHA_END_DISTANCE = 0.5F;

@@ -16,6 +16,7 @@ import androidx.core.view.contains
 import androidx.core.view.doOnLayout
 import androidx.core.view.isVisible
 import androidx.core.view.updateLayoutParams
+import com.reteno.core.data.remote.model.iam.message.InAppMessageContent
 import com.reteno.core.data.remote.model.iam.message.InAppMessageContent.InAppLayoutParams.Position
 import com.reteno.core.domain.controller.IamFetchResult
 import com.reteno.core.features.iam.RetenoAndroidHandler
@@ -40,18 +41,29 @@ internal class SlideUpIamContainer(
     private fun addWebViewToParent() {
         /*@formatter:off*/ Logger.i(TAG, "addWebViewToCardView(): ", "")
         /*@formatter:on*/
-        val swipe = SwipeDismissBehavior<WebView>().apply {
-            setSwipeDirection(SwipeDismissBehavior.SWIPE_DIRECTION_ANY)
+        val swipe = when(fetchResult.layoutType) {
+            InAppMessageContent.InAppLayoutType.BOTTOM_BAR -> {
+                VerticalSwipeDismissBehavior<WebView>().apply {
+                    dismissListener = object :VerticalSwipeDismissBehavior.OnDismissListener {
+                        override fun onDismiss(view: View) {
+                            iamDismissListener.onIamDismissed()
+                        }
+                    }
+                }
+            }
+            else -> SwipeDismissBehavior<WebView>().apply {
+                setSwipeDirection(SwipeDismissBehavior.SWIPE_DIRECTION_HORIZONTAL)
+                setListener(object : SwipeDismissBehavior.OnDismissListener {
+                    override fun onDismiss(var1: View?) {
+                        iamDismissListener.onIamDismissed()
+                    }
+
+                    override fun onDragStateChanged(var1: Int) {
+                    }
+
+                })
+            }
         }
-        swipe.setListener(object : SwipeDismissBehavior.OnDismissListener {
-            override fun onDismiss(var1: View?) {
-                iamDismissListener.onIamDismissed()
-            }
-
-            override fun onDragStateChanged(var1: Int) {
-            }
-
-        })
         parentLayout.addView(
             webView,
             CoordinatorLayout.LayoutParams(
