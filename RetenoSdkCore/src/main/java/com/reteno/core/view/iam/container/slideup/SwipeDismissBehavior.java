@@ -210,8 +210,7 @@ public class SwipeDismissBehavior<V extends View> extends CoordinatorLayout.Beha
     }
 
     public boolean onTouchEvent(CoordinatorLayout parent, V child, MotionEvent event) {
-        boolean isInChildBounds = parent.isPointInChildBounds(child, (int)event.getX(), (int)event.getY());
-        if (this.viewDragHelper != null && isInChildBounds) {
+        if (this.viewDragHelper != null && interceptingEvents) {
             this.viewDragHelper.processTouchEvent(event);
             return true;
         } else {

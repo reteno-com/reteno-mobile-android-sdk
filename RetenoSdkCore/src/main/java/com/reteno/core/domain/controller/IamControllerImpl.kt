@@ -36,6 +36,7 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
+import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
 
 internal class IamControllerImpl(
@@ -96,6 +97,7 @@ internal class IamControllerImpl(
                     }
                     _fullHtmlStateFlow.value = ResultDomain.Success(
                         IamFetchResult(
+                            id = UUID.randomUUID().toString(),
                             fullHtml = fullHtml,
                             layoutType = widgetModel.layoutType ?: InAppLayoutType.FULL,
                             layoutParams = widgetModel.layoutParams ?: InAppLayoutParams(Position.TOP)
@@ -126,6 +128,7 @@ internal class IamControllerImpl(
 
                     _fullHtmlStateFlow.value = ResultDomain.Success(
                         IamFetchResult(
+                            id = UUID.randomUUID().toString(),
                             fullHtml = text,
                             layoutType = messageContent?.layoutType?: InAppLayoutType.FULL,
                             layoutParams = messageContent?.layoutParams ?: InAppLayoutParams(Position.TOP)

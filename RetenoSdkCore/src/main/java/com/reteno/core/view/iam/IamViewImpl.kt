@@ -1,6 +1,7 @@
 package com.reteno.core.view.iam
 
 import android.app.Activity
+import android.content.ActivityNotFoundException
 import android.content.ComponentName
 import android.content.Intent
 import android.content.res.Resources
@@ -78,7 +79,7 @@ internal class IamViewImpl(
                     IamJsEventType.WIDGET_INIT_SUCCESS -> {
                         val height = jsEvent.payload?.contentHeight
                         if (height != null) {
-                            OperationQueue.addUiOperation {
+                            iamShowScope.launch {
                                 val intHeight = height.filter { it.isDigit() }.toInt()
                                 iamContainer?.onHeightDefined(dpToPx(intHeight))
                             }
@@ -206,7 +207,7 @@ internal class IamViewImpl(
                 messageId = null
                 messageInstanceId = null
 
-                OperationQueue.addUiOperation {
+                iamShowScope.launch {
                     inAppLifecycleCallback?.beforeDisplay(createInAppData())
                     iamController.fetchIamFullHtml(interactionId)
                 }
@@ -227,7 +228,7 @@ internal class IamViewImpl(
         try {
             inAppMessage.notifyShown()
             iamController.updateInAppMessage(inAppMessage)
-            OperationQueue.addUiOperation {
+            iamShowScope.launch {
                 messageId = inAppMessage.messageId
                 messageInstanceId = inAppMessage.messageInstanceId
                 inAppSource = InAppSource.DISPLAY_RULES
@@ -305,7 +306,7 @@ internal class IamViewImpl(
         }
 
         if (activityHelper.canPresentMessages() && activityHelper.isActivityFullyReady()) {
-            OperationQueue.addUiOperation {
+            iamShowScope.launch {
                 activityHelper.currentActivity?.let(::showIamContainer)
             }
         } else {
@@ -331,7 +332,7 @@ internal class IamViewImpl(
         interactionId = null
         messageId = null
         messageInstanceId = null
-        OperationQueue.addUiOperation {
+        iamShowScope.launch {
             iamContainer?.destroy()
             iamContainer = null
             isViewShown.set(false)
@@ -377,12 +378,12 @@ internal class IamViewImpl(
         jsEvent.payload?.url.takeUnless { it.isNullOrBlank() }?.let {
             val deepLinkIntent = Intent(Intent.ACTION_VIEW, Uri.parse(it))
             deepLinkIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-            try {
-                OperationQueue.addUiOperation {
+            iamShowScope.launch {
+                try {
                     activityHelper.currentActivity?.startActivity(deepLinkIntent)
+                } catch (e: ActivityNotFoundException) {
+                    Logger.e(TAG, "openUrl()", e)
                 }
-            } catch (e: Throwable) {
-                Logger.e(TAG, "openUrl()", e)
             }
         }
     }

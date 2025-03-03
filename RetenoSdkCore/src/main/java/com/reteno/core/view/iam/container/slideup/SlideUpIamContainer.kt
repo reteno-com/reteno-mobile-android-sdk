@@ -104,10 +104,10 @@ internal class SlideUpIamContainer(
 
     override fun destroy() {
         try {
-            val container = parentLayout.parent as ViewGroup
+            val container = parentLayout.parent as? ViewGroup
             //To stop propagating unexpected scroll event to Activity convent View
             parentLayout.isVisible = false
-            container.removeView(parentLayout)
+            container?.removeView(parentLayout)
             parentLayout.removeAllViews()
             webView.removeJavascriptInterface(IamViewImpl.JS_INTERFACE_NAME)
         } catch (e: Exception) {
