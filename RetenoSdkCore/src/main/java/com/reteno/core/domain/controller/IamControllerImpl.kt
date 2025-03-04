@@ -27,12 +27,13 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.BufferOverflow
-import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
@@ -58,12 +59,13 @@ internal class IamControllerImpl(
         private set
     private var htmlJob: Job? = null
 
-    private val _inAppMessage = MutableSharedFlow<InAppMessage>(
-        extraBufferCapacity = 2,
+    private val _inAppMessage = Channel<InAppMessage>(
+        capacity = 2,
         onBufferOverflow = BufferOverflow.DROP_OLDEST
     )
     private val postponedNotifications = mutableListOf<InAppMessage>()
-    override val inAppMessagesFlow: SharedFlow<InAppMessage> = _inAppMessage
+    override val inAppMessagesFlow: Flow<InAppMessage>
+    get() = _inAppMessage.receiveAsFlow()
 
     init {
         eventController.eventFlow
@@ -393,7 +395,7 @@ internal class IamControllerImpl(
     private fun showInApp(inAppMessage: InAppMessage) {
         if (isPausedInAppMessages.get()) postponedNotifications.add(inAppMessage)
         if (!canShowInApp()) return
-        scope.launch { _inAppMessage.emit(inAppMessage) }
+        scope.launch { _inAppMessage.send(inAppMessage) }
     }
 
     private fun checkSegmentRuleMatches(inAppMessage: InAppMessage): Boolean {

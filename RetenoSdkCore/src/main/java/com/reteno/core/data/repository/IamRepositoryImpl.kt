@@ -358,7 +358,7 @@ internal class IamRepositoryImpl(
     companion object {
         private val TAG: String = IamRepositoryImpl::class.java.simpleName
 
-        private const val BASE_HTML_VERSION_DEFAULT = "0"
+        private const val BASE_HTML_VERSION_DEFAULT = "20250221-1558-453c0df"
         private const val IN_APP_NO_CHANGES_CODE = 304
         private const val HEADER_ETAG_RESPONSE = "ETag"
         private const val HEADER_ETAG_REQUEST = "If-None-Match"

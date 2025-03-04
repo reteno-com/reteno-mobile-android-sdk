@@ -1,10 +1,11 @@
 package com.reteno.core
 
-import android.app.Activity
 import android.app.Application
 import android.content.ComponentName
 import android.content.Intent
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.OnLifecycleEvent
 import androidx.lifecycle.ProcessLifecycleOwner
 import com.reteno.core.di.ServiceLocator
 import com.reteno.core.di.provider.RetenoConfigProvider
@@ -18,7 +19,6 @@ import com.reteno.core.domain.model.user.User
 import com.reteno.core.domain.model.user.UserAttributesAnonymous
 import com.reteno.core.features.iam.InAppPauseBehaviour
 import com.reteno.core.lifecycle.RetenoActivityHelper
-import com.reteno.core.lifecycle.RetenoLifecycleCallbacks
 import com.reteno.core.lifecycle.ScreenTrackingConfig
 import com.reteno.core.util.*
 import com.reteno.core.util.Constants.BROADCAST_ACTION_PUSH_PERMISSION_CHANGED
@@ -40,7 +40,7 @@ class RetenoImpl(
     private val mainDispatcher: CoroutineDispatcher = Dispatchers.Main,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
     private val appLifecycleOwner: LifecycleOwner = ProcessLifecycleOwner.get()
-) : RetenoLifecycleCallbacks, Reteno, RetenoInternalFacade {
+) :  Reteno, RetenoInternalFacade {
 
     private val initWaitCondition = CompletableDeferred<Unit>()
     private val anrWaitCondition = CompletableDeferred<Unit>()
@@ -114,7 +114,8 @@ class RetenoImpl(
 
     private fun initSdk() {
         if (isOsVersionSupported()) {
-            activityHelper.enableLifecycleCallbacks(application, this@RetenoImpl)
+            activityHelper.enableLifecycleCallbacks(application)
+            appLifecycleOwner.lifecycle.addObserver(this@RetenoImpl)
             syncScope.launch(ioDispatcher) {
                 preventANR()
                 anrWaitCondition.complete(Unit)
@@ -124,66 +125,52 @@ class RetenoImpl(
 
     private fun preventANR() {
         runCatching {
-            //Trick to wait for sharedPrefs initialization on background thread to prevent ANR
-            serviceLocator.sharedPrefsManagerProvider.get().getEmail()
             //Init workmanager singleton instance
             serviceLocator.initWorkManager()
+            //Trick to wait for sharedPrefs initialization on background thread to prevent ANR
+            serviceLocator.sharedPrefsManagerProvider.get().getEmail()
         }.getOrElse {
             Logger.e(TAG, "preventANR(): ", it)
         }
     }
 
-    override fun start(activity: Activity) = awaitInit {
+    @OnLifecycleEvent(Lifecycle.Event.ON_START)
+    fun start() = awaitInit {
         if (!isOsVersionSupported()) {
             return@awaitInit
         }
-        /*@formatter:off*/ Logger.i(TAG, "start(): ", "activity = [", activity, "]")
+        /*@formatter:off*/ Logger.i(TAG, "start(): ")
         /*@formatter:on*/
         if (!isStarted.getAndSet(true)) {
             iamController.getInAppMessages()
         }
-    }
-
-    override fun resume(activity: Activity) = awaitInit {
-        if (!isOsVersionSupported()) {
-            return@awaitInit
-        }
-        /*@formatter:off*/ Logger.i(TAG, "resume(): ", "activity = [" , activity , "]")
-        /*@formatter:on*/
         try {
             contactController.checkIfDeviceRequestSentThisSession()
             sessionHandler.start()
             startScheduler()
-            iamView.resume(activity)
+            iamView.start()
         } catch (ex: Throwable) {
-            /*@formatter:off*/ Logger.e(TAG, "resume(): ", ex)
+            /*@formatter:off*/ Logger.e(TAG, "start(): ", ex)
             /*@formatter:on*/
         }
     }
 
-    override fun pause(activity: Activity) = awaitInit {
+    @OnLifecycleEvent(Lifecycle.Event.ON_STOP)
+    fun stop() = awaitInit {
         if (!isOsVersionSupported()) {
             return@awaitInit
         }
-        /*@formatter:off*/ Logger.i(TAG, "pause(): ", "activity = [" , activity , "]")
+        /*@formatter:off*/ Logger.i(TAG, "stop(): ")
         /*@formatter:on*/
+        isStarted.set(false)
         try {
             sessionHandler.stop()
             stopPushScheduler()
-            iamView.pause(activity)
+            iamView.pause()
         } catch (ex: Throwable) {
-            /*@formatter:off*/ Logger.e(TAG, "pause(): ", ex)
+            /*@formatter:off*/ Logger.e(TAG, "stop(): ", ex)
             /*@formatter:on*/
         }
-    }
-
-    override fun stop(activity: Activity) = awaitInit {
-        if (!isOsVersionSupported()) {
-            return@awaitInit
-        }
-        isStarted.set(false)
-        /*@formatter:off*/ Logger.i(TAG, "stop(): ", "activity = [", activity, "]")
-        /*@formatter:on*/
     }
 
     @Throws(java.lang.IllegalArgumentException::class)
@@ -461,6 +448,10 @@ class RetenoImpl(
         /*@formatter:off*/ Logger.i(TAG, "isDatabaseEmpty(): $result")
         /*@formatter:on*/
         return result
+    }
+
+    override fun isActivityPresented(): Boolean {
+        return activityHelper.currentActivity != null
     }
 
     override fun initializeIamView(interactionId: String) = awaitInit {
