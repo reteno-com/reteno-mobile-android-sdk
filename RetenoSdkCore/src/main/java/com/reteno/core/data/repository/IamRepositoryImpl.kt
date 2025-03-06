@@ -66,9 +66,15 @@ internal class IamRepositoryImpl(
     private suspend fun getBaseHtmlVersionRemote(): String? {
         /*@formatter:off*/ Logger.i(TAG, "getBaseHtmlVersionRemote(): ", "")
         /*@formatter:on*/
+        val iamUrl = sharedPrefsManager.getIamBaseUrl()
+        val url = if (iamUrl != null) {
+            ApiContract.Custom(url = iamUrl)
+        } else {
+            ApiContract.InAppMessages.BaseHtml
+        }
         return withContext(coroutineDispatcher) {
             suspendCancellableCoroutine { continuation ->
-                apiClient.head(url = ApiContract.InAppMessages.BaseHtml,
+                apiClient.head(url = url,
                     queryParams = null,
                     responseHandler = object : ResponseCallback {
                         override fun onSuccess(
@@ -100,9 +106,15 @@ internal class IamRepositoryImpl(
     private suspend fun getBaseHtmlContentRemote(): String? {
         /*@formatter:off*/ Logger.i(TAG, "getBaseHtmlContentRemote(): ", "")
         /*@formatter:on*/
+        val iamUrl = sharedPrefsManager.getIamBaseUrl()
+        val url = if (iamUrl != null) {
+            ApiContract.Custom(url = iamUrl)
+        } else {
+            ApiContract.InAppMessages.BaseHtml
+        }
         return withContext(coroutineDispatcher) {
             suspendCancellableCoroutine { continuation ->
-                apiClient.get(url = ApiContract.InAppMessages.BaseHtml,
+                apiClient.get(url = url,
                     queryParams = null,
                     responseHandler = object : ResponseCallback {
                         override fun onSuccess(response: String) {

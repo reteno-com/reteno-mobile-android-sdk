@@ -79,6 +79,7 @@ class IamRepositoryImplTest : BaseRobolectricTest() {
             // Given
             createRepository(StandardTestDispatcher(testScheduler))
             every { sharedPrefsManager.getIamBaseHtmlVersion() } returns BASE_HTML_VERSION_LOCAL
+            every { sharedPrefsManager.getIamBaseUrl() } returns null
             every { apiClient.head(ApiContract.InAppMessages.BaseHtml, any(), any()) } answers {
                 val callback = thirdArg<ResponseCallback>()
                 val headers = mapOf<String, List<String>>(
@@ -120,6 +121,7 @@ class IamRepositoryImplTest : BaseRobolectricTest() {
             createRepository(StandardTestDispatcher(testScheduler))
             every { sharedPrefsManager.getIamBaseHtmlVersion() } returns BASE_HTML_VERSION_LOCAL
             every { sharedPrefsManager.getIamBaseHtmlContent() } returns BASE_HTML_CONTENT_LOCAL
+            every { sharedPrefsManager.getIamBaseUrl() } returns null
             every { apiClient.head(ApiContract.InAppMessages.BaseHtml, any(), any()) } answers {
                 val callback = thirdArg<ResponseCallback>()
                 val headers = mapOf<String, List<String>>(

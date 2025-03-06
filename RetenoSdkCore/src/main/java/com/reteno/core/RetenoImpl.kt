@@ -40,7 +40,7 @@ class RetenoImpl(
     private val mainDispatcher: CoroutineDispatcher = Dispatchers.Main,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
     private val appLifecycleOwner: LifecycleOwner = ProcessLifecycleOwner.get()
-) :  Reteno, RetenoInternalFacade {
+) : Reteno, RetenoInternalFacade {
 
     private val initWaitCondition = CompletableDeferred<Unit>()
     private val anrWaitCondition = CompletableDeferred<Unit>()
@@ -486,6 +486,10 @@ class RetenoImpl(
 
     override fun deeplinkClicked(linkWrapped: String, linkUnwrapped: String) {
         deeplinkController.deeplinkClicked(linkWrapped, linkUnwrapped)
+    }
+
+    override fun hasActiveTask(): Boolean {
+        return activityHelper.hasActiveTask()
     }
 
     private fun stopPushScheduler() {

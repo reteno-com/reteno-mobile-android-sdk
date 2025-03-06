@@ -85,8 +85,11 @@ class RetenoNotificationClickedReceiver : BroadcastReceiver() {
         }
         intent.extras?.let(launchIntent::putExtras)
         val isIam = intent.extras?.let(::checkIam)?:false
-        if (!isIam || !RetenoImpl.instance.isActivityPresented()) {
-            context.startActivity(launchIntent)
+        when {
+            isIam && RetenoImpl.instance.isActivityPresented() -> {}
+            else -> {
+                context.startActivity(intent)
+            }
         }
     }
 

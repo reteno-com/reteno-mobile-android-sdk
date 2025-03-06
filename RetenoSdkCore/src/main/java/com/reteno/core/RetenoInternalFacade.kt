@@ -36,4 +36,6 @@ internal interface RetenoInternalFacade : LifecycleObserver {
     fun notificationsEnabled(enabled: Boolean)
 
     fun deeplinkClicked(linkWrapped: String, linkUnwrapped: String)
+
+    fun hasActiveTask(): Boolean
 }

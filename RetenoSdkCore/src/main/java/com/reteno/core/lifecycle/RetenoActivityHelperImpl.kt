@@ -162,8 +162,7 @@ internal class RetenoActivityHelperImpl : RetenoActivityHelper {
     /**
      * Checks whether activity is in foreground.
      */
-    override fun canPresentMessages(): Boolean =
-        currentActivity != null && !currentActivity!!.isFinishing && !isActivityPaused && !isReadyForTransition
+    override fun canPresentMessages(): Boolean = isActivityInForeground()
 
     // Ensures the Activity is fully ready by;
     //   1. Ensure it is attached to a top-level Window by checking if it has an IBinder
@@ -176,6 +175,14 @@ internal class RetenoActivityHelperImpl : RetenoActivityHelper {
         /*@formatter:off*/ Logger.i(TAG, "isActivityFullyReady(): ", result)
         /*@formatter:on*/
         return result
+    }
+
+    override fun hasActiveTask(): Boolean {
+        return lastForegroundActivity != null
+    }
+
+    private fun isActivityInForeground():Boolean {
+        return currentActivity != null && !currentActivity!!.isFinishing && !isActivityPaused && !isReadyForTransition
     }
 
     /**

@@ -89,8 +89,11 @@ class RetenoNotificationClickedActivity : Activity() {
         }
         intent.component = launchIntent.component
         val isIam = intent.extras?.let(::checkIam) ?: false
-        if (!isIam || !RetenoImpl.instance.isActivityPresented()) {
-            this.startActivity(intent)
+        when {
+            isIam && RetenoImpl.instance.isActivityPresented() -> {}
+            else -> {
+                this.startActivity(intent)
+            }
         }
         finish()
     }

@@ -2,11 +2,7 @@ package com.reteno.core.data.local.sharedpref
 
 import android.content.Context
 import android.content.SharedPreferences
-import androidx.core.app.NotificationChannelCompat
-import androidx.core.app.NotificationManagerCompat.IMPORTANCE_DEFAULT
 import com.reteno.core.R
-import com.reteno.core.Reteno
-import com.reteno.core.RetenoImpl
 import com.reteno.core.util.Logger
 import com.reteno.core.util.Util
 import java.util.UUID
@@ -35,6 +31,13 @@ internal class SharedPrefsManager(
         /*@formatter:off*/ Logger.i(TAG, "getDeviceId(): ", "deviceId = [", deviceId, "]")
         /*@formatter:on*/
         return deviceId
+    }
+
+    fun getIamBaseUrl(): String? {
+        val url = sharedPreferences.getString(PREF_KEY_IAM_BASE_URL, null)
+        /*@formatter:off*/ Logger.i(TAG, "getIamBaseUrl(): ", "url = ", url)
+        /*@formatter:on*/
+        return url
     }
 
     fun saveFcmToken(token: String) {
@@ -345,6 +348,7 @@ internal class SharedPrefsManager(
         private const val PREF_KEY_IAM_BASE_HTML_VERSION = "in_app_messages_base_html_version"
         private const val PREF_KEY_IAM_BASE_HTML_CONTENT = "in_app_messages_base_html_content"
         private const val PREF_KEY_IAM_ETAG = "in_app_e_tag"
+        private const val PREF_KEY_IAM_BASE_URL = "iam_base_url"
         private const val PREF_KEY_APP_STOPPED_TIMESTAMP = "app_stopped_timestamp"
         private const val PREF_KEY_APP_INTERACTION_TIMESTAMP = "app_interaction_timestamp"
         private const val PREF_KEY_SESSION_START_TIMESTAMP = "session_start_timestamp"
