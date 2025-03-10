@@ -72,7 +72,6 @@ internal class IamViewImpl(
             LIFECYCLE_KEY,
             RetenoLifecycleCallBacksAdapter(
                 onStart = {
-                    if (activityHelper.currentActivity != it) return@RetenoLifecycleCallBacksAdapter
                     Logger.i(TAG, "IamActivityLifecycle.onStart(): ", "isViewShown = [", isViewShown.get(), "]")
                     if (isViewShown.get()) {
                         showIamOnceReady(DELAY_UI_ATTEMPTS)

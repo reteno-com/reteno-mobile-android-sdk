@@ -124,7 +124,7 @@ class FragmentStart : BaseFragment() {
     private fun initIamBaseUrl() {
         val prefs = requireActivity()
             .getSharedPreferences("reteno_shared_prefs", Context.MODE_PRIVATE)
-        val coreUrl = "https://statics.esputnik.com/in-app/base.4147521dc72162d3e1ea1ed1e58c6b7f44f2bffb.html"
+        val coreUrl = "https://statics.esputnik.com/in-app/base.latest.html"
         val custom = prefs.getString("iam_base_url", null)
         binding!!.etBaseInAppURL.setText(custom ?: coreUrl)
         binding!!.saveInAppBase.setOnClickListener {
