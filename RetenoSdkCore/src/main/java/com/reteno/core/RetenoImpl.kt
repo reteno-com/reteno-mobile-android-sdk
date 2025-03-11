@@ -319,6 +319,7 @@ class RetenoImpl(
     }
 
     override fun updatePushPermissionStatus() = awaitInit {
+        Logger.i(TAG, "updatePushPermissionStatus():")
         val intent =
             Intent(BROADCAST_ACTION_PUSH_PERMISSION_CHANGED).setFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES)
         val infoList = application.queryBroadcastReceivers(intent)
@@ -331,19 +332,23 @@ class RetenoImpl(
     }
 
     override fun pauseInAppMessages(isPaused: Boolean) = awaitInit {
+        Logger.i(TAG, "pauseInAppMessages(): isPaused = [$isPaused]")
         iamController.pauseInAppMessages(isPaused)
     }
 
     override fun pausePushInAppMessages(isPaused: Boolean) = awaitInit {
+        Logger.i(TAG, "pausePushInAppMessages(): isPaused = [$isPaused]")
         iamView.pauseIncomingPushInApps(isPaused)
     }
 
     override fun setPushInAppMessagesPauseBehaviour(behaviour: InAppPauseBehaviour) = awaitInit {
+        Logger.i(TAG, "setPushInAppMessagesPauseBehaviour(): behaviour = [$behaviour]")
         iamView.setPauseBehaviour(behaviour)
     }
 
     override fun setInAppLifecycleCallback(inAppLifecycleCallback: InAppLifecycleCallback?) =
         awaitInit {
+            Logger.i(TAG, "setInAppLifecycleCallback(): inAppLifecycleCallback = [$inAppLifecycleCallback]")
             iamView.setInAppLifecycleCallback(inAppLifecycleCallback)
         }
 

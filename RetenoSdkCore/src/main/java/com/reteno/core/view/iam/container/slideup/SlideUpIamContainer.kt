@@ -122,43 +122,53 @@ internal class SlideUpIamContainer(
     }
 
     override fun show(activity: Activity) {
-        val container = activity.findViewById<ViewGroup>(android.R.id.content)
-        if (!container.contains(parentLayout)) {
-            activity.addContentView(
-                parentLayout,
-                ViewGroup.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.MATCH_PARENT
+        try {
+            val container = activity.findViewById<ViewGroup>(android.R.id.content) ?: return
+            if (!container.contains(parentLayout)) {
+                activity.addContentView(
+                    parentLayout,
+                    ViewGroup.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.MATCH_PARENT
+                    )
                 )
-            )
-            webView.doOnLayout {
-                val position = fetchResult.layoutParams.position ?: Position.TOP
-                when (position) {
-                    Position.TOP -> {
-                        webView.translationY = -webView.height.toFloat()
-                        webView.animate()
-                            .translationY(0f)
-                            .setInterpolator(LinearInterpolator())
-                            .setDuration(200L)
-                            .start()
-                    }
+                webView.doOnLayout { view ->
+                    val position = fetchResult.layoutParams.position ?: Position.TOP
+                    when (position) {
+                        Position.TOP -> {
+                            view.translationY = -view.height.toFloat()
+                            view.animate()
+                                .translationY(0f)
+                                .setInterpolator(LinearInterpolator())
+                                .setDuration(200L)
+                                .start()
+                        }
 
-                    Position.BOTTOM -> {
-                        webView.translationY = webView.height.toFloat()
-                        webView.animate()
-                            .translationY(0f)
-                            .setInterpolator(LinearInterpolator())
-                            .setDuration(200L)
-                            .start()
+                        Position.BOTTOM -> {
+                            view.translationY = view.height.toFloat()
+                            view.animate()
+                                .translationY(0f)
+                                .setInterpolator(LinearInterpolator())
+                                .setDuration(200L)
+                                .start()
+                        }
                     }
                 }
             }
+        } catch (e: Exception) {
+            /*@formatter:off*/ Logger.e(TAG, "show(): SlideUpIamContainer.show() ", e)
+            /*@formatter:on*/
         }
     }
 
     override fun onHeightDefined(newHeight: Int) {
-        webView.updateLayoutParams<CoordinatorLayout.LayoutParams> {
-            height = newHeight
+        try {
+            webView.updateLayoutParams<CoordinatorLayout.LayoutParams> {
+                height = newHeight
+            }
+        } catch (e: Exception) {
+            /*@formatter:off*/ Logger.e(TAG, "show(): SlideUpIamContainer.show() ", e)
+            /*@formatter:on*/
         }
     }
 
