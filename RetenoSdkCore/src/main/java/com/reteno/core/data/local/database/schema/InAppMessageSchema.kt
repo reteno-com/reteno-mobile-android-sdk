@@ -11,6 +11,7 @@ object InAppMessageSchema {
     internal const val COLUMN_IAM_SHOW_COUNT = "iamShowCount"
     internal const val COLUMN_IAM_LAYOUT_TYPE = "iamLayoutType"
     internal const val COLUMN_IAM_MODEL = "iamModel"
+    internal const val COLUMN_IAM_POSITION = "iamPosition"
 
     internal const val SQL_CREATE_TABLE =
         "CREATE TABLE IF NOT EXISTS $TABLE_NAME_IN_APP_MESSAGE" +
@@ -23,8 +24,11 @@ object InAppMessageSchema {
                 "$COLUMN_IAM_LAST_SHOW_TIME INTEGER, " +
                 "$COLUMN_IAM_SHOW_COUNT INTEGER NOT NULL, " +
                 "$COLUMN_IAM_LAYOUT_TYPE TEXT, " +
-                "$COLUMN_IAM_MODEL TEXT" +
+                "$COLUMN_IAM_MODEL TEXT, " +
+                "$COLUMN_IAM_POSITION TEXT" +
                 ")"
+
+    internal const val SQL_UPGRADE_TABLE_VERSION_9 = "ALTER TABLE $TABLE_NAME_IN_APP_MESSAGE ADD COLUMN $COLUMN_IAM_POSITION TEXT"
 
     internal object SegmentSchema {
         internal const val TABLE_NAME_SEGMENT = "Segment"
@@ -57,6 +61,7 @@ object InAppMessageSchema {
         COLUMN_IAM_LAST_SHOW_TIME,
         COLUMN_IAM_SHOW_COUNT,
         COLUMN_IAM_LAYOUT_TYPE,
-        COLUMN_IAM_MODEL
+        COLUMN_IAM_MODEL,
+        COLUMN_IAM_POSITION
     )
 }

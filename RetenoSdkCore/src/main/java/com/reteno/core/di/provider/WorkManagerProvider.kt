@@ -28,7 +28,7 @@ internal class WorkManagerProvider(
             WorkManager.initialize(
                 context ,
                 Configuration.Builder()
-                    .setMinimumLoggingLevel(android.util.Log.DEBUG)
+                    .setMinimumLoggingLevel(android.util.Log.INFO)
                     .build())
             /*@formatter:off*/ Logger.i(TAG, "initialiseWorkManager(): ", "WorkManager initialised")
             /*@formatter:on*/

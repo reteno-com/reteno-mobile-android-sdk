@@ -11,7 +11,7 @@ interface RetenoActivityHelper {
     /**
      * Enables lifecycle callbacks for Android devices with Android OS &gt;= 4.0
      */
-    fun enableLifecycleCallbacks(application: Application, callbacks: RetenoLifecycleCallbacks)
+    fun enableLifecycleCallbacks(application: Application)
 
     fun registerActivityLifecycleCallbacks(
         key: String,
@@ -23,4 +23,6 @@ interface RetenoActivityHelper {
     fun canPresentMessages(): Boolean
 
     fun isActivityFullyReady(): Boolean
+
+    fun hasActiveTask(): Boolean
 }

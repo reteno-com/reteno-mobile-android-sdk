@@ -9,7 +9,8 @@ data class InAppMessageDb(
     val lastShowTime: Long?,
     val showCount: Long = 0,
     val layoutType: String?,
-    val model: String?
+    val model: String?,
+    val position: String?
 ) {
     var segment: SegmentDb? = null
 }

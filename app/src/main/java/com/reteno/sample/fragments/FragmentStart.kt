@@ -1,5 +1,6 @@
 package com.reteno.sample.fragments
 
+import android.content.Context
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -7,6 +8,7 @@ import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.CompoundButton
+import android.widget.Toast
 import androidx.navigation.NavDirections
 import androidx.navigation.fragment.NavHostFragment
 import com.reteno.core.RetenoImpl
@@ -58,6 +60,7 @@ class FragmentStart : BaseFragment() {
         initInAppPausingSwitcher()
         initPauseBehaviourSwitcher()
         initDelayedInitCheckbox()
+        initIamBaseUrl()
     }
 
     override fun onDestroyView() {
@@ -116,6 +119,25 @@ class FragmentStart : BaseFragment() {
             ),
             ScreenItem("Ecom Events", direction = FragmentStartDirections.startToEcomEvents())
         )
+    }
+
+    private fun initIamBaseUrl() {
+        val prefs = requireActivity()
+            .getSharedPreferences("reteno_shared_prefs", Context.MODE_PRIVATE)
+        val coreUrl = "https://statics.esputnik.com/in-app/base.latest.html"
+        val custom = prefs.getString("iam_base_url", null)
+        binding!!.etBaseInAppURL.setText(custom ?: coreUrl)
+        binding!!.saveInAppBase.setOnClickListener {
+            try {
+                prefs
+                    .edit()
+                    .putString("iam_base_url", binding!!.etBaseInAppURL.text?.toString()?.takeIf { it.isNotBlank() })
+                    .apply()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+            Toast.makeText(requireContext(), "SAVED", Toast.LENGTH_LONG).show()
+        }
     }
 
 

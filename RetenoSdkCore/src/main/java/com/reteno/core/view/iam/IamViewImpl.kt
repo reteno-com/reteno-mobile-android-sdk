@@ -1,32 +1,19 @@
 package com.reteno.core.view.iam
 
 import android.app.Activity
+import android.content.ActivityNotFoundException
 import android.content.ComponentName
-import android.content.Context
 import android.content.Intent
 import android.content.res.Resources
-import android.graphics.Color
-import android.graphics.drawable.ColorDrawable
 import android.net.Uri
 import android.os.Bundle
-import android.util.Log
-import android.view.Gravity
-import android.view.ViewGroup.LayoutParams
-import android.view.WindowManager
-import android.webkit.ConsoleMessage
-import android.webkit.WebChromeClient
-import android.webkit.WebView
-import android.widget.FrameLayout
-import android.widget.PopupWindow
-import androidx.cardview.widget.CardView
-import androidx.core.widget.PopupWindowCompat
-import com.reteno.core.Reteno
 import com.reteno.core.RetenoImpl
 import com.reteno.core.data.remote.OperationQueue
 import com.reteno.core.data.remote.mapper.fromJson
 import com.reteno.core.data.remote.model.iam.message.InAppMessage
 import com.reteno.core.domain.ResultDomain
 import com.reteno.core.domain.controller.IamController
+import com.reteno.core.domain.controller.IamFetchResult
 import com.reteno.core.domain.controller.InteractionController
 import com.reteno.core.domain.controller.ScheduleController
 import com.reteno.core.domain.model.interaction.InAppInteraction
@@ -37,6 +24,7 @@ import com.reteno.core.features.iam.IamJsPayload
 import com.reteno.core.features.iam.InAppPauseBehaviour
 import com.reteno.core.features.iam.RetenoAndroidHandler
 import com.reteno.core.lifecycle.RetenoActivityHelper
+import com.reteno.core.lifecycle.RetenoLifecycleCallBacksAdapter
 import com.reteno.core.util.Constants
 import com.reteno.core.util.Logger
 import com.reteno.core.util.queryBroadcastReceivers
@@ -46,10 +34,11 @@ import com.reteno.core.view.iam.callback.InAppData
 import com.reteno.core.view.iam.callback.InAppErrorData
 import com.reteno.core.view.iam.callback.InAppLifecycleCallback
 import com.reteno.core.view.iam.callback.InAppSource
+import com.reteno.core.view.iam.container.IamContainer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancelChildren
-import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
@@ -72,37 +61,30 @@ internal class IamViewImpl(
     private var interactionId: String? = null
     private var messageId: Long? = null
     private var messageInstanceId: Long? = null
-    private var _parentLayout: FrameLayout? = null
-    private var _popupWindow: PopupWindow? = null
-    private var _cardView: CardView? = null
-    private var _webView: WebView? = null
-
-    private var parentLayout: FrameLayout
-        get() = requireNotNull(_parentLayout)
-        set(value) {
-            _parentLayout = value
-        }
-    private var popupWindow: PopupWindow
-        get() = requireNotNull(_popupWindow)
-        set(value) {
-            _popupWindow = value
-        }
-    private var cardView: CardView
-        get() = requireNotNull(_cardView)
-        set(value) {
-            _cardView = value
-        }
-    private var webView: WebView
-        get() = requireNotNull(_webView)
-        set(value) {
-            _webView = value
-        }
-
-    private var initViewOnResume = true
+    private var iamContainer: IamContainer? = null
 
     private var pauseIncomingPushInApps = AtomicBoolean(false)
     private var lastPushInteractionId: String? = null
     private var pauseBehaviour = InAppPauseBehaviour.POSTPONE_IN_APPS
+
+    init {
+        activityHelper.registerActivityLifecycleCallbacks(
+            LIFECYCLE_KEY,
+            RetenoLifecycleCallBacksAdapter(
+                onStart = {
+                    Logger.i(TAG, "IamActivityLifecycle.onStart(): ", "isViewShown = [", isViewShown.get(), "]")
+                    if (isViewShown.get()) {
+                        showIamOnceReady(DELAY_UI_ATTEMPTS)
+                    }
+                },
+                onStop = {
+                    if (activityHelper.currentActivity != it) return@RetenoLifecycleCallBacksAdapter
+                    Logger.i(TAG, "IamActivityLifecycle.onStop(): ", "isViewShown = [", isViewShown.get(), "]")
+                    iamContainer?.dismiss()
+                }
+            )
+        )
+    }
 
     private val retenoAndroidHandler: RetenoAndroidHandler = object : RetenoAndroidHandler() {
         override fun onMessagePosted(event: String?) {
@@ -114,7 +96,16 @@ internal class IamViewImpl(
                     IamJsEventType.WIDGET_INIT_FAILED,
                     IamJsEventType.WIDGET_RUNTIME_ERROR -> onWidgetInitFailed(jsEvent)
 
-                    IamJsEventType.WIDGET_INIT_SUCCESS -> onWidgetInitSuccess()
+                    IamJsEventType.WIDGET_INIT_SUCCESS -> {
+                        val height = jsEvent.payload?.contentHeight
+                        if (height != null) {
+                            iamShowScope.launch {
+                                val intHeight = height.filter { it.isDigit() }.toInt()
+                                iamContainer?.onHeightDefined(dpToPx(intHeight))
+                            }
+                        }
+                        onWidgetInitSuccess()
+                    }
 
                     IamJsEventType.CLICK,
                     IamJsEventType.OPEN_URL -> openUrl(jsEvent)
@@ -131,15 +122,17 @@ internal class IamViewImpl(
     override fun pauseIncomingPushInApps(isPaused: Boolean) {
         if (pauseIncomingPushInApps.getAndSet(isPaused) && !isPaused) {
             lastPushInteractionId?.let {
-                if (pauseBehaviour == InAppPauseBehaviour.POSTPONE_IN_APPS) {
-                    showIamPopupWindowOnceReady(DELAY_UI_ATTEMPTS)
-                }
                 lastPushInteractionId = null
+                if (pauseBehaviour == InAppPauseBehaviour.POSTPONE_IN_APPS) {
+                    onWidgetInitSuccess()
+                }
             }
         }
     }
 
     override fun setPauseBehaviour(behaviour: InAppPauseBehaviour) {
+        /*@formatter:off*/ Logger.i(TAG, "setPauseBehaviour(): ", "behaviour = [", behaviour, "]")
+        /*@formatter:on*/
         pauseBehaviour = behaviour
         if (pauseBehaviour == InAppPauseBehaviour.SKIP_IN_APPS) {
             lastPushInteractionId = null
@@ -150,7 +143,7 @@ internal class IamViewImpl(
         /*@formatter:off*/ Logger.i(TAG, "onWidgetInitSuccess(): ", "")
         /*@formatter:on*/
         if (checkPauseState()) return
-        showIamPopupWindowOnceReady(DELAY_UI_ATTEMPTS)
+        showIamOnceReady(DELAY_UI_ATTEMPTS)
         inAppLifecycleCallback?.onDisplay(createInAppData())
         messageInstanceId?.let { instanceId ->
             val newInteractionId = UUID.randomUUID().toString()
@@ -236,15 +229,7 @@ internal class IamViewImpl(
                 messageId = null
                 messageInstanceId = null
 
-                OperationQueue.addUiOperation {
-                    activityHelper.currentActivity.let { activity ->
-                        if (activity != null) {
-                            initViewOnResume = false
-                            createIam(activity)
-                        } else {
-                            initViewOnResume = true
-                        }
-                    }
+                iamShowScope.launch {
                     inAppLifecycleCallback?.beforeDisplay(createInAppData())
                     iamController.fetchIamFullHtml(interactionId)
                 }
@@ -265,10 +250,7 @@ internal class IamViewImpl(
         try {
             inAppMessage.notifyShown()
             iamController.updateInAppMessage(inAppMessage)
-            OperationQueue.addUiOperation {
-                activityHelper.currentActivity?.let {
-                    createIam(it)
-                }
+            iamShowScope.launch {
                 messageId = inAppMessage.messageId
                 messageInstanceId = inAppMessage.messageInstanceId
                 inAppSource = InAppSource.DISPLAY_RULES
@@ -282,40 +264,36 @@ internal class IamViewImpl(
         }
     }
 
-    override fun resume(activity: Activity) {
-        /*@formatter:off*/ Logger.i(TAG, "resume(): ", "activity = [", activity, "]")
+    override fun start() {
+        /*@formatter:off*/ Logger.i(TAG, "resume(): ")
         /*@formatter:on*/
-        if (isViewShown.get()) {
-            showIamPopupWindowOnceReady(DELAY_UI_ATTEMPTS)
-            return
-        }
-
-        if (initViewOnResume) {
-            createIam(activity)
-            initViewOnResume = false
-        }
-
         iamController.inAppMessagesFlow
             .onEach { initialize(it) }
             .launchIn(iamShowScope)
 
-        iamShowScope.launch {
-            iamController.fullHtmlStateFlow.collect { result ->
-                ensureActive()
-                if (result is ResultDomain.Success) {
-                    uploadHtmlIntoWebView(result.body)
-                }
-            }
-        }
+        iamController.fullHtmlStateFlow
+            .filterIsInstance<ResultDomain.Success<IamFetchResult>>()
+            .onEach { createIamContainer(it) }
+            .launchIn(iamShowScope)
     }
 
-    override fun pause(activity: Activity) {
-        /*@formatter:off*/ Logger.i(TAG, "pause(): ", "activity = [", activity, "]")
+    private fun createIamContainer(result: ResultDomain.Success<IamFetchResult>) {
+        iamContainer = IamContainer.create(
+            context = RetenoImpl.instance.application,
+            jsInterface = retenoAndroidHandler,
+            iamFetchResult = result.body,
+            dismissListener = {
+                inAppLifecycleCallback?.beforeClose(createInAppCloseData(InAppCloseAction.DISMISSED))
+                teardown()
+                inAppLifecycleCallback?.afterClose(createInAppCloseData(InAppCloseAction.DISMISSED))
+            }
+        )
+    }
+
+    override fun pause() {
+        /*@formatter:off*/ Logger.i(TAG, "pause():")
         /*@formatter:on*/
         iamShowScope.coroutineContext.cancelChildren()
-        if (isViewShown.get()) {
-            popupWindow.dismiss()
-        }
     }
 
     override fun setInAppLifecycleCallback(inAppLifecycleCallback: InAppLifecycleCallback?) {
@@ -323,6 +301,8 @@ internal class IamViewImpl(
     }
 
     private fun checkPauseState(): Boolean {
+        /*@formatter:off*/ Logger.i(TAG, "checkPauseState(): ", "paused = [", pauseIncomingPushInApps.get(), "]")
+        /*@formatter:on*/
         return pauseIncomingPushInApps.get().also {
             if (it) {
                 lastPushInteractionId = interactionId
@@ -330,134 +310,29 @@ internal class IamViewImpl(
         }
     }
 
-    private fun showIamPopupWindowOnceReady(attempts: Int) {
-        /*@formatter:off*/ Logger.i(TAG, "showIamPopupWindowOnceReady(): ", "attempts = [", attempts, "]")
+    private fun showIamOnceReady(attempts: Int) {
+        /*@formatter:off*/ Logger.i(TAG, "showIamOnceReady(): ", "attempts = [", attempts, "]")
         /*@formatter:on*/
         if (attempts < 0) {
             return
         }
 
         if (activityHelper.canPresentMessages() && activityHelper.isActivityFullyReady()) {
-            OperationQueue.addUiOperation {
-                activityHelper.currentActivity?.let(::showIamPopupWindow)
+            iamShowScope.launch {
+                activityHelper.currentActivity?.let(::showIamContainer)
             }
         } else {
             OperationQueue.addOperationAfterDelay({
-                showIamPopupWindowOnceReady(attempts - 1)
+                showIamOnceReady(attempts - 1)
             }, DELAY_UI_MS)
         }
     }
 
-    private fun createIam(activity: Activity) {
-        /*@formatter:off*/ Logger.i(TAG, "createIamInActivity(): ", "activity = [", activity, "]")
-        /*@formatter:on*/
-        val applicationContext = activity.applicationContext
-        parentLayout = FrameLayout(applicationContext)
-        popupWindow = createPopupWindow(parentLayout)
-        cardView = createCardView(applicationContext)
-        webView = createWebView(applicationContext)
-
-        addCardViewToParentLayout()
-        addWebViewToCardView()
-    }
-
-    private fun createPopupWindow(parentLayout: FrameLayout): PopupWindow {
-        /*@formatter:off*/ Logger.i(TAG, "createPopupWindow(): ", "parentLayout = [", parentLayout, "]")
-        /*@formatter:on*/
-        val popupWindow = PopupWindow(
-            parentLayout,
-            WindowManager.LayoutParams.MATCH_PARENT,
-            WindowManager.LayoutParams.MATCH_PARENT,
-            true
-        )
-
-        popupWindow.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
-        popupWindow.isTouchable = true
-        // Required for getting fullscreen under notches working in portrait mode
-        popupWindow.isClippingEnabled = false
-        return popupWindow
-    }
-
-    private fun createCardView(context: Context): CardView {
-        /*@formatter:off*/ Logger.i(TAG, "createCardView(): ", "context = [", context, "]")
-        /*@formatter:on*/
-        val cardView = CardView(context)
-        cardView.layoutParams =
-            FrameLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
-
-        // Set the initial elevation of the CardView to 0dp if using Android 6 API 23
-        //  Fixes bug when animating a elevated CardView class
-        cardView.cardElevation = dpToPx(5).toFloat()
-        cardView.radius = dpToPx(8).toFloat()
-        cardView.clipChildren = false
-        cardView.clipToPadding = false
-        cardView.preventCornerOverlap = false
-        cardView.setCardBackgroundColor(Color.TRANSPARENT)
-        return cardView
-    }
-
-    private fun createWebView(context: Context): WebView {
-        /*@formatter:off*/ Logger.i(TAG, "createWebView(): ", "context = [", context, "]")
-        /*@formatter:on*/
-        val webView = WebView(context)
-        webView.webChromeClient = object : WebChromeClient() {
-            override fun onConsoleMessage(consoleMessage: ConsoleMessage): Boolean {
-                Log.d(
-                    "WEB VIEW TAG",
-                    consoleMessage.message() + " -- From line " + consoleMessage.lineNumber() + " of " + consoleMessage.sourceId()
-                )
-                return true
-            }
-        }
-        webView.settings.apply {
-            javaScriptEnabled = true
-            domStorageEnabled = true
-            databaseEnabled = true
-        }
-        webView.setBackgroundColor(Color.TRANSPARENT)
-        return webView
-    }
-
-    private fun addCardViewToParentLayout() {
-        /*@formatter:off*/ Logger.i(TAG, "addCardViewToParentLayout(): ", "")
-        /*@formatter:on*/
-        parentLayout.clipChildren = false
-        parentLayout.clipToPadding = false
-        parentLayout.addView(cardView, LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
-    }
-
-    private fun addWebViewToCardView() {
-        /*@formatter:off*/ Logger.i(TAG, "addWebViewToCardView(): ", "")
-        /*@formatter:on*/
-        cardView.addView(webView, LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
-    }
-
-    private fun uploadHtmlIntoWebView(fullHtml: String) {
-        /*@formatter:off*/ Logger.i(TAG, "uploadHtmlIntoWebView(): ")
-        /*@formatter:on*/
-//        val encodedHtml = Base64.encodeToString(fullHtml.toByteArray(), Base64.NO_PADDING)
-//        webView.loadData(encodedHtml, MIME_TYPE, ENCODING)
-        webView.loadDataWithBaseURL("", fullHtml, MIME_TYPE, "UTF-8", "")
-        webView.addJavascriptInterface(retenoAndroidHandler, JS_INTERFACE_NAME)
-    }
-
-    private fun showIamPopupWindow(activity: Activity) {
+    private fun showIamContainer(activity: Activity) {
         /*@formatter:off*/ Logger.i(TAG, "showIamPopupWindow(): ", "activity = [", activity, "]")
         /*@formatter:on*/
-        val gravity = Gravity.CENTER_HORIZONTAL or Gravity.TOP
-        val displayType = WindowManager.LayoutParams.TYPE_APPLICATION_PANEL
-
-        PopupWindowCompat.setWindowLayoutType(popupWindow, displayType)
-
         if (activityHelper.canPresentMessages() && activityHelper.isActivityFullyReady()) {
-            /*@formatter:off*/ Logger.i(TAG, "showIamPopupWindow(): ", "Start showing")
-            /*@formatter:on*/
-            popupWindow.showAtLocation(
-                activity.window.decorView.rootView,
-                gravity,
-                0,
-                0
-            )
+            iamContainer?.show(activity)
             isViewShown.set(true)
         }
     }
@@ -469,29 +344,9 @@ internal class IamViewImpl(
         interactionId = null
         messageId = null
         messageInstanceId = null
-        OperationQueue.addUiOperation {
-            if (_parentLayout != null) {
-                parentLayout.removeAllViews()
-            }
-            if (_popupWindow != null) {
-                try {
-                    popupWindow.dismiss()
-                } catch (e: Exception) {
-                    /*@formatter:off*/ Logger.e(TAG, "teardown(): popupWindow.dismiss() ", e)
-                    /*@formatter:on*/
-                }
-            }
-            if (_cardView != null) {
-                cardView.removeAllViews()
-            }
-            if (_webView != null) {
-                webView.removeAllViews()
-                webView.removeJavascriptInterface(JS_INTERFACE_NAME)
-            }
-            _parentLayout = null
-            _popupWindow = null
-            _cardView = null
-            _webView = null
+        iamShowScope.launch {
+            iamContainer?.destroy()
+            iamContainer = null
             isViewShown.set(false)
         }
     }
@@ -535,12 +390,12 @@ internal class IamViewImpl(
         jsEvent.payload?.url.takeUnless { it.isNullOrBlank() }?.let {
             val deepLinkIntent = Intent(Intent.ACTION_VIEW, Uri.parse(it))
             deepLinkIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-            try {
-                OperationQueue.addUiOperation {
+            iamShowScope.launch {
+                try {
                     activityHelper.currentActivity?.startActivity(deepLinkIntent)
+                } catch (e: ActivityNotFoundException) {
+                    Logger.e(TAG, "openUrl()", e)
                 }
-            } catch (e: Throwable) {
-                Logger.e(TAG, "openUrl()", e)
             }
         }
     }
@@ -607,13 +462,12 @@ internal class IamViewImpl(
         private const val DELAY_UI_MS = 200L
         private const val DELAY_UI_ATTEMPTS = 150
 
-        private const val MIME_TYPE = "text/html"
-        private const val ENCODING = "base64"
-        private const val JS_INTERFACE_NAME = "RetenoAndroidHandler"
+        internal const val JS_INTERFACE_NAME = "RetenoAndroidHandler"
 
         private const val ERROR_MESSAGE = "Failed to load In-App message."
+        private const val LIFECYCLE_KEY = "IamView"
 
-        private fun dpToPx(dp: Int): Int {
+        fun dpToPx(dp: Int): Int {
             return (dp * Resources.getSystem().displayMetrics.density).toInt()
         }
     }
