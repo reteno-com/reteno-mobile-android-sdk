@@ -175,7 +175,8 @@ class RetenoNotificationClickedActivityTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun givenPushWithCustomDataNoDeeplinkReceived_whenNotificationClicked_thenCustomDataDeliveredToLaunchActivity() {
+    fun givenPushWithCustomDataNoDeeplinkReceived_whenNotificationClicked_thenCustomDataDeliveredToLaunchActivity()  = runTest{
+        createReteno()
         // Given
         every { IntentHandler.AppLaunchIntent.getAppLaunchIntent(any()) } returns Intent()
 

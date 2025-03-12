@@ -1,6 +1,5 @@
 package com.reteno.core.view.iam
 
-import android.app.Activity
 import com.reteno.core.data.remote.model.iam.message.InAppMessage
 import com.reteno.core.features.iam.InAppPauseBehaviour
 import com.reteno.core.view.iam.callback.InAppLifecycleCallback
@@ -13,9 +12,9 @@ interface IamView {
 
     fun initialize(inAppMessage: InAppMessage)
 
-    fun resume(activity: Activity)
+    fun start()
 
-    fun pause(activity: Activity)
+    fun pause()
 
     fun setInAppLifecycleCallback(inAppLifecycleCallback: InAppLifecycleCallback?)
 

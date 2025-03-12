@@ -4,6 +4,7 @@ import com.reteno.core.RetenoConfig
 import com.reteno.core.di.base.ProviderNewInstance
 
 class RetenoConfigProvider(
+    @Volatile
     private var config: RetenoConfig
 ) : ProviderNewInstance<RetenoConfig>() {
 
