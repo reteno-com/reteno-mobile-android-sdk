@@ -41,17 +41,22 @@ internal class SlideUpIamContainer(
         /*@formatter:off*/ Logger.i(TAG, "addWebViewToCardView(): ", "")
         /*@formatter:on*/
         val swipe = SwipeDismissBehavior<WebView>().apply {
-            setSwipeDirection(SwipeDismissBehavior.SWIPE_DIRECTION_ANY)
+            setHorizontalSwipeDirection(SwipeDismissBehavior.SWIPE_DIRECTION_HORIZONTAL)
+            val direction = when (fetchResult.layoutParams.position) {
+                Position.BOTTOM -> SwipeDismissBehavior.SWIPE_DIRECTION_TOP_TO_BOTTOM
+                else -> SwipeDismissBehavior.SWIPE_DIRECTION_BOTTOM_TO_TOP
+            }
+            setVerticalSwipeDirection(direction)
+            setListener(object : SwipeDismissBehavior.OnDismissListener {
+                override fun onDismiss(var1: View?) {
+                    iamDismissListener.onIamDismissed()
+                }
+
+                override fun onDragStateChanged(var1: Int) {
+                }
+
+            })
         }
-        swipe.setListener(object : SwipeDismissBehavior.OnDismissListener {
-            override fun onDismiss(var1: View?) {
-                iamDismissListener.onIamDismissed()
-            }
-
-            override fun onDragStateChanged(var1: Int) {
-            }
-
-        })
         parentLayout.addView(
             webView,
             CoordinatorLayout.LayoutParams(
@@ -59,7 +64,8 @@ internal class SlideUpIamContainer(
                 CoordinatorLayout.LayoutParams.WRAP_CONTENT
             ).apply {
                 behavior = swipe
-                gravity = when (fetchResult.layoutParams.position) {
+                val position = fetchResult.layoutParams.position ?: Position.TOP
+                gravity = when (position) {
                     Position.TOP -> Gravity.TOP
                     Position.BOTTOM -> Gravity.BOTTOM
                 }
@@ -103,10 +109,10 @@ internal class SlideUpIamContainer(
 
     override fun destroy() {
         try {
-            val container = parentLayout.parent as ViewGroup
+            val container = parentLayout.parent as? ViewGroup
             //To stop propagating unexpected scroll event to Activity convent View
             parentLayout.isVisible = false
-            container.removeView(parentLayout)
+            container?.removeView(parentLayout)
             parentLayout.removeAllViews()
             webView.removeJavascriptInterface(IamViewImpl.JS_INTERFACE_NAME)
         } catch (e: Exception) {
@@ -116,42 +122,53 @@ internal class SlideUpIamContainer(
     }
 
     override fun show(activity: Activity) {
-        val container = activity.findViewById<ViewGroup>(android.R.id.content)
-        if (!container.contains(parentLayout)) {
-            activity.addContentView(
-                parentLayout,
-                ViewGroup.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.MATCH_PARENT
+        try {
+            val container = activity.findViewById<ViewGroup>(android.R.id.content) ?: return
+            if (!container.contains(parentLayout)) {
+                activity.addContentView(
+                    parentLayout,
+                    ViewGroup.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.MATCH_PARENT
+                    )
                 )
-            )
-            webView.doOnLayout {
-                when (fetchResult.layoutParams.position) {
-                    Position.TOP -> {
-                        webView.translationY = -webView.height.toFloat()
-                        webView.animate()
-                            .translationY(0f)
-                            .setInterpolator(LinearInterpolator())
-                            .setDuration(200L)
-                            .start()
-                    }
+                webView.doOnLayout { view ->
+                    val position = fetchResult.layoutParams.position ?: Position.TOP
+                    when (position) {
+                        Position.TOP -> {
+                            view.translationY = -view.height.toFloat()
+                            view.animate()
+                                .translationY(0f)
+                                .setInterpolator(LinearInterpolator())
+                                .setDuration(200L)
+                                .start()
+                        }
 
-                    Position.BOTTOM -> {
-                        webView.translationY = webView.height.toFloat()
-                        webView.animate()
-                            .translationY(0f)
-                            .setInterpolator(LinearInterpolator())
-                            .setDuration(200L)
-                            .start()
+                        Position.BOTTOM -> {
+                            view.translationY = view.height.toFloat()
+                            view.animate()
+                                .translationY(0f)
+                                .setInterpolator(LinearInterpolator())
+                                .setDuration(200L)
+                                .start()
+                        }
                     }
                 }
             }
+        } catch (e: Exception) {
+            /*@formatter:off*/ Logger.e(TAG, "show(): SlideUpIamContainer.show() ", e)
+            /*@formatter:on*/
         }
     }
 
     override fun onHeightDefined(newHeight: Int) {
-        webView.updateLayoutParams<CoordinatorLayout.LayoutParams> {
-            height = newHeight
+        try {
+            webView.updateLayoutParams<CoordinatorLayout.LayoutParams> {
+                height = newHeight
+            }
+        } catch (e: Exception) {
+            /*@formatter:off*/ Logger.e(TAG, "show(): SlideUpIamContainer.show() ", e)
+            /*@formatter:on*/
         }
     }
 

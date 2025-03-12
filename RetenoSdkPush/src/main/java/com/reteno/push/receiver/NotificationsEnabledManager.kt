@@ -19,6 +19,5 @@ internal object NotificationsEnabledManager {
 
         val reteno = RetenoImpl.instance
         reteno.notificationsEnabled(notificationsEnabled && defaultChannelEnabled)
-        reteno.startScheduler()
     }
 }

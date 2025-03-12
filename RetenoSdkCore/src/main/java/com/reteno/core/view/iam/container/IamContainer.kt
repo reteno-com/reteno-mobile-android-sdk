@@ -26,7 +26,9 @@ internal interface IamContainer {
             dismissListener: IamDismissListener
         ): IamContainer {
             return when (iamFetchResult.layoutType) {
-                InAppLayoutType.FULL -> FullscreenIamContainer(context, jsInterface, iamFetchResult)
+                InAppLayoutType.FULL,
+                InAppLayoutType.POP_UP -> FullscreenIamContainer(context, jsInterface, iamFetchResult)
+                InAppLayoutType.BOTTOM_BAR,
                 InAppLayoutType.SLIDE_UP -> SlideUpIamContainer(context, jsInterface, iamFetchResult, dismissListener)
             }
         }

@@ -23,6 +23,7 @@ plugins {
     id 'org.jetbrains.kotlin.android' version '1.7.10' apply false
     // https://github.com/radarsh/gradle-test-logger-plugin
     id 'com.adarshr.test-logger' version '3.2.0'
+    id 'com.google.firebase.crashlytics' version "2.9.9" apply false
 }
 subprojects { apply plugin: 'com.adarshr.test-logger' }
 

@@ -1,9 +1,10 @@
 package com.reteno.core
 
+import androidx.lifecycle.LifecycleObserver
 import com.reteno.core.domain.model.interaction.InteractionStatus
 import com.reteno.core.domain.model.logevent.RetenoLogEvent
 
-internal interface RetenoInternalFacade {
+internal interface RetenoInternalFacade : LifecycleObserver {
     /**
      * Method invoked by SDK itself when Firebase token changes
      * */
@@ -17,6 +18,8 @@ internal interface RetenoInternalFacade {
     fun canPresentMessages(): Boolean
 
     fun isDatabaseEmpty(): Boolean
+
+    fun isActivityPresented(): Boolean
 
     fun getDeviceId(): String
 
@@ -33,4 +36,6 @@ internal interface RetenoInternalFacade {
     fun notificationsEnabled(enabled: Boolean)
 
     fun deeplinkClicked(linkWrapped: String, linkUnwrapped: String)
+
+    fun hasActiveTask(): Boolean
 }

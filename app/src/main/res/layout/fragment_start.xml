@@ -69,11 +69,11 @@
         <androidx.appcompat.widget.AppCompatSpinner
             android:id="@+id/spinnerPushPauseBehaviour"
             android:layout_width="0dp"
-            android:layout_marginStart="16dp"
             android:layout_height="wrap_content"
-            app:layout_constraintStart_toEndOf="@id/tvPushPauseBehaviour"
+            android:layout_marginStart="16dp"
             app:layout_constraintBottom_toBottomOf="@id/tvPushPauseBehaviour"
             app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@id/tvPushPauseBehaviour"
             app:layout_constraintTop_toTopOf="@id/tvPushPauseBehaviour" />
 
         <TextView
@@ -90,11 +90,11 @@
         <androidx.appcompat.widget.AppCompatSpinner
             android:id="@+id/spinnerPauseBehaviour"
             android:layout_width="0dp"
-            android:layout_marginStart="16dp"
             android:layout_height="wrap_content"
-            app:layout_constraintStart_toEndOf="@id/tvPauseBehaviour"
+            android:layout_marginStart="16dp"
             app:layout_constraintBottom_toBottomOf="@id/tvPauseBehaviour"
             app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@id/tvPauseBehaviour"
             app:layout_constraintTop_toTopOf="@id/tvPauseBehaviour" />
 
         <androidx.appcompat.widget.SwitchCompat
@@ -110,9 +110,9 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginEnd="12dp"
+            app:layout_constraintBottom_toBottomOf="@id/tvPausePushInApps"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="@id/tvPausePushInApps"
-            app:layout_constraintBottom_toBottomOf="@id/tvPausePushInApps"/>
+            app:layout_constraintTop_toTopOf="@id/tvPausePushInApps" />
 
         <FrameLayout
             android:id="@+id/flInit"
@@ -130,23 +130,46 @@
                 android:textSize="18sp" />
 
             <ProgressBar
-                android:visibility="gone"
                 android:id="@+id/progressBar"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_gravity="center" />
+                android:layout_gravity="center"
+                android:visibility="gone" />
         </FrameLayout>
+
+        <EditText
+            android:id="@+id/etBaseInAppURL"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:hint="InApp Base URL"
+            android:inputType="textMultiLine|textUri"
+            app:layout_constraintEnd_toStartOf="@id/saveInAppBase"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/flInit" />
+
+
+        <Button
+            android:id="@+id/saveInAppBase"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Save"
+            app:layout_constraintBottom_toBottomOf="@id/etBaseInAppURL"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@id/etBaseInAppURL"
+            app:layout_constraintTop_toTopOf="@id/etBaseInAppURL" />
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/recycler"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:paddingHorizontal="4dp"
+            android:layout_marginTop="16.dp"
             app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/flInit"
+            app:layout_constraintTop_toBottomOf="@id/etBaseInAppURL"
             tools:context=".fragments.FragmentStart"
             tools:listitem="@layout/item_button_go_to_fragment" />
 

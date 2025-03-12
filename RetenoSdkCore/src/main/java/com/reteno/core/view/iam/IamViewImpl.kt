@@ -1,6 +1,7 @@
 package com.reteno.core.view.iam
 
 import android.app.Activity
+import android.content.ActivityNotFoundException
 import android.content.ComponentName
 import android.content.Intent
 import android.content.res.Resources
@@ -23,6 +24,7 @@ import com.reteno.core.features.iam.IamJsPayload
 import com.reteno.core.features.iam.InAppPauseBehaviour
 import com.reteno.core.features.iam.RetenoAndroidHandler
 import com.reteno.core.lifecycle.RetenoActivityHelper
+import com.reteno.core.lifecycle.RetenoLifecycleCallBacksAdapter
 import com.reteno.core.util.Constants
 import com.reteno.core.util.Logger
 import com.reteno.core.util.queryBroadcastReceivers
@@ -36,7 +38,7 @@ import com.reteno.core.view.iam.container.IamContainer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancelChildren
-import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
@@ -65,6 +67,25 @@ internal class IamViewImpl(
     private var lastPushInteractionId: String? = null
     private var pauseBehaviour = InAppPauseBehaviour.POSTPONE_IN_APPS
 
+    init {
+        activityHelper.registerActivityLifecycleCallbacks(
+            LIFECYCLE_KEY,
+            RetenoLifecycleCallBacksAdapter(
+                onStart = {
+                    Logger.i(TAG, "IamActivityLifecycle.onStart(): ", "isViewShown = [", isViewShown.get(), "]")
+                    if (isViewShown.get()) {
+                        showIamOnceReady(DELAY_UI_ATTEMPTS)
+                    }
+                },
+                onStop = {
+                    if (activityHelper.currentActivity != it) return@RetenoLifecycleCallBacksAdapter
+                    Logger.i(TAG, "IamActivityLifecycle.onStop(): ", "isViewShown = [", isViewShown.get(), "]")
+                    iamContainer?.dismiss()
+                }
+            )
+        )
+    }
+
     private val retenoAndroidHandler: RetenoAndroidHandler = object : RetenoAndroidHandler() {
         override fun onMessagePosted(event: String?) {
             /*@formatter:off*/ Logger.i(TAG, "onMessagePosted(): ", "event = [", event, "]")
@@ -78,7 +99,7 @@ internal class IamViewImpl(
                     IamJsEventType.WIDGET_INIT_SUCCESS -> {
                         val height = jsEvent.payload?.contentHeight
                         if (height != null) {
-                            OperationQueue.addUiOperation {
+                            iamShowScope.launch {
                                 val intHeight = height.filter { it.isDigit() }.toInt()
                                 iamContainer?.onHeightDefined(dpToPx(intHeight))
                             }
@@ -101,15 +122,17 @@ internal class IamViewImpl(
     override fun pauseIncomingPushInApps(isPaused: Boolean) {
         if (pauseIncomingPushInApps.getAndSet(isPaused) && !isPaused) {
             lastPushInteractionId?.let {
-                if (pauseBehaviour == InAppPauseBehaviour.POSTPONE_IN_APPS) {
-                    showIamOnceReady(DELAY_UI_ATTEMPTS)
-                }
                 lastPushInteractionId = null
+                if (pauseBehaviour == InAppPauseBehaviour.POSTPONE_IN_APPS) {
+                    onWidgetInitSuccess()
+                }
             }
         }
     }
 
     override fun setPauseBehaviour(behaviour: InAppPauseBehaviour) {
+        /*@formatter:off*/ Logger.i(TAG, "setPauseBehaviour(): ", "behaviour = [", behaviour, "]")
+        /*@formatter:on*/
         pauseBehaviour = behaviour
         if (pauseBehaviour == InAppPauseBehaviour.SKIP_IN_APPS) {
             lastPushInteractionId = null
@@ -206,7 +229,7 @@ internal class IamViewImpl(
                 messageId = null
                 messageInstanceId = null
 
-                OperationQueue.addUiOperation {
+                iamShowScope.launch {
                     inAppLifecycleCallback?.beforeDisplay(createInAppData())
                     iamController.fetchIamFullHtml(interactionId)
                 }
@@ -227,7 +250,7 @@ internal class IamViewImpl(
         try {
             inAppMessage.notifyShown()
             iamController.updateInAppMessage(inAppMessage)
-            OperationQueue.addUiOperation {
+            iamShowScope.launch {
                 messageId = inAppMessage.messageId
                 messageInstanceId = inAppMessage.messageInstanceId
                 inAppSource = InAppSource.DISPLAY_RULES
@@ -241,26 +264,17 @@ internal class IamViewImpl(
         }
     }
 
-    override fun resume(activity: Activity) {
-        /*@formatter:off*/ Logger.i(TAG, "resume(): ", "activity = [", activity, "]")
+    override fun start() {
+        /*@formatter:off*/ Logger.i(TAG, "resume(): ")
         /*@formatter:on*/
-        if (isViewShown.get()) {
-            showIamOnceReady(DELAY_UI_ATTEMPTS)
-            return
-        }
-
         iamController.inAppMessagesFlow
             .onEach { initialize(it) }
             .launchIn(iamShowScope)
 
-        iamShowScope.launch {
-            iamController.fullHtmlStateFlow.collect { result ->
-                ensureActive()
-                if (result is ResultDomain.Success) {
-                    createIamContainer(result)
-                }
-            }
-        }
+        iamController.fullHtmlStateFlow
+            .filterIsInstance<ResultDomain.Success<IamFetchResult>>()
+            .onEach { createIamContainer(it) }
+            .launchIn(iamShowScope)
     }
 
     private fun createIamContainer(result: ResultDomain.Success<IamFetchResult>) {
@@ -276,13 +290,10 @@ internal class IamViewImpl(
         )
     }
 
-    override fun pause(activity: Activity) {
-        /*@formatter:off*/ Logger.i(TAG, "pause(): ", "activity = [", activity, "]")
+    override fun pause() {
+        /*@formatter:off*/ Logger.i(TAG, "pause():")
         /*@formatter:on*/
         iamShowScope.coroutineContext.cancelChildren()
-        if (isViewShown.get()) {
-            iamContainer?.dismiss()
-        }
     }
 
     override fun setInAppLifecycleCallback(inAppLifecycleCallback: InAppLifecycleCallback?) {
@@ -290,6 +301,8 @@ internal class IamViewImpl(
     }
 
     private fun checkPauseState(): Boolean {
+        /*@formatter:off*/ Logger.i(TAG, "checkPauseState(): ", "paused = [", pauseIncomingPushInApps.get(), "]")
+        /*@formatter:on*/
         return pauseIncomingPushInApps.get().also {
             if (it) {
                 lastPushInteractionId = interactionId
@@ -298,14 +311,14 @@ internal class IamViewImpl(
     }
 
     private fun showIamOnceReady(attempts: Int) {
-        /*@formatter:off*/ Logger.i(TAG, "showIamPopupWindowOnceReady(): ", "attempts = [", attempts, "]")
+        /*@formatter:off*/ Logger.i(TAG, "showIamOnceReady(): ", "attempts = [", attempts, "]")
         /*@formatter:on*/
         if (attempts < 0) {
             return
         }
 
         if (activityHelper.canPresentMessages() && activityHelper.isActivityFullyReady()) {
-            OperationQueue.addUiOperation {
+            iamShowScope.launch {
                 activityHelper.currentActivity?.let(::showIamContainer)
             }
         } else {
@@ -331,7 +344,7 @@ internal class IamViewImpl(
         interactionId = null
         messageId = null
         messageInstanceId = null
-        OperationQueue.addUiOperation {
+        iamShowScope.launch {
             iamContainer?.destroy()
             iamContainer = null
             isViewShown.set(false)
@@ -377,12 +390,12 @@ internal class IamViewImpl(
         jsEvent.payload?.url.takeUnless { it.isNullOrBlank() }?.let {
             val deepLinkIntent = Intent(Intent.ACTION_VIEW, Uri.parse(it))
             deepLinkIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-            try {
-                OperationQueue.addUiOperation {
+            iamShowScope.launch {
+                try {
                     activityHelper.currentActivity?.startActivity(deepLinkIntent)
+                } catch (e: ActivityNotFoundException) {
+                    Logger.e(TAG, "openUrl()", e)
                 }
-            } catch (e: Throwable) {
-                Logger.e(TAG, "openUrl()", e)
             }
         }
     }
@@ -452,6 +465,7 @@ internal class IamViewImpl(
         internal const val JS_INTERFACE_NAME = "RetenoAndroidHandler"
 
         private const val ERROR_MESSAGE = "Failed to load In-App message."
+        private const val LIFECYCLE_KEY = "IamView"
 
         fun dpToPx(dp: Int): Int {
             return (dp * Resources.getSystem().displayMetrics.density).toInt()

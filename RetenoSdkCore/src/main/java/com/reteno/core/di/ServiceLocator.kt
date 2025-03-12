@@ -294,4 +294,8 @@ class ServiceLocator(
 
     val iamViewProvider: ProviderWeakReference<IamView> =
         iamViewProviderInternal
+
+    fun initWorkManager() {
+        workManagerProvider.get()
+    }
 }

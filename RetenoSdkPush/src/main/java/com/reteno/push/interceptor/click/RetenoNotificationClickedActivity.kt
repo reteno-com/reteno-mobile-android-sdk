@@ -87,21 +87,27 @@ class RetenoNotificationClickedActivity : Activity() {
         if (intent == null || launchIntent == null) {
             return
         }
-        intent.extras?.let(::checkIam)
-
         intent.component = launchIntent.component
-        this.startActivity(intent)
+        val isIam = intent.extras?.let(::checkIam) ?: false
+        when {
+            isIam && RetenoImpl.instance.isActivityPresented() -> {}
+            else -> {
+                this.startActivity(intent)
+            }
+        }
         finish()
     }
 
-    private fun checkIam(bundle: Bundle) {
+    private fun checkIam(bundle: Bundle): Boolean {
         /*@formatter:off*/ Logger.i(TAG, "RetenoNotificationClickedActivity.class: checkIam(): ", "bundle = [", bundle, "]")
         /*@formatter:on*/
         bundle.getString(Constants.KEY_ES_IAM)
             .takeIf { it == "1" }
             ?.run {
                 bundle.getString(Constants.KEY_ES_INTERACTION_ID)?.let(RetenoImpl.instance::initializeIamView)
+                return true
             }
+        return false
     }
 
     companion object {

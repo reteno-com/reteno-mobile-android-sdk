@@ -143,16 +143,21 @@ internal class FullscreenIamContainer(
     }
 
     override fun show(activity: Activity) {
-        val gravity = Gravity.CENTER_HORIZONTAL or Gravity.TOP
-        val displayType = WindowManager.LayoutParams.TYPE_APPLICATION_PANEL
+        try {
+            val gravity = Gravity.CENTER_HORIZONTAL or Gravity.TOP
+            val displayType = WindowManager.LayoutParams.TYPE_APPLICATION_PANEL
 
-        PopupWindowCompat.setWindowLayoutType(popupWindow, displayType)
-        popupWindow.showAtLocation(
-            activity.window.decorView.rootView,
-            gravity,
-            0,
-            0
-        )
+            PopupWindowCompat.setWindowLayoutType(popupWindow, displayType)
+            popupWindow.showAtLocation(
+                activity.window.decorView.rootView,
+                gravity,
+                0,
+                0
+            )
+        } catch (e: Exception) {
+            /*@formatter:off*/ Logger.e(TAG, "show(): popupWindow.show() ", e)
+            /*@formatter:on*/
+        }
     }
 
     override fun onHeightDefined(newHeight: Int) {
