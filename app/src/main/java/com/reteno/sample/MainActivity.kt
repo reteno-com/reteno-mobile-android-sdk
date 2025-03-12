@@ -14,7 +14,6 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
-import androidx.fragment.app.FragmentActivity
 import androidx.navigation.fragment.NavHostFragment
 import com.google.android.material.snackbar.Snackbar
 import com.reteno.core.RetenoImpl
@@ -46,7 +45,6 @@ class MainActivity : AppCompatActivity() {
         checkPermissions()
         checkDeepLink(intent)
         setNavigation(intent)
-        //createInAppLifecycleListener(); this is an example of in-app lifecycle callbacks
     }
 
     override fun onNewIntent(intent: Intent) {

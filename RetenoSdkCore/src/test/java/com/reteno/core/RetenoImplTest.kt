@@ -1,6 +1,5 @@
 package com.reteno.core
 
-import android.app.Activity
 import android.app.Application
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -481,8 +480,7 @@ class RetenoImplTest : BaseRobolectricTest() {
         val retenoImpl = createRetenoAndAdvanceInit()
 
         // When
-        val activity: Activity = mockk()
-        retenoImpl.resume(activity)
+        retenoImpl.start()
 
         advanceUntilIdle()
 
@@ -490,7 +488,7 @@ class RetenoImplTest : BaseRobolectricTest() {
         verify { scheduleController.startScheduler() }
         coVerify(exactly = 1) { contactController.checkIfDeviceRegistered() }
         verify(exactly = 1) { contactController.checkIfDeviceRequestSentThisSession() }
-        verify { iamView.resume(activity) }
+        verify { iamView.start() }
     }
 
     @Test
@@ -501,7 +499,7 @@ class RetenoImplTest : BaseRobolectricTest() {
 
         // When
         val exceptionThrownOutsideSdk = try {
-            retenoImpl.resume(mockk())
+            retenoImpl.start()
             false
         } catch (ex: Throwable) {
             true
@@ -512,7 +510,7 @@ class RetenoImplTest : BaseRobolectricTest() {
         verify(exactly = 1) {
             Logger.e(
                 any(),
-                eq("resume(): "),
+                eq("start(): "),
                 eq(EXCEPTION)
             )
         }
@@ -523,12 +521,11 @@ class RetenoImplTest : BaseRobolectricTest() {
         //Given
         val retenoImpl = createRetenoAndAdvanceInit()
         // When
-        val activity: Activity = mockk()
-        retenoImpl.pause(activity)
+        retenoImpl.stop()
 
         // Then
         verify { scheduleController.stopScheduler() }
-        verify { iamView.pause(activity) }
+        verify { iamView.pause() }
     }
 
     @Test
@@ -538,7 +535,7 @@ class RetenoImplTest : BaseRobolectricTest() {
         val retenoImpl = createRetenoAndAdvanceInit()
         // When
         val exceptionThrownOutsideSdk = try {
-            retenoImpl.pause(mockk())
+            retenoImpl.stop()
             false
         } catch (ex: Throwable) {
             true
@@ -549,7 +546,7 @@ class RetenoImplTest : BaseRobolectricTest() {
         verify(exactly = 1) {
             Logger.e(
                 any(),
-                eq("pause(): "),
+                eq("stop(): "),
                 eq(EXCEPTION)
             )
         }
@@ -643,7 +640,7 @@ class RetenoImplTest : BaseRobolectricTest() {
         //When
         val reteno = createRetenoAndAdvanceInit()
 
-        reteno.start(mockk())
+        reteno.start()
 
         //Then
         verify(exactly = 1) { iamController.getInAppMessages() }

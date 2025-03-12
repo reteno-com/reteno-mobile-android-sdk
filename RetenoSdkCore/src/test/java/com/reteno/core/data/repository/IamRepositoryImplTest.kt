@@ -12,6 +12,7 @@ import com.reteno.core.data.local.sharedpref.SharedPrefsManager
 import com.reteno.core.data.remote.api.ApiClient
 import com.reteno.core.data.remote.api.ApiContract
 import com.reteno.core.data.remote.api.RestClientImpl.Companion.HEADER_X_AMZ_META_VERSION
+import com.reteno.core.data.remote.mapper.fromJson
 import com.reteno.core.data.remote.mapper.toJson
 import com.reteno.core.data.remote.model.iam.displayrules.DisplayRules
 import com.reteno.core.data.remote.model.iam.displayrules.async.AsyncRulesCheckResponse
@@ -78,6 +79,7 @@ class IamRepositoryImplTest : BaseRobolectricTest() {
             // Given
             createRepository(StandardTestDispatcher(testScheduler))
             every { sharedPrefsManager.getIamBaseHtmlVersion() } returns BASE_HTML_VERSION_LOCAL
+            every { sharedPrefsManager.getIamBaseUrl() } returns null
             every { apiClient.head(ApiContract.InAppMessages.BaseHtml, any(), any()) } answers {
                 val callback = thirdArg<ResponseCallback>()
                 val headers = mapOf<String, List<String>>(
@@ -119,6 +121,7 @@ class IamRepositoryImplTest : BaseRobolectricTest() {
             createRepository(StandardTestDispatcher(testScheduler))
             every { sharedPrefsManager.getIamBaseHtmlVersion() } returns BASE_HTML_VERSION_LOCAL
             every { sharedPrefsManager.getIamBaseHtmlContent() } returns BASE_HTML_CONTENT_LOCAL
+            every { sharedPrefsManager.getIamBaseUrl() } returns null
             every { apiClient.head(ApiContract.InAppMessages.BaseHtml, any(), any()) } answers {
                 val callback = thirdArg<ResponseCallback>()
                 val headers = mapOf<String, List<String>>(
@@ -172,8 +175,13 @@ class IamRepositoryImplTest : BaseRobolectricTest() {
             // Given
             createRepository(StandardTestDispatcher(testScheduler))
             val interactionId = "widgetIdHere"
-            val widget = "{ \"model\": {\"type\":\"HTML\"}, \"personalisation\": {}}"
-            val expected = WidgetModel("{\"type\":\"HTML\"}", "{}")
+            val widget = "{ \"model\": {\"type\":\"FULL\"}, \"personalisation\": {}}"
+            val expected = WidgetModel(
+                layoutType = null,
+                model = "{\"type\":\"FULL\"}".fromJson(),
+                personalization =  "{}".fromJson(),
+                layoutParams = null
+            )
 
             coEvery {
                 apiClient.get(
@@ -200,7 +208,11 @@ class IamRepositoryImplTest : BaseRobolectricTest() {
             // Given
             createRepository(StandardTestDispatcher(testScheduler))
             val interactionId = "widgetIdHere"
-            val expected = WidgetModel(Util.readFromRaw(application, R.raw.widget) ?: "")
+            val expected = WidgetModel(
+                layoutType = InAppMessageContent.InAppLayoutType.FULL,
+                model = (Util.readFromRaw(application, R.raw.widget) ?: "{}").fromJson(),
+                layoutParams = null
+            )
 
             // When
             coEvery {
@@ -248,7 +260,8 @@ class IamRepositoryImplTest : BaseRobolectricTest() {
                     displayRules = JsonObject().toJson(),
                     lastShowTime = null,
                     layoutType = null,
-                    model = null
+                    model = null,
+                    position = null
                 )
             )
             every { sharedPrefsManager.getIamEtag() } returns null
@@ -321,7 +334,8 @@ class IamRepositoryImplTest : BaseRobolectricTest() {
                     displayRules = JsonObject().toJson(),
                     lastShowTime = null,
                     layoutType = null,
-                    model = null
+                    model = null,
+                    position = null
                 )
             )
             val response = InAppMessageListResponse(
@@ -370,9 +384,10 @@ class IamRepositoryImplTest : BaseRobolectricTest() {
             val response = InAppMessagesContentResponse(
                 contents = listOf(
                     InAppMessageContent(
-                        10L,
-                        "type",
-                        model = JsonObject()
+                        messageInstanceId = 10L,
+                        layoutType = InAppMessageContent.InAppLayoutType.FULL,
+                        model = JsonObject(),
+                        layoutParams = null
                     )
                 )
             )

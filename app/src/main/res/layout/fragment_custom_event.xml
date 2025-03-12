@@ -27,7 +27,7 @@
                 android:id="@+id/etEventType"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="custom_android_event" />
+                android:text="test_event_type" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <LinearLayout
