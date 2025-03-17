@@ -4,19 +4,19 @@ import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import com.reteno.core.RetenoImpl
+import com.reteno.core.RetenoInternalImpl
 import com.reteno.core.util.getApplicationMetaData
 
 internal object Util {
 
     internal fun tryToSendToCustomReceiverPushReceived(data: Bundle) {
-        val receiver = RetenoImpl.instance.application.getApplicationMetaData()
+        val receiver = RetenoInternalImpl.instance.application.getApplicationMetaData()
             .getString(Constants.META_DATA_KEY_CUSTOM_RECEIVER_PUSH_RECEIVED)
         tryToSendToReceiver(receiver, data)
     }
 
     internal fun tryToSendToCustomReceiverNotificationClicked(data: Bundle) {
-        val receiver = RetenoImpl.instance.application.getApplicationMetaData()
+        val receiver = RetenoInternalImpl.instance.application.getApplicationMetaData()
             .getString(Constants.META_DATA_KEY_CUSTOM_RECEIVER_NOTIFICATION_CLICKED)
         tryToSendToReceiver(receiver, data)
     }
@@ -43,7 +43,7 @@ internal object Util {
 
     private fun tryToSendToReceiver(receiver: String?, data: Bundle) =
         receiver?.let {
-            val context = RetenoImpl.instance.application
+            val context = RetenoInternalImpl.instance.application
             // Forward Intent to a client broadcast receiver.
             val forwardIntent = Intent()
             forwardIntent.setClassName(context, it)

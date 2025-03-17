@@ -2,8 +2,7 @@ package com.reteno.push.base.robolectric
 
 import android.app.Application
 import android.provider.Settings
-import com.reteno.core.Reteno
-import com.reteno.core.RetenoImpl
+import com.reteno.core.RetenoInternalImpl
 import com.reteno.core.util.BuildUtil
 import com.reteno.core.util.Logger
 import com.reteno.push.Util
@@ -17,7 +16,7 @@ import io.mockk.mockkStatic
 
 class RetenoTestApp : Application() {
 
-    internal var retenoMock: RetenoImpl = mockk()
+    internal var retenoMock: RetenoInternalImpl = mockk()
 
     init {
         mockLogger()

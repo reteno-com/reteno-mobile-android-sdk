@@ -8,7 +8,7 @@ import android.os.Build
 import android.os.Bundle
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GoogleApiAvailability
-import com.reteno.core.RetenoImpl
+import com.reteno.core.RetenoInternalImpl
 import com.reteno.core.domain.SchedulerUtils
 import com.reteno.core.domain.model.event.LifecycleEventType
 import com.reteno.core.domain.model.event.LifecycleTrackingOptions
@@ -35,7 +35,7 @@ fun <T : Any> allElementsNull(vararg elements: T?) = elements.all { it == null }
 fun <T : Any> allElementsNotNull(vararg elements: T?) = elements.all { it != null }
 
 internal fun isGooglePlayServicesAvailable(): Boolean {
-    val context = RetenoImpl.instance.application
+    val context = RetenoInternalImpl.instance.application
     val googleApiAvailability = GoogleApiAvailability.getInstance()
     val resultCode = googleApiAvailability.isGooglePlayServicesAvailable(context)
     return resultCode == ConnectionResult.SUCCESS

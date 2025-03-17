@@ -8,7 +8,7 @@ import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.Toast
-import com.reteno.core.RetenoImpl
+import com.reteno.core.RetenoInternalImpl
 import com.reteno.core._interop.DeviceIdInternal.getIdInternal
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerEvents
 import com.reteno.core.data.local.mappers.toDb
@@ -17,7 +17,6 @@ import com.reteno.core.domain.model.event.Event
 import com.reteno.core.domain.model.event.Events
 import com.reteno.core.domain.model.event.Parameter
 import com.reteno.sample.R
-import com.reteno.sample.SampleApp
 import com.reteno.sample.databinding.DialogDbWriteEventBinding
 import com.reteno.sample.databinding.ViewEventWriteBinding
 import com.reteno.sample.databinding.ViewUserCustomFieldsHorizontalBinding
@@ -74,7 +73,7 @@ class EventWriteDialogFragment : BaseDatabaseDialogFragment() {
     }
 
     private fun getEventData():Events {
-        val retenoImpl = RetenoImpl.instance
+        val retenoImpl = RetenoInternalImpl.instance
         val deviceIdModel = retenoImpl.serviceLocator.configRepositoryProvider.get().getDeviceId()
         val deviceId = deviceIdModel.getIdInternal()
         val externalUserId = Util.getTextOrNull(binding!!.etExternalUserId)

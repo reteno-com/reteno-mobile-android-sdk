@@ -11,7 +11,7 @@ import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.testing.TestWorkerBuilder
 import androidx.work.testing.WorkManagerTestInitHelper
-import com.reteno.core.RetenoImpl
+import com.reteno.core.RetenoInternalImpl
 import com.reteno.core.base.robolectric.BaseRobolectricTest
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManager
 import com.reteno.core.di.ServiceLocator
@@ -220,7 +220,7 @@ class PushDataWorkerTest : BaseRobolectricTest() {
         every { databaseManager.isDatabaseEmpty() } returns isEmpty
     }
 
-    private fun createReteno(): RetenoImpl {
+    private fun createReteno(): RetenoInternalImpl {
         return mockk()
     }
     // endregion helper methods --------------------------------------------------------------------

@@ -35,7 +35,7 @@ import kotlinx.coroutines.withContext
 import java.util.concurrent.atomic.AtomicBoolean
 
 
-class RetenoImpl(
+class RetenoInternalImpl(
     val application: Application,
     private val mainDispatcher: CoroutineDispatcher = Dispatchers.Main,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
@@ -89,6 +89,14 @@ class RetenoImpl(
         }
     }
 
+    @Deprecated(
+        "Deprecated API, use static function Reteno.initWithConfig() instead",
+        replaceWith = ReplaceWith("Reteno.initWithConfig(config)")
+    )
+    override fun initWith(config: RetenoConfig) {
+        Reteno.initWithConfig(config)
+    }
+
     private suspend fun applyConfig(config: RetenoConfig) = withContext(mainDispatcher) {
         try {
             appLifecycleOwner.lifecycle.addObserver(appLifecycleController)
@@ -115,7 +123,7 @@ class RetenoImpl(
     private fun initSdk() {
         if (isOsVersionSupported()) {
             activityHelper.enableLifecycleCallbacks(application)
-            appLifecycleOwner.lifecycle.addObserver(this@RetenoImpl)
+            appLifecycleOwner.lifecycle.addObserver(this@RetenoInternalImpl)
             syncScope.launch(ioDispatcher) {
                 preventANR()
                 anrWaitCondition.complete(Unit)
@@ -516,12 +524,12 @@ class RetenoImpl(
     }
 
     companion object {
-        private val TAG: String = RetenoImpl::class.java.simpleName
+        private val TAG: String = RetenoInternalImpl::class.java.simpleName
 
-        val instance: RetenoImpl
-            get() = Reteno.instance as RetenoImpl
+        val instance: RetenoInternalImpl
+            get() = Reteno.instance as RetenoInternalImpl
 
-        fun swapInstance(instance: RetenoImpl) {
+        fun swapInstance(instance: RetenoInternalImpl) {
             Reteno.instanceInternal = instance
         }
     }

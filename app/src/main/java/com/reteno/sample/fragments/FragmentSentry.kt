@@ -4,7 +4,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import com.reteno.core.RetenoImpl
+import com.reteno.core.RetenoInternalImpl
 import com.reteno.sample.BaseFragment
 import com.reteno.sample.databinding.FragmentSentryBinding
 import java.lang.reflect.InvocationTargetException
@@ -31,7 +31,7 @@ class FragmentSentry : BaseFragment() {
         binding!!.btnCrashApp.setOnClickListener { throw IllegalArgumentException("This is a test crash from app scope") }
         binding!!.btnCrashSdk.setOnClickListener {
             try {
-                val method = RetenoImpl::class.java.getDeclaredMethod("testCrash")
+                val method = RetenoInternalImpl::class.java.getDeclaredMethod("testCrash")
                 method.isAccessible = true
                 method.invoke(reteno)
                 method.isAccessible = false

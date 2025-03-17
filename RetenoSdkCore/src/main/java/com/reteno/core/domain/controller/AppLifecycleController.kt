@@ -11,8 +11,7 @@ import androidx.annotation.MainThread
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleObserver
 import androidx.lifecycle.OnLifecycleEvent
-import com.reteno.core.Reteno
-import com.reteno.core.RetenoImpl
+import com.reteno.core.RetenoInternalImpl
 import com.reteno.core.data.repository.ConfigRepository
 import com.reteno.core.domain.model.event.Event
 import com.reteno.core.domain.model.event.LifecycleEvent
@@ -185,11 +184,11 @@ class AppLifecycleController internal constructor(
     private fun sendAppResumeBroadcast() {
         val intent =
             Intent(Constants.BROADCAST_ACTION_RETENO_APP_RESUME).setFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES)
-        val infoList = RetenoImpl.instance.application.queryBroadcastReceivers(intent)
+        val infoList = RetenoInternalImpl.instance.application.queryBroadcastReceivers(intent)
         for (info in infoList) {
             info?.activityInfo?.let {
                 intent.component = ComponentName(it.packageName, it.name)
-                RetenoImpl.instance.application.sendBroadcast(intent)
+                RetenoInternalImpl.instance.application.sendBroadcast(intent)
             }
         }
     }
