@@ -4,7 +4,7 @@ import android.app.Activity
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.os.Bundle
-import com.reteno.core.RetenoImpl
+import com.reteno.core.RetenoInternalImpl
 import com.reteno.core.domain.model.interaction.InteractionStatus
 import com.reteno.core.util.Logger
 import com.reteno.core.util.isOsVersionSupported
@@ -40,7 +40,7 @@ class RetenoNotificationClickedActivity : Activity() {
             intent?.extras?.getString(Constants.KEY_ES_INTERACTION_ID)?.let { interactionId ->
                 /*@formatter:off*/ Logger.i(TAG, "sendInteractionStatus(): ", "intent = [", intent, "]")
                 /*@formatter:on*/
-                val reteno = RetenoImpl.instance
+                val reteno = RetenoInternalImpl.instance
                 reteno.recordInteraction(interactionId, InteractionStatus.CLICKED)
                 reteno.forcePushData()
             }
@@ -61,7 +61,7 @@ class RetenoNotificationClickedActivity : Activity() {
 
             IntentHandler.getDeepLinkIntent(bundle)?.let { deeplinkIntent ->
                 val (linkWrapped, linkUnwrapped) = Util.getLinkFromBundle(bundle)
-                RetenoImpl.instance.deeplinkClicked(linkWrapped, linkUnwrapped)
+                RetenoInternalImpl.instance.deeplinkClicked(linkWrapped, linkUnwrapped)
                 launchDeeplink(deeplinkIntent)
             } ?: launchApp(intent)
         } ?: launchApp(intent)
@@ -90,7 +90,7 @@ class RetenoNotificationClickedActivity : Activity() {
         intent.component = launchIntent.component
         val isIam = intent.extras?.let(::checkIam) ?: false
         when {
-            isIam && RetenoImpl.instance.isActivityPresented() -> {}
+            isIam && RetenoInternalImpl.instance.isActivityPresented() -> {}
             else -> {
                 this.startActivity(intent)
             }
@@ -104,7 +104,7 @@ class RetenoNotificationClickedActivity : Activity() {
         bundle.getString(Constants.KEY_ES_IAM)
             .takeIf { it == "1" }
             ?.run {
-                bundle.getString(Constants.KEY_ES_INTERACTION_ID)?.let(RetenoImpl.instance::initializeIamView)
+                bundle.getString(Constants.KEY_ES_INTERACTION_ID)?.let(RetenoInternalImpl.instance::initializeIamView)
                 return true
             }
         return false

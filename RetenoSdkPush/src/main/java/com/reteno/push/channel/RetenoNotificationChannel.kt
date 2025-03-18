@@ -3,7 +3,7 @@ package com.reteno.push.channel
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
-import com.reteno.core.RetenoImpl
+import com.reteno.core.RetenoInternalImpl
 import com.reteno.core.data.remote.mapper.fromJson
 import com.reteno.core.data.remote.mapper.fromJsonOrNull
 import com.reteno.core.util.Logger
@@ -85,7 +85,7 @@ internal object RetenoNotificationChannel {
     private fun configureDefaultNotificationChannel(channel: String) {
         channel.takeUnless { it.isEmpty() }?.let {
             try {
-                RetenoImpl.instance.saveDefaultNotificationChannel(channel)
+                RetenoInternalImpl.instance.saveDefaultNotificationChannel(channel)
             } catch (t: Throwable) {
                 /*@formatter:off*/ Logger.e(TAG, "configureDefaultNotificationChannel(): ", t)
                 /*@formatter:on*/
@@ -101,7 +101,7 @@ internal object RetenoNotificationChannel {
     private fun retrieveDefaultNotificationChannelData(context: Context): NotificationChannelData {
         val defaultChannelOrNull: NotificationChannelData? =
             try {
-                val jsonChannel = RetenoImpl.instance.getDefaultNotificationChannel()
+                val jsonChannel = RetenoInternalImpl.instance.getDefaultNotificationChannel()
                 jsonChannel.fromJsonOrNull()
             } catch (e: Exception) {
                 /*@formatter:off*/ Logger.d(TAG, "retrieveDefaultNotificationChannelData(): Failed to read saved DefaultChannelId ", e)

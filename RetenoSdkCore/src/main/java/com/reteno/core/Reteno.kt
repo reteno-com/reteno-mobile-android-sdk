@@ -163,18 +163,28 @@ interface Reteno {
      */
     fun setConfig(config: RetenoConfig)
 
+    /**
+     * Method for finishing delayed initialization of RetenoSDK, this method is utilized mainly in
+     * cross-platform SDK wrappers, so use it only if you actually need it
+     *
+     * @param config - supply config to the SDK
+     * @throws IllegalStateException - indicates that sdk was already initialized before
+     */
+    @Deprecated(message = "Deprecated API, use static function Reteno.initWithConfig() instead", replaceWith = ReplaceWith(expression = "Reteno.initWithConfig(config)"))
+    fun initWith(config: RetenoConfig)
+
     companion object {
         private val TAG: String = Reteno::class.java.simpleName
 
         @Volatile
-        internal var instanceInternal: RetenoImpl? = null
+        internal var instanceInternal: RetenoInternalImpl? = null
 
         @JvmStatic
         val instance: Reteno
             get() = requireNotNull(instanceInternal) { "Trying to access Reteno instance before Application.onCreate()" }
 
         internal fun create(application: Application) {
-            instanceInternal = RetenoImpl(application)
+            instanceInternal = RetenoInternalImpl(application)
         }
 
         /**
@@ -184,7 +194,7 @@ interface Reteno {
          * @throws IllegalStateException - indicates that sdk was already initialized before
          */
         @JvmStatic
-        fun initWith(config: RetenoConfig) {
+        fun initWithConfig(config: RetenoConfig) {
             instance.setConfig(config)
         }
     }

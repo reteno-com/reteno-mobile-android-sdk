@@ -5,7 +5,7 @@ import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import com.reteno.core.RetenoImpl
+import com.reteno.core.RetenoInternalImpl
 import com.reteno.core._interop.DeviceIdInternal.getExternalIdInternal
 import com.reteno.core._interop.DeviceIdInternal.getIdInternal
 import com.reteno.core._interop.DeviceIdInternal.getModeInternal
@@ -24,7 +24,7 @@ class FragmentDeviceId : BaseFragment() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         try {
-            val field = RetenoImpl::class.java.getDeclaredField("serviceLocator")
+            val field = RetenoInternalImpl::class.java.getDeclaredField("serviceLocator")
             field.isAccessible = true
             serviceLocator = field[reteno] as ServiceLocator
             field.isAccessible = false

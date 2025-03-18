@@ -1,7 +1,7 @@
 package com.reteno.push.receiver
 
 import android.content.Context
-import com.reteno.core.RetenoImpl
+import com.reteno.core.RetenoInternalImpl
 import com.reteno.core.util.Logger
 import com.reteno.push.channel.RetenoNotificationChannel
 import com.reteno.push.channel.RetenoNotificationChannel.DEFAULT_CHANNEL_ID
@@ -17,7 +17,7 @@ internal object NotificationsEnabledManager {
         val defaultChannelEnabled =
             RetenoNotificationChannel.isNotificationChannelEnabled(context, DEFAULT_CHANNEL_ID)
 
-        val reteno = RetenoImpl.instance
+        val reteno = RetenoInternalImpl.instance
         reteno.notificationsEnabled(notificationsEnabled && defaultChannelEnabled)
     }
 }

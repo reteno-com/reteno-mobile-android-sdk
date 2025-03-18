@@ -3,8 +3,7 @@ package com.reteno.core.base.robolectric
 import android.app.Application
 import android.database.Cursor
 import android.provider.Settings
-import com.reteno.core.Reteno
-import com.reteno.core.RetenoImpl
+import com.reteno.core.RetenoInternalImpl
 import com.reteno.core.data.local.database.util.getAppInbox
 import com.reteno.core.data.local.database.util.getDevice
 import com.reteno.core.data.local.database.util.getEvent
@@ -28,7 +27,7 @@ import java.util.concurrent.ScheduledExecutorService
 class RetenoTestApp : Application() {
 
     internal val scheduler: ScheduledExecutorService = mockStaticScheduler()
-    internal var retenoMock: RetenoImpl = mockk()
+    internal var retenoMock: RetenoInternalImpl = mockk()
 
     init {
         mockStaticLogger()
