@@ -1,11 +1,8 @@
 package com.reteno.core.util
 
-import android.app.Application
 import android.app.PendingIntent
 import android.content.Context
 import android.os.Build
-import com.reteno.core.Reteno
-import com.reteno.core.RetenoImpl
 
 object BuildUtil {
     private var targetSdk = -1

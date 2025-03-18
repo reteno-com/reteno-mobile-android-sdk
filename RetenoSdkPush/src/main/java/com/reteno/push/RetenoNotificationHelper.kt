@@ -11,7 +11,6 @@ import android.text.TextUtils
 import android.widget.RemoteViews
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
-import com.reteno.core.RetenoImpl
 import com.reteno.core.data.remote.mapper.listFromJson
 import com.reteno.core.util.BitmapUtil
 import com.reteno.core.util.BitmapUtil.resize

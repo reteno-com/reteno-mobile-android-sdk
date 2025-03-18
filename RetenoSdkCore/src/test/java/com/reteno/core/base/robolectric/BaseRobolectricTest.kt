@@ -5,7 +5,7 @@ import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.test.core.app.ApplicationProvider
 import com.reteno.core.Reteno
 import com.reteno.core.RetenoConfig
-import com.reteno.core.RetenoImpl
+import com.reteno.core.RetenoInternalImpl
 import com.reteno.core.data.local.database.util.*
 import io.mockk.*
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -35,7 +35,7 @@ abstract class BaseRobolectricTest {
         ApplicationProvider.getApplicationContext() as RetenoTestApp
     }
 
-    protected val reteno: RetenoImpl
+    protected val reteno: RetenoInternalImpl
         get() = requireNotNull(application.retenoMock)
 
     @Before
@@ -62,15 +62,15 @@ abstract class BaseRobolectricTest {
 
     protected fun TestScope.createRetenoAndAdvanceInit(
         lifecycleOwner: LifecycleOwner = ProcessLifecycleOwner.get()
-    ): RetenoImpl {
-        return RetenoImpl(
+    ): RetenoInternalImpl {
+        return RetenoInternalImpl(
             application = application,
             mainDispatcher = StandardTestDispatcher(testScheduler),
             ioDispatcher = StandardTestDispatcher(testScheduler),
             appLifecycleOwner = lifecycleOwner
         ).also {
-            RetenoImpl.swapInstance(it)
-            Reteno.initWith(RetenoConfig())
+            RetenoInternalImpl.swapInstance(it)
+            Reteno.initWithConfig(RetenoConfig())
             application.retenoMock = it
             while (!it.isInitialized) {
                 advanceUntilIdle()

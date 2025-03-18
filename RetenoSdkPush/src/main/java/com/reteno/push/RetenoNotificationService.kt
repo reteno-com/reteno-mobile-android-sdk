@@ -6,7 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import com.reteno.core.Reteno
-import com.reteno.core.RetenoImpl
+import com.reteno.core.RetenoInternalImpl
 import com.reteno.core.domain.model.interaction.InteractionStatus
 import com.reteno.core.util.Constants
 import com.reteno.core.util.Logger
@@ -28,7 +28,7 @@ class RetenoNotificationService(
     fun onNewToken(token: String) {
         /*@formatter:off*/ Logger.i(TAG, "onNewToken(): ", "token = [" , token , "]")
         /*@formatter:on*/
-        val retenoImpl = reteno as RetenoImpl
+        val retenoImpl = reteno as RetenoInternalImpl
         retenoImpl.onNewFcmToken(token)
     }
 
@@ -97,7 +97,7 @@ class RetenoNotificationService(
 
         if (channelEnabled && permissionsGranted) {
             data.getString(KEY_ES_INTERACTION_ID)?.let { interactionId ->
-                val retenoImpl = reteno as RetenoImpl
+                val retenoImpl = reteno as RetenoInternalImpl
                 retenoImpl.recordInteraction(interactionId, InteractionStatus.DELIVERED)
                 retenoImpl.forcePushData()
             }

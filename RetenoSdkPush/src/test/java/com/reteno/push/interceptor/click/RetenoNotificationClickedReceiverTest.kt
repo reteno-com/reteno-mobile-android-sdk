@@ -4,7 +4,7 @@ import android.app.Application
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import com.reteno.core.RetenoImpl
+import com.reteno.core.RetenoInternalImpl
 import com.reteno.core.di.ServiceLocator
 import com.reteno.core.domain.controller.ContactController
 import com.reteno.core.domain.controller.DeeplinkController
@@ -129,20 +129,20 @@ class RetenoNotificationClickedReceiverTest : BaseRobolectricTest() {
 
     @Test
     fun doNotLaunchIntent_doNotFindLaunchIntentAndDoNotHaveDeepLink() {
-        mockkObject(RetenoImpl)
+        mockkObject(RetenoInternalImpl)
 
         val application = mockk<Application>()
 
         every { context.packageManager.getLaunchIntentForPackage(any()) } returns null
         every { context.packageName } returns "com.reteno.example"
         every { application.applicationContext } returns context
-        every { RetenoImpl.instance.application } returns application
+        every { RetenoInternalImpl.instance.application } returns application
 
         receiver!!.onReceive(context, Intent())
 
         verify(exactly = 0) { context.startActivity(any()) }
 
-        unmockkObject(RetenoImpl)
+        unmockkObject(RetenoInternalImpl)
     }
 
     @Test

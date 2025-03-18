@@ -3,8 +3,6 @@ package com.reteno.core.data.local.config
 import android.content.Context
 import android.provider.Settings
 import com.google.android.gms.appset.AppSet
-import com.reteno.core.Reteno
-import com.reteno.core.RetenoImpl
 import com.reteno.core.data.local.sharedpref.SharedPrefsManager
 import com.reteno.core.identification.DeviceIdProvider
 import com.reteno.core.util.Logger

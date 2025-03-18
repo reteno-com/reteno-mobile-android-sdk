@@ -5,7 +5,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import com.reteno.core.RetenoImpl
+import com.reteno.core.RetenoInternalImpl
 import com.reteno.core.domain.model.interaction.InteractionStatus
 import com.reteno.core.util.Logger
 import com.reteno.core.util.isOsVersionSupported
@@ -24,15 +24,15 @@ class RetenoNotificationClickedReceiver : BroadcastReceiver() {
         /*@formatter:off*/ Logger.i(TAG, "onReceive(): ", "notification clicked. Context = [" , context , "], intent.extras = [" , intent?.extras.toStringVerbose() , "]")
         /*@formatter:on*/
         try {
-            sendInteractionStatus(RetenoImpl.instance, intent)
-            handleIntent(context, RetenoImpl.instance, intent)
+            sendInteractionStatus(RetenoInternalImpl.instance, intent)
+            handleIntent(context, RetenoInternalImpl.instance, intent)
         } catch (ex: Throwable) {
             /*@formatter:off*/ Logger.e(TAG, "onReceive(): ", ex)
             /*@formatter:on*/
         }
     }
 
-    private fun sendInteractionStatus(reteno: RetenoImpl, intent: Intent?) {
+    private fun sendInteractionStatus(reteno: RetenoInternalImpl, intent: Intent?) {
         if (intent?.extras?.getString(Constants.KEY_ES_IAM) != "1") {
 
             intent?.extras?.getString(Constants.KEY_ES_INTERACTION_ID)?.let { interactionId ->
@@ -44,7 +44,7 @@ class RetenoNotificationClickedReceiver : BroadcastReceiver() {
         }
     }
 
-    private fun handleIntent(context: Context, reteno: RetenoImpl, intent: Intent?) {
+    private fun handleIntent(context: Context, reteno: RetenoInternalImpl, intent: Intent?) {
         /*@formatter:off*/ Logger.i(TAG, "handleIntent(): ", "context = [", context, "], intent = [", intent, "]")
         /*@formatter:on*/
         intent?.extras?.let { bundle ->
@@ -86,7 +86,7 @@ class RetenoNotificationClickedReceiver : BroadcastReceiver() {
         intent.extras?.let(launchIntent::putExtras)
         val isIam = intent.extras?.let(::checkIam)?:false
         when {
-            isIam && RetenoImpl.instance.isActivityPresented() -> {}
+            isIam && RetenoInternalImpl.instance.isActivityPresented() -> {}
             else -> {
                 context.startActivity(intent)
             }
@@ -99,7 +99,7 @@ class RetenoNotificationClickedReceiver : BroadcastReceiver() {
         bundle.getString(Constants.KEY_ES_IAM)
             .takeIf { it == "1" }
             ?.run {
-                bundle.getString(Constants.KEY_ES_INTERACTION_ID)?.let(RetenoImpl.instance::initializeIamView)
+                bundle.getString(Constants.KEY_ES_INTERACTION_ID)?.let(RetenoInternalImpl.instance::initializeIamView)
                 return true
             }
         return false

@@ -9,7 +9,7 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.Worker
 import androidx.work.WorkerParameters
-import com.reteno.core.RetenoImpl
+import com.reteno.core.RetenoInternalImpl
 import com.reteno.core.util.Logger
 import com.reteno.core.util.Util
 import java.util.UUID
@@ -31,7 +31,7 @@ internal class PushDataWorker(context: Context, params: WorkerParameters) :
     }
 
     private fun doWorkActual(): Result {
-        val isForeground = RetenoImpl.instance.canPresentMessages()
+        val isForeground = RetenoInternalImpl.instance.canPresentMessages()
         return if (isForeground) {
             /*@formatter:off*/ Logger.i(TAG, "doWork(): ", "App is in foreground, nothing to do")
             /*@formatter:on*/
@@ -40,7 +40,7 @@ internal class PushDataWorker(context: Context, params: WorkerParameters) :
         } else {
             /*@formatter:off*/ Logger.i(TAG, "doWork(): ", "App is in background")
             /*@formatter:on*/
-            if (RetenoImpl.instance.isDatabaseEmpty()) {
+            if (RetenoInternalImpl.instance.isDatabaseEmpty()) {
                 /*@formatter:off*/ Logger.i(TAG, "doWork(): ", "Database is empty, nothing to do, cancelling periodic work")
                 /*@formatter:on*/
                 WorkManager.getInstance(applicationContext).cancelUniqueWork(PUSH_DATA_WORK_NAME)
@@ -48,7 +48,7 @@ internal class PushDataWorker(context: Context, params: WorkerParameters) :
             } else {
                 /*@formatter:off*/ Logger.i(TAG, "doWork(): ", "Database has data, sending to server")
                 /*@formatter:on*/
-                RetenoImpl.instance.forcePushData()
+                RetenoInternalImpl.instance.forcePushData()
                 Result.success()
             }
         }

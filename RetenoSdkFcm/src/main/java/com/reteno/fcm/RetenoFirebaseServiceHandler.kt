@@ -2,7 +2,7 @@ package com.reteno.fcm
 
 import android.os.Bundle
 import com.google.firebase.messaging.RemoteMessage
-import com.reteno.core.RetenoImpl
+import com.reteno.core.RetenoInternalImpl
 import com.reteno.core.util.Logger
 import com.reteno.push.RetenoNotificationService
 
@@ -12,7 +12,7 @@ class RetenoFirebaseServiceHandler(private val pushService: RetenoNotificationSe
      * Call from your implementation of [com.google.firebase.messaging.FirebaseMessagingService.onCreate]
      */
     fun onCreate() {
-        /*@formatter:off*/ Logger.i(TAG, "onCreate(): ", "context = ", RetenoImpl.instance.application)
+        /*@formatter:off*/ Logger.i(TAG, "onCreate(): ", "context = ", RetenoInternalImpl.instance.application)
         /*@formatter:on*/
         // TODO: Nothing to do yet. Maybe remove later
     }

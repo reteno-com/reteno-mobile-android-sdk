@@ -5,7 +5,7 @@ import android.app.Dialog
 import android.os.Bundle
 import android.view.View
 import android.widget.Toast
-import com.reteno.core.RetenoImpl
+import com.reteno.core.RetenoInternalImpl
 import com.reteno.core._interop.DeviceIdInternal.getExternalIdInternal
 import com.reteno.core._interop.DeviceIdInternal.getIdInternal
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerDevice
@@ -14,7 +14,6 @@ import com.reteno.core.data.local.model.device.DeviceCategoryDb
 import com.reteno.core.data.local.model.device.DeviceDb
 import com.reteno.core.data.local.model.device.DeviceOsDb
 import com.reteno.core.domain.model.device.Device.Companion.createDevice
-import com.reteno.sample.SampleApp
 import com.reteno.sample.databinding.DialogDbWriteDeviceBinding
 import com.reteno.sample.util.Util
 
@@ -52,7 +51,7 @@ class DeviceWriteDialogFragment : BaseDatabaseDialogFragment() {
     }
 
     private fun initUi() {
-        val retenoImpl = RetenoImpl.instance
+        val retenoImpl = RetenoInternalImpl.instance
         val deviceId = retenoImpl.serviceLocator.configRepositoryProvider.get().getDeviceId()
         retenoImpl.serviceLocator.configRepositoryProvider.get().getFcmToken { token: String? ->
             val device = createDevice(
