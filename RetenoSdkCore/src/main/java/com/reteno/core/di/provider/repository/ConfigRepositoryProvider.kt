@@ -11,8 +11,7 @@ internal class ConfigRepositoryProvider(
     private val context: Context,
     private val sharedPrefsManagerProvider: SharedPrefsManagerProvider,
     private val restConfigProvider: RestConfigProvider
-) :
-    ProviderWeakReference<ConfigRepository>() {
+) : ProviderWeakReference<ConfigRepository>() {
 
     override fun create(): ConfigRepository {
         return ConfigRepositoryImpl(

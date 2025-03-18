@@ -7,7 +7,7 @@ import android.content.Intent
 import android.content.res.Resources
 import android.net.Uri
 import android.os.Bundle
-import com.reteno.core.RetenoImpl
+import com.reteno.core.RetenoInternalImpl
 import com.reteno.core.data.remote.OperationQueue
 import com.reteno.core.data.remote.mapper.fromJson
 import com.reteno.core.data.remote.model.iam.message.InAppMessage
@@ -279,7 +279,7 @@ internal class IamViewImpl(
 
     private fun createIamContainer(result: ResultDomain.Success<IamFetchResult>) {
         iamContainer = IamContainer.create(
-            context = RetenoImpl.instance.application,
+            context = RetenoInternalImpl.instance.application,
             jsInterface = retenoAndroidHandler,
             iamFetchResult = result.body,
             dismissListener = {
@@ -373,12 +373,12 @@ internal class IamViewImpl(
             Intent(Constants.BROADCAST_ACTION_CUSTOM_INAPP_DATA).setFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES)
         intent.putExtras(bundle)
 
-        val infoList = RetenoImpl.instance.application.queryBroadcastReceivers(intent)
+        val infoList = RetenoInternalImpl.instance.application.queryBroadcastReceivers(intent)
         var customDataSent = false
         for (info in infoList) {
             info?.activityInfo?.let {
                 intent.component = ComponentName(it.packageName, it.name)
-                RetenoImpl.instance.application.sendBroadcast(intent)
+                RetenoInternalImpl.instance.application.sendBroadcast(intent)
                 customDataSent = true
             }
         }

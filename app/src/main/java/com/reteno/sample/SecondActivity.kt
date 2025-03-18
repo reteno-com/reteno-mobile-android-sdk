@@ -4,13 +4,13 @@ import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
 import androidx.appcompat.app.AppCompatActivity
-import com.reteno.core.RetenoImpl
+import com.reteno.core.RetenoInternalImpl
 
 class SecondActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_second)
-        RetenoImpl.instance.pausePushInAppMessages(true)
+        RetenoInternalImpl.instance.pausePushInAppMessages(true)
         Handler().postDelayed({
             startActivity(Intent(this, MainActivity::class.java))
             finish()
@@ -18,7 +18,7 @@ class SecondActivity : AppCompatActivity() {
     }
 
     override fun onStop() {
-        RetenoImpl.instance.pausePushInAppMessages(false)
+        RetenoInternalImpl.instance.pausePushInAppMessages(false)
         super.onStop()
     }
 }

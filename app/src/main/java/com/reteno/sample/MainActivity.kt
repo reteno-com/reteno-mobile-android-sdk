@@ -9,14 +9,14 @@ import android.os.Bundle
 import android.provider.Settings
 import android.view.View
 import android.widget.Toast
-import androidx.activity.result.ActivityResultCallback
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.navigation.fragment.NavHostFragment
 import com.google.android.material.snackbar.Snackbar
-import com.reteno.core.RetenoImpl
+import com.reteno.core.Reteno
+import com.reteno.core.RetenoInternalImpl
 import com.reteno.core.view.iam.callback.InAppCloseData
 import com.reteno.core.view.iam.callback.InAppData
 import com.reteno.core.view.iam.callback.InAppErrorData
@@ -26,17 +26,16 @@ import com.reteno.sample.databinding.ActivityMainBinding
 class MainActivity : AppCompatActivity() {
     private var binding: ActivityMainBinding? = null
     private val requestPermissionLauncher: ActivityResultLauncher<String> =
-        registerForActivityResult<String, Boolean>(
-            ActivityResultContracts.RequestPermission(),
-            ActivityResultCallback<Boolean> { isGranted: Boolean ->
-                if (isGranted) {
-                    RetenoImpl.instance
-                        .updatePushPermissionStatus()
-                    Toast.makeText(this, "Permission granted", Toast.LENGTH_SHORT).show()
-                } else {
-                    Toast.makeText(this, "Permission not granted", Toast.LENGTH_SHORT).show()
-                }
-            })
+        registerForActivityResult(
+            ActivityResultContracts.RequestPermission()
+        ) { isGranted: Boolean ->
+            if (isGranted) {
+                Reteno.instance.updatePushPermissionStatus()
+                Toast.makeText(this, "Permission granted", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(this, "Permission not granted", Toast.LENGTH_SHORT).show()
+            }
+        }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -55,7 +54,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun createInAppLifecycleListener() {
         val context: Context = this
-        RetenoImpl.instance
+        RetenoInternalImpl.instance
             .setInAppLifecycleCallback(object : InAppLifecycleCallback {
                 override fun beforeDisplay(inAppData: InAppData) {
                     Toast.makeText(

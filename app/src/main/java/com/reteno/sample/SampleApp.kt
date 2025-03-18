@@ -3,7 +3,9 @@ package com.reteno.sample
 import android.app.Application
 import android.os.Handler
 import com.reteno.core.Reteno
+import com.reteno.core.RetenoApplication
 import com.reteno.core.RetenoConfig
+import com.reteno.core.RetenoImpl
 import com.reteno.core.domain.model.event.LifecycleTrackingOptions.Companion.ALL
 import com.reteno.core.identification.DeviceIdProvider
 import com.reteno.core.lifecycle.ScreenTrackingConfig
@@ -12,42 +14,39 @@ import com.reteno.sample.util.AppSharedPreferencesManager.getDeviceIdDelay
 import com.reteno.sample.util.AppSharedPreferencesManager.getShouldDelayLaunch
 import com.reteno.sample.util.AppSharedPreferencesManager.setDelayLaunch
 
-class SampleApp : Application() {
+class SampleApp : Application(), RetenoApplication {
+    private var retenoInstance: Reteno? = null
     override fun onCreate() {
         super.onCreate()
         if (getShouldDelayLaunch(this)) {
             setDelayLaunch(this, false)
+            val instance = RetenoImpl(this)
+            retenoInstance = instance
             val handler = Handler()
             handler.postDelayed({
-                Reteno.initWith(
+                instance.initWith(
                     RetenoConfig(
-                        accessKey = BuildConfig.API_ACCESS_KEY,
-                        isPausedInAppMessages = false,
-                        userIdProvider = createProvider(),
-                        lifecycleTrackingOptions = ALL
+                        false,
+                        createProvider(),
+                        ALL,
+                        BuildConfig.API_ACCESS_KEY
                     )
                 )
             }, 3000L)
         } else {
-            Reteno.initWith(
-                RetenoConfig(
-                    accessKey = BuildConfig.API_ACCESS_KEY,
-                    isPausedInAppMessages = false,
-                    userIdProvider = createProvider(),
-                    lifecycleTrackingOptions = ALL
-                )
-            )
+            retenoInstance =
+                RetenoImpl(this, BuildConfig.API_ACCESS_KEY, RetenoConfig(false, createProvider()))
         }
         val excludeScreensFromTracking = ArrayList<String>()
         excludeScreensFromTracking.add("NavHostFragment")
-        Reteno.instance.autoScreenTracking(ScreenTrackingConfig(false, excludeScreensFromTracking))
+        retenoInstance?.autoScreenTracking(ScreenTrackingConfig(false, excludeScreensFromTracking))
     }
 
     private fun createProvider(): DeviceIdProvider? {
         var provider: DeviceIdProvider? = null
         val deviceIdDelay = getDeviceIdDelay(this)
         val deviceId = getDeviceId(this)
-        if (deviceId!!.isNotEmpty()) {
+        if (!deviceId!!.isEmpty()) {
             val startTime = System.currentTimeMillis()
             provider = DeviceIdProvider {
                 if (System.currentTimeMillis() - startTime > deviceIdDelay) {
@@ -58,5 +57,9 @@ class SampleApp : Application() {
             }
         }
         return provider
+    }
+
+    override fun getRetenoInstance(): Reteno {
+        return retenoInstance!!
     }
 }

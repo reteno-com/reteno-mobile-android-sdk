@@ -7,7 +7,7 @@ import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.Toast
-import com.reteno.core.RetenoImpl
+import com.reteno.core.RetenoInternalImpl
 import com.reteno.core._interop.DeviceIdInternal.getIdInternal
 import com.reteno.core._interop.DeviceIdInternal.getModeInternal
 import com.reteno.core.data.local.config.DeviceId
@@ -20,7 +20,6 @@ import com.reteno.core.domain.model.user.UserAttributes
 import com.reteno.core.domain.model.user.UserCustomField
 import com.reteno.core.util.allElementsNull
 import com.reteno.sample.R
-import com.reteno.sample.SampleApp
 import com.reteno.sample.databinding.FragmentUserDataBinding
 import com.reteno.sample.util.Util
 
@@ -161,7 +160,7 @@ class UserWriteFragment : BaseDatabaseDialogFragment() {
     }
 
     private fun getDeviceId(): DeviceId {
-        val retenoImpl = RetenoImpl.instance
+        val retenoImpl = RetenoInternalImpl.instance
         return retenoImpl.serviceLocator.configRepositoryProvider.get().getDeviceId()
     }
 }

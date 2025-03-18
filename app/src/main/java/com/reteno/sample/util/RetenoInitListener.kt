@@ -1,6 +1,6 @@
 package com.reteno.sample.util
 
-import com.reteno.core.RetenoImpl
+import com.reteno.core.RetenoInternalImpl
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -9,7 +9,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class RetenoInitListener(
-    private val retenoImpl: RetenoImpl,
+    private val retenoImpl: RetenoInternalImpl,
     private val onSuccessListener: () -> Unit
 ) {
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
