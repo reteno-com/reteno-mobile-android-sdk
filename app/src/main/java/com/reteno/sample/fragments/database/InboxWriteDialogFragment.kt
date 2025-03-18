@@ -5,13 +5,12 @@ import android.app.Dialog
 import android.os.Bundle
 import android.view.View
 import android.widget.Toast
-import com.reteno.core.RetenoImpl
+import com.reteno.core.RetenoInternalImpl
 import com.reteno.core._interop.DeviceIdInternal.getIdInternal
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerAppInbox
 import com.reteno.core.data.local.model.appinbox.AppInboxMessageDb
 import com.reteno.core.data.local.model.appinbox.AppInboxMessageStatusDb
 import com.reteno.core.util.Util.getCurrentTimeStamp
-import com.reteno.sample.SampleApp
 import com.reteno.sample.databinding.DialogDbWriteInboxBinding
 import com.reteno.sample.util.Util
 
@@ -50,7 +49,7 @@ class InboxWriteDialogFragment : BaseDatabaseDialogFragment() {
             val messageId = Util.getTextOrNull(
                 binding!!.etInteractionId
             )
-            val retenoImpl = RetenoImpl.instance
+            val retenoImpl = RetenoInternalImpl.instance
             val deviceIdModel =
                 retenoImpl.serviceLocator.configRepositoryProvider.get().getDeviceId()
             val deviceId = deviceIdModel.getIdInternal()

@@ -11,7 +11,7 @@ import android.widget.CompoundButton
 import android.widget.Toast
 import androidx.navigation.NavDirections
 import androidx.navigation.fragment.NavHostFragment
-import com.reteno.core.RetenoImpl
+import com.reteno.core.RetenoInternalImpl
 import com.reteno.core.di.ServiceLocator
 import com.reteno.core.features.iam.InAppPauseBehaviour
 import com.reteno.core.lifecycle.RetenoSessionHandler
@@ -196,7 +196,7 @@ class FragmentStart : BaseFragment() {
     }
 
     private fun awaitInit() {
-        val impl = reteno as RetenoImpl
+        val impl = reteno as RetenoInternalImpl
         if (impl.isInitialized) {
             initSessionHandler()
             binding!!.progressBar.visibility = View.GONE
@@ -217,7 +217,7 @@ class FragmentStart : BaseFragment() {
 
     private fun initSessionHandler() {
         try {
-            val field = RetenoImpl::class.java.getDeclaredField("serviceLocator")
+            val field = RetenoInternalImpl::class.java.getDeclaredField("serviceLocator")
             field.isAccessible = true
             val serviceLocator = field[reteno] as ServiceLocator
             field.isAccessible = false

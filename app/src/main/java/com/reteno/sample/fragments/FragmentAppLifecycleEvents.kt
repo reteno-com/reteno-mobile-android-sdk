@@ -5,7 +5,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
-import com.reteno.core.RetenoImpl
+import com.reteno.core.RetenoInternalImpl
 import com.reteno.core.di.ServiceLocator
 import com.reteno.core.domain.controller.AppLifecycleController
 import com.reteno.core.domain.model.event.LifecycleEventType
@@ -22,7 +22,7 @@ class FragmentAppLifecycleEvents : BaseFragment() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         try {
-            val field = RetenoImpl::class.java.getDeclaredField("serviceLocator")
+            val field = RetenoInternalImpl::class.java.getDeclaredField("serviceLocator")
             field.isAccessible = true
             val serviceLocator = field[reteno] as ServiceLocator
             appLifecycleController = serviceLocator.appLifecycleControllerProvider.get()
