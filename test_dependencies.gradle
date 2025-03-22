@@ -40,12 +40,7 @@ ext.powermock = dependencyGroup {
 }
 
 ext.robolectric = dependencyGroup {
-    testImplementation('org.robolectric:robolectric:4.8.1') {
-        exclude group: 'commons-logging', module: 'commons-logging'
-        exclude group: 'org.apache.httpcomponents', module: 'httpclient'
-    }
-    testImplementation 'org.robolectric:shadows-play-services:3.3.2'
-
+    testImplementation 'org.robolectric:robolectric:4.14.1'
     testImplementation 'androidx.fragment:fragment-testing:1.5.5'
 }
 

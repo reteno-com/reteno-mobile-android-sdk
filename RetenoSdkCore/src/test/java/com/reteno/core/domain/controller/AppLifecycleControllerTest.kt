@@ -14,13 +14,11 @@ import com.reteno.core.util.Util
 import com.reteno.core.util.Util.asZonedDateTime
 import io.mockk.MockKVerificationScope
 import io.mockk.coEvery
-import io.mockk.coVerify
 import io.mockk.impl.annotations.RelaxedMockK
 import io.mockk.unmockkObject
 import io.mockk.unmockkStatic
 import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.TestScope
@@ -28,7 +26,6 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
-import org.robolectric.Shadows.shadowOf
 import java.time.ZonedDateTime
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -91,7 +88,7 @@ class AppLifecycleControllerTest : BaseRobolectricTest() {
 
 
     @Test
-    fun given_whenContrillerInit_thenBaseHtmlShouldBeFetched() = runTest {
+    fun given_whenControllerInit_thenBaseHtmlShouldBeFetched() = runTest {
         coEvery { sessionHandler.sessionEventFlow } returns MutableSharedFlow()
         coEvery { configRepository.notificationState } returns MutableSharedFlow()
 
