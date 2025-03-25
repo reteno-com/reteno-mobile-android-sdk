@@ -15,7 +15,6 @@ import com.reteno.core.util.toStringVerbose
 import com.reteno.push.Constants.KEY_ES_INTERACTION_ID
 import com.reteno.push.Constants.KEY_NOTIFICATION_ID
 import com.reteno.push.channel.RetenoNotificationChannel
-import com.reteno.push.receiver.NotificationsEnabledManager
 
 
 class RetenoNotificationService(
@@ -51,7 +50,6 @@ class RetenoNotificationService(
         RetenoNotificationChannel.createDefaultChannel(context)
         showNotification(data)
         handleInteractionStatus(data)
-        NotificationsEnabledManager.onCheckState(context)
     }
 
     private fun sendCustomPushBroadcast(bundle: Bundle) {
