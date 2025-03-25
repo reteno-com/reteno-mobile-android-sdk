@@ -33,9 +33,10 @@ import org.junit.Test
 import org.robolectric.Shadows
 import org.robolectric.annotation.Config
 import org.robolectric.shadows.ShadowLooper
+import org.robolectric.shadows.ShadowNotificationManager
 
 @OptIn(ExperimentalCoroutinesApi::class)
-@Config(sdk = [26])
+@Config(sdk = [26], shadows = [ShadowNotificationManager::class])
 class RetenoNotificationServiceTest : BaseRobolectricTest() {
 
     // region constants ----------------------------------------------------------------------------
@@ -199,7 +200,7 @@ class RetenoNotificationServiceTest : BaseRobolectricTest() {
 
     @Test
     @Throws(Exception::class)
-    fun whenHandleNotification_thenNotificationsEnabledManagerOnCheckStateCalled() = runTest {
+    fun whenHandleNotification_thenNotificationsEnabledManagerOnCheckStateNotCalled() = runTest {
         val reteno = createReteno()
         // Given
         val bundle = buildBundle(INTERACTION_ID)
@@ -216,7 +217,7 @@ class RetenoNotificationServiceTest : BaseRobolectricTest() {
         pushService.handleNotification(bundle)
 
         // Then
-        verify(exactly = 1) { NotificationsEnabledManager.onCheckState(any()) }
+        verify(exactly = 0) { NotificationsEnabledManager.onCheckState(any()) }
     }
 
     @Test
@@ -227,6 +228,7 @@ class RetenoNotificationServiceTest : BaseRobolectricTest() {
         val pushService = RetenoNotificationService(ApplicationProvider.getApplicationContext(), reteno)
         justRun { pushService.handleNotification(bundle) }
         every { application.getApplicationMetaData().getInt(any()) } returns 0
+        every { RetenoNotificationChannel.isNotificationsEnabled(any()) } returns true
         // When
         val pushServiceSpy = spyk<RetenoNotificationService>(recordPrivateCalls = true, objToCopy = pushService)
         pushServiceSpy.handleNotification(bundle)
