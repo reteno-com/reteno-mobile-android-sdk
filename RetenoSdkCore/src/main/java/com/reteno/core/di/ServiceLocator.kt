@@ -1,6 +1,7 @@
 package com.reteno.core.di
 
 import android.content.Context
+import com.reteno.core.RetenoConfig
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerAppInbox
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerDevice
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerEvents
@@ -63,10 +64,10 @@ import com.reteno.core.view.iam.IamView
 import kotlinx.coroutines.Dispatchers
 
 class ServiceLocator(
-    context: Context,
-    configProvider: RetenoConfigProvider
+    context: Context
 ) {
 
+    private val configProvider = RetenoConfigProvider()
     private val retenoActivityHelperProviderInternal: RetenoActivityHelperProvider =
         RetenoActivityHelperProvider()
     val retenoActivityHelperProvider: ProviderWeakReference<RetenoActivityHelper>
@@ -295,7 +296,14 @@ class ServiceLocator(
     val iamViewProvider: ProviderWeakReference<IamView> =
         iamViewProviderInternal
 
+    internal val currentConfig: RetenoConfig
+        get() = configProvider.get()
+
     fun initWorkManager() {
         workManagerProvider.get()
+    }
+
+    fun setConfig(config: RetenoConfig) {
+        configProvider.setConfig(config)
     }
 }

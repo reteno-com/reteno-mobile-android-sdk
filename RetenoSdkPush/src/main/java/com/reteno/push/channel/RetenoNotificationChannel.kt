@@ -3,6 +3,9 @@ package com.reteno.push.channel
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
+import android.os.Build
+import androidx.core.app.NotificationChannelCompat
+import androidx.core.app.NotificationManagerCompat
 import com.reteno.core.RetenoInternalImpl
 import com.reteno.core.data.remote.mapper.fromJson
 import com.reteno.core.data.remote.mapper.fromJsonOrNull
@@ -14,7 +17,7 @@ internal object RetenoNotificationChannel {
 
     private val TAG: String = RetenoNotificationChannel::class.java.simpleName
 
-    internal var DEFAULT_CHANNEL_ID: String = "DEFAULT_CHANNEL_ID"
+    internal var DEFAULT_CHANNEL_ID: String = "defaultId"
         private set
 
     private const val FALLBACK_DEFAULT_CHANNEL_NAME = "default"
@@ -40,6 +43,7 @@ internal object RetenoNotificationChannel {
                 createDefaultChannel(context)
                 true
             } else {
+                applyChannelPropertiesFromDefaultConfig(context, channelId)
                 channel.importance != NotificationManager.IMPORTANCE_NONE
             }
         }
@@ -52,28 +56,51 @@ internal object RetenoNotificationChannel {
     internal fun createDefaultChannel(context: Context) {
         /*@formatter:off*/ Logger.i(TAG, "createDefaultChannel(): ", "context = [" , context , "]")
         /*@formatter:on*/
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
+        RetenoInternalImpl.instance.getDefaultNotificationChannelConfig()?.let { config ->
+            val channel = NotificationChannelCompat.Builder(
+                DEFAULT_CHANNEL_ID,
+                NotificationManagerCompat.IMPORTANCE_DEFAULT
+            )
+                .apply(config)
+                .build()
 
-        val channelData = retrieveDefaultNotificationChannelData(context)
-        DEFAULT_CHANNEL_ID = channelData.id
-
-        val channel = NotificationChannel(
-            channelData.id,
-            channelData.name,
-            channelData.importance
-        ).apply {
-            description = channelData.description
-            enableLights(channelData.enableLights)
-            lightColor = channelData.lightColor
-            enableVibration(channelData.enableVibration)
-            channelData.vibrationPattern?.toLongArray()?.let(::setVibrationPattern)
-            lockscreenVisibility = channelData.lockscreenVisibility
-            setBypassDnd(channelData.bypassDnd)
-            setShowBadge(channelData.showBadge)
+            NotificationManagerCompat.from(context)
+                .createNotificationChannel(channel)
+        } ?: run {
+            val channelData = retrieveDefaultNotificationChannelData(context)
+            DEFAULT_CHANNEL_ID = channelData.id
+            val channel = NotificationChannel(
+                DEFAULT_CHANNEL_ID,
+                channelData.name,
+                channelData.importance
+            ).apply {
+                description = channelData.description
+                enableLights(channelData.enableLights)
+                lightColor = channelData.lightColor
+                enableVibration(channelData.enableVibration)
+                channelData.vibrationPattern?.toLongArray()?.let(::setVibrationPattern)
+                lockscreenVisibility = channelData.lockscreenVisibility
+                setBypassDnd(channelData.bypassDnd)
+                setShowBadge(channelData.showBadge)
+            }
+            NotificationManagerCompat.from(context)
+                .createNotificationChannel(channel)
         }
+    }
 
-        val notificationManager =
-            context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        notificationManager.createNotificationChannel(channel)
+    private fun applyChannelPropertiesFromDefaultConfig(context: Context, channelId: String) {
+        RetenoInternalImpl.instance.getDefaultNotificationChannelConfig()?.let { config ->
+            val channel = NotificationChannelCompat.Builder(
+                channelId,
+                NotificationManagerCompat.IMPORTANCE_DEFAULT
+            )
+                .apply(config)
+                .build()
+
+            NotificationManagerCompat.from(context)
+                .createNotificationChannel(channel)
+        }
     }
 
     /**

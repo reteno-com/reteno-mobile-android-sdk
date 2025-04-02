@@ -3,13 +3,12 @@ package com.reteno.core.di.provider
 import com.reteno.core.RetenoConfig
 import com.reteno.core.di.base.ProviderNewInstance
 
-class RetenoConfigProvider(
+class RetenoConfigProvider : ProviderNewInstance<RetenoConfig>() {
     @Volatile
-    private var config: RetenoConfig
-) : ProviderNewInstance<RetenoConfig>() {
+    private var config: RetenoConfig? = null
 
     override fun create(): RetenoConfig {
-        return config
+        return requireNotNull(config)
     }
 
     fun setConfig(config: RetenoConfig) {

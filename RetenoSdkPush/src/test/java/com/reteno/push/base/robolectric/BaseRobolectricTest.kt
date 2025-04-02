@@ -63,7 +63,11 @@ abstract class BaseRobolectricTest {
             appLifecycleOwner = lifecycleOwner
         ).also {
             RetenoInternalImpl.swapInstance(it)
-            Reteno.initWithConfig(RetenoConfig())
+            Reteno.initWithConfig(
+                RetenoConfig.Builder()
+                    .accessKey("Test access key")
+                    .build()
+            )
             application.retenoMock = it
             while (!it.isInitialized) {
                 advanceUntilIdle()
