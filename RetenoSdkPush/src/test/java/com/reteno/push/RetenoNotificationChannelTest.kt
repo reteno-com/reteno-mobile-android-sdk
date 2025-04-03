@@ -275,6 +275,10 @@ class RetenoNotificationChannelTest : BaseRobolectricTest() {
     @Test
     fun givenNotificationChannelIsDisabled_whenIsNotificationChannelEnabled_thenReturnFalse() {
         // Given
+        mockkObject(Reteno.Companion)
+        val retenoMock = mockk<RetenoInternalImpl>()
+        every { Reteno.instance } returns retenoMock
+        every { retenoMock.getDefaultNotificationChannelConfig() } returns null
         val channel = mockk<NotificationChannel>()
         every { channel.importance } returns NotificationManager.IMPORTANCE_NONE
         every { notificationManager!!.getNotificationChannel(DEFAULT_CHANNEL_ID) } returns channel
@@ -288,11 +292,17 @@ class RetenoNotificationChannelTest : BaseRobolectricTest() {
 
         // Then
         assertFalse(result)
+
+        unmockkObject(Reteno.Companion)
     }
 
     @Test
     fun givenNotificationChannelIsEnabled_whenIsNotificationChannelEnabled_thenReturnTrue() {
         // Given
+        mockkObject(Reteno.Companion)
+        val retenoMock = mockk<RetenoInternalImpl>()
+        every { Reteno.instance } returns retenoMock
+        every { retenoMock.getDefaultNotificationChannelConfig() } returns null
         val channel = mockk<NotificationChannel>()
         every { channel.importance } returns NotificationManager.IMPORTANCE_HIGH
         every { notificationManager!!.getNotificationChannel(DEFAULT_CHANNEL_ID) } returns channel
@@ -306,6 +316,7 @@ class RetenoNotificationChannelTest : BaseRobolectricTest() {
 
         // Then
         assertTrue(result)
+        unmockkObject(Reteno.Companion)
     }
 
     @Test

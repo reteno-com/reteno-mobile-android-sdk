@@ -96,8 +96,7 @@ class RetenoNotificationClickedReceiverTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun sendToCustomReceiver_extrasIsNotNull() = runTest {
-        val reteno = createReteno()
+    fun sendToCustomReceiver_extrasIsNotNull() = runRetenoTest {
         val extra = Bundle().apply { putString("key", "value") }
         val intent = Intent()
         intent.putExtras(extra)
@@ -117,8 +116,7 @@ class RetenoNotificationClickedReceiverTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun launchIntent_doNotHaveDeepLink() = runTest {
-        createReteno()
+    fun launchIntent_doNotHaveDeepLink() = runRetenoTest {
 
         receiver!!.onReceive(context, Intent())
         every { context.packageManager.getLaunchIntentForPackage(any()) } returns application.packageManager.getLaunchIntentForPackage(application.packageName)
@@ -146,8 +144,7 @@ class RetenoNotificationClickedReceiverTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun launchDeepLink_whenExist() = runTest {
-        val reteno = createReteno()
+    fun launchDeepLink_whenExist() = runRetenoTest {
         val intentSlot = slot<Intent>()
         val deepLink = "com.reteno.example"
 
@@ -168,8 +165,7 @@ class RetenoNotificationClickedReceiverTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun saveInteraction() = runTest {
-        val reteno = createReteno()
+    fun saveInteraction() = runRetenoTest {
 
         val interactionId = "interaction_id"
         val extra = Bundle().apply { putString(Constants.KEY_ES_INTERACTION_ID, interactionId) }
@@ -186,8 +182,7 @@ class RetenoNotificationClickedReceiverTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun givenPushWithCustomDataNoDeeplinkReceived_whenNotificationClicked_thenCustomDataDeliveredToLaunchActivity() = runTest {
-        val reteno = createReteno()
+    fun givenPushWithCustomDataNoDeeplinkReceived_whenNotificationClicked_thenCustomDataDeliveredToLaunchActivity() = runRetenoTest {
         // Given
         mockkObject(IntentHandler.AppLaunchIntent)
 
@@ -215,8 +210,7 @@ class RetenoNotificationClickedReceiverTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun givenPushWithCustomDataDeeplinkReceived_whenNotificationClicked_thenCustomDataDeliveredToLaunchActivity() = runTest {
-        val reteno = createReteno()
+    fun givenPushWithCustomDataDeeplinkReceived_whenNotificationClicked_thenCustomDataDeliveredToLaunchActivity() = runRetenoTest {
         // Given
         val intentSlot = slot<Intent>()
         val customDataKey = "customDataKey"
@@ -267,5 +261,6 @@ class RetenoNotificationClickedReceiverTest : BaseRobolectricTest() {
 
         // Then
         verify { iamView.initialize(iamWidgetId) }
+        RetenoInternalImpl.swapInstance(null)
     }
 }

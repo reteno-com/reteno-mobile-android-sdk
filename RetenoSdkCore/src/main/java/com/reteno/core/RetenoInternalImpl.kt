@@ -536,7 +536,7 @@ class RetenoInternalImpl(
         val instance: RetenoInternalImpl
             get() = Reteno.instance as RetenoInternalImpl
 
-        fun swapInstance(instance: RetenoInternalImpl) {
+        fun swapInstance(instance: RetenoInternalImpl?) {
             Reteno.instanceInternal = instance
         }
     }

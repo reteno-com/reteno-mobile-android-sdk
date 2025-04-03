@@ -12,6 +12,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Before
 import org.junit.runner.RunWith
@@ -80,5 +81,13 @@ abstract class BaseRobolectricTest {
                 advanceUntilIdle()
             }
         }
+    }
+
+    fun runRetenoTest(
+        lifecycleOwner: LifecycleOwner = ProcessLifecycleOwner.get(),
+        test: TestScope.(RetenoInternalImpl) -> Unit
+    ) = runTest {
+        test(createRetenoAndAdvanceInit(lifecycleOwner))
+        RetenoInternalImpl.swapInstance(null)
     }
 }
