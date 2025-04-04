@@ -7,6 +7,7 @@ import com.reteno.push.channel.RetenoNotificationChannel
 
 object RetenoNotifications {
 
+    @JvmStatic
     fun updateDefaultNotificationChannel(name: String? = null, description: String? = null) {
         if (name == null && description == null) return
         RetenoInternalImpl.instance.executeAfterInit {
