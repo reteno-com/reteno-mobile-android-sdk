@@ -12,6 +12,9 @@
         tools:layout="@layout/fragment_start">
 
         <action
+            android:id="@+id/start_to_notifications"
+            app:destination="@id/fragmentNotifications" />
+        <action
             android:id="@+id/start_to_deviceId"
             app:destination="@id/fragmentDeviceId" />
         <action
@@ -135,6 +138,12 @@
         android:name="com.reteno.sample.fragments.FragmentAppLifecycleEvents"
         android:label="fragment_app_lifecycle_events"
         tools:layout="@layout/fragment_app_lifecycle_events" />
+
+    <fragment
+        android:id="@+id/fragmentNotifications"
+        android:name="com.reteno.sample.fragments.FragmentNotifications"
+        android:label="fragment_notifications"
+        tools:layout="@layout/fragment_notifications" />
 
     <include app:graph="@navigation/nav_graph_ecom_events" />
     <include app:graph="@navigation/nav_graph_database" />

@@ -1,5 +1,6 @@
 package com.reteno.core
 
+import androidx.core.app.NotificationChannelCompat
 import androidx.lifecycle.LifecycleObserver
 import com.reteno.core.domain.model.interaction.InteractionStatus
 import com.reteno.core.domain.model.logevent.RetenoLogEvent
@@ -38,4 +39,8 @@ internal interface RetenoInternalFacade : LifecycleObserver {
     fun deeplinkClicked(linkWrapped: String, linkUnwrapped: String)
 
     fun hasActiveTask(): Boolean
+
+    fun getDefaultNotificationChannelConfig(): ((NotificationChannelCompat.Builder) -> Unit)? = null
+
+    fun executeAfterInit(action: () -> Unit)
 }

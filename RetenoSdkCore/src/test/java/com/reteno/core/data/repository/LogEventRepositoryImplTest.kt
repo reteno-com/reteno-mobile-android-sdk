@@ -1,6 +1,5 @@
 package com.reteno.core.data.repository
 
-import com.reteno.core.base.BaseUnitTest
 import com.reteno.core.base.robolectric.BaseRobolectricTest
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerLogEvent
 import com.reteno.core.data.local.mappers.toDb
@@ -10,11 +9,8 @@ import com.reteno.core.domain.model.logevent.RetenoLogEvent
 import io.mockk.coEvery
 import io.mockk.impl.annotations.RelaxedMockK
 import io.mockk.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.runTest
 import org.junit.Test
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class LogEventRepositoryImplTest : BaseRobolectricTest() {
 
     @RelaxedMockK
@@ -25,8 +21,7 @@ class LogEventRepositoryImplTest : BaseRobolectricTest() {
 
 
     @Test
-    fun givenEvent_whenSaveLogEventCalled_thenManagerCalled() = runTest {
-        createRetenoAndAdvanceInit()
+    fun givenEvent_whenSaveLogEventCalled_thenManagerCalled() = runRetenoTest {
         val event = RetenoLogEvent()
         coEvery { manager.getLogEvents(any()) } returns listOf(event.toDb())
         val sut = createSUT()
@@ -37,8 +32,7 @@ class LogEventRepositoryImplTest : BaseRobolectricTest() {
 
     @Test
     fun givenEvent_whenSaveLogEventCalledAndEventsPushedWithSuccess_thenDatabaseCleared() =
-        runTest {
-            createRetenoAndAdvanceInit()
+        runRetenoTest {
             val event = RetenoLogEvent()
             coEvery { manager.getLogEvents(any()) } returns listOf(event.toDb())
             coEvery { apiClient.post(any(), any(), any()) } answers {
@@ -52,8 +46,7 @@ class LogEventRepositoryImplTest : BaseRobolectricTest() {
 
     @Test
     fun givenEvent_whenSaveLogEventCalledAndEventsPushedWithRepeatableError_thenDatabaseCleared() =
-        runTest {
-            createRetenoAndAdvanceInit()
+        runRetenoTest {
             val event = RetenoLogEvent()
             coEvery { manager.getLogEvents(any()) } returns listOf(event.toDb())
             coEvery { apiClient.post(any(), any(), any()) } answers {
@@ -67,8 +60,7 @@ class LogEventRepositoryImplTest : BaseRobolectricTest() {
 
     @Test
     fun givenEvent_whenSaveLogEventCalledAndEventsPushedWithNonRepeatableError_thenDatabaseNotCleared() =
-        runTest {
-            createRetenoAndAdvanceInit()
+        runRetenoTest {
             val event = RetenoLogEvent()
             coEvery { manager.getLogEvents(any()) } returns listOf(event.toDb())
             coEvery { apiClient.post(any(), any(), any()) } answers {
@@ -81,8 +73,7 @@ class LogEventRepositoryImplTest : BaseRobolectricTest() {
         }
 
     @Test
-    fun whenPushEventsWithEmptyDB_thenNoRequest() = runTest {
-        createRetenoAndAdvanceInit()
+    fun whenPushEventsWithEmptyDB_thenNoRequest() = runRetenoTest {
         coEvery { manager.getLogEvents(any()) } returns listOf()
         coEvery { apiClient.post(any(), any(), any()) } answers {
             thirdArg<ResponseCallback>().onFailure(500, null, IllegalArgumentException())

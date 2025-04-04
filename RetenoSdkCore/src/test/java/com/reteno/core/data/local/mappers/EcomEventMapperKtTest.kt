@@ -80,7 +80,8 @@ class EcomEventMapperKtTest : BaseRobolectricTest() {
             11, 11, 11, 0,
             ZoneId.of("UTC+3")
         )
-        const val OCCURRED_EXPECTED = "1996-08-15T08:11:11Z"
+        const val OCCURRED_EXPECTED = "1996-08-15T08:11:11.000Z"
+        const val OCCURRED_EXPECTED_ORDER = "1996-08-15T08:11:11Z"
 
         const val ATTRIBUTE_1_KEY = "key1"
         const val ATTRIBUTE_2_KEY = "key2"
@@ -583,7 +584,7 @@ class EcomEventMapperKtTest : BaseRobolectricTest() {
             ParameterDb(EXTERNAL_CUSTOMER_ID, Order.EXTERNAL_CUSTOMER_ID_EXPECTED),
             ParameterDb(TOTAL_COST, Order.TOTAL_COST_EXPECTED),
             ParameterDb(STATUS, Order.STATUS_EXPECTED),
-            ParameterDb(DATE, General.OCCURRED_EXPECTED),
+            ParameterDb(DATE, General.OCCURRED_EXPECTED_ORDER),
             ParameterDb(CART_ID, Order.CART_ID_EXPECTED),
             ParameterDb(CURRENCY_CODE, General.CURRENCY_CODE_EXPECTED),
             ParameterDb(EMAIL, Order.EMAIL_EXPECTED),

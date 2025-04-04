@@ -54,13 +54,14 @@ import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.TAXES
 import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.TOTAL_COST
 import com.reteno.core.util.Logger
 import com.reteno.core.util.Util.formatToRemote
+import com.reteno.core.util.Util.formatToRemoteExplicitMillis
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
 
 internal fun EcomEvent.toDb() = EventDb(
     eventTypeKey = getTypeKey(),
-    occurred = occurred.formatToRemote(),
+    occurred = occurred.formatToRemoteExplicitMillis(),
     params = convertToParams()
 )
 

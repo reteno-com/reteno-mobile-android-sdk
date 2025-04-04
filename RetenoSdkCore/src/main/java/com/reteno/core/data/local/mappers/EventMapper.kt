@@ -6,7 +6,7 @@ import com.reteno.core.data.local.model.event.ParameterDb
 import com.reteno.core.domain.model.event.Event
 import com.reteno.core.domain.model.event.Events
 import com.reteno.core.domain.model.event.Parameter
-import com.reteno.core.util.Util.formatToRemote
+import com.reteno.core.util.Util.formatToRemoteExplicitMillis
 
 fun Events.toDb() = EventsDb(
     deviceId = deviceId,
@@ -16,7 +16,7 @@ fun Events.toDb() = EventsDb(
 
 internal fun Event.toDb() = EventDb(
     eventTypeKey = eventTypeKey,
-    occurred = occurred.formatToRemote(),
+    occurred = occurred.formatToRemoteExplicitMillis(),
     params = params?.map { it.toDb() }
 )
 

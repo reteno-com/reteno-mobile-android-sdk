@@ -234,7 +234,7 @@ class InteractionRepositoryImplTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun thereAreOutdatedInteraction_whenClearOldInteractions_thenSentCountDeleted() {
+    fun thereAreOutdatedInteraction_whenClearOldInteractions_thenSentCountDeleted() = runRetenoTest {
         // Given
         val deletedInteractions = listOf<InteractionDb>(
             InteractionDb(
