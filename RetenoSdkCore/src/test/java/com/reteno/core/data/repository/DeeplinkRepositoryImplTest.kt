@@ -199,7 +199,7 @@ class DeeplinkRepositoryImplTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun givenOutdatedWrappedLinksPresent_whenClearOldWrappedLinks_thenSentDeleteWrappedLinksDataToLogger() {
+    fun givenOutdatedWrappedLinksPresent_whenClearOldWrappedLinks_thenSentDeleteWrappedLinksDataToLogger() = runRetenoTest {
         // Given
         val deletedWrappedLinks = 2
         every { databaseManager.deleteWrappedLinksByTime(any()) } returns deletedWrappedLinks

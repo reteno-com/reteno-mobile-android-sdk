@@ -3,6 +3,7 @@ package com.reteno.core.domain.controller
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.testing.launchFragmentInContainer
 import androidx.lifecycle.Lifecycle
+import com.reteno.core.RetenoInternalImpl
 import com.reteno.core.base.robolectric.BaseRobolectricTest
 import com.reteno.core.di.ServiceLocator
 import com.reteno.core.lifecycle.RetenoActivityHelper
@@ -64,6 +65,7 @@ class ScreenTrackerControllerTest : BaseRobolectricTest() {
         }
         //Then
         coVerify(exactly = 0) { eventController.trackScreenViewEvent(any()) }
+        RetenoInternalImpl.swapInstance(null)
     }
 
     @Test
@@ -84,6 +86,7 @@ class ScreenTrackerControllerTest : BaseRobolectricTest() {
         }
         //Then
         coVerify(exactly = 1) { eventController.trackScreenViewEvent(any()) }
+        RetenoInternalImpl.swapInstance(null)
     }
 
     private fun createController(retenoActivityHelper: RetenoActivityHelper): ScreenTrackingController {

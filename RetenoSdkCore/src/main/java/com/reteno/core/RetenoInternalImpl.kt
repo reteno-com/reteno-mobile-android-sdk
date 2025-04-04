@@ -3,12 +3,12 @@ package com.reteno.core
 import android.app.Application
 import android.content.ComponentName
 import android.content.Intent
+import androidx.core.app.NotificationChannelCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.OnLifecycleEvent
 import androidx.lifecycle.ProcessLifecycleOwner
 import com.reteno.core.di.ServiceLocator
-import com.reteno.core.di.provider.RetenoConfigProvider
 import com.reteno.core.domain.controller.ScreenTrackingController
 import com.reteno.core.domain.model.ecom.EcomEvent
 import com.reteno.core.domain.model.event.Event
@@ -44,11 +44,10 @@ class RetenoInternalImpl(
 
     private val initWaitCondition = CompletableDeferred<Unit>()
     private val anrWaitCondition = CompletableDeferred<Unit>()
-    private val configProvider = RetenoConfigProvider(RetenoConfig())
     private val syncScope = CoroutineScope(mainDispatcher + SupervisorJob())
 
     //TODO make this property private
-    val serviceLocator: ServiceLocator = ServiceLocator(application, configProvider)
+    val serviceLocator: ServiceLocator = ServiceLocator(application)
     private val activityHelper: RetenoActivityHelper by lazy { serviceLocator.retenoActivityHelperProvider.get() }
 
     private val screenTrackingController: ScreenTrackingController by lazy { serviceLocator.screenTrackingControllerProvider.get() }
@@ -81,7 +80,7 @@ class RetenoInternalImpl(
             return
         }
         Logger.i(TAG, "setConfig()")
-        configProvider.setConfig(config)
+        serviceLocator.setConfig(config)
         syncScope.launch(mainDispatcher) {
             anrWaitCondition.await()
             applyConfig(config)
@@ -109,7 +108,7 @@ class RetenoInternalImpl(
         }
     }
 
-    private inline fun awaitInit(crossinline operation: () -> Unit) {
+    private inline fun runAfterInit(crossinline operation: () -> Unit) {
         if (!isInitialized) {
             syncScope.launch(mainDispatcher) {
                 initWaitCondition.await()
@@ -143,9 +142,9 @@ class RetenoInternalImpl(
     }
 
     @OnLifecycleEvent(Lifecycle.Event.ON_START)
-    fun start() = awaitInit {
+    fun start() = runAfterInit {
         if (!isOsVersionSupported()) {
-            return@awaitInit
+            return@runAfterInit
         }
         /*@formatter:off*/ Logger.i(TAG, "start(): ")
         /*@formatter:on*/
@@ -164,9 +163,9 @@ class RetenoInternalImpl(
     }
 
     @OnLifecycleEvent(Lifecycle.Event.ON_STOP)
-    fun stop() = awaitInit {
+    fun stop() = runAfterInit {
         if (!isOsVersionSupported()) {
-            return@awaitInit
+            return@runAfterInit
         }
         /*@formatter:off*/ Logger.i(TAG, "stop(): ")
         /*@formatter:on*/
@@ -182,9 +181,9 @@ class RetenoInternalImpl(
     }
 
     @Throws(java.lang.IllegalArgumentException::class)
-    override fun setUserAttributes(externalUserId: String) = awaitInit {
+    override fun setUserAttributes(externalUserId: String) = runAfterInit {
         if (!isOsVersionSupported()) {
-            return@awaitInit
+            return@runAfterInit
         }
         /*@formatter:off*/ Logger.i(TAG, "setUserAttributes(): ", "externalUserId = [" , externalUserId , "]")
         /*@formatter:on*/
@@ -199,9 +198,9 @@ class RetenoInternalImpl(
     }
 
     @Throws(java.lang.IllegalArgumentException::class)
-    override fun setUserAttributes(externalUserId: String, user: User?) = awaitInit {
+    override fun setUserAttributes(externalUserId: String, user: User?) = runAfterInit {
         if (!isOsVersionSupported()) {
-            return@awaitInit
+            return@runAfterInit
         }
 
         /*@formatter:off*/ Logger.i(TAG, "setUserAttributes(): ", "externalUserId = [" , externalUserId , "], used = [" , user , "]")
@@ -227,9 +226,9 @@ class RetenoInternalImpl(
         }
     }
 
-    override fun setAnonymousUserAttributes(userAttributes: UserAttributesAnonymous) = awaitInit {
+    override fun setAnonymousUserAttributes(userAttributes: UserAttributesAnonymous) = runAfterInit {
         if (!isOsVersionSupported()) {
-            return@awaitInit
+            return@runAfterInit
         }
         /*@formatter:off*/ Logger.i(TAG, "setAnonymousUserAttributes(): ", "userAttributes = [", userAttributes, "]")
         /*@formatter:on*/
@@ -241,9 +240,9 @@ class RetenoInternalImpl(
         }
     }
 
-    override fun logEvent(event: Event) = awaitInit {
+    override fun logEvent(event: Event) = runAfterInit {
         if (!isOsVersionSupported()) {
-            return@awaitInit
+            return@runAfterInit
         }
         /*@formatter:off*/ Logger.i(TAG, "logEvent(): ", "eventType = [" , event.eventTypeKey , "], date = [" , event.occurred , "], parameters = [" , event.params , "]")
         /*@formatter:on*/
@@ -255,9 +254,9 @@ class RetenoInternalImpl(
         }
     }
 
-    override fun logEcommerceEvent(ecomEvent: EcomEvent) = awaitInit {
+    override fun logEcommerceEvent(ecomEvent: EcomEvent) = runAfterInit {
         if (!isOsVersionSupported()) {
-            return@awaitInit
+            return@runAfterInit
         }
         /*@formatter:off*/ Logger.i(TAG, "logEcommerceEvent(): ", "ecomEvent = [" , ecomEvent , "]")
         /*@formatter:on*/
@@ -269,9 +268,9 @@ class RetenoInternalImpl(
         }
     }
 
-    override fun logScreenView(screenName: String) = awaitInit {
+    override fun logScreenView(screenName: String) = runAfterInit {
         if (!isOsVersionSupported()) {
-            return@awaitInit
+            return@runAfterInit
         }
         /*@formatter:off*/ Logger.i(TAG, "logScreenView(): ", "screenName = [" , screenName , "]")
         /*@formatter:on*/
@@ -283,9 +282,9 @@ class RetenoInternalImpl(
         }
     }
 
-    override fun logRetenoEvent(event: RetenoLogEvent) = awaitInit {
+    override fun logRetenoEvent(event: RetenoLogEvent) = runAfterInit {
         if (!isOsVersionSupported()) {
-            return@awaitInit
+            return@runAfterInit
         }
         /*@formatter:off*/ Logger.i(TAG, "logRetenoEvent(): ", "event = [" , event , "]")
         /*@formatter:on*/
@@ -298,9 +297,9 @@ class RetenoInternalImpl(
     }
 
     override fun setLifecycleEventConfig(lifecycleTrackingOptions: LifecycleTrackingOptions) =
-        awaitInit {
+        runAfterInit {
             if (!isOsVersionSupported()) {
-                return@awaitInit
+                return@runAfterInit
             }
             /*@formatter:off*/ Logger.i(TAG, "setLifecycleEventConfig(): ", "lifecycleEventConfig = [" , lifecycleTrackingOptions , "]")
         /*@formatter:on*/
@@ -312,9 +311,9 @@ class RetenoInternalImpl(
             }
         }
 
-    override fun autoScreenTracking(config: ScreenTrackingConfig) = awaitInit {
+    override fun autoScreenTracking(config: ScreenTrackingConfig) = runAfterInit {
         if (!isOsVersionSupported()) {
-            return@awaitInit
+            return@runAfterInit
         }
         /*@formatter:off*/ Logger.i(TAG, "autoScreenTracking(): ", "config = [" , config , "]")
         /*@formatter:on*/
@@ -326,7 +325,7 @@ class RetenoInternalImpl(
         }
     }
 
-    override fun updatePushPermissionStatus() = awaitInit {
+    override fun updatePushPermissionStatus() = runAfterInit {
         Logger.i(TAG, "updatePushPermissionStatus():")
         val intent =
             Intent(BROADCAST_ACTION_PUSH_PERMISSION_CHANGED).setFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES)
@@ -339,30 +338,30 @@ class RetenoInternalImpl(
         }
     }
 
-    override fun pauseInAppMessages(isPaused: Boolean) = awaitInit {
+    override fun pauseInAppMessages(isPaused: Boolean) = runAfterInit {
         Logger.i(TAG, "pauseInAppMessages(): isPaused = [$isPaused]")
         iamController.pauseInAppMessages(isPaused)
     }
 
-    override fun pausePushInAppMessages(isPaused: Boolean) = awaitInit {
+    override fun pausePushInAppMessages(isPaused: Boolean) = runAfterInit {
         Logger.i(TAG, "pausePushInAppMessages(): isPaused = [$isPaused]")
         iamView.pauseIncomingPushInApps(isPaused)
     }
 
-    override fun setPushInAppMessagesPauseBehaviour(behaviour: InAppPauseBehaviour) = awaitInit {
+    override fun setPushInAppMessagesPauseBehaviour(behaviour: InAppPauseBehaviour) = runAfterInit {
         Logger.i(TAG, "setPushInAppMessagesPauseBehaviour(): behaviour = [$behaviour]")
         iamView.setPauseBehaviour(behaviour)
     }
 
     override fun setInAppLifecycleCallback(inAppLifecycleCallback: InAppLifecycleCallback?) =
-        awaitInit {
+        runAfterInit {
             Logger.i(TAG, "setInAppLifecycleCallback(): inAppLifecycleCallback = [$inAppLifecycleCallback]")
             iamView.setInAppLifecycleCallback(inAppLifecycleCallback)
         }
 
-    override fun forcePushData() = awaitInit {
+    override fun forcePushData() = runAfterInit {
         if (!isOsVersionSupported()) {
-            return@awaitInit
+            return@runAfterInit
         }
         /*@formatter:off*/ Logger.i(TAG, "forcePushData(): ", "")
         /*@formatter:on*/
@@ -374,9 +373,9 @@ class RetenoInternalImpl(
         }
     }
 
-    override fun setInAppMessagesPauseBehaviour(behaviour: InAppPauseBehaviour) = awaitInit {
+    override fun setInAppMessagesPauseBehaviour(behaviour: InAppPauseBehaviour) = runAfterInit {
         if (!isOsVersionSupported()) {
-            return@awaitInit
+            return@runAfterInit
         }
         /*@formatter:off*/ Logger.i(TAG, "setInAppMessagesPauseBehaviour(): ", "behaviour = [" , behaviour , "]")
         /*@formatter:on*/
@@ -388,9 +387,9 @@ class RetenoInternalImpl(
         }
     }
 
-    override fun onNewFcmToken(token: String) = awaitInit {
+    override fun onNewFcmToken(token: String) = runAfterInit {
         if (!isOsVersionSupported()) {
-            return@awaitInit
+            return@runAfterInit
         }
         /*@formatter:off*/ Logger.i(TAG, "onNewFcmToken(): ", "token = [" , token , "]")
         /*@formatter:on*/
@@ -402,9 +401,9 @@ class RetenoInternalImpl(
         }
     }
 
-    override fun recordInteraction(id: String, status: InteractionStatus) = awaitInit {
+    override fun recordInteraction(id: String, status: InteractionStatus) = runAfterInit {
         if (!isOsVersionSupported()) {
-            return@awaitInit
+            return@runAfterInit
         }
         /*@formatter:off*/ Logger.i(TAG, "recordInteraction(): ", "status = [" , status , "]")
         /*@formatter:on*/
@@ -467,9 +466,9 @@ class RetenoInternalImpl(
         return activityHelper.currentActivity != null
     }
 
-    override fun initializeIamView(interactionId: String) = awaitInit {
+    override fun initializeIamView(interactionId: String) = runAfterInit {
         if (!isOsVersionSupported()) {
-            return@awaitInit
+            return@runAfterInit
         }
         /*@formatter:off*/ Logger.i(TAG, "initializeIamView(): ", "interactionId = [" , interactionId , "]")
         /*@formatter:on*/
@@ -505,6 +504,14 @@ class RetenoInternalImpl(
         return activityHelper.hasActiveTask()
     }
 
+    override fun getDefaultNotificationChannelConfig(): ((NotificationChannelCompat.Builder) -> Unit)? {
+        return serviceLocator.currentConfig.defaultNotificationChannelConfig
+    }
+
+    override fun executeAfterInit(action: () -> Unit) = runAfterInit {
+        action()
+    }
+
     private fun stopPushScheduler() {
         scheduleController.stopScheduler()
     }
@@ -529,7 +536,7 @@ class RetenoInternalImpl(
         val instance: RetenoInternalImpl
             get() = Reteno.instance as RetenoInternalImpl
 
-        fun swapInstance(instance: RetenoInternalImpl) {
+        fun swapInstance(instance: RetenoInternalImpl?) {
             Reteno.instanceInternal = instance
         }
     }

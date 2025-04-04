@@ -131,6 +131,10 @@ object Util {
         .ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'")
         .withZone(ZoneId.of("UTC"))
 
+    private val millisFormatter = DateTimeFormatter
+        .ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+        .withZone(ZoneId.of("UTC"))
+
     private val sqlToTimestampFormat by lazy {
         SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
     }
@@ -187,6 +191,10 @@ object Util {
 
     fun ZonedDateTime.formatToRemote(): String {
         return formatter.format(this)
+    }
+
+    fun ZonedDateTime.formatToRemoteExplicitMillis(): String {
+        return millisFormatter.format(this)
     }
 
     fun String.fromRemote():ZonedDateTime {

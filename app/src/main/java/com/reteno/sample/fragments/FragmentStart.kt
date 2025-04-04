@@ -91,6 +91,7 @@ class FragmentStart : BaseFragment() {
                 "Second Activity",
                 direction = FragmentStartDirections.startToActivitySecond()
             ),
+            ScreenItem("Notifications", direction = FragmentStartDirections.startToNotifications()),
             ScreenItem("User data",direction =  FragmentStartDirections.startToUserData()),
             ScreenItem(
                 "User Anonymous data",
