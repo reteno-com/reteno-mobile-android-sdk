@@ -9,7 +9,6 @@ import com.reteno.core.domain.controller.ScreenTrackingController
 import io.mockk.impl.annotations.RelaxedMockK
 import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import org.robolectric.Robolectric
 import org.robolectric.android.controller.ActivityController
@@ -36,8 +35,7 @@ class RetenoActivityHelperFragmentTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun givenScreenTrackingDisabled_whenFragmentStarted_thenScreenViewNotTracked() = runTest {
-        createRetenoAndAdvanceInit()
+    fun givenScreenTrackingDisabled_whenFragmentStarted_thenScreenViewNotTracked() = runRetenoTest {
         // Given
         val sut = createSUT()
         sut.enableLifecycleCallbacks(activityController.get().application)
@@ -56,8 +54,7 @@ class RetenoActivityHelperFragmentTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun givenScreenTrackingEnabled_whenFragmentStarted_thenScreenViewNotTracked() = runTest {
-        createRetenoAndAdvanceInit()
+    fun givenScreenTrackingEnabled_whenFragmentStarted_thenScreenViewNotTracked() = runRetenoTest {
         // Given
         val sut = createSUT()
         sut.enableLifecycleCallbacks(activityController.get().application)
@@ -76,8 +73,7 @@ class RetenoActivityHelperFragmentTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun givenScreenTrackingOnResume_whenFragmentStarted_thenScreenViewNotTracked() = runTest {
-        createRetenoAndAdvanceInit()
+    fun givenScreenTrackingOnResume_whenFragmentStarted_thenScreenViewNotTracked() = runRetenoTest {
         // Given
         val sut = createSUT()
         sut.enableLifecycleCallbacks(activityController.get().application)
@@ -96,8 +92,7 @@ class RetenoActivityHelperFragmentTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun givenScreenTrackingOnResume_whenFragmentResumed_thenScreenViewTracked() = runTest {
-        createRetenoAndAdvanceInit()
+    fun givenScreenTrackingOnResume_whenFragmentResumed_thenScreenViewTracked() = runRetenoTest {
         // Given
         val sut = createSUT()
         sut.enableLifecycleCallbacks(activityController.get().application)
@@ -117,8 +112,7 @@ class RetenoActivityHelperFragmentTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun givenScreenExcluded_whenFragmentStarted_thenScreenViewNotTracked() = runTest {
-        createRetenoAndAdvanceInit()
+    fun givenScreenExcluded_whenFragmentStarted_thenScreenViewNotTracked() = runRetenoTest {
         // Given
         val sut = createSUT()
         sut.enableLifecycleCallbacks(activityController.get().application)
@@ -137,8 +131,7 @@ class RetenoActivityHelperFragmentTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun givenScreenExcluded_whenFragmentResumed_thenScreenViewNotTracked() = runTest {
-        createRetenoAndAdvanceInit()
+    fun givenScreenExcluded_whenFragmentResumed_thenScreenViewNotTracked() = runRetenoTest {
         // Given
         val sut = createSUT()
         sut.enableLifecycleCallbacks(activityController.get().application)

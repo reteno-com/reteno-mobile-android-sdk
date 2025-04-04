@@ -2,7 +2,6 @@ package com.reteno.core.data.local.database.util
 
 import android.content.ContentValues
 import android.database.Cursor
-import androidx.core.database.getLongOrNull
 import androidx.core.database.getStringOrNull
 import com.reteno.core.base.robolectric.BaseRobolectricTest
 import com.reteno.core.data.local.database.schema.DbSchema
@@ -15,8 +14,6 @@ import com.reteno.core.util.Util
 import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -176,10 +173,8 @@ class DbUtilDeviceTest : BaseRobolectricTest() {
         assertEquals(expectedDevice, actualDevice)
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
-    fun givenCursorWithDeviceIdOnly_whenGetDevice_thenDeviceReturned() = runTest {
-        createRetenoAndAdvanceInit()
+    fun givenCursorWithDeviceIdOnly_whenGetDevice_thenDeviceReturned() = runRetenoTest {
         // Given
         mockDeviceDeviceIdOnly()
 

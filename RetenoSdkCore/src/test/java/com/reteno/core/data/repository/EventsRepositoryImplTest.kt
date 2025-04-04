@@ -265,7 +265,7 @@ class EventsRepositoryImplTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun thereAreOutdatedEvents_whenClearOldEvents_thenSentCountDeleted() {
+    fun thereAreOutdatedEvents_whenClearOldEvents_thenSentCountDeleted() = runRetenoTest {
         // Given
         val deletedEvents = listOf<EventDb>(
             EventDb(eventTypeKey = "key1", occurred = "occurred1"),

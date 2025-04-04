@@ -2,10 +2,8 @@ package com.reteno.core.util
 
 import android.util.Log
 import com.reteno.core.BuildConfig
-import com.reteno.core.RetenoConfig
 import com.reteno.core.RetenoInternalImpl
 import com.reteno.core.di.ServiceLocator
-import com.reteno.core.di.provider.RetenoConfigProvider
 import com.reteno.core.domain.model.logevent.LogLevel
 import com.reteno.core.domain.model.logevent.RetenoLogEvent
 
@@ -103,7 +101,7 @@ object Logger {
             runCatching {
                 RetenoInternalImpl.instance.logRetenoEvent(logEvent)
             }.onFailure {
-                ServiceLocator(RetenoInternalImpl.instance.application, RetenoConfigProvider(RetenoConfig()))
+                ServiceLocator(RetenoInternalImpl.instance.application)
                     .eventsControllerProvider
                     .get()
                     .trackRetenoEvent(logEvent)

@@ -94,6 +94,7 @@ class PushDataWorkerTest : BaseRobolectricTest() {
 
         val workState = WorkManager.getInstance(application).getWorkInfoById(workUuid).get()
         assertEquals(WorkInfo.State.ENQUEUED, workState.state)
+        RetenoInternalImpl.swapInstance(null)
     }
 
     @Test
@@ -113,6 +114,7 @@ class PushDataWorkerTest : BaseRobolectricTest() {
 
             val workState = WorkManager.getInstance(application).getWorkInfoById(workUuid).get()
             assertEquals(WorkInfo.State.CANCELLED, workState.state)
+            RetenoInternalImpl.swapInstance(null)
         }
 
     @Test
@@ -132,6 +134,7 @@ class PushDataWorkerTest : BaseRobolectricTest() {
 
             val workState = WorkManager.getInstance(application).getWorkInfoById(workUuid).get()
             assertEquals(WorkInfo.State.ENQUEUED, workState.state)
+            RetenoInternalImpl.swapInstance(null)
         }
 
     @Test
@@ -158,6 +161,7 @@ class PushDataWorkerTest : BaseRobolectricTest() {
             setPeriodDelayMet(request.id)
             setAllConstraintsMet(request.id)
         }
+        RetenoInternalImpl.swapInstance(null)
     }
 
     @Test
@@ -182,6 +186,7 @@ class PushDataWorkerTest : BaseRobolectricTest() {
         // Then
         val workInfo = workManager.getWorkInfoById(request.id).get()
         assertEquals(WorkInfo.State.ENQUEUED, workInfo.state)
+        RetenoInternalImpl.swapInstance(null)
     }
 
     // region helper methods -----------------------------------------------------------------------
