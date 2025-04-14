@@ -293,5 +293,221 @@ class ScheduleRuleValidatorTest : BaseRobolectricTest() {
         unmockkStatic(ZonedDateTime::class)
     }
 
+    @Test
+    fun givenInAppSpecificDaysAndTime_whenEndHoursBeforeStartHoursAndInRange_thenTrue() {
+        //Given
+        val sut = createValidator()
+        val mocked = ZonedDateTime.parse("2024-04-01T08:28:52+01:00[Europe/Paris]")
+        mockkStatic(ZonedDateTime::class)
+        every { ZonedDateTime.now() } returns mocked
+        val inApp = InAppMessage(
+            messageId = 2,
+            messageInstanceId = 2,
+            displayRules = DisplayRules(
+                frequency = null,
+                targeting = null,
+                schedule = ScheduleDisplayRules().apply {
+                    predicates.add(
+                        ScheduleRule.SpecificDaysAndTime(
+                            timeZone = "Europe/Paris",
+                            daysOfWeek = listOf(
+                                DayOfWeek.MONDAY.name.lowercase(),
+                                DayOfWeek.FRIDAY.name.lowercase()
+                            ),
+                            fromHours = 14,
+                            toHours = 10,
+                            fromMinutes = 10,
+                            toMinutes = 30
+                        )
+                    )
+                },
+                async = null
+            ),
+            content = null,
+            lastShowTime = null,
+            displayRulesJson = JsonObject()
+        )
+        //When
+        val result = sut.checkInAppMatchesScheduleRules(
+            inAppMessage = inApp
+        )
+        //Then
+        Assert.assertEquals(true, result)
+        unmockkStatic(ZonedDateTime::class)
+    }
+
+    @Test
+    fun givenInAppSpecificDaysAndTime_whenEndHoursBeforeStartHoursAndNotInRange_thenFalse() {
+        //Given
+        val sut = createValidator()
+        val mocked = ZonedDateTime.parse("2024-04-01T11:28:52+01:00[Europe/Paris]")
+        mockkStatic(ZonedDateTime::class)
+        every { ZonedDateTime.now() } returns mocked
+        val inApp = InAppMessage(
+            messageId = 2,
+            messageInstanceId = 2,
+            displayRules = DisplayRules(
+                frequency = null,
+                targeting = null,
+                schedule = ScheduleDisplayRules().apply {
+                    predicates.add(
+                        ScheduleRule.SpecificDaysAndTime(
+                            timeZone = "Europe/Paris",
+                            daysOfWeek = listOf(
+                                DayOfWeek.MONDAY.name.lowercase(),
+                                DayOfWeek.FRIDAY.name.lowercase()
+                            ),
+                            fromHours = 14,
+                            toHours = 10,
+                            fromMinutes = 10,
+                            toMinutes = 30
+                        )
+                    )
+                },
+                async = null
+            ),
+            content = null,
+            lastShowTime = null,
+            displayRulesJson = JsonObject()
+        )
+        //When
+        val result = sut.checkInAppMatchesScheduleRules(
+            inAppMessage = inApp
+        )
+        //Then
+        Assert.assertEquals(false, result)
+        unmockkStatic(ZonedDateTime::class)
+    }
+
+    @Test
+    fun givenInAppSpecificDaysAndTime_whenEndHoursBeforeStartHoursAndInRangeEdgeEnd_thenTrue() {
+        //Given
+        val sut = createValidator()
+        val mocked = ZonedDateTime.parse("2024-04-01T09:30:52+01:00[Europe/Paris]")
+        mockkStatic(ZonedDateTime::class)
+        every { ZonedDateTime.now() } returns mocked
+        val inApp = InAppMessage(
+            messageId = 2,
+            messageInstanceId = 2,
+            displayRules = DisplayRules(
+                frequency = null,
+                targeting = null,
+                schedule = ScheduleDisplayRules().apply {
+                    predicates.add(
+                        ScheduleRule.SpecificDaysAndTime(
+                            timeZone = "Europe/Paris",
+                            daysOfWeek = listOf(
+                                DayOfWeek.MONDAY.name.lowercase(),
+                                DayOfWeek.FRIDAY.name.lowercase()
+                            ),
+                            fromHours = 14,
+                            toHours = 10,
+                            fromMinutes = 10,
+                            toMinutes = 30
+                        )
+                    )
+                },
+                async = null
+            ),
+            content = null,
+            lastShowTime = null,
+            displayRulesJson = JsonObject()
+        )
+        //When
+        val result = sut.checkInAppMatchesScheduleRules(
+            inAppMessage = inApp
+        )
+        //Then
+        Assert.assertEquals(true, result)
+        unmockkStatic(ZonedDateTime::class)
+    }
+
+    @Test
+    fun givenInAppSpecificDaysAndTime_whenEndHoursBeforeStartHoursAndInRangeEdgeStart_thenTrue() {
+        //Given
+        val sut = createValidator()
+        val mocked = ZonedDateTime.parse("2024-04-01T13:10:00+01:00[Europe/Paris]")
+        mockkStatic(ZonedDateTime::class)
+        every { ZonedDateTime.now() } returns mocked
+        val inApp = InAppMessage(
+            messageId = 2,
+            messageInstanceId = 2,
+            displayRules = DisplayRules(
+                frequency = null,
+                targeting = null,
+                schedule = ScheduleDisplayRules().apply {
+                    predicates.add(
+                        ScheduleRule.SpecificDaysAndTime(
+                            timeZone = "Europe/Paris",
+                            daysOfWeek = listOf(
+                                DayOfWeek.MONDAY.name.lowercase(),
+                                DayOfWeek.FRIDAY.name.lowercase()
+                            ),
+                            fromHours = 14,
+                            toHours = 10,
+                            fromMinutes = 10,
+                            toMinutes = 30
+                        )
+                    )
+                },
+                async = null
+            ),
+            content = null,
+            lastShowTime = null,
+            displayRulesJson = JsonObject()
+        )
+        //When
+        val result = sut.checkInAppMatchesScheduleRules(
+            inAppMessage = inApp
+        )
+        //Then
+        Assert.assertEquals(true, result)
+        unmockkStatic(ZonedDateTime::class)
+    }
+
+    @Test
+    fun givenInAppSpecificDaysAndTime_whenEndHoursBeforeStartHoursAndNotInRangeEdgeStart_thenFalse() {
+        //Given
+        val sut = createValidator()
+        val mocked = ZonedDateTime.parse("2024-04-01T13:09:59+01:00[Europe/Paris]")
+        mockkStatic(ZonedDateTime::class)
+        every { ZonedDateTime.now() } returns mocked
+        val inApp = InAppMessage(
+            messageId = 2,
+            messageInstanceId = 2,
+            displayRules = DisplayRules(
+                frequency = null,
+                targeting = null,
+                schedule = ScheduleDisplayRules().apply {
+                    predicates.add(
+                        ScheduleRule.SpecificDaysAndTime(
+                            timeZone = "Europe/Paris",
+                            daysOfWeek = listOf(
+                                DayOfWeek.MONDAY.name.lowercase(),
+                                DayOfWeek.FRIDAY.name.lowercase()
+                            ),
+                            fromHours = 14,
+                            toHours = 10,
+                            fromMinutes = 10,
+                            toMinutes = 30
+                        )
+                    )
+                },
+                async = null
+            ),
+            content = null,
+            lastShowTime = null,
+            displayRulesJson = JsonObject()
+        )
+        //When
+        val result = sut.checkInAppMatchesScheduleRules(
+            inAppMessage = inApp
+        )
+        //Then
+        Assert.assertEquals(false, result)
+        unmockkStatic(ZonedDateTime::class)
+    }
+
+
     private fun createValidator() = ScheduleRuleValidator()
 }

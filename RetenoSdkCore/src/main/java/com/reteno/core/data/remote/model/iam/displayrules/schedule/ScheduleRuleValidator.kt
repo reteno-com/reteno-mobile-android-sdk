@@ -1,6 +1,7 @@
 package com.reteno.core.data.remote.model.iam.displayrules.schedule
 
 import com.reteno.core.data.remote.model.iam.message.InAppMessage
+import java.time.LocalTime
 import java.time.ZonedDateTime
 
 class ScheduleRuleValidator {
@@ -53,12 +54,18 @@ class ScheduleRuleValidator {
         if (daysAndTime.fromHours == 0 && daysAndTime.fromMinutes == 0 &&
             daysAndTime.toHours == 0 && daysAndTime.toMinutes == 0) return true
 
-        if (now.hour < daysAndTime.fromHours) return false
-        if (now.hour == daysAndTime.fromHours && now.minute < daysAndTime.fromMinutes) return false
-        if (daysAndTime.toHours == 0 && daysAndTime.toMinutes == 0) return true
-        if (now.hour > daysAndTime.toHours) return false
-        if (now.hour == daysAndTime.toHours && now.minute > daysAndTime.toMinutes) return false
+        val localNow = now.toLocalTime()
+        val startTime = LocalTime.of(daysAndTime.fromHours, daysAndTime.fromMinutes)
+        val endTime = LocalTime.of(daysAndTime.toHours, daysAndTime.toMinutes, 59)
 
-        return true
+        if (startTime.isAfter(endTime)) {
+            val dayEndTime = LocalTime.of(23,59, 59)
+            val dayStartTime = LocalTime.ofSecondOfDay(0)
+            val inFirstRange = !localNow.isBefore(startTime) && localNow.isBefore(dayEndTime)
+            val inSecondRange = !localNow.isBefore(dayStartTime) && localNow.isBefore(endTime)
+            return inFirstRange || inSecondRange
+        }
+
+        return !localNow.isBefore(startTime) && localNow.isBefore(endTime)
     }
 }
