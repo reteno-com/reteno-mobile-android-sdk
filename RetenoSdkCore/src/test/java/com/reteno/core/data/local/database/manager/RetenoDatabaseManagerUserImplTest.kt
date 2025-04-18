@@ -351,7 +351,7 @@ class RetenoDatabaseManagerUserImplTest : BaseRobolectricTest() {
         every { database.getRowCount(UserSchema.TABLE_NAME_USER) } returns recordsCount
 
         // When
-        val count = SUT.getUserCount()
+        val count = SUT.getUnSyncedUserCount()
 
         // Then
         assertEquals(recordsCount, count)
@@ -370,7 +370,7 @@ class RetenoDatabaseManagerUserImplTest : BaseRobolectricTest() {
         } returns recordsCount
 
         // When
-        val count = SUT.getUserCount()
+        val count = SUT.getUnSyncedUserCount()
 
         // Then
         assertEquals(recordsCount, count)

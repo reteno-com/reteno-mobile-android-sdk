@@ -222,7 +222,7 @@ class PushDataWorkerTest : BaseRobolectricTest() {
     }
 
     private fun mockDatabaseEmpty(isEmpty: Boolean) {
-        every { databaseManager.isDatabaseEmpty() } returns isEmpty
+        every { databaseManager.hasDataForSync() } returns isEmpty
     }
 
     private fun createReteno(): RetenoInternalImpl {

@@ -38,7 +38,7 @@ internal class DeviceReadDialogFragment :
     }
 
     override fun initCount() {
-        val deviceEventsCount = databaseManager!!.getDeviceCount()
+        val deviceEventsCount = databaseManager!!.getUnSyncedDeviceCount()
         bindingMain!!.tvCount.text = String.format(Locale.US, "Count: %d", deviceEventsCount)
     }
 

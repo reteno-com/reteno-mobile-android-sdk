@@ -110,7 +110,7 @@ internal class RetenoDatabaseManagerUserImpl(private val database: RetenoDatabas
         return userList
     }
 
-    override fun getUserCount(): Long = database.getRowCount(
+    override fun getUnSyncedUserCount(): Long = database.getRowCount(
         UserSchema.TABLE_NAME_USER,
         whereClause = "${UserSchema.COLUMN_SYNCHRONIZED_WITH_BACKEND}<>?",
         whereArgs = arrayOf(BooleanDb.TRUE.toString())
