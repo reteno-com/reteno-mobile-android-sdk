@@ -446,12 +446,12 @@ class RetenoInternalImpl(
         return result
     }
 
-    override fun isDatabaseEmpty(): Boolean {
+    override fun hasDataForSync(): Boolean {
         if (!isOsVersionSupported()) {
             return true
         }
         val result = try {
-            databaseManager.isDatabaseEmpty()
+            databaseManager.hasDataForSync()
         } catch (ex: Throwable) {
             /*@formatter:off*/ Logger.e(TAG, "isDatabaseEmpty(): ", ex)
             /*@formatter:on*/

@@ -83,7 +83,7 @@ internal class ContactRepositoryImpl(
                     latestDevice?.let {
                         databaseManagerDevice.insertDevice(it.copy(isSynchronizedWithBackend = BooleanDb.TRUE))
                     }
-                    if (databaseManagerDevice.getDeviceCount() > 0) {
+                    if (databaseManagerDevice.getUnSyncedDeviceCount() > 0) {
                         pushDeviceData()
                     } else {
                         PushOperationQueue.addOperation { pushUserData() } //User data should be pushed only after device update
@@ -98,7 +98,7 @@ internal class ContactRepositoryImpl(
                         latestDevice?.let {
                             databaseManagerDevice.insertDevice(it.copy(isSynchronizedWithBackend = BooleanDb.TRUE))
                         }
-                        if (databaseManagerDevice.getDeviceCount() > 0) {
+                        if (databaseManagerDevice.getUnSyncedDeviceCount() > 0) {
                             pushDeviceData()
                         }
                     }

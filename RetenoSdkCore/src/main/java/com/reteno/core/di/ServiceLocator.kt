@@ -137,7 +137,6 @@ class ServiceLocator(
         retenoDatabaseManagerRecomEventsProvider,
         retenoDatabaseManagerWrappedLinksProvider,
         retenoDatabaseManagerLogEventProvider,
-        retenoDatabaseManagerInAppMessagesProvider,
         retenoDatabaseManagerInAppInteractionProvider
     )
 
