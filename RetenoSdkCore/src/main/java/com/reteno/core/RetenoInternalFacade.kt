@@ -18,7 +18,7 @@ internal interface RetenoInternalFacade : LifecycleObserver {
 
     fun canPresentMessages(): Boolean
 
-    fun isDatabaseEmpty(): Boolean
+    fun hasDataForSync(): Boolean
 
     fun isActivityPresented(): Boolean
 
