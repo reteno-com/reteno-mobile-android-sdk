@@ -75,7 +75,7 @@ internal class RetenoDatabaseManagerDeviceImpl(private val database: RetenoDatab
         return deviceEvents
     }
 
-    override fun getDeviceCount(): Long = database.getRowCount(
+    override fun getUnSyncedDeviceCount(): Long = database.getRowCount(
         DeviceSchema.TABLE_NAME_DEVICE,
         whereClause = "${DeviceSchema.COLUMN_SYNCHRONIZED_WITH_BACKEND}<>?",
         whereArgs = arrayOf(BooleanDb.TRUE.toString())

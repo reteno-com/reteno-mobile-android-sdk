@@ -3,8 +3,8 @@ package com.reteno.core.data.local.database.manager
 import com.reteno.core.base.robolectric.BaseRobolectricTest
 import io.mockk.every
 import io.mockk.impl.annotations.RelaxedMockK
-import junit.framework.TestCase.assertFalse
 import junit.framework.TestCase.assertTrue
+import org.junit.Assert.assertFalse
 import org.junit.Test
 
 
@@ -29,8 +29,6 @@ class RetenoDatabaseManagerImplTest : BaseRobolectricTest() {
     @RelaxedMockK
     private lateinit var logEventManager: RetenoDatabaseManagerLogEvent
     @RelaxedMockK
-    private lateinit var inAppMessagesManager: RetenoDatabaseManagerInAppMessages
-    @RelaxedMockK
     private lateinit var inAppInteractionManager: RetenoDatabaseManagerInAppInteraction
 
     private lateinit var SUT: RetenoDatabaseManager
@@ -47,16 +45,15 @@ class RetenoDatabaseManagerImplTest : BaseRobolectricTest() {
             recomEventsManager,
             wrappedLinksManager,
             logEventManager,
-            inAppMessagesManager,
             inAppInteractionManager
         )
     }
 
     @Test
-    fun givenAllTablesEmpty_whenIsDatabaseEmpty_thenTrueReturned() {
+    fun givenAllTablesEmpty_whenNoDataForSync_thenFalseReturned() {
         // Given
-        every { deviceManager.getDeviceCount() } returns 0
-        every { userManager.getUserCount() } returns 0
+        every { deviceManager.getUnSyncedDeviceCount() } returns 0
+        every { userManager.getUnSyncedUserCount() } returns 0
         every { interactionManager.getInteractionCount() } returns 0
         every { eventsManager.getEventsCount() } returns 0
         every { appInboxManager.getAppInboxMessagesCount() } returns 0
@@ -64,17 +61,17 @@ class RetenoDatabaseManagerImplTest : BaseRobolectricTest() {
         every { wrappedLinksManager.getWrappedLinksCount() } returns 0
 
         // When
-        val isDatabaseEmpty = SUT.isDatabaseEmpty()
+        val hasDataForSync = SUT.hasDataForSync()
 
         // Then
-        assertTrue(isDatabaseEmpty)
+        assertFalse(hasDataForSync)
     }
 
     @Test
-    fun givenDevicesPresent_whenIsDatabaseEmpty_thenFalseReturned() {
+    fun givenDevicesPresent_whenNoDataForSync_thenTrueReturned() {
         // Given
-        every { deviceManager.getDeviceCount() } returns 3
-        every { userManager.getUserCount() } returns 0
+        every { deviceManager.getUnSyncedDeviceCount() } returns 3
+        every { userManager.getUnSyncedUserCount() } returns 0
         every { interactionManager.getInteractionCount() } returns 0
         every { eventsManager.getEventsCount() } returns 0
         every { appInboxManager.getAppInboxMessagesCount() } returns 0
@@ -82,17 +79,17 @@ class RetenoDatabaseManagerImplTest : BaseRobolectricTest() {
         every { wrappedLinksManager.getWrappedLinksCount() } returns 0
 
         // When
-        val isDatabaseEmpty = SUT.isDatabaseEmpty()
+        val hasDataForSync = SUT.hasDataForSync()
 
         // Then
-        assertFalse(isDatabaseEmpty)
+        assertTrue(hasDataForSync)
     }
 
     @Test
-    fun givenUsersPresent_whenIsDatabaseEmpty_thenFalseReturned() {
+    fun givenUsersPresent_whenNoDataForSync_thenTrueReturned() {
         // Given
-        every { deviceManager.getDeviceCount() } returns 0
-        every { userManager.getUserCount() } returns 4
+        every { deviceManager.getUnSyncedDeviceCount() } returns 0
+        every { userManager.getUnSyncedUserCount() } returns 4
         every { interactionManager.getInteractionCount() } returns 0
         every { eventsManager.getEventsCount() } returns 0
         every { appInboxManager.getAppInboxMessagesCount() } returns 0
@@ -100,17 +97,17 @@ class RetenoDatabaseManagerImplTest : BaseRobolectricTest() {
         every { wrappedLinksManager.getWrappedLinksCount() } returns 0
 
         // When
-        val isDatabaseEmpty = SUT.isDatabaseEmpty()
+        val hasDataForSync = SUT.hasDataForSync()
 
         // Then
-        assertFalse(isDatabaseEmpty)
+        assertTrue(hasDataForSync)
     }
 
     @Test
-    fun givenInteractionsPresent_whenIsDatabaseEmpty_thenFalseReturned() {
+    fun givenInteractionsPresent_whenNoDataForSync_thenTrueReturned() {
         // Given
-        every { deviceManager.getDeviceCount() } returns 0
-        every { userManager.getUserCount() } returns 0
+        every { deviceManager.getUnSyncedDeviceCount() } returns 0
+        every { userManager.getUnSyncedUserCount() } returns 0
         every { interactionManager.getInteractionCount() } returns 4
         every { eventsManager.getEventsCount() } returns 0
         every { appInboxManager.getAppInboxMessagesCount() } returns 0
@@ -118,17 +115,17 @@ class RetenoDatabaseManagerImplTest : BaseRobolectricTest() {
         every { wrappedLinksManager.getWrappedLinksCount() } returns 0
 
         // When
-        val isDatabaseEmpty = SUT.isDatabaseEmpty()
+        val hasDataForSync = SUT.hasDataForSync()
 
         // Then
-        assertFalse(isDatabaseEmpty)
+        assertTrue(hasDataForSync)
     }
 
     @Test
-    fun givenEventPresent_whenIsDatabaseEmpty_thenFalseReturned() {
+    fun givenEventPresent_whenNoDataForSync_thenTrueReturned() {
         // Given
-        every { deviceManager.getDeviceCount() } returns 0
-        every { userManager.getUserCount() } returns 0
+        every { deviceManager.getUnSyncedDeviceCount() } returns 0
+        every { userManager.getUnSyncedUserCount() } returns 0
         every { interactionManager.getInteractionCount() } returns 0
         every { eventsManager.getEventsCount() } returns 5
         every { appInboxManager.getAppInboxMessagesCount() } returns 0
@@ -136,17 +133,17 @@ class RetenoDatabaseManagerImplTest : BaseRobolectricTest() {
         every { wrappedLinksManager.getWrappedLinksCount() } returns 0
 
         // When
-        val isDatabaseEmpty = SUT.isDatabaseEmpty()
+        val hasDataForSync = SUT.hasDataForSync()
 
         // Then
-        assertFalse(isDatabaseEmpty)
+        assertTrue(hasDataForSync)
     }
 
     @Test
-    fun givenAppInboxPresent_whenIsDatabaseEmpty_thenFalseReturned() {
+    fun givenAppInboxPresent_whenNoDataForSync_thenTrueReturned() {
         // Given
-        every { deviceManager.getDeviceCount() } returns 0
-        every { userManager.getUserCount() } returns 0
+        every { deviceManager.getUnSyncedDeviceCount() } returns 0
+        every { userManager.getUnSyncedUserCount() } returns 0
         every { interactionManager.getInteractionCount() } returns 0
         every { eventsManager.getEventsCount() } returns 0
         every { appInboxManager.getAppInboxMessagesCount() } returns 6
@@ -154,17 +151,17 @@ class RetenoDatabaseManagerImplTest : BaseRobolectricTest() {
         every { wrappedLinksManager.getWrappedLinksCount() } returns 0
 
         // When
-        val isDatabaseEmpty = SUT.isDatabaseEmpty()
+        val hasDataForSync = SUT.hasDataForSync()
 
         // Then
-        assertFalse(isDatabaseEmpty)
+        assertTrue(hasDataForSync)
     }
 
     @Test
-    fun givenRecomEventPresent_whenIsDatabaseEmpty_thenFalseReturned() {
+    fun givenRecomEventPresent_whenNoDataForSync_thenTrueReturned() {
         // Given
-        every { deviceManager.getDeviceCount() } returns 0
-        every { userManager.getUserCount() } returns 0
+        every { deviceManager.getUnSyncedDeviceCount() } returns 0
+        every { userManager.getUnSyncedUserCount() } returns 0
         every { interactionManager.getInteractionCount() } returns 0
         every { eventsManager.getEventsCount() } returns 0
         every { appInboxManager.getAppInboxMessagesCount() } returns 0
@@ -172,17 +169,17 @@ class RetenoDatabaseManagerImplTest : BaseRobolectricTest() {
         every { wrappedLinksManager.getWrappedLinksCount() } returns 0
 
         // When
-        val isDatabaseEmpty = SUT.isDatabaseEmpty()
+        val hasDataForSync = SUT.hasDataForSync()
 
         // Then
-        assertFalse(isDatabaseEmpty)
+        assertTrue(hasDataForSync)
     }
 
     @Test
-    fun givenWrappedLinksPresent_whenIsDatabaseEmpty_thenFalseReturned() {
+    fun givenWrappedLinksPresent_whenNoDataForSync_thenTrueReturned() {
         // Given
-        every { deviceManager.getDeviceCount() } returns 0
-        every { userManager.getUserCount() } returns 0
+        every { deviceManager.getUnSyncedDeviceCount() } returns 0
+        every { userManager.getUnSyncedUserCount() } returns 0
         every { interactionManager.getInteractionCount() } returns 0
         every { eventsManager.getEventsCount() } returns 0
         every { appInboxManager.getAppInboxMessagesCount() } returns 0
@@ -190,9 +187,9 @@ class RetenoDatabaseManagerImplTest : BaseRobolectricTest() {
         every { wrappedLinksManager.getWrappedLinksCount() } returns 11
 
         // When
-        val isDatabaseEmpty = SUT.isDatabaseEmpty()
+        val hasDataForSync = SUT.hasDataForSync()
 
         // Then
-        assertFalse(isDatabaseEmpty)
+        assertTrue(hasDataForSync)
     }
 }

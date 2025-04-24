@@ -278,7 +278,7 @@ class RetenoDatabaseManagerDeviceImplTest : BaseRobolectricTest() {
         every { database.getRowCount(DeviceSchema.TABLE_NAME_DEVICE) } returns recordsCount
 
         // When
-        val count = SUT.getDeviceCount()
+        val count = SUT.getUnSyncedDeviceCount()
 
         // Then
         assertEquals(recordsCount, count)
@@ -297,7 +297,7 @@ class RetenoDatabaseManagerDeviceImplTest : BaseRobolectricTest() {
         } returns recordsCount
 
         // When
-        val count = SUT.getDeviceCount()
+        val count = SUT.getUnSyncedDeviceCount()
 
         // Then
         assertEquals(recordsCount, count)
