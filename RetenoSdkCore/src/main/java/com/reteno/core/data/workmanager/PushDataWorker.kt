@@ -40,7 +40,7 @@ internal class PushDataWorker(context: Context, params: WorkerParameters) :
         } else {
             /*@formatter:off*/ Logger.i(TAG, "doWork(): ", "App is in background")
             /*@formatter:on*/
-            if (RetenoInternalImpl.instance.isDatabaseEmpty()) {
+            if (!RetenoInternalImpl.instance.hasDataForSync()) {
                 /*@formatter:off*/ Logger.i(TAG, "doWork(): ", "Database is empty, nothing to do, cancelling periodic work")
                 /*@formatter:on*/
                 WorkManager.getInstance(applicationContext).cancelUniqueWork(PUSH_DATA_WORK_NAME)
@@ -62,7 +62,7 @@ internal class PushDataWorker(context: Context, params: WorkerParameters) :
 
         private val INITIAL_DELAY_DEBUG = TimeInterval(20L, TimeUnit.SECONDS)
         private val INITIAL_DELAY_DEFAULT = TimeInterval(15L, TimeUnit.MINUTES)
-        private val INTERVAL = TimeInterval(15L, TimeUnit.SECONDS)
+        private val INTERVAL = TimeInterval(PeriodicWorkRequest.MIN_PERIODIC_INTERVAL_MILLIS, TimeUnit.MILLISECONDS)
 
         /**
          * Enqueues periodic work provided by PushDataWorker

@@ -38,7 +38,7 @@ internal class UserReadDialogFragment :
     }
 
     override fun initCount() {
-        val userEventsCount = databaseManager!!.getUserCount()
+        val userEventsCount = databaseManager!!.getUnSyncedUserCount()
         bindingMain!!.tvCount.text = String.format(Locale.US, "Count: %d", userEventsCount)
     }
 

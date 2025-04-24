@@ -13,7 +13,6 @@ internal class RetenoDatabaseManagerProvider(
     private val retenoDatabaseManagerRecomEventsProvider: RetenoDatabaseManagerRecomEventsProvider,
     private val retenoDatabaseManagerWrappedLinkProvider: RetenoDatabaseManagerWrappedLinkProvider,
     private val retenoDatabaseManagerLogEventProvider: RetenoDatabaseManagerLogEventProvider,
-    private val retenoDatabaseManagerInAppMessagesProvider: RetenoDatabaseManagerInAppMessagesProvider,
     private val retenoDatabaseManagerInAppInteractionProvider: RetenoDatabaseManagerInAppInteractionProvider
     ) : ProviderWeakReference<RetenoDatabaseManager>() {
 
@@ -27,7 +26,6 @@ internal class RetenoDatabaseManagerProvider(
             retenoDatabaseManagerRecomEventsProvider.get(),
             retenoDatabaseManagerWrappedLinkProvider.get(),
             retenoDatabaseManagerLogEventProvider.get(),
-            retenoDatabaseManagerInAppMessagesProvider.get(),
             retenoDatabaseManagerInAppInteractionProvider.get()
         )
     }

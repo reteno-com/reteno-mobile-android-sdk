@@ -218,7 +218,7 @@ class ContactRepositoryImplTest : BaseRobolectricTest() {
         val deviceDataDb = mockk<DeviceDb>(relaxed = true)
         every { databaseManagerDevice.getDevices(any()) } returnsMany listOf(listOf(deviceDataDb), listOf(deviceDataDb), emptyList())
         every { databaseManagerDevice.deleteDevices(any()) } returns Unit
-        every { databaseManagerDevice.getDeviceCount() } returnsMany listOf(1, 0)
+        every { databaseManagerDevice.getUnSyncedDeviceCount() } returnsMany listOf(1, 0)
         every { apiClient.postSync(url = any(), jsonBody = any(), responseHandler = any()) } answers {
             val callback = arg<ResponseCallback>(3)
             callback.onFailure(SERVER_ERROR_REPEATABLE, null, null)
@@ -241,7 +241,7 @@ class ContactRepositoryImplTest : BaseRobolectricTest() {
         val deviceDataDb = mockk<DeviceDb>(relaxed = true)
         every { databaseManagerDevice.getDevices(any()) } returnsMany listOf(listOf(deviceDataDb), listOf(deviceDataDb), emptyList())
         every { databaseManagerDevice.deleteDevice(deviceDataDb) } returns false
-        every { databaseManagerDevice.getDeviceCount() } returns 0
+        every { databaseManagerDevice.getUnSyncedDeviceCount() } returns 0
         every { apiClient.postSync(url = any(), jsonBody = any(), responseHandler = any()) } answers {
             val callback = arg<ResponseCallback>(3)
             callback.onFailure(400, null, null)

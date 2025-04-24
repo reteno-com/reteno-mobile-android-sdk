@@ -11,23 +11,21 @@ internal class RetenoDatabaseManagerImpl(
     private val recomEventsManager: RetenoDatabaseManagerRecomEvents,
     private val wrappedLinkManager: RetenoDatabaseManagerWrappedLink,
     private val logEventManager: RetenoDatabaseManagerLogEvent,
-    private val inAppMessagesManager: RetenoDatabaseManagerInAppMessages,
     private val inAppInteractionManager: RetenoDatabaseManagerInAppInteraction
 ): RetenoDatabaseManager {
 
-    override fun isDatabaseEmpty(): Boolean {
-        val deviceCount = deviceManager.getDeviceCount()
-        val userCount = userManager.getUserCount()
+    override fun hasDataForSync(): Boolean {
+        val deviceCount = deviceManager.getUnSyncedDeviceCount()
+        val userCount = userManager.getUnSyncedUserCount()
         val interactionCount = interactionManager.getInteractionCount()
         val eventCount = eventsManager.getEventsCount()
         val appInboxCount = appInboxManager.getAppInboxMessagesCount()
         val recomEventsCount = recomEventsManager.getRecomEventsCount()
         val wrappedLinksCount = wrappedLinkManager.getWrappedLinksCount()
         val logEventsCount = logEventManager.getLogEventsCount()
-        val inAppMessagesCount = inAppMessagesManager.getInAppMessagesCount()
         val inAppInteractionsCount = inAppInteractionManager.getInAppInteractionsCount()
 
-        val result = deviceCount == 0L
+        val isDataMissing = deviceCount == 0L
                 && userCount == 0L
                 && interactionCount == 0L
                 && eventCount == 0L
@@ -35,11 +33,10 @@ internal class RetenoDatabaseManagerImpl(
                 && recomEventsCount == 0L
                 && wrappedLinksCount == 0L
                 && logEventsCount == 0L
-                && inAppMessagesCount == 0L
                 && inAppInteractionsCount == 0L
-        /*@formatter:off*/ Logger.i(TAG, "isDatabaseEmpty(): ", "result = $result")
+        /*@formatter:off*/ Logger.i(TAG, "isDatabaseEmpty(): ", "result = $isDataMissing")
         /*@formatter:on*/
-        return result
+        return isDataMissing.not()
     }
 
     companion object {
