@@ -32,6 +32,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.time.ZonedDateTime
 import java.util.concurrent.atomic.AtomicBoolean
 
 
@@ -72,6 +73,7 @@ class RetenoInternalImpl(
 
     init {
         initSdk()
+        logEvent(Event.Custom("some_test_event", ZonedDateTime.now()))
     }
 
     override fun setConfig(config: RetenoConfig) {

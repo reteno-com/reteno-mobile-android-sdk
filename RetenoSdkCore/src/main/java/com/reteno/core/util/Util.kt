@@ -201,6 +201,10 @@ object Util {
         return ZonedDateTime.parse(this, formatter)
     }
 
+    fun String.fromRemoteExplicitMillis():ZonedDateTime {
+        return ZonedDateTime.parse(this, millisFormatter)
+    }
+
     internal fun Long.asZonedDateTime(): ZonedDateTime {
         return ZonedDateTime.ofInstant(
             Instant.ofEpochMilli(this),
