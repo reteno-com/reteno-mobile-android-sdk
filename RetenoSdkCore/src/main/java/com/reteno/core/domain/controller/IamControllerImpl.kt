@@ -16,7 +16,6 @@ import com.reteno.core.data.remote.model.iam.message.InAppMessageContent.InAppLa
 import com.reteno.core.data.repository.IamRepository
 import com.reteno.core.domain.ResultDomain
 import com.reteno.core.domain.model.event.Event
-import com.reteno.core.domain.model.iam.EventWaitingQueue
 import com.reteno.core.features.iam.IamJsEvent
 import com.reteno.core.features.iam.InAppPauseBehaviour
 import com.reteno.core.lifecycle.RetenoSessionHandler
@@ -65,7 +64,6 @@ internal class IamControllerImpl(
         onBufferOverflow = BufferOverflow.DROP_OLDEST
     )
     private val postponedNotifications = mutableListOf<InAppMessage>()
-    private val eventQueue = EventWaitingQueue()
     override val inAppMessagesFlow: Flow<InAppMessage>
         get() = _inAppMessage.receiveAsFlow()
 
@@ -184,7 +182,6 @@ internal class IamControllerImpl(
                 }
 
                 iamRepository.saveInAppMessages(messageListModel)
-                eventQueue.close()
                 sortMessages(inAppMessages)
             } catch (e: Exception) {
                 Logger.e(TAG, "getInAppMessages():", e)
@@ -210,10 +207,7 @@ internal class IamControllerImpl(
 
     private suspend fun notifyEventOccurred(event: Event): Boolean {
         val inapps = inAppsWaitingForEvent
-        if (inapps.isNullOrEmpty()) {
-            eventQueue.pushEvent(event)
-            return false
-        }
+        if (inapps.isNullOrEmpty()) return false
 
         val inAppsWithCurrentEvent = inapps.filter { inapp ->
             inapp.event.name == event.eventTypeKey
@@ -305,13 +299,6 @@ internal class IamControllerImpl(
             inAppsWaitingForEvent = inAppsWithEvents
         }
         scope.launch {
-            for (event in eventQueue.getEvents()) {
-                if (notifyEventOccurred(event)) {
-                    eventQueue.clear()
-                    return@launch
-                }
-            }
-            eventQueue.clear()
             tryShowInAppFromList(inAppMessages = inAppsOnAppStart, showingOnAppStart = true)
         }
     }
