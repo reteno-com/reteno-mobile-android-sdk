@@ -65,7 +65,7 @@ internal class IamControllerImpl(
     )
     private val postponedNotifications = mutableListOf<InAppMessage>()
     override val inAppMessagesFlow: Flow<InAppMessage>
-    get() = _inAppMessage.receiveAsFlow()
+        get() = _inAppMessage.receiveAsFlow()
 
     init {
         eventController.eventFlow
@@ -102,7 +102,8 @@ internal class IamControllerImpl(
                             id = UUID.randomUUID().toString(),
                             fullHtml = fullHtml,
                             layoutType = widgetModel.layoutType ?: InAppLayoutType.FULL,
-                            layoutParams = widgetModel.layoutParams ?: InAppLayoutParams(Position.TOP)
+                            layoutParams = widgetModel.layoutParams
+                                ?: InAppLayoutParams(Position.TOP)
                         )
                     )
                 }
@@ -132,8 +133,10 @@ internal class IamControllerImpl(
                         IamFetchResult(
                             id = UUID.randomUUID().toString(),
                             fullHtml = text,
-                            layoutType = messageContent?.layoutType?: InAppLayoutType.FULL,
-                            layoutParams = messageContent?.layoutParams ?: InAppLayoutParams(Position.TOP)
+                            layoutType = messageContent?.layoutType ?: InAppLayoutType.FULL,
+                            layoutParams = messageContent?.layoutParams ?: InAppLayoutParams(
+                                Position.TOP
+                            )
                         )
                     )
                 }
@@ -202,9 +205,9 @@ internal class IamControllerImpl(
         }
     }
 
-    private fun notifyEventOccurred(event: Event) {
+    private suspend fun notifyEventOccurred(event: Event): Boolean {
         val inapps = inAppsWaitingForEvent
-        if (inapps.isNullOrEmpty()) return
+        if (inapps.isNullOrEmpty()) return false
 
         val inAppsWithCurrentEvent = inapps.filter { inapp ->
             inapp.event.name == event.eventTypeKey
@@ -215,7 +218,7 @@ internal class IamControllerImpl(
             validator.checkEventMatchesRules(inapp, event)
         }
 
-        tryShowInAppFromList(inAppsMatchingEventParams.map { it.inApp }.toMutableList())
+        return tryShowInAppFromList(inAppsMatchingEventParams.map { it.inApp }.toMutableList())
     }
 
     override fun pauseInAppMessages(isPaused: Boolean) {
@@ -288,45 +291,45 @@ internal class IamControllerImpl(
 
         if (inAppsWithTimer.isNotEmpty()) {
             sessionHandler.scheduleInAppMessages(inAppsWithTimer) { messagesToShow ->
-                tryShowInAppFromList(messagesToShow.toMutableList())
+                scope.launch { tryShowInAppFromList(messagesToShow.toMutableList()) }
             }
         }
 
         if (inAppsWithEvents.isNotEmpty()) {
             inAppsWaitingForEvent = inAppsWithEvents
         }
-
-        tryShowInAppFromList(inAppMessages = inAppsOnAppStart, showingOnAppStart = true)
+        scope.launch {
+            tryShowInAppFromList(inAppMessages = inAppsOnAppStart, showingOnAppStart = true)
+        }
     }
 
-    private fun tryShowInAppFromList(
+    private suspend fun tryShowInAppFromList(
         inAppMessages: MutableList<InAppMessage>,
         showingOnAppStart: Boolean = false
-    ) {
-        scope.launch {
-            if (!showingOnAppStart) {
-                updateSegmentStatuses(inAppMessages, updateCacheOnSuccess = true)
-            }
-
-            val frequencyValidator = FrequencyRuleValidator()
-            val scheduleValidator = ScheduleRuleValidator()
-            while (true) {
-                if (inAppMessages.isEmpty()) break
-
-                val inAppWithHighestId = inAppMessages.maxBy { it.messageId }
-                val showedInApp = tryShowInApp(
-                    inAppMessage = inAppWithHighestId,
-                    frequencyValidator = frequencyValidator,
-                    scheduleValidator = scheduleValidator,
-                    showingOnAppStart = showingOnAppStart
-                )
-
-                if (showedInApp) {
-                    break
-                }
-                inAppMessages.remove(inAppWithHighestId)
-            }
+    ): Boolean {
+        if (!showingOnAppStart) {
+            updateSegmentStatuses(inAppMessages, updateCacheOnSuccess = true)
         }
+
+        val frequencyValidator = FrequencyRuleValidator()
+        val scheduleValidator = ScheduleRuleValidator()
+        while (true) {
+            if (inAppMessages.isEmpty()) break
+
+            val inAppWithHighestId = inAppMessages.maxBy { it.messageId }
+            val showedInApp = tryShowInApp(
+                inAppMessage = inAppWithHighestId,
+                frequencyValidator = frequencyValidator,
+                scheduleValidator = scheduleValidator,
+                showingOnAppStart = showingOnAppStart
+            )
+
+            if (showedInApp) {
+                return true
+            }
+            inAppMessages.remove(inAppWithHighestId)
+        }
+        return false
     }
 
     private suspend fun updateSegmentStatuses(
