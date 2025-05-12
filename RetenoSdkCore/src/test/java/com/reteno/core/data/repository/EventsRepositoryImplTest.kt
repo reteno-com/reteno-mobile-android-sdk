@@ -20,7 +20,7 @@ import com.reteno.core.domain.model.event.Event
 import com.reteno.core.domain.model.event.Events
 import com.reteno.core.domain.model.event.Parameter
 import com.reteno.core.util.Logger
-import com.reteno.core.util.Util.formatToRemote
+import com.reteno.core.util.Util.formatToRemoteExplicitMillis
 import io.mockk.every
 import io.mockk.impl.annotations.RelaxedMockK
 import io.mockk.verify
@@ -35,7 +35,7 @@ class EventsRepositoryImplTest : BaseRobolectricTest() {
         private const val DEVICE_ID = "device_id"
         private const val EXTERNAL_DEVICE_ID = "external_device_id"
         private const val EVENT_TYPE_KEY = "event_type_key"
-        private const val OCCURRED = "2022-11-11T20:22:21Z"
+        private const val OCCURRED = "2022-11-11T20:22:21.021Z"
         private const val ECOM_EVENT_KEY = RemoteConstants.EcomEvent.EXTERNAL_ORDER_ID
         private const val ECOM_EVENT_EXTERNAL_ORDER_ID = "external_order_id"
 
@@ -304,17 +304,17 @@ class EventsRepositoryImplTest : BaseRobolectricTest() {
             ),
             EventDb(
                 eventTypeKey = RemoteConstants.EcomEvent.EVENT_TYPE_CART_UPDATED,
-                occurred = ZonedDateTime.now().minusHours(2).formatToRemote(),
+                occurred = ZonedDateTime.now().minusHours(2).formatToRemoteExplicitMillis(),
                 params = listOf(ParameterDb("key", "false"))
             ),
             EventDb(
                 eventTypeKey = RemoteConstants.EcomEvent.EVENT_TYPE_CART_UPDATED,
-                occurred = ZonedDateTime.now().minusHours(1).formatToRemote(),
+                occurred = ZonedDateTime.now().minusHours(1).formatToRemoteExplicitMillis(),
                 params = listOf(ParameterDb("key", "false"))
             ),
             EventDb(
                 eventTypeKey = RemoteConstants.EcomEvent.EVENT_TYPE_CART_UPDATED,
-                occurred = ZonedDateTime.now().formatToRemote(),
+                occurred = ZonedDateTime.now().formatToRemoteExplicitMillis(),
                 params = listOf(ParameterDb("key", "false"))
             )
         )

@@ -18,7 +18,7 @@ import com.reteno.core.domain.model.logevent.LogLevel
 import com.reteno.core.domain.model.logevent.RetenoLogEvent
 import com.reteno.core.util.Logger
 import com.reteno.core.util.Util.formatToRemote
-import com.reteno.core.util.Util.fromRemote
+import com.reteno.core.util.Util.fromRemoteExplicitMillis
 import com.reteno.core.util.isNonRepeatableError
 import java.time.ZonedDateTime
 
@@ -146,7 +146,7 @@ internal class EventsRepositoryImpl(
             .groupBy { it.eventTypeKey }
             .mapValues { entry ->
                 if (!types.contains(entry.key)) entry.value
-                else listOf(entry.value.maxBy { it.occurred.fromRemote() })
+                else listOf(entry.value.maxBy { it.occurred.fromRemoteExplicitMillis() })
             }
             .values
             .flatten()
