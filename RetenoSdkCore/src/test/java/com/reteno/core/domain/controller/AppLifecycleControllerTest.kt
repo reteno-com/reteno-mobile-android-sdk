@@ -88,7 +88,7 @@ class AppLifecycleControllerTest : BaseRobolectricTest() {
 
 
     @Test
-    fun given_whenContrillerInit_thenBaseHtmlShouldBeFetched() = runRetenoTest {
+    fun given_whenControllerInit_thenBaseHtmlShouldBeFetched() = runRetenoTest {
         coEvery { sessionHandler.sessionEventFlow } returns MutableSharedFlow()
         coEvery { configRepository.notificationState } returns MutableSharedFlow()
 
