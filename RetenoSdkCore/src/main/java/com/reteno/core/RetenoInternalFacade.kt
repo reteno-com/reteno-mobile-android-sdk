@@ -32,8 +32,6 @@ internal interface RetenoInternalFacade : LifecycleObserver {
 
     fun getDefaultNotificationChannel(): String
 
-    fun startScheduler()
-
     fun notificationsEnabled(enabled: Boolean)
 
     fun deeplinkClicked(linkWrapped: String, linkUnwrapped: String)

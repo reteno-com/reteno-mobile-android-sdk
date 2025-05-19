@@ -263,8 +263,7 @@ internal class RetenoNotificationHelper(private val context: Context) {
         val imagesJson = bundle.getString(KEY_ES_NOTIFICATION_CAROUSEL_IMAGES)
         val imageUrlListAll = imagesJson?.listFromJson<String>()
 
-        return if (imageUrlListAll == null ||
-            imageUrlListAll.isEmpty() ||
+        return if (imageUrlListAll.isNullOrEmpty() ||
             imageUrlListAll.all { it.isBlank() }
         ) {
             null

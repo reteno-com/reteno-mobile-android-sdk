@@ -1,9 +1,9 @@
 package com.reteno.core.domain.controller
 
-import androidx.work.WorkManager
 import com.reteno.core.data.remote.OperationQueue
 import com.reteno.core.data.remote.PushOperationQueue
 import com.reteno.core.data.workmanager.PushDataWorker
+import com.reteno.core.di.provider.WorkManagerProvider
 import com.reteno.core.util.Logger
 import com.reteno.core.util.RetenoThreadFactory
 import com.reteno.core.util.Util
@@ -19,7 +19,7 @@ internal class ScheduleControllerImpl(
     private val appInboxController: AppInboxController,
     private val recommendationController: RecommendationController,
     private val deepLinkController: DeeplinkController,
-    private val workManager: WorkManager
+    private val workManagerProvider: WorkManagerProvider
 ) : ScheduleController {
 
     companion object {
@@ -62,8 +62,17 @@ internal class ScheduleControllerImpl(
             delay,
             TimeUnit.MILLISECONDS
         )
+        enqueueBackgroundWorker()
+    }
 
-        PushDataWorker.enqueuePeriodicWork(workManager)
+    override fun enqueueBackgroundWorker() {
+        OperationQueue.addParallelOperation {
+            runCatching {
+                PushDataWorker.enqueuePeriodicWork(workManagerProvider.get())
+            }.getOrElse {
+                Logger.e(TAG, "enqueueBackgroundWorker():", it)
+            }
+        }
     }
 
     /**

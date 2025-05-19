@@ -3,6 +3,7 @@ package com.reteno.core
 import android.app.Application
 import android.content.ComponentName
 import android.content.Intent
+import android.util.Log
 import androidx.core.app.NotificationChannelCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
@@ -132,8 +133,6 @@ class RetenoInternalImpl(
 
     private fun preventANR() {
         runCatching {
-            //Init workmanager singleton instance
-            serviceLocator.initWorkManager()
             //Trick to wait for sharedPrefs initialization on background thread to prevent ANR
             serviceLocator.sharedPrefsManagerProvider.get().getEmail()
         }.getOrElse {
@@ -154,7 +153,7 @@ class RetenoInternalImpl(
         try {
             contactController.checkIfDeviceRequestSentThisSession()
             sessionHandler.start()
-            startScheduler()
+            scheduleController.startScheduler()
             iamView.start()
         } catch (ex: Throwable) {
             /*@formatter:off*/ Logger.e(TAG, "start(): ", ex)
@@ -437,8 +436,12 @@ class RetenoInternalImpl(
         val result = try {
             contactController.getDeviceId()
         } catch (ex: Throwable) {
-            /*@formatter:off*/ Logger.e(TAG, "getDeviceId(): ", ex)
-            /*@formatter:on*/
+            if (isInitialized) {
+                /*@formatter:off*/ Logger.e(TAG, "getDeviceId(): ", ex)
+                /*@formatter:on*/
+            } else {
+                Log.e(TAG, "getDeviceId(): ", ex)
+            }
             ""
         }
         /*@formatter:off*/ Logger.i(TAG, "getDeviceId(): $result")
@@ -486,10 +489,6 @@ class RetenoInternalImpl(
 
     override fun saveDefaultNotificationChannel(channel: String) {
         contactController.saveDefaultNotificationChannel(channel)
-    }
-
-    override fun startScheduler() {
-        scheduleController.startScheduler()
     }
 
     override fun notificationsEnabled(enabled: Boolean) {
