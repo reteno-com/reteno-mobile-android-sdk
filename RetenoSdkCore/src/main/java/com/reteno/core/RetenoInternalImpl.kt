@@ -9,6 +9,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.OnLifecycleEvent
 import androidx.lifecycle.ProcessLifecycleOwner
+import androidx.work.Configuration
 import com.reteno.core.di.ServiceLocator
 import com.reteno.core.domain.controller.ScreenTrackingController
 import com.reteno.core.domain.model.ecom.EcomEvent
@@ -133,6 +134,10 @@ class RetenoInternalImpl(
 
     private fun preventANR() {
         runCatching {
+            if (application !is Configuration.Provider) {
+                //Init workmanager singleton instance
+                serviceLocator.initWorkManager()
+            }
             //Trick to wait for sharedPrefs initialization on background thread to prevent ANR
             serviceLocator.sharedPrefsManagerProvider.get().getEmail()
         }.getOrElse {
