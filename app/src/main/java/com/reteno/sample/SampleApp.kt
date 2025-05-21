@@ -2,6 +2,7 @@ package com.reteno.sample
 
 import android.app.Application
 import android.os.Handler
+import androidx.work.Configuration
 import com.reteno.core.Reteno
 import com.reteno.core.RetenoConfig
 import com.reteno.core.domain.model.event.LifecycleTrackingOptions.Companion.ALL
@@ -12,7 +13,13 @@ import com.reteno.sample.util.AppSharedPreferencesManager.getDeviceIdDelay
 import com.reteno.sample.util.AppSharedPreferencesManager.getShouldDelayLaunch
 import com.reteno.sample.util.AppSharedPreferencesManager.setDelayLaunch
 
-class SampleApp : Application() {
+class SampleApp : Application(), Configuration.Provider {
+
+    override fun getWorkManagerConfiguration(): Configuration {
+        return Configuration.Builder()
+            .setMinimumLoggingLevel(android.util.Log.INFO)
+            .build()
+    }
 
     override fun onCreate() {
         super.onCreate()
