@@ -15,7 +15,7 @@ internal class WorkManagerProvider(
             /*@formatter:off*/ Logger.i(TAG, "create(): ", "try to get work-manager instance if it is not initialised, will try to initialise it")
             /*@formatter:on*/
             WorkManager.getInstance(context)
-        } catch (e : IllegalStateException) {
+        } catch (e : Exception) {
             /*@formatter:off*/ Logger.i(TAG, "create(): ", "initialising work-manager ${e.message}")
             /*@formatter:on*/
             initialiseWorkManager(context)
@@ -32,7 +32,7 @@ internal class WorkManagerProvider(
                     .build())
             /*@formatter:off*/ Logger.i(TAG, "initialiseWorkManager(): ", "WorkManager initialised")
             /*@formatter:on*/
-        } catch (e : IllegalStateException) {
+        } catch (e : Exception) {
             /*@formatter:off*/ Logger.i(TAG, "initialiseWorkManager(): ", "Failed to initialize WorkManager ${e.message}")
             /*@formatter:on*/
         }
