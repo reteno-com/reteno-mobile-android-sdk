@@ -13,6 +13,11 @@ interface ScheduleController {
     fun startScheduler()
 
     /**
+     *  Starts WorkManager which syncs data when app is not running in foreground.
+     */
+    fun enqueueBackgroundWorker()
+
+    /**
      *  Cancels push data scheduler.
      */
     fun stopScheduler()

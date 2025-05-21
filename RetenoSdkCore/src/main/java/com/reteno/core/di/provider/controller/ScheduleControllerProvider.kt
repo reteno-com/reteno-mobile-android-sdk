@@ -23,7 +23,7 @@ internal class ScheduleControllerProvider(
             appInboxControllerProvider.get(),
             recommendationControllerProvider.get(),
             deeplinkControllerProvider.get(),
-            workManagerProvider.get()
+            workManagerProvider
         )
     }
 }
