@@ -78,7 +78,7 @@ class FragmentCustomEvent : BaseFragment() {
             val etValue = parent.getChildAt(1) as EditText
             val key = Util.getTextOrNull(etKey)
             val value = Util.getTextOrNull(etValue)
-            if (key != null) {
+            if (key != null && value != null) {
                 list.add(Parameter(key, value))
             }
         }

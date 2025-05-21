@@ -50,7 +50,7 @@ class ScheduleControllerImplTest : BaseRobolectricTest() {
             appInboxController = appInboxController,
             recommendationController = recommendationController,
             deepLinkController = deeplinkController,
-            workManager = mockk(relaxed = true)
+            workManagerProvider = mockk(relaxed = true)
         )
         scheduler = application.scheduler
     }
