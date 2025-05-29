@@ -110,14 +110,16 @@ class RetenoInternalImpl(
         }
     }
 
-    private inline fun runAfterInit(crossinline operation: () -> Unit) {
+    private inline fun runAfterInit(crossinline operation: suspend () -> Unit) {
         if (!isInitialized) {
             syncScope.launch(mainDispatcher) {
                 initWaitCondition.await()
                 operation()
             }
         } else {
-            operation()
+            syncScope.launch(mainDispatcher) {
+                operation()
+            }
         }
     }
 
@@ -156,7 +158,9 @@ class RetenoInternalImpl(
             iamController.getInAppMessages()
         }
         try {
-            contactController.checkIfDeviceRequestSentThisSession()
+            withContext(ioDispatcher) {
+                contactController.checkIfDeviceRequestSentThisSession()
+            }
             sessionHandler.start()
             scheduleController.startScheduler()
             iamView.start()
@@ -219,10 +223,8 @@ class RetenoInternalImpl(
         try {
             contactController.setExternalIdAndUserData(externalUserId, user)
             if (isStarted.get()) {
-                syncScope.launch {
-                    delay(5000L) //There is a requirement to refresh segmentation in 5 sec after user change his attributes
-                    iamController.refreshSegmentation()
-                }
+                delay(5000L) //There is a requirement to refresh segmentation in 5 sec after user change his attributes
+                iamController.refreshSegmentation()
             }
         } catch (ex: Throwable) {
             /*@formatter:off*/ Logger.e(TAG, "setUserAttributes(): externalUserId = [$externalUserId], user = [$user]", ex)
@@ -230,19 +232,20 @@ class RetenoInternalImpl(
         }
     }
 
-    override fun setAnonymousUserAttributes(userAttributes: UserAttributesAnonymous) = runAfterInit {
-        if (!isOsVersionSupported()) {
-            return@runAfterInit
-        }
-        /*@formatter:off*/ Logger.i(TAG, "setAnonymousUserAttributes(): ", "userAttributes = [", userAttributes, "]")
+    override fun setAnonymousUserAttributes(userAttributes: UserAttributesAnonymous) =
+        runAfterInit {
+            if (!isOsVersionSupported()) {
+                return@runAfterInit
+            }
+            /*@formatter:off*/ Logger.i(TAG, "setAnonymousUserAttributes(): ", "userAttributes = [", userAttributes, "]")
         /*@formatter:on*/
-        try {
-            contactController.setAnonymousUserAttributes(userAttributes)
-        } catch (ex: Throwable) {
-            /*@formatter:off*/ Logger.e(TAG, "setAnonymousUserAttributes(): userAttributes = [$userAttributes]", ex)
+            try {
+                contactController.setAnonymousUserAttributes(userAttributes)
+            } catch (ex: Throwable) {
+                /*@formatter:off*/ Logger.e(TAG, "setAnonymousUserAttributes(): userAttributes = [$userAttributes]", ex)
             /*@formatter:on*/
+            }
         }
-    }
 
     override fun logEvent(event: Event) = runAfterInit {
         if (!isOsVersionSupported()) {
@@ -359,7 +362,10 @@ class RetenoInternalImpl(
 
     override fun setInAppLifecycleCallback(inAppLifecycleCallback: InAppLifecycleCallback?) =
         runAfterInit {
-            Logger.i(TAG, "setInAppLifecycleCallback(): inAppLifecycleCallback = [$inAppLifecycleCallback]")
+            Logger.i(
+                TAG,
+                "setInAppLifecycleCallback(): inAppLifecycleCallback = [$inAppLifecycleCallback]"
+            )
             iamView.setInAppLifecycleCallback(inAppLifecycleCallback)
         }
 
