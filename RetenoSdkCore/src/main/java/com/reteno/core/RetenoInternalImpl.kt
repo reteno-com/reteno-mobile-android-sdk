@@ -110,16 +110,14 @@ class RetenoInternalImpl(
         }
     }
 
-    private inline fun runAfterInit(crossinline operation: suspend () -> Unit) {
+    private inline fun runAfterInit(crossinline operation: () -> Unit) {
         if (!isInitialized) {
             syncScope.launch(mainDispatcher) {
                 initWaitCondition.await()
                 operation()
             }
         } else {
-            syncScope.launch(mainDispatcher) {
-                operation()
-            }
+            operation()
         }
     }
 
@@ -157,16 +155,18 @@ class RetenoInternalImpl(
         if (!isStarted.getAndSet(true)) {
             iamController.getInAppMessages()
         }
-        try {
-            withContext(ioDispatcher) {
-                contactController.checkIfDeviceRequestSentThisSession()
-            }
-            sessionHandler.start()
-            scheduleController.startScheduler()
-            iamView.start()
-        } catch (ex: Throwable) {
-            /*@formatter:off*/ Logger.e(TAG, "start(): ", ex)
+        syncScope.launch(mainDispatcher) {
+            try {
+                withContext(ioDispatcher) {
+                    contactController.checkIfDeviceRequestSentThisSession()
+                }
+                sessionHandler.start()
+                scheduleController.startScheduler()
+                iamView.start()
+            } catch (ex: Throwable) {
+                /*@formatter:off*/ Logger.e(TAG, "start(): ", ex)
             /*@formatter:on*/
+            }
         }
     }
 
@@ -223,8 +223,10 @@ class RetenoInternalImpl(
         try {
             contactController.setExternalIdAndUserData(externalUserId, user)
             if (isStarted.get()) {
-                delay(5000L) //There is a requirement to refresh segmentation in 5 sec after user change his attributes
-                iamController.refreshSegmentation()
+                syncScope.launch(mainDispatcher) {
+                    delay(5000L) //There is a requirement to refresh segmentation in 5 sec after user change his attributes
+                    iamController.refreshSegmentation()
+                }
             }
         } catch (ex: Throwable) {
             /*@formatter:off*/ Logger.e(TAG, "setUserAttributes(): externalUserId = [$externalUserId], user = [$user]", ex)
