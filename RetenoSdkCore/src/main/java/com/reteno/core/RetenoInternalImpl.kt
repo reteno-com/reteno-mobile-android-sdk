@@ -500,11 +500,11 @@ class RetenoInternalImpl(
         return contactController.getDefaultNotificationChannel()
     }
 
-    override fun saveDefaultNotificationChannel(channel: String) {
+    override fun saveDefaultNotificationChannel(channel: String) = runAfterInit {
         contactController.saveDefaultNotificationChannel(channel)
     }
 
-    override fun notificationsEnabled(enabled: Boolean) {
+    override fun notificationsEnabled(enabled: Boolean) = runAfterInit {
         contactController.notificationsEnabled(enabled)
     }
 

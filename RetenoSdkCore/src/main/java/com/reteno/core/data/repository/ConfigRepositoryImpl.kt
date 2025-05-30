@@ -96,6 +96,8 @@ internal class ConfigRepositoryImpl(
         sharedPrefsManager.getDefaultNotificationChannel()
 
     override fun saveNotificationsEnabled(enabled: Boolean) {
+        /*@formatter:off*/ Logger.i(TAG, "saveNotificationsEnabledRepo(): ", "$enabled,", "Current state: ${notificationState.value}")
+        /*@formatter:on*/
         notificationState.value = enabled
         sharedPrefsManager.saveNotificationsEnabled(enabled)
     }
