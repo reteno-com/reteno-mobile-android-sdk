@@ -9,6 +9,7 @@ import com.reteno.core.domain.model.user.UserAttributesAnonymous
 import com.reteno.core.util.Logger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.util.concurrent.atomic.AtomicBoolean
 
 
 class ContactController(
@@ -16,8 +17,7 @@ class ContactController(
     private val configRepository: ConfigRepository
 ) {
 
-    @Volatile
-    private var isDeviceSentThisSession = false
+    private var isDeviceSentThisSession = AtomicBoolean(false)
 
     fun getDeviceId(): String {
         return configRepository.getDeviceId().id
@@ -33,7 +33,7 @@ class ContactController(
 
         val oldDeviceId = configRepository.getDeviceId()
         if (oldDeviceId.externalId != id) {
-            isDeviceSentThisSession = true
+            isDeviceSentThisSession.set(true)
             configRepository.setExternalUserId(id)
             if (pushContact) {
                 configRepository.getFcmToken {
@@ -75,7 +75,7 @@ class ContactController(
     fun onNewFcmToken(token: String) {
         /*@formatter:off*/ Logger.i(TAG, "onNewFcmToken(): ", "newToken = [" , token , "]")
         /*@formatter:on*/
-        isDeviceSentThisSession = true
+        isDeviceSentThisSession.set(true)
         configRepository.getFcmToken { oldToken ->
             token.takeIf { it != oldToken }?.let {
                 configRepository.saveFcmToken(it)
@@ -100,7 +100,7 @@ class ContactController(
         /*@formatter:off*/ Logger.i(TAG, "checkIfDeviceRegistered(): ")
         /*@formatter:on*/
         if (!configRepository.isDeviceRegistered()) {
-            isDeviceSentThisSession = true
+            isDeviceSentThisSession.set(true)
             withContext(Dispatchers.IO) {
                 configRepository.awaitForDeviceId()
             }
@@ -113,12 +113,12 @@ class ContactController(
     fun checkIfDeviceRequestSentThisSession() {
         /*@formatter:off*/ Logger.i(TAG, "checkIfDeviceRequestSentThisSession(): ", "isDeviceSentThisSession = [" , isDeviceSentThisSession , "]")
         /*@formatter:on*/
-        if (isDeviceSentThisSession.not()) {
+        if (isDeviceSentThisSession.get().not()) {
             contactRepository.deleteSynchedDevices()
             configRepository.getFcmToken {
                 onNewContact(it, toParallelWork = false)
             }
-            isDeviceSentThisSession = true
+            isDeviceSentThisSession.set(true)
         }
     }
 
@@ -126,9 +126,9 @@ class ContactController(
         /*@formatter:off*/ Logger.i(TAG, "notificationsEnabled(): ", "notificationsEnabled = [" , notificationsEnabled , "]")
         /*@formatter:on*/
         val currentState = configRepository.isNotificationsEnabled()
-        configRepository.saveNotificationsEnabled(notificationsEnabled)
         if (notificationsEnabled != currentState) {
-            isDeviceSentThisSession = true
+            isDeviceSentThisSession.set(true)
+            configRepository.saveNotificationsEnabled(notificationsEnabled)
             configRepository.getFcmToken {
                 onNewContact(it, notificationsEnabled = notificationsEnabled)
             }
