@@ -28,7 +28,7 @@ import com.reteno.core.util.queryBroadcastReceivers
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlin.time.Duration.Companion.milliseconds
@@ -55,7 +55,7 @@ class AppLifecycleController internal constructor(
             .onEach { handleSessionEvent(it) }
             .launchIn(scope)
         configRepository.notificationState
-            .filterNotNull()
+            .drop(1)
             .onEach { notifyNotificationsStateChanged(it) }
             .launchIn(scope)
         activityHelper.registerActivityLifecycleCallbacks(TAG, lifecycleCallbacks)
