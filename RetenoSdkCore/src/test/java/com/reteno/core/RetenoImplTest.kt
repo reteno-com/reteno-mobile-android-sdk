@@ -480,6 +480,7 @@ class RetenoImplTest : BaseRobolectricTest() {
         // When
         val exceptionThrownOutsideSdk = try {
             retenoImpl.start()
+            advanceUntilIdle()
             false
         } catch (ex: Throwable) {
             true
