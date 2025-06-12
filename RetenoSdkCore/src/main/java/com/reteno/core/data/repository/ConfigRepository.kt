@@ -14,7 +14,7 @@ interface ConfigRepository {
     fun getDeviceId(): DeviceId
     suspend fun awaitForDeviceId(): DeviceId
     fun saveFcmToken(token: String)
-    fun getFcmToken(callback: (String) -> Unit)
+    suspend fun getFcmToken(): String
     fun saveDefaultNotificationChannel(channel: String)
     fun getDefaultNotificationChannel(): String
 

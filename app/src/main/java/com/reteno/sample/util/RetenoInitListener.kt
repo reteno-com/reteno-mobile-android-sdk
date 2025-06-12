@@ -10,7 +10,7 @@ import kotlinx.coroutines.withContext
 
 class RetenoInitListener(
     private val retenoImpl: RetenoInternalImpl,
-    private val onSuccessListener: () -> Unit
+    private val onSuccessListener: suspend () -> Unit
 ) {
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
