@@ -39,6 +39,10 @@ internal class ContactRepositoryImpl(
         }
     }
 
+    override fun saveDeviceDataImmediate(device: Device) {
+        onSaveDeviceData(device)
+    }
+
     override fun saveUserData(user: User, toParallelWork: Boolean) {
         /*@formatter:off*/ Logger.i(TAG, "saveUserData(): ", "user = [" , user , "]")
         /*@formatter:on*/
@@ -76,7 +80,7 @@ internal class ContactRepositoryImpl(
             jsonBody = requestModel.toJson(),
             responseHandler = object : ResponseCallback {
                 override fun onSuccess(response: String) {
-                    /*@formatter:off*/ Logger.i(TAG, "onSuccess(): ", "response = [" , response , "]")
+                    /*@formatter:off*/ Logger.i(TAG, "pushDeviceData, onSuccess(): ", "response = [" , response , "]")
                     /*@formatter:on*/
                     configRepository.saveDeviceRegistered(true)
                     databaseManagerDevice.deleteDevices(devices)
@@ -91,7 +95,7 @@ internal class ContactRepositoryImpl(
                 }
 
                 override fun onFailure(statusCode: Int?, response: String?, throwable: Throwable?) {
-                    /*@formatter:off*/ Logger.i(TAG, "onFailure(): ", "statusCode = [" , statusCode , "], response = [" , response , "], throwable = [" , throwable , "]")
+                    /*@formatter:off*/ Logger.i(TAG, "pushDeviceData, onFailure(): ", "statusCode = [" , statusCode , "], response = [" , response , "], throwable = [" , throwable , "]")
                     /*@formatter:on*/
                     if (isNonRepeatableError(statusCode)) {
                         databaseManagerDevice.deleteDevices(devices)

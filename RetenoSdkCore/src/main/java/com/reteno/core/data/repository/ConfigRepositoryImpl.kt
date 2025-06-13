@@ -11,7 +11,9 @@ import com.reteno.core.util.Logger
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.coroutineContext
+import kotlin.coroutines.resume
 
 
 internal class ConfigRepositoryImpl(
@@ -47,43 +49,41 @@ internal class ConfigRepositoryImpl(
         sharedPrefsManager.saveFcmToken(token)
     }
 
-    override fun getFcmToken(callback: (String) -> Unit) {
-        sharedPrefsManager.getFcmToken()
-            .takeIf { it.isNotEmpty() }
-            ?.let { callback.invoke(it) }
-            ?: run {
-                getAndSaveFreshFcmToken { token ->
-                    callback.invoke(token.orEmpty())
-                }
-            }
+    override suspend fun getFcmToken(): String {
+        val token = sharedPrefsManager.getFcmToken().takeIf { it.isNotEmpty() }
+        if (token != null) return token
+        return getAndSaveFreshFcmToken().orEmpty()
     }
 
-    private fun getAndSaveFreshFcmToken(callback: (String?) -> Unit) {
+    private suspend fun getAndSaveFreshFcmToken(): String? {
         /*@formatter:off*/ Logger.i(TAG, "getAndSaveFreshFcmToken(): ", "")
         /*@formatter:on*/
         val firebaseMessaging = FirebaseMessaging.getInstance()
-        if (firebaseMessaging.isAutoInitEnabled) {
-            firebaseMessaging.token.addOnCompleteListener(OnCompleteListener { task ->
-                if (!task.isSuccessful) {
-                    /*@formatter:off*/Logger.d(TAG, "Fetching FCM registration token failed", task.exception ?: Throwable(""))
+        return if (firebaseMessaging.isAutoInitEnabled) {
+            suspendCancellableCoroutine { continuation ->
+                firebaseMessaging.token.addOnCompleteListener(OnCompleteListener { task ->
+                    if (!task.isSuccessful) {
+                        /*@formatter:off*/Logger.d(TAG, "Fetching FCM registration token failed", task.exception ?: Throwable(""))
                     /*@formatter:on*/
-                    callback.invoke(null)
-                    return@OnCompleteListener
-                }
+                        continuation.resume(null)
+                        return@OnCompleteListener
+                    }
 
-                val freshToken = task.result
-                /*@formatter:off*/Logger.d(TAG, "getAndSaveFreshFcmToken()", "result: $freshToken")
+                    val freshToken = task.result
+                    /*@formatter:off*/Logger.d(TAG, "getAndSaveFreshFcmToken()", "result: $freshToken")
                 /*@formatter:on*/
-                sharedPrefsManager.getFcmToken().takeIf { it.isNotEmpty() } ?: run {
-                    saveFcmToken(freshToken)
-                    callback.invoke(freshToken)
-                }
-            })
+                    val localToken = sharedPrefsManager.getFcmToken().takeIf { it.isNotEmpty() }
+                    if (localToken != freshToken) {
+                         saveFcmToken(freshToken)
+                    }
+                    continuation.resume(freshToken)
+                })
+            }
         } else {
             /*@formatter:off*/ Logger.d(TAG, "setting AutoInitEnabled = false. cannot initiate FirebaseMessaging")
             /*@formatter:on*/
             saveFcmToken("")
-            callback.invoke(null)
+            null
         }
     }
 

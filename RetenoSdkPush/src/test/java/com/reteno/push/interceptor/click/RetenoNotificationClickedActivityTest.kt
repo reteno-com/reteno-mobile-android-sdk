@@ -16,6 +16,8 @@ import com.reteno.push.Constants.KEY_ES_INTERACTION_ID
 import com.reteno.push.Util
 import com.reteno.push.base.robolectric.BaseRobolectricTest
 import io.mockk.coEvery
+import io.mockk.coJustRun
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.impl.annotations.RelaxedMockK
 import io.mockk.justRun
@@ -26,6 +28,7 @@ import io.mockk.unmockkConstructor
 import io.mockk.unmockkStatic
 import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.AfterClass
 import org.junit.Assert
@@ -86,8 +89,7 @@ class RetenoNotificationClickedActivityTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun saveInteraction_extrasIsNotNull() = runTest {
-        val reteno = createReteno()
+    fun saveInteraction_extrasIsNotNull() = runRetenoTest {
         val interactionId = "interaction_id"
 
         val extra = Bundle().apply {
@@ -95,13 +97,14 @@ class RetenoNotificationClickedActivityTest : BaseRobolectricTest() {
         }
         val intent = Intent()
         intent.putExtras(extra)
-        justRun { interactionController.onInteraction(any(), any()) }
+        coJustRun { interactionController.onInteraction(any(), any()) }
 
         val activity = buildActivity(RetenoNotificationClickedActivity::class.java, intent)
             .create()
             .get()
 
-        verify { interactionController.onInteraction(eq(interactionId), InteractionStatus.CLICKED) }
+        advanceUntilIdle()
+        coVerify { interactionController.onInteraction(eq(interactionId), InteractionStatus.CLICKED) }
         verify(exactly = 1) { scheduleController.forcePush() }
         assertTrue(activity.isFinishing)
     }
@@ -121,7 +124,7 @@ class RetenoNotificationClickedActivityTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun launchApp_doNotHaveDeepLinkAndExtrasIsNull() {
+    fun launchApp_doNotHaveDeepLinkAndExtrasIsNull() = runRetenoTest {
         every { IntentHandler.AppLaunchIntent.getAppLaunchIntent(any()) } returns Intent()
 
         val extra = Bundle().apply { putString("key", "value") }

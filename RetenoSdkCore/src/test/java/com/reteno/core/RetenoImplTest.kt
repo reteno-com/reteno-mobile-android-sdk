@@ -182,9 +182,9 @@ class RetenoImplTest : BaseRobolectricTest() {
     fun givenExternalIdValid_whenSetUserAttributes_thenInteractWithController() = runRetenoTest { retenoImpl ->
         // When
         retenoImpl.setUserAttributes(externalUserId = EXTERNAL_USER_ID)
-
+        advanceUntilIdle()
         // Then
-        verify(exactly = 1) {
+        coVerify(exactly = 1) {
             contactController.setExternalIdAndUserData(
                 eq(EXTERNAL_USER_ID),
                 null
@@ -198,9 +198,9 @@ class RetenoImplTest : BaseRobolectricTest() {
         runRetenoTest {retenoImpl ->
             // When
             retenoImpl.setUserAttributes(EXTERNAL_USER_ID, null)
-
+            advanceUntilIdle()
             // Then
-            verify(exactly = 1) {
+            coVerify(exactly = 1) {
                 contactController.setExternalIdAndUserData(
                     eq(EXTERNAL_USER_ID),
                     null
@@ -213,19 +213,18 @@ class RetenoImplTest : BaseRobolectricTest() {
         runRetenoTest {retenoImpl ->
             // Given
             val userFull = getUserFull()
-
             // When
             retenoImpl.setUserAttributes(EXTERNAL_USER_ID, userFull)
-
+            advanceUntilIdle()
             // Then
-            verify { contactController.setExternalIdAndUserData((eq(EXTERNAL_USER_ID)), userFull) }
+            coVerify { contactController.setExternalIdAndUserData((eq(EXTERNAL_USER_ID)), userFull) }
             //  verify { contactController.setUserData(userFull) }
         }
 
     @Test
     fun givenExceptionThrown_whenSetUserData_thenExceptionSentToLogger() = runRetenoTest {retenoImpl ->
         // Given
-        every { contactController.setExternalIdAndUserData(any(), any()) } throws EXCEPTION
+        coEvery { contactController.setExternalIdAndUserData(any(), any()) } throws EXCEPTION
 
         val userFull = getUserFull()
 
@@ -236,7 +235,7 @@ class RetenoImplTest : BaseRobolectricTest() {
         } catch (ex: Throwable) {
             true
         }
-
+        advanceUntilIdle()
         // Then
         assertFalse(exceptionThrownOutsideSdk)
         verify(exactly = 1) {
@@ -276,7 +275,7 @@ class RetenoImplTest : BaseRobolectricTest() {
             retenoImpl.setAnonymousUserAttributes(userAttributesAnonymous)
 
             // Then
-            verify(exactly = 0) { contactController.setExternalUserId(eq(EXTERNAL_USER_ID)) }
+            coVerify(exactly = 0) { contactController.setExternalUserId(eq(EXTERNAL_USER_ID)) }
             verify(exactly = 1) {
                 contactController.setAnonymousUserAttributes(
                     eq(
@@ -468,7 +467,7 @@ class RetenoImplTest : BaseRobolectricTest() {
         // Then
         verify { scheduleController.startScheduler() }
         coVerify(exactly = 1) { contactController.checkIfDeviceRegistered() }
-        verify(exactly = 1) { contactController.checkIfDeviceRequestSentThisSession() }
+        coVerify(exactly = 1) { contactController.checkIfDeviceRequestSentThisSession() }
         verify { iamView.start() }
     }
 
