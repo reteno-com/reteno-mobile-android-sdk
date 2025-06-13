@@ -17,7 +17,6 @@ import org.junit.Before
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
-import org.robolectric.shadows.ShadowLooper
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
@@ -25,7 +24,6 @@ import org.robolectric.shadows.ShadowLooper
     sdk = [26],
     application = RetenoTestApp::class,
     packageName = "com.reteno.core",
-    shadows = [ShadowLooper::class]
 )
 abstract class BaseRobolectricTest {
 
@@ -75,7 +73,6 @@ abstract class BaseRobolectricTest {
             }
         }
     }
-
 
     fun runRetenoTest(
         lifecycleOwner: LifecycleOwner = TestLifecycleOwner(),
