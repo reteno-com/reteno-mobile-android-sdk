@@ -83,7 +83,7 @@ class RetenoInternalImpl(
         }
         Logger.i(TAG, "setConfig()")
         serviceLocator.setConfig(config)
-        syncScope.launch(mainDispatcher) {
+        syncScope.launch {
             anrWaitCondition.await()
             applyConfig(config)
             initWaitCondition.complete(Unit)
@@ -100,8 +100,11 @@ class RetenoInternalImpl(
 
     private suspend fun applyConfig(config: RetenoConfig) = withContext(mainDispatcher) {
         try {
+            delay(2000)
             appLifecycleOwner.lifecycle.addObserver(appLifecycleController)
-            contactController.checkIfDeviceRegistered()
+            withContext(ioDispatcher) {
+                contactController.checkIfDeviceRegistered()
+            }
             pauseInAppMessages(config.isPausedInAppMessages)
             pausePushInAppMessages(config.isPausedPushInAppMessages)
         } catch (t: Throwable) {
@@ -155,7 +158,7 @@ class RetenoInternalImpl(
         if (!isStarted.getAndSet(true)) {
             iamController.getInAppMessages()
         }
-        syncScope.launch(mainDispatcher) {
+        syncScope.launch {
             try {
                 withContext(ioDispatcher) {
                     contactController.checkIfDeviceRequestSentThisSession()
@@ -220,17 +223,17 @@ class RetenoInternalImpl(
             throw exception
         }
 
-        try {
-            contactController.setExternalIdAndUserData(externalUserId, user)
-            if (isStarted.get()) {
-                syncScope.launch(mainDispatcher) {
+        syncScope.launch(ioDispatcher) {
+            try {
+                contactController.setExternalIdAndUserData(externalUserId, user)
+                if (isStarted.get()) {
                     delay(5000L) //There is a requirement to refresh segmentation in 5 sec after user change his attributes
                     iamController.refreshSegmentation()
                 }
-            }
-        } catch (ex: Throwable) {
-            /*@formatter:off*/ Logger.e(TAG, "setUserAttributes(): externalUserId = [$externalUserId], user = [$user]", ex)
+            } catch (ex: Throwable) {
+                /*@formatter:off*/ Logger.e(TAG, "setUserAttributes(): externalUserId = [$externalUserId], user = [$user]", ex)
             /*@formatter:on*/
+            }
         }
     }
 
@@ -405,11 +408,13 @@ class RetenoInternalImpl(
         }
         /*@formatter:off*/ Logger.i(TAG, "onNewFcmToken(): ", "token = [" , token , "]")
         /*@formatter:on*/
-        try {
-            contactController.onNewFcmToken(token)
-        } catch (ex: Throwable) {
-            /*@formatter:off*/ Logger.e(TAG, "onNewFcmToken(): token = [$token]", ex)
+        syncScope.launch(ioDispatcher) {
+            try {
+                contactController.onNewFcmToken(token)
+            } catch (ex: Throwable) {
+                /*@formatter:off*/ Logger.e(TAG, "onNewFcmToken(): token = [$token]", ex)
             /*@formatter:on*/
+            }
         }
     }
 
@@ -419,11 +424,13 @@ class RetenoInternalImpl(
         }
         /*@formatter:off*/ Logger.i(TAG, "recordInteraction(): ", "status = [" , status , "]")
         /*@formatter:on*/
-        try {
-            interactionController.onInteraction(id, status)
-        } catch (ex: Throwable) {
-            /*@formatter:off*/ Logger.e(TAG, "recordInteraction(): status = [$status]", ex)
+        syncScope.launch(ioDispatcher) {
+            try {
+                interactionController.onInteraction(id, status)
+            } catch (ex: Throwable) {
+                /*@formatter:off*/ Logger.e(TAG, "recordInteraction(): status = [$status]", ex)
             /*@formatter:on*/
+            }
         }
     }
 
@@ -505,7 +512,9 @@ class RetenoInternalImpl(
     }
 
     override fun notificationsEnabled(enabled: Boolean) = runAfterInit {
-        contactController.notificationsEnabled(enabled)
+        syncScope.launch(ioDispatcher) {
+            contactController.notificationsEnabled(enabled)
+        }
     }
 
     override fun deeplinkClicked(linkWrapped: String, linkUnwrapped: String) {

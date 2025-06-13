@@ -7,8 +7,6 @@ import com.reteno.core.domain.model.device.Device
 import com.reteno.core.domain.model.user.User
 import com.reteno.core.domain.model.user.UserAttributesAnonymous
 import com.reteno.core.util.Logger
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import java.util.concurrent.atomic.AtomicBoolean
 
 
@@ -17,6 +15,7 @@ class ContactController(
     private val configRepository: ConfigRepository
 ) {
 
+    //This session means app opening session, not the SDK Session
     private var isDeviceSentThisSession = AtomicBoolean(false)
 
     fun getDeviceId(): String {
@@ -27,7 +26,7 @@ class ContactController(
         return configRepository.awaitForDeviceId().id
     }
 
-    fun setExternalUserId(id: String?, pushContact: Boolean = true): Boolean {
+    suspend fun setExternalUserId(id: String?, pushContact: Boolean = true): Boolean {
         /*@formatter:off*/ Logger.i(TAG, "setExternalUserId(): ", "id = [" , id , "]")
         /*@formatter:on*/
 
@@ -36,9 +35,8 @@ class ContactController(
             isDeviceSentThisSession.set(true)
             configRepository.setExternalUserId(id)
             if (pushContact) {
-                configRepository.getFcmToken {
-                    onNewContact(it, toParallelWork = false)
-                }
+                val token = configRepository.getFcmToken()
+                onNewContact(token, toParallelWork = false)
             }
             return true
         }
@@ -72,15 +70,14 @@ class ContactController(
         } ?: Logger.captureMessage("setAnonymousUserAttributes(): attributes = [$attributes]")
     }
 
-    fun onNewFcmToken(token: String) {
+    suspend fun onNewFcmToken(token: String) {
         /*@formatter:off*/ Logger.i(TAG, "onNewFcmToken(): ", "newToken = [" , token , "]")
         /*@formatter:on*/
-        isDeviceSentThisSession.set(true)
-        configRepository.getFcmToken { oldToken ->
-            token.takeIf { it != oldToken }?.let {
-                configRepository.saveFcmToken(it)
-            }
+        val oldToken = configRepository.getFcmToken()
+        if (token != oldToken) {
+            configRepository.saveFcmToken(token)
             onNewContact(token, toParallelWork = false)
+            isDeviceSentThisSession.set(true)
         }
     }
 
@@ -101,44 +98,40 @@ class ContactController(
         /*@formatter:on*/
         if (!configRepository.isDeviceRegistered()) {
             isDeviceSentThisSession.set(true)
-            withContext(Dispatchers.IO) {
-                configRepository.awaitForDeviceId()
-            }
-            configRepository.getFcmToken {
-                onNewContact(it, toParallelWork = false)
-            }
+            configRepository.awaitForDeviceId()
+            val token = configRepository.getFcmToken()
+            onNewContact(token, toParallelWork = false, pushImmediate = true)
         }
     }
 
-    fun checkIfDeviceRequestSentThisSession() {
+    suspend fun checkIfDeviceRequestSentThisSession() {
         /*@formatter:off*/ Logger.i(TAG, "checkIfDeviceRequestSentThisSession(): ", "isDeviceSentThisSession = [" , isDeviceSentThisSession , "]")
         /*@formatter:on*/
         if (isDeviceSentThisSession.get().not()) {
             contactRepository.deleteSynchedDevices()
-            configRepository.getFcmToken {
-                onNewContact(it, toParallelWork = false)
-            }
+            val token = configRepository.getFcmToken()
+            onNewContact(token, toParallelWork = false, pushImmediate = true)
             isDeviceSentThisSession.set(true)
         }
     }
 
-    fun notificationsEnabled(notificationsEnabled: Boolean) {
+    suspend fun notificationsEnabled(notificationsEnabled: Boolean) {
         /*@formatter:off*/ Logger.i(TAG, "notificationsEnabled(): ", "notificationsEnabled = [" , notificationsEnabled , "]")
         /*@formatter:on*/
         val currentState = configRepository.isNotificationsEnabled()
         if (notificationsEnabled != currentState) {
             isDeviceSentThisSession.set(true)
             configRepository.saveNotificationsEnabled(notificationsEnabled)
-            configRepository.getFcmToken {
-                onNewContact(it, notificationsEnabled = notificationsEnabled)
-            }
+            val token = configRepository.getFcmToken()
+            onNewContact(token, notificationsEnabled = notificationsEnabled, toParallelWork = false)
         }
     }
 
     private fun onNewContact(
         fcmToken: String,
         notificationsEnabled: Boolean? = null,
-        toParallelWork: Boolean = false
+        toParallelWork: Boolean = false,
+        pushImmediate: Boolean = false
     ) {
         /*@formatter:off*/ Logger.i(TAG, "onNewContact(): ", "fcmToken = [", fcmToken, "], notificationsEnabled = [", notificationsEnabled, "]")
         /*@formatter:on*/
@@ -155,15 +148,19 @@ class ContactController(
             phone = deviceId.phone,
             pushSubscribed = notificationsEnabled ?: configRepository.isNotificationsEnabled()
         )
-        contactRepository.saveDeviceData(contact, toParallelWork)
+        if (pushImmediate) {
+            contactRepository.saveDeviceDataImmediate(contact)
+            contactRepository.pushDeviceData()
+        } else {
+            contactRepository.saveDeviceData(contact, toParallelWork)
+        }
     }
 
-    fun setExternalIdAndUserData(externalUserId: String, user: User?) {
+    suspend fun setExternalIdAndUserData(externalUserId: String, user: User?) {
         setExternalUserId(externalUserId, pushContact = false)
         setUserData(user)
-        configRepository.getFcmToken { token ->
-            onNewContact(token, toParallelWork = false)
-        }
+        val token = configRepository.getFcmToken()
+        onNewContact(token, toParallelWork = false)
     }
 
     fun saveDefaultNotificationChannel(channel: String) {

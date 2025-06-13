@@ -5,9 +5,11 @@ import android.app.Dialog
 import android.os.Bundle
 import android.view.View
 import android.widget.Toast
+import androidx.lifecycle.lifecycleScope
 import com.reteno.core.RetenoInternalImpl
 import com.reteno.core._interop.DeviceIdInternal.getExternalIdInternal
 import com.reteno.core._interop.DeviceIdInternal.getIdInternal
+import com.reteno.core.data.local.config.DeviceId
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerDevice
 import com.reteno.core.data.local.model.BooleanDb
 import com.reteno.core.data.local.model.device.DeviceCategoryDb
@@ -16,6 +18,9 @@ import com.reteno.core.data.local.model.device.DeviceOsDb
 import com.reteno.core.domain.model.device.Device.Companion.createDevice
 import com.reteno.sample.databinding.DialogDbWriteDeviceBinding
 import com.reteno.sample.util.Util
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class DeviceWriteDialogFragment : BaseDatabaseDialogFragment() {
 
@@ -53,30 +58,40 @@ class DeviceWriteDialogFragment : BaseDatabaseDialogFragment() {
     private fun initUi() {
         val retenoImpl = RetenoInternalImpl.instance
         val deviceId = retenoImpl.serviceLocator.configRepositoryProvider.get().getDeviceId()
-        retenoImpl.serviceLocator.configRepositoryProvider.get().getFcmToken { token: String? ->
-            val device = createDevice(
-                deviceId.getIdInternal(),
-                deviceId.getExternalIdInternal(),
-                token,
-                null,
-                null,
-                null,
-                null
-            )
-            binding!!.etDeviceId.setText(device.deviceId)
-            binding!!.etExternalUserId.setText(device.externalUserId)
-            binding!!.etPushToken.setText(device.pushToken)
-            binding!!.etCategory.setText(device.category.toString())
-            binding!!.etOsType.setText(device.osType.toString())
-            binding!!.etOsVersion.setText(device.osVersion)
-            binding!!.etDeviceModel.setText(device.deviceModel)
-            binding!!.etAppVersion.setText(device.appVersion)
-            binding!!.etLanguageCode.setText(device.languageCode)
-            binding!!.etTimeZone.setText(device.timeZone)
-            binding!!.etAdvertisingId.setText(device.advertisingId)
-            binding!!.etPhone.setText(device.phone)
-            binding!!.etEmail.setText(device.email)
+        lifecycleScope.launch {
+            val token = withContext(Dispatchers.IO) {
+                retenoImpl.serviceLocator.configRepositoryProvider.get().getFcmToken()
+            }
+            initUiFromToken(deviceId, token)
         }
+    }
+
+    private fun initUiFromToken(
+        deviceId: DeviceId,
+        token: String?
+    ) {
+        val device = createDevice(
+            deviceId.getIdInternal(),
+            deviceId.getExternalIdInternal(),
+            token,
+            null,
+            null,
+            null,
+            null
+        )
+        binding!!.etDeviceId.setText(device.deviceId)
+        binding!!.etExternalUserId.setText(device.externalUserId)
+        binding!!.etPushToken.setText(device.pushToken)
+        binding!!.etCategory.setText(device.category.toString())
+        binding!!.etOsType.setText(device.osType.toString())
+        binding!!.etOsVersion.setText(device.osVersion)
+        binding!!.etDeviceModel.setText(device.deviceModel)
+        binding!!.etAppVersion.setText(device.appVersion)
+        binding!!.etLanguageCode.setText(device.languageCode)
+        binding!!.etTimeZone.setText(device.timeZone)
+        binding!!.etAdvertisingId.setText(device.advertisingId)
+        binding!!.etPhone.setText(device.phone)
+        binding!!.etEmail.setText(device.email)
     }
 
     private fun initListeners() {

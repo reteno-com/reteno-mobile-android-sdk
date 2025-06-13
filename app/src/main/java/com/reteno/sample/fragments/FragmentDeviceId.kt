@@ -5,6 +5,7 @@ import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.lifecycle.lifecycleScope
 import com.reteno.core.RetenoInternalImpl
 import com.reteno.core._interop.DeviceIdInternal.getExternalIdInternal
 import com.reteno.core._interop.DeviceIdInternal.getIdInternal
@@ -14,6 +15,9 @@ import com.reteno.core.di.ServiceLocator
 import com.reteno.sample.BaseFragment
 import com.reteno.sample.databinding.FragmentDeviceIdBinding
 import com.reteno.sample.util.AppSharedPreferencesManager
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class FragmentDeviceId : BaseFragment() {
 
@@ -72,9 +76,11 @@ class FragmentDeviceId : BaseFragment() {
             ).toString()
         )
         binding!!.tvExternalId.text = externalId
-        configRepository!!.getFcmToken { str: String? ->
-            binding!!.etFcmToken.setText(str)
-            Unit
+        lifecycleScope.launch {
+            val token = withContext(Dispatchers.IO) {
+                configRepository!!.getFcmToken()
+            }
+            binding!!.etFcmToken.setText(token)
         }
     }
 
