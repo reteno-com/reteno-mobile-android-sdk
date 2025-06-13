@@ -9,6 +9,7 @@ import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.CompoundButton
 import android.widget.Toast
+import androidx.lifecycle.Lifecycle
 import androidx.navigation.NavDirections
 import androidx.navigation.fragment.NavHostFragment
 import com.reteno.core.RetenoInternalImpl
@@ -24,6 +25,7 @@ import com.reteno.sample.testscreens.ScreenItem
 import com.reteno.sample.util.AppSharedPreferencesManager
 import com.reteno.sample.util.FragmentStartSessionListener
 import com.reteno.sample.util.RetenoInitListener
+import kotlinx.coroutines.delay
 
 class FragmentStart : BaseFragment() {
 
@@ -206,12 +208,12 @@ class FragmentStart : BaseFragment() {
             binding!!.progressBar.visibility = View.VISIBLE
             binding!!.cbDelayNextLaunch.visibility = View.GONE
             RetenoInitListener(impl) {
-                if (isResumed) {
-                    initSessionHandler()
-                    binding!!.progressBar.visibility = View.GONE
-                    binding!!.cbDelayNextLaunch.visibility = View.VISIBLE
+                while (!viewLifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
+                    delay(100)
                 }
-                Unit
+                initSessionHandler()
+                binding!!.progressBar.visibility = View.GONE
+                binding!!.cbDelayNextLaunch.visibility = View.VISIBLE
             }
         }
     }

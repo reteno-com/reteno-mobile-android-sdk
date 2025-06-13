@@ -7,11 +7,13 @@ import com.reteno.core.domain.SchedulerUtils
 import com.reteno.core.domain.model.interaction.Interaction
 import com.reteno.core.domain.model.interaction.InteractionStatus
 import com.reteno.core.util.Util
+import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
 import io.mockk.impl.annotations.RelaxedMockK
 import io.mockk.mockk
 import io.mockk.verify
+import kotlinx.coroutines.test.runTest
 import org.junit.Before
 import org.junit.Test
 import java.time.ZonedDateTime
@@ -47,12 +49,9 @@ class InteractionControllerTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun givenTokenAvailable_whenOnInteractionDelivered_thenInteractionDeliveredPassedToRepository() {
+    fun givenTokenAvailable_whenOnInteractionDelivered_thenInteractionDeliveredPassedToRepository() = runTest {
         // Given
-        every { configRepository.getFcmToken(any()) } answers {
-            val callback = arg<((String) -> Unit)>(0)
-            callback.invoke(TOKEN)
-        }
+        coEvery { configRepository.getFcmToken() } answers { TOKEN }
         // When
         SUT.onInteraction(INTERACTION_ID, InteractionStatus.DELIVERED)
 
@@ -67,12 +66,9 @@ class InteractionControllerTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun givenTokenAvailable_whenOnInteractionClicked_thenInteractionOpenedPassedToRepository() {
+    fun givenTokenAvailable_whenOnInteractionClicked_thenInteractionOpenedPassedToRepository() = runTest {
         // Given
-        every { configRepository.getFcmToken(any()) } answers {
-            val callback = arg<((String) -> Unit)>(0)
-            callback.invoke(TOKEN)
-        }
+        coEvery { configRepository.getFcmToken() } answers { TOKEN }
         // When
         SUT.onInteraction(INTERACTION_ID, InteractionStatus.CLICKED)
 
@@ -87,12 +83,9 @@ class InteractionControllerTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun givenTokenNotAvailable_whenOnInteraction_thenRepositoryNotCalled() {
+    fun givenTokenNotAvailable_whenOnInteraction_thenRepositoryNotCalled() = runTest {
         // Given
-        every { configRepository.getFcmToken(any()) } answers {
-            val callback = arg<((String) -> Unit)>(0)
-            callback.invoke("")
-        }
+        coEvery { configRepository.getFcmToken() } answers { "" }
         // When
         SUT.onInteraction(INTERACTION_ID, InteractionStatus.DELIVERED)
 

@@ -13,6 +13,7 @@ import com.reteno.core.domain.model.user.User
 import com.reteno.core.domain.model.user.UserAttributesAnonymous
 import com.reteno.core.domain.model.user.UserCustomField
 import com.reteno.core.util.Logger
+import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.impl.annotations.RelaxedMockK
 import io.mockk.mockkObject
@@ -147,12 +148,9 @@ class ContactControllerTest : BaseUnitTest() {
     }
 
     @Test
-    fun givenPushTokenAvailable_whenSetExternalDeviceId_thenContactSent() {
+    fun givenPushTokenAvailable_whenSetExternalDeviceId_thenContactSent() = runTest {
         // Given
-        every { configRepository.getFcmToken(any()) } answers {
-            val callback = arg<((String) -> Unit)>(0)
-            callback.invoke(FCM_TOKEN_NEW)
-        }
+        coEvery { configRepository.getFcmToken() } answers { FCM_TOKEN_NEW }
         every { configRepository.getDeviceId() } returns DeviceId(
             DEVICE_ID_ANDROID,
             EXTERNAL_DEVICE_ID
@@ -173,11 +171,10 @@ class ContactControllerTest : BaseUnitTest() {
     }
 
     @Test
-    fun givenPushTokenAvailableAndExternalIdWasSet_whenSetEqualsExternalDeviceId_thenContactDoesNotSent() {
+    fun givenPushTokenAvailableAndExternalIdWasSet_whenSetEqualsExternalDeviceId_thenContactDoesNotSent() = runTest {
         // Given
-        every { configRepository.getFcmToken(any()) } answers {
-            val callback = arg<((String) -> Unit)>(0)
-            callback.invoke(FCM_TOKEN_NEW)
+        coEvery { configRepository.getFcmToken() } answers {
+            FCM_TOKEN_NEW
         }
         every { configRepository.getDeviceId() } returns DeviceId(
             DEVICE_ID_ANDROID,
@@ -194,11 +191,10 @@ class ContactControllerTest : BaseUnitTest() {
     }
 
     @Test
-    fun whenOnNewFcmToken_andTokenSame_thenTokenNotSavedDeviceUpdated() {
+    fun whenOnNewFcmToken_andTokenSame_thenTokenNotSavedDeviceUpdated() = runTest {
         // Given
-        every { configRepository.getFcmToken(any()) } answers {
-            val callback = arg<((String) -> Unit)>(0)
-            callback.invoke(FCM_TOKEN_NEW)
+        coEvery { configRepository.getFcmToken() } answers {
+            FCM_TOKEN_NEW
         }
         every { configRepository.getDeviceId() } returns DeviceId(DEVICE_ID_ANDROID, null)
 
@@ -212,12 +208,9 @@ class ContactControllerTest : BaseUnitTest() {
     }
 
     @Test
-    fun whenOnNewFcmToken_andTokenDifferent_thenTokenSavedDeviceUpdated() {
+    fun whenOnNewFcmToken_andTokenDifferent_thenTokenSavedDeviceUpdated() = runTest {
         // Given
-        every { configRepository.getFcmToken(any()) } answers {
-            val callback = arg<((String) -> Unit)>(0)
-            callback.invoke(FCM_TOKEN_NEW + "different")
-        }
+        coEvery { configRepository.getFcmToken() } answers { FCM_TOKEN_NEW + "different" }
         every { configRepository.getDeviceId() } returns DeviceId(DEVICE_ID_ANDROID, null)
 
         // When
@@ -291,13 +284,12 @@ class ContactControllerTest : BaseUnitTest() {
     }
 
     @Test
-    fun givenNotificationsDisabled_whenEnableNotifications_thenDeviceSaved() {
+    fun givenNotificationsDisabled_whenEnableNotifications_thenDeviceSaved() = runTest {
         // Given
         val pushSubscribed = true
         every { configRepository.isNotificationsEnabled() } returns false
-        every { configRepository.getFcmToken(any()) } answers {
-            val callback = arg<((String) -> Unit)>(0)
-            callback.invoke(FCM_TOKEN_NEW)
+        coEvery { configRepository.getFcmToken() } coAnswers  {
+            FCM_TOKEN_NEW
         }
         every { configRepository.getDeviceId() } returns DeviceId(
             DEVICE_ID_ANDROID,
@@ -316,7 +308,7 @@ class ContactControllerTest : BaseUnitTest() {
     }
 
     @Test
-    fun givenNotificationsDisabled_whenDisableNotifications_thenEventNotResend_andDeviceIsNotUpdated() {
+    fun givenNotificationsDisabled_whenDisableNotifications_thenEventNotResend_andDeviceIsNotUpdated() = runTest {
         // Given
         val pushSubscribed = false
         every { configRepository.isNotificationsEnabled() } returns false
@@ -330,7 +322,7 @@ class ContactControllerTest : BaseUnitTest() {
     }
 
     @Test
-    fun givenNotificationsEnabled_whenEnableNotifications_thenEventNotResend_andDeviceIsNotUpdated() {
+    fun givenNotificationsEnabled_whenEnableNotifications_thenEventNotResend_andDeviceIsNotUpdated() = runTest {
         // Given
         val pushSubscribed = true
         every { configRepository.isNotificationsEnabled() } returns true
@@ -344,14 +336,11 @@ class ContactControllerTest : BaseUnitTest() {
     }
 
     @Test
-    fun givenNotificationsEnabled_whenDisableNotifications_thenDeviceSaved() {
+    fun givenNotificationsEnabled_whenDisableNotifications_thenDeviceSaved() = runTest {
         // Given
         val pushSubscribed = false
         every { configRepository.isNotificationsEnabled() } returns true
-        every { configRepository.getFcmToken(any()) } answers {
-            val callback = arg<((String) -> Unit)>(0)
-            callback.invoke(FCM_TOKEN_NEW)
-        }
+        coEvery { configRepository.getFcmToken() } answers { FCM_TOKEN_NEW }
         every { configRepository.getDeviceId() } returns DeviceId(
             DEVICE_ID_ANDROID,
             EXTERNAL_DEVICE_ID
@@ -369,14 +358,11 @@ class ContactControllerTest : BaseUnitTest() {
     }
 
     @Test
-    fun givenIsDeviceRegisteredFalse_whenCheckIfDeviceRegistered_thenSaveDeviceDataCalled() =
+    fun givenIsDeviceRegisteredFalse_whenCheckIfDeviceRegistered_thenSaveDeviceDataCalledImmediately() =
         runTest {
             // Given
             every { configRepository.isDeviceRegistered() } returns false
-            every { configRepository.getFcmToken(any()) } answers {
-                val callback = arg<((String) -> Unit)>(0)
-                callback.invoke(FCM_TOKEN_NEW)
-            }
+            coEvery { configRepository.getFcmToken() } coAnswers { FCM_TOKEN_NEW }
             every { configRepository.getDeviceId() } returns DeviceId(
                 DEVICE_ID_ANDROID,
                 EXTERNAL_DEVICE_ID
@@ -391,9 +377,8 @@ class ContactControllerTest : BaseUnitTest() {
 
             // When
             SUT.checkIfDeviceRegistered()
-
             // Then
-            verify(exactly = 1) { contactRepository.saveDeviceData(expectedDevice, false) }
+            verify(exactly = 1) { contactRepository.saveDeviceDataImmediate(expectedDevice) }
         }
 
     @Test

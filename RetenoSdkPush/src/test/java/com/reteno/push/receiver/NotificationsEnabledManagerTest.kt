@@ -5,6 +5,8 @@ import com.reteno.core.domain.controller.ContactController
 import com.reteno.core.domain.controller.ScheduleController
 import com.reteno.push.base.robolectric.BaseRobolectricTest
 import com.reteno.push.channel.RetenoNotificationChannel
+import io.mockk.coJustRun
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.impl.annotations.RelaxedMockK
 import io.mockk.justRun
@@ -14,6 +16,7 @@ import io.mockk.unmockkConstructor
 import io.mockk.unmockkStatic
 import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.advanceUntilIdle
 import org.junit.AfterClass
 import org.junit.BeforeClass
 import org.junit.Test
@@ -61,7 +64,7 @@ class NotificationsEnabledManagerTest : BaseRobolectricTest() {
         // Given
         every { RetenoNotificationChannel.isNotificationsEnabled(any()) } returns true
         every { RetenoNotificationChannel.isNotificationChannelEnabled(any(), any()) } returns true
-        justRun { contactController.notificationsEnabled(any()) }
+        coJustRun { contactController.notificationsEnabled(any()) }
 
         // When
         SUT.onCheckState(application)
@@ -79,9 +82,9 @@ class NotificationsEnabledManagerTest : BaseRobolectricTest() {
 
         // When
         SUT.onCheckState(application)
-
+        advanceUntilIdle()
         // Then
-        verify(exactly = 1) { contactController.notificationsEnabled(false) }
+        coVerify(exactly = 1) { contactController.notificationsEnabled(false) }
     }
 
     @Test
@@ -93,9 +96,9 @@ class NotificationsEnabledManagerTest : BaseRobolectricTest() {
 
         // When
         SUT.onCheckState(application)
-
+        advanceUntilIdle()
         // Then
-        verify(exactly = 1) { contactController.notificationsEnabled(false) }
+        coVerify(exactly = 1) { contactController.notificationsEnabled(false) }
     }
 
     @Test
@@ -108,8 +111,10 @@ class NotificationsEnabledManagerTest : BaseRobolectricTest() {
         // When
         SUT.onCheckState(application)
 
+        advanceUntilIdle()
+
         // Then
-        verify(exactly = 1) { contactController.notificationsEnabled(false) }
+        coVerify(exactly = 1) { contactController.notificationsEnabled(false) }
     }
 
     @Test
@@ -121,8 +126,8 @@ class NotificationsEnabledManagerTest : BaseRobolectricTest() {
 
         // When
         SUT.onCheckState(application)
-
+        advanceUntilIdle()
         // Then
-        verify(exactly = 1) { contactController.notificationsEnabled(true) }
+        coVerify(exactly = 1) { contactController.notificationsEnabled(true) }
     }
 }
