@@ -26,6 +26,7 @@ import io.mockk.impl.annotations.RelaxedMockK
 import junit.framework.TestCase
 import junit.framework.TestCase.assertEquals
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.AfterClass
 import org.junit.BeforeClass
@@ -111,9 +112,9 @@ class RetenoNotificationServiceTest : BaseRobolectricTest() {
         // When
         val sut = RetenoNotificationService(application, reteno)
         sut.onNewToken(TOKEN)
-
+        advanceUntilIdle()
         // Then
-        verify { contactController.onNewFcmToken(eq(TOKEN)) }
+        coVerify { contactController.onNewFcmToken(eq(TOKEN)) }
     }
 
     @Test
@@ -140,19 +141,19 @@ class RetenoNotificationServiceTest : BaseRobolectricTest() {
         // Given
         val bundle = buildBundle(INTERACTION_ID)
 
-        justRun { RetenoNotificationChannel.createDefaultChannel(any()) }
         every { RetenoNotificationChannel.DEFAULT_CHANNEL_ID } returns DEFAULT_CHANNEL_ID
         every { RetenoNotificationChannel.isNotificationChannelEnabled(any(), DEFAULT_CHANNEL_ID) } returns true
         every { RetenoNotificationChannel.isNotificationsEnabled(any()) } returns true
+        justRun { RetenoNotificationChannel.createDefaultChannel(any()) }
 
-        justRun { interactionController.onInteraction(any(), any()) }
+        coJustRun { interactionController.onInteraction(any(), any()) }
 
         // When
         val pushService = RetenoNotificationService(ApplicationProvider.getApplicationContext(), reteno)
         pushService.handleNotification(bundle)
-
+        advanceUntilIdle()
         // Then
-        verify(exactly = 1) { interactionController.onInteraction(eq(INTERACTION_ID), eq(InteractionStatus.DELIVERED)) }
+        coVerify(exactly = 1) { interactionController.onInteraction(eq(INTERACTION_ID), eq(InteractionStatus.DELIVERED)) }
         verify(exactly = 1) { scheduleController.forcePush() }
     }
 
@@ -167,14 +168,14 @@ class RetenoNotificationServiceTest : BaseRobolectricTest() {
         every { RetenoNotificationChannel.DEFAULT_CHANNEL_ID } returns DEFAULT_CHANNEL_ID
         every { RetenoNotificationChannel.isNotificationChannelEnabled(any(), DEFAULT_CHANNEL_ID) } returns false
 
-        justRun { interactionController.onInteraction(any(), any()) }
+        coJustRun { interactionController.onInteraction(any(), any()) }
 
         // When
         val pushService = RetenoNotificationService(ApplicationProvider.getApplicationContext(), reteno)
         pushService.handleNotification(bundle)
 
         // Then
-        verify(exactly = 0) { interactionController.onInteraction(eq(INTERACTION_ID), eq(InteractionStatus.DELIVERED)) }
+        coVerify(exactly = 0) { interactionController.onInteraction(eq(INTERACTION_ID), eq(InteractionStatus.DELIVERED)) }
         verify(exactly = 0) { scheduleController.forcePush() }
     }
 
@@ -187,14 +188,14 @@ class RetenoNotificationServiceTest : BaseRobolectricTest() {
 
         every { RetenoNotificationChannel.isNotificationsEnabled(any()) } returns false
 
-        justRun { interactionController.onInteraction(any(), any()) }
+        coJustRun { interactionController.onInteraction(any(), any()) }
 
         // When
         val pushService = RetenoNotificationService(ApplicationProvider.getApplicationContext(), reteno)
         pushService.handleNotification(bundle)
 
         // Then
-        verify(exactly = 0) { interactionController.onInteraction(eq(INTERACTION_ID), eq(InteractionStatus.DELIVERED)) }
+        coVerify(exactly = 0) { interactionController.onInteraction(eq(INTERACTION_ID), eq(InteractionStatus.DELIVERED)) }
         verify(exactly = 0) { scheduleController.forcePush() }
     }
 
@@ -210,7 +211,7 @@ class RetenoNotificationServiceTest : BaseRobolectricTest() {
         every { RetenoNotificationChannel.isNotificationChannelEnabled(any(), DEFAULT_CHANNEL_ID) } returns true
         every { RetenoNotificationChannel.isNotificationsEnabled(any()) } returns true
 
-        justRun { interactionController.onInteraction(any(), any()) }
+        coJustRun { interactionController.onInteraction(any(), any()) }
 
         // When
         val pushService = RetenoNotificationService(ApplicationProvider.getApplicationContext(), reteno)
