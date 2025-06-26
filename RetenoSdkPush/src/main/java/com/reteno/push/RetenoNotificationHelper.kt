@@ -94,7 +94,7 @@ internal class RetenoNotificationHelper(private val context: Context) {
                         .bigPicture(bitmap)
                         .setBigContentTitle(title)
                         .setSummaryText(text)
-                        .bigLargeIcon(null)
+                        .clearLargeIcon()
                 )
         }
         imageCarouselRemoteViews?.let {
@@ -328,7 +328,7 @@ internal class RetenoNotificationHelper(private val context: Context) {
                         context,
                         0,
                         intent,
-                        PendingIntent.FLAG_CANCEL_CURRENT
+                        PendingIntent.FLAG_CANCEL_CURRENT or PendingIntent.FLAG_IMMUTABLE
                     )
                 }
             }
@@ -356,4 +356,10 @@ internal class RetenoNotificationHelper(private val context: Context) {
 
         return createPendingIntent(bundleButton)
     }
+}
+
+private fun NotificationCompat.BigPictureStyle.clearLargeIcon(): NotificationCompat.BigPictureStyle {
+    val nullBitmap: Bitmap? = null
+    bigLargeIcon(nullBitmap)
+    return this
 }

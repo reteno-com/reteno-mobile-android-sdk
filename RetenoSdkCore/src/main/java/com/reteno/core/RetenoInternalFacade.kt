@@ -4,6 +4,7 @@ import androidx.core.app.NotificationChannelCompat
 import androidx.lifecycle.LifecycleObserver
 import com.reteno.core.domain.model.interaction.InteractionStatus
 import com.reteno.core.domain.model.logevent.RetenoLogEvent
+import com.reteno.core.permission.AndroidPermissionChecker
 
 internal interface RetenoInternalFacade : LifecycleObserver {
     /**
@@ -41,4 +42,6 @@ internal interface RetenoInternalFacade : LifecycleObserver {
     fun getDefaultNotificationChannelConfig(): ((NotificationChannelCompat.Builder) -> Unit)? = null
 
     fun executeAfterInit(action: () -> Unit)
+
+    suspend fun requestPermissionChecker(): AndroidPermissionChecker?
 }

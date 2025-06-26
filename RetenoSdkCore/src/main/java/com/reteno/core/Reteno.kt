@@ -170,7 +170,10 @@ interface Reteno {
      * @param config - supply config to the SDK
      * @throws IllegalStateException - indicates that sdk was already initialized before
      */
-    @Deprecated(message = "Deprecated API, use static function Reteno.initWithConfig() instead", replaceWith = ReplaceWith(expression = "Reteno.initWithConfig(config)"))
+    @Deprecated(
+        message = "Deprecated API, use static function Reteno.initWithConfig() instead",
+        replaceWith = ReplaceWith(expression = "Reteno.initWithConfig(config)")
+    )
     fun initWith(config: RetenoConfig)
 
     companion object {
