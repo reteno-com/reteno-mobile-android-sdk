@@ -10,6 +10,10 @@ def sdkPropsFile = file("$project.rootDir/RetenoSdkCore/keys.properties")
 Properties sdkProps = new Properties()
 sdkProps.load(new FileInputStream(sdkPropsFile))
 
+kotlin {
+    jvmToolchain(8)
+}
+
 android {
     def globalConfig = rootProject.ext
 
