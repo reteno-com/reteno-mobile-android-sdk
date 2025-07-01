@@ -82,8 +82,9 @@ class RetenoConfig private constructor(
             return this
         }
 
-        fun setDebug(isDebug: Boolean) {
+        fun setDebug(isDebug: Boolean): Builder {
             this.isDebug = isDebug
+            return this
         }
 
         fun build(): RetenoConfig {

@@ -32,6 +32,7 @@ class SampleApp : Application(), Configuration.Provider {
                         .customDeviceIdProvider(createProvider())
                         .lifecycleTrackingOptions(ALL)
                         .accessKey(BuildConfig.API_ACCESS_KEY)
+                        .setDebug(true)
                         .build()
                 )
             }, 3000L)
