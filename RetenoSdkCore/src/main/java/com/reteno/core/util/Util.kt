@@ -12,15 +12,10 @@ import com.reteno.core.RetenoInternalImpl
 import com.reteno.core.domain.SchedulerUtils
 import com.reteno.core.domain.model.event.LifecycleEventType
 import com.reteno.core.domain.model.event.LifecycleTrackingOptions
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers.IO
-import kotlinx.coroutines.launch
-import java.io.BufferedReader
 import java.io.ByteArrayOutputStream
 import java.io.FileInputStream
 import java.io.IOException
 import java.io.InputStream
-import java.io.InputStreamReader
 import java.text.SimpleDateFormat
 import java.time.Instant
 import java.time.ZoneId
@@ -125,7 +120,7 @@ fun isOsVersionSupported(): Boolean {
 
 object Util {
 
-    private var isDebugViewCashed: Boolean = false
+    private var isDebugViewCached: Boolean = false
 
     private val formatter = DateTimeFormatter
         .ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'")
@@ -140,13 +135,6 @@ object Util {
     }
 
     private val patternWithNoSeconds = "yyyy-MM-dd'T'HH:mm"
-
-    init {
-        CoroutineScope(IO).launch {
-            val debugString = getSysProp(PROP_KEY_DEBUG_VIEW)
-            isDebugViewCashed = debugString == PROP_VALUE_DEBUG_VIEW_ENABLE
-        }
-    }
 
     @JvmStatic
     fun readFromRaw(context: Context, rawResourceId: Int): String? {
@@ -186,7 +174,11 @@ object Util {
      * adb shell setprop debug.com.reteno.debug.view disable
      */
     internal fun isDebugView(): Boolean {
-        return isDebugViewCashed
+        return isDebugViewCached
+    }
+
+    internal fun setIsDebug(isDebug: Boolean) {
+        isDebugViewCached = isDebug
     }
 
     fun ZonedDateTime.formatToRemote(): String {
@@ -197,11 +189,11 @@ object Util {
         return millisFormatter.format(this)
     }
 
-    fun String.fromRemote():ZonedDateTime {
+    fun String.fromRemote(): ZonedDateTime {
         return ZonedDateTime.parse(this, formatter)
     }
 
-    fun String.fromRemoteExplicitMillis():ZonedDateTime {
+    fun String.fromRemoteExplicitMillis(): ZonedDateTime {
         return ZonedDateTime.parse(this, millisFormatter)
     }
 
@@ -242,20 +234,6 @@ object Util {
         return diff > SchedulerUtils.getOutdatedDeviceAndUserTime()
     }
 
-    private fun getSysProp(key: String): String {
-        val process: Process
-        var propvalue = ""
-        try {
-            process = ProcessBuilder("/system/bin/getprop", key).redirectErrorStream(true).start()
-            val reader = BufferedReader(InputStreamReader(process.inputStream))
-            propvalue = reader.readLine()
-            process.destroy()
-        } catch (e: Exception) {
-            propvalue = ""
-        }
-        return propvalue
-    }
-
     /**
      * Check to see if the database is encrypted
      *
@@ -271,12 +249,29 @@ object Util {
     fun isEncryptedDatabase(context: Context, databaseName: String): Boolean {
         var isEncrypted = false
 
-        val requiredSQLiteFileHeaderString = byteArrayOf(0x53,0x51,0x4c,0x69,0x74,0x65,0x20,0x66,0x6F,0x72,0x6D,0x61,0x74,0x20,0x33,0x0)
+        val requiredSQLiteFileHeaderString = byteArrayOf(
+            0x53,
+            0x51,
+            0x4c,
+            0x69,
+            0x74,
+            0x65,
+            0x20,
+            0x66,
+            0x6F,
+            0x72,
+            0x6D,
+            0x61,
+            0x74,
+            0x20,
+            0x33,
+            0x0
+        )
         val dbFileHeader = ByteArray(requiredSQLiteFileHeaderString.size)
         try {
             FileInputStream(context.getDatabasePath(databaseName)).use {
                 it.read(dbFileHeader)
-                if(!dbFileHeader.contentEquals(requiredSQLiteFileHeaderString)) {
+                if (!dbFileHeader.contentEquals(requiredSQLiteFileHeaderString)) {
                     isEncrypted = true
                 }
             }
@@ -286,7 +281,7 @@ object Util {
         return isEncrypted
     }
 
-    fun LifecycleTrackingOptions.toTypeMap():Map<LifecycleEventType, Boolean> {
+    fun LifecycleTrackingOptions.toTypeMap(): Map<LifecycleEventType, Boolean> {
         return mapOf(
             LifecycleEventType.APP_LIFECYCLE to appLifecycleEnabled,
             LifecycleEventType.PUSH to pushSubscriptionEnabled,

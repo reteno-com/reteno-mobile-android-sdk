@@ -81,17 +81,7 @@ android {
 }
 ```
 
-### Step3: Declare a notification permission in your manifest.
-```xml
-<manifest ...>
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
-    <application ...>
-        ...
-    </application>
-</manifest>
-```
-
-### Step4: Edit your custom Application class and provider API Access-Key at SDK initialization.
+### Step3: Edit your custom Application class and provider API Access-Key at SDK initialization.
 
 > Note:
 >
@@ -133,7 +123,7 @@ class CustomApplication: Application(), RetenoApplication {
 </application>
 ```
 
-### Step5: Use SDK via `Reteno` interface.
+### Step4: Use SDK via `Reteno` interface.
 
 Do not use `RetenoImpl` directly, access Reteno SDK across your application via your app instance. E.g. in Activity:
 
@@ -141,7 +131,7 @@ Do not use `RetenoImpl` directly, access Reteno SDK across your application via 
 val reteno = (application as CustomApplication).getRetenoInstance()
 ```
 
-### Step6: Handle Runtime Permissions.
+### Step5: Handle Runtime Permissions.
 
 Since Android 13 was released you have to make sure you are handling [Notification runtime permissions](https://developer.android.com/develop/ui/views/notifications/notification-permission)
 
@@ -178,7 +168,7 @@ private fun checkPermissions() {
 }
 ```
 
-### Step7: Set up your Firebase application for Firebase Cloud Messaging:
+### Step5: Set up your Firebase application for Firebase Cloud Messaging:
 
 - Download your `google-services.json` config file (see how [here](https://support.google.com/firebase/answer/7015592?hl=en)).
 

@@ -22,6 +22,8 @@ import com.reteno.core.domain.model.user.UserAttributesAnonymous
 import com.reteno.core.features.iam.InAppPauseBehaviour
 import com.reteno.core.lifecycle.RetenoActivityHelper
 import com.reteno.core.lifecycle.ScreenTrackingConfig
+import com.reteno.core.permission.AndroidPermissionChecker
+import com.reteno.core.permission.PermissionActivityDelegate
 import com.reteno.core.util.*
 import com.reteno.core.util.Constants.BROADCAST_ACTION_PUSH_PERMISSION_CHANGED
 import com.reteno.core.view.iam.IamView
@@ -50,6 +52,7 @@ class RetenoInternalImpl(
 
     //TODO make this property private
     val serviceLocator: ServiceLocator = ServiceLocator(application)
+    private val permissionDelegate = PermissionActivityDelegate(application)
     private val activityHelper: RetenoActivityHelper by lazy { serviceLocator.retenoActivityHelperProvider.get() }
 
     private val screenTrackingController: ScreenTrackingController by lazy { serviceLocator.screenTrackingControllerProvider.get() }
@@ -83,6 +86,7 @@ class RetenoInternalImpl(
         }
         Logger.i(TAG, "setConfig()")
         serviceLocator.setConfig(config)
+        Util.setIsDebug(config.isDebug)
         syncScope.launch {
             anrWaitCondition.await()
             applyConfig(config)
@@ -531,6 +535,10 @@ class RetenoInternalImpl(
 
     override fun executeAfterInit(action: () -> Unit) = runAfterInit {
         action()
+    }
+
+    override suspend fun requestPermissionChecker(): AndroidPermissionChecker? {
+        return permissionDelegate.requestChecker()
     }
 
     private fun stopPushScheduler() {
