@@ -4,6 +4,9 @@ import androidx.core.app.NotificationChannelCompat
 import androidx.core.app.NotificationManagerCompat
 import com.reteno.core.RetenoInternalImpl
 import com.reteno.push.channel.RetenoNotificationChannel
+import com.reteno.push.permission.NotificationPermissionChecker
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 object RetenoNotifications {
 
@@ -21,6 +24,14 @@ object RetenoNotifications {
 
             NotificationManagerCompat.from(RetenoInternalImpl.instance.application)
                 .createNotificationChannel(channel)
+        }
+    }
+
+    suspend fun requestNotificationPermission(): Boolean {
+       return withContext(Dispatchers.Main) {
+            val checker = RetenoInternalImpl.instance.requestPermissionChecker() ?: return@withContext false
+            val notificationChecker = NotificationPermissionChecker(checker)
+            notificationChecker.requestPermission()
         }
     }
 }
