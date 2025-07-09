@@ -13,6 +13,7 @@ import com.reteno.core.identification.DeviceIdProvider
  * and it should not be changed in other use cases).
  * @property lifecycleTrackingOptions - behavior of automatic app lifecycle event tracking, see [Reteno.setLifecycleEventConfig] to learn more
  * @property accessKey - reteno access key
+ * @property isDebug - enable/disable debug mode
  * */
 class RetenoConfig private constructor(
     val isPausedInAppMessages: Boolean,
