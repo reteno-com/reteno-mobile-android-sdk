@@ -66,9 +66,6 @@ android {
     }
 
     testOptions {
-        unitTests.all {
-            jvmArgs "--add-opens=java.base/java.time=ALL-UNNAMED"
-        }
         unitTests {
             includeAndroidResources = true
         }
