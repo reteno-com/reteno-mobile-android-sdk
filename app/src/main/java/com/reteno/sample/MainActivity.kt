@@ -1,41 +1,23 @@
 package com.reteno.sample
 
-import android.Manifest.permission
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
-import android.net.Uri
 import android.os.Bundle
-import android.provider.Settings
-import android.view.View
 import android.widget.Toast
-import androidx.activity.result.ActivityResultLauncher
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.NavHostFragment
-import com.google.android.material.snackbar.Snackbar
-import com.reteno.core.Reteno
 import com.reteno.core.RetenoInternalImpl
 import com.reteno.core.view.iam.callback.InAppCloseData
 import com.reteno.core.view.iam.callback.InAppData
 import com.reteno.core.view.iam.callback.InAppErrorData
 import com.reteno.core.view.iam.callback.InAppLifecycleCallback
+import com.reteno.push.RetenoNotifications
 import com.reteno.sample.databinding.ActivityMainBinding
+import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
     private var binding: ActivityMainBinding? = null
-    private val requestPermissionLauncher: ActivityResultLauncher<String> =
-        registerForActivityResult(
-            ActivityResultContracts.RequestPermission()
-        ) { isGranted: Boolean ->
-            if (isGranted) {
-                Reteno.instance.updatePushPermissionStatus()
-                Toast.makeText(this, "Permission granted", Toast.LENGTH_SHORT).show()
-            } else {
-                Toast.makeText(this, "Permission not granted", Toast.LENGTH_SHORT).show()
-            }
-        }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -99,23 +81,13 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun checkPermissions() {
-        if (ContextCompat.checkSelfPermission(
-                this,
-                permission.POST_NOTIFICATIONS
-            ) == PackageManager.PERMISSION_GRANTED
-        ) {
-            return
-        } else if (shouldShowRequestPermissionRationale(permission.POST_NOTIFICATIONS)) {
-            Snackbar.make(window.decorView, "Notification blocked", Snackbar.LENGTH_LONG)
-                .setAction("Settings") { v: View? ->
-                    val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
-                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    val uri = Uri.fromParts("package", packageName, null)
-                    intent.setData(uri)
-                    startActivity(intent)
-                }.show()
-        } else {
-            requestPermissionLauncher.launch(permission.POST_NOTIFICATIONS)
+        lifecycleScope.launch {
+            val isGranted = RetenoNotifications.requestNotificationPermission()
+            if (isGranted) {
+                Toast.makeText(this@MainActivity, "Permission granted", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(this@MainActivity, "Permission not granted", Toast.LENGTH_SHORT).show()
+            }
         }
     }
 

@@ -4,8 +4,17 @@ import androidx.core.app.NotificationChannelCompat
 import androidx.core.app.NotificationManagerCompat
 import com.reteno.core.RetenoInternalImpl
 import com.reteno.push.channel.RetenoNotificationChannel
+import com.reteno.push.permission.NotificationPermissionChecker
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.future.future
+import kotlinx.coroutines.withContext
+import java.util.concurrent.CompletableFuture
 
 object RetenoNotifications {
+
+    private val notificationScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
 
     @JvmStatic
     fun updateDefaultNotificationChannel(name: String? = null, description: String? = null) {
@@ -21,6 +30,22 @@ object RetenoNotifications {
 
             NotificationManagerCompat.from(RetenoInternalImpl.instance.application)
                 .createNotificationChannel(channel)
+        }
+    }
+
+    @JvmStatic
+    suspend fun requestNotificationPermission(): Boolean {
+        val checker = RetenoInternalImpl.instance.requestPermissionChecker() ?: return false
+        val notificationChecker = NotificationPermissionChecker(checker)
+        return withContext(Dispatchers.Main) {
+            notificationChecker.requestPermission()
+        }
+    }
+
+    @JvmStatic
+    fun requestNotificationPermissionFuture(): CompletableFuture<Boolean> {
+        return notificationScope.future {
+            requestNotificationPermission()
         }
     }
 }

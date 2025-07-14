@@ -13,6 +13,7 @@ import com.reteno.core.identification.DeviceIdProvider
  * and it should not be changed in other use cases).
  * @property lifecycleTrackingOptions - behavior of automatic app lifecycle event tracking, see [Reteno.setLifecycleEventConfig] to learn more
  * @property accessKey - reteno access key
+ * @property isDebug - enable/disable debug mode
  * */
 class RetenoConfig private constructor(
     val isPausedInAppMessages: Boolean,
@@ -21,7 +22,8 @@ class RetenoConfig private constructor(
     val accessKey: String,
     val isPausedPushInAppMessages: Boolean,
     val defaultNotificationChannelConfig: ((NotificationChannelCompat.Builder) -> Unit)?,
-    val platform: String
+    val platform: String,
+    val isDebug: Boolean
 ) {
 
     class Builder() {
@@ -33,6 +35,7 @@ class RetenoConfig private constructor(
         private var accessKey: String = ""
         private var currentPlatform: String = "Android"
         private var notificationChannelConfig: ((NotificationChannelCompat.Builder) -> Unit)? = null
+        private var isDebug: Boolean = false
 
         constructor(config: RetenoConfig) : this() {
             pauseInAppMessages(config.isPausedInAppMessages)
@@ -41,6 +44,7 @@ class RetenoConfig private constructor(
             accessKey(config.accessKey)
             lifecycleTrackingOptions(config.lifecycleTrackingOptions)
             config.defaultNotificationChannelConfig?.let { defaultNotificationChannelConfig(config.defaultNotificationChannelConfig) }
+            setDebug(config.isDebug)
         }
 
         fun pauseInAppMessages(isPaused: Boolean): Builder {
@@ -79,6 +83,11 @@ class RetenoConfig private constructor(
             return this
         }
 
+        fun setDebug(isDebug: Boolean): Builder {
+            this.isDebug = isDebug
+            return this
+        }
+
         fun build(): RetenoConfig {
             if (accessKey.isBlank()) throw IllegalStateException("Access key is blank. Use accessKey method to set access key.")
             return RetenoConfig(
@@ -88,7 +97,8 @@ class RetenoConfig private constructor(
                 userIdProvider = deviceIdProvider,
                 lifecycleTrackingOptions = lifecycleOptions,
                 defaultNotificationChannelConfig = notificationChannelConfig,
-                platform = currentPlatform
+                platform = currentPlatform,
+                isDebug = isDebug
             )
         }
     }
