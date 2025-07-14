@@ -45,9 +45,6 @@ android {
     }
 
     testOptions {
-        unitTests.all {
-            jvmArgs "--add-opens=java.base/java.time=ALL-UNNAMED"
-        }
         unitTests {
             includeAndroidResources = true
         }
@@ -58,6 +55,7 @@ dependencies {
     api project(':RetenoSdkCore')
 
     implementation "androidx.core:core-ktx:1.9.0"
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:1.6.4"
 
     testDependencies()
 }

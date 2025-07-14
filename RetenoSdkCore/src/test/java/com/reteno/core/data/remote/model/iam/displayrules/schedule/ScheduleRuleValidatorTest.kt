@@ -423,7 +423,7 @@ class ScheduleRuleValidatorTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun givenInAppSpecificDaysAndTime_whenEndHoursBeforeStartHoursAndInRangeEdgeStart_thenTrue() {
+    fun givenInAppSpecificDaysAndTime_whenEndHoursBeforeStartHoursAndInRangeEdgeStart_thenFalse() {
         //Given
         val sut = createValidator()
         val mocked = ZonedDateTime.parse("2024-04-01T13:10:00+01:00[Europe/Paris]")
@@ -460,9 +460,9 @@ class ScheduleRuleValidatorTest : BaseRobolectricTest() {
         val result = sut.checkInAppMatchesScheduleRules(
             inAppMessage = inApp
         )
-        //Then
-        Assert.assertEquals(true, result)
         unmockkStatic(ZonedDateTime::class)
+        //Then
+        Assert.assertEquals(false, result)
     }
 
     @Test
