@@ -1,5 +1,6 @@
 package com.reteno.core.permission
 
+import android.app.Activity
 import android.content.Context
 import androidx.activity.ComponentActivity
 import androidx.annotation.CallSuper
@@ -12,7 +13,7 @@ open class AndroidActivityAware : DefaultLifecycleObserver {
     @Volatile
     private var activity: ComponentActivity? = null
 
-    protected fun requireActivity() = requireNotNull(activity)
+    protected fun requireActivity(): Activity = requireNotNull(activity)
 
     suspend fun awaitActivity() = withTimeout(2000L) {
         if (activity != null) return@withTimeout requireActivity()
