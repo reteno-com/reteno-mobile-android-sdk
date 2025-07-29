@@ -71,13 +71,13 @@ class DeviceWriteDialogFragment : BaseDatabaseDialogFragment() {
         token: String?
     ) {
         val device = createDevice(
-            deviceId.getIdInternal(),
-            deviceId.getExternalIdInternal(),
-            token,
-            null,
-            null,
-            null,
-            null
+            deviceId = deviceId.getIdInternal(),
+            externalUserId = deviceId.getExternalIdInternal(),
+            pushToken = token,
+            pushSubscribed = null,
+            advertisingId = null,
+            email = null,
+            phone = null
         )
         binding!!.etDeviceId.setText(device.deviceId)
         binding!!.etExternalUserId.setText(device.externalUserId)

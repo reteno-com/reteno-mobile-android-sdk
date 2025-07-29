@@ -84,7 +84,7 @@ class ConfigRepositoryImplTest : BaseUnitTest() {
     @Test
     fun given_whenGetDeviceId_thenDelegatedToRestConfig() {
         // Given
-        val deviceId = DeviceId(DEVICE_ID, EXTERNAL_DEVICE_ID, DeviceIdMode.RANDOM_UUID)
+        val deviceId = DeviceId(DEVICE_ID, null, EXTERNAL_DEVICE_ID, DeviceIdMode.RANDOM_UUID)
         every { restConfig.deviceId } returns deviceId
 
         // When

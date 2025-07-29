@@ -7,7 +7,6 @@ import com.reteno.core.identification.DeviceIdProvider
 import io.mockk.MockKAnnotations
 import io.mockk.every
 import io.mockk.impl.annotations.RelaxedMockK
-import io.mockk.mockk
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Test
@@ -47,8 +46,8 @@ class DeviceIdHelperTest : BaseRobolectricTest() {
         // Given
         val oldDeviceIdMode = DeviceIdMode.RANDOM_UUID
         val newDeviceIdMode = DeviceIdMode.ANDROID_ID
-        val oldDeviceId = DeviceId(DEVICE_ID_UUID, null, oldDeviceIdMode)
-        val expectedDeviceId = DeviceId(DEVICE_ID_ANDROID, null, newDeviceIdMode)
+        val oldDeviceId = DeviceId(DEVICE_ID_UUID, null, null, oldDeviceIdMode)
+        val expectedDeviceId = DeviceId(DEVICE_ID_ANDROID, null, null, newDeviceIdMode)
 
         every { sharedPrefsManager.getDeviceIdUuid() } returns DEVICE_ID_UUID
 
@@ -68,7 +67,7 @@ class DeviceIdHelperTest : BaseRobolectricTest() {
         val oldDeviceIdMode = DeviceIdMode.RANDOM_UUID
         val expectedDeviceIdMode = DeviceIdMode.ANDROID_ID
         val externalId = null
-        val oldDeviceId = DeviceId(DEVICE_ID_UUID, externalId, oldDeviceIdMode)
+        val oldDeviceId = DeviceId(DEVICE_ID_UUID, null, externalId, oldDeviceIdMode)
         every { sharedPrefsManager.getDeviceIdUuid() } returns DEVICE_ID_UUID
 
         // When
@@ -87,39 +86,39 @@ class DeviceIdHelperTest : BaseRobolectricTest() {
     @Test
     fun givenExternalDeviceIdSaved_whenWithNullExternalDeviceId_thenExternalDeviceIdIsNull() {
         // Given
-        val oldDeviceId = DeviceId(DEVICE_ID_UUID, EXTERNAL_DEVICE_ID)
+        val oldDeviceId = DeviceId(DEVICE_ID_UUID, null, EXTERNAL_DEVICE_ID)
 
         // When
         val newDeviceId = SUT.withExternalUserId(oldDeviceId, null)
 
         // Then
-        val expectedDeviceId = DeviceId(DEVICE_ID_UUID, null)
+        val expectedDeviceId = DeviceId(DEVICE_ID_UUID,null, null)
         assertEquals(expectedDeviceId, newDeviceId)
     }
 
     @Test
     fun givenExternalDeviceIdSaved_whenWithEmptyExternalDeviceId_thenExternalDeviceIdIsEmpty() {
         // Given
-        val oldDeviceId = DeviceId(DEVICE_ID_UUID, EXTERNAL_DEVICE_ID)
+        val oldDeviceId = DeviceId(DEVICE_ID_UUID,null, EXTERNAL_DEVICE_ID)
 
         // When
         val newDeviceId = SUT.withExternalUserId(oldDeviceId, "")
 
         // Then
-        val expectedDeviceId = DeviceId(DEVICE_ID_UUID, "")
+        val expectedDeviceId = DeviceId(DEVICE_ID_UUID, null, "")
         assertEquals(expectedDeviceId, newDeviceId)
     }
 
     @Test
     fun givenNoExternalDeviceId_whenWithExternalDeviceId_thenExternalDeviceIdSaved() {
         // Given
-        val oldDeviceId = DeviceId(DEVICE_ID_UUID, null)
+        val oldDeviceId = DeviceId(DEVICE_ID_UUID, null, null)
 
         // When
         val newDeviceId = SUT.withExternalUserId(oldDeviceId, EXTERNAL_DEVICE_ID)
 
         // Then
-        val expectedDeviceId = DeviceId(DEVICE_ID_UUID, EXTERNAL_DEVICE_ID)
+        val expectedDeviceId = DeviceId(DEVICE_ID_UUID, null, EXTERNAL_DEVICE_ID)
         assertEquals(expectedDeviceId, newDeviceId)
     }
 }

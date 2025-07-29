@@ -617,7 +617,7 @@ class RetenoImplTest : BaseRobolectricTest() {
         val reteno = createRetenoAndAdvanceInit()
 
         reteno.start()
-
+        advanceUntilIdle()
         //Then
         verify(exactly = 1) { iamController.getInAppMessages() }
         RetenoInternalImpl.swapInstance(null)
