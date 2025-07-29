@@ -40,6 +40,9 @@ interface Reteno {
     @Throws(java.lang.IllegalArgumentException::class)
     fun setUserAttributes(externalUserId: String, user: User?)
 
+
+    fun setMultiAccountUserAttributes(externalUserId: String, user: User?)
+
     /**
      * Add or modify user attributes without providing externalUserId.
      * User attributes are added/modified for anonymous contact

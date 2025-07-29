@@ -17,7 +17,7 @@ interface RetenoSessionHandler {
         messages: MutableList<InAppWithTime>,
         onTimeMatch: (List<InAppMessage>) -> Unit
     )
-
+    suspend fun clearSessionForced()
 
     sealed interface SessionEvent {
         class SessionEndEvent(

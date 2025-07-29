@@ -28,6 +28,10 @@ internal class ConfigRepositoryImpl(
         restConfig.setExternalUserId(externalId)
     }
 
+    override fun setDeviceIdSuffix(suffix: String?) {
+        restConfig.setDeviceIdSuffix(suffix)
+    }
+
     override fun setUserEmail(email: String?) {
         restConfig.setDeviceEmail(email)
     }

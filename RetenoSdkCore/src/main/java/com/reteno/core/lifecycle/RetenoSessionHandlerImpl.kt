@@ -134,6 +134,24 @@ internal class RetenoSessionHandlerImpl(
         sharedPrefsManager.saveOpenCount(sharedPrefsManager.getOpenCount() + 1)
     }
 
+    override suspend fun clearSessionForced() {
+        val appStoppedTimestamp = sharedPrefsManager.getLastInteractionTime()
+        sessionEventFlow.emit(
+            SessionEvent.SessionEndEvent(
+                sharedPrefsManager.getSessionId().orEmpty(),
+                System.currentTimeMillis(),
+                appStoppedTimestamp - sharedPrefsManager.getSessionStartTimestamp(),
+                sharedPrefsManager.getOpenCount(),
+                sharedPrefsManager.getBackgroundCount()
+            )
+        )
+        sharedPrefsManager.saveOpenCount(0)
+        sharedPrefsManager.saveBackgroundCount(0)
+        sharedPrefsManager.saveLastInteractionTime(0)
+        previousForegroundTime = 0L
+        foregroundTimeMillis = 0
+    }
+
     private fun countTime() {
         timeSinceResume = System.currentTimeMillis() - appResumedTimestamp
         foregroundTimeMillis = previousForegroundTime + timeSinceResume

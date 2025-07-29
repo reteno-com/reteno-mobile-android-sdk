@@ -159,13 +159,13 @@ class RetenoInternalImpl(
         }
         /*@formatter:off*/ Logger.i(TAG, "start(): ")
         /*@formatter:on*/
-        if (!isStarted.getAndSet(true)) {
-            iamController.getInAppMessages()
-        }
         syncScope.launch {
             try {
                 withContext(ioDispatcher) {
                     contactController.checkIfDeviceRequestSentThisSession()
+                }
+                if (!isStarted.getAndSet(true)) {
+                    iamController.getInAppMessages()
                 }
                 sessionHandler.start()
                 scheduleController.startScheduler()
@@ -238,6 +238,31 @@ class RetenoInternalImpl(
                 /*@formatter:off*/ Logger.e(TAG, "setUserAttributes(): externalUserId = [$externalUserId], user = [$user]", ex)
             /*@formatter:on*/
             }
+        }
+    }
+
+    override fun setMultiAccountUserAttributes(externalUserId: String, user: User?) = runAfterInit {
+        if (!isOsVersionSupported()) {
+            return@runAfterInit
+        }
+        /*@formatter:off*/ Logger.i(TAG, "setMultiAccountUserAttributes(): ", "externalUserId = [" , externalUserId , "], used = [" , user , "]")
+        /*@formatter:on*/
+        if (externalUserId.isBlank()) {
+            val exception = IllegalArgumentException("externalUserId should not be null or blank")
+            /*@formatter:off*/ Logger.e(TAG, "setMultiAccountUserAttributes(): ", exception)
+            /*@formatter:on*/
+            throw exception
+        }
+        syncScope.launch {
+            stop()
+            withContext(ioDispatcher) {
+                if (contactController.getDeviceIdSuffix() != externalUserId) {
+                    sessionHandler.clearSessionForced()
+                    contactController.setDeviceIdSuffix(externalUserId)
+                }
+                contactController.setExternalIdAndUserData(externalUserId, user)
+            }
+            start()
         }
     }
 
