@@ -28,6 +28,7 @@ import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -159,33 +160,31 @@ internal class IamControllerImpl(
         htmlJob = null
     }
 
-    override fun getInAppMessages() {
-        scope.launch {
-            try {
-                val messageListModel = iamRepository.getInAppMessages()
-                val inAppMessages = messageListModel.messages
+    override suspend fun getInAppMessages() = coroutineScope {
+        try {
+            val messageListModel = iamRepository.getInAppMessages()
+            val inAppMessages = messageListModel.messages
 
-                val messagesWithNoContent = inAppMessages.filter { it.content == null }
-                val contentIds = messagesWithNoContent.map { it.messageInstanceId }
-                val contentsDeferred = async { iamRepository.getInAppMessagesContent(contentIds) }
+            val messagesWithNoContent = inAppMessages.filter { it.content == null }
+            val contentIds = messagesWithNoContent.map { it.messageInstanceId }
+            val contentsDeferred = async { iamRepository.getInAppMessagesContent(contentIds) }
 
-                updateSegmentStatuses(
-                    inAppMessages,
-                    updateCacheOnSuccess = messageListModel.isFromRemote.not()
-                )
+            updateSegmentStatuses(
+                inAppMessages,
+                updateCacheOnSuccess = messageListModel.isFromRemote.not()
+            )
 
-                val contents = contentsDeferred.await()
-                messagesWithNoContent.forEach { message ->
-                    message.content = contents.firstOrNull {
-                        it.messageInstanceId == message.messageInstanceId
-                    }
+            val contents = contentsDeferred.await()
+            messagesWithNoContent.forEach { message ->
+                message.content = contents.firstOrNull {
+                    it.messageInstanceId == message.messageInstanceId
                 }
-
-                iamRepository.saveInAppMessages(messageListModel)
-                sortMessages(inAppMessages)
-            } catch (e: Exception) {
-                Logger.e(TAG, "getInAppMessages():", e)
             }
+
+            iamRepository.saveInAppMessages(messageListModel)
+            sortMessages(inAppMessages)
+        } catch (e: Exception) {
+            Logger.e(TAG, "getInAppMessages():", e)
         }
     }
 

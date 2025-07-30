@@ -35,10 +35,10 @@ internal class EventsRepositoryImpl(
     private val distinctEventTypes = listOf(RemoteConstants.EcomEvent.EVENT_TYPE_CART_UPDATED)
 
     override fun saveEvent(event: Event) {
-        /*@formatter:off*/ Logger.i(TAG, "saveEvent(): ", "event = [" , event , "]")
+        val deviceId = configRepository.getDeviceId()
+        /*@formatter:off*/ Logger.i(TAG, "saveEvent(): ", "event = [" , event , "]", ", deviceId = [" , deviceId , "]")
         /*@formatter:on*/
 
-        val deviceId = configRepository.getDeviceId()
         val events = EventsDb(
             deviceId = deviceId.id,
             externalUserId = deviceId.externalId,

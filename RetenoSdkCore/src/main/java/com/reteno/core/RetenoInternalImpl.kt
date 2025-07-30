@@ -104,7 +104,6 @@ class RetenoInternalImpl(
 
     private suspend fun applyConfig(config: RetenoConfig) = withContext(mainDispatcher) {
         try {
-            delay(2000)
             appLifecycleOwner.lifecycle.addObserver(appLifecycleController)
             withContext(ioDispatcher) {
                 contactController.checkIfDeviceRegistered()
@@ -163,9 +162,9 @@ class RetenoInternalImpl(
             try {
                 withContext(ioDispatcher) {
                     contactController.checkIfDeviceRequestSentThisSession()
-                }
-                if (!isStarted.getAndSet(true)) {
-                    iamController.getInAppMessages()
+                    if (!isStarted.getAndSet(true)) {
+                        iamController.getInAppMessages()
+                    }
                 }
                 sessionHandler.start()
                 scheduleController.startScheduler()
@@ -346,6 +345,7 @@ class RetenoInternalImpl(
         /*@formatter:on*/
             try {
                 appLifecycleController.setLifecycleEventConfig(lifecycleTrackingOptions)
+                sessionHandler.setLifecycleEventConfig(lifecycleTrackingOptions)
             } catch (ex: Throwable) {
                 /*@formatter:off*/ Logger.e(TAG, "setLifecycleEventConfig(): lifecycleEventConfig = [$lifecycleTrackingOptions]", ex)
             /*@formatter:on*/
