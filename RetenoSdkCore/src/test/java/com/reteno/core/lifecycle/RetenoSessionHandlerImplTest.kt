@@ -2,14 +2,15 @@ package com.reteno.core.lifecycle
 
 import com.reteno.core.base.BaseUnitTest
 import com.reteno.core.data.local.sharedpref.SharedPrefsManager
-import com.reteno.core.lifecycle.RetenoSessionHandler.SessionEvent
+import com.reteno.core.domain.controller.EventController
+import com.reteno.core.domain.model.event.Event.Companion.SESSION_START_EVENT_TYPE_KEY
+import com.reteno.core.domain.model.event.LifecycleTrackingOptions
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.impl.annotations.RelaxedMockK
 import io.mockk.mockkStatic
 import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.toList
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -25,6 +26,9 @@ internal class RetenoSessionHandlerImplTest : BaseUnitTest() {
 
     @RelaxedMockK
     lateinit var sharedPrefsManager: SharedPrefsManager
+
+    @RelaxedMockK
+    lateinit var eventsController: EventController
 
     @Test
     fun givenAppStartedLongTImeAgo_whenAppStart_thenSessionIdMatches() = runTest {
@@ -49,19 +53,12 @@ internal class RetenoSessionHandlerImplTest : BaseUnitTest() {
 
         //When
         val sut = createHandler()
-        val emittedItems = mutableListOf<SessionEvent>()
-        val job = launch {
-            sut.sessionEventFlow.toList(emittedItems)
-        }
-        advanceUntilIdle()
-
         sut.start()
 
         advanceUntilIdle()
 
         //Then
-        assertEquals(emittedItems.filterIsInstance<SessionEvent.SessionStartEvent>().size, 1)
-        job.cancel()
+        coVerify { eventsController.trackEvent(match { it.eventTypeKey == SESSION_START_EVENT_TYPE_KEY }) }
     }
 
     @Test
@@ -103,18 +100,18 @@ internal class RetenoSessionHandlerImplTest : BaseUnitTest() {
 
         //When
         val sut = createHandler()
-        val emittedItems = mutableListOf<SessionEvent>()
-        backgroundScope.launch {
-            sut.sessionEventFlow.toList(emittedItems)
-        }
         sut.start()
 
         //Then
-        assertEquals(emittedItems.filterIsInstance<SessionEvent.SessionStartEvent>().size, 0)
+        coVerify(exactly = 0) { eventsController.trackEvent(any()) }
     }
 
 
-    private fun createHandler() = RetenoSessionHandlerImpl(
-        sharedPrefsManager = sharedPrefsManager
+    private fun createHandler(
+        options: LifecycleTrackingOptions = LifecycleTrackingOptions.ALL
+    ) = RetenoSessionHandlerImpl(
+        eventController = eventsController,
+        sharedPrefsManager = sharedPrefsManager,
+        lifecycleTrackingOptions = options
     )
 }

@@ -619,7 +619,7 @@ class RetenoImplTest : BaseRobolectricTest() {
         reteno.start()
         advanceUntilIdle()
         //Then
-        verify(exactly = 1) { iamController.getInAppMessages() }
+        coVerify(exactly = 1) { iamController.getInAppMessages() }
         RetenoInternalImpl.swapInstance(null)
     }
 
