@@ -24,7 +24,7 @@ class ScheduleRuleValidatorTest : BaseRobolectricTest() {
                 frequency = null,
                 targeting = null,
                 schedule = ScheduleDisplayRules().apply {
-                    predicates.add(ScheduleRule.ShowAfter(ZonedDateTime.now()))
+                    predicates.add(ScheduleRule.ShowAfter(ZonedDateTime.now().minusSeconds(1)))
                 },
                 async = null
             ),
