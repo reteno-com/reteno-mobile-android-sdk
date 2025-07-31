@@ -225,6 +225,7 @@ class RetenoImplTest : BaseRobolectricTest() {
     fun givenExceptionThrown_whenSetUserData_thenExceptionSentToLogger() = runRetenoTest {retenoImpl ->
         // Given
         coEvery { contactController.setExternalIdAndUserData(any(), any()) } throws EXCEPTION
+        coEvery { contactController.getDeviceIdSuffix() } returns null
 
         val userFull = getUserFull()
 
