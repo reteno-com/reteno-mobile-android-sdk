@@ -228,7 +228,17 @@ class RetenoInternalImpl(
 
         syncScope.launch(ioDispatcher) {
             try {
-                contactController.setExternalIdAndUserData(externalUserId, user)
+                if (contactController.getDeviceIdSuffix() != null) {
+                    stop()
+                    withContext(ioDispatcher) {
+                        sessionHandler.clearSessionForced()
+                        contactController.setDeviceIdSuffix(null)
+                        contactController.setExternalIdAndUserData(externalUserId, user)
+                    }
+                    start()
+                } else {
+                    contactController.setExternalIdAndUserData(externalUserId, user)
+                }
                 if (isStarted.get()) {
                     delay(5000L) //There is a requirement to refresh segmentation in 5 sec after user change his attributes
                     iamController.refreshSegmentation()
