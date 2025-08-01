@@ -262,16 +262,18 @@ class RetenoInternalImpl(
             /*@formatter:on*/
             throw exception
         }
-        syncScope.launch {
-            stop()
-            withContext(ioDispatcher) {
+        syncScope.launch(ioDispatcher) {
                 if (contactController.getDeviceIdSuffix() != externalUserId) {
+                    withContext(mainDispatcher) {
+                        stop()
+                    }
                     sessionHandler.clearSessionForced()
                     contactController.setDeviceIdSuffix(externalUserId)
+                    withContext(mainDispatcher) {
+                        start()
+                    }
                 }
                 contactController.setExternalIdAndUserData(externalUserId, user)
-            }
-            start()
         }
     }
 
