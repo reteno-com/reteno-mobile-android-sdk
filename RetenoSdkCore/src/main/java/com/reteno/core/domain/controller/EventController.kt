@@ -4,6 +4,7 @@ import com.reteno.core.data.repository.EventsRepository
 import com.reteno.core.data.repository.LogEventRepository
 import com.reteno.core.domain.SchedulerUtils
 import com.reteno.core.domain.model.ecom.EcomEvent
+import com.reteno.core.domain.model.ecom.asRegularEvent
 import com.reteno.core.domain.model.event.Event
 import com.reteno.core.domain.model.logevent.RetenoLogEvent
 import com.reteno.core.util.Logger
@@ -41,6 +42,7 @@ internal class EventController(
         /*@formatter:off*/ Logger.i(TAG, "trackEcomEvent(): ", "event = [" , ecomEvent , "]")
         /*@formatter:on*/
         eventsRepository.saveEcomEvent(ecomEvent)
+        _eventFlow.tryEmit(ecomEvent.asRegularEvent())
     }
 
     fun pushEvents() {
