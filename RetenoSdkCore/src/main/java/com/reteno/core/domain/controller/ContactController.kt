@@ -22,6 +22,10 @@ class ContactController(
         return configRepository.getDeviceId().id
     }
 
+    fun getDeviceIdSuffix(): String? {
+        return configRepository.getDeviceId().idSuffix
+    }
+
     suspend fun awaitDeviceId(): String {
         return configRepository.awaitForDeviceId().id
     }
@@ -41,6 +45,16 @@ class ContactController(
             return true
         }
         return false
+    }
+
+    fun setDeviceIdSuffix(suffix: String?) {
+        /*@formatter:off*/ Logger.i(TAG, "setDeviceIdSuffix(): ", "suffix = [" , suffix , "]")
+        /*@formatter:on*/
+        val oldDeviceId = configRepository.getDeviceId()
+        if (oldDeviceId.idSuffix != suffix) {
+            isDeviceSentThisSession.set(false)
+            configRepository.setDeviceIdSuffix(suffix)
+        }
     }
 
     fun setUserData(user: User?): Boolean {
@@ -142,6 +156,7 @@ class ContactController(
         val deviceId = configRepository.getDeviceId()
         val contact = Device.createDevice(
             deviceId = deviceId.id,
+            deviceIdSuffix = deviceId.idSuffix,
             externalUserId = deviceId.externalId,
             pushToken = fcmToken,
             email = deviceId.email,

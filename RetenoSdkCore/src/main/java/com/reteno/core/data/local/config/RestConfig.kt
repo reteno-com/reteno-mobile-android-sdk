@@ -23,10 +23,18 @@ internal class RestConfig(
         deviceIdHelper.withDeviceIdMode(deviceId, deviceIdMode) {
             deviceId = it.copy(
                 externalId = sharedPrefsManager.getExternalUserId(),
+                idSuffix = sharedPrefsManager.getDeviceIdSuffix(),
                 email = sharedPrefsManager.getEmail(),
                 phone = sharedPrefsManager.getPhone()
             )
         }
+    }
+
+    internal fun setDeviceIdSuffix(suffix: String?) {
+        /*@formatter:off*/ Logger.i(TAG, "setDeviceIdSuffix(): ", "suffix = [" , suffix , "]")
+        /*@formatter:on*/
+        sharedPrefsManager.saveDeviceIdSuffix(suffix)
+        deviceId = deviceIdHelper.withDeviceIdSuffix(deviceId, suffix)
     }
 
     internal fun setExternalUserId(externalUserId: String?) {

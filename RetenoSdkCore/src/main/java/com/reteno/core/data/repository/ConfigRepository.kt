@@ -9,6 +9,7 @@ interface ConfigRepository {
     val notificationState: Flow<Boolean>
 
     fun setExternalUserId(externalId: String?)
+    fun setDeviceIdSuffix(suffix: String?)
     fun setUserPhone(phone: String?)
     fun setUserEmail(email: String?)
     fun getDeviceId(): DeviceId

@@ -37,7 +37,7 @@ internal class DeviceIdHelper(
                     )
                     /*@formatter:off*/ Logger.i(TAG, "initDeviceId(): ", "deviceIdMode = [", deviceIdMode, "]", " deviceId = [", deviceId, "]")
                     /*@formatter:on*/
-                    onDeviceIdChanged(currentDeviceId.copy(id = deviceId, mode = deviceIdMode))
+                    onDeviceIdChanged(currentDeviceId.copy(idBody = deviceId, mode = deviceIdMode))
                 } catch (ex: Exception) {
                     /*@formatter:off*/ Logger.e(TAG, "initDeviceId(): DeviceIdMode.ANDROID_ID", ex)
                     /*@formatter:on*/
@@ -52,7 +52,7 @@ internal class DeviceIdHelper(
                     client.appSetIdInfo.addOnSuccessListener {
                         /*@formatter:off*/ Logger.i(TAG, "initDeviceId(): ", "deviceIdMode = [", deviceIdMode, "]", " deviceId = [", it.id, "]")
                         /*@formatter:on*/
-                        onDeviceIdChanged(currentDeviceId.copy(id = it.id, mode = deviceIdMode))
+                        onDeviceIdChanged(currentDeviceId.copy(idBody = it.id, mode = deviceIdMode))
                     }.addOnFailureListener {
                         /*@formatter:off*/ Logger.i(TAG, "initDeviceId(): ", "deviceIdMode = [", deviceIdMode, "]", " failed trying ANDROID_ID")
                         /*@formatter:on*/
@@ -71,7 +71,7 @@ internal class DeviceIdHelper(
 
             DeviceIdMode.RANDOM_UUID -> {
                 val newId = sharedPrefsManager.getDeviceIdUuid()
-                onDeviceIdChanged(currentDeviceId.copy(id = newId, mode = deviceIdMode))
+                onDeviceIdChanged(currentDeviceId.copy(idBody = newId, mode = deviceIdMode))
                 /*@formatter:off*/ Logger.i(TAG, "initDeviceId(): ", "deviceIdMode = [", deviceIdMode, "]", " deviceId = [", newId, "]")
                 /*@formatter:on*/
             }
@@ -99,7 +99,7 @@ internal class DeviceIdHelper(
                             /*@formatter:on*/
                             onDeviceIdChanged(
                                 currentDeviceId.copy(
-                                    id = requireNotNull(deviceId),
+                                    idBody = requireNotNull(deviceId),
                                     mode = deviceIdMode
                                 )
                             )
@@ -114,6 +114,15 @@ internal class DeviceIdHelper(
                 }
             }
         }
+    }
+
+    internal fun withDeviceIdSuffix(
+        currentDeviceId: DeviceId,
+        suffix: String?
+    ): DeviceId {
+        /*@formatter:off*/ Logger.i(TAG, "withDeviceIdSuffix(): ", "currentDeviceId = [" , currentDeviceId , "], suffix = [" , suffix , "]")
+        /*@formatter:on*/
+        return currentDeviceId.copy(idSuffix = suffix)
     }
 
     internal fun withExternalUserId(

@@ -62,6 +62,7 @@ class FragmentUserData : BaseFragment() {
         if (externalId!!.contains("null")) {
             externalId = null
         }
+        val isMultiAccount = binding!!.cbMultiAccount.isChecked
         val userCustomData = getUserCustomData()
         val address = Address(
             Util.getTextOrNull(binding!!.etRegion),
@@ -89,7 +90,7 @@ class FragmentUserData : BaseFragment() {
             binding!!.etGroupNamesExclude
         )
         val user = User(userAttributes, subscriptionKeys, groupNamesInclude, groupNamesExclude)
-        sendUserData(externalId, user)
+        sendUserData(externalId, isMultiAccount, user)
     }
 
     private fun getUserCustomData(): List<UserCustomField>? {
@@ -109,8 +110,12 @@ class FragmentUserData : BaseFragment() {
         return list
     }
 
-    protected fun sendUserData(externalId: String?, user: User?) {
-        reteno.setUserAttributes(externalId!!, user)
+    protected fun sendUserData(externalId: String?, isMultiAccount: Boolean, user: User?) {
+        if (isMultiAccount) {
+            reteno.setMultiAccountUserAttributes(externalId!!, user)
+        } else {
+            reteno.setUserAttributes(externalId!!, user)
+        }
     }
 
     private fun createNewFields(): View {

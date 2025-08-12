@@ -104,7 +104,6 @@ class RetenoInternalImpl(
 
     private suspend fun applyConfig(config: RetenoConfig) = withContext(mainDispatcher) {
         try {
-            delay(2000)
             appLifecycleOwner.lifecycle.addObserver(appLifecycleController)
             withContext(ioDispatcher) {
                 contactController.checkIfDeviceRegistered()
@@ -159,13 +158,13 @@ class RetenoInternalImpl(
         }
         /*@formatter:off*/ Logger.i(TAG, "start(): ")
         /*@formatter:on*/
-        if (!isStarted.getAndSet(true)) {
-            iamController.getInAppMessages()
-        }
         syncScope.launch {
             try {
                 withContext(ioDispatcher) {
                     contactController.checkIfDeviceRequestSentThisSession()
+                    if (!isStarted.getAndSet(true)) {
+                        iamController.getInAppMessages()
+                    }
                 }
                 sessionHandler.start()
                 scheduleController.startScheduler()
@@ -229,7 +228,17 @@ class RetenoInternalImpl(
 
         syncScope.launch(ioDispatcher) {
             try {
-                contactController.setExternalIdAndUserData(externalUserId, user)
+                if (contactController.getDeviceIdSuffix() != null) {
+                    stop()
+                    withContext(ioDispatcher) {
+                        sessionHandler.clearSessionForced()
+                        contactController.setDeviceIdSuffix(null)
+                        contactController.setExternalIdAndUserData(externalUserId, user)
+                    }
+                    start()
+                } else {
+                    contactController.setExternalIdAndUserData(externalUserId, user)
+                }
                 if (isStarted.get()) {
                     delay(5000L) //There is a requirement to refresh segmentation in 5 sec after user change his attributes
                     iamController.refreshSegmentation()
@@ -238,6 +247,33 @@ class RetenoInternalImpl(
                 /*@formatter:off*/ Logger.e(TAG, "setUserAttributes(): externalUserId = [$externalUserId], user = [$user]", ex)
             /*@formatter:on*/
             }
+        }
+    }
+
+    override fun setMultiAccountUserAttributes(externalUserId: String, user: User?) = runAfterInit {
+        if (!isOsVersionSupported()) {
+            return@runAfterInit
+        }
+        /*@formatter:off*/ Logger.i(TAG, "setMultiAccountUserAttributes(): ", "externalUserId = [" , externalUserId , "], used = [" , user , "]")
+        /*@formatter:on*/
+        if (externalUserId.isBlank()) {
+            val exception = IllegalArgumentException("externalUserId should not be null or blank")
+            /*@formatter:off*/ Logger.e(TAG, "setMultiAccountUserAttributes(): ", exception)
+            /*@formatter:on*/
+            throw exception
+        }
+        syncScope.launch(ioDispatcher) {
+                if (contactController.getDeviceIdSuffix() != externalUserId) {
+                    withContext(mainDispatcher) {
+                        stop()
+                    }
+                    sessionHandler.clearSessionForced()
+                    contactController.setDeviceIdSuffix(externalUserId)
+                    withContext(mainDispatcher) {
+                        start()
+                    }
+                }
+                contactController.setExternalIdAndUserData(externalUserId, user)
         }
     }
 
@@ -321,6 +357,7 @@ class RetenoInternalImpl(
         /*@formatter:on*/
             try {
                 appLifecycleController.setLifecycleEventConfig(lifecycleTrackingOptions)
+                sessionHandler.setLifecycleEventConfig(lifecycleTrackingOptions)
             } catch (ex: Throwable) {
                 /*@formatter:off*/ Logger.e(TAG, "setLifecycleEventConfig(): lifecycleEventConfig = [$lifecycleTrackingOptions]", ex)
             /*@formatter:on*/

@@ -3,28 +3,29 @@ package com.reteno.core.lifecycle
 import com.reteno.core.data.local.sharedpref.SharedPrefsManager
 import com.reteno.core.data.remote.model.iam.displayrules.targeting.InAppWithTime
 import com.reteno.core.data.remote.model.iam.message.InAppMessage
-import com.reteno.core.lifecycle.RetenoSessionHandler.SessionEvent
-import com.reteno.core.lifecycle.RetenoSessionHandler.SessionEvent.SessionStartEvent
+import com.reteno.core.domain.controller.EventController
+import com.reteno.core.domain.model.event.Event
+import com.reteno.core.domain.model.event.LifecycleEvent
+import com.reteno.core.domain.model.event.LifecycleTrackingOptions
+import com.reteno.core.util.Logger
+import com.reteno.core.util.Util.asZonedDateTime
+import com.reteno.core.util.Util.toTypeMap
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
 import java.util.UUID
+import kotlin.time.Duration.Companion.milliseconds
 
 internal class RetenoSessionHandlerImpl(
-    private val sharedPrefsManager: SharedPrefsManager
+    private val eventController: EventController,
+    private val sharedPrefsManager: SharedPrefsManager,
+    lifecycleTrackingOptions: LifecycleTrackingOptions,
 ) : RetenoSessionHandler {
 
-    override val sessionEventFlow = MutableSharedFlow<SessionEvent>(
-        extraBufferCapacity = 2,
-        onBufferOverflow = BufferOverflow.DROP_OLDEST,
-        replay = 2
-    )
-
+    private var lifecycleEventConfig = lifecycleTrackingOptions.toTypeMap()
     private var foregroundTimeMillis: Long = 0L
     private var sessionStartTimestamp: Long = 0L
     private var sessionId = ""
@@ -80,6 +81,12 @@ internal class RetenoSessionHandlerImpl(
         return sessionStartTimestamp
     }
 
+    override fun setLifecycleEventConfig(lifecycleEventConfig: LifecycleTrackingOptions) {
+        /*@formatter:off*/ Logger.i(TAG, "setLifecycleEventConfig(): ", "lifecycleEventConfig = [" , lifecycleEventConfig , "]")
+        /*@formatter:on*/
+        this.lifecycleEventConfig = lifecycleEventConfig.toTypeMap()
+    }
+
     override fun getSessionId(): String {
         return sessionId
     }
@@ -106,11 +113,11 @@ internal class RetenoSessionHandlerImpl(
         val pausedTime = appResumedTimestamp - appStoppedTimestamp
         if (pausedTime > SESSION_RESET_TIME) {
             if (appStoppedTimestamp != 0L) {
-                sessionEventFlow.tryEmit(
-                    SessionEvent.SessionEndEvent(
+                trackSessionEvent(
+                    Event.sessionEnd(
                         sharedPrefsManager.getSessionId().orEmpty(),
-                        System.currentTimeMillis(),
-                        appStoppedTimestamp - sharedPrefsManager.getSessionStartTimestamp(),
+                        System.currentTimeMillis().asZonedDateTime(),
+                        (appStoppedTimestamp - sharedPrefsManager.getSessionStartTimestamp()).milliseconds.inWholeSeconds.toInt(),
                         sharedPrefsManager.getOpenCount(),
                         sharedPrefsManager.getBackgroundCount()
                     )
@@ -123,7 +130,7 @@ internal class RetenoSessionHandlerImpl(
             sessionId = UUID.randomUUID().toString()
             sharedPrefsManager.saveSessionStartTimestamp(sessionStartTimestamp)
             sharedPrefsManager.saveSessionId(sessionId = sessionId)
-            sessionEventFlow.tryEmit(SessionStartEvent(sessionId, sessionStartTimestamp))
+            trackSessionEvent(Event.sessionStart(sessionId, sessionStartTimestamp.asZonedDateTime()))
         } else {
             previousForegroundTime = sharedPrefsManager.getAppSessionTime()
             sessionStartTimestamp = sharedPrefsManager.getSessionStartTimestamp()
@@ -132,6 +139,30 @@ internal class RetenoSessionHandlerImpl(
         }
         foregroundTimeMillis = previousForegroundTime
         sharedPrefsManager.saveOpenCount(sharedPrefsManager.getOpenCount() + 1)
+    }
+
+    override fun clearSessionForced() {
+        val appStoppedTimestamp = sharedPrefsManager.getLastInteractionTime()
+        trackSessionEvent(
+            Event.sessionEnd(
+                sharedPrefsManager.getSessionId().orEmpty(),
+                System.currentTimeMillis().asZonedDateTime(),
+                (appStoppedTimestamp - sharedPrefsManager.getSessionStartTimestamp()).milliseconds.inWholeSeconds.toInt(),
+                sharedPrefsManager.getOpenCount(),
+                sharedPrefsManager.getBackgroundCount()
+            )
+        )
+        sharedPrefsManager.saveOpenCount(0)
+        sharedPrefsManager.saveBackgroundCount(0)
+        sharedPrefsManager.saveLastInteractionTime(0)
+        previousForegroundTime = 0L
+        foregroundTimeMillis = 0
+    }
+
+    private fun trackSessionEvent(lifecycleEvent: LifecycleEvent) {
+        if (lifecycleEventConfig.getOrElse(lifecycleEvent.type) { false }) {
+            eventController.trackEvent(lifecycleEvent.event)
+        }
     }
 
     private fun countTime() {
@@ -153,6 +184,7 @@ internal class RetenoSessionHandlerImpl(
     }
 
     companion object {
+        private val TAG = RetenoSessionHandlerImpl::class.java.simpleName
         private const val TIME_COUNTER_DELAY = 1000L
         private const val SESSION_RESET_TIME = 5L * 60L * 1000L
     }
