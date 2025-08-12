@@ -19,10 +19,8 @@ import com.reteno.core.domain.model.event.LifecycleTrackingOptions
 import com.reteno.core.lifecycle.RetenoActivityHelper
 import com.reteno.core.lifecycle.RetenoLifecycleCallBacksAdapter
 import com.reteno.core.lifecycle.RetenoSessionHandler
-import com.reteno.core.lifecycle.RetenoSessionHandler.SessionEvent
 import com.reteno.core.util.Constants
 import com.reteno.core.util.Logger
-import com.reteno.core.util.Util.asZonedDateTime
 import com.reteno.core.util.Util.toTypeMap
 import com.reteno.core.util.queryBroadcastReceivers
 import kotlinx.coroutines.CoroutineScope
@@ -51,9 +49,6 @@ class AppLifecycleController internal constructor(
     private val lifecycleCallbacks = RetenoLifecycleCallBacksAdapter(onPause = ::onActivityPause)
 
     init {
-        sessionHandler.sessionEventFlow
-            .onEach { handleSessionEvent(it) }
-            .launchIn(scope)
         configRepository.notificationState
             .drop(1)
             .onEach { notifyNotificationsStateChanged(it) }
@@ -155,25 +150,6 @@ class AppLifecycleController internal constructor(
         }
         trackLifecycleEvent(event)
     }
-
-    private fun handleSessionEvent(event: SessionEvent) {
-        when (event) {
-            is SessionEvent.SessionEndEvent -> trackLifecycleEvent(
-                Event.sessionEnd(
-                    event.sessionId,
-                    event.endTime.asZonedDateTime(),
-                    event.durationInMillis.milliseconds.inWholeSeconds.toInt(),
-                    event.openCount,
-                    event.bgCount
-                )
-            )
-
-            is SessionEvent.SessionStartEvent -> trackLifecycleEvent(
-                Event.sessionStart(event.sessionId, event.startTime.asZonedDateTime())
-            )
-        }
-    }
-
 
     private fun trackLifecycleEvent(lifecycleEvent: LifecycleEvent) {
         if (lifecycleEventConfig.getOrElse(lifecycleEvent.type) { false }) {

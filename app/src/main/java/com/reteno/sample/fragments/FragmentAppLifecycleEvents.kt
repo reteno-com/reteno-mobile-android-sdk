@@ -10,12 +10,14 @@ import com.reteno.core.di.ServiceLocator
 import com.reteno.core.domain.controller.AppLifecycleController
 import com.reteno.core.domain.model.event.LifecycleEventType
 import com.reteno.core.domain.model.event.LifecycleTrackingOptions
+import com.reteno.core.lifecycle.RetenoSessionHandler
 import com.reteno.sample.BaseFragment
 import com.reteno.sample.databinding.FragmentAppLifecycleEventsBinding
 
 class FragmentAppLifecycleEvents : BaseFragment() {
 
     private var binding: FragmentAppLifecycleEventsBinding? = null
+    private var sessionHandler: RetenoSessionHandler? = null
     private var appLifecycleController: AppLifecycleController? = null
     private var config = LifecycleTrackingOptions.ALL
 
@@ -26,6 +28,7 @@ class FragmentAppLifecycleEvents : BaseFragment() {
             field.isAccessible = true
             val serviceLocator = field[reteno] as ServiceLocator
             appLifecycleController = serviceLocator.appLifecycleControllerProvider.get()
+            sessionHandler = serviceLocator.retenoSessionHandlerProvider.get()
             field.isAccessible = false
             val configField = AppLifecycleController::class.java.getDeclaredField("lifecycleEventConfig")
             configField.isAccessible = true
@@ -73,6 +76,7 @@ class FragmentAppLifecycleEvents : BaseFragment() {
             }
             btnSave.setOnClickListener {
                 appLifecycleController?.setLifecycleEventConfig(config)
+                sessionHandler?.setLifecycleEventConfig(config)
                 Toast.makeText(requireContext(), "SAVED", Toast.LENGTH_SHORT).show()
             }
         }

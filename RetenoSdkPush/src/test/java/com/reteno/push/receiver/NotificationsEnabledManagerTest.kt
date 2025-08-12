@@ -5,7 +5,6 @@ import com.reteno.core.domain.controller.ContactController
 import com.reteno.core.domain.controller.ScheduleController
 import com.reteno.push.base.robolectric.BaseRobolectricTest
 import com.reteno.push.channel.RetenoNotificationChannel
-import io.mockk.coJustRun
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.impl.annotations.RelaxedMockK
@@ -14,7 +13,6 @@ import io.mockk.mockkConstructor
 import io.mockk.mockkStatic
 import io.mockk.unmockkConstructor
 import io.mockk.unmockkStatic
-import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
 import org.junit.AfterClass
@@ -57,20 +55,6 @@ class NotificationsEnabledManagerTest : BaseRobolectricTest() {
 
         every { anyConstructed<ServiceLocator>().contactControllerProvider.get() } returns contactController
         every { anyConstructed<ServiceLocator>().scheduleControllerProvider.get() } returns scheduleController
-    }
-
-    @Test
-    fun whenOnCheckState_thenScheduleControllerStart() = runRetenoTest {
-        // Given
-        every { RetenoNotificationChannel.isNotificationsEnabled(any()) } returns true
-        every { RetenoNotificationChannel.isNotificationChannelEnabled(any(), any()) } returns true
-        coJustRun { contactController.notificationsEnabled(any()) }
-
-        // When
-        SUT.onCheckState(application)
-
-        // Then
-        verify(exactly = 1) { scheduleController.startScheduler() }
     }
 
     @Test

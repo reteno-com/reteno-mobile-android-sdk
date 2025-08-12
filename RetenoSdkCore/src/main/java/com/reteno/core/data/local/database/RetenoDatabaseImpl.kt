@@ -158,7 +158,6 @@ internal class RetenoDatabaseImpl(private val context: Context) : RetenoDatabase
     override fun onDowngrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
         /*@formatter:off*/ Logger.i(TAG, "onDowngrade(): ", "db = [", db, "], oldVersion = [", oldVersion, "], newVersion = [", newVersion, "]")
         /*@formatter:on*/
-        super.onDowngrade(db, oldVersion, newVersion)
         context.deleteDatabase(DATABASE_NAME)
         createTables(db)
     }

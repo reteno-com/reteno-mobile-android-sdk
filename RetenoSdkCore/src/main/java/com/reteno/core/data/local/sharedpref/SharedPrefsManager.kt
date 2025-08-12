@@ -299,6 +299,21 @@ internal class SharedPrefsManager(
             ?.apply()
     }
 
+    fun saveDeviceIdSuffix(suffix: String?) {
+        /*@formatter:off*/ Logger.i(TAG, "saveDeviceIdSuffix(): ", "suffix = [", suffix, "]")
+        /*@formatter:on*/
+        sharedPreferences.edit()
+            ?.putString(PREF_KEY_DEVICE_SUFFIX, suffix)
+            ?.apply()
+    }
+
+    fun getDeviceIdSuffix(): String? {
+        val result = sharedPreferences.getString(PREF_KEY_DEVICE_SUFFIX, null)
+        /*@formatter:off*/ Logger.i(TAG, "getDeviceIdSuffix(): ", "result = ", result)
+        /*@formatter:on*/
+        return result
+    }
+
     fun getExternalUserId(): String? {
         val result = sharedPreferences.getString(PREF_KEY_EXTERNAL_DEVICE_ID, null)
         /*@formatter:off*/ Logger.i(TAG, "getExternalDeviceId(): ", "result = ", result)
@@ -360,6 +375,7 @@ internal class SharedPrefsManager(
         private const val PREF_KEY_APP_OPEN_COUNT = "open_count"
         private const val PREF_KEY_APP_BG_COUNT = "background_count"
         private const val PREF_KEY_EXTERNAL_DEVICE_ID = "external_user_id"
+        private const val PREF_KEY_DEVICE_SUFFIX = "device_suffix"
         private const val PREF_KEY_DEVICE_PHONE = "device_phone"
         private const val PREF_KEY_DEVICE_EMAIL = "device_email"
     }

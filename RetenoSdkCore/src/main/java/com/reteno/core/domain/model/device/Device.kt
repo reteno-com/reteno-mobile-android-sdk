@@ -11,6 +11,7 @@ import java.util.TimeZone
 
 data class Device(
     val deviceId: String,
+    val deviceIdSuffix: String?,
     val externalUserId: String?,
     val pushToken: String?,
     val pushSubscribed: Boolean?,
@@ -31,6 +32,7 @@ data class Device(
         @JvmStatic
         fun createDevice(
             deviceId: String,
+            deviceIdSuffix: String? = null,
             externalUserId: String? = null,
             pushToken: String? = null,
             pushSubscribed: Boolean? = null,
@@ -40,6 +42,7 @@ data class Device(
         ): Device {
             val device = Device(
                 deviceId = deviceId,
+                deviceIdSuffix = deviceIdSuffix,
                 externalUserId = externalUserId,
                 pushToken = pushToken,
                 pushSubscribed = pushSubscribed,

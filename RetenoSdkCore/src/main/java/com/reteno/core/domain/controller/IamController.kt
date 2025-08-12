@@ -18,7 +18,7 @@ internal interface IamController {
 
     fun reset()
 
-    fun getInAppMessages()
+    suspend fun getInAppMessages()
 
     fun pauseInAppMessages(isPaused: Boolean)
 

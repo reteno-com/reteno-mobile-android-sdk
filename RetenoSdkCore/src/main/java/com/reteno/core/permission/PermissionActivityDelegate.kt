@@ -66,5 +66,6 @@ internal class PermissionActivityDelegate(application: Application) : ActivityLi
     }
 
     override fun onActivityDestroyed(activity: Activity) {
+        activityCheckerMap.remove(activity)
     }
 }

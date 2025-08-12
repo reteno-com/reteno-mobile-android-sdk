@@ -9,9 +9,7 @@ import com.reteno.core.domain.model.event.Event
 import com.reteno.core.domain.model.event.LifecycleTrackingOptions
 import com.reteno.core.lifecycle.RetenoActivityHelper
 import com.reteno.core.lifecycle.RetenoSessionHandler
-import com.reteno.core.lifecycle.RetenoSessionHandler.SessionEvent
 import com.reteno.core.util.Util
-import com.reteno.core.util.Util.asZonedDateTime
 import io.mockk.MockKVerificationScope
 import io.mockk.coEvery
 import io.mockk.impl.annotations.RelaxedMockK
@@ -62,7 +60,6 @@ class AppLifecycleControllerTest : BaseRobolectricTest() {
 
     @Test
     fun whenApplicationOpen_thenAppOpenEventSent() = runRetenoTest {
-        coEvery { sessionHandler.sessionEventFlow } returns MutableSharedFlow()
         coEvery { configRepository.notificationState } returns MutableSharedFlow()
         val sut = createSUT(LifecycleTrackingOptions.ALL)
 
@@ -75,7 +72,6 @@ class AppLifecycleControllerTest : BaseRobolectricTest() {
 
     @Test
     fun whenApplicationOpen_thenOldEventsCleared() = runRetenoTest {
-        coEvery { sessionHandler.sessionEventFlow } returns MutableSharedFlow()
         coEvery { configRepository.notificationState } returns MutableSharedFlow()
         val sut = createSUT(LifecycleTrackingOptions.ALL)
 
@@ -89,7 +85,6 @@ class AppLifecycleControllerTest : BaseRobolectricTest() {
 
     @Test
     fun given_whenContrillerInit_thenBaseHtmlShouldBeFetched() = runRetenoTest {
-        coEvery { sessionHandler.sessionEventFlow } returns MutableSharedFlow()
         coEvery { configRepository.notificationState } returns MutableSharedFlow()
 
         val sut = createSUT(LifecycleTrackingOptions.ALL)
@@ -103,7 +98,6 @@ class AppLifecycleControllerTest : BaseRobolectricTest() {
 
     @Test
     fun whenApplicationStop_thenAppBackgroundedEventSent() = runRetenoTest {
-        coEvery { sessionHandler.sessionEventFlow } returns MutableSharedFlow()
         coEvery { configRepository.notificationState } returns MutableSharedFlow()
         coEvery { sessionHandler.getForegroundTimeMillis() } returns 2000L
         val sut = createSUT(LifecycleTrackingOptions.ALL)
@@ -126,7 +120,6 @@ class AppLifecycleControllerTest : BaseRobolectricTest() {
 
     @Test
     fun givenAppBackgrounded_whenApplicationOpen_thenAppOpenedSentWithBackgroundedFlag() = runRetenoTest {
-        coEvery { sessionHandler.sessionEventFlow } returns MutableSharedFlow()
         coEvery { configRepository.notificationState } returns MutableSharedFlow()
         coEvery { sessionHandler.getForegroundTimeMillis() } returns 2000L
         val sut = createSUT(LifecycleTrackingOptions.ALL)
@@ -141,61 +134,8 @@ class AppLifecycleControllerTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun whenSessionStartEventReceived_thenSessionStartEventLogged() = runTest {
-        val sessionFlow = MutableSharedFlow<SessionEvent>()
-        coEvery { sessionHandler.sessionEventFlow } returns sessionFlow
-        coEvery { configRepository.notificationState } returns MutableSharedFlow()
-        createSUT(LifecycleTrackingOptions.ALL)
-
-        val time = System.currentTimeMillis()
-
-        runCurrent()
-        sessionFlow.emit(SessionEvent.SessionStartEvent("10", time))
-        advanceUntilIdle()
-
-        verify {
-            eventController.trackEvent(
-                eventMatcher(
-                    Event.sessionStart(
-                        "10",
-                        time.asZonedDateTime()
-                    ).event
-                )
-            )
-        }
-
-    }
-
-    @Test
-    fun whenSessionEndEventReceived_thenSessionEndEventLogged() = runTest {
-        val sessionFlow = MutableSharedFlow<SessionEvent>()
-        coEvery { sessionHandler.sessionEventFlow } returns sessionFlow
-        coEvery { configRepository.notificationState } returns MutableSharedFlow()
-        createSUT(LifecycleTrackingOptions.ALL)
-
-        val time = System.currentTimeMillis()
-        runCurrent()
-        sessionFlow.emit(SessionEvent.SessionEndEvent("10", time, 1000L, 2, 1))
-        advanceUntilIdle()
-        verify {
-            eventController.trackEvent(
-                eventMatcher(
-                    Event.sessionEnd(
-                        "10",
-                        time.asZonedDateTime(),
-                        1,
-                        2,
-                        1
-                    ).event
-                )
-            )
-        }
-    }
-
-    @Test
     fun whenNotificationEnabled_thenNotificationEnabledEventLogged() = runTest {
         val notificationFlow = MutableStateFlow(false)
-        coEvery { sessionHandler.sessionEventFlow } returns MutableSharedFlow()
         coEvery { configRepository.notificationState } returns notificationFlow
         createSUT(LifecycleTrackingOptions.ALL)
         runCurrent()
@@ -214,7 +154,6 @@ class AppLifecycleControllerTest : BaseRobolectricTest() {
     @Test
     fun whenNotificationDisabled_thenNotificationDisabledEventLogged() = runTest {
         val notificationFlow = MutableStateFlow(true)
-        coEvery { sessionHandler.sessionEventFlow } returns MutableSharedFlow()
         coEvery { configRepository.notificationState } returns notificationFlow
         createSUT(LifecycleTrackingOptions.ALL)
         runCurrent()
@@ -232,7 +171,6 @@ class AppLifecycleControllerTest : BaseRobolectricTest() {
 
     @Test
     fun given_AppVersionNotExist_whenInit_thenAppInstallEventLogged() = runRetenoTest {
-        coEvery { sessionHandler.sessionEventFlow } returns MutableSharedFlow()
         coEvery { configRepository.notificationState } returns MutableSharedFlow()
         coEvery { configRepository.getAppVersion() } returns ""
         coEvery { configRepository.getAppBuildNumber() } returns 0
@@ -259,7 +197,6 @@ class AppLifecycleControllerTest : BaseRobolectricTest() {
 
     @Test
     fun given_AppVersionExist_whenInitWithNewVersion_thenAppUpdateEventLogged() = runRetenoTest {
-        coEvery { sessionHandler.sessionEventFlow } returns MutableSharedFlow()
         coEvery { configRepository.notificationState } returns MutableSharedFlow()
         coEvery { configRepository.getAppVersion() } returns "1.0.0"
         coEvery { configRepository.getAppBuildNumber() } returns 0
@@ -286,7 +223,6 @@ class AppLifecycleControllerTest : BaseRobolectricTest() {
 
     @Test
     fun given_AppVersionExist_whenInitWithNewVersionCode_thenAppUpdateEventLogged() = runRetenoTest {
-        coEvery { sessionHandler.sessionEventFlow } returns MutableSharedFlow()
         coEvery { configRepository.notificationState } returns MutableSharedFlow()
         coEvery { configRepository.getAppVersion() } returns "1.0.0"
         coEvery { configRepository.getAppBuildNumber() } returns 0
@@ -316,7 +252,6 @@ class AppLifecycleControllerTest : BaseRobolectricTest() {
     ///
     @Test
     fun whenApplicationOpenAndEventDisabled_thenAppOpenEventSent() = runRetenoTest {
-        coEvery { sessionHandler.sessionEventFlow } returns MutableSharedFlow()
         coEvery { configRepository.notificationState } returns MutableSharedFlow()
         val sut = createSUT(
             LifecycleTrackingOptions(
@@ -333,7 +268,6 @@ class AppLifecycleControllerTest : BaseRobolectricTest() {
 
     @Test
     fun whenApplicationStopAndEventDisabled_thenAppBackgroundedEventSent() = runRetenoTest {
-        coEvery { sessionHandler.sessionEventFlow } returns MutableSharedFlow()
         coEvery { configRepository.notificationState } returns MutableSharedFlow()
         coEvery { sessionHandler.getForegroundTimeMillis() } returns 2000L
         val sut = createSUT(LifecycleTrackingOptions(
@@ -357,65 +291,8 @@ class AppLifecycleControllerTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun whenSessionStartEventReceivedAndEventDisabled_thenSessionStartEventLogged() = runTest {
-        val sessionFlow = MutableSharedFlow<SessionEvent>()
-        coEvery { sessionHandler.sessionEventFlow } returns sessionFlow
-        coEvery { configRepository.notificationState } returns MutableSharedFlow()
-        createSUT(LifecycleTrackingOptions(
-            sessionEventsEnabled = false
-        ))
-
-        val time = System.currentTimeMillis()
-
-        runCurrent()
-        sessionFlow.emit(SessionEvent.SessionStartEvent("10", time))
-        advanceUntilIdle()
-
-        verify(exactly = 0) {
-            eventController.trackEvent(
-                eventMatcher(
-                    Event.sessionStart(
-                        "10",
-                        time.asZonedDateTime()
-                    ).event
-                )
-            )
-        }
-
-    }
-
-    @Test
-    fun whenSessionEndEventReceivedAndEventDisabled_thenSessionEndEventLogged() = runTest {
-        val sessionFlow = MutableSharedFlow<SessionEvent>()
-        coEvery { sessionHandler.sessionEventFlow } returns sessionFlow
-        coEvery { configRepository.notificationState } returns MutableSharedFlow()
-        createSUT(LifecycleTrackingOptions(
-            sessionEventsEnabled = false
-        ))
-
-        val time = System.currentTimeMillis()
-        runCurrent()
-        sessionFlow.emit(SessionEvent.SessionEndEvent("10", time, 1000L, 2, 1))
-        advanceUntilIdle()
-        verify(exactly = 0) {
-            eventController.trackEvent(
-                eventMatcher(
-                    Event.sessionEnd(
-                        "10",
-                        time.asZonedDateTime(),
-                        1,
-                        2,
-                        1
-                    ).event
-                )
-            )
-        }
-    }
-
-    @Test
     fun whenNotificationEnabledAndEventDisabled_thenNotificationEnabledEventLogged() = runTest {
         val notificationFlow = MutableStateFlow(false)
-        coEvery { sessionHandler.sessionEventFlow } returns MutableSharedFlow()
         coEvery { configRepository.notificationState } returns notificationFlow
         createSUT(LifecycleTrackingOptions(
             pushSubscriptionEnabled = false
@@ -436,7 +313,6 @@ class AppLifecycleControllerTest : BaseRobolectricTest() {
     @Test
     fun whenNotificationDisabledAndEventDisabled_thenNotificationDisabledEventLogged() = runTest {
         val notificationFlow = MutableStateFlow(true)
-        coEvery { sessionHandler.sessionEventFlow } returns MutableSharedFlow()
         coEvery { configRepository.notificationState } returns notificationFlow
         createSUT(LifecycleTrackingOptions(
             pushSubscriptionEnabled = false
@@ -456,7 +332,6 @@ class AppLifecycleControllerTest : BaseRobolectricTest() {
 
     @Test
     fun given_AppVersionNotExist_whenInitAndEventDisabled_thenAppInstallEventLogged() = runRetenoTest {
-        coEvery { sessionHandler.sessionEventFlow } returns MutableSharedFlow()
         coEvery { configRepository.notificationState } returns MutableSharedFlow()
         coEvery { configRepository.getAppVersion() } returns ""
         coEvery { configRepository.getAppBuildNumber() } returns 0
@@ -486,7 +361,6 @@ class AppLifecycleControllerTest : BaseRobolectricTest() {
 
     @Test
     fun given_AppVersionExist_whenInitWithNewVersionAndEventDisabled_thenAppUpdateEventLogged() = runRetenoTest {
-        coEvery { sessionHandler.sessionEventFlow } returns MutableSharedFlow()
         coEvery { configRepository.notificationState } returns MutableSharedFlow()
         coEvery { configRepository.getAppVersion() } returns "1.0.0"
         coEvery { configRepository.getAppPackageInfo() } returns PackageInfo().apply {
@@ -517,7 +391,6 @@ class AppLifecycleControllerTest : BaseRobolectricTest() {
 
     @Test
     fun given_AppVersionExist_whenInitWithNewVersionCodeAndEventDisabled_thenAppUpdateEventLogged() = runRetenoTest {
-        coEvery { sessionHandler.sessionEventFlow } returns MutableSharedFlow()
         coEvery { configRepository.notificationState } returns MutableSharedFlow()
         coEvery { configRepository.getAppVersion() } returns "1.0.0"
         coEvery { configRepository.getAppBuildNumber() } returns 0

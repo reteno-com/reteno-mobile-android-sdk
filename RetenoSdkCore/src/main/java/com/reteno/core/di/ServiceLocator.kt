@@ -262,7 +262,7 @@ class ServiceLocator(
         RecommendationProvider(recommendationControllerProvider)
 
     private val retenoSessionHandlerProviderInternal =
-        RetenoSessionHandlerProvider(sharedPrefsManagerProvider)
+        RetenoSessionHandlerProvider(eventsControllerProvider, sharedPrefsManagerProvider, configProvider)
     val retenoSessionHandlerProvider: ProviderWeakReference<RetenoSessionHandler>
         get() = retenoSessionHandlerProviderInternal
 
