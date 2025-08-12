@@ -311,10 +311,10 @@ class ContactRepositoryImplTest : BaseRobolectricTest() {
         // Given
         val expectedUserJson =
             "{\"deviceId\":\"${DEVICE_ID}\",\"externalUserId\":\"${EXTERNAL_DEVICE_ID}\",\"userAttributes\":{\"phone\":\"${USER_ATTRS_PHONE}\",\"email\":\"${USER_ATTRS_EMAIL}\",\"firstName\":\"${USER_ATTRS_FIRST_NAME}\",\"lastName\":\"${USER_ATTRS_LAST_NAME}\",\"languageCode\":\"${USER_ATTRS_LANGUAGE_CODE}\",\"timeZone\":\"${USER_ATTRS_TIMEZONE}\",\"address\":{\"region\":\"${USER_ATTRS_ADDRESS_REGION}\",\"town\":\"${USER_ATTRS_ADDRESS_TOWN}\",\"address\":\"${USER_ATTRS_ADDRESS_ADDRESS}\",\"postcode\":\"${USER_ATTRS_ADDRESS_POSTCODE}\"},\"fields\":[{\"key\":\"${USER_ATTRS_FIELD_KEY_1}\",\"value\":\"${USER_ATTRS_FIELD_VALUE_1}\"},{\"key\":\"${USER_ATTRS_FIELD_KEY_2}\",\"value\":\"${USER_ATTRS_FIELD_VALUE_2}\"}]},\"subscriptionKeys\":${USER_SUBSCRIPTION_KEYS.toJson()},\"groupNamesInclude\":${USER_GROUP_NAMES_INCLUDE.toJson()},\"groupNamesExclude\":${USER_GROUP_NAMES_EXCLUDE.toJson()}}"
-        val deviceId = DeviceId(DEVICE_ID, EXTERNAL_DEVICE_ID)
+        val deviceId = DeviceId(DEVICE_ID, null, EXTERNAL_DEVICE_ID)
         every { configRepository.getDeviceId() } returns deviceId
         val userDb = getUser().toDb(deviceId)
-        every { configRepository.getDeviceId() } returns DeviceId(DEVICE_ID, EXTERNAL_DEVICE_ID)
+        every { configRepository.getDeviceId() } returns DeviceId(DEVICE_ID, null, EXTERNAL_DEVICE_ID)
         every { databaseManagerUser.getUsers(any()) } returnsMany listOf(
             listOf(userDb),
             emptyList()
@@ -428,6 +428,7 @@ class ContactRepositoryImplTest : BaseRobolectricTest() {
 
     private fun getDevice() = Device(
         deviceId = DEVICE_ID,
+        deviceIdSuffix = null,
         externalUserId = EXTERNAL_DEVICE_ID,
         pushToken = FCM_TOKEN_NEW,
         pushSubscribed = null,

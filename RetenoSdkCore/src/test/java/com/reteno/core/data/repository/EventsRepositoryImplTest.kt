@@ -60,7 +60,7 @@ class EventsRepositoryImplTest : BaseRobolectricTest() {
     @Before
     override fun before() {
         super.before()
-        every { configRepository.getDeviceId() } returns DeviceId(DEVICE_ID, EXTERNAL_DEVICE_ID)
+        every { configRepository.getDeviceId() } returns DeviceId(DEVICE_ID, null, EXTERNAL_DEVICE_ID)
         SUT = EventsRepositoryImpl(apiClient, databaseManagerEvents, configRepository)
     }
 

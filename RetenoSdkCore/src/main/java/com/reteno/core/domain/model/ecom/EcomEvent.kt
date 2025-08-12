@@ -1,8 +1,12 @@
 package com.reteno.core.domain.model.ecom
 
+import com.reteno.core.domain.model.event.Event
 import java.time.ZonedDateTime
 
-sealed class EcomEvent(open val occurred: ZonedDateTime) {
+sealed class EcomEvent(
+    open val occurred: ZonedDateTime,
+    val typeKey: String
+) {
 
     /**
      * Track a product card a user is viewing to rank items / categories and send triggers for abandoned browses.
@@ -17,7 +21,7 @@ sealed class EcomEvent(open val occurred: ZonedDateTime) {
         val product: ProductView,
         val currencyCode: String? = null,
         override val occurred: ZonedDateTime = ZonedDateTime.now()
-    ) : EcomEvent(occurred)
+    ) : EcomEvent(occurred, typeKey = "productViewed")
 
     /**
      * Track a product category a user is viewing for triggers like Website visit with a category view and Website visit without a category view.
@@ -29,7 +33,7 @@ sealed class EcomEvent(open val occurred: ZonedDateTime) {
     data class ProductCategoryViewed @JvmOverloads constructor(
         val category: ProductCategoryView,
         override val occurred: ZonedDateTime = ZonedDateTime.now()
-    ) : EcomEvent(occurred)
+    ) : EcomEvent(occurred, typeKey = "productCategoryViewed")
 
     /**
      * Track adding product to a wishlist to calculate and display recoms and send triggers related to a wishlist.
@@ -44,7 +48,7 @@ sealed class EcomEvent(open val occurred: ZonedDateTime) {
         val product: ProductView,
         val currencyCode: String? = null,
         override val occurred: ZonedDateTime = ZonedDateTime.now()
-    ) : EcomEvent(occurred)
+    ) : EcomEvent(occurred, typeKey = "productAddedToWishlist")
 
     /**
      * Track updating a shopping cart for triggers.
@@ -61,7 +65,7 @@ sealed class EcomEvent(open val occurred: ZonedDateTime) {
         val products: List<ProductInCart>,
         val currencyCode: String? = null,
         override val occurred: ZonedDateTime = ZonedDateTime.now()
-    ) : EcomEvent(occurred)
+    ) : EcomEvent(occurred, typeKey = "cartUpdated")
 
     /**
      * Create an order.
@@ -80,7 +84,7 @@ sealed class EcomEvent(open val occurred: ZonedDateTime) {
         val order: Order,
         val currencyCode: String? = null,
         override val occurred: ZonedDateTime = ZonedDateTime.now()
-    ) : EcomEvent(occurred)
+    ) : EcomEvent(occurred, typeKey = "orderCreated")
 
     /**
      * Update an order with the specified [Order.externalOrderId] value.
@@ -97,7 +101,7 @@ sealed class EcomEvent(open val occurred: ZonedDateTime) {
         val order: Order,
         val currencyCode: String? = null,
         override val occurred: ZonedDateTime = ZonedDateTime.now()
-    ) : EcomEvent(occurred)
+    ) : EcomEvent(occurred, typeKey = "orderUpdated")
 
     /**
      * Updates a status of an order with the specified [externalOrderId] to ***DELIVERED***.
@@ -108,7 +112,7 @@ sealed class EcomEvent(open val occurred: ZonedDateTime) {
     data class OrderDelivered @JvmOverloads constructor(
         val externalOrderId: String,
         override val occurred: ZonedDateTime = ZonedDateTime.now()
-    ) : EcomEvent(occurred)
+    ) : EcomEvent(occurred, typeKey = "orderDelivered")
 
     /**
      * Change an existing order status to ***CANCELLED***.
@@ -118,7 +122,7 @@ sealed class EcomEvent(open val occurred: ZonedDateTime) {
     data class OrderCancelled @JvmOverloads constructor(
         val externalOrderId: String,
         override val occurred: ZonedDateTime = ZonedDateTime.now()
-    ) : EcomEvent(occurred)
+    ) : EcomEvent(occurred, typeKey = "orderCancelled")
 
     /**
      * Track search requests for triggers like Abandoned search.
@@ -130,6 +134,13 @@ sealed class EcomEvent(open val occurred: ZonedDateTime) {
         val search: String,
         val isFound: Boolean = false,
         override val occurred: ZonedDateTime = ZonedDateTime.now()
-    ) : EcomEvent(occurred)
+    ) : EcomEvent(occurred, typeKey = "searchRequest")
 
+}
+
+fun EcomEvent.asRegularEvent(): Event {
+    return Event.Custom(
+        typeKey = typeKey,
+        dateOccurred = occurred
+    )
 }

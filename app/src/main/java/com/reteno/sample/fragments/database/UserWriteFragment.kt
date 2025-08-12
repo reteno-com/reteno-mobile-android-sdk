@@ -8,7 +8,8 @@ import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.Toast
 import com.reteno.core.RetenoInternalImpl
-import com.reteno.core._interop.DeviceIdInternal.getIdInternal
+import com.reteno.core._interop.DeviceIdInternal.getIdBodyInternal
+import com.reteno.core._interop.DeviceIdInternal.getIdSuffixInternal
 import com.reteno.core._interop.DeviceIdInternal.getModeInternal
 import com.reteno.core.data.local.config.DeviceId
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerUser
@@ -149,7 +150,8 @@ class UserWriteFragment : BaseDatabaseDialogFragment() {
     private fun sendUserData(externalId: String, user: User) {
         var deviceId = getDeviceId()
         deviceId = deviceId.copy(
-            deviceId.getIdInternal(),
+            deviceId.getIdBodyInternal(),
+            deviceId.getIdSuffixInternal(),
             externalId,
             deviceId.getModeInternal(),
             user.userAttributes!!.email,
