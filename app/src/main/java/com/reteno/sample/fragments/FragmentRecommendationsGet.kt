@@ -1,11 +1,15 @@
 package com.reteno.sample.fragments
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import android.os.Bundle
 import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.core.view.isVisible
 import androidx.recyclerview.widget.RecyclerView
 import androidx.transition.AutoTransition
 import androidx.transition.TransitionManager
@@ -13,6 +17,7 @@ import com.reteno.core.data.remote.model.recommendation.get.Recoms
 import com.reteno.core.domain.model.recommendation.get.RecomFilter
 import com.reteno.core.domain.model.recommendation.get.RecomRequest
 import com.reteno.core.features.recommendation.GetRecommendationResponseCallback
+import com.reteno.core.features.recommendation.GetRecommendationResponseJsonCallback
 import com.reteno.core.util.Logger.i
 import com.reteno.sample.BaseFragment
 import com.reteno.sample.R
@@ -59,36 +64,8 @@ class FragmentRecommendationsGet : BaseFragment() {
     }
 
     private fun initListeners() {
-        binding!!.btnFetch.setOnClickListener { v: View? ->
-            val variantId = binding!!.etRecomVariantId.text.toString()
-            val productsString = binding!!.etProducts.text.toString()
-            var products: List<String>? = null
-            if (productsString.isNotEmpty()) {
-                products = productsString.split(",".toRegex()).dropLastWhile { it.isEmpty() }
-            }
-            var category: String? = binding!!.etCategory.text.toString()
-            if (TextUtils.isEmpty(category)) category = null
-            val fieldsString = binding!!.etFields.text.toString()
-            val fields: List<String>? = if (fieldsString == "null") {
-                null
-            } else if (TextUtils.isEmpty(fieldsString)) {
-                ArrayList()
-            } else {
-                fieldsString.split(",".toRegex()).dropLastWhile { it.isEmpty() }
-            }
-            val text = binding!!.etFilters.text?.toString().orEmpty()
-            val filters = text.split(";").mapNotNull {
-                if (it.isNotBlank()) {
-                    val list = it.split(",")
-                    val name = list.first()
-                    RecomFilter(
-                        name,
-                        list.subList(1, list.size)
-                    )
-                }
-                else null
-            }
-            val request = RecomRequest(products, category, fields, filters)
+        binding!!.btnFetch.setOnClickListener {
+            val (variantId, request) = buildRecomRequest()
             reteno.recommendation.fetchRecommendation(
                 variantId,
                 request,
@@ -96,6 +73,8 @@ class FragmentRecommendationsGet : BaseFragment() {
                 object : GetRecommendationResponseCallback<RecommendationResponseFull> {
                     override fun onSuccess(response: Recoms<RecommendationResponseFull>) {
                         adapter!!.setItems(response.recoms)
+                        binding?.rvList?.isVisible = true
+                        binding?.jsonSection?.isVisible = false
                     }
 
                     override fun onSuccessFallbackToJson(response: String) {
@@ -123,6 +102,78 @@ class FragmentRecommendationsGet : BaseFragment() {
                     }
                 })
         }
+
+        binding!!.btnFetchJson.setOnClickListener {
+            val (variantId, request) = buildRecomRequest()
+            reteno.recommendation.fetchRecommendationJson(
+                variantId,
+                request,
+                object :GetRecommendationResponseJsonCallback {
+                    override fun onSuccess(response: String) {
+                        binding?.tvJson?.text = response
+                        binding?.rvList?.isVisible = false
+                        binding?.jsonSection?.isVisible = true
+                    }
+
+                    override fun onFailure(
+                        statusCode: Int?,
+                        response: String?,
+                        throwable: Throwable?
+                    ) {
+                        /*@formatter:off*/
+                        i(TAG, "onFailure(): ", "statusCode = [", statusCode, "], response = [", response, "], throwable = [", throwable, "]")
+                        /*@formatter:on*/Toast.makeText(
+                            context,
+                            "Error occurred. See Logcat",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+
+                }
+            )
+        }
+        binding!!.btnCopyJson.setOnClickListener {
+            copyToClipboard(binding?.tvJson?.text?.toString())
+        }
+    }
+
+    private fun copyToClipboard(text: String?) {
+        val clipboard = requireContext().getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+        val clip = ClipData.newPlainText("Custom Data", text)
+        clipboard.setPrimaryClip(clip)
+        Toast.makeText(requireContext(), "Copied to clipboard", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun buildRecomRequest(): Pair<String, RecomRequest> {
+        val variantId = binding!!.etRecomVariantId.text.toString()
+        val productsString = binding!!.etProducts.text.toString()
+        var products: List<String>? = null
+        if (productsString.isNotEmpty()) {
+            products = productsString.split(",".toRegex()).dropLastWhile { it.isEmpty() }
+        }
+        var category: String? = binding!!.etCategory.text.toString()
+        if (TextUtils.isEmpty(category)) category = null
+        val fieldsString = binding!!.etFields.text.toString()
+        val fields: List<String>? = if (fieldsString == "null") {
+            null
+        } else if (TextUtils.isEmpty(fieldsString)) {
+            ArrayList()
+        } else {
+            fieldsString.split(",".toRegex()).dropLastWhile { it.isEmpty() }
+        }
+        val text = binding!!.etFilters.text?.toString().orEmpty()
+        val filters = text.split(";").mapNotNull {
+            if (it.isNotBlank()) {
+                val list = it.split(",")
+                val name = list.first()
+                RecomFilter(
+                    name,
+                    list.subList(1, list.size)
+                )
+            } else null
+        }
+        val request = RecomRequest(products, category, fields, filters)
+        return Pair(variantId, request)
     }
 
     //==============================================================================================

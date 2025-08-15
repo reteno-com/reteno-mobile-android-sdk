@@ -79,7 +79,7 @@
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Filters should be written in comma separated style. Each filter should be deivided by semicolon(;) symbol. For example: \n FilterName1,FilterValue1,FilterValue2;FilterName2,FilterValue3,FilterValue4"/>
+                    android:text="Filters should be written in comma separated style. Each filter should be deivided by semicolon(;) symbol. For example: \n FilterName1,FilterValue1,FilterValue2;FilterName2,FilterValue3,FilterValue4" />
 
                 <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/tilFilters"
@@ -93,14 +93,51 @@
                         android:layout_height="wrap_content" />
                 </com.google.android.material.textfield.TextInputLayout>
 
-                <Button
-                    android:id="@+id/btnFetch"
-                    android:layout_width="wrap_content"
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_gravity="center"
-                    android:text="fetch" />
-            </LinearLayout>
+                    android:gravity="center"
+                    android:orientation="horizontal">
 
+                    <Button
+                        android:id="@+id/btnFetch"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="8dp"
+                        android:text="fetch" />
+
+                    <Button
+                        android:id="@+id/btnFetchJson"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:text="fetch Json" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/jsonSection"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:visibility="gone"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/tvJson"
+                        android:layout_width="0dp"
+                        android:maxHeight="128dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1" />
+
+                    <ImageButton
+                        android:id="@+id/btnCopyJson"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_margin="8dp"
+                        android:background="?android:selectableItemBackgroundBorderless"
+                        android:src="@drawable/ic_content_copy" />
+                </LinearLayout>
+            </LinearLayout>
         </com.google.android.material.appbar.CollapsingToolbarLayout>
     </com.google.android.material.appbar.AppBarLayout>
 
@@ -109,6 +146,7 @@
         android:id="@+id/rvList"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:visibility="gone"
         app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
         app:layout_behavior="@string/appbar_scrolling_view_behavior"
         tools:listitem="@layout/item_recommendations_get" />
