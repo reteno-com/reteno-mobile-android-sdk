@@ -40,7 +40,12 @@ interface Reteno {
     @Throws(java.lang.IllegalArgumentException::class)
     fun setUserAttributes(externalUserId: String, user: User?)
 
-
+    /**
+     * Set the user ID (Note: id should not be null or empty, or IllegalArgumentException will be thrown)
+     * and add or modify user attributes while retaining push notification token for previous user.
+     *
+     * @see com.reteno.core.domain.model.user.User
+     */
     fun setMultiAccountUserAttributes(externalUserId: String, user: User?)
 
     /**
