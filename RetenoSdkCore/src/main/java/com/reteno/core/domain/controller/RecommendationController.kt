@@ -6,6 +6,7 @@ import com.reteno.core.domain.SchedulerUtils
 import com.reteno.core.domain.model.recommendation.get.RecomRequest
 import com.reteno.core.domain.model.recommendation.post.RecomEvents
 import com.reteno.core.features.recommendation.GetRecommendationResponseCallback
+import com.reteno.core.features.recommendation.GetRecommendationResponseJsonCallback
 import com.reteno.core.util.Logger
 
 internal class RecommendationController(private val recommendationRepository: RecommendationRepository) {
@@ -22,6 +23,20 @@ internal class RecommendationController(private val recommendationRepository: Re
             recomVariantId,
             recomRequest,
             responseClass,
+            responseCallback
+        )
+    }
+
+    fun getRecommendationJson(
+        recomVariantId: String,
+        recomRequest: RecomRequest,
+        responseCallback: GetRecommendationResponseJsonCallback
+    ) {
+        /*@formatter:off*/ Logger.i(TAG, "getRecommendationJson(): ", "recomVariantId = [" , recomVariantId , "], recomRequest = [" , recomRequest , "], responseCallback = [" , responseCallback , "]")
+        /*@formatter:on*/
+        recommendationRepository.getRecommendationJson(
+            recomVariantId,
+            recomRequest,
             responseCallback
         )
     }
