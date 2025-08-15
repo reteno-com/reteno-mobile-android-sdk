@@ -33,6 +33,27 @@ internal class RecommendationImpl(private val recommendationController: Recommen
         }
     }
 
+    override fun fetchRecommendationJson(
+        recomVariantId: String,
+        recomRequest: RecomRequest,
+        responseCallback: GetRecommendationResponseJsonCallback
+    ) {
+        if (!isOsVersionSupported()) {
+            return
+        }
+        /*@formatter:off*/ Logger.i(TAG, "fetchRecommendationJson(): ", "recomVariantId = [" , recomVariantId , "], recomRequest = [" , recomRequest , "], responseCallback = [" , responseCallback , "]")
+        /*@formatter:on*/
+        try {
+            recommendationController.getRecommendationJson(
+                recomVariantId,
+                recomRequest,
+                responseCallback
+            )
+        } catch (ex: Throwable) {
+            Logger.e(TAG, "fetchRecommendationJson(): ", ex)
+        }
+    }
+
     override fun logRecommendations(recomEvents: RecomEvents) {
         if (!isOsVersionSupported()) {
             return
