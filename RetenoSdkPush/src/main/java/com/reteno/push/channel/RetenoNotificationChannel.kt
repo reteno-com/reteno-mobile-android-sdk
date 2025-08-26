@@ -43,7 +43,9 @@ internal object RetenoNotificationChannel {
                 createDefaultChannel(context)
                 true
             } else {
-                applyChannelPropertiesFromDefaultConfig(context, channelId)
+                if (RetenoInternalImpl.instance.isInitialized) {
+                    applyChannelPropertiesFromDefaultConfig(context, channelId)
+                }
                 channel.importance != NotificationManager.IMPORTANCE_NONE
             }
         }
@@ -57,6 +59,11 @@ internal object RetenoNotificationChannel {
         /*@formatter:off*/ Logger.i(TAG, "createDefaultChannel(): ", "context = [" , context , "]")
         /*@formatter:on*/
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
+        if (!RetenoInternalImpl.instance.isInitialized) {
+            /*@formatter:off*/ Logger.i(TAG, "createDefaultChannel(): ", "Using default notification channel without creation process due to delayed initialization.")
+            /*@formatter:on*/
+            return
+        }
         RetenoInternalImpl.instance.getDefaultNotificationChannelConfig()?.let { config ->
             val channel = NotificationChannelCompat.Builder(
                 DEFAULT_CHANNEL_ID,
