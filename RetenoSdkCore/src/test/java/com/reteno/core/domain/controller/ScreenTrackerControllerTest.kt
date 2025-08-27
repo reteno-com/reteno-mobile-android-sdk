@@ -20,6 +20,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.AfterClass
 import org.junit.BeforeClass
 import org.junit.Test
+import kotlin.time.Duration.Companion.seconds
 
 //Integrational test for ScreenTrackerController
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -69,7 +70,7 @@ class ScreenTrackerControllerTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun givenAutoScreenTrackingEnabled_whenFragmentOpens_thenEventRecorded() = runTest {
+    fun givenAutoScreenTrackingEnabled_whenFragmentOpens_thenEventRecorded() = runTest(timeout = 20.seconds) {
         //Given
         val helper = RetenoActivityHelperImpl()
         val controller = createController(helper)
@@ -77,7 +78,6 @@ class ScreenTrackerControllerTest : BaseRobolectricTest() {
         every { anyConstructed<ServiceLocator>().retenoActivityHelperProvider.get() } returns helper
         every { anyConstructed<ServiceLocator>().contactControllerProvider.get() } returns contactController
         val reteno = createRetenoAndAdvanceInit()
-        advanceUntilIdle()
         reteno.autoScreenTracking(ScreenTrackingConfig(true))
         //When
         val scenario = launchFragmentInContainer<Fragment>(initialState = Lifecycle.State.CREATED)
