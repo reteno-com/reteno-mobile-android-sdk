@@ -108,9 +108,9 @@ class RetenoNotificationServiceTest : BaseRobolectricTest() {
     @Throws(Exception::class)
     fun givenValidToken_whenOnNewToken_thenSavedToRepository() = runTest {
         every { anyConstructed<ServiceLocator>().contactControllerProvider.get() } returns contactController
-        val reteno = createReteno()
+        createReteno()
         // When
-        val sut = RetenoNotificationService(application, reteno)
+        val sut = RetenoNotificationService(application)
         sut.onNewToken(TOKEN)
         advanceUntilIdle()
         // Then
@@ -120,12 +120,12 @@ class RetenoNotificationServiceTest : BaseRobolectricTest() {
     @Test
     @Throws(Exception::class)
     fun givenValidNotification_whenHandleNotification_thenNotificationShown() = runTest {
-        val reteno = createReteno()
+        createReteno()
         // Given
         val bundle = buildBundle(INTERACTION_ID)
 
         // When
-        val pushService = RetenoNotificationService(ApplicationProvider.getApplicationContext(), reteno)
+        val pushService = RetenoNotificationService(ApplicationProvider.getApplicationContext())
         pushService.handleNotification(bundle)
 
         // Then
@@ -137,7 +137,7 @@ class RetenoNotificationServiceTest : BaseRobolectricTest() {
     @Test
     @Throws(Exception::class)
     fun givenNotificationChannelEnabledAndPermissionsGranted_whenHandleNotification_thenDeliveredStatusSent() = runTest {
-        val reteno = createReteno()
+        createReteno()
         // Given
         val bundle = buildBundle(INTERACTION_ID)
 
@@ -149,7 +149,7 @@ class RetenoNotificationServiceTest : BaseRobolectricTest() {
         coJustRun { interactionController.onInteraction(any(), any()) }
 
         // When
-        val pushService = RetenoNotificationService(ApplicationProvider.getApplicationContext(), reteno)
+        val pushService = RetenoNotificationService(ApplicationProvider.getApplicationContext())
         pushService.handleNotification(bundle)
         advanceUntilIdle()
         // Then
@@ -160,7 +160,7 @@ class RetenoNotificationServiceTest : BaseRobolectricTest() {
     @Test
     @Throws(Exception::class)
     fun givenNotificationChannelDisabled_whenHandleNotification_thenDeliveredStatusNotSent() = runTest {
-        val reteno = createReteno()
+        createReteno()
         // Given
         val bundle = buildBundle(INTERACTION_ID)
 
@@ -171,7 +171,7 @@ class RetenoNotificationServiceTest : BaseRobolectricTest() {
         coJustRun { interactionController.onInteraction(any(), any()) }
 
         // When
-        val pushService = RetenoNotificationService(ApplicationProvider.getApplicationContext(), reteno)
+        val pushService = RetenoNotificationService(ApplicationProvider.getApplicationContext())
         pushService.handleNotification(bundle)
 
         // Then
@@ -182,7 +182,7 @@ class RetenoNotificationServiceTest : BaseRobolectricTest() {
     @Test
     @Throws(Exception::class)
     fun givenNotificationPermissionsNotGranted_whenHandleNotification_thenDeliveredStatusNotSent() = runTest {
-        val reteno = createReteno()
+        createReteno()
         // Given
         val bundle = buildBundle(INTERACTION_ID)
 
@@ -191,7 +191,7 @@ class RetenoNotificationServiceTest : BaseRobolectricTest() {
         coJustRun { interactionController.onInteraction(any(), any()) }
 
         // When
-        val pushService = RetenoNotificationService(ApplicationProvider.getApplicationContext(), reteno)
+        val pushService = RetenoNotificationService(ApplicationProvider.getApplicationContext())
         pushService.handleNotification(bundle)
 
         // Then
@@ -202,7 +202,7 @@ class RetenoNotificationServiceTest : BaseRobolectricTest() {
     @Test
     @Throws(Exception::class)
     fun whenHandleNotification_thenNotificationsEnabledManagerOnCheckStateNotCalled() = runTest {
-        val reteno = createReteno()
+        createReteno()
         // Given
         val bundle = buildBundle(INTERACTION_ID)
 
@@ -214,7 +214,7 @@ class RetenoNotificationServiceTest : BaseRobolectricTest() {
         coJustRun { interactionController.onInteraction(any(), any()) }
 
         // When
-        val pushService = RetenoNotificationService(ApplicationProvider.getApplicationContext(), reteno)
+        val pushService = RetenoNotificationService(ApplicationProvider.getApplicationContext())
         pushService.handleNotification(bundle)
 
         // Then
@@ -223,10 +223,10 @@ class RetenoNotificationServiceTest : BaseRobolectricTest() {
 
     @Test
     fun givenEsInteractionIdPresent_whenOnMessageReceived_thenPushServiceHandleNotificationCalled() = runTest {
-        val reteno = createReteno()
+        createReteno()
         // Given
         val bundle = buildBundle(INTERACTION_ID)
-        val pushService = RetenoNotificationService(ApplicationProvider.getApplicationContext(), reteno)
+        val pushService = RetenoNotificationService(ApplicationProvider.getApplicationContext())
         justRun { pushService.handleNotification(bundle) }
         every { application.getApplicationMetaData().getInt(any()) } returns 0
         every { RetenoNotificationChannel.isNotificationsEnabled(any()) } returns true
@@ -240,9 +240,9 @@ class RetenoNotificationServiceTest : BaseRobolectricTest() {
 
     @Test
     fun givenEsInteractionNotPresent_whenOnMessageReceived_thenBroadcastIsSent() = runTest {
-        val reteno = createReteno()
+        createReteno()
         // Given
-        val pushService = RetenoNotificationService(ApplicationProvider.getApplicationContext(), reteno)
+        val pushService = RetenoNotificationService(ApplicationProvider.getApplicationContext())
         val bundle = Bundle()
 
         val receiver =

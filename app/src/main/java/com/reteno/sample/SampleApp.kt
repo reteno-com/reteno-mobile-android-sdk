@@ -35,7 +35,7 @@ class SampleApp : Application(), Configuration.Provider {
                         .setDebug(BuildConfig.DEBUG)
                         .build()
                 )
-            }, 3000L)
+            }, 10000L)
         } else {
             Reteno.initWithConfig(
                 RetenoConfig.Builder()

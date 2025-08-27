@@ -11,6 +11,7 @@ import com.reteno.core.data.repository.ConfigRepository
 import com.reteno.core.data.repository.LogEventRepository
 import com.reteno.core.di.base.ProviderWeakReference
 import com.reteno.core.di.provider.DeviceIdHelperProvider
+import com.reteno.core.di.provider.InteractionCacheProvider
 import com.reteno.core.di.provider.RestConfigProvider
 import com.reteno.core.di.provider.RetenoActivityHelperProvider
 import com.reteno.core.di.provider.RetenoConfigProvider
@@ -170,6 +171,11 @@ class ServiceLocator(
             apiClientProvider,
             retenoDatabaseManagerInteractionProviderInternal,
             retenoDatabaseManagerInAppInteractionProvider
+        )
+
+    internal val interactionCacheProvider: InteractionCacheProvider =
+        InteractionCacheProvider(
+            retenoDatabaseManagerInteractionProviderInternal,
         )
 
     private val deeplinkRepositoryProvider: DeeplinkRepositoryProvider =
