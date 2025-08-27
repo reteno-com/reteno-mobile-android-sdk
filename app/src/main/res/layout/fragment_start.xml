@@ -126,7 +126,7 @@
                 android:id="@+id/cbDelayNextLaunch"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Delay next launch by 3 seconds"
+                android:text="Delay next launch by 10 seconds"
                 android:textSize="18sp" />
 
             <ProgressBar

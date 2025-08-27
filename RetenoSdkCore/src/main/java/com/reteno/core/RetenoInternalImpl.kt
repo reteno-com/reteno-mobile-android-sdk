@@ -70,6 +70,9 @@ class RetenoInternalImpl(
     override val recommendation by lazy { serviceLocator.recommendationProvider.get() }
     private val iamView: IamView by lazy { serviceLocator.iamViewProvider.get() }
 
+    //Safe to call before config init
+    private val interactionCache by lazy { serviceLocator.interactionCacheProvider.get() }
+
     private var isStarted: AtomicBoolean = AtomicBoolean(false)
 
     val isInitialized: Boolean
@@ -91,6 +94,9 @@ class RetenoInternalImpl(
             anrWaitCondition.await()
             applyConfig(config)
             initWaitCondition.complete(Unit)
+            withContext(ioDispatcher) {
+                interactionCache.processCachedInteractions()
+            }
         }
     }
 
@@ -459,12 +465,18 @@ class RetenoInternalImpl(
         }
     }
 
-    override fun recordInteraction(id: String, status: InteractionStatus) = runAfterInit {
+    override fun recordInteraction(id: String, status: InteractionStatus) {
         if (!isOsVersionSupported()) {
-            return@runAfterInit
+            return
         }
         /*@formatter:off*/ Logger.i(TAG, "recordInteraction(): ", "status = [" , status , "]")
         /*@formatter:on*/
+        if (!isInitialized) {
+            /*@formatter:off*/ Logger.i(TAG, "recordInteraction(): ", "Uninitialized, saving interaction to cache. It will be delivered after library init.")
+            /*@formatter:on*/
+            interactionCache.recordInteraction(id, status)
+            return
+        }
         syncScope.launch(ioDispatcher) {
             try {
                 interactionController.onInteraction(id, status)

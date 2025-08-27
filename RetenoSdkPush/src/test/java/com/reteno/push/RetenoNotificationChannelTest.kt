@@ -83,6 +83,7 @@ class RetenoNotificationChannelTest : BaseRobolectricTest() {
         mockkObject(Reteno.Companion)
         val retenoMock = mockk<RetenoInternalImpl>()
         every { Reteno.instance } returns retenoMock
+        every { retenoMock.isInitialized } returns true
         every { retenoMock.getDefaultNotificationChannelConfig() } returns null
         // Given
         every { Util.readFromRaw(any(), any<Int>()) } throws Exception("Resource not found exception")
@@ -131,6 +132,7 @@ class RetenoNotificationChannelTest : BaseRobolectricTest() {
         mockkObject(Reteno.Companion)
         val retenoMock = mockk<RetenoInternalImpl>()
         every { Reteno.instance } returns retenoMock
+        every { retenoMock.isInitialized } returns true
         every { retenoMock.getDefaultNotificationChannelConfig() } returns null
         // Given
         val channelJson = "{" +
@@ -190,6 +192,7 @@ class RetenoNotificationChannelTest : BaseRobolectricTest() {
         mockkObject(Reteno.Companion)
         val retenoMock = mockk<RetenoInternalImpl>()
         every { Reteno.instance } returns retenoMock
+        every { retenoMock.isInitialized } returns true
         every { retenoMock.getDefaultNotificationChannelConfig() } returns null
         val configJson = "{" +
                 "\"id\":\"SomeIdSetByClient\"," +
@@ -278,6 +281,7 @@ class RetenoNotificationChannelTest : BaseRobolectricTest() {
         mockkObject(Reteno.Companion)
         val retenoMock = mockk<RetenoInternalImpl>()
         every { Reteno.instance } returns retenoMock
+        every { retenoMock.isInitialized } returns true
         every { retenoMock.getDefaultNotificationChannelConfig() } returns null
         val channel = mockk<NotificationChannel>()
         every { channel.importance } returns NotificationManager.IMPORTANCE_NONE
@@ -302,6 +306,7 @@ class RetenoNotificationChannelTest : BaseRobolectricTest() {
         mockkObject(Reteno.Companion)
         val retenoMock = mockk<RetenoInternalImpl>()
         every { Reteno.instance } returns retenoMock
+        every { retenoMock.isInitialized } returns true
         every { retenoMock.getDefaultNotificationChannelConfig() } returns null
         val channel = mockk<NotificationChannel>()
         every { channel.importance } returns NotificationManager.IMPORTANCE_HIGH
