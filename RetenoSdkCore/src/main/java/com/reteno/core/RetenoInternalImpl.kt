@@ -570,7 +570,7 @@ class RetenoInternalImpl(
         }
     }
 
-    override fun deeplinkClicked(linkWrapped: String, linkUnwrapped: String) {
+    override fun deeplinkClicked(linkWrapped: String, linkUnwrapped: String) = runAfterInit {
         deeplinkController.deeplinkClicked(linkWrapped, linkUnwrapped)
     }
 
