@@ -6,8 +6,9 @@ import androidx.test.core.app.ApplicationProvider
 import com.reteno.core.Reteno
 import com.reteno.core.RetenoConfig
 import com.reteno.core.RetenoInternalImpl
-import com.reteno.core.data.local.database.util.*
-import io.mockk.*
+import io.mockk.MockKAnnotations
+import io.mockk.clearAllMocks
+import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
@@ -18,8 +19,6 @@ import org.junit.Before
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
-import org.robolectric.shadows.ShadowLooper
-import org.robolectric.shadows.ShadowPackageManager
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
@@ -27,7 +26,6 @@ import org.robolectric.shadows.ShadowPackageManager
     sdk = [26],
     application = RetenoTestApp::class,
     packageName = "com.reteno.core",
-    shadows = [ShadowLooper::class, ShadowPackageManager::class]
 )
 
 abstract class BaseRobolectricTest {

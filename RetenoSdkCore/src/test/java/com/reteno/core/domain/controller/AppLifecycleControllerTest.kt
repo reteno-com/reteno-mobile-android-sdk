@@ -1,9 +1,7 @@
 package com.reteno.core.domain.controller
 
 import android.content.pm.PackageInfo
-import androidx.test.core.app.ApplicationProvider
 import com.reteno.core.base.robolectric.BaseRobolectricTest
-import com.reteno.core.base.robolectric.RetenoTestApp
 import com.reteno.core.data.repository.ConfigRepository
 import com.reteno.core.domain.model.event.Event
 import com.reteno.core.domain.model.event.LifecycleTrackingOptions
@@ -84,7 +82,7 @@ class AppLifecycleControllerTest : BaseRobolectricTest() {
 
 
     @Test
-    fun given_whenContrillerInit_thenBaseHtmlShouldBeFetched() = runRetenoTest {
+    fun given_whenControllerInit_thenBaseHtmlShouldBeFetched() = runRetenoTest {
         coEvery { configRepository.notificationState } returns MutableSharedFlow()
 
         val sut = createSUT(LifecycleTrackingOptions.ALL)
@@ -343,7 +341,6 @@ class AppLifecycleControllerTest : BaseRobolectricTest() {
         val sut = createSUT(LifecycleTrackingOptions(
             appLifecycleEnabled = false
         ))
-        val app = ApplicationProvider.getApplicationContext<RetenoTestApp>()
         sut.initMetadata()
 
         verify(exactly = 0) {
