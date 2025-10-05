@@ -88,7 +88,7 @@ class RetenoNotificationClickedReceiver : BroadcastReceiver() {
         when {
             isIam && RetenoInternalImpl.instance.isActivityPresented() -> {}
             else -> {
-                context.startActivity(intent)
+                context.startActivity(launchIntent)
             }
         }
     }
