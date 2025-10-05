@@ -47,6 +47,16 @@ class RetenoConfig private constructor(
             setDebug(config.isDebug)
         }
 
+        constructor(config: RetenoConfig, accessKey: String) : this() {
+            accessKey(accessKey)
+            pauseInAppMessages(config.isPausedInAppMessages)
+            pausePushInAppMessages(config.isPausedPushInAppMessages)
+            customDeviceIdProvider(config.userIdProvider)
+            lifecycleTrackingOptions(config.lifecycleTrackingOptions)
+            config.defaultNotificationChannelConfig?.let { defaultNotificationChannelConfig(config.defaultNotificationChannelConfig) }
+            setDebug(config.isDebug)
+        }
+
         fun pauseInAppMessages(isPaused: Boolean): Builder {
             isPausedInApps = isPaused
             return this
@@ -101,5 +111,31 @@ class RetenoConfig private constructor(
                 isDebug = isDebug
             )
         }
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as RetenoConfig
+
+        if (isPausedInAppMessages != other.isPausedInAppMessages) return false
+        if (isPausedPushInAppMessages != other.isPausedPushInAppMessages) return false
+        if (isDebug != other.isDebug) return false
+        if (lifecycleTrackingOptions != other.lifecycleTrackingOptions) return false
+        if (accessKey != other.accessKey) return false
+        if (platform != other.platform) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = isPausedInAppMessages.hashCode()
+        result = 31 * result + isPausedPushInAppMessages.hashCode()
+        result = 31 * result + isDebug.hashCode()
+        result = 31 * result + lifecycleTrackingOptions.hashCode()
+        result = 31 * result + accessKey.hashCode()
+        result = 31 * result + platform.hashCode()
+        return result
     }
 }

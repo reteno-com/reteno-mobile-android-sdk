@@ -15,4 +15,10 @@ data class DeviceId(
             append(it)
         }
     }
+
+    companion object {
+        fun getIdBodyFrom(id: String): String {
+            return id.takeWhile { it != ':' }
+        }
+    }
 }

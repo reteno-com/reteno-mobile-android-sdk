@@ -113,6 +113,13 @@ internal class DeviceIdHelper(
                     }
                 }
             }
+
+            DeviceIdMode.CACHE -> {
+                val body = DeviceId.getIdBodyFrom(sharedPrefsManager.getLastStoredId())
+                onDeviceIdChanged(currentDeviceId.copy(idBody = body, mode = deviceIdMode))
+                /*@formatter:off*/ Logger.i(TAG, "initDeviceId(): ", "deviceIdMode = [", deviceIdMode, "]", " deviceId = [", body, "]")
+                /*@formatter:on*/
+            }
         }
     }
 
