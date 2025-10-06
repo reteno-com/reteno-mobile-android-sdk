@@ -3,17 +3,23 @@ package com.reteno.sample
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.os.Handler
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.NavHostFragment
+import com.reteno.core.Reteno
+import com.reteno.core.RetenoConfig
 import com.reteno.core.RetenoInternalImpl
+import com.reteno.core.domain.model.event.LifecycleTrackingOptions.Companion.ALL
 import com.reteno.core.view.iam.callback.InAppCloseData
 import com.reteno.core.view.iam.callback.InAppData
 import com.reteno.core.view.iam.callback.InAppErrorData
 import com.reteno.core.view.iam.callback.InAppLifecycleCallback
 import com.reteno.push.RetenoNotifications
 import com.reteno.sample.databinding.ActivityMainBinding
+import com.reteno.sample.util.AppSharedPreferencesManager.getShouldDelayLaunch
+import com.reteno.sample.util.AppSharedPreferencesManager.setDelayLaunch
 import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
@@ -26,6 +32,20 @@ class MainActivity : AppCompatActivity() {
         checkPermissions()
         checkDeepLink(intent)
         setNavigation(intent)
+        if (getShouldDelayLaunch(this)) {
+            setDelayLaunch(this, false)
+            Handler().postDelayed({
+                Reteno.initWithConfig(
+                    RetenoConfig.Builder()
+                        .pauseInAppMessages(false)
+                        .customDeviceIdProvider((application as SampleApp).createProvider())
+                        .lifecycleTrackingOptions(ALL)
+                        .accessKey(BuildConfig.API_ACCESS_KEY)
+                        .setDebug(BuildConfig.DEBUG)
+                        .build()
+                )
+            }, 10000L)
+        }
     }
 
     override fun onNewIntent(intent: Intent) {
