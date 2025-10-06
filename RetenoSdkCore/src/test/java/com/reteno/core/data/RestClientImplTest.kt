@@ -2,7 +2,6 @@ package com.reteno.core.data
 
 import android.net.Uri
 import com.reteno.core.base.BaseUnitTest
-import com.reteno.core.data.local.config.DeviceIdMode
 import com.reteno.core.data.local.config.RestConfig
 import com.reteno.core.data.remote.api.ApiContract
 import com.reteno.core.data.remote.api.ConnectionManager
@@ -89,8 +88,7 @@ class RestClientImplTest : BaseUnitTest() {
             RestConfig(
                 mockk(relaxed = true),
                 mockk(relaxed = true),
-                "",
-                initIdMode = DeviceIdMode.ANDROID_ID,
+                { "" },
             ), platform = "Android"
         )
     }

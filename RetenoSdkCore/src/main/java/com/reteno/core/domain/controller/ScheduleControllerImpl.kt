@@ -177,12 +177,6 @@ internal class ScheduleControllerImpl(
             deepLinkController.pushDeeplink()
         }
 
-        PushOperationQueue.addOperation {
-            /*@formatter:off*/ Logger.i(TAG, "sendData(): ", "step: pushDeeplink")
-            /*@formatter:on*/
-            deepLinkController.pushDeeplink()
-        }
-
         PushOperationQueue.nextOperation()
     }
 
