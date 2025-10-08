@@ -7,7 +7,7 @@ abstract class ProviderWeakReference<T> : Provider<T>() {
 
     private var reference = WeakReference<T>(null)
 
-    override fun get(): T {
+    override fun get(): T = synchronized(this) {
         var instance = reference.get()
         if (instance == null) {
             instance = create()

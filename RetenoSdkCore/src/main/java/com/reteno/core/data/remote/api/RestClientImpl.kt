@@ -149,13 +149,13 @@ internal class RestClientImpl(
 
             when (apiContract) {
                 is ApiContract.MobileApi -> {
-                    setRequestProperty(HEADER_KEY, restConfig.accessKey)
+                    setRequestProperty(HEADER_KEY, restConfig.accessKeyProvider())
                     setRequestProperty(HEADER_VERSION, "$platform ${BuildConfig.SDK_VERSION}")
                 }
                 is ApiContract.InAppMessages,
                 is ApiContract.AppInbox,
                 is ApiContract.Recommendation -> {
-                    setRequestProperty(HEADER_KEY, restConfig.accessKey)
+                    setRequestProperty(HEADER_KEY, restConfig.accessKeyProvider())
                     setRequestProperty(HEADER_VERSION, "$platform ${BuildConfig.SDK_VERSION}")
                     setRequestProperty(HEADER_DEVICE_ID, restConfig.deviceId.id)
                 }

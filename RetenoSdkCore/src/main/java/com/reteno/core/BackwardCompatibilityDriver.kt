@@ -27,8 +27,7 @@ fun RetenoImpl(
     }
 
     Reteno.initWithConfig(
-        RetenoConfig.Builder(config)
-            .accessKey(accessKey)
+        RetenoConfig.Builder(config, accessKey)
             .build()
     )
     return Reteno.instance

@@ -47,6 +47,16 @@ class RetenoConfig private constructor(
             setDebug(config.isDebug)
         }
 
+        constructor(config: RetenoConfig, accessKey: String) : this() {
+            accessKey(accessKey)
+            pauseInAppMessages(config.isPausedInAppMessages)
+            pausePushInAppMessages(config.isPausedPushInAppMessages)
+            customDeviceIdProvider(config.userIdProvider)
+            lifecycleTrackingOptions(config.lifecycleTrackingOptions)
+            config.defaultNotificationChannelConfig?.let { defaultNotificationChannelConfig(config.defaultNotificationChannelConfig) }
+            setDebug(config.isDebug)
+        }
+
         fun pauseInAppMessages(isPaused: Boolean): Builder {
             isPausedInApps = isPaused
             return this

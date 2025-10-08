@@ -8,10 +8,13 @@ internal class DeviceIdHelperProvider(
     private val context: Context,
     private val sharedPrefsManagerProvider: SharedPrefsManagerProvider,
     private val configProvider: RetenoConfigProvider
-) :
-    ProviderWeakReference<DeviceIdHelper>() {
+) : ProviderWeakReference<DeviceIdHelper>() {
 
     override fun create(): DeviceIdHelper {
-        return DeviceIdHelper(context, sharedPrefsManagerProvider.get(), configProvider.get().userIdProvider)
+        return DeviceIdHelper(
+            context = context,
+            sharedPrefsManager = sharedPrefsManagerProvider.get(),
+            userIdProvider = configProvider.get().userIdProvider
+        )
     }
 }
