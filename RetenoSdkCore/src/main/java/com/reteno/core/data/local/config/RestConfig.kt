@@ -6,18 +6,17 @@ import com.reteno.core.util.Logger
 internal class RestConfig(
     private val sharedPrefsManager: SharedPrefsManager,
     private val deviceIdHelper: DeviceIdHelper,
-    internal val accessKey: String,
-    initIdMode: DeviceIdMode
+    internal val accessKeyProvider: () -> String
 ) {
 
     internal var deviceId: DeviceId = DeviceId("")
         private set
 
     init {
-        initDeviceId(initIdMode)
+        initDeviceId(DeviceIdMode.CACHE)
     }
 
-    private fun initDeviceId(deviceIdMode: DeviceIdMode) {
+    internal fun initDeviceId(deviceIdMode: DeviceIdMode) {
         /*@formatter:off*/ Logger.i(TAG, "changeDeviceIdMode(): ", "deviceIdMode = [" , deviceIdMode , "]")
         /*@formatter:on*/
         deviceIdHelper.withDeviceIdMode(deviceId, deviceIdMode) {

@@ -2,7 +2,9 @@ package com.reteno.core.data.local.sharedpref
 
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.core.content.edit
 import com.reteno.core.R
+import com.reteno.core.RetenoConfig
 import com.reteno.core.util.Logger
 import com.reteno.core.util.Util
 import java.util.UUID
@@ -351,6 +353,25 @@ internal class SharedPrefsManager(
         return result
     }
 
+    fun cacheConfiguration(deviceId: String, config: RetenoConfig) {
+        sharedPreferences.edit {
+            putString(PREF_KEY_CONFIG_LAST_STORED_ID, deviceId)
+            putBoolean(PREF_KEY_CONFIG_IN_APP, config.isPausedInAppMessages)
+            putBoolean(PREF_KEY_CONFIG_LC_TRACK, config.lifecycleTrackingOptions.appLifecycleEnabled)
+            putBoolean(PREF_KEY_CONFIG_SESS_TRACK, config.lifecycleTrackingOptions.sessionEventsEnabled)
+            putBoolean(PREF_KEY_CONFIG_PUSH_TRACK, config.lifecycleTrackingOptions.pushSubscriptionEnabled)
+            putString(PREF_KEY_CONFIG_ACCESS, config.accessKey)
+            putBoolean(PREF_KEY_CONFIG_PUSH_IN_APP, config.isPausedPushInAppMessages)
+            putString(PREF_KEY_CONFIG_PLATFORM, config.platform)
+            putBoolean(PREF_KEY_CONFIG_DEBUG, config.isDebug)
+            putBoolean(PREF_KEY_CONFIG_HAS_CUSTOM_ID, config.userIdProvider != null)
+        }
+    }
+
+    fun getLastStoredId(): String {
+        return sharedPreferences.getString(PREF_KEY_CONFIG_LAST_STORED_ID, "").orEmpty()
+    }
+
     companion object {
         private val TAG: String = SharedPrefsManager::class.java.simpleName
 
@@ -378,5 +399,15 @@ internal class SharedPrefsManager(
         private const val PREF_KEY_DEVICE_SUFFIX = "device_suffix"
         private const val PREF_KEY_DEVICE_PHONE = "device_phone"
         private const val PREF_KEY_DEVICE_EMAIL = "device_email"
+        private const val PREF_KEY_CONFIG_IN_APP = "config_paused_in_app"
+        private const val PREF_KEY_CONFIG_LC_TRACK = "config_lifecycle_tracking"
+        private const val PREF_KEY_CONFIG_SESS_TRACK = "config_session_tracking"
+        private const val PREF_KEY_CONFIG_PUSH_TRACK = "config_push_tracking"
+        private const val PREF_KEY_CONFIG_ACCESS = "config_access_key"
+        private const val PREF_KEY_CONFIG_PUSH_IN_APP = "config_paused_push_in_app"
+        private const val PREF_KEY_CONFIG_PLATFORM = "config_platform"
+        private const val PREF_KEY_CONFIG_DEBUG = "config_debug"
+        private const val PREF_KEY_CONFIG_LAST_STORED_ID = "config_last_id"
+        private const val PREF_KEY_CONFIG_HAS_CUSTOM_ID = "config_has_custom_id"
     }
 }

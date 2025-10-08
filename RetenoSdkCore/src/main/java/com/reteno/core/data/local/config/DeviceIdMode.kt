@@ -38,5 +38,10 @@ enum class DeviceIdMode {
      *
      * Uses [DeviceIdProvider] from [RetenoConfig] as an Id provider
      */
-    CLIENT_UUID
+    CLIENT_UUID,
+    /**
+     * Uses the Id that was previously used on the latest application launch
+     *
+     */
+    CACHE
 }

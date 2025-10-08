@@ -2,6 +2,7 @@ package com.reteno.core.di
 
 import android.content.Context
 import com.reteno.core.RetenoConfig
+import com.reteno.core.data.local.config.DeviceIdMode
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerAppInbox
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerDevice
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerEvents
@@ -310,5 +311,14 @@ class ServiceLocator(
 
     fun setConfig(config: RetenoConfig) {
         configProvider.setConfig(config)
+    }
+
+    //TODO Questionable placement, re-evaluate after the next release
+    fun replaceCachedDeviceIdWithIdFromConfig() {
+        val deviceIdMode = when {
+            configProvider.get().userIdProvider != null -> DeviceIdMode.CLIENT_UUID
+            else -> DeviceIdMode.ANDROID_ID
+        }
+        restConfigProvider.get().initDeviceId(deviceIdMode)
     }
 }

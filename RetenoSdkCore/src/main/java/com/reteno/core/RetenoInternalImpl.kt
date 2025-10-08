@@ -65,6 +65,7 @@ class RetenoInternalImpl(
     private val interactionController by lazy { serviceLocator.interactionControllerProvider.get() }
     private val databaseManager by lazy { serviceLocator.retenoDatabaseManagerProvider.get() }
     private val deeplinkController by lazy { serviceLocator.deeplinkControllerProvider.get() }
+    private val sharedPrefsManager by lazy { serviceLocator.sharedPrefsManagerProvider.get() }
 
     override val appInbox by lazy { serviceLocator.appInboxProvider.get() }
     override val recommendation by lazy { serviceLocator.recommendationProvider.get() }
@@ -74,6 +75,7 @@ class RetenoInternalImpl(
     private val interactionCache by lazy { serviceLocator.interactionCacheProvider.get() }
 
     private var isStarted: AtomicBoolean = AtomicBoolean(false)
+    private var receivedConfigFromUser = false
 
     val isInitialized: Boolean
         get() = initWaitCondition.isCompleted
@@ -83,15 +85,21 @@ class RetenoInternalImpl(
     }
 
     override fun setConfig(config: RetenoConfig) {
-        if (isInitialized) {
+        if (receivedConfigFromUser) {
             Logger.i(TAG, "RetenoSDK was already initialized, skipping")
             return
         }
+        receivedConfigFromUser = true
+        setConfigInternal(config)
+    }
+
+    private fun setConfigInternal(config: RetenoConfig) {
         Logger.i(TAG, "setConfig()")
         serviceLocator.setConfig(config)
         Util.setIsDebug(config.isDebug)
         syncScope.launch {
             anrWaitCondition.await()
+            serviceLocator.replaceCachedDeviceIdWithIdFromConfig()
             applyConfig(config)
             initWaitCondition.complete(Unit)
             withContext(ioDispatcher) {
@@ -112,6 +120,8 @@ class RetenoInternalImpl(
         try {
             appLifecycleOwner.lifecycle.addObserver(appLifecycleController)
             withContext(ioDispatcher) {
+                val id = contactController.awaitDeviceId()
+                sharedPrefsManager.cacheConfiguration(id, config)
                 contactController.checkIfDeviceRegistered()
             }
             pauseInAppMessages(config.isPausedInAppMessages)
@@ -421,9 +431,9 @@ class RetenoInternalImpl(
             iamView.setInAppLifecycleCallback(inAppLifecycleCallback)
         }
 
-    override fun forcePushData() = runAfterInit {
+    override fun forcePushData() {
         if (!isOsVersionSupported()) {
-            return@runAfterInit
+            return
         }
         /*@formatter:off*/ Logger.i(TAG, "forcePushData(): ", "")
         /*@formatter:on*/
@@ -471,12 +481,6 @@ class RetenoInternalImpl(
         }
         /*@formatter:off*/ Logger.i(TAG, "recordInteraction(): ", "status = [" , status , "]")
         /*@formatter:on*/
-        if (!isInitialized) {
-            /*@formatter:off*/ Logger.i(TAG, "recordInteraction(): ", "Uninitialized, saving interaction to cache. It will be delivered after library init.")
-            /*@formatter:on*/
-            interactionCache.recordInteraction(id, status)
-            return
-        }
         syncScope.launch(ioDispatcher) {
             try {
                 interactionController.onInteraction(id, status)
