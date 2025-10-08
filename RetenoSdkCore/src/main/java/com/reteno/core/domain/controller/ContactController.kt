@@ -112,7 +112,6 @@ class ContactController(
         /*@formatter:on*/
         if (!configRepository.isDeviceRegistered()) {
             isDeviceSentThisSession.set(true)
-            configRepository.awaitForDeviceId()
             val token = configRepository.getFcmToken()
             onNewContact(token, toParallelWork = false, pushImmediate = true)
         }
