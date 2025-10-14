@@ -67,6 +67,7 @@ abstract class BaseRobolectricTest {
             Reteno.initWithConfig(
                 RetenoConfig.Builder()
                     .accessKey("Test access key")
+                    .setPlatform("Android")
                     .build()
             )
             application.retenoMock = it

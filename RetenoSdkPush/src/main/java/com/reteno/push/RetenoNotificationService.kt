@@ -92,8 +92,11 @@ class RetenoNotificationService(
 
         if (channelEnabled && permissionsGranted) {
             data.getString(KEY_ES_INTERACTION_ID)?.let { interactionId ->
-                RetenoInternalImpl.instance.recordInteraction(interactionId, InteractionStatus.DELIVERED)
-                RetenoInternalImpl.instance.forcePushData()
+                RetenoInternalImpl.instance.recordInteraction(
+                    interactionId,
+                    InteractionStatus.DELIVERED,
+                    forcePush = true
+                )
             }
         }
     }

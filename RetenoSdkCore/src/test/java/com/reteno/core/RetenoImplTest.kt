@@ -1,23 +1,13 @@
 package com.reteno.core
 
 import android.app.Application
-import android.content.BroadcastReceiver
-import android.content.Context
 import android.content.ContextWrapper
-import android.content.Intent
-import android.content.IntentFilter
 import android.content.pm.ActivityInfo
 import android.content.pm.ResolveInfo
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.testing.TestLifecycleOwner
 import com.reteno.core.base.robolectric.BaseRobolectricTest
 import com.reteno.core.di.ServiceLocator
-import com.reteno.core.domain.controller.AppLifecycleController
-import com.reteno.core.domain.controller.ContactController
-import com.reteno.core.domain.controller.EventController
-import com.reteno.core.domain.controller.IamController
-import com.reteno.core.domain.controller.ScheduleController
-import com.reteno.core.domain.controller.ScreenTrackingController
 import com.reteno.core.domain.model.ecom.EcomEvent
 import com.reteno.core.domain.model.event.Event
 import com.reteno.core.domain.model.event.Parameter
@@ -25,32 +15,23 @@ import com.reteno.core.domain.model.user.Address
 import com.reteno.core.domain.model.user.User
 import com.reteno.core.domain.model.user.UserAttributesAnonymous
 import com.reteno.core.domain.model.user.UserCustomField
-import com.reteno.core.features.appinbox.AppInboxImpl
-import com.reteno.core.lifecycle.RetenoActivityHelper
 import com.reteno.core.lifecycle.ScreenTrackingConfig
 import com.reteno.core.lifecycle.ScreenTrackingTrigger
-import com.reteno.core.util.Constants
 import com.reteno.core.util.Logger
 import com.reteno.core.util.queryBroadcastReceivers
-import com.reteno.core.view.iam.IamView
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
-import io.mockk.impl.annotations.RelaxedMockK
 import io.mockk.mockk
-import io.mockk.mockkConstructor
-import io.mockk.unmockkConstructor
 import io.mockk.verify
 import junit.framework.TestCase.assertNotNull
 import junit.framework.TestCase.assertTrue
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
-import org.junit.AfterClass
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Before
-import org.junit.BeforeClass
 import org.junit.Test
 import org.robolectric.shadows.ShadowLooper
 import java.time.ZonedDateTime
@@ -107,47 +88,10 @@ class RetenoImplTest : BaseRobolectricTest() {
 
         private val EXCEPTION = Exception("MyCustomException")
 
-        @BeforeClass
-        @JvmStatic
-        fun beforeClass() {
-            mockkConstructor(ServiceLocator::class)
-        }
-
-        @AfterClass
-        @JvmStatic
-        fun afterClass() {
-            unmockkConstructor(ServiceLocator::class)
-        }
     }
     // endregion constants -------------------------------------------------------------------------
 
     // region helper fields ------------------------------------------------------------------------
-    @RelaxedMockK
-    private lateinit var contactController: ContactController
-
-    @RelaxedMockK
-    private lateinit var scheduleController: ScheduleController
-
-    @RelaxedMockK
-    private lateinit var eventController: EventController
-
-    @RelaxedMockK
-    private lateinit var screenTrackingController: ScreenTrackingController
-
-    @RelaxedMockK
-    private lateinit var inbox: AppInboxImpl
-
-    @RelaxedMockK
-    private lateinit var iamView: IamView
-
-    @RelaxedMockK
-    private lateinit var iamController: IamController
-
-    @RelaxedMockK
-    private lateinit var activityHelper: RetenoActivityHelper
-
-    @RelaxedMockK
-    private lateinit var appLifeController: AppLifecycleController
 
     private var contextWrapper: ContextWrapper? = null
 
@@ -157,16 +101,6 @@ class RetenoImplTest : BaseRobolectricTest() {
     @Before
     override fun before() {
         super.before()
-        every { anyConstructed<ServiceLocator>().contactControllerProvider.get() } returns contactController
-        every { anyConstructed<ServiceLocator>().scheduleControllerProvider.get() } returns scheduleController
-        every { anyConstructed<ServiceLocator>().iamViewProvider.get() } returns iamView
-        every { anyConstructed<ServiceLocator>().eventsControllerProvider.get() } returns eventController
-        every { anyConstructed<ServiceLocator>().iamControllerProvider.get() } returns iamController
-        every { anyConstructed<ServiceLocator>().retenoActivityHelperProvider.get() } returns activityHelper
-        every { anyConstructed<ServiceLocator>().appInboxProvider.get() } returns inbox
-        every { anyConstructed<ServiceLocator>().screenTrackingControllerProvider.get() } returns screenTrackingController
-        every { anyConstructed<ServiceLocator>().appLifecycleControllerProvider.get() } returns appLifeController
-
         contextWrapper = ContextWrapper(application)
         assertNotNull(contextWrapper)
         transcript.clear()
@@ -467,7 +401,7 @@ class RetenoImplTest : BaseRobolectricTest() {
 
         // Then
         verify { scheduleController.startScheduler() }
-        coVerify(exactly = 1) { contactController.checkIfDeviceRegistered() }
+        coVerify(exactly = 1) { contactController.registerDevice() }
         coVerify(exactly = 1) { contactController.checkIfDeviceRequestSentThisSession() }
         verify { iamView.start() }
     }
@@ -566,43 +500,23 @@ class RetenoImplTest : BaseRobolectricTest() {
 
     @Test
     fun getAppInbox() = runRetenoTest { retenoImpl ->
-
         val result = retenoImpl.appInbox
-        assertEquals(inbox, result)
+        assertEquals(appInbox, result)
     }
 
     @Test
-    fun whenAppStart_thenBroadcastSent() = runRetenoTest { retenoImpl ->
-        // Given
-        mockkConstructor(ServiceLocator::class)
-        every { anyConstructed<ServiceLocator>().contactControllerProvider.get() } returns contactController
-        every { anyConstructed<ServiceLocator>().scheduleControllerProvider.get() } returns scheduleController
-        every { anyConstructed<ServiceLocator>().iamViewProvider.get() } returns iamView
-        every { anyConstructed<ServiceLocator>().eventsControllerProvider.get() } returns eventController
-        every { anyConstructed<ServiceLocator>().appInboxProvider.get() } returns inbox
-        every { anyConstructed<ServiceLocator>().screenTrackingControllerProvider.get() } returns screenTrackingController
-        mockQueryBroadcastReceivers(application)
-        val receiver =
-            object : BroadcastReceiver() {
-                override fun onReceive(context: Context?, intent: Intent?) {
-                    transcript.add(TRANSCRIPT_RESUME_RECEIVED)
-                }
-            }
-        contextWrapper!!.registerReceiver(
-            receiver,
-            IntentFilter(Constants.BROADCAST_ACTION_RETENO_APP_RESUME)
-        )
-
+    fun whenAppStart_thenBroadcastSent() {
         val lifecycleOwner = TestLifecycleOwner(initialState = Lifecycle.State.CREATED)
-        val retenoImpl = createRetenoAndAdvanceInit(lifecycleOwner)
-        // When
+        runRetenoTest(lifecycleOwner) { retenoImpl ->
+            // Given
 
-        lifecycleOwner.handleLifecycleEvent(Lifecycle.Event.ON_START)
+            // When
+            lifecycleOwner.handleLifecycleEvent(Lifecycle.Event.ON_START)
 
-        // Then
-        ShadowLooper.shadowMainLooper().idle()
-        assertTrue(transcript.contains(TRANSCRIPT_RESUME_RECEIVED))
-        RetenoInternalImpl.swapInstance(null)
+            // Then
+            ShadowLooper.shadowMainLooper().idle()
+            verify { appLifecycleController.start() }
+        }
     }
 
     @Test
@@ -611,7 +525,7 @@ class RetenoImplTest : BaseRobolectricTest() {
         val application = mockk<Application>()
         mockQueryBroadcastReceivers(application)
         every { anyConstructed<ServiceLocator>().scheduleControllerProvider.get() } returns scheduleController
-        coEvery { contactController.checkIfDeviceRegistered() } returns Unit
+        coEvery { contactController.registerDevice() } returns Unit
         every { scheduleController.clearOldData() } returns Unit
         every { application.sendBroadcast(any()) } returns Unit
         //When

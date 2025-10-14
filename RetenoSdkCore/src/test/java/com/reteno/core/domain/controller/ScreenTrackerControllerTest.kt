@@ -11,7 +11,6 @@ import com.reteno.core.lifecycle.RetenoActivityHelperImpl
 import com.reteno.core.lifecycle.ScreenTrackingConfig
 import io.mockk.coVerify
 import io.mockk.every
-import io.mockk.impl.annotations.RelaxedMockK
 import io.mockk.mockkConstructor
 import io.mockk.unmockkConstructor
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -39,15 +38,6 @@ class ScreenTrackerControllerTest : BaseRobolectricTest() {
             unmockkConstructor(ServiceLocator::class)
         }
     }
-
-    // region helper fields ------------------------------------------------------------------------
-
-    @RelaxedMockK
-    private lateinit var eventController: EventController
-
-    @RelaxedMockK
-    private lateinit var contactController: ContactController
-    //endregion helper fields
 
     @Test
     fun givenInit_whenFragmentOpens_thenEventNotRecorded() = runTest {

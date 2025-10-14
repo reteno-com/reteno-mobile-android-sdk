@@ -65,6 +65,7 @@ class ContactRepositoryImplTest : BaseRobolectricTest() {
         @JvmStatic
         @BeforeClass
         fun beforeClass() {
+            BaseRobolectricTest.beforeClass()
             mockkStatic(User::toDb)
         }
 
@@ -72,6 +73,7 @@ class ContactRepositoryImplTest : BaseRobolectricTest() {
         @AfterClass
         fun afterClass() {
             unmockkStatic(User::toDb)
+            BaseRobolectricTest.afterClass()
         }
     }
     // endregion constants -------------------------------------------------------------------------

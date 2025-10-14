@@ -30,7 +30,6 @@ import com.reteno.core.domain.controller.IamControllerImpl.Companion.TIMEOUT
 import com.reteno.core.domain.model.event.Event
 import com.reteno.core.domain.model.event.Event.Companion.SCREEN_VIEW_EVENT_TYPE_KEY
 import com.reteno.core.features.iam.InAppPauseBehaviour
-import com.reteno.core.lifecycle.RetenoSessionHandlerImpl
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -82,13 +81,6 @@ class IamControllerImplTest : BaseRobolectricTest() {
     // region helper fields ------------------------------------------------------------------------
     @RelaxedMockK
     private lateinit var iamRepository: IamRepository
-
-    @RelaxedMockK
-    private lateinit var sessionHandler: RetenoSessionHandlerImpl
-
-    @RelaxedMockK
-    private lateinit var eventController: EventController
-
     private val eventFlow = MutableSharedFlow<Event>()
     // endregion helper fields ---------------------------------------------------------------------
 

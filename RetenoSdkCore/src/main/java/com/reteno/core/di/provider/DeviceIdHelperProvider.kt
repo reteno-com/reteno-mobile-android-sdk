@@ -14,7 +14,7 @@ internal class DeviceIdHelperProvider(
         return DeviceIdHelper(
             context = context,
             sharedPrefsManager = sharedPrefsManagerProvider.get(),
-            userIdProvider = configProvider.get().userIdProvider
+            retenoConfigProvider = configProvider::get
         )
     }
 }

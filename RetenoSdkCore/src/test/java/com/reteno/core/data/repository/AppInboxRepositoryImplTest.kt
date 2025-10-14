@@ -19,10 +19,14 @@ import com.reteno.core.domain.model.appinbox.AppInboxMessages
 import com.reteno.core.features.appinbox.AppInboxStatus
 import com.reteno.core.util.Logger
 import com.reteno.core.util.Util
-import io.mockk.*
+import io.mockk.MockKException
+import io.mockk.every
 import io.mockk.impl.annotations.RelaxedMockK
-import org.junit.AfterClass
-import org.junit.BeforeClass
+import io.mockk.mockk
+import io.mockk.mockkStatic
+import io.mockk.spyk
+import io.mockk.unmockkStatic
+import io.mockk.verify
 import org.junit.Test
 import java.time.ZonedDateTime
 import java.util.concurrent.Executor
@@ -54,18 +58,6 @@ class AppInboxRepositoryImplTest : BaseRobolectricTest() {
 
         private lateinit var scheduler: ScheduledExecutorService
 
-        @BeforeClass
-        @JvmStatic
-        fun beforeClass() {
-            mockStaticJsonMappers()
-        }
-
-        @AfterClass
-        @JvmStatic
-        fun afterClass() {
-            unMockStaticJsonMappers()
-        }
-
         private fun mockStaticJsonMappers() {
             mockkStatic("com.reteno.core.data.remote.mapper.JsonMappersKt")
             mockkStatic("com.reteno.core.data.remote.mapper.AppInboxMapperKt")
@@ -96,8 +88,14 @@ class AppInboxRepositoryImplTest : BaseRobolectricTest() {
 
     override fun before() {
         super.before()
+        mockStaticJsonMappers()
         scheduler = application.scheduler
         inboxRepository = AppInboxRepositoryImpl(apiClient, databaseManagerAppInbox, configRepository)
+    }
+
+    override fun after() {
+        super.after()
+        unMockStaticJsonMappers()
     }
 
     @Test

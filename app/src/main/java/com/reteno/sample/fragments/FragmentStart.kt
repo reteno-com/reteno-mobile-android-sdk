@@ -200,7 +200,7 @@ class FragmentStart : BaseFragment() {
 
     private fun awaitInit() {
         val impl = reteno as RetenoInternalImpl
-        if (impl.isInitialized) {
+        if (impl.isInitializedByUser) {
             initSessionHandler()
             binding!!.progressBar.visibility = View.GONE
             binding!!.cbDelayNextLaunch.visibility = View.VISIBLE

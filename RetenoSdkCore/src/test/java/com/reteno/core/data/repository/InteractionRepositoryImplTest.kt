@@ -20,6 +20,7 @@ import io.mockk.mockk
 import io.mockk.runs
 import io.mockk.slot
 import io.mockk.verify
+import kotlinx.coroutines.test.runTest
 import org.junit.Assert
 import org.junit.Before
 import org.junit.Test
@@ -62,7 +63,7 @@ class InteractionRepositoryImplTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun givenValidInteraction_whenInteractionSent_thenSaveInteraction() {
+    fun givenValidInteraction_whenInteractionSent_thenSaveInteraction() = runTest {
         // Given
         val interaction = Interaction(INTERACTION_STATUS, CURRENT_TIMESTAMP, TOKEN)
         val dbInteraction = interaction.toDb(INTERACTION_ID)

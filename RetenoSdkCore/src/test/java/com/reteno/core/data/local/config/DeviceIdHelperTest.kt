@@ -1,12 +1,12 @@
 package com.reteno.core.data.local.config
 
+import com.reteno.core.RetenoConfig
 import com.reteno.core.base.robolectric.BaseRobolectricTest
 import com.reteno.core.base.robolectric.Constants.DEVICE_ID_ANDROID
-import com.reteno.core.data.local.sharedpref.SharedPrefsManager
 import com.reteno.core.identification.DeviceIdProvider
 import io.mockk.MockKAnnotations
 import io.mockk.every
-import io.mockk.impl.annotations.RelaxedMockK
+import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Test
@@ -25,9 +25,6 @@ class DeviceIdHelperTest : BaseRobolectricTest() {
 
 
     // region helper fields ------------------------------------------------------------------------
-    @RelaxedMockK
-    private lateinit var sharedPrefsManager: SharedPrefsManager
-
     private var userIdProvider: DeviceIdProvider? = null
     // endregion helper fields ---------------------------------------------------------------------
 
@@ -38,11 +35,17 @@ class DeviceIdHelperTest : BaseRobolectricTest() {
         super.before()
         MockKAnnotations.init(this)
 
-        SUT = DeviceIdHelper(application, sharedPrefsManager, userIdProvider)
+        SUT = DeviceIdHelper(application, sharedPrefsManager, {
+            RetenoConfig.Builder()
+                .accessKey("any")
+                .setPlatform("Android")
+                .customDeviceIdProvider(userIdProvider)
+                .build()
+        })
     }
 
     @Test
-    fun givenEmptyDeviceId_withDeviceIdMode_thenDeviceIdModeChanged() {
+    fun givenEmptyDeviceId_withDeviceIdMode_thenDeviceIdModeChanged() = runTest {
         // Given
         val oldDeviceIdMode = DeviceIdMode.RANDOM_UUID
         val newDeviceIdMode = DeviceIdMode.ANDROID_ID
@@ -62,7 +65,7 @@ class DeviceIdHelperTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun givenEmptyDeviceId_withDeviceIdMode_thenDeviceIdChanged() {
+    fun givenEmptyDeviceId_withDeviceIdMode_thenDeviceIdChanged() = runTest {
         // Given
         val oldDeviceIdMode = DeviceIdMode.RANDOM_UUID
         val expectedDeviceIdMode = DeviceIdMode.ANDROID_ID

@@ -4,7 +4,6 @@ import android.app.Activity
 import androidx.fragment.app.testing.launchFragmentInContainer
 import androidx.lifecycle.Lifecycle
 import com.reteno.core.base.robolectric.BaseRobolectricTest
-import com.reteno.core.domain.controller.EventController
 import com.reteno.core.domain.controller.ScreenTrackingController
 import io.mockk.impl.annotations.RelaxedMockK
 import io.mockk.verify
@@ -17,10 +16,6 @@ import org.robolectric.android.controller.ActivityController
 @OptIn(ExperimentalCoroutinesApi::class)
 class RetenoActivityHelperFragmentTest : BaseRobolectricTest() {
     // region helper fields ------------------------------------------------------------------------
-
-    @RelaxedMockK
-    private lateinit var eventController: EventController
-
     @RelaxedMockK
     private lateinit var retenoLifecycleCallbacks: RetenoLifecycleCallbacks
 

@@ -16,7 +16,7 @@ class RetenoInitListener(
 
     init {
         scope.launch {
-            while (!retenoImpl.isInitialized) {
+            while (!retenoImpl.isInitializedByUser) {
                 delay(500L)
             }
             withContext(Dispatchers.Main) {

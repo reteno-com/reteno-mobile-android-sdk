@@ -12,6 +12,6 @@ internal class RestClientProvider(
 ) : ProviderWeakReference<RestClient>() {
 
     override fun create(): RestClient {
-        return RestClientImpl(restConfigProvider.get(), configProvider.get().platform)
+        return RestClientImpl(restConfigProvider.get(), configProvider::get)
     }
 }
