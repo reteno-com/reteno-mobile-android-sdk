@@ -41,8 +41,7 @@ class RetenoNotificationClickedActivity : Activity() {
                 /*@formatter:off*/ Logger.i(TAG, "sendInteractionStatus(): ", "intent = [", intent, "]")
                 /*@formatter:on*/
                 val reteno = RetenoInternalImpl.instance
-                reteno.recordInteraction(interactionId, InteractionStatus.CLICKED)
-                reteno.forcePushData()
+                reteno.recordInteraction(interactionId, InteractionStatus.CLICKED, forcePush = true)
             }
         }
     }

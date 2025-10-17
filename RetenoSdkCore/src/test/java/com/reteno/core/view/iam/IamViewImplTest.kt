@@ -2,10 +2,6 @@ package com.reteno.core.view.iam
 
 import com.reteno.core.base.robolectric.BaseRobolectricTest
 import com.reteno.core.data.remote.model.iam.message.InAppMessage
-import com.reteno.core.domain.controller.IamController
-import com.reteno.core.domain.controller.InteractionController
-import com.reteno.core.domain.controller.ScheduleController
-import com.reteno.core.lifecycle.RetenoActivityHelper
 import io.mockk.every
 import io.mockk.impl.annotations.RelaxedMockK
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -23,15 +19,7 @@ class IamViewImplTest : BaseRobolectricTest() {
 
     // region helper fields ------------------------------------------------------------------------
     @RelaxedMockK
-    private lateinit var activityHelper: RetenoActivityHelper
-    @RelaxedMockK
-    private lateinit var iamController: IamController
-    @RelaxedMockK
     private lateinit var inAppMessage: InAppMessage
-    @RelaxedMockK
-    private lateinit var interactionController: InteractionController
-    @RelaxedMockK
-    private lateinit var scheduleController: ScheduleController
 
     private lateinit var SUT: IamView
     // endregion helper fields ---------------------------------------------------------------------

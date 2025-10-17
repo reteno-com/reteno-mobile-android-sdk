@@ -27,12 +27,10 @@ internal class InteractionRepositoryImpl(
     private val inAppInteractionDatabaseManager: RetenoDatabaseManagerInAppInteraction
 ) : InteractionRepository {
 
-    override fun saveInteraction(interactionId: String, interaction: Interaction) {
+    override suspend fun saveInteraction(interactionId: String, interaction: Interaction) {
         /*@formatter:off*/ Logger.i(TAG, "saveInteraction(): ", "interactionId = [" , interactionId , "], interaction = [" , interaction , "]")
         /*@formatter:on*/
-        OperationQueue.addParallelOperation {
-            interactionDatabaseManager.insertInteraction(interaction.toDb(interactionId))
-        }
+        interactionDatabaseManager.insertInteraction(interaction.toDb(interactionId))
     }
 
     override fun pushInteractions() {
@@ -62,7 +60,8 @@ internal class InteractionRepositoryImpl(
                     /*@formatter:off*/ Logger.i(TAG, "onFailure(): ", "statusCode = [" , statusCode , "], response = [" , response , "], throwable = [" , throwable , "]")
                     /*@formatter:on*/
                     if (isNonRepeatableError(statusCode)) {
-                        val cacheUpdated = interactionDatabaseManager.deleteInteraction(interactionDb)
+                        val cacheUpdated =
+                            interactionDatabaseManager.deleteInteraction(interactionDb)
                         if (cacheUpdated) {
                             pushInteractions()
                         }
@@ -79,7 +78,8 @@ internal class InteractionRepositoryImpl(
         /*@formatter:off*/ Logger.i(TAG, "clearOldInteractions(): ", "outdatedTime = [" , outdatedTime , "]")
         /*@formatter:on*/
         OperationQueue.addOperation {
-            val removedInteractions: List<InteractionDb> = interactionDatabaseManager.deleteInteractionByTime(outdatedTime.formatToRemote())
+            val removedInteractions: List<InteractionDb> =
+                interactionDatabaseManager.deleteInteractionByTime(outdatedTime.formatToRemote())
             /*@formatter:off*/ Logger.i(TAG, "clearOldInteractions(): ", "removedInteractionsCount = [" , removedInteractions.count() , "]")
             /*@formatter:on*/
             if (removedInteractions.isNotEmpty()) {
@@ -111,10 +111,11 @@ internal class InteractionRepositoryImpl(
     }
 
     override fun pushInAppInteractions() {
-        val inAppInteractionDb: InAppInteractionDb = inAppInteractionDatabaseManager.getInteractions(1).firstOrNull() ?: kotlin.run {
-            PushOperationQueue.nextOperation()
-            return
-        }
+        val inAppInteractionDb: InAppInteractionDb =
+            inAppInteractionDatabaseManager.getInteractions(1).firstOrNull() ?: kotlin.run {
+                PushOperationQueue.nextOperation()
+                return
+            }
         /*@formatter:off*/ Logger.i(TAG, "pushInAppInteractions(): ", "inAppInteractionDb = [" , inAppInteractionDb , "]")
         /*@formatter:on*/
         apiClient.post(
@@ -125,7 +126,8 @@ internal class InteractionRepositoryImpl(
                 override fun onSuccess(response: String) {
                     /*@formatter:off*/ Logger.i(TAG, "onSuccess(): ", "response = [" , response , "]")
                     /*@formatter:on*/
-                    val cacheUpdated = inAppInteractionDatabaseManager.deleteInteraction(inAppInteractionDb)
+                    val cacheUpdated =
+                        inAppInteractionDatabaseManager.deleteInteraction(inAppInteractionDb)
                     if (cacheUpdated) {
                         pushInteractions()
                     } else {
@@ -137,7 +139,8 @@ internal class InteractionRepositoryImpl(
                     /*@formatter:off*/ Logger.i(TAG, "onFailure(): ", "statusCode = [" , statusCode , "], response = [" , response , "], throwable = [" , throwable , "]")
                     /*@formatter:on*/
                     if (isNonRepeatableError(statusCode)) {
-                        val cacheUpdated = inAppInteractionDatabaseManager.deleteInteraction(inAppInteractionDb)
+                        val cacheUpdated =
+                            inAppInteractionDatabaseManager.deleteInteraction(inAppInteractionDb)
                         if (cacheUpdated) {
                             pushInteractions()
                         }
@@ -154,7 +157,8 @@ internal class InteractionRepositoryImpl(
         /*@formatter:off*/ Logger.i(TAG, "clearOldInAppInteractions(): ", "outdatedTime = [" , outdatedTime , "]")
         /*@formatter:on*/
         OperationQueue.addOperation {
-            val removedInteractions: List<InAppInteractionDb> = inAppInteractionDatabaseManager.deleteInteractionsByTime(outdatedTime.formatToRemote())
+            val removedInteractions: List<InAppInteractionDb> =
+                inAppInteractionDatabaseManager.deleteInteractionsByTime(outdatedTime.formatToRemote())
             /*@formatter:off*/ Logger.i(TAG, "clearOldInAppInteractions(): ", "removedInteractionsCount = [" , removedInteractions.count() , "]")
             /*@formatter:on*/
             if (removedInteractions.isNotEmpty()) {

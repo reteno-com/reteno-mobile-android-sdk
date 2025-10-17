@@ -2,6 +2,7 @@ package com.reteno.core.data.remote.api
 
 import android.net.Uri
 import com.reteno.core.BuildConfig
+import com.reteno.core.RetenoConfig
 import com.reteno.core.data.local.config.RestConfig
 import com.reteno.core.domain.ResponseCallback
 import com.reteno.core.util.Logger
@@ -10,12 +11,11 @@ import java.io.BufferedWriter
 import java.io.OutputStreamWriter
 import java.net.HttpURLConnection
 import java.util.zip.GZIPOutputStream
-import javax.net.ssl.HttpsURLConnection
 import javax.net.ssl.SSLSocketFactory
 
 internal class RestClientImpl(
     private val restConfig: RestConfig,
-    private val platform: String
+    private val retenoConfigProvider: () -> RetenoConfig
 ) : RestClient {
 
     companion object {
@@ -99,6 +99,7 @@ internal class RestClientImpl(
                     Logger.i(TAG, "makeRequest(): ", "response: ", response)
                     responseCallback.onSuccess(headerFiles, response)
                 }
+
                 (responseCode >= 500 || responseCode == 408) && retryCount != 0 -> {
                     makeRequest(
                         method,
@@ -110,6 +111,7 @@ internal class RestClientImpl(
                         responseCallback
                     )
                 }
+
                 else -> {
                     val response =
                         urlConnection.errorStream?.bufferedReader()?.use { it.readText() }
@@ -149,14 +151,14 @@ internal class RestClientImpl(
 
             when (apiContract) {
                 is ApiContract.MobileApi -> {
-                    setRequestProperty(HEADER_KEY, restConfig.accessKeyProvider())
-                    setRequestProperty(HEADER_VERSION, "$platform ${BuildConfig.SDK_VERSION}")
+                    setRequestProperty(HEADER_KEY, retenoConfigProvider().accessKey)
+                    setRequestProperty(HEADER_VERSION, "$${retenoConfigProvider().platform} ${BuildConfig.SDK_VERSION}")
                 }
                 is ApiContract.InAppMessages,
                 is ApiContract.AppInbox,
                 is ApiContract.Recommendation -> {
-                    setRequestProperty(HEADER_KEY, restConfig.accessKeyProvider())
-                    setRequestProperty(HEADER_VERSION, "$platform ${BuildConfig.SDK_VERSION}")
+                    setRequestProperty(HEADER_KEY, retenoConfigProvider().accessKey)
+                    setRequestProperty(HEADER_VERSION, "$${retenoConfigProvider().platform} ${BuildConfig.SDK_VERSION}")
                     setRequestProperty(HEADER_DEVICE_ID, restConfig.deviceId.id)
                 }
                 else -> { /* NO-OP */ }
@@ -166,7 +168,7 @@ internal class RestClientImpl(
 
             if (useSsl) {
                 val socketFactory = SSLSocketFactory.getDefault() as SSLSocketFactory
-                (urlConnection as HttpsURLConnection).sslSocketFactory =
+                urlConnection.sslSocketFactory =
                     socketFactory
             }
             if (method != HttpMethod.GET) {

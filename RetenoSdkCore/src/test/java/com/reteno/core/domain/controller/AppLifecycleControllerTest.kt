@@ -7,8 +7,6 @@ import com.reteno.core.base.robolectric.RetenoTestApp
 import com.reteno.core.data.repository.ConfigRepository
 import com.reteno.core.domain.model.event.Event
 import com.reteno.core.domain.model.event.LifecycleTrackingOptions
-import com.reteno.core.lifecycle.RetenoActivityHelper
-import com.reteno.core.lifecycle.RetenoSessionHandler
 import com.reteno.core.util.Util
 import io.mockk.MockKVerificationScope
 import io.mockk.coEvery
@@ -34,21 +32,6 @@ class AppLifecycleControllerTest : BaseRobolectricTest() {
 
     @RelaxedMockK
     private lateinit var configRepository: ConfigRepository
-
-    @RelaxedMockK
-    private lateinit var eventController: EventController
-
-    @RelaxedMockK
-    private lateinit var sessionHandler: RetenoSessionHandler
-
-    @RelaxedMockK
-    private lateinit var activityHelper: RetenoActivityHelper
-
-    @RelaxedMockK
-    private lateinit var scheduleController: ScheduleController
-
-    @RelaxedMockK
-    private lateinit var iamController: IamController
 
     override fun before() {
         super.before()

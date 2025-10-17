@@ -362,7 +362,7 @@ class ContactControllerTest : BaseUnitTest() {
     }
 
     @Test
-    fun givenIsDeviceRegisteredFalse_whenCheckIfDeviceRegistered_thenSaveDeviceDataCalledImmediately() =
+    fun givenIsDeviceRegisteredFalse_whenRegisterDeviceRegistered_thenSaveDeviceDataCalledImmediately() =
         runTest {
             // Given
             every { configRepository.isDeviceRegistered() } returns false
@@ -380,19 +380,19 @@ class ContactControllerTest : BaseUnitTest() {
                 )
 
             // When
-            SUT.checkIfDeviceRegistered()
+            SUT.registerDevice()
             // Then
             verify(exactly = 1) { contactRepository.saveDeviceDataImmediate(expectedDevice) }
         }
 
     @Test
-    fun givenIsDeviceRegisteredTrue_whenCheckIfDeviceRegistered_thenSaveDeviceDataNotCalled() =
+    fun givenIsDeviceRegisteredTrue_whenRegisterDeviceRegistered_thenSaveDeviceDataNotCalled() =
         runTest {
             // Given
             every { configRepository.isDeviceRegistered() } returns true
 
             // When
-            SUT.checkIfDeviceRegistered()
+            SUT.registerDevice()
 
             // Then
             verify(exactly = 0) { contactRepository.saveDeviceData(any()) }

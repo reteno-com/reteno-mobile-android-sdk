@@ -1,5 +1,6 @@
 package com.reteno.core.data.repository
 
+import com.reteno.core.RetenoInternalImpl
 import com.reteno.core.base.robolectric.BaseRobolectricTest
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerWrappedLink
 import com.reteno.core.data.remote.OperationQueue
@@ -7,9 +8,11 @@ import com.reteno.core.data.remote.PushOperationQueue
 import com.reteno.core.data.remote.api.ApiClient
 import com.reteno.core.data.remote.api.ApiContract
 import com.reteno.core.domain.ResponseCallback
+import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.impl.annotations.RelaxedMockK
 import io.mockk.just
+import io.mockk.mockk
 import io.mockk.runs
 import io.mockk.slot
 import io.mockk.verify
@@ -34,14 +37,14 @@ class DeeplinkRepositoryImplTest : BaseRobolectricTest() {
     @RelaxedMockK
     private lateinit var apiClient: ApiClient
     @RelaxedMockK
-    private lateinit var databaseManager: RetenoDatabaseManagerWrappedLink
+    private lateinit var databaseManagerWrappedLink: RetenoDatabaseManagerWrappedLink
 
     private lateinit var deeplinkRepository: DeeplinkRepository
     // endregion helper fields ---------------------------------------------------------------------
 
     override fun before() {
         super.before()
-        deeplinkRepository = DeeplinkRepositoryImpl(apiClient, databaseManager)
+        deeplinkRepository = DeeplinkRepositoryImpl(apiClient, databaseManagerWrappedLink)
     }
 
     @Test
@@ -51,7 +54,7 @@ class DeeplinkRepositoryImplTest : BaseRobolectricTest() {
 
         // Then
         verify(exactly = 1) { OperationQueue.addParallelOperation(any()) }
-        verify(exactly = 1) { databaseManager.insertWrappedLink(DEEPLINK_WRAPPED) }
+        verify(exactly = 1) { databaseManagerWrappedLink.insertWrappedLink(DEEPLINK_WRAPPED) }
     }
 
     @Test
@@ -61,7 +64,7 @@ class DeeplinkRepositoryImplTest : BaseRobolectricTest() {
 
         // Then
         verify(exactly = 0) { OperationQueue.addOperation(any()) }
-        verify(exactly = 0) { databaseManager.insertWrappedLink(DEEPLINK_WRAPPED) }
+        verify(exactly = 0) { databaseManagerWrappedLink.insertWrappedLink(DEEPLINK_WRAPPED) }
     }
 
     @Test
@@ -71,13 +74,13 @@ class DeeplinkRepositoryImplTest : BaseRobolectricTest() {
 
         // Then
         verify(exactly = 0) { OperationQueue.addOperation(any()) }
-        verify(exactly = 0) { databaseManager.insertWrappedLink(DEEPLINK_WRAPPED) }
+        verify(exactly = 0) { databaseManagerWrappedLink.insertWrappedLink(DEEPLINK_WRAPPED) }
     }
 
     @Test
     fun givenNoWrappedLinksCachedInDatabase_whenPushWrappedLink_thenNothingHappensNextOperation() {
         // Given
-        every { databaseManager.getWrappedLinks(any()) } returns emptyList<String>()
+        every { databaseManagerWrappedLink.getWrappedLinks(any()) } returns emptyList<String>()
 
         // When
         deeplinkRepository.pushWrappedLink()
@@ -91,7 +94,7 @@ class DeeplinkRepositoryImplTest : BaseRobolectricTest() {
     @Test
     fun givenWrappedLinkCachedInDatabase_whenPushWrappedLink_thenApiClientPutsWrappedLinkWithCorrectParameters() {
         // Given
-        every { databaseManager.getWrappedLinks(any()) } returns listOf(DEEPLINK_WRAPPED) andThen emptyList<String>()
+        every { databaseManagerWrappedLink.getWrappedLinks(any()) } returns listOf(DEEPLINK_WRAPPED) andThen emptyList<String>()
 
         val apiContractCaptured = slot<ApiContract>()
         every {
@@ -116,7 +119,7 @@ class DeeplinkRepositoryImplTest : BaseRobolectricTest() {
     @Test
     fun givenWrappedLink_whenPushWrappedLinkSuccessful_thenTryPushNextWrappedLink() {
         // Given
-        every { databaseManager.getWrappedLinks(any()) } returnsMany listOf(
+        every { databaseManagerWrappedLink.getWrappedLinks(any()) } returnsMany listOf(
             listOf(DEEPLINK_WRAPPED),
             listOf(DEEPLINK_WRAPPED_2),
             emptyList<String>()
@@ -133,7 +136,7 @@ class DeeplinkRepositoryImplTest : BaseRobolectricTest() {
         // Then
         verify(exactly = 3) { OperationQueue.addOperation(any()) }
         verify(exactly = 2) { apiClient.head(any(), any(), any()) }
-        verify(exactly = 2) { databaseManager.deleteWrappedLinks(1) }
+        verify(exactly = 2) { databaseManagerWrappedLink.deleteWrappedLinks(1) }
         verify(exactly = 1) { PushOperationQueue.nextOperation() }
         verify(exactly = 0) { PushOperationQueue.removeAllOperations() }
     }
@@ -141,7 +144,7 @@ class DeeplinkRepositoryImplTest : BaseRobolectricTest() {
     @Test
     fun givenWrappedLink_whenPushWrappedLinkFailedAndErrorIsNonRepeatable_thenCancelPushOperations() {
         // Given
-        every { databaseManager.getWrappedLinks(any()) } returnsMany listOf(
+        every { databaseManagerWrappedLink.getWrappedLinks(any()) } returnsMany listOf(
             listOf(DEEPLINK_WRAPPED),
             emptyList<String>()
         )
@@ -163,7 +166,7 @@ class DeeplinkRepositoryImplTest : BaseRobolectricTest() {
     @Test
     fun givenWrappedLink_whenPushWrappedLinkFailedAndErrorIsRepeatable_thenTryPushNextWrappedLink() {
         // Given
-        every { databaseManager.getWrappedLinks(any()) } returnsMany listOf(
+        every { databaseManagerWrappedLink.getWrappedLinks(any()) } returnsMany listOf(
             listOf(DEEPLINK_WRAPPED),
             listOf(DEEPLINK_WRAPPED_2),
             emptyList<String>()
@@ -180,35 +183,38 @@ class DeeplinkRepositoryImplTest : BaseRobolectricTest() {
         // Then
         verify(exactly = 3) { OperationQueue.addOperation(any()) }
         verify(exactly = 2) { apiClient.head(any(), any(), any()) }
-        verify(exactly = 3) { databaseManager.getWrappedLinks(1) }
-        verify(exactly = 2) { databaseManager.deleteWrappedLinks(1) }
+        verify(exactly = 3) { databaseManagerWrappedLink.getWrappedLinks(1) }
+        verify(exactly = 2) { databaseManagerWrappedLink.deleteWrappedLinks(1) }
         verify(exactly = 1) { PushOperationQueue.nextOperation() }
     }
 
     @Test
     fun givenNoOutdatedWrappedLinks_whenClearOldWrappedLinks_thenSentNothing() {
         // Given
-        every { databaseManager.deleteWrappedLinksByTime(any()) } returns 0
+        every { databaseManagerWrappedLink.deleteWrappedLinksByTime(any()) } returns 0
 
         // When
         deeplinkRepository.clearOldWrappedLinks(ZonedDateTime.now())
 
         // Then
         verify(exactly = 1) { OperationQueue.addOperation(any()) }
-        verify(exactly = 1) { databaseManager.deleteWrappedLinksByTime(any()) }
+        verify(exactly = 1) { databaseManagerWrappedLink.deleteWrappedLinksByTime(any()) }
     }
 
     @Test
-    fun givenOutdatedWrappedLinksPresent_whenClearOldWrappedLinks_thenSentDeleteWrappedLinksDataToLogger() = runRetenoTest {
+    fun givenOutdatedWrappedLinksPresent_whenClearOldWrappedLinks_thenSentDeleteWrappedLinksDataToLogger() {
         // Given
         val deletedWrappedLinks = 2
-        every { databaseManager.deleteWrappedLinksByTime(any()) } returns deletedWrappedLinks
+        val reteno:RetenoInternalImpl = mockk()
+        RetenoInternalImpl.swapInstance(reteno)
+        coEvery { reteno.application } returns mockk(relaxed = true)
+        every { databaseManagerWrappedLink.deleteWrappedLinksByTime(any()) } returns deletedWrappedLinks
 
         // When
         deeplinkRepository.clearOldWrappedLinks(ZonedDateTime.now())
 
         // Then
         verify(exactly = 1) { OperationQueue.addOperation(any()) }
-        verify(exactly = 1) { databaseManager.deleteWrappedLinksByTime(any()) }
+        verify(exactly = 1) { databaseManagerWrappedLink.deleteWrappedLinksByTime(any()) }
     }
 }

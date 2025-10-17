@@ -36,9 +36,9 @@ class ContactController(
 
         val oldDeviceId = configRepository.getDeviceId()
         if (oldDeviceId.externalId != id) {
-            isDeviceSentThisSession.set(true)
             configRepository.setExternalUserId(id)
             if (pushContact) {
+                isDeviceSentThisSession.set(true)
                 val token = configRepository.getFcmToken()
                 onNewContact(token, toParallelWork = false)
             }
@@ -107,14 +107,12 @@ class ContactController(
         contactRepository.pushUserData()
     }
 
-    suspend fun checkIfDeviceRegistered() {
-        /*@formatter:off*/ Logger.i(TAG, "checkIfDeviceRegistered(): ")
+    suspend fun registerDevice() {
+        /*@formatter:off*/ Logger.i(TAG, "registerDevice(): ")
         /*@formatter:on*/
-        if (!configRepository.isDeviceRegistered()) {
-            isDeviceSentThisSession.set(true)
-            val token = configRepository.getFcmToken()
-            onNewContact(token, toParallelWork = false, pushImmediate = true)
-        }
+        val token = configRepository.getFcmToken()
+        onNewContact(token, toParallelWork = false, pushImmediate = true)
+        isDeviceSentThisSession.set(true)
     }
 
     suspend fun checkIfDeviceRequestSentThisSession() {

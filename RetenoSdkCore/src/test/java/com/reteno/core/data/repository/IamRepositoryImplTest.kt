@@ -8,7 +8,6 @@ import com.reteno.core.data.local.mappers.mapDbToInAppMessages
 import com.reteno.core.data.local.mappers.mapResponseToInAppMessages
 import com.reteno.core.data.local.mappers.toDB
 import com.reteno.core.data.local.model.iam.InAppMessageDb
-import com.reteno.core.data.local.sharedpref.SharedPrefsManager
 import com.reteno.core.data.remote.api.ApiClient
 import com.reteno.core.data.remote.api.ApiContract
 import com.reteno.core.data.remote.api.RestClientImpl.Companion.HEADER_X_AMZ_META_VERSION
@@ -62,12 +61,8 @@ class IamRepositoryImplTest : BaseRobolectricTest() {
     // region helper fields ------------------------------------------------------------------------
     @RelaxedMockK
     private lateinit var apiClient: ApiClient
-
     @RelaxedMockK
-    private lateinit var sharedPrefsManager: SharedPrefsManager
-
-    @RelaxedMockK
-    private lateinit var databaseManager: RetenoDatabaseManagerInAppMessages
+    private lateinit var databaseManagerInApp: RetenoDatabaseManagerInAppMessages
 
     private lateinit var SUT: IamRepository
     // endregion helper fields ---------------------------------------------------------------------
@@ -265,7 +260,7 @@ class IamRepositoryImplTest : BaseRobolectricTest() {
                 )
             )
             every { sharedPrefsManager.getIamEtag() } returns null
-            coEvery { databaseManager.getInAppMessages(any()) } returns inaAppDb
+            coEvery { databaseManagerInApp.getInAppMessages(any()) } returns inaAppDb
 
             // When
             coEvery {
@@ -348,7 +343,7 @@ class IamRepositoryImplTest : BaseRobolectricTest() {
                 )
             )
             every { sharedPrefsManager.getIamEtag() } returns null
-            coEvery { databaseManager.getInAppMessages(any()) } returns inaAppDb
+            coEvery { databaseManagerInApp.getInAppMessages(any()) } returns inaAppDb
 
             // When
             coEvery {
@@ -457,8 +452,8 @@ class IamRepositoryImplTest : BaseRobolectricTest() {
             )
 
             // Then
-            verify { databaseManager.deleteAllInAppMessages() }
-            verify { databaseManager.insertInAppMessages(emptyList()) }
+            verify { databaseManagerInApp.deleteAllInAppMessages() }
+            verify { databaseManagerInApp.insertInAppMessages(emptyList()) }
             verify { sharedPrefsManager.saveIamEtag("tag") }
         }
     }
@@ -476,8 +471,8 @@ class IamRepositoryImplTest : BaseRobolectricTest() {
             )
 
             // Then
-            verify(exactly = 0) { databaseManager.deleteAllInAppMessages() }
-            verify(exactly = 0) { databaseManager.insertInAppMessages(emptyList()) }
+            verify(exactly = 0) { databaseManagerInApp.deleteAllInAppMessages() }
+            verify(exactly = 0) { databaseManagerInApp.insertInAppMessages(emptyList()) }
             verify(exactly = 0) { sharedPrefsManager.saveIamEtag("tag") }
         }
     }
@@ -509,8 +504,8 @@ class IamRepositoryImplTest : BaseRobolectricTest() {
             SUT.updateInAppMessages(listOf(inapp))
 
             // Then
-            verify { databaseManager.deleteInAppMessages(listOf(inapp.toDB())) }
-            verify { databaseManager.insertInAppMessages(listOf(inapp.toDB())) }
+            verify { databaseManagerInApp.deleteInAppMessages(listOf(inapp.toDB())) }
+            verify { databaseManagerInApp.insertInAppMessages(listOf(inapp.toDB())) }
         }
     }
 
@@ -577,7 +572,7 @@ class IamRepositoryImplTest : BaseRobolectricTest() {
             application,
             apiClient,
             sharedPrefsManager,
-            databaseManager,
+            databaseManagerInApp,
             dispatcher
         )
     }

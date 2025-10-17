@@ -8,6 +8,7 @@ import com.reteno.core.domain.model.interaction.Interaction
 import com.reteno.core.domain.model.interaction.InteractionStatus
 import com.reteno.core.util.Util
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
 import io.mockk.impl.annotations.RelaxedMockK
@@ -57,7 +58,7 @@ class InteractionControllerTest : BaseRobolectricTest() {
 
         // Then
         val expectedInteraction = Interaction(InteractionStatus.DELIVERED, CURRENT_TIMESTAMP, TOKEN)
-        verify(exactly = 1) {
+        coVerify(exactly = 1) {
             interactionsRepository.saveInteraction(
                 eq(INTERACTION_ID),
                 eq(expectedInteraction)
@@ -74,7 +75,7 @@ class InteractionControllerTest : BaseRobolectricTest() {
 
         // Then
         val expectedInteraction = Interaction(InteractionStatus.CLICKED, CURRENT_TIMESTAMP, TOKEN)
-        verify(exactly = 1) {
+        coVerify(exactly = 1) {
             interactionsRepository.saveInteraction(
                 eq(INTERACTION_ID),
                 eq(expectedInteraction)
@@ -90,7 +91,7 @@ class InteractionControllerTest : BaseRobolectricTest() {
         SUT.onInteraction(INTERACTION_ID, InteractionStatus.DELIVERED)
 
         // Then
-        verify(exactly = 0) { interactionsRepository.saveInteraction(any(), any()) }
+        coVerify(exactly = 0) { interactionsRepository.saveInteraction(any(), any()) }
     }
 
     @Test

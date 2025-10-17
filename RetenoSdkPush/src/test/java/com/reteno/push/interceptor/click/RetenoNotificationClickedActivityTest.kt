@@ -78,6 +78,9 @@ class RetenoNotificationClickedActivityTest : BaseRobolectricTest() {
 
     @RelaxedMockK
     private lateinit var scheduleController: ScheduleController
+
+    @RelaxedMockK
+    private lateinit var contactController: ContactController
     // endregion helper fields ---------------------------------------------------------------------
 
 
@@ -86,6 +89,7 @@ class RetenoNotificationClickedActivityTest : BaseRobolectricTest() {
         every { anyConstructed<ServiceLocator>().interactionControllerProvider.get() } returns interactionController
         every { anyConstructed<ServiceLocator>().deeplinkControllerProvider.get() } returns deeplinkController
         every { anyConstructed<ServiceLocator>().scheduleControllerProvider.get() } returns scheduleController
+        every { anyConstructed<ServiceLocator>().contactControllerProvider.get() } returns contactController
     }
 
     @Test

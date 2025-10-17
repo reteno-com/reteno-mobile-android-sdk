@@ -15,7 +15,7 @@ internal interface RetenoInternalFacade : LifecycleObserver {
     /**
      * Method invoked by SDK itself to record interaction
      * */
-    fun recordInteraction(id: String, status: InteractionStatus)
+    fun recordInteraction(id: String, status: InteractionStatus, forcePush: Boolean = false)
 
     fun canPresentMessages(): Boolean
 

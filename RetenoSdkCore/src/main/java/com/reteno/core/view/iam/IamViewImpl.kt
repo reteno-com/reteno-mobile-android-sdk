@@ -181,15 +181,17 @@ internal class IamViewImpl(
         /*@formatter:off*/ Logger.i(TAG, "openUrl(): ", "interactionId = [", interactionId, "], jsEvent = [", jsEvent, "]")
         /*@formatter:on*/
         interactionId?.let { interaction ->
-            interactionController.onInteractionIamClick(
-                interaction,
-                InteractionAction(
-                    jsEvent.type.name,
-                    jsEvent.payload?.targetComponentId,
-                    jsEvent.payload?.url
+            iamShowScope.launch(Dispatchers.IO) {
+                interactionController.onInteractionIamClick(
+                    interaction,
+                    InteractionAction(
+                        jsEvent.type.name,
+                        jsEvent.payload?.targetComponentId,
+                        jsEvent.payload?.url
+                    )
                 )
-            )
-            scheduleController.forcePush()
+                scheduleController.forcePush()
+            }
         }
 
         jsEvent.payload?.let {

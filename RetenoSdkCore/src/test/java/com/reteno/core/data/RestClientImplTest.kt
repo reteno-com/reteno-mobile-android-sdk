@@ -1,6 +1,7 @@
 package com.reteno.core.data
 
 import android.net.Uri
+import com.reteno.core.RetenoConfig
 import com.reteno.core.base.BaseUnitTest
 import com.reteno.core.data.local.config.RestConfig
 import com.reteno.core.data.remote.api.ApiContract
@@ -88,8 +89,13 @@ class RestClientImplTest : BaseUnitTest() {
             RestConfig(
                 mockk(relaxed = true),
                 mockk(relaxed = true),
-                { "" },
-            ), platform = "Android"
+            ),
+            retenoConfigProvider = {
+                RetenoConfig.Builder()
+                    .accessKey("any")
+                    .setPlatform("Android")
+                    .build()
+            }
         )
     }
 
@@ -385,7 +391,15 @@ class RestClientImplTest : BaseUnitTest() {
         queryParams: Map<String, String?>? = null,
         responseCallback: ResponseCallback = getCallback()
     ) {
-        restClient.makeRequest(method, url, body, null, queryParams, retryCount = 0, responseCallback)
+        restClient.makeRequest(
+            method,
+            url,
+            body,
+            null,
+            queryParams,
+            retryCount = 0,
+            responseCallback
+        )
     }
 
     private fun generateUriWithParams(params: Map<String, Any>): String {
