@@ -25,17 +25,9 @@ class ScheduleControllerImplTest : BaseRobolectricTest() {
 
     // region helper fields ------------------------------------------------------------------------
     @RelaxedMockK
-    private lateinit var contactController: ContactController
-    @RelaxedMockK
-    private lateinit var interactionController: InteractionController
-    @RelaxedMockK
-    private lateinit var eventController: EventController
-    @RelaxedMockK
     private lateinit var appInboxController: AppInboxController
     @RelaxedMockK
     private lateinit var recommendationController: RecommendationController
-    @RelaxedMockK
-    private lateinit var deeplinkController: DeeplinkController
 
 
     private lateinit var SUT: ScheduleController

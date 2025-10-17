@@ -6,7 +6,7 @@ import java.time.ZonedDateTime
 
 interface InteractionRepository {
 
-    fun saveInteraction(interactionId: String, interaction: Interaction)
+    suspend fun saveInteraction(interactionId: String, interaction: Interaction)
     fun pushInteractions()
     fun clearOldInteractions(outdatedTime: ZonedDateTime)
 

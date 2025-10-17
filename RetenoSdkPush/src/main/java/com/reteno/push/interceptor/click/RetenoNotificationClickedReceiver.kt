@@ -38,8 +38,7 @@ class RetenoNotificationClickedReceiver : BroadcastReceiver() {
             intent?.extras?.getString(Constants.KEY_ES_INTERACTION_ID)?.let { interactionId ->
                 /*@formatter:off*/ Logger.i(TAG, "sendInteractionStatus(): ", "intent = [", intent, "]")
                 /*@formatter:on*/
-                reteno.recordInteraction(interactionId, InteractionStatus.CLICKED)
-                reteno.forcePushData()
+                reteno.recordInteraction(interactionId, InteractionStatus.CLICKED, forcePush = true)
             }
         }
     }

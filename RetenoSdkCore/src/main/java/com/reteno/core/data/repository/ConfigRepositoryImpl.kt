@@ -112,8 +112,9 @@ internal class ConfigRepositoryImpl(
     override fun saveDeviceRegistered(registered: Boolean) =
         sharedPrefsManager.saveDeviceRegistered(registered)
 
-    override fun isDeviceRegistered(): Boolean =
-        sharedPrefsManager.isDeviceRegistered()
+    override fun isDeviceRegistered(): Boolean {
+        return sharedPrefsManager.isDeviceRegistered()
+    }
 
     override fun getAppVersion(): String = sharedPrefsManager.getAppVersion()
 

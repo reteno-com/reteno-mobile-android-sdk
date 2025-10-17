@@ -10,6 +10,7 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.OnLifecycleEvent
 import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.work.Configuration
+import com.reteno.core.data.local.config.DeviceIdMode
 import com.reteno.core.di.ServiceLocator
 import com.reteno.core.domain.controller.ScreenTrackingController
 import com.reteno.core.domain.model.ecom.EcomEvent
@@ -47,6 +48,7 @@ class RetenoInternalImpl(
 ) : Reteno, RetenoInternalFacade {
 
     private val initWaitCondition = CompletableDeferred<Unit>()
+    private val userInitWaitCondition = CompletableDeferred<Unit>()
     private val anrWaitCondition = CompletableDeferred<Unit>()
     private val syncScope = CoroutineScope(mainDispatcher + SupervisorJob())
 
@@ -66,6 +68,7 @@ class RetenoInternalImpl(
     private val databaseManager by lazy { serviceLocator.retenoDatabaseManagerProvider.get() }
     private val deeplinkController by lazy { serviceLocator.deeplinkControllerProvider.get() }
     private val sharedPrefsManager by lazy { serviceLocator.sharedPrefsManagerProvider.get() }
+    private val restConfig by lazy { serviceLocator.restConfigProvider.get() }
 
     override val appInbox by lazy { serviceLocator.appInboxProvider.get() }
     override val recommendation by lazy { serviceLocator.recommendationProvider.get() }
@@ -80,6 +83,9 @@ class RetenoInternalImpl(
     val isInitialized: Boolean
         get() = initWaitCondition.isCompleted
 
+    val isInitializedByUser: Boolean
+        get() = userInitWaitCondition.isCompleted
+
     init {
         initSdk()
     }
@@ -90,18 +96,34 @@ class RetenoInternalImpl(
             return
         }
         receivedConfigFromUser = true
-        setConfigInternal(config)
+        if (sharedPrefsManager.getCachedConfiguration() != null) {
+            runAfterInit {
+                setConfigInternal(config, isUserConfiguration = true)
+                appLifecycleOwner.lifecycle.addObserver(appLifecycleController)
+            }
+        } else {
+            setConfigInternal(config, isUserConfiguration = true)
+            appLifecycleOwner.lifecycle.addObserver(appLifecycleController)
+        }
     }
 
-    private fun setConfigInternal(config: RetenoConfig) {
+    private fun setConfigInternal(config: RetenoConfig, isUserConfiguration: Boolean = false) {
         Logger.i(TAG, "setConfig()")
         serviceLocator.setConfig(config)
         Util.setIsDebug(config.isDebug)
         syncScope.launch {
             anrWaitCondition.await()
-            serviceLocator.replaceCachedDeviceIdWithIdFromConfig()
+            if (isUserConfiguration) {
+                replaceCachedDeviceIdWithIdFromUserConfig(config)
+            }
             applyConfig(config)
+            if (isUserConfiguration) {
+                contactController.registerDevice()
+            }
             initWaitCondition.complete(Unit)
+            if (isUserConfiguration) {
+                userInitWaitCondition.complete(Unit)
+            }
             withContext(ioDispatcher) {
                 interactionCache.processCachedInteractions()
             }
@@ -118,16 +140,14 @@ class RetenoInternalImpl(
 
     private suspend fun applyConfig(config: RetenoConfig) = withContext(mainDispatcher) {
         try {
-            appLifecycleOwner.lifecycle.addObserver(appLifecycleController)
             withContext(ioDispatcher) {
                 val id = contactController.awaitDeviceId()
                 sharedPrefsManager.cacheConfiguration(id, config)
-                contactController.checkIfDeviceRegistered()
             }
             pauseInAppMessages(config.isPausedInAppMessages)
             pausePushInAppMessages(config.isPausedPushInAppMessages)
         } catch (t: Throwable) {
-            /*@formatter:off*/ Logger.e(TAG, "init(): ", t)
+            /*@formatter:off*/ Logger.e(TAG, "applyConfig(): ", t)
             /*@formatter:on*/
         }
     }
@@ -143,12 +163,27 @@ class RetenoInternalImpl(
         }
     }
 
+    private inline fun runAfterUserInit(crossinline operation: () -> Unit) {
+        if (!isInitializedByUser) {
+            syncScope.launch(mainDispatcher) {
+                userInitWaitCondition.await()
+                operation()
+            }
+        } else {
+            operation()
+        }
+    }
+
     private fun initSdk() {
         if (isOsVersionSupported()) {
             activityHelper.enableLifecycleCallbacks(application)
             appLifecycleOwner.lifecycle.addObserver(this@RetenoInternalImpl)
             syncScope.launch(ioDispatcher) {
                 preventANR()
+                sharedPrefsManager.getCachedConfiguration()?.let {
+                    restConfig.initDeviceId(DeviceIdMode.CACHE)
+                    setConfigInternal(it)
+                }
                 anrWaitCondition.complete(Unit)
             }
         }
@@ -167,10 +202,18 @@ class RetenoInternalImpl(
         }
     }
 
+    private suspend fun replaceCachedDeviceIdWithIdFromUserConfig(config: RetenoConfig) {
+        val deviceIdMode = when {
+            config.userIdProvider != null -> DeviceIdMode.CLIENT_UUID
+            else -> DeviceIdMode.ANDROID_ID
+        }
+        restConfig.initDeviceId(deviceIdMode)
+    }
+
     @OnLifecycleEvent(Lifecycle.Event.ON_START)
-    fun start() = runAfterInit {
+    fun start() = runAfterUserInit {
         if (!isOsVersionSupported()) {
-            return@runAfterInit
+            return@runAfterUserInit
         }
         /*@formatter:off*/ Logger.i(TAG, "start(): ")
         /*@formatter:on*/
@@ -193,9 +236,9 @@ class RetenoInternalImpl(
     }
 
     @OnLifecycleEvent(Lifecycle.Event.ON_STOP)
-    fun stop() = runAfterInit {
+    fun stop() = runAfterUserInit {
         if (!isOsVersionSupported()) {
-            return@runAfterInit
+            return@runAfterUserInit
         }
         /*@formatter:off*/ Logger.i(TAG, "stop(): ")
         /*@formatter:on*/
@@ -279,17 +322,17 @@ class RetenoInternalImpl(
             throw exception
         }
         syncScope.launch(ioDispatcher) {
-                if (contactController.getDeviceIdSuffix() != externalUserId) {
-                    withContext(mainDispatcher) {
-                        stop()
-                    }
-                    sessionHandler.clearSessionForced()
-                    contactController.setDeviceIdSuffix(externalUserId)
-                    withContext(mainDispatcher) {
-                        start()
-                    }
+            if (contactController.getDeviceIdSuffix() != externalUserId) {
+                withContext(mainDispatcher) {
+                    stop()
                 }
-                contactController.setExternalIdAndUserData(externalUserId, user)
+                sessionHandler.clearSessionForced()
+                contactController.setDeviceIdSuffix(externalUserId)
+                withContext(mainDispatcher) {
+                    start()
+                }
+            }
+            contactController.setExternalIdAndUserData(externalUserId, user)
         }
     }
 
@@ -475,15 +518,18 @@ class RetenoInternalImpl(
         }
     }
 
-    override fun recordInteraction(id: String, status: InteractionStatus) {
+    override fun recordInteraction(id: String, status: InteractionStatus, forcePush: Boolean) = runAfterInit {
         if (!isOsVersionSupported()) {
-            return
+            return@runAfterInit
         }
-        /*@formatter:off*/ Logger.i(TAG, "recordInteraction(): ", "status = [" , status , "]")
+        /*@formatter:off*/ Logger.i(TAG, "recordInteraction(): ", "status = [" , status , "]", "forcePush = [", forcePush , "]")
         /*@formatter:on*/
         syncScope.launch(ioDispatcher) {
             try {
                 interactionController.onInteraction(id, status)
+                if (forcePush) {
+                    forcePushData()
+                }
             } catch (ex: Throwable) {
                 /*@formatter:off*/ Logger.e(TAG, "recordInteraction(): status = [$status]", ex)
             /*@formatter:on*/

@@ -15,7 +15,7 @@ class InteractionController(
     private val interactionRepository: InteractionRepository,
 ) {
 
-    fun onInteractionIamClick(interactionId: String, action: InteractionAction) {
+    suspend fun onInteractionIamClick(interactionId: String, action: InteractionAction) {
         /*@formatter:off*/ Logger.i(TAG, "onClickInteraction(): ", "interactionId = [" , interactionId , "],","action = [",action,"]")
         /*@formatter:on*/
         val timeStamp = Util.getCurrentTimeStamp()
@@ -49,7 +49,7 @@ class InteractionController(
         interactionRepository.pushInteractions()
     }
 
-    private fun saveInteraction(interactionId: String, interaction: Interaction) {
+    private suspend fun saveInteraction(interactionId: String, interaction: Interaction) {
         interactionRepository.saveInteraction(interactionId, interaction)
     }
 

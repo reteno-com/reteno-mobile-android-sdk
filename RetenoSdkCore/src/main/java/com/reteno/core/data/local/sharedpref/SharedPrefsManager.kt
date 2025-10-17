@@ -5,6 +5,8 @@ import android.content.SharedPreferences
 import androidx.core.content.edit
 import com.reteno.core.R
 import com.reteno.core.RetenoConfig
+import com.reteno.core.data.local.config.DeviceId
+import com.reteno.core.domain.model.event.LifecycleTrackingOptions
 import com.reteno.core.util.Logger
 import com.reteno.core.util.Util
 import java.util.UUID
@@ -357,9 +359,18 @@ internal class SharedPrefsManager(
         sharedPreferences.edit {
             putString(PREF_KEY_CONFIG_LAST_STORED_ID, deviceId)
             putBoolean(PREF_KEY_CONFIG_IN_APP, config.isPausedInAppMessages)
-            putBoolean(PREF_KEY_CONFIG_LC_TRACK, config.lifecycleTrackingOptions.appLifecycleEnabled)
-            putBoolean(PREF_KEY_CONFIG_SESS_TRACK, config.lifecycleTrackingOptions.sessionEventsEnabled)
-            putBoolean(PREF_KEY_CONFIG_PUSH_TRACK, config.lifecycleTrackingOptions.pushSubscriptionEnabled)
+            putBoolean(
+                PREF_KEY_CONFIG_LC_TRACK,
+                config.lifecycleTrackingOptions.appLifecycleEnabled
+            )
+            putBoolean(
+                PREF_KEY_CONFIG_SESS_TRACK,
+                config.lifecycleTrackingOptions.sessionEventsEnabled
+            )
+            putBoolean(
+                PREF_KEY_CONFIG_PUSH_TRACK,
+                config.lifecycleTrackingOptions.pushSubscriptionEnabled
+            )
             putString(PREF_KEY_CONFIG_ACCESS, config.accessKey)
             putBoolean(PREF_KEY_CONFIG_PUSH_IN_APP, config.isPausedPushInAppMessages)
             putString(PREF_KEY_CONFIG_PLATFORM, config.platform)
@@ -367,6 +378,42 @@ internal class SharedPrefsManager(
             putBoolean(PREF_KEY_CONFIG_HAS_CUSTOM_ID, config.userIdProvider != null)
         }
     }
+
+    fun getCachedConfiguration(): RetenoConfig? {
+        if (sharedPreferences.getString(PREF_KEY_CONFIG_LAST_STORED_ID, null) == null) return null
+        return RetenoConfig.Builder()
+            .accessKey(sharedPreferences.getString(PREF_KEY_CONFIG_ACCESS, null).orEmpty())
+            .lifecycleTrackingOptions(
+                LifecycleTrackingOptions(
+                    sharedPreferences.getBoolean(PREF_KEY_CONFIG_LC_TRACK, true),
+                    sharedPreferences.getBoolean(PREF_KEY_CONFIG_SESS_TRACK, true),
+                    sharedPreferences.getBoolean(PREF_KEY_CONFIG_PUSH_TRACK, true)
+                )
+            )
+            .pauseInAppMessages(sharedPreferences.getBoolean(PREF_KEY_CONFIG_IN_APP, false))
+            .pausePushInAppMessages(
+                sharedPreferences.getBoolean(
+                    PREF_KEY_CONFIG_PUSH_IN_APP,
+                    false
+                )
+            )
+            .setPlatform(sharedPreferences.getString(PREF_KEY_CONFIG_PLATFORM, null).orEmpty())
+            .setDebug(sharedPreferences.getBoolean(PREF_KEY_CONFIG_DEBUG, false))
+            .apply {
+                if (sharedPreferences.getBoolean(PREF_KEY_CONFIG_HAS_CUSTOM_ID, false)) {
+                    customDeviceIdProvider {
+                        DeviceId.getIdBodyFrom(
+                            sharedPreferences.getString(
+                                PREF_KEY_CONFIG_LAST_STORED_ID,
+                                null
+                            ).orEmpty()
+                        )
+                    }
+                }
+            }
+            .build()
+    }
+
 
     fun getLastStoredId(): String {
         return sharedPreferences.getString(PREF_KEY_CONFIG_LAST_STORED_ID, "").orEmpty()

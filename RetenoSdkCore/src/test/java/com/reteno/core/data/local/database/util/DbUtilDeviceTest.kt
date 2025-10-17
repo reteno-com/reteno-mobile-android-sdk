@@ -10,11 +10,18 @@ import com.reteno.core.data.local.model.BooleanDb
 import com.reteno.core.data.local.model.device.DeviceCategoryDb
 import com.reteno.core.data.local.model.device.DeviceDb
 import com.reteno.core.data.local.model.device.DeviceOsDb
+import com.reteno.core.di.ServiceLocator
 import com.reteno.core.util.Util
 import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
+import io.mockk.mockkConstructor
+import io.mockk.mockkStatic
+import io.mockk.unmockkConstructor
+import io.mockk.unmockkStatic
+import org.junit.AfterClass
 import org.junit.Assert.assertEquals
+import org.junit.BeforeClass
 import org.junit.Test
 
 
@@ -58,6 +65,20 @@ class DbUtilDeviceTest : BaseRobolectricTest() {
         private const val COLUMN_INDEX_SYNCHRONIZED_WITH_BACKEND = 15
         private const val COLUMN_INDEX_EMAIL = 16
         private const val COLUMN_INDEX_PHONE = 17
+
+        @JvmStatic
+        @BeforeClass
+        fun beforeClass() {
+            mockkStatic("com.reteno.core.util.UtilKt")
+            mockkConstructor(ServiceLocator::class)
+        }
+
+        @JvmStatic
+        @AfterClass
+        fun afterClass() {
+            unmockkStatic("com.reteno.core.util.UtilKt")
+            unmockkConstructor(ServiceLocator::class)
+        }
     }
     // endregion constants -------------------------------------------------------------------------
 
@@ -72,7 +93,6 @@ class DbUtilDeviceTest : BaseRobolectricTest() {
         super.before()
         contentValues.clear()
         mockColumnIndexes()
-
     }
 
     override fun after() {

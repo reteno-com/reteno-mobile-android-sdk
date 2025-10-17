@@ -3,26 +3,24 @@ package com.reteno.core.data.local.config
 import android.content.Context
 import android.provider.Settings
 import com.google.android.gms.appset.AppSet
+import com.reteno.core.RetenoConfig
 import com.reteno.core.data.local.sharedpref.SharedPrefsManager
-import com.reteno.core.identification.DeviceIdProvider
 import com.reteno.core.util.Logger
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlin.coroutines.coroutineContext
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
 
 internal class DeviceIdHelper(
     private val context: Context,
     private val sharedPrefsManager: SharedPrefsManager,
-    private val userIdProvider: DeviceIdProvider?
+    private val retenoConfigProvider: () -> RetenoConfig
 ) {
 
-    private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
-
-    internal fun withDeviceIdMode(
+    internal suspend fun withDeviceIdMode(
         currentDeviceId: DeviceId,
         deviceIdMode: DeviceIdMode,
         onDeviceIdChanged: (DeviceId) -> Unit
@@ -49,19 +47,33 @@ internal class DeviceIdHelper(
             DeviceIdMode.APP_SET_ID -> {
                 try {
                     val client = AppSet.getClient(context)
-                    client.appSetIdInfo.addOnSuccessListener {
-                        /*@formatter:off*/ Logger.i(TAG, "initDeviceId(): ", "deviceIdMode = [", deviceIdMode, "]", " deviceId = [", it.id, "]")
+                    val result = suspendCoroutine<Result<String>> { continuation ->
+                        client.appSetIdInfo.addOnSuccessListener {
+                            /*@formatter:off*/ Logger.i(TAG, "initDeviceId(): ", "deviceIdMode = [", deviceIdMode, "]", " deviceId = [", it.id, "]")
                         /*@formatter:on*/
-                        onDeviceIdChanged(currentDeviceId.copy(idBody = it.id, mode = deviceIdMode))
-                    }.addOnFailureListener {
-                        /*@formatter:off*/ Logger.i(TAG, "initDeviceId(): ", "deviceIdMode = [", deviceIdMode, "]", " failed trying ANDROID_ID")
+                            continuation.resume(Result.success(it.id))
+                        }.addOnFailureListener {
+                            /*@formatter:off*/ Logger.i(TAG, "initDeviceId(): ", "deviceIdMode = [", deviceIdMode, "]", " failed trying ANDROID_ID")
                         /*@formatter:on*/
-                        withDeviceIdMode(
-                            currentDeviceId,
-                            DeviceIdMode.RANDOM_UUID,
-                            onDeviceIdChanged
-                        )
+                            continuation.resume(Result.failure(it))
+                        }
                     }
+                    result
+                        .onSuccess {
+                            onDeviceIdChanged(
+                                currentDeviceId.copy(
+                                    idBody = it,
+                                    mode = deviceIdMode
+                                )
+                            )
+                        }
+                        .onFailure {
+                            withDeviceIdMode(
+                                currentDeviceId,
+                                DeviceIdMode.RANDOM_UUID,
+                                onDeviceIdChanged
+                            )
+                        }
                 } catch (ex: Exception) {
                     /*@formatter:off*/ Logger.e(TAG, "initDeviceId(): DeviceIdMode.APP_SET_ID", ex)
                     /*@formatter:on*/
@@ -77,6 +89,7 @@ internal class DeviceIdHelper(
             }
 
             DeviceIdMode.CLIENT_UUID -> {
+                val userIdProvider = retenoConfigProvider().userIdProvider
                 if (userIdProvider == null) {
                     /*@formatter:off*/ Logger.i(TAG, "initDeviceId(): ", "deviceIdMode = [", deviceIdMode, "]", " failed trying DeviceIdProvider is null")
                     /*@formatter:on*/
@@ -87,30 +100,28 @@ internal class DeviceIdHelper(
                     )
                     return
                 }
-                scope.launch {
-                    try {
-                        var deviceId: String? = null
-                        while (deviceId == null && isActive) {
-                            deviceId = userIdProvider.getDeviceId()
-                            delay(60L)
-                        }
-                        withContext(Dispatchers.Main) {
-                            /*@formatter:off*/ Logger.i(TAG, "initDeviceId(): ", "deviceIdMode = [", deviceIdMode, "]", " deviceId = [", deviceId, "]")
+                try {
+                    var deviceId: String? = null
+                    while (deviceId == null && coroutineContext.isActive) {
+                        deviceId = userIdProvider.getDeviceId()
+                        delay(60L)
+                    }
+                    withContext(Dispatchers.Main) {
+                        /*@formatter:off*/ Logger.i(TAG, "initDeviceId(): ", "deviceIdMode = [", deviceIdMode, "]", " deviceId = [", deviceId, "]")
                             /*@formatter:on*/
-                            onDeviceIdChanged(
-                                currentDeviceId.copy(
-                                    idBody = requireNotNull(deviceId),
-                                    mode = deviceIdMode
-                                )
+                        onDeviceIdChanged(
+                            currentDeviceId.copy(
+                                idBody = requireNotNull(deviceId),
+                                mode = deviceIdMode
                             )
-                        }
-                    } catch (e: Exception) {
-                        withDeviceIdMode(
-                            currentDeviceId,
-                            DeviceIdMode.RANDOM_UUID,
-                            onDeviceIdChanged
                         )
                     }
+                } catch (e: Exception) {
+                    withDeviceIdMode(
+                        currentDeviceId,
+                        DeviceIdMode.RANDOM_UUID,
+                        onDeviceIdChanged
+                    )
                 }
             }
 
