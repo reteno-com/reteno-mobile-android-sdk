@@ -624,10 +624,6 @@ class RetenoInternalImpl(
         deeplinkController.deeplinkClicked(linkWrapped, linkUnwrapped)
     }
 
-    override fun hasActiveTask(): Boolean {
-        return activityHelper.hasActiveTask()
-    }
-
     override fun getDefaultNotificationChannelConfig(): ((NotificationChannelCompat.Builder) -> Unit)? {
         return serviceLocator.currentConfig.defaultNotificationChannelConfig
     }

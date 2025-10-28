@@ -22,6 +22,7 @@ internal class RetenoActivityHelperImpl : RetenoActivityHelper {
      * Whether any of the activities are paused.
      */
     private var isActivityPaused = false
+
     /**
      * Retrieves if the activity is ready to be changed.
      */
@@ -30,9 +31,6 @@ internal class RetenoActivityHelperImpl : RetenoActivityHelper {
     // keeps current activity while app is in foreground
     override var currentActivity: Activity? = null
         private set
-
-    // keeps the last activity while app is in background, onDestroy will clear it
-    private var lastForegroundActivity: Activity? = null
 
     override fun enableLifecycleCallbacks(application: Application) {
         /*@formatter:off*/ Logger.i(TAG, "enableLifecycleCallbacks(): ", "app = [" , application , "]")
@@ -101,7 +99,6 @@ internal class RetenoActivityHelperImpl : RetenoActivityHelper {
         notifyLifecycleCallbacksStopped(activity)
 
         if (currentActivity != null && currentActivity == activity) {
-            lastForegroundActivity = currentActivity
             // Don't leak activities.
             currentActivity = null
         }
@@ -150,13 +147,9 @@ internal class RetenoActivityHelperImpl : RetenoActivityHelper {
     private fun onDestroy(activity: Activity) {
         /*@formatter:off*/ Logger.i(TAG, "onDestroy(): ", "activity = [" , activity , "]")
         /*@formatter:on*/
-        if (isActivityPaused && lastForegroundActivity != null && lastForegroundActivity == activity) {
-            // prevent activity leak
-            lastForegroundActivity = null
-            // no activity is presented and last activity is being destroyed
-            // dismiss iam dialogs to prevent leak
-            // TODO: Not yet implemented
-        }
+        // no activity is presented and last activity is being destroyed
+        // dismiss iam dialogs to prevent leak
+        // TODO: Not yet implemented
     }
 
     /**
@@ -177,11 +170,7 @@ internal class RetenoActivityHelperImpl : RetenoActivityHelper {
         return result
     }
 
-    override fun hasActiveTask(): Boolean {
-        return lastForegroundActivity != null
-    }
-
-    private fun isActivityInForeground():Boolean {
+    private fun isActivityInForeground(): Boolean {
         return currentActivity != null && !currentActivity!!.isFinishing && !isActivityPaused && !isReadyForTransition
     }
 
@@ -210,6 +199,7 @@ internal class RetenoActivityHelperImpl : RetenoActivityHelper {
                 /*@formatter:on*/
             }
         }
+
         override fun onActivityStopped(activity: Activity) {
             try {
                 onStop(activity)

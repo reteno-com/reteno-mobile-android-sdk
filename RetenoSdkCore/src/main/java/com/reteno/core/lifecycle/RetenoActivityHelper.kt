@@ -23,6 +23,4 @@ interface RetenoActivityHelper {
     fun canPresentMessages(): Boolean
 
     fun isActivityFullyReady(): Boolean
-
-    fun hasActiveTask(): Boolean
 }
