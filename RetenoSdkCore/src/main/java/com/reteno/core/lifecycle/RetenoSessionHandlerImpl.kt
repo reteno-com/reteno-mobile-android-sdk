@@ -39,15 +39,18 @@ internal class RetenoSessionHandlerImpl(
     private var job: Job? = null
     private val scope = CoroutineScope(Dispatchers.Default + SupervisorJob())
 
-    private var scheduledMessages: MutableList<InAppWithTime>? = null
-    private var closestScheduledMessages: List<InAppWithTime>? = null
+    private var scheduledMessages: MutableList<InAppWithTime> = mutableListOf()
+    private var closestScheduledMessages: List<InAppWithTime> = emptyList()
     private var showInApp: ((List<InAppMessage>) -> Unit)? = null
 
     override fun start() {
         initSession()
         job = scope.launch {
             while (true) {
-                countTime()
+                synchronized(this@RetenoSessionHandlerImpl) {
+                    countTime(scheduledMessages, closestScheduledMessages)
+                    closestScheduledMessages = findNextScheduledMessages(scheduledMessages)
+                }
                 delay(TIME_COUNTER_DELAY)
             }
         }
@@ -67,10 +70,12 @@ internal class RetenoSessionHandlerImpl(
         onTimeMatch: (List<InAppMessage>) -> Unit
     ) {
         if (messages.isEmpty()) return
-
-        showInApp = onTimeMatch
-        scheduledMessages = messages
-        findNextScheduledMessages()
+        messages.sortBy { it.time }
+        synchronized(this) {
+            showInApp = onTimeMatch
+            scheduledMessages = messages
+            closestScheduledMessages = findNextScheduledMessages(messages)
+        }
     }
 
     override fun getForegroundTimeMillis(): Long {
@@ -91,20 +96,11 @@ internal class RetenoSessionHandlerImpl(
         return sessionId
     }
 
-    private fun findNextScheduledMessages() {
-        var messages = scheduledMessages
-
-        if (messages.isNullOrEmpty()) {
-            closestScheduledMessages = null
-            return
-        }
-
-        messages.sortBy { it.time }
+    private fun findNextScheduledMessages(messages: List<InAppWithTime>): List<InAppWithTime> {
+        if (messages.isEmpty()) return emptyList()
 
         val nextMessageTime = messages.first().time
-        messages = messages.filter { it.time == nextMessageTime }.toMutableList()
-
-        closestScheduledMessages = messages
+        return messages.filter { it.time == nextMessageTime }
     }
 
     private fun initSession() {
@@ -130,7 +126,12 @@ internal class RetenoSessionHandlerImpl(
             sessionId = UUID.randomUUID().toString()
             sharedPrefsManager.saveSessionStartTimestamp(sessionStartTimestamp)
             sharedPrefsManager.saveSessionId(sessionId = sessionId)
-            trackSessionEvent(Event.sessionStart(sessionId, sessionStartTimestamp.asZonedDateTime()))
+            trackSessionEvent(
+                Event.sessionStart(
+                    sessionId,
+                    sessionStartTimestamp.asZonedDateTime()
+                )
+            )
         } else {
             previousForegroundTime = sharedPrefsManager.getAppSessionTime()
             sessionStartTimestamp = sharedPrefsManager.getSessionStartTimestamp()
@@ -165,20 +166,21 @@ internal class RetenoSessionHandlerImpl(
         }
     }
 
-    private fun countTime() {
+    private fun countTime(
+        scheduled: MutableList<InAppWithTime>,
+        closest: List<InAppWithTime>
+    ) {
         timeSinceResume = System.currentTimeMillis() - appResumedTimestamp
         foregroundTimeMillis = previousForegroundTime + timeSinceResume
         //We need to save this values here because onPause may not be called on some devices if app removed from system tray
         sharedPrefsManager.saveAppSessionTime(foregroundTimeMillis)
         sharedPrefsManager.saveLastInteractionTime(System.currentTimeMillis())
 
-        val nextMessages = closestScheduledMessages
-        if (!nextMessages.isNullOrEmpty() && foregroundTimeMillis >= nextMessages.first().time) {
-            scheduledMessages?.removeAll(nextMessages)
-            findNextScheduledMessages()
+        if (closest.isNotEmpty() && foregroundTimeMillis >= closest.first().time) {
+            scheduled.removeAll(closest)
 
-            if (foregroundTimeMillis <= nextMessages.first().time + TIME_COUNTER_DELAY) { // check it is not too late to show inApp
-                showInApp?.invoke(nextMessages.map { it.inApp })
+            if (foregroundTimeMillis <= closest.first().time + TIME_COUNTER_DELAY) { // check it is not too late to show inApp
+                showInApp?.invoke(closest.map { it.inApp })
             }
         }
     }

@@ -37,8 +37,6 @@ internal interface RetenoInternalFacade : LifecycleObserver {
 
     fun deeplinkClicked(linkWrapped: String, linkUnwrapped: String)
 
-    fun hasActiveTask(): Boolean
-
     fun getDefaultNotificationChannelConfig(): ((NotificationChannelCompat.Builder) -> Unit)? = null
 
     fun executeAfterInit(action: () -> Unit)
