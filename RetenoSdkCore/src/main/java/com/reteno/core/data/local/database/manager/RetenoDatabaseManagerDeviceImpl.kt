@@ -24,7 +24,7 @@ internal class RetenoDatabaseManagerDeviceImpl(private val database: RetenoDatab
 
         val contentValues = ContentValues()
         contentValues.putDevice(device)
-        database.insert(table = DeviceSchema.TABLE_NAME_DEVICE, contentValues = contentValues)
+        database.insert(table = DeviceSchema.TABLE_NAME, contentValues = contentValues)
         contentValues.clear()
     }
 
@@ -37,7 +37,7 @@ internal class RetenoDatabaseManagerDeviceImpl(private val database: RetenoDatab
         var cursor: Cursor? = null
         try {
             cursor = database.query(
-                table = DeviceSchema.TABLE_NAME_DEVICE,
+                table = DeviceSchema.TABLE_NAME,
                 columns = DeviceSchema.getAllColumns(),
                 orderBy = "${DbSchema.COLUMN_TIMESTAMP} ASC",
                 limit = limit?.toString()
@@ -57,7 +57,7 @@ internal class RetenoDatabaseManagerDeviceImpl(private val database: RetenoDatab
                         /*@formatter:on*/
                     } else {
                         database.delete(
-                            table = DeviceSchema.TABLE_NAME_DEVICE,
+                            table = DeviceSchema.TABLE_NAME,
                             whereClause = "${DeviceSchema.COLUMN_DEVICE_ROW_ID}=?",
                             whereArgs = arrayOf(rowId.toString())
                         )
@@ -76,7 +76,7 @@ internal class RetenoDatabaseManagerDeviceImpl(private val database: RetenoDatab
     }
 
     override fun getUnSyncedDeviceCount(): Long = database.getRowCount(
-        DeviceSchema.TABLE_NAME_DEVICE,
+        DeviceSchema.TABLE_NAME,
         whereClause = "${DeviceSchema.COLUMN_SYNCHRONIZED_WITH_BACKEND}<>?",
         whereArgs = arrayOf(BooleanDb.TRUE.toString())
     )
@@ -86,7 +86,7 @@ internal class RetenoDatabaseManagerDeviceImpl(private val database: RetenoDatab
         /*@formatter:on*/
 
         val removedRecordsCount = database.delete(
-            table = DeviceSchema.TABLE_NAME_DEVICE,
+            table = DeviceSchema.TABLE_NAME,
             whereClause = "${DeviceSchema.COLUMN_DEVICE_ROW_ID}=?",
             whereArgs = arrayOf(device.rowId)
         )
@@ -102,7 +102,7 @@ internal class RetenoDatabaseManagerDeviceImpl(private val database: RetenoDatab
 
         for (rowId: String in rowIds) {
             database.delete(
-                table = DeviceSchema.TABLE_NAME_DEVICE,
+                table = DeviceSchema.TABLE_NAME,
                 whereClause = "${DeviceSchema.COLUMN_DEVICE_ROW_ID}=?",
                 whereArgs = arrayOf(rowId)
             )

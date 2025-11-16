@@ -175,7 +175,7 @@ class RetenoDatabaseManagerUserImplTest : BaseRobolectricTest() {
         // Then
         verify(exactly = 1) {
             database.insert(
-                table = eq(UserSchema.TABLE_NAME_USER),
+                table = eq(UserSchema.TABLE_NAME),
                 contentValues = any()
             )
         }
@@ -218,7 +218,7 @@ class RetenoDatabaseManagerUserImplTest : BaseRobolectricTest() {
         // Then
         verify(exactly = 1) {
             database.insert(
-                table = eq(UserSchema.TABLE_NAME_USER),
+                table = eq(UserSchema.TABLE_NAME),
                 contentValues = any()
             )
         }
@@ -252,7 +252,7 @@ class RetenoDatabaseManagerUserImplTest : BaseRobolectricTest() {
         // Then
         verify(exactly = 1) {
             database.insert(
-                table = eq(UserSchema.TABLE_NAME_USER),
+                table = eq(UserSchema.TABLE_NAME),
                 contentValues = any()
             )
         }
@@ -314,7 +314,7 @@ class RetenoDatabaseManagerUserImplTest : BaseRobolectricTest() {
         verify(exactly = 1) { database.rawQuery(any(), any()) }
         verify(exactly = 1) {
             database.delete(
-                UserSchema.TABLE_NAME_USER,
+                UserSchema.TABLE_NAME,
                 "${UserSchema.COLUMN_USER_ROW_ID}=?",
                 arrayOf(ROW_ID_CORRUPTED.toString())
             )
@@ -348,7 +348,7 @@ class RetenoDatabaseManagerUserImplTest : BaseRobolectricTest() {
     fun givenUserCountEmpty_whenGetUserCount_thenZeroReturned() {
         // Given
         val recordsCount = 0L
-        every { database.getRowCount(UserSchema.TABLE_NAME_USER) } returns recordsCount
+        every { database.getRowCount(UserSchema.TABLE_NAME) } returns recordsCount
 
         // When
         val count = SUT.getUnSyncedUserCount()
@@ -363,7 +363,7 @@ class RetenoDatabaseManagerUserImplTest : BaseRobolectricTest() {
         val recordsCount = 5L
         every {
             database.getRowCount(
-                UserSchema.TABLE_NAME_USER,
+                UserSchema.TABLE_NAME,
                 whereClause = "${UserSchema.COLUMN_SYNCHRONIZED_WITH_BACKEND}<>?",
                 whereArgs = arrayOf(BooleanDb.TRUE.toString())
             )
@@ -384,7 +384,7 @@ class RetenoDatabaseManagerUserImplTest : BaseRobolectricTest() {
         // Then
         verify(exactly = 1) {
             database.delete(
-                table = eq(UserSchema.TABLE_NAME_USER),
+                table = eq(UserSchema.TABLE_NAME),
                 whereClause = eq("${UserSchema.COLUMN_USER_ROW_ID}=?"),
                 whereArgs = eq(arrayOf(USER_ROW_ID))
             )

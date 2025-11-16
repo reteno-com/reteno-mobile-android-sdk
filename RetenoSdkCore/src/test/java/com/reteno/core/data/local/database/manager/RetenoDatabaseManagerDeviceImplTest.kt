@@ -153,7 +153,7 @@ class RetenoDatabaseManagerDeviceImplTest : BaseRobolectricTest() {
         // Then
         verify(exactly = 1) {
             database.insert(
-                table = eq(DeviceSchema.TABLE_NAME_DEVICE),
+                table = eq(DeviceSchema.TABLE_NAME),
                 contentValues = any()
             )
         }
@@ -174,7 +174,7 @@ class RetenoDatabaseManagerDeviceImplTest : BaseRobolectricTest() {
         // Then
         verify(exactly = 1) {
             database.query(
-                table = eq(DeviceSchema.TABLE_NAME_DEVICE),
+                table = eq(DeviceSchema.TABLE_NAME),
                 columns = eq(DeviceSchema.getAllColumns()),
                 orderBy = eq("${DbSchema.COLUMN_TIMESTAMP} ASC"),
                 limit = null
@@ -199,7 +199,7 @@ class RetenoDatabaseManagerDeviceImplTest : BaseRobolectricTest() {
         // Then
         verify(exactly = 1) {
             database.query(
-                table = eq(DeviceSchema.TABLE_NAME_DEVICE),
+                table = eq(DeviceSchema.TABLE_NAME),
                 columns = eq(DeviceSchema.getAllColumns()),
                 orderBy = eq("${DbSchema.COLUMN_TIMESTAMP} ASC"),
                 limit = null
@@ -225,7 +225,7 @@ class RetenoDatabaseManagerDeviceImplTest : BaseRobolectricTest() {
         // Then
         verify(exactly = 1) {
             database.query(
-                table = eq(DeviceSchema.TABLE_NAME_DEVICE),
+                table = eq(DeviceSchema.TABLE_NAME),
                 columns = eq(DeviceSchema.getAllColumns()),
                 orderBy = eq("${DbSchema.COLUMN_TIMESTAMP} ASC"),
                 limit = null
@@ -233,7 +233,7 @@ class RetenoDatabaseManagerDeviceImplTest : BaseRobolectricTest() {
         }
         verify(exactly = 1) {
             database.delete(
-                DeviceSchema.TABLE_NAME_DEVICE,
+                DeviceSchema.TABLE_NAME,
                 "${DeviceSchema.COLUMN_DEVICE_ROW_ID}=?",
                 arrayOf(ROW_ID_CORRUPTED.toString())
             )
@@ -258,7 +258,7 @@ class RetenoDatabaseManagerDeviceImplTest : BaseRobolectricTest() {
         // Then
         verify(exactly = 1) {
             database.query(
-                table = eq(DeviceSchema.TABLE_NAME_DEVICE),
+                table = eq(DeviceSchema.TABLE_NAME),
                 columns = eq(DeviceSchema.getAllColumns()),
                 orderBy = eq("${DbSchema.COLUMN_TIMESTAMP} ASC"),
                 limit = null
@@ -275,7 +275,7 @@ class RetenoDatabaseManagerDeviceImplTest : BaseRobolectricTest() {
     fun givenDeviceCountEmpty_whenGetDeviceCount_thenZeroReturned() {
         // Given
         val recordsCount = 0L
-        every { database.getRowCount(DeviceSchema.TABLE_NAME_DEVICE) } returns recordsCount
+        every { database.getRowCount(DeviceSchema.TABLE_NAME) } returns recordsCount
 
         // When
         val count = SUT.getUnSyncedDeviceCount()
@@ -290,7 +290,7 @@ class RetenoDatabaseManagerDeviceImplTest : BaseRobolectricTest() {
         val recordsCount = 5L
         every {
             database.getRowCount(
-                DeviceSchema.TABLE_NAME_DEVICE,
+                DeviceSchema.TABLE_NAME,
                 whereClause = "${DeviceSchema.COLUMN_SYNCHRONIZED_WITH_BACKEND}<>?",
                 whereArgs = arrayOf(BooleanDb.TRUE.toString())
             )
@@ -311,7 +311,7 @@ class RetenoDatabaseManagerDeviceImplTest : BaseRobolectricTest() {
         // Then
         verify(exactly = 1) {
             database.delete(
-                table = eq(DeviceSchema.TABLE_NAME_DEVICE),
+                table = eq(DeviceSchema.TABLE_NAME),
                 whereClause = eq("${DeviceSchema.COLUMN_DEVICE_ROW_ID}=?"),
                 whereArgs = arrayOf(ROW_ID_1)
             )
@@ -376,7 +376,7 @@ class RetenoDatabaseManagerDeviceImplTest : BaseRobolectricTest() {
     private fun mockDatabaseQuery() {
         every {
             database.query(
-                table = DeviceSchema.TABLE_NAME_DEVICE,
+                table = DeviceSchema.TABLE_NAME,
                 columns = DeviceSchema.getAllColumns(),
                 orderBy = any(),
                 limit = null

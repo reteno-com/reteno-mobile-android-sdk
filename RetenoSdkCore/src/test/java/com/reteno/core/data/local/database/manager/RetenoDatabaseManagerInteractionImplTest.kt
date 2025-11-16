@@ -111,7 +111,7 @@ class RetenoDatabaseManagerInteractionImplTest : BaseRobolectricTest() {
         // Then
         verify(exactly = 1) {
             database.insert(
-                table = eq(InteractionSchema.TABLE_NAME_INTERACTION),
+                table = eq(InteractionSchema.TABLE_NAME),
                 contentValues = any()
             )
         }
@@ -132,7 +132,7 @@ class RetenoDatabaseManagerInteractionImplTest : BaseRobolectricTest() {
         // Then
         verify(exactly = 1) {
             database.query(
-                table = eq(InteractionSchema.TABLE_NAME_INTERACTION),
+                table = eq(InteractionSchema.TABLE_NAME),
                 columns = eq(InteractionSchema.getAllColumns()),
                 orderBy = eq("${DbSchema.COLUMN_TIMESTAMP} ASC"),
                 limit = null
@@ -157,7 +157,7 @@ class RetenoDatabaseManagerInteractionImplTest : BaseRobolectricTest() {
         // Then
         verify(exactly = 1) {
             database.query(
-                table = eq(InteractionSchema.TABLE_NAME_INTERACTION),
+                table = eq(InteractionSchema.TABLE_NAME),
                 columns = eq(InteractionSchema.getAllColumns()),
                 orderBy = eq("${DbSchema.COLUMN_TIMESTAMP} ASC"),
                 limit = null
@@ -182,7 +182,7 @@ class RetenoDatabaseManagerInteractionImplTest : BaseRobolectricTest() {
         // Then
         verify(exactly = 1) {
             database.query(
-                table = eq(InteractionSchema.TABLE_NAME_INTERACTION),
+                table = eq(InteractionSchema.TABLE_NAME),
                 columns = eq(InteractionSchema.getAllColumns()),
                 orderBy = eq("${DbSchema.COLUMN_TIMESTAMP} ASC"),
                 limit = null
@@ -190,7 +190,7 @@ class RetenoDatabaseManagerInteractionImplTest : BaseRobolectricTest() {
         }
         verify(exactly = 1) {
             database.delete(
-                InteractionSchema.TABLE_NAME_INTERACTION,
+                InteractionSchema.TABLE_NAME,
                 "${InteractionSchema.COLUMN_INTERACTION_ROW_ID}=?",
                 arrayOf(ROW_ID_CORRUPTED.toString())
             )
@@ -214,7 +214,7 @@ class RetenoDatabaseManagerInteractionImplTest : BaseRobolectricTest() {
         // Then
         verify(exactly = 1) {
             database.query(
-                table = eq(InteractionSchema.TABLE_NAME_INTERACTION),
+                table = eq(InteractionSchema.TABLE_NAME),
                 columns = eq(InteractionSchema.getAllColumns()),
                 orderBy = eq("${DbSchema.COLUMN_TIMESTAMP} ASC"),
                 limit = null
@@ -231,7 +231,7 @@ class RetenoDatabaseManagerInteractionImplTest : BaseRobolectricTest() {
     fun givenInteractionCountEmpty_whenGetInteractionCount_thenZeroReturned() {
         // Given
         val recordsCount = 0L
-        every { database.getRowCount(InteractionSchema.TABLE_NAME_INTERACTION) } returns recordsCount
+        every { database.getRowCount(InteractionSchema.TABLE_NAME) } returns recordsCount
 
         // When
         val count = SUT.getInteractionCount()
@@ -244,7 +244,7 @@ class RetenoDatabaseManagerInteractionImplTest : BaseRobolectricTest() {
     fun givenInteractionCountNonEmpty_whenGetInteractionCount_thenCountReturned() {
         // Given
         val recordsCount = 5L
-        every { database.getRowCount(InteractionSchema.TABLE_NAME_INTERACTION) } returns recordsCount
+        every { database.getRowCount(InteractionSchema.TABLE_NAME) } returns recordsCount
 
         // When
         val count = SUT.getInteractionCount()
@@ -261,7 +261,7 @@ class RetenoDatabaseManagerInteractionImplTest : BaseRobolectricTest() {
         // Then
         verify(exactly = 1) {
             database.delete(
-                table = eq(InteractionSchema.TABLE_NAME_INTERACTION),
+                table = eq(InteractionSchema.TABLE_NAME),
                 whereClause = eq("${InteractionSchema.COLUMN_INTERACTION_ROW_ID}=?"),
                 whereArgs = eq(arrayOf(ROW_ID_1))
             )
@@ -300,7 +300,7 @@ class RetenoDatabaseManagerInteractionImplTest : BaseRobolectricTest() {
 
         mockCursorRecordsNumber(2)
         every { database.query(
-            table = eq(InteractionSchema.TABLE_NAME_INTERACTION),
+            table = eq(InteractionSchema.TABLE_NAME),
             columns = eq(InteractionSchema.getAllColumns()),
             selection = eq(whereClauseExpected)
         ) } returns cursor
@@ -312,14 +312,14 @@ class RetenoDatabaseManagerInteractionImplTest : BaseRobolectricTest() {
         // Then
         verify(exactly = 1) {
             database.query(
-                table = eq(InteractionSchema.TABLE_NAME_INTERACTION),
+                table = eq(InteractionSchema.TABLE_NAME),
                 columns = eq(InteractionSchema.getAllColumns()),
                 selection = eq(whereClauseExpected)
             )
         }
         verify(exactly = 1) {
             database.delete(
-                eq(InteractionSchema.TABLE_NAME_INTERACTION),
+                eq(InteractionSchema.TABLE_NAME),
                 eq(whereClauseExpected)
             )
         }
@@ -334,7 +334,7 @@ class RetenoDatabaseManagerInteractionImplTest : BaseRobolectricTest() {
 
         mockCursorRecordsNumber(0)
         every { database.query(
-            table = eq(InteractionSchema.TABLE_NAME_INTERACTION),
+            table = eq(InteractionSchema.TABLE_NAME),
             columns = eq(InteractionSchema.getAllColumns()),
             selection = eq(whereClauseExpected)
         ) } returns cursor
@@ -345,14 +345,14 @@ class RetenoDatabaseManagerInteractionImplTest : BaseRobolectricTest() {
         // Then
         verify(exactly = 1) {
             database.query(
-                table = eq(InteractionSchema.TABLE_NAME_INTERACTION),
+                table = eq(InteractionSchema.TABLE_NAME),
                 columns = eq(InteractionSchema.getAllColumns()),
                 selection = eq(whereClauseExpected)
             )
         }
         verify(exactly = 1) {
             database.delete(
-                eq(InteractionSchema.TABLE_NAME_INTERACTION),
+                eq(InteractionSchema.TABLE_NAME),
                 eq(whereClauseExpected)
             )
         }
@@ -384,7 +384,7 @@ class RetenoDatabaseManagerInteractionImplTest : BaseRobolectricTest() {
     private fun mockDatabaseQuery() {
         every {
             database.query(
-                table = InteractionSchema.TABLE_NAME_INTERACTION,
+                table = InteractionSchema.TABLE_NAME,
                 columns = InteractionSchema.getAllColumns(),
                 orderBy = any(),
                 limit = null

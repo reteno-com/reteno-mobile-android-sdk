@@ -1,7 +1,7 @@
 package com.reteno.core.data.local.database.schema
 
 internal object DeviceSchema {
-    internal const val TABLE_NAME_DEVICE = "Device"
+    internal const val TABLE_NAME = "Device"
 
     internal const val COLUMN_DEVICE_ROW_ID = "row_id"
     internal const val COLUMN_DEVICE_ID = "deviceId"
@@ -21,7 +21,7 @@ internal object DeviceSchema {
     internal const val COLUMN_PHONE = "phone"
 
     internal const val SQL_CREATE_TABLE =
-        "CREATE TABLE IF NOT EXISTS $TABLE_NAME_DEVICE" +
+        "CREATE TABLE IF NOT EXISTS $TABLE_NAME" +
                 "(" +
                 "$COLUMN_DEVICE_ROW_ID INTEGER PRIMARY KEY, " +
                 "${DbSchema.COLUMN_TIMESTAMP} TIMESTAMP DEFAULT CURRENT_TIMESTAMP, " +
@@ -43,14 +43,14 @@ internal object DeviceSchema {
                 ")"
 
     internal const val SQL_UPGRADE_TABLE_VERSION_2 =
-        "ALTER TABLE $TABLE_NAME_DEVICE ADD COLUMN $COLUMN_PUSH_SUBSCRIBED TEXT"
+        "ALTER TABLE $TABLE_NAME ADD COLUMN $COLUMN_PUSH_SUBSCRIBED TEXT"
 
     internal const val SQL_UPGRADE_TABLE_VERSION_6 =
-        "ALTER TABLE $TABLE_NAME_DEVICE ADD COLUMN $COLUMN_SYNCHRONIZED_WITH_BACKEND TEXT"
+        "ALTER TABLE $TABLE_NAME ADD COLUMN $COLUMN_SYNCHRONIZED_WITH_BACKEND TEXT"
 
     internal const val SQL_UPGRADE_TABLE_VERSION_8_EMAIL =
-        "ALTER TABLE $TABLE_NAME_DEVICE ADD COLUMN $COLUMN_EMAIL TEXT"
-    internal const val SQL_UPGRADE_TABLE_VERSION_8_PHONE = "ALTER TABLE $TABLE_NAME_DEVICE ADD COLUMN $COLUMN_PHONE TEXT"
+        "ALTER TABLE $TABLE_NAME ADD COLUMN $COLUMN_EMAIL TEXT"
+    internal const val SQL_UPGRADE_TABLE_VERSION_8_PHONE = "ALTER TABLE $TABLE_NAME ADD COLUMN $COLUMN_PHONE TEXT"
 
     fun getAllColumns(): Array<String> = arrayOf(
         COLUMN_DEVICE_ROW_ID,

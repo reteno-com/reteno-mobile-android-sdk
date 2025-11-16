@@ -26,7 +26,7 @@ internal class RetenoDatabaseManagerUserImpl(private val database: RetenoDatabas
 
             val contentValues = ContentValues()
             contentValues.putUser(user)
-            val rowId = database.insert(table = UserSchema.TABLE_NAME_USER, contentValues = contentValues)
+            val rowId = database.insert(table = UserSchema.TABLE_NAME, contentValues = contentValues)
             contentValues.clear()
 
             user.userAttributes?.let { userAttrs ->
@@ -53,14 +53,14 @@ internal class RetenoDatabaseManagerUserImpl(private val database: RetenoDatabas
         var cursor: Cursor? = null
         try {
             val rawQuery = "SELECT" +
-                    "  ${UserSchema.TABLE_NAME_USER}.${UserSchema.COLUMN_USER_ROW_ID} AS ${UserSchema.COLUMN_USER_ROW_ID}," +
-                    "  ${UserSchema.TABLE_NAME_USER}.${UserSchema.COLUMN_DEVICE_ID} AS ${UserSchema.COLUMN_DEVICE_ID}," +
-                    "  ${UserSchema.TABLE_NAME_USER}.${UserSchema.COLUMN_EXTERNAL_USER_ID} AS ${UserSchema.COLUMN_EXTERNAL_USER_ID}," +
-                    "  ${UserSchema.TABLE_NAME_USER}.${DbSchema.COLUMN_TIMESTAMP} AS ${DbSchema.COLUMN_TIMESTAMP}," +
-                    "  ${UserSchema.TABLE_NAME_USER}.${UserSchema.COLUMN_SUBSCRIPTION_KEYS} AS ${UserSchema.COLUMN_SUBSCRIPTION_KEYS}," +
-                    "  ${UserSchema.TABLE_NAME_USER}.${UserSchema.COLUMN_GROUP_NAMES_INCLUDE} AS ${UserSchema.COLUMN_GROUP_NAMES_INCLUDE}," +
-                    "  ${UserSchema.TABLE_NAME_USER}.${UserSchema.COLUMN_GROUP_NAMES_EXCLUDE} AS ${UserSchema.COLUMN_GROUP_NAMES_EXCLUDE}," +
-                    "  ${UserSchema.TABLE_NAME_USER}.${UserSchema.COLUMN_SYNCHRONIZED_WITH_BACKEND} AS ${UserSchema.COLUMN_SYNCHRONIZED_WITH_BACKEND}," +
+                    "  ${UserSchema.TABLE_NAME}.${UserSchema.COLUMN_USER_ROW_ID} AS ${UserSchema.COLUMN_USER_ROW_ID}," +
+                    "  ${UserSchema.TABLE_NAME}.${UserSchema.COLUMN_DEVICE_ID} AS ${UserSchema.COLUMN_DEVICE_ID}," +
+                    "  ${UserSchema.TABLE_NAME}.${UserSchema.COLUMN_EXTERNAL_USER_ID} AS ${UserSchema.COLUMN_EXTERNAL_USER_ID}," +
+                    "  ${UserSchema.TABLE_NAME}.${DbSchema.COLUMN_TIMESTAMP} AS ${DbSchema.COLUMN_TIMESTAMP}," +
+                    "  ${UserSchema.TABLE_NAME}.${UserSchema.COLUMN_SUBSCRIPTION_KEYS} AS ${UserSchema.COLUMN_SUBSCRIPTION_KEYS}," +
+                    "  ${UserSchema.TABLE_NAME}.${UserSchema.COLUMN_GROUP_NAMES_INCLUDE} AS ${UserSchema.COLUMN_GROUP_NAMES_INCLUDE}," +
+                    "  ${UserSchema.TABLE_NAME}.${UserSchema.COLUMN_GROUP_NAMES_EXCLUDE} AS ${UserSchema.COLUMN_GROUP_NAMES_EXCLUDE}," +
+                    "  ${UserSchema.TABLE_NAME}.${UserSchema.COLUMN_SYNCHRONIZED_WITH_BACKEND} AS ${UserSchema.COLUMN_SYNCHRONIZED_WITH_BACKEND}," +
                     "  ${UserSchema.UserAttributesSchema.TABLE_NAME_USER_ATTRIBUTES}.${UserSchema.UserAttributesSchema.COLUMN_PHONE} AS ${UserSchema.UserAttributesSchema.COLUMN_PHONE}," +
                     "  ${UserSchema.UserAttributesSchema.TABLE_NAME_USER_ATTRIBUTES}.${UserSchema.UserAttributesSchema.COLUMN_EMAIL} AS ${UserSchema.UserAttributesSchema.COLUMN_EMAIL}," +
                     "  ${UserSchema.UserAttributesSchema.TABLE_NAME_USER_ATTRIBUTES}.${UserSchema.UserAttributesSchema.COLUMN_FIRST_NAME} AS ${UserSchema.UserAttributesSchema.COLUMN_FIRST_NAME}," +
@@ -72,9 +72,9 @@ internal class RetenoDatabaseManagerUserImpl(private val database: RetenoDatabas
                     "  ${UserSchema.UserAddressSchema.TABLE_NAME_USER_ADDRESS}.${UserSchema.UserAddressSchema.COLUMN_TOWN} AS ${UserSchema.UserAddressSchema.COLUMN_TOWN}," +
                     "  ${UserSchema.UserAddressSchema.TABLE_NAME_USER_ADDRESS}.${UserSchema.UserAddressSchema.COLUMN_ADDRESS} AS ${UserSchema.UserAddressSchema.COLUMN_ADDRESS}," +
                     "  ${UserSchema.UserAddressSchema.TABLE_NAME_USER_ADDRESS}.${UserSchema.UserAddressSchema.COLUMN_POSTCODE} AS ${UserSchema.UserAddressSchema.COLUMN_POSTCODE}" +
-                    " FROM ${UserSchema.TABLE_NAME_USER}" +
-                    "  LEFT JOIN ${UserSchema.UserAttributesSchema.TABLE_NAME_USER_ATTRIBUTES} ON ${UserSchema.TABLE_NAME_USER}.${UserSchema.COLUMN_USER_ROW_ID} = ${UserSchema.UserAttributesSchema.TABLE_NAME_USER_ATTRIBUTES}.${UserSchema.COLUMN_USER_ROW_ID}" +
-                    "  LEFT JOIN ${UserSchema.UserAddressSchema.TABLE_NAME_USER_ADDRESS} ON ${UserSchema.TABLE_NAME_USER}.${UserSchema.COLUMN_USER_ROW_ID} = ${UserSchema.UserAddressSchema.TABLE_NAME_USER_ADDRESS}.${UserSchema.COLUMN_USER_ROW_ID}" +
+                    " FROM ${UserSchema.TABLE_NAME}" +
+                    "  LEFT JOIN ${UserSchema.UserAttributesSchema.TABLE_NAME_USER_ATTRIBUTES} ON ${UserSchema.TABLE_NAME}.${UserSchema.COLUMN_USER_ROW_ID} = ${UserSchema.UserAttributesSchema.TABLE_NAME_USER_ATTRIBUTES}.${UserSchema.COLUMN_USER_ROW_ID}" +
+                    "  LEFT JOIN ${UserSchema.UserAddressSchema.TABLE_NAME_USER_ADDRESS} ON ${UserSchema.TABLE_NAME}.${UserSchema.COLUMN_USER_ROW_ID} = ${UserSchema.UserAddressSchema.TABLE_NAME_USER_ADDRESS}.${UserSchema.COLUMN_USER_ROW_ID}" +
                     rawQueryLimit
             cursor = database.rawQuery(rawQuery)
             while (cursor.moveToNext()) {
@@ -92,7 +92,7 @@ internal class RetenoDatabaseManagerUserImpl(private val database: RetenoDatabas
                         /*@formatter:on*/
                     } else {
                         database.delete(
-                            table = UserSchema.TABLE_NAME_USER,
+                            table = UserSchema.TABLE_NAME,
                             whereClause = "${UserSchema.COLUMN_USER_ROW_ID}=?",
                             whereArgs = arrayOf(rowId.toString())
                         )
@@ -111,7 +111,7 @@ internal class RetenoDatabaseManagerUserImpl(private val database: RetenoDatabas
     }
 
     override fun getUnSyncedUserCount(): Long = database.getRowCount(
-        UserSchema.TABLE_NAME_USER,
+        UserSchema.TABLE_NAME,
         whereClause = "${UserSchema.COLUMN_SYNCHRONIZED_WITH_BACKEND}<>?",
         whereArgs = arrayOf(BooleanDb.TRUE.toString())
     )
@@ -121,7 +121,7 @@ internal class RetenoDatabaseManagerUserImpl(private val database: RetenoDatabas
         /*@formatter:on*/
 
         val removedRecordsCount = database.delete(
-            table = UserSchema.TABLE_NAME_USER,
+            table = UserSchema.TABLE_NAME,
             whereClause = "${UserSchema.COLUMN_USER_ROW_ID}=?",
             whereArgs = arrayOf(user.rowId)
         )
@@ -137,7 +137,7 @@ internal class RetenoDatabaseManagerUserImpl(private val database: RetenoDatabas
 
         for (rowId: String in rowIds) {
             database.delete(
-                table = UserSchema.TABLE_NAME_USER,
+                table = UserSchema.TABLE_NAME,
                 whereClause = "${UserSchema.COLUMN_USER_ROW_ID}=?",
                 whereArgs = arrayOf(rowId)
             )

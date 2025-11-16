@@ -1,7 +1,7 @@
 package com.reteno.core.data.local.database.schema
 
 internal object UserSchema {
-    internal const val TABLE_NAME_USER = "User"
+    internal const val TABLE_NAME = "User"
 
     internal const val COLUMN_USER_ROW_ID = "user_row_id"
     internal const val COLUMN_DEVICE_ID = "deviceId"
@@ -12,7 +12,7 @@ internal object UserSchema {
     internal const val COLUMN_SYNCHRONIZED_WITH_BACKEND = "synchronizedWithBackend"
 
     internal const val SQL_CREATE_TABLE =
-        "CREATE TABLE IF NOT EXISTS $TABLE_NAME_USER" +
+        "CREATE TABLE IF NOT EXISTS $TABLE_NAME" +
                 "(" +
                 "$COLUMN_USER_ROW_ID INTEGER PRIMARY KEY, " +
                 "${DbSchema.COLUMN_TIMESTAMP} TIMESTAMP DEFAULT CURRENT_TIMESTAMP, " +
@@ -25,7 +25,7 @@ internal object UserSchema {
                 ")"
 
     internal const val SQL_UPGRADE_TABLE_VERSION_6 =
-        "ALTER TABLE $TABLE_NAME_USER ADD COLUMN $COLUMN_SYNCHRONIZED_WITH_BACKEND TEXT"
+        "ALTER TABLE $TABLE_NAME ADD COLUMN $COLUMN_SYNCHRONIZED_WITH_BACKEND TEXT"
 
     internal object UserAttributesSchema {
         internal const val TABLE_NAME_USER_ATTRIBUTES = "UserAttributes"
@@ -49,7 +49,7 @@ internal object UserSchema {
                     "$COLUMN_LANGUAGE_CODE TEXT, " +
                     "$COLUMN_TIME_ZONE TEXT, " +
                     "$COLUMN_CUSTOM_FIELDS TEXT, " +
-                    "FOREIGN KEY (${UserSchema.COLUMN_USER_ROW_ID}) REFERENCES ${UserSchema.TABLE_NAME_USER} (${UserSchema.COLUMN_USER_ROW_ID}) ON DELETE CASCADE" +
+                    "FOREIGN KEY (${UserSchema.COLUMN_USER_ROW_ID}) REFERENCES ${UserSchema.TABLE_NAME} (${UserSchema.COLUMN_USER_ROW_ID}) ON DELETE CASCADE" +
                     ")"
     }
 
@@ -69,7 +69,7 @@ internal object UserSchema {
                     "$COLUMN_TOWN TEXT, " +
                     "$COLUMN_ADDRESS TEXT, " +
                     "$COLUMN_POSTCODE TEXT, " +
-                    "FOREIGN KEY (${UserSchema.COLUMN_USER_ROW_ID}) REFERENCES ${UserSchema.TABLE_NAME_USER} (${UserSchema.COLUMN_USER_ROW_ID}) ON DELETE CASCADE" +
+                    "FOREIGN KEY (${UserSchema.COLUMN_USER_ROW_ID}) REFERENCES ${UserSchema.TABLE_NAME} (${UserSchema.COLUMN_USER_ROW_ID}) ON DELETE CASCADE" +
                     ")"
     }
 }
