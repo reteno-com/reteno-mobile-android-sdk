@@ -12,7 +12,7 @@ internal object PushOperationQueue {
      *
      * @param operation The operation that will be executed.
      */
-    fun addOperation(operation: () -> Unit) {
+    fun addOperation(operation: () -> Unit) = synchronized(operationQueue) {
         val catchableBlock: () -> Unit = {
             try {
                 operation.invoke()
@@ -28,7 +28,7 @@ internal object PushOperationQueue {
     /**
      * Sends the first operation from [PushOperationQueue] to [OperationQueue] for execution.
      */
-    fun nextOperation() {
+    fun nextOperation() = synchronized(operationQueue) {
         operationQueue.removeFirstOrNull()?.let {
             OperationQueue.addOperation(it)
         }
@@ -37,7 +37,7 @@ internal object PushOperationQueue {
     /**
      * Remove all push Operations that are in [PushOperationQueue]
      */
-    fun removeAllOperations() {
+    fun removeAllOperations() = synchronized(operationQueue) {
         operationQueue.clear()
     }
 }
