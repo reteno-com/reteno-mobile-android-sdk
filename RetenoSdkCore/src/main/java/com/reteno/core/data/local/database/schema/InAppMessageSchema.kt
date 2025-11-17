@@ -1,7 +1,7 @@
 package com.reteno.core.data.local.database.schema
 
 object InAppMessageSchema {
-    internal const val TABLE_NAME_IN_APP_MESSAGE = "InAppMessage"
+    internal const val TABLE_NAME = "InAppMessage"
 
     internal const val COLUMN_IAM_ROW_ID = "row_id"
     internal const val COLUMN_IAM_ID = "iamId"
@@ -14,7 +14,7 @@ object InAppMessageSchema {
     internal const val COLUMN_IAM_POSITION = "iamPosition"
 
     internal const val SQL_CREATE_TABLE =
-        "CREATE TABLE IF NOT EXISTS $TABLE_NAME_IN_APP_MESSAGE" +
+        "CREATE TABLE IF NOT EXISTS $TABLE_NAME" +
                 "(" +
                 "$COLUMN_IAM_ROW_ID INTEGER PRIMARY KEY, " +
                 "${DbSchema.COLUMN_TIMESTAMP} TIMESTAMP DEFAULT CURRENT_TIMESTAMP, " +
@@ -28,7 +28,7 @@ object InAppMessageSchema {
                 "$COLUMN_IAM_POSITION TEXT" +
                 ")"
 
-    internal const val SQL_UPGRADE_TABLE_VERSION_9 = "ALTER TABLE $TABLE_NAME_IN_APP_MESSAGE ADD COLUMN $COLUMN_IAM_POSITION TEXT"
+    internal const val SQL_UPGRADE_TABLE_VERSION_9 = "ALTER TABLE $TABLE_NAME ADD COLUMN $COLUMN_IAM_POSITION TEXT"
 
     internal object SegmentSchema {
         internal const val TABLE_NAME_SEGMENT = "Segment"
@@ -48,7 +48,7 @@ object InAppMessageSchema {
                     "$COLUMN_LAST_CHECK_TIME INTEGER, " +
                     "$COLUMN_CHECK_STATUS_CODE INTEGER, " +
                     "$COLUMN_RETRY_AFTER INTEGER, " +
-                    "FOREIGN KEY (${InAppMessageSchema.COLUMN_IAM_ROW_ID}) REFERENCES ${InAppMessageSchema.TABLE_NAME_IN_APP_MESSAGE} (${InAppMessageSchema.COLUMN_IAM_ROW_ID}) ON DELETE CASCADE" +
+                    "FOREIGN KEY (${InAppMessageSchema.COLUMN_IAM_ROW_ID}) REFERENCES ${InAppMessageSchema.TABLE_NAME} (${InAppMessageSchema.COLUMN_IAM_ROW_ID}) ON DELETE CASCADE" +
                     ")"
     }
 

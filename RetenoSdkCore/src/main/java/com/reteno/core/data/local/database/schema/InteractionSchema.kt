@@ -1,7 +1,7 @@
 package com.reteno.core.data.local.database.schema
 
 internal object InteractionSchema {
-    internal const val TABLE_NAME_INTERACTION = "Interaction"
+    internal const val TABLE_NAME = "Interaction"
 
     internal const val COLUMN_INTERACTION_ROW_ID = "row_id"
 
@@ -12,7 +12,7 @@ internal object InteractionSchema {
     internal const val COLUMN_INTERACTION_ACTION = "action"
 
     internal const val SQL_CREATE_TABLE =
-        "CREATE TABLE IF NOT EXISTS $TABLE_NAME_INTERACTION" +
+        "CREATE TABLE IF NOT EXISTS $TABLE_NAME" +
                 "(" +
                 "$COLUMN_INTERACTION_ROW_ID INTEGER PRIMARY KEY, " +
                 "${DbSchema.COLUMN_TIMESTAMP} TIMESTAMP DEFAULT CURRENT_TIMESTAMP, " +
@@ -24,7 +24,7 @@ internal object InteractionSchema {
                 ")"
 
     internal const val SQL_UPGRADE_TABLE_VERSION_4 =
-        "ALTER TABLE $TABLE_NAME_INTERACTION ADD COLUMN $COLUMN_INTERACTION_ACTION TEXT"
+        "ALTER TABLE $TABLE_NAME ADD COLUMN $COLUMN_INTERACTION_ACTION TEXT"
 
     fun getAllColumns(): Array<String> = arrayOf(
         COLUMN_INTERACTION_ROW_ID,

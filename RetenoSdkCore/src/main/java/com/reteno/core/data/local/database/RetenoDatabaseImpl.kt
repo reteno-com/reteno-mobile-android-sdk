@@ -18,7 +18,6 @@ import com.reteno.core.data.local.database.schema.DeviceSchema
 import com.reteno.core.data.local.database.schema.EventsSchema
 import com.reteno.core.data.local.database.schema.InAppInteractionSchema
 import com.reteno.core.data.local.database.schema.InAppMessageSchema
-import com.reteno.core.data.local.database.schema.InAppMessageSchema.TABLE_NAME_IN_APP_MESSAGE
 import com.reteno.core.data.local.database.schema.InteractionRequestSchema
 import com.reteno.core.data.local.database.schema.InteractionSchema
 import com.reteno.core.data.local.database.schema.LogEventSchema
@@ -74,84 +73,34 @@ internal class RetenoDatabaseImpl(private val context: Context) : RetenoDatabase
         /*@formatter:on*/
         createTables(db)
         if (oldVersion == 1 && newVersion > 1) {
-            try {
+            runMigrationOperation(table = DeviceSchema.TABLE_NAME, oldVersion, newVersion) {
                 db.execSQL(DeviceSchema.SQL_UPGRADE_TABLE_VERSION_2)
-            } catch (e: SQLiteException) {
-                if (e.toString().startsWith("duplicate column name")) {
-                    /*@formatter:off*/ Logger.e(TAG, "onUpgrade(): Ignoring this exception", e)
-                    /*@formatter:on*/
-                } else {
-                    throw e
-                }
             }
         }
         if (oldVersion < 4) {
-            try {
-                /*@formatter:off*/ Logger.i(TAG, "onUpgrade(): start update table \"Interaction\"", " old DB version = ",oldVersion,", newVersion = ",newVersion )
-                /*@formatter:on*/
+            runMigrationOperation(table = InteractionSchema.TABLE_NAME, oldVersion, newVersion) {
                 db.execSQL(InteractionSchema.SQL_UPGRADE_TABLE_VERSION_4)
-            } catch (e: SQLiteException) {
-                if (e.toString().startsWith("duplicate column name")) {
-                    /*@formatter:off*/ Logger.e(TAG, "onUpgrade(): Ignoring this exception", e)
-                    /*@formatter:on*/
-                } else {
-                    throw e
-                }
             }
         }
         if (oldVersion < 6) {
-            try {
-                /*@formatter:off*/ Logger.i(TAG, "onUpgrade(): start update table \"User\"", " old DB version = ",oldVersion,", newVersion = ",newVersion )
-                /*@formatter:on*/
+            runMigrationOperation(table = UserSchema.TABLE_NAME, oldVersion, newVersion) {
                 db.execSQL(UserSchema.SQL_UPGRADE_TABLE_VERSION_6)
-            } catch (e: SQLiteException) {
-                if (e.toString().startsWith("duplicate column name")) {
-                    /*@formatter:off*/ Logger.e(TAG, "onUpgrade(): Ignoring this exception", e)
-                    /*@formatter:on*/
-                } else {
-                    throw e
-                }
             }
-            try {
-                /*@formatter:off*/ Logger.i(TAG, "onUpgrade(): start update table \"Device\"", " old DB version = ",oldVersion,", newVersion = ",newVersion )
-                /*@formatter:on*/
+            runMigrationOperation(table = DeviceSchema.TABLE_NAME, oldVersion, newVersion) {
                 db.execSQL(DeviceSchema.SQL_UPGRADE_TABLE_VERSION_6)
-            } catch (e: SQLiteException) {
-                if (e.toString().startsWith("duplicate column name")) {
-                    /*@formatter:off*/ Logger.e(TAG, "onUpgrade(): Ignoring this exception", e)
-                    /*@formatter:on*/
-                } else {
-                    throw e
-                }
             }
         }
         if (oldVersion < 8) {
-            try {
-                /*@formatter:off*/ Logger.i(TAG, "onUpgrade(): start update table \"Device\"", " old DB version = ",oldVersion,", newVersion = ",newVersion )
-                /*@formatter:on*/
+            runMigrationOperation(table = DeviceSchema.TABLE_NAME, oldVersion, newVersion) {
                 db.execSQL(DeviceSchema.SQL_UPGRADE_TABLE_VERSION_8_EMAIL)
+            }
+            runMigrationOperation(table = DeviceSchema.TABLE_NAME, oldVersion, newVersion) {
                 db.execSQL(DeviceSchema.SQL_UPGRADE_TABLE_VERSION_8_PHONE)
-            } catch (e: SQLiteException) {
-                if (e.toString().startsWith("duplicate column name")) {
-                    /*@formatter:off*/ Logger.e(TAG, "onUpgrade(): Ignoring this exception", e)
-                    /*@formatter:on*/
-                } else {
-                    throw e
-                }
             }
         }
         if (oldVersion < 9) {
-            try {
-                /*@formatter:off*/ Logger.i(TAG, "onUpgrade(): start update table \"${TABLE_NAME_IN_APP_MESSAGE}\"", " old DB version = ",oldVersion,", newVersion = ",newVersion )
-                /*@formatter:on*/
+            runMigrationOperation(table = InAppMessageSchema.TABLE_NAME, oldVersion, newVersion) {
                 db.execSQL(InAppMessageSchema.SQL_UPGRADE_TABLE_VERSION_9)
-            } catch (e: SQLiteException) {
-                if (e.toString().startsWith("duplicate column name")) {
-                    /*@formatter:off*/ Logger.e(TAG, "onUpgrade(): Ignoring this exception", e)
-                    /*@formatter:on*/
-                } else {
-                    throw e
-                }
             }
         }
     }
@@ -397,8 +346,7 @@ internal class RetenoDatabaseImpl(private val context: Context) : RetenoDatabase
                 /*@formatter:off*/ Log.e(TAG, "delete(): Error under delete transaction under table: $table with whereClause: $whereClause and whereArgs: $whereArgs", e)
                 /*@formatter:on*/
                 e.printStackTrace()
-            }
-            finally {
+            } finally {
                 try {
                     writableSQLDatabase.endTransaction() // May throw if transaction was never opened or DB is full.
                 } catch (e: IllegalStateException) {
@@ -414,7 +362,11 @@ internal class RetenoDatabaseImpl(private val context: Context) : RetenoDatabase
         return count
     }
 
-    override fun getRowCount(tableName: String, whereClause: String?, whereArgs: Array<String?>?): Long {
+    override fun getRowCount(
+        tableName: String,
+        whereClause: String?,
+        whereArgs: Array<String?>?
+    ): Long {
         var count: Long = 0
 
         try {
@@ -527,6 +479,26 @@ internal class RetenoDatabaseImpl(private val context: Context) : RetenoDatabase
             onUpgrade(getSQLiteDatabase(), 1, Integer.MAX_VALUE)
             /*@formatter:off*/ Logger.e(TAG, "attemptToMitigateSqlException(): Upgrade database SUCCESS", ex)
             /*@formatter:on*/
+        }
+    }
+
+    private fun runMigrationOperation(
+        table: String,
+        fromVersion: Int,
+        toVersion: Int,
+        operation: () -> Unit
+    ) {
+        try {
+            /*@formatter:off*/ Logger.i(TAG, "onUpgrade(): start update table \"${table}\"", " old DB version = ", fromVersion,", newVersion = ", toVersion)
+            /*@formatter:on*/
+            operation()
+        } catch (e: SQLiteException) {
+            if (e.message.orEmpty().contains("duplicate column name")) {
+                /*@formatter:off*/ Logger.e(TAG, "onUpgrade(): Ignoring this exception", e)
+                /*@formatter:on*/
+            } else {
+                Logger.e(TAG, "onUpgrade(): Unexpected exception while migrating database", e)
+            }
         }
     }
 

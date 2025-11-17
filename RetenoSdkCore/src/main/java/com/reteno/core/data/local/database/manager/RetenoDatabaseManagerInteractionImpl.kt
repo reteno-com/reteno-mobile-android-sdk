@@ -98,7 +98,7 @@ internal class RetenoDatabaseManagerInteractionImpl(private val database: Reteno
         val contentValues = ContentValues()
         contentValues.putInteraction(interaction)
         database.insert(
-            table = InteractionSchema.TABLE_NAME_INTERACTION,
+            table = InteractionSchema.TABLE_NAME,
             contentValues = contentValues
         )
         contentValues.clear()
@@ -113,7 +113,7 @@ internal class RetenoDatabaseManagerInteractionImpl(private val database: Reteno
         var cursor: Cursor? = null
         try {
             cursor = database.query(
-                table = InteractionSchema.TABLE_NAME_INTERACTION,
+                table = InteractionSchema.TABLE_NAME,
                 columns = InteractionSchema.getAllColumns(),
                 orderBy = "${DbSchema.COLUMN_TIMESTAMP} ASC",
                 limit = limit?.toString()
@@ -135,7 +135,7 @@ internal class RetenoDatabaseManagerInteractionImpl(private val database: Reteno
                         /*@formatter:on*/
                     } else {
                         database.delete(
-                            table = InteractionSchema.TABLE_NAME_INTERACTION,
+                            table = InteractionSchema.TABLE_NAME,
                             whereClause = "${InteractionSchema.COLUMN_INTERACTION_ROW_ID}=?",
                             whereArgs = arrayOf(rowId.toString())
                         )
@@ -154,14 +154,14 @@ internal class RetenoDatabaseManagerInteractionImpl(private val database: Reteno
     }
 
     override fun getInteractionCount(): Long =
-        database.getRowCount(InteractionSchema.TABLE_NAME_INTERACTION)
+        database.getRowCount(InteractionSchema.TABLE_NAME)
 
     override fun deleteInteraction(interaction: InteractionDb): Boolean {
         /*@formatter:off*/ Logger.i(TAG, "deleteInteraction(): ", "interaction = [", interaction, "]")
         /*@formatter:on*/
 
         val removedRecordsCount = database.delete(
-            table = InteractionSchema.TABLE_NAME_INTERACTION,
+            table = InteractionSchema.TABLE_NAME,
             whereClause = "${InteractionSchema.COLUMN_INTERACTION_ROW_ID}=?",
             whereArgs = arrayOf(interaction.rowId)
         )
@@ -179,7 +179,7 @@ internal class RetenoDatabaseManagerInteractionImpl(private val database: Reteno
         val interactionsList = mutableListOf<InteractionDb>()
         try {
             cursor = database.query(
-                table = InteractionSchema.TABLE_NAME_INTERACTION,
+                table = InteractionSchema.TABLE_NAME,
                 columns = InteractionSchema.getAllColumns(),
                 selection = whereClause
             )
@@ -199,7 +199,7 @@ internal class RetenoDatabaseManagerInteractionImpl(private val database: Reteno
                         /*@formatter:on*/
                     } else {
                         database.delete(
-                            table = InteractionSchema.TABLE_NAME_INTERACTION,
+                            table = InteractionSchema.TABLE_NAME,
                             whereClause = "${InteractionSchema.COLUMN_INTERACTION_ROW_ID}=?",
                             whereArgs = arrayOf(rowId.toString())
                         )
@@ -216,7 +216,7 @@ internal class RetenoDatabaseManagerInteractionImpl(private val database: Reteno
         }
 
         database.delete(
-            table = InteractionSchema.TABLE_NAME_INTERACTION,
+            table = InteractionSchema.TABLE_NAME,
             whereClause = whereClause
         )
 

@@ -118,7 +118,9 @@ class RetenoInternalImpl(
             }
             applyConfig(config)
             if (isUserConfiguration) {
-                contactController.registerDevice()
+                withContext(ioDispatcher) {
+                    contactController.registerDevice()
+                }
             }
             initWaitCondition.complete(Unit)
             if (isUserConfiguration) {
