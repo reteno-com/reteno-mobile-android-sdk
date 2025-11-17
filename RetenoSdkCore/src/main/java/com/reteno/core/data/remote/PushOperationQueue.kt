@@ -12,17 +12,19 @@ internal object PushOperationQueue {
      *
      * @param operation The operation that will be executed.
      */
-    fun addOperation(operation: () -> Unit) = synchronized(operationQueue) {
-        val catchableBlock: () -> Unit = {
-            try {
-                operation.invoke()
-            } catch (ex: Throwable) {
-                /*@formatter:off*/ Logger.e("TAG", "addOperation(): ", ex)
-                /*@formatter:on*/
+    fun addOperation(operation: () -> Unit) {
+        synchronized(operationQueue) {
+            val catchableBlock: () -> Unit = {
+                try {
+                    operation.invoke()
+                } catch (ex: Throwable) {
+                    /*@formatter:off*/ Logger.e("TAG", "addOperation(): ", ex)
+                    /*@formatter:on*/
+                }
             }
-        }
 
-        operationQueue.add(catchableBlock)
+            operationQueue.add(catchableBlock)
+        }
     }
 
     /**
