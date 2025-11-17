@@ -72,14 +72,26 @@ internal class IamViewImpl(
             LIFECYCLE_KEY,
             RetenoLifecycleCallBacksAdapter(
                 onStart = {
-                    Logger.i(TAG, "IamActivityLifecycle.onStart(): ", "isViewShown = [", isViewShown.get(), "]")
+                    Logger.i(
+                        TAG,
+                        "IamActivityLifecycle.onStart(): ",
+                        "isViewShown = [",
+                        isViewShown.get(),
+                        "]"
+                    )
                     if (isViewShown.get()) {
                         showIamOnceReady(DELAY_UI_ATTEMPTS)
                     }
                 },
                 onStop = {
                     if (activityHelper.currentActivity != it) return@RetenoLifecycleCallBacksAdapter
-                    Logger.i(TAG, "IamActivityLifecycle.onStop(): ", "isViewShown = [", isViewShown.get(), "]")
+                    Logger.i(
+                        TAG,
+                        "IamActivityLifecycle.onStop(): ",
+                        "isViewShown = [",
+                        isViewShown.get(),
+                        "]"
+                    )
                     iamContainer?.dismiss()
                 }
             )
@@ -219,29 +231,24 @@ internal class IamViewImpl(
         /*@formatter:off*/ Logger.i(TAG, "initialize(): ", "widgetId = [", interactionId, "]")
         /*@formatter:on*/
         try {
-            try {
-                if (pauseIncomingPushInApps.get() && pauseBehaviour == InAppPauseBehaviour.SKIP_IN_APPS) {
-                    return
-                }
-                if (isViewShown.get()) {
-                    teardown()
-                }
-                this.interactionId = interactionId
-                inAppSource = InAppSource.PUSH_NOTIFICATION
-                messageId = null
-                messageInstanceId = null
+            if (pauseIncomingPushInApps.get() && pauseBehaviour == InAppPauseBehaviour.SKIP_IN_APPS) {
+                return
+            }
+            if (isViewShown.get()) {
+                teardown()
+            }
+            this.interactionId = interactionId
+            inAppSource = InAppSource.PUSH_NOTIFICATION
+            messageId = null
+            messageInstanceId = null
 
-                iamShowScope.launch {
-                    inAppLifecycleCallback?.beforeDisplay(createInAppData())
-                    iamController.fetchIamFullHtml(interactionId)
-                }
-            } catch (e: Exception) {
-                /*@formatter:off*/ Logger.e(TAG, "initialize(): ", e)
-                /*@formatter:on*/
+            iamShowScope.launch {
+                inAppLifecycleCallback?.beforeDisplay(createInAppData())
+                iamController.fetchIamFullHtml(interactionId)
             }
         } catch (e: Exception) {
             /*@formatter:off*/ Logger.e(TAG, "initialize(): ", e)
-            /*@formatter:on*/
+                /*@formatter:on*/
         }
     }
 
