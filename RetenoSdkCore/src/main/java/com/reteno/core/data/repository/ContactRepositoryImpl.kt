@@ -39,11 +39,36 @@ internal class ContactRepositoryImpl(
         }
     }
 
+    override suspend fun saveDeviceData(device: Device) {
+        /*@formatter:off*/ Logger.i(TAG, "saveDeviceData(): ", "device = [" , device , "]")
+        /*@formatter:on*/
+
+        val newDevice: DeviceDb = device.toDb()
+        val savedDevices: List<DeviceDb> = databaseManagerDevice.getDevices()
+        val mappedSavedDevices = savedDevices.map {
+            it.copy(
+                rowId = null,
+                createdAt = 0L,
+                isSynchronizedWithBackend = null
+            )
+        }
+
+        if (mappedSavedDevices.contains(newDevice).not()) {
+            databaseManagerDevice.insertDevice(device.toDb())
+            /*@formatter:off*/ Logger.i(TAG, "saveDeviceData(): ", "Device saved")
+            /*@formatter:on*/
+        } else {
+            /*@formatter:off*/ Logger.i(TAG, "saveDeviceData(): ", "Device NOT saved. Device is already present in database. Duplicates are not saved")
+            /*@formatter:on*/
+        }
+    }
+
     override fun saveDeviceDataImmediate(device: Device) {
         onSaveDeviceData(device)
     }
 
-    override fun saveUserData(user: User, toParallelWork: Boolean) {
+    @Deprecated("Use suspend alternative")
+    override fun saveUserDataDeprecated(user: User, toParallelWork: Boolean) {
         /*@formatter:off*/ Logger.i(TAG, "saveUserData(): ", "user = [" , user , "]")
         /*@formatter:on*/
         if (toParallelWork) {
@@ -53,7 +78,13 @@ internal class ContactRepositoryImpl(
         }
     }
 
+    override suspend fun saveUserData(user: User) {
+        databaseManagerUser.insertUser(user.toDb(configRepository.getDeviceId()))
+    }
+
     override fun pushDeviceData() {
+        /*@formatter:off*/ Logger.i(TAG, "pushDeviceData(): ", "")
+        /*@formatter:on*/
         val devices: List<DeviceDb> = databaseManagerDevice.getDevices()
 
         val latestDevice = devices.filter { it.isSynchronizedWithBackend != BooleanDb.TRUE }
@@ -155,6 +186,100 @@ internal class ContactRepositoryImpl(
                     }
                 }
 
+            })
+    }
+
+    override fun pushDeviceDataImmediate() {
+        /*@formatter:off*/ Logger.i(TAG, "pushDeviceData(): ", "")
+        /*@formatter:on*/
+        val devices: List<DeviceDb> = databaseManagerDevice.getDevices()
+
+        val latestDevice = devices.filter { it.isSynchronizedWithBackend != BooleanDb.TRUE }
+            .maxByOrNull {
+                it.createdAt
+            }
+
+        val latestSynchedDevice = devices.filter { it.isSynchronizedWithBackend == BooleanDb.TRUE }
+            .maxByOrNull {
+                it.createdAt
+            }
+
+        val requestModel = createDeviceRequestModel(latestDevice, latestSynchedDevice) ?: return
+
+        /*@formatter:off*/ Logger.i(TAG, "pushDeviceData(): ", "device = [" , requestModel , "]")
+        /*@formatter:on*/
+        apiClient.postSync(
+            url = ApiContract.MobileApi.Device,
+            jsonBody = requestModel.toJson(),
+            responseHandler = object : ResponseCallback {
+                override fun onSuccess(response: String) {
+                    /*@formatter:off*/ Logger.i(TAG, "pushDeviceData, onSuccess(): ", "response = [" , response , "]")
+                    /*@formatter:on*/
+                    configRepository.saveDeviceRegistered(true)
+                    databaseManagerDevice.deleteDevices(devices)
+                    latestDevice?.let {
+                        databaseManagerDevice.insertDevice(it.copy(isSynchronizedWithBackend = BooleanDb.TRUE))
+                    }
+                    if (databaseManagerDevice.getUnSyncedDeviceCount() > 0) {
+                        pushDeviceData()
+                    }
+                }
+
+                override fun onFailure(statusCode: Int?, response: String?, throwable: Throwable?) {
+                    /*@formatter:off*/ Logger.i(TAG, "pushDeviceData, onFailure(): ", "statusCode = [" , statusCode , "], response = [" , response , "], throwable = [" , throwable , "]")
+                    /*@formatter:on*/
+                    if (isNonRepeatableError(statusCode)) {
+                        databaseManagerDevice.deleteDevices(devices)
+                        latestDevice?.let {
+                            databaseManagerDevice.insertDevice(it.copy(isSynchronizedWithBackend = BooleanDb.TRUE))
+                        }
+                        if (databaseManagerDevice.getUnSyncedDeviceCount() > 0) {
+                            pushDeviceData()
+                        }
+                    }
+                }
+
+            })
+    }
+
+    override fun pushUserDataImmediate() {
+        val users: List<UserDb> = databaseManagerUser.getUsers()
+
+        val latestUsers = users.filter { it.isSynchronizedWithBackend != BooleanDb.TRUE }
+
+        val latestSynchedUser = users.filter { it.isSynchronizedWithBackend == BooleanDb.TRUE }
+            .maxByOrNull {
+                it.createdAt
+            }
+
+        val requestModel = createUserRequestModel(latestUsers, latestSynchedUser)
+
+        if (requestModel == null) {
+            databaseManagerUser.deleteUsers(latestUsers)
+            return
+        }
+
+        /*@formatter:off*/ Logger.i(TAG, "pushUserData(): ", "user = [" , requestModel , "]")
+        /*@formatter:on*/
+        apiClient.postSync(
+            ApiContract.MobileApi.User,
+            requestModel.toJson(),
+            responseHandler = object : ResponseCallback {
+                override fun onSuccess(response: String) {
+                    /*@formatter:off*/ Logger.i(TAG, "onSuccess(): ", "response = [" , response , "]")
+                    /*@formatter:on*/
+                    databaseManagerUser.deleteUsers(users)
+                    databaseManagerUser.insertUser(requestModel.toDb().copy(isSynchronizedWithBackend = BooleanDb.TRUE))
+                }
+
+                override fun onFailure(statusCode: Int?, response: String?, throwable: Throwable?) {
+                    /*@formatter:off*/ Logger.i(TAG, "onFailure(): ", "statusCode = [" , statusCode , "], response = [" , response , "], throwable = [" , throwable , "]")
+                    /*@formatter:on*/
+                    if (isNonRepeatableError(statusCode)) {
+                        databaseManagerUser.deleteUsers(users)
+                        databaseManagerUser.insertUser(requestModel.toDb().copy(isSynchronizedWithBackend = BooleanDb.TRUE))
+                    }
+                }
             })
     }
 

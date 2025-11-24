@@ -12,6 +12,8 @@ import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.work.Configuration
 import com.reteno.core.data.local.config.DeviceIdMode
 import com.reteno.core.di.ServiceLocator
+import com.reteno.core.domain.action.user.UpdateMultiAccountUserAttributesAction
+import com.reteno.core.domain.action.user.UpdateUserAttributesAction
 import com.reteno.core.domain.controller.ScreenTrackingController
 import com.reteno.core.domain.model.ecom.EcomEvent
 import com.reteno.core.domain.model.event.Event
@@ -34,7 +36,6 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.concurrent.atomic.AtomicBoolean
@@ -54,6 +55,8 @@ class RetenoInternalImpl(
 
     //TODO make this property private
     val serviceLocator: ServiceLocator = ServiceLocator(application)
+    private val updateAttributesAction by lazy { UpdateUserAttributesAction(serviceLocator, ioDispatcher) }
+    private val updateMultiAccAttributesAction by lazy { UpdateMultiAccountUserAttributesAction(serviceLocator, ioDispatcher) }
     private val permissionDelegate = PermissionActivityDelegate(application)
     private val activityHelper: RetenoActivityHelper by lazy { serviceLocator.retenoActivityHelperProvider.get() }
 
@@ -77,8 +80,11 @@ class RetenoInternalImpl(
     //Safe to call before config init
     private val interactionCache by lazy { serviceLocator.interactionCacheProvider.get() }
 
-    private var isStarted: AtomicBoolean = AtomicBoolean(false)
+    private var isStartedAtomic: AtomicBoolean = AtomicBoolean(false)
     private var receivedConfigFromUser = false
+
+    val isStarted: Boolean
+        get() = isStartedAtomic.get()
 
     val isInitialized: Boolean
         get() = initWaitCondition.isCompleted
@@ -180,6 +186,8 @@ class RetenoInternalImpl(
         if (isOsVersionSupported()) {
             activityHelper.enableLifecycleCallbacks(application)
             appLifecycleOwner.lifecycle.addObserver(this@RetenoInternalImpl)
+            updateAttributesAction.start(syncScope)
+            updateMultiAccAttributesAction.start(syncScope)
             syncScope.launch(ioDispatcher) {
                 preventANR()
                 sharedPrefsManager.getCachedConfiguration()?.let {
@@ -225,7 +233,7 @@ class RetenoInternalImpl(
                     contactController.checkIfDeviceRequestSentThisSession()
                 }
                 sessionHandler.start()
-                if (!isStarted.getAndSet(true)) {
+                if (!isStartedAtomic.getAndSet(true)) {
                     withContext(ioDispatcher) {
                         iamController.getInAppMessages()
                     }
@@ -246,7 +254,7 @@ class RetenoInternalImpl(
         }
         /*@formatter:off*/ Logger.i(TAG, "stop(): ")
         /*@formatter:on*/
-        isStarted.set(false)
+        isStartedAtomic.set(false)
         try {
             sessionHandler.stop()
             stopPushScheduler()
@@ -289,28 +297,7 @@ class RetenoInternalImpl(
             throw exception
         }
 
-        syncScope.launch(ioDispatcher) {
-            try {
-                if (contactController.getDeviceIdSuffix() != null) {
-                    stop()
-                    withContext(ioDispatcher) {
-                        sessionHandler.clearSessionForced()
-                        contactController.setDeviceIdSuffix(null)
-                        contactController.setExternalIdAndUserData(externalUserId, user)
-                    }
-                    start()
-                } else {
-                    contactController.setExternalIdAndUserData(externalUserId, user)
-                }
-                if (isStarted.get()) {
-                    delay(5000L) //There is a requirement to refresh segmentation in 5 sec after user change his attributes
-                    iamController.refreshSegmentation()
-                }
-            } catch (ex: Throwable) {
-                /*@formatter:off*/ Logger.e(TAG, "setUserAttributes(): externalUserId = [$externalUserId], user = [$user]", ex)
-            /*@formatter:on*/
-            }
-        }
+        updateAttributesAction.postUpdateRequest(externalUserId, user)
     }
 
     override fun setMultiAccountUserAttributes(externalUserId: String, user: User?) = runAfterInit {
@@ -325,19 +312,7 @@ class RetenoInternalImpl(
             /*@formatter:on*/
             throw exception
         }
-        syncScope.launch(ioDispatcher) {
-            if (contactController.getDeviceIdSuffix() != externalUserId) {
-                withContext(mainDispatcher) {
-                    stop()
-                }
-                sessionHandler.clearSessionForced()
-                contactController.setDeviceIdSuffix(externalUserId)
-                withContext(mainDispatcher) {
-                    start()
-                }
-            }
-            contactController.setExternalIdAndUserData(externalUserId, user)
-        }
+        updateMultiAccAttributesAction.postUpdateRequest(externalUserId, user)
     }
 
     override fun setAnonymousUserAttributes(userAttributes: UserAttributesAnonymous) =
