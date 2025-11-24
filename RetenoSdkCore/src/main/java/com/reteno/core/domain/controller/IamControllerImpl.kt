@@ -256,7 +256,7 @@ internal class IamControllerImpl(
         }
     }
 
-    private fun sortMessages(inAppMessages: List<InAppMessage>) {
+    private suspend fun sortMessages(inAppMessages: List<InAppMessage>) {
         val inAppsWithEvents = mutableListOf<InAppWithEvent>()
         val inAppsWithTimer = mutableListOf<InAppWithTime>()
         val inAppsOnAppStart = mutableListOf<InAppMessage>()
@@ -297,9 +297,7 @@ internal class IamControllerImpl(
         if (inAppsWithEvents.isNotEmpty()) {
             inAppsWaitingForEvent = inAppsWithEvents
         }
-        scope.launch {
-            tryShowInAppFromList(inAppMessages = inAppsOnAppStart, showingOnAppStart = true)
-        }
+        tryShowInAppFromList(inAppMessages = inAppsOnAppStart, showingOnAppStart = true)
     }
 
     private suspend fun tryShowInAppFromList(

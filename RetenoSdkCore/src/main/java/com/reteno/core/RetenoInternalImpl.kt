@@ -223,11 +223,13 @@ class RetenoInternalImpl(
             try {
                 withContext(ioDispatcher) {
                     contactController.checkIfDeviceRequestSentThisSession()
-                    if (!isStarted.getAndSet(true)) {
+                }
+                sessionHandler.start()
+                if (!isStarted.getAndSet(true)) {
+                    withContext(ioDispatcher) {
                         iamController.getInAppMessages()
                     }
                 }
-                sessionHandler.start()
                 scheduleController.startScheduler()
                 iamView.start()
             } catch (ex: Throwable) {
@@ -520,24 +522,25 @@ class RetenoInternalImpl(
         }
     }
 
-    override fun recordInteraction(id: String, status: InteractionStatus, forcePush: Boolean) = runAfterInit {
-        if (!isOsVersionSupported()) {
-            return@runAfterInit
-        }
-        /*@formatter:off*/ Logger.i(TAG, "recordInteraction(): ", "status = [" , status , "]", "forcePush = [", forcePush , "]")
+    override fun recordInteraction(id: String, status: InteractionStatus, forcePush: Boolean) =
+        runAfterInit {
+            if (!isOsVersionSupported()) {
+                return@runAfterInit
+            }
+            /*@formatter:off*/ Logger.i(TAG, "recordInteraction(): ", "status = [" , status , "]", "forcePush = [", forcePush , "]")
         /*@formatter:on*/
-        syncScope.launch(ioDispatcher) {
-            try {
-                interactionController.onInteraction(id, status)
-                if (forcePush) {
-                    forcePushData()
-                }
-            } catch (ex: Throwable) {
-                /*@formatter:off*/ Logger.e(TAG, "recordInteraction(): status = [$status]", ex)
+            syncScope.launch(ioDispatcher) {
+                try {
+                    interactionController.onInteraction(id, status)
+                    if (forcePush) {
+                        forcePushData()
+                    }
+                } catch (ex: Throwable) {
+                    /*@formatter:off*/ Logger.e(TAG, "recordInteraction(): status = [$status]", ex)
             /*@formatter:on*/
+                }
             }
         }
-    }
 
     override fun canPresentMessages(): Boolean {
         if (!isOsVersionSupported()) {
