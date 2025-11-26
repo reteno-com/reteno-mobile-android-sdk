@@ -156,7 +156,7 @@ class RetenoImplTest : BaseRobolectricTest() {
         }
 
     @Test
-    fun givenExceptionThrown_whenSetUserData_thenExceptionSentToLogger() = runRetenoTest {retenoImpl ->
+    fun givenExceptionThrown_whenSetUserData_thenExceptionSentToLogger() = runRetenoTest { retenoImpl ->
         // Given
         coEvery { contactController.setExternalIdAndUserData(any(), any()) } throws EXCEPTION
         coEvery { contactController.getDeviceIdSuffix() } returns null
@@ -176,7 +176,7 @@ class RetenoImplTest : BaseRobolectricTest() {
         verify(exactly = 1) {
             Logger.e(
                 any(),
-                eq("setUserAttributes(): externalUserId = [$EXTERNAL_USER_ID], user = [$userFull]"),
+                eq("setUserAttributes():"),
                 eq(EXCEPTION)
             )
         }

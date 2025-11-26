@@ -14,6 +14,7 @@ import com.reteno.core.domain.model.user.UserAttributesAnonymous
 import com.reteno.core.domain.model.user.UserCustomField
 import com.reteno.core.util.Logger
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.impl.annotations.RelaxedMockK
 import io.mockk.mockkObject
@@ -190,7 +191,7 @@ class ContactControllerTest : BaseUnitTest() {
         // Then
         val expectedDevice =
             Device.createDevice(DEVICE_ID_ANDROID, EXTERNAL_DEVICE_ID, FCM_TOKEN_NEW)
-        verify(exactly = 0) { contactRepository.saveDeviceData(eq(expectedDevice)) }
+        verify(exactly = 0) { contactRepository.saveDeviceData(eq(expectedDevice), toParallelWork = eq(false)) }
     }
 
     @Test
@@ -207,7 +208,7 @@ class ContactControllerTest : BaseUnitTest() {
         // Then
         verify(exactly = 0) { configRepository.saveFcmToken(FCM_TOKEN_NEW) }
         val expectedDevice = Device.createDevice(DEVICE_ID_ANDROID, null, FCM_TOKEN_NEW)
-        verify(exactly = 0) { contactRepository.saveDeviceData(expectedDevice) }
+        verify(exactly = 0) { contactRepository.saveDeviceData(expectedDevice, toParallelWork = false) }
     }
 
     @Test
@@ -232,7 +233,7 @@ class ContactControllerTest : BaseUnitTest() {
     }
 
     @Test
-    fun givenUserFull_whenSetUserData_thenContactRepositoryCalled() {
+    fun givenUserFull_whenSetUserData_thenContactRepositoryCalled() = runTest {
         // Given
         val user = getUser()
         every { Validator.validateUser(user) } returns user
@@ -241,11 +242,11 @@ class ContactControllerTest : BaseUnitTest() {
         SUT.setUserData(user)
 
         // Then
-        verify(exactly = 1) { contactRepository.saveUserData(eq(user), false) }
+        coVerify(exactly = 1) { contactRepository.saveUserData(eq(user)) }
     }
 
     @Test
-    fun givenUserNull_whenSetUserData_thenContactRepositoryNotCalled() {
+    fun givenUserNull_whenSetUserData_thenContactRepositoryNotCalled() = runTest {
         // Given
         val user = null
 
@@ -253,11 +254,11 @@ class ContactControllerTest : BaseUnitTest() {
         SUT.setUserData(user)
 
         // Then
-        verify(exactly = 0) { contactRepository.saveUserData(any()) }
+        coVerify(exactly = 0) { contactRepository.saveUserData(any()) }
     }
 
     @Test
-    fun givenInvalidUser_whenSetUserData_thenContactRepositoryNotCalled() {
+    fun givenInvalidUser_whenSetUserData_thenContactRepositoryNotCalled() = runTest {
         val user = getUser()
         every { Validator.validateUser(user) } returns null
 
@@ -265,7 +266,7 @@ class ContactControllerTest : BaseUnitTest() {
         SUT.setUserData(user)
 
         // Then
-        verify(exactly = 0) { contactRepository.saveUserData(any()) }
+        coVerify(exactly = 0) { contactRepository.saveUserData(any()) }
         verify(exactly = 1) { Logger.captureMessage(eq("ContactController.setUserData(): user = [$user]")) }
     }
 
@@ -322,7 +323,7 @@ class ContactControllerTest : BaseUnitTest() {
 
         // Then
         verify(exactly = 0) { configRepository.saveNotificationsEnabled(any()) }
-        verify(exactly = 0) { contactRepository.saveDeviceData(any()) }
+        verify(exactly = 0) { contactRepository.saveDeviceData(any(), toParallelWork = false) }
     }
 
     @Test
@@ -336,7 +337,7 @@ class ContactControllerTest : BaseUnitTest() {
 
         // Then
         verify(exactly = 0) { configRepository.saveNotificationsEnabled(any()) }
-        verify(exactly = 0) { contactRepository.saveDeviceData(any()) }
+        verify(exactly = 0) { contactRepository.saveDeviceData(any(), false) }
     }
 
     @Test
@@ -382,7 +383,8 @@ class ContactControllerTest : BaseUnitTest() {
             // When
             SUT.registerDevice()
             // Then
-            verify(exactly = 1) { contactRepository.saveDeviceDataImmediate(expectedDevice) }
+            coVerify(exactly = 1) { contactRepository.saveDeviceData(expectedDevice) }
+            coVerify(exactly = 1) { contactRepository.pushDeviceDataImmediate() }
         }
 
     @Test
@@ -395,7 +397,7 @@ class ContactControllerTest : BaseUnitTest() {
             SUT.registerDevice()
 
             // Then
-            verify(exactly = 0) { contactRepository.saveDeviceData(any()) }
+            verify(exactly = 0) { contactRepository.saveDeviceData(any(), false) }
         }
 
     @Test
@@ -409,7 +411,7 @@ class ContactControllerTest : BaseUnitTest() {
         SUT.setAnonymousUserAttributes(anonymousUserAttributes)
 
         // Then
-        verify(exactly = 1) { contactRepository.saveUserData(eq(expectedUserData), any()) }
+        verify(exactly = 1) { contactRepository.saveUserDataDeprecated(eq(expectedUserData), any()) }
     }
 
     @Test
@@ -422,7 +424,7 @@ class ContactControllerTest : BaseUnitTest() {
         SUT.setAnonymousUserAttributes(anonymousUserAttributes)
 
         // Then
-        verify(exactly = 0) { contactRepository.saveUserData(any()) }
+        verify(exactly = 0) { contactRepository.saveUserDataDeprecated(any()) }
         verify(exactly = 1) { Logger.captureMessage(eq("setAnonymousUserAttributes(): attributes = [$anonymousUserAttributes]")) }
     }
 

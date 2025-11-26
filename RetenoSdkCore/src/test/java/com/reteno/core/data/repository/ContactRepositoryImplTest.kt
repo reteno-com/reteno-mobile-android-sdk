@@ -27,6 +27,7 @@ import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkStatic
 import io.mockk.verify
+import kotlinx.coroutines.test.runTest
 import org.junit.AfterClass
 import org.junit.BeforeClass
 import org.junit.Test
@@ -108,7 +109,7 @@ class ContactRepositoryImplTest : BaseRobolectricTest() {
         )
 
         // When
-        SUT.saveDeviceData(device)
+        SUT.saveDeviceData(device, toParallelWork = false)
 
         // Then
         verify(exactly = 1) { databaseManagerDevice.insertDevice(deviceDb) }
@@ -127,7 +128,7 @@ class ContactRepositoryImplTest : BaseRobolectricTest() {
         )
 
         // When
-        SUT.saveDeviceData(device)
+        SUT.saveDeviceData(device, toParallelWork = false)
 
         // Then
         verify(exactly = 0) { databaseManagerDevice.insertDevice(deviceDb) }
@@ -276,7 +277,7 @@ class ContactRepositoryImplTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun whenSendUsedData_thenCallUserToDbMapper() {
+    fun whenSendUsedData_thenCallUserToDbMapper() = runTest {
         // Given
         val user = getUser()
 
@@ -291,7 +292,7 @@ class ContactRepositoryImplTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun whenSaveUserAttributes_thenInsertDb() {
+    fun whenSaveUserAttributes_thenInsertDb() = runTest {
         // Given
         val user = getUser()
         every { configRepository.getDeviceId() } returns mockk(relaxed = true)

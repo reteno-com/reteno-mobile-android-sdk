@@ -40,7 +40,7 @@ class ContactController(
             if (pushContact) {
                 isDeviceSentThisSession.set(true)
                 val token = configRepository.getFcmToken()
-                onNewContact(token, toParallelWork = false)
+                onNewContactDeprecated(token, toParallelWork = false)
             }
             return true
         }
@@ -57,19 +57,19 @@ class ContactController(
         }
     }
 
-    fun setUserData(user: User?): Boolean {
+    suspend fun setUserData(user: User?): Boolean {
         /*@formatter:off*/ Logger.i(TAG, "setUserData(): ", "user = [" , user , "]")
         /*@formatter:on*/
-
-        user?.let { userTmp ->
-            Validator.validateUser(userTmp)?.let {
-                contactRepository.saveUserData(it, toParallelWork = false)
-                configRepository.setUserEmail(it.userAttributes?.email)
-                configRepository.setUserPhone(it.userAttributes?.phone)
-                return true
-            } ?: Logger.captureMessage("ContactController.setUserData(): user = [$userTmp]")
+        if (user == null) return false
+        val validatedUser = Validator.validateUser(user)
+        if (validatedUser == null) {
+            Logger.captureMessage("ContactController.setUserData(): user = [$user]")
+            return false
         }
-        return false
+        contactRepository.saveUserData(validatedUser)
+        configRepository.setUserEmail(validatedUser.userAttributes?.email)
+        configRepository.setUserPhone(validatedUser.userAttributes?.phone)
+        return true
     }
 
     fun setAnonymousUserAttributes(attributes: UserAttributesAnonymous) {
@@ -80,7 +80,7 @@ class ContactController(
             Validator.validateAnonymousUserAttributes(attributes)
         validAttributes?.let {
             val userData = User(it.toUserAttributes())
-            contactRepository.saveUserData(userData, toParallelWork = false)
+            contactRepository.saveUserDataDeprecated(userData, toParallelWork = false)
         } ?: Logger.captureMessage("setAnonymousUserAttributes(): attributes = [$attributes]")
     }
 
@@ -90,7 +90,7 @@ class ContactController(
         val oldToken = configRepository.getFcmToken()
         if (token != oldToken) {
             configRepository.saveFcmToken(token)
-            onNewContact(token, toParallelWork = false)
+            onNewContactDeprecated(token, toParallelWork = false)
             isDeviceSentThisSession.set(true)
         }
     }
@@ -111,7 +111,8 @@ class ContactController(
         /*@formatter:off*/ Logger.i(TAG, "registerDevice(): ")
         /*@formatter:on*/
         val token = configRepository.getFcmToken()
-        onNewContact(token, toParallelWork = false, pushImmediate = true)
+        onNewContact(token)
+        contactRepository.pushDeviceDataImmediate()
         isDeviceSentThisSession.set(true)
     }
 
@@ -121,7 +122,7 @@ class ContactController(
         if (isDeviceSentThisSession.get().not()) {
             contactRepository.deleteSynchedDevices()
             val token = configRepository.getFcmToken()
-            onNewContact(token, toParallelWork = false, pushImmediate = true)
+            onNewContactDeprecated(token, toParallelWork = false, pushImmediate = true)
             isDeviceSentThisSession.set(true)
         }
     }
@@ -134,11 +135,34 @@ class ContactController(
             isDeviceSentThisSession.set(true)
             configRepository.saveNotificationsEnabled(notificationsEnabled)
             val token = configRepository.getFcmToken()
-            onNewContact(token, notificationsEnabled = notificationsEnabled, toParallelWork = false)
+            onNewContactDeprecated(token, notificationsEnabled = notificationsEnabled, toParallelWork = false)
         }
     }
 
-    private fun onNewContact(
+    private suspend fun onNewContact(
+        fcmToken: String,
+        notificationsEnabled: Boolean? = null,
+    ) {
+        /*@formatter:off*/ Logger.i(TAG, "onNewContact(): ", "fcmToken = [", fcmToken, "], notificationsEnabled = [", notificationsEnabled, "]")
+        /*@formatter:on*/
+        if (fcmToken.isNotEmpty()) {
+            /*@formatter:off*/ Logger.i(TAG, "onNewContact(): ", "token AVAILABLE")
+            /*@formatter:on*/
+        }
+        val deviceId = configRepository.getDeviceId()
+        val contact = Device.createDevice(
+            deviceId = deviceId.id,
+            deviceIdSuffix = deviceId.idSuffix,
+            externalUserId = deviceId.externalId,
+            pushToken = fcmToken,
+            email = deviceId.email,
+            phone = deviceId.phone,
+            pushSubscribed = notificationsEnabled ?: configRepository.isNotificationsEnabled()
+        )
+        contactRepository.saveDeviceData(contact)
+    }
+
+    private fun onNewContactDeprecated(
         fcmToken: String,
         notificationsEnabled: Boolean? = null,
         toParallelWork: Boolean = false,
@@ -172,7 +196,10 @@ class ContactController(
         setExternalUserId(externalUserId, pushContact = false)
         setUserData(user)
         val token = configRepository.getFcmToken()
-        onNewContact(token, toParallelWork = false)
+        onNewContact(token)
+        contactRepository.pushDeviceDataImmediate()
+        isDeviceSentThisSession.set(true)
+        contactRepository.pushUserDataImmediate()
     }
 
     fun saveDefaultNotificationChannel(channel: String) {
