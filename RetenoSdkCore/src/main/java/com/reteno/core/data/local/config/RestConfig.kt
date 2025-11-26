@@ -8,6 +8,7 @@ internal class RestConfig(
     private val deviceIdHelper: DeviceIdHelper
 ) {
 
+    @Volatile
     internal var deviceId: DeviceId = DeviceId("")
         private set
 
