@@ -2,10 +2,18 @@ package com.reteno.push
 
 import android.Manifest
 import android.os.Build
+import android.os.Bundle
 import androidx.core.app.NotificationChannelCompat
 import androidx.core.app.NotificationManagerCompat
 import com.reteno.core.RetenoInternalImpl
 import com.reteno.push.channel.RetenoNotificationChannel
+import com.reteno.push.events.EventListener
+import com.reteno.push.events.InAppCustomData
+import com.reteno.push.events.NotificationClick
+import com.reteno.push.events.NotificationCustom
+import com.reteno.push.events.NotificationDelete
+import com.reteno.push.events.NotificationInAppCustomDataReceived
+import com.reteno.push.events.NotificationReceived
 import com.reteno.push.permission.NotificationPermissionChecker
 import com.reteno.push.permission.NotificationStatus
 import kotlinx.coroutines.CoroutineScope
@@ -19,6 +27,12 @@ import java.util.concurrent.CompletableFuture
 object RetenoNotifications {
 
     private val notificationScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
+
+    val click: EventListener<Bundle> = NotificationClick
+    val close: EventListener<Bundle> = NotificationDelete
+    val received: EventListener<Bundle> = NotificationReceived
+    val inAppCustomDataReceived: EventListener<InAppCustomData> = NotificationInAppCustomDataReceived
+    val custom: EventListener<Bundle> = NotificationCustom
 
     @JvmStatic
     fun updateDefaultNotificationChannel(name: String? = null, description: String? = null) {
