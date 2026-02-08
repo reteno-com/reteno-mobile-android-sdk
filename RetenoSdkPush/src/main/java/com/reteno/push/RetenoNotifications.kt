@@ -28,10 +28,15 @@ object RetenoNotifications {
 
     private val notificationScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
 
+    @JvmStatic
     val click: EventListener<Bundle> = NotificationClick
+    @JvmStatic
     val close: EventListener<Bundle> = NotificationDelete
+    @JvmStatic
     val received: EventListener<Bundle> = NotificationReceived
+    @JvmStatic
     val inAppCustomDataReceived: EventListener<InAppCustomData> = NotificationInAppCustomDataReceived
+    @JvmStatic
     val custom: EventListener<Bundle> = NotificationCustom
 
     @JvmStatic

@@ -604,7 +604,7 @@ class RetenoInternalImpl(
         deeplinkController.deeplinkClicked(linkWrapped, linkUnwrapped)
     }
 
-    override fun getDefaultNotificationChannelConfig(): ((NotificationChannelCompat.Builder) -> Unit)? {
+    override fun getDefaultNotificationChannelConfig(): Procedure<NotificationChannelCompat.Builder>? {
         return serviceLocator.currentConfig.defaultNotificationChannelConfig
     }
 

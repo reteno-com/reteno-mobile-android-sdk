@@ -69,7 +69,7 @@ internal object RetenoNotificationChannel {
                 DEFAULT_CHANNEL_ID,
                 NotificationManagerCompat.IMPORTANCE_DEFAULT
             )
-                .apply(config)
+                .apply(config::execute)
                 .build()
 
             NotificationManagerCompat.from(context)
@@ -102,7 +102,7 @@ internal object RetenoNotificationChannel {
                 channelId,
                 NotificationManagerCompat.IMPORTANCE_DEFAULT
             )
-                .apply(config)
+                .apply(config::execute)
                 .build()
 
             NotificationManagerCompat.from(context)
