@@ -61,50 +61,6 @@
         </activity>
 
         <!-- TODO add this to listen to PushReceived events -->
-        <receiver
-            android:name="com.reteno.sample.CustomReceiverPushReceived"
-            android:enabled="true"
-            android:exported="true"/>
-        <meta-data
-            android:name="com.reteno.Receiver.PushReceived"
-            android:value="com.reteno.sample.CustomReceiverPushReceived" />
-
-        <!-- TODO add this to listen to NotificationClicked events -->
-        <receiver
-            android:name="com.reteno.sample.CustomReceiverNotificationClicked"
-            android:enabled="true"
-            android:exported="true"/>
-        <meta-data
-            android:name="com.reteno.Receiver.NotificationClicked"
-            android:value="com.reteno.sample.CustomReceiverNotificationClicked" />
-
-        <receiver
-            android:name=".CustomReceiverNotificationDeleted"
-            android:enabled="true"
-            android:exported="true"/>
-        <meta-data
-            android:name="com.reteno.Receiver.NotificationDeleted"
-            android:value="com.reteno.sample.CustomReceiverNotificationDeleted" />
-
-        <receiver
-            android:name="com.reteno.sample.CustomPushReceiver"
-            android:enabled="true"
-            android:exported="false" >
-
-            <intent-filter>
-                <action android:name="com.reteno.custom-push" />
-            </intent-filter>
-        </receiver>
-
-        <receiver
-            android:name="com.reteno.sample.CustomReceiverInAppData"
-            android:enabled="true"
-            android:exported="false" >
-
-            <intent-filter>
-                <action android:name="com.reteno.custom-inapp-data" />
-            </intent-filter>
-        </receiver>
 
         <!-- TODO add this to set up your notification icon -->
         <meta-data

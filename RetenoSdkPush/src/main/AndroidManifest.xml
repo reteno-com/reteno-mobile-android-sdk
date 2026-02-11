@@ -17,7 +17,7 @@
         <receiver
             android:name="com.reteno.push.receiver.NotificationChannelStateChangeReceiver"
             android:enabled="true"
-            android:exported="true" >
+            android:exported="true">
 
             <intent-filter>
                 <action android:name="android.app.action.APP_BLOCK_STATE_CHANGED" />
@@ -29,7 +29,7 @@
         <receiver
             android:name="com.reteno.push.receiver.AppResumeReceiver"
             android:enabled="true"
-            android:exported="false" >
+            android:exported="false">
 
             <intent-filter>
                 <action android:name="com.reteno.app-resume" />
@@ -39,10 +39,55 @@
         <receiver
             android:name="com.reteno.push.receiver.PushPermissionChangedReceiver"
             android:enabled="true"
-            android:exported="false" >
+            android:exported="false">
 
             <intent-filter>
                 <action android:name="com.reteno.push-permission-changed" />
+            </intent-filter>
+        </receiver>
+
+        <receiver
+            android:name=".receiver.PushReceivedReceiver"
+            android:enabled="true"
+            android:exported="false" />
+
+        <meta-data
+            android:name="com.reteno.Receiver.PushReceived"
+            android:value="com.reteno.push.receiver.PushReceivedReceiver" />
+
+        <receiver
+            android:name=".receiver.ReceiverNotificationClicked"
+            android:enabled="true"
+            android:exported="false" />
+        <meta-data
+            android:name="com.reteno.Receiver.NotificationClicked"
+            android:value="com.reteno.push.receiver.ReceiverNotificationClicked" />
+
+        <receiver
+            android:name=".receiver.ReceiverNotificationDeleted"
+            android:enabled="true"
+            android:exported="false" />
+        <meta-data
+            android:name="com.reteno.Receiver.NotificationDeleted"
+            android:value="com.reteno.push.receiver.ReceiverNotificationDeleted" />
+
+        <receiver
+            android:name=".receiver.CustomPushReceiver"
+            android:enabled="true"
+            android:exported="false">
+
+            <intent-filter>
+                <action android:name="com.reteno.custom-push" />
+            </intent-filter>
+        </receiver>
+
+        <receiver
+            android:name=".receiver.ReceiverInAppData"
+            android:enabled="true"
+            android:exported="false">
+
+            <intent-filter>
+                <action android:name="com.reteno.custom-inapp-data" />
             </intent-filter>
         </receiver>
     </application>

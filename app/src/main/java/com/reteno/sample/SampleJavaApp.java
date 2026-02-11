@@ -2,11 +2,14 @@ package com.reteno.sample;
 
 import android.app.Application;
 import android.graphics.Color;
+import android.os.Bundle;
 
 import androidx.core.app.NotificationManagerCompat;
 
 import com.reteno.core.Reteno;
 import com.reteno.core.RetenoConfig;
+import com.reteno.core.util.Procedure;
+import com.reteno.push.RetenoNotifications;
 
 public class SampleJavaApp extends Application {
 
@@ -26,9 +29,16 @@ public class SampleJavaApp extends Application {
                                     .setLightsEnabled(true)
                                     .setVibrationEnabled(true)
                                     .setShowBadge(true);
-                            return null;
                         })
                         .build()
         );
+
+        Procedure<Bundle> listener = bundle -> {
+
+        };
+        RetenoNotifications.getClose().removeListener(listener);
+        RetenoNotifications.getClick().addListener(bundle -> {
+
+        });
     }
 }
