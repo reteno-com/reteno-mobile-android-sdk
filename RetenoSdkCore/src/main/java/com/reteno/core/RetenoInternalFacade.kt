@@ -5,6 +5,7 @@ import androidx.lifecycle.LifecycleObserver
 import com.reteno.core.domain.model.interaction.InteractionStatus
 import com.reteno.core.domain.model.logevent.RetenoLogEvent
 import com.reteno.core.permission.AndroidPermissionChecker
+import com.reteno.core.util.Procedure
 
 internal interface RetenoInternalFacade : LifecycleObserver {
     /**
@@ -37,7 +38,7 @@ internal interface RetenoInternalFacade : LifecycleObserver {
 
     fun deeplinkClicked(linkWrapped: String, linkUnwrapped: String)
 
-    fun getDefaultNotificationChannelConfig(): ((NotificationChannelCompat.Builder) -> Unit)? = null
+    fun getDefaultNotificationChannelConfig(): Procedure<NotificationChannelCompat.Builder>?
 
     fun executeAfterInit(action: () -> Unit)
 
