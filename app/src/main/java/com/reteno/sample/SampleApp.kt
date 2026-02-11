@@ -1,11 +1,14 @@
 package com.reteno.sample
 
 import android.app.Application
+import android.widget.Toast
 import androidx.work.Configuration
 import com.reteno.core.Reteno
 import com.reteno.core.RetenoConfig
 import com.reteno.core.identification.DeviceIdProvider
 import com.reteno.core.lifecycle.ScreenTrackingConfig
+import com.reteno.core.util.toStringVerbose
+import com.reteno.push.RetenoNotifications
 import com.reteno.sample.util.AppSharedPreferencesManager.getDeviceId
 import com.reteno.sample.util.AppSharedPreferencesManager.getDeviceIdDelay
 import com.reteno.sample.util.AppSharedPreferencesManager.getShouldDelayLaunch
@@ -33,6 +36,31 @@ class SampleApp : Application(), Configuration.Provider {
         val excludeScreensFromTracking = ArrayList<String>()
         excludeScreensFromTracking.add("NavHostFragment")
         Reteno.instance.autoScreenTracking(ScreenTrackingConfig(false, excludeScreensFromTracking))
+        RetenoNotifications.click.addListener {
+            val text = "Push click: ${it.toStringVerbose()}"
+            Toast.makeText(this, text, Toast.LENGTH_SHORT)
+                .show()
+        }
+        RetenoNotifications.custom.addListener {
+            val text = "Custom push received: ${it.toStringVerbose()}"
+            Toast.makeText(this, text, Toast.LENGTH_SHORT)
+                .show()
+        }
+        RetenoNotifications.close.addListener {
+            val text = "Push closed: ${it.toStringVerbose()}"
+            Toast.makeText(this, text, Toast.LENGTH_SHORT)
+                .show()
+        }
+        RetenoNotifications.received.addListener {
+            val text = "Push received: ${it.toStringVerbose()}"
+            Toast.makeText(this, text, Toast.LENGTH_SHORT)
+                .show()
+        }
+        RetenoNotifications.inAppCustomDataReceived.addListener {
+            val text = "InApp custom data received: $it"
+            Toast.makeText(this, text, Toast.LENGTH_SHORT)
+                .show()
+        }
     }
 
     fun createProvider(): DeviceIdProvider? {

@@ -3,6 +3,7 @@ package com.reteno.core
 import androidx.core.app.NotificationChannelCompat
 import com.reteno.core.domain.model.event.LifecycleTrackingOptions
 import com.reteno.core.identification.DeviceIdProvider
+import com.reteno.core.util.Procedure
 
 /**
  * @param isPausedInAppMessages - indicates paused/resumed state for in-app messages
@@ -21,7 +22,7 @@ class RetenoConfig private constructor(
     val lifecycleTrackingOptions: LifecycleTrackingOptions,
     val accessKey: String,
     val isPausedPushInAppMessages: Boolean,
-    val defaultNotificationChannelConfig: ((NotificationChannelCompat.Builder) -> Unit)?,
+    val defaultNotificationChannelConfig: Procedure<NotificationChannelCompat.Builder>?,
     val platform: String,
     val isDebug: Boolean
 ) {
@@ -34,7 +35,7 @@ class RetenoConfig private constructor(
         private var lifecycleOptions = LifecycleTrackingOptions.ALL
         private var accessKey: String = ""
         private var currentPlatform: String = "Android"
-        private var notificationChannelConfig: ((NotificationChannelCompat.Builder) -> Unit)? = null
+        private var notificationChannelConfig: Procedure<NotificationChannelCompat.Builder>? = null
         private var isDebug: Boolean = false
 
         constructor(config: RetenoConfig) : this() {
@@ -83,7 +84,7 @@ class RetenoConfig private constructor(
             return this
         }
 
-        fun defaultNotificationChannelConfig(builder: (NotificationChannelCompat.Builder) -> Unit): Builder {
+        fun defaultNotificationChannelConfig(builder: Procedure<NotificationChannelCompat.Builder>): Builder {
             notificationChannelConfig = builder
             return this
         }

@@ -1,0 +1,20 @@
+package com.reteno.push.receiver
+
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.os.Bundle
+import com.reteno.core.util.Logger
+import com.reteno.core.util.toStringVerbose
+import com.reteno.push.events.NotificationCustom
+
+class CustomPushReceiver : BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
+        Logger.d(TAG, "onReceive():", intent.extras.toStringVerbose())
+        NotificationCustom.notifyListeners(intent.extras ?: Bundle.EMPTY)
+    }
+
+    companion object {
+        private val TAG = CustomPushReceiver::class.java.getSimpleName()
+    }
+}
