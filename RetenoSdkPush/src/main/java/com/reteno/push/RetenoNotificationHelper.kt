@@ -84,7 +84,15 @@ internal class RetenoNotificationHelper(private val context: Context) {
                 .setColor(ContextCompat.getColor(context, it))
                 .setStyle(NotificationCompat.DecoratedCustomViewStyle())
         }
-        text?.let(builder::setContentText)
+        text?.let {
+            val hasNoDecorations = bigPicture == null && imageCarouselRemoteViews == null
+            if (it.length > 100 && hasNoDecorations) {
+                builder.setStyle(NotificationCompat.BigTextStyle()
+                    .bigText(it))
+            } else {
+                builder.setContentText(it)
+            }
+        }
         badgeCount?.let(builder::setNumber)
 
         bigPicture?.let { bitmap ->
