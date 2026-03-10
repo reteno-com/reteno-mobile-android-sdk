@@ -3,6 +3,7 @@ package com.reteno.core.data.repository
 import android.content.Context
 import com.reteno.core.R
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerInAppMessages
+import com.reteno.core.data.local.file.FileManager
 import com.reteno.core.data.local.mappers.mapDbToInAppMessages
 import com.reteno.core.data.local.mappers.mapResponseToInAppMessages
 import com.reteno.core.data.local.mappers.toDB
@@ -38,25 +39,36 @@ import kotlin.coroutines.resume
 internal class IamRepositoryImpl(
     private val context: Context,
     private val apiClient: ApiClient,
+    private val fileManager: FileManager,
     private val sharedPrefsManager: SharedPrefsManager,
     private val databaseManager: RetenoDatabaseManagerInAppMessages,
     private val coroutineDispatcher: CoroutineDispatcher
 ) : IamRepository {
+
+    override suspend fun getLocalBaseHtml(): String {
+        return fileManager.getBaseHtmlContent()
+    }
 
     override suspend fun getBaseHtml(): String {
         /*@formatter:off*/ Logger.i(TAG, "fetchBaseHtml(): ", "") 
         /*@formatter:on*/
         val versionRemote = getBaseHtmlVersionRemote() ?: BASE_HTML_VERSION_DEFAULT
         val versionLocal = sharedPrefsManager.getIamBaseHtmlVersion() ?: BASE_HTML_VERSION_DEFAULT
-
+        val cachedDeprecatedHtml = sharedPrefsManager.getIamBaseHtmlContent()
+        if (cachedDeprecatedHtml.isNotBlank()) {
+            //Migration for moving base inapp content to file from sharedprefs
+            fileManager.saveBaseHtmlContent(cachedDeprecatedHtml)
+            sharedPrefsManager.clearBaseHtmlContent()
+        }
         val baseHtmlContent = if (versionRemote == versionLocal) {
-            sharedPrefsManager.getIamBaseHtmlContent()
+            fileManager.getBaseHtmlContent()
         } else {
             val baseHtmlContentRemote =
-                getBaseHtmlContentRemote() ?: sharedPrefsManager.getIamBaseHtmlContent()
+                getBaseHtmlContentRemote() ?: fileManager.getBaseHtmlContent()
 
             sharedPrefsManager.saveIamBaseHtmlVersion(versionRemote)
-            sharedPrefsManager.saveIamBaseHtmlContent(baseHtmlContentRemote)
+            fileManager.saveBaseHtmlContent(baseHtmlContentRemote)
+            sharedPrefsManager.clearBaseHtmlContent()
             baseHtmlContentRemote
         }
 
@@ -365,7 +377,6 @@ internal class IamRepositoryImpl(
             }
         }
     }
-
 
     companion object {
         private val TAG: String = IamRepositoryImpl::class.java.simpleName
