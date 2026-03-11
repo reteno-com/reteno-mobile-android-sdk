@@ -8,7 +8,6 @@ class FrequencyRuleValidator {
         sessionStartTimestamp: Long,
         showingOnAppStart: Boolean = false
     ): Boolean {
-        return true
         val frequencyRules = inAppMessage.displayRules.frequency?.predicates
 
         if (frequencyRules.isNullOrEmpty()) {
