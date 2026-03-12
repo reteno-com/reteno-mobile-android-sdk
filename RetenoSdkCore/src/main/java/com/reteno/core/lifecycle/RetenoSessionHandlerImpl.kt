@@ -153,9 +153,11 @@ internal class RetenoSessionHandlerImpl(
                 sharedPrefsManager.getBackgroundCount()
             )
         )
-        sharedPrefsManager.saveOpenCount(0)
-        sharedPrefsManager.saveBackgroundCount(0)
-        sharedPrefsManager.saveLastInteractionTime(0)
+        sharedPrefsManager.batchSave(
+            openCount = 0,
+            backgroundCount = 0,
+            lastInteractionTime = 0
+        )
         previousForegroundTime = 0L
         foregroundTimeMillis = 0
     }
@@ -173,9 +175,10 @@ internal class RetenoSessionHandlerImpl(
         timeSinceResume = System.currentTimeMillis() - appResumedTimestamp
         foregroundTimeMillis = previousForegroundTime + timeSinceResume
         //We need to save this values here because onPause may not be called on some devices if app removed from system tray
-        sharedPrefsManager.saveAppSessionTime(foregroundTimeMillis)
-        sharedPrefsManager.saveLastInteractionTime(System.currentTimeMillis())
-
+        sharedPrefsManager.batchSaveSession(
+            sessionTime = foregroundTimeMillis,
+            lastInteractionTime = System.currentTimeMillis()
+        )
         if (closest.isNotEmpty() && foregroundTimeMillis >= closest.first().time) {
             scheduled.removeAll(closest)
 

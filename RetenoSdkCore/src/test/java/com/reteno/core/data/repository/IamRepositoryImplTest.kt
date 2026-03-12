@@ -30,6 +30,7 @@ import com.reteno.core.features.iam.IamJsEvent
 import com.reteno.core.features.iam.IamJsEventType
 import com.reteno.core.util.Util
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.impl.annotations.RelaxedMockK
 import io.mockk.verify
@@ -98,8 +99,8 @@ class IamRepositoryImplTest : BaseRobolectricTest() {
                     )
                 )
             }
-            verify(exactly = 1) {
-                sharedPrefsManager.saveIamBaseHtmlContent(
+            coVerify(exactly = 1) {
+                fileManager.saveBaseHtmlContent(
                     eq(
                         BASE_HTML_CONTENT_REMOTE
                     )
@@ -115,7 +116,7 @@ class IamRepositoryImplTest : BaseRobolectricTest() {
             // Given
             createRepository(StandardTestDispatcher(testScheduler))
             every { sharedPrefsManager.getIamBaseHtmlVersion() } returns BASE_HTML_VERSION_LOCAL
-            every { sharedPrefsManager.getIamBaseHtmlContent() } returns BASE_HTML_CONTENT_LOCAL
+            coEvery { fileManager.getBaseHtmlContent() } returns BASE_HTML_CONTENT_LOCAL
             every { sharedPrefsManager.getIamBaseUrl() } returns null
             every { apiClient.head(ApiContract.InAppMessages.BaseHtml, any(), any()) } answers {
                 val callback = thirdArg<ResponseCallback>()
@@ -571,6 +572,7 @@ class IamRepositoryImplTest : BaseRobolectricTest() {
         SUT = IamRepositoryImpl(
             application,
             apiClient,
+            fileManager,
             sharedPrefsManager,
             databaseManagerInApp,
             dispatcher
