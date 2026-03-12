@@ -50,6 +50,7 @@ import com.reteno.core.di.provider.repository.ConfigRepositoryProvider
 import com.reteno.core.di.provider.repository.ContactRepositoryProvider
 import com.reteno.core.di.provider.repository.DeeplinkRepositoryProvider
 import com.reteno.core.di.provider.repository.EventsRepositoryProvider
+import com.reteno.core.di.provider.repository.FileManagerProvider
 import com.reteno.core.di.provider.repository.IamRepositoryProvider
 import com.reteno.core.di.provider.repository.InteractionRepositoryProvider
 import com.reteno.core.di.provider.repository.LogEventRepositoryProvider
@@ -194,9 +195,12 @@ class ServiceLocator(
             apiClientProvider
         )
 
+    private val fileManagerProvider:FileManagerProvider = FileManagerProvider(context)
+
     private val iamRepositoryProvider: IamRepositoryProvider =
         IamRepositoryProvider(
             context,
+            fileManagerProvider,
             apiClientProvider,
             sharedPrefsManagerProvider,
             retenoDatabaseManagerInAppMessagesProvider,

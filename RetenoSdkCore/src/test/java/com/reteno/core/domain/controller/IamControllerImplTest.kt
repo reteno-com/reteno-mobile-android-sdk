@@ -88,7 +88,7 @@ class IamControllerImplTest : BaseRobolectricTest() {
         super.before()
         coEvery { eventController.eventFlow } returns eventFlow
 
-        coEvery { iamRepository.getBaseHtml() } coAnswers {
+        coEvery { iamRepository.getLocalBaseHtml() } coAnswers {
             delay(DELAY_BASE_HTML)
             BASE_HTML_CONTENT
         }
@@ -149,7 +149,7 @@ class IamControllerImplTest : BaseRobolectricTest() {
     @Test
     fun given_whenFetchIamFullHtmlTimeoutReached_thenFullHtmlFlowChangesToError() = runTest {
         val sut = createController()
-        coEvery { iamRepository.getBaseHtml() } coAnswers {
+        coEvery { iamRepository.getLocalBaseHtml() } coAnswers {
             delay(TIMEOUT)
             BASE_HTML_CONTENT
         }

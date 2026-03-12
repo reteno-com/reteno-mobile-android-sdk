@@ -82,7 +82,7 @@ internal class IamControllerImpl(
         htmlJob = scope.launch {
             try {
                 withTimeout(TIMEOUT) {
-                    val baseHtml = async { iamRepository.getBaseHtml() }
+                    val baseHtml = async { iamRepository.getLocalBaseHtml() }
                     val widget = async { iamRepository.getWidgetRemote(interactionId) }
 
                     val base = baseHtml.await()
@@ -123,7 +123,7 @@ internal class IamControllerImpl(
         scope.launch {
             try {
                 withTimeout(TIMEOUT) {
-                    val baseHtml = iamRepository.getBaseHtml()
+                    val baseHtml = iamRepository.getLocalBaseHtml()
                     val widgetModel = messageContent?.model.toString()
 
                     var text = baseHtml

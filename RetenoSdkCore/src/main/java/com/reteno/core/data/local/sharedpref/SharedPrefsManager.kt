@@ -3,12 +3,10 @@ package com.reteno.core.data.local.sharedpref
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.core.content.edit
-import com.reteno.core.R
 import com.reteno.core.RetenoConfig
 import com.reteno.core.data.local.config.DeviceId
 import com.reteno.core.domain.model.event.LifecycleTrackingOptions
 import com.reteno.core.util.Logger
-import com.reteno.core.util.Util
 import java.util.UUID
 
 
@@ -113,18 +111,16 @@ internal class SharedPrefsManager(
         return version
     }
 
-    fun saveIamBaseHtmlContent(baseHtml: String) {
-        /*@formatter:off*/ Logger.i(TAG, "saveIamBaseHtmlContent(): ", "baseHtml = [", baseHtml, "]")
+    fun clearBaseHtmlContent() {
+        /*@formatter:off*/ Logger.i(TAG, "clearBaseHtmlContent(): ")
         /*@formatter:on*/
         sharedPreferences.edit()
-            ?.putString(PREF_KEY_IAM_BASE_HTML_CONTENT, baseHtml)
+            ?.remove(PREF_KEY_IAM_BASE_HTML_CONTENT)
             ?.apply()
     }
 
     fun getIamBaseHtmlContent(): String {
-        val result = sharedPreferences.getString(PREF_KEY_IAM_BASE_HTML_CONTENT, null)
-            ?: Util.readFromRaw(context, R.raw.base_html)
-            ?: ""
+        val result = sharedPreferences.getString(PREF_KEY_IAM_BASE_HTML_CONTENT, null) ?: ""
         /*@formatter:off*/ Logger.i(TAG, "getIamBaseHtmlContent(): ", "result = ", result)
         /*@formatter:on*/
         return result
@@ -205,6 +201,16 @@ internal class SharedPrefsManager(
         return result
     }
 
+    fun batchSaveSession(
+        sessionTime: Long,
+        lastInteractionTime: Long
+    ) {
+        sharedPreferences.edit {
+            putLong(PREF_KEY_APP_SESSION_TIME, sessionTime)
+            putLong(PREF_KEY_APP_INTERACTION_TIMESTAMP, lastInteractionTime)
+        }
+    }
+
     fun saveAppSessionTime(appSessionTime: Long) {
         /*@formatter:off*/ Logger.i(TAG, "saveAppSessionTime(): ", "appSessionTime = [", appSessionTime, "]")
         /*@formatter:on*/
@@ -270,6 +276,20 @@ internal class SharedPrefsManager(
         /*@formatter:off*/ Logger.i(TAG, "getOpenCount(): ", "result = ", result)
         /*@formatter:on*/
         return result
+    }
+
+    fun batchSave(
+        openCount: Int,
+        backgroundCount: Int,
+        lastInteractionTime: Long
+    ) {
+        /*@formatter:off*/ Logger.i(TAG, "batchSave(): ", "openCount = [", openCount, "]", "backgroundCount = [", backgroundCount, "]", "lastInteractionTime = [", lastInteractionTime, "]")
+        /*@formatter:on*/
+        sharedPreferences.edit {
+            putInt(PREF_KEY_APP_OPEN_COUNT, openCount)
+            putInt(PREF_KEY_APP_BG_COUNT, backgroundCount)
+            putLong(PREF_KEY_APP_INTERACTION_TIMESTAMP, lastInteractionTime)
+        }
     }
 
     fun saveOpenCount(count: Int) {
