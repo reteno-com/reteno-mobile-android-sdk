@@ -11,6 +11,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 
 internal class IamRepositoryProvider(
     private val context: Context,
+    private val fileManagerProvider: FileManagerProvider,
     private val apiClientProvider: ApiClientProvider,
     private val sharedPrefsManagerProvider: SharedPrefsManagerProvider,
     private val retenoDatabaseManagerInAppMessagesProvider: RetenoDatabaseManagerInAppMessagesProvider,
@@ -21,6 +22,7 @@ internal class IamRepositoryProvider(
         return IamRepositoryImpl(
             context,
             apiClientProvider.get(),
+            fileManagerProvider.get(),
             sharedPrefsManagerProvider.get(),
             retenoDatabaseManagerInAppMessagesProvider.get(),
             coroutineDispatcher

@@ -9,6 +9,7 @@ import com.reteno.core.RetenoInternalImpl
 import com.reteno.core.data.local.config.RestConfig
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManager
 import com.reteno.core.data.local.database.util.*
+import com.reteno.core.data.local.file.FileManager
 import com.reteno.core.data.local.sharedpref.SharedPrefsManager
 import com.reteno.core.di.ServiceLocator
 import com.reteno.core.domain.controller.AppLifecycleController
@@ -108,6 +109,8 @@ abstract class BaseRobolectricTest {
     protected lateinit var deeplinkController: DeeplinkController
     @RelaxedMockK
     internal lateinit var sharedPrefsManager: SharedPrefsManager
+    @RelaxedMockK
+    internal lateinit var fileManager: FileManager
     @RelaxedMockK
     internal lateinit var restConfig: RestConfig
     @RelaxedMockK
