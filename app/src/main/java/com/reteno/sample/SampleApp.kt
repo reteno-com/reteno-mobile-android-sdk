@@ -9,6 +9,7 @@ import com.reteno.core.identification.DeviceIdProvider
 import com.reteno.core.lifecycle.ScreenTrackingConfig
 import com.reteno.core.util.toStringVerbose
 import com.reteno.push.RetenoNotifications
+import com.reteno.sample.util.AppSharedPreferencesManager
 import com.reteno.sample.util.AppSharedPreferencesManager.getDeviceId
 import com.reteno.sample.util.AppSharedPreferencesManager.getDeviceIdDelay
 import com.reteno.sample.util.AppSharedPreferencesManager.getShouldDelayLaunch
@@ -30,6 +31,7 @@ class SampleApp : Application(), Configuration.Provider {
                     .customDeviceIdProvider(createProvider())
                     .accessKey(BuildConfig.API_ACCESS_KEY)
                     .setDebug(BuildConfig.DEBUG)
+                    .sessionDuration(AppSharedPreferencesManager.getSessionDuration(this))
                     .build()
             )
         }

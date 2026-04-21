@@ -14,6 +14,10 @@
             layout="@layout/item_app_lifecycle" />
 
         <include
+            android:id="@+id/itemForegroundLifecycle"
+            layout="@layout/item_app_lifecycle" />
+
+        <include
             android:id="@+id/itemPush"
             layout="@layout/item_app_lifecycle" />
 

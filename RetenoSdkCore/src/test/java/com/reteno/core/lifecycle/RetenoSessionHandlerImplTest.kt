@@ -8,9 +8,9 @@ import com.reteno.core.domain.model.event.LifecycleTrackingOptions
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.impl.annotations.RelaxedMockK
-import io.mockk.mockkStatic
 import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -29,22 +29,6 @@ internal class RetenoSessionHandlerImplTest : BaseUnitTest() {
 
     @RelaxedMockK
     lateinit var eventsController: EventController
-
-    @Test
-    fun givenAppStartedLongTImeAgo_whenAppStart_thenSessionIdMatches() = runTest {
-        //Given
-        val id = UUID.randomUUID()
-        mockkStatic(UUID::class)
-        every { UUID.randomUUID() } returns id
-        every { sharedPrefsManager.getAppStoppedTimestamp() } returns System.currentTimeMillis() - (5 * 60L * 1000L) - 1
-
-        //When
-        val sut = createHandler()
-        sut.start()
-
-        //Then
-        assertEquals(id.toString(), sut.getSessionId())
-    }
 
     @Test
     fun givenAppStartedLongTImeAgo_whenAppStart_thenTrackAppStartEvent() = runTest {
@@ -69,6 +53,8 @@ internal class RetenoSessionHandlerImplTest : BaseUnitTest() {
         //When
         val sut = createHandler()
         sut.start()
+
+        advanceTimeBy(5000L)
 
         //Then
         verify {

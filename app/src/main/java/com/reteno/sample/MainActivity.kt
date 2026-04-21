@@ -18,6 +18,7 @@ import com.reteno.core.view.iam.callback.InAppErrorData
 import com.reteno.core.view.iam.callback.InAppLifecycleCallback
 import com.reteno.push.RetenoNotifications
 import com.reteno.sample.databinding.ActivityMainBinding
+import com.reteno.sample.util.AppSharedPreferencesManager
 import com.reteno.sample.util.AppSharedPreferencesManager.getShouldDelayLaunch
 import com.reteno.sample.util.AppSharedPreferencesManager.setDelayLaunch
 import kotlinx.coroutines.launch
@@ -42,6 +43,7 @@ class MainActivity : AppCompatActivity() {
                         .lifecycleTrackingOptions(ALL)
                         .accessKey(BuildConfig.API_ACCESS_KEY)
                         .setDebug(BuildConfig.DEBUG)
+                        .sessionDuration(AppSharedPreferencesManager.getSessionDuration(this))
                         .build()
                 )
             }, 10000L)

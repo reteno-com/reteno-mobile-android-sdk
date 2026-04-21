@@ -11,6 +11,8 @@ object AppSharedPreferencesManager {
     private const val PREF_KEY_DEVICE_ID = "KEY_DEVICE_ID"
     private const val PREF_KEY_DEVICE_ID_DELAY = "KEY_DEVICE_ID_DELAY"
     private const val PREF_KEY_DELAY_NEXT_LAUNCH = "KEY_DELAY_NEXT_LAUNCH"
+    private const val PREF_KEY_SESSION_DURATION = "KEY_SESSION_DURATION"
+
     fun saveDeviceIdMode(context: Context, deviceIdMode: DeviceIdMode) {
         getPrefs(context).edit().putString(PREF_KEY_DEVICE_ID_MODE, deviceIdMode.toString()).apply()
     }
@@ -59,5 +61,15 @@ object AppSharedPreferencesManager {
     @JvmStatic
     fun getShouldDelayLaunch(context: Context): Boolean {
         return getPrefs(context).getBoolean(PREF_KEY_DELAY_NEXT_LAUNCH, false)
+    }
+
+    @JvmStatic
+    fun getSessionDuration(context: Context): Long {
+        return getPrefs(context).getLong(PREF_KEY_SESSION_DURATION,  3 * 60L * 60L * 1000L)
+    }
+
+    @JvmStatic
+    fun saveSessionDuration(context: Context, duration: Long) {
+        getPrefs(context).edit().putLong(PREF_KEY_SESSION_DURATION, duration).apply()
     }
 }

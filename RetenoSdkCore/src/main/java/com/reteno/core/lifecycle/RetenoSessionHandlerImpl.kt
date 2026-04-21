@@ -17,7 +17,6 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.UUID
-import kotlin.time.Duration.Companion.milliseconds
 
 internal class RetenoSessionHandlerImpl(
     private val eventController: EventController,
@@ -29,6 +28,7 @@ internal class RetenoSessionHandlerImpl(
     private var foregroundTimeMillis: Long = 0L
     private var sessionStartTimestamp: Long = 0L
     private var sessionId = ""
+    private var sessionResetTime = DEFAULT_SESSION_RESET_TIME
 
     private var timeSinceResume: Long = 0L
     private var appResumedTimestamp: Long = 0L
@@ -44,10 +44,13 @@ internal class RetenoSessionHandlerImpl(
     private var showInApp: ((List<InAppMessage>) -> Unit)? = null
 
     override fun start() {
-        initSession()
+        onAppForegrounded()
         job = scope.launch {
             while (true) {
                 synchronized(this@RetenoSessionHandlerImpl) {
+                    if (System.currentTimeMillis() - sessionStartTimestamp > sessionResetTime) {
+                        startSession()
+                    }
                     countTime(scheduledMessages, closestScheduledMessages)
                     closestScheduledMessages = findNextScheduledMessages(scheduledMessages)
                 }
@@ -63,6 +66,12 @@ internal class RetenoSessionHandlerImpl(
         sharedPrefsManager.saveAppStoppedTimestamp(appPausedTimestamp)
         job?.cancel()
         job = null
+    }
+
+    override fun setSessionResetDuration(duration: Long) {
+        /*@formatter:off*/ Logger.i(TAG, "setSessionResetDuration(): ", "duration = [" , duration , "]")
+        /*@formatter:on*/
+        sessionResetTime = duration
     }
 
     override fun scheduleInAppMessages(
@@ -103,56 +112,34 @@ internal class RetenoSessionHandlerImpl(
         return messages.filter { it.time == nextMessageTime }
     }
 
-    private fun initSession() {
+    private fun onAppForegrounded() {
         appResumedTimestamp = System.currentTimeMillis()
         val appStoppedTimestamp = sharedPrefsManager.getLastInteractionTime()
-        val pausedTime = appResumedTimestamp - appStoppedTimestamp
-        if (pausedTime > SESSION_RESET_TIME) {
-            if (appStoppedTimestamp != 0L) {
-                trackSessionEvent(
-                    Event.sessionEnd(
-                        sharedPrefsManager.getSessionId().orEmpty(),
-                        System.currentTimeMillis().asZonedDateTime(),
-                        (appStoppedTimestamp - sharedPrefsManager.getSessionStartTimestamp()).milliseconds.inWholeSeconds.toInt(),
-                        sharedPrefsManager.getOpenCount(),
-                        sharedPrefsManager.getBackgroundCount()
-                    )
-                )
-            }
-            sharedPrefsManager.saveOpenCount(0)
-            sharedPrefsManager.saveBackgroundCount(0)
-            previousForegroundTime = 0L
-            sessionStartTimestamp = appResumedTimestamp
-            sessionId = UUID.randomUUID().toString()
-            sharedPrefsManager.saveSessionStartTimestamp(sessionStartTimestamp)
-            sharedPrefsManager.saveSessionId(sessionId = sessionId)
-            trackSessionEvent(
-                Event.sessionStart(
-                    sessionId,
-                    sessionStartTimestamp.asZonedDateTime()
-                )
-            )
-        } else {
-            previousForegroundTime = sharedPrefsManager.getAppSessionTime()
-            sessionStartTimestamp = sharedPrefsManager.getSessionStartTimestamp()
-            sessionId = sharedPrefsManager.getSessionId().orEmpty()
-            if (sessionStartTimestamp == 0L) sessionStartTimestamp = appStoppedTimestamp
-        }
+        previousForegroundTime = sharedPrefsManager.getAppSessionTime()
+        sessionStartTimestamp = sharedPrefsManager.getSessionStartTimestamp()
+        sessionId = sharedPrefsManager.getSessionId().orEmpty()
+        if (sessionStartTimestamp == 0L) sessionStartTimestamp = appStoppedTimestamp
         foregroundTimeMillis = previousForegroundTime
         sharedPrefsManager.saveOpenCount(sharedPrefsManager.getOpenCount() + 1)
     }
 
-    override fun clearSessionForced() {
-        val appStoppedTimestamp = sharedPrefsManager.getLastInteractionTime()
+    private fun startSession() {
+        sharedPrefsManager.saveOpenCount(0)
+        sharedPrefsManager.saveBackgroundCount(0)
+        previousForegroundTime = 0L
+        sessionStartTimestamp = System.currentTimeMillis()
+        sessionId = UUID.randomUUID().toString()
+        sharedPrefsManager.saveSessionStartTimestamp(sessionStartTimestamp)
+        sharedPrefsManager.saveSessionId(sessionId = sessionId)
         trackSessionEvent(
-            Event.sessionEnd(
-                sharedPrefsManager.getSessionId().orEmpty(),
-                System.currentTimeMillis().asZonedDateTime(),
-                (appStoppedTimestamp - sharedPrefsManager.getSessionStartTimestamp()).milliseconds.inWholeSeconds.toInt(),
-                sharedPrefsManager.getOpenCount(),
-                sharedPrefsManager.getBackgroundCount()
+            Event.sessionStart(
+                sessionId,
+                sessionStartTimestamp.asZonedDateTime()
             )
         )
+    }
+
+    override fun clearSessionForced() {
         sharedPrefsManager.batchSave(
             openCount = 0,
             backgroundCount = 0,
@@ -191,6 +178,6 @@ internal class RetenoSessionHandlerImpl(
     companion object {
         private val TAG = RetenoSessionHandlerImpl::class.java.simpleName
         private const val TIME_COUNTER_DELAY = 1000L
-        private const val SESSION_RESET_TIME = 5L * 60L * 1000L
+        internal const val DEFAULT_SESSION_RESET_TIME = 3 * 60L * 60L * 1000L //3 hours
     }
 }

@@ -16,6 +16,8 @@ interface RetenoSessionHandler {
         messages: MutableList<InAppWithTime>,
         onTimeMatch: (List<InAppMessage>) -> Unit
     )
+
+    fun setSessionResetDuration(duration: Long)
     fun clearSessionForced()
 
 }

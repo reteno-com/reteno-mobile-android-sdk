@@ -19,7 +19,7 @@ class FragmentAppLifecycleEvents : BaseFragment() {
     private var binding: FragmentAppLifecycleEventsBinding? = null
     private var sessionHandler: RetenoSessionHandler? = null
     private var appLifecycleController: AppLifecycleController? = null
-    private var config = LifecycleTrackingOptions.ALL
+    private var config = LifecycleTrackingOptions.DEFAULT
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -35,6 +35,7 @@ class FragmentAppLifecycleEvents : BaseFragment() {
             val configMap = configField[appLifecycleController] as Map<LifecycleEventType, Boolean>
             config = LifecycleTrackingOptions(
                 appLifecycleEnabled = configMap.getOrDefault(LifecycleEventType.APP_LIFECYCLE, false),
+                foregroundLifecycleEnabled = configMap.getOrDefault(LifecycleEventType.FOREGROUND_LIFECYCLE, false),
                 pushSubscriptionEnabled = configMap.getOrDefault(LifecycleEventType.PUSH, false),
                 sessionEventsEnabled = configMap.getOrDefault(LifecycleEventType.SESSION, false)
             )
@@ -68,6 +69,11 @@ class FragmentAppLifecycleEvents : BaseFragment() {
             itemPush.cbEnabled.isChecked = config.pushSubscriptionEnabled
             itemPush.cbEnabled.setOnCheckedChangeListener { _, b ->
                 config = config.copy(pushSubscriptionEnabled = b)
+            }
+            itemForegroundLifecycle.tvTitle.text = "ForegroundLifecycle"
+            itemForegroundLifecycle.cbEnabled.isChecked = config.foregroundLifecycleEnabled
+            itemForegroundLifecycle.cbEnabled.setOnCheckedChangeListener { _, b ->
+                config = config.copy(foregroundLifecycleEnabled = b)
             }
             itemSession.tvTitle.text = "Sessions"
             itemSession.cbEnabled.isChecked = config.sessionEventsEnabled

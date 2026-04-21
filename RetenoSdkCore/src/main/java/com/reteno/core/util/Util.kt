@@ -284,6 +284,7 @@ object Util {
     fun LifecycleTrackingOptions.toTypeMap(): Map<LifecycleEventType, Boolean> {
         return mapOf(
             LifecycleEventType.APP_LIFECYCLE to appLifecycleEnabled,
+            LifecycleEventType.FOREGROUND_LIFECYCLE to foregroundLifecycleEnabled,
             LifecycleEventType.PUSH to pushSubscriptionEnabled,
             LifecycleEventType.SESSION to sessionEventsEnabled
         )

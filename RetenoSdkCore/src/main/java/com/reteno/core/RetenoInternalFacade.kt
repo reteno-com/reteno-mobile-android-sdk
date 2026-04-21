@@ -42,5 +42,7 @@ internal interface RetenoInternalFacade : LifecycleObserver {
 
     fun executeAfterInit(action: () -> Unit)
 
+    fun setSessionDuration(duration: Long)
+
     suspend fun requestPermissionChecker(): AndroidPermissionChecker?
 }
