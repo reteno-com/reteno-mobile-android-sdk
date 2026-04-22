@@ -23,6 +23,7 @@ internal class RetenoSessionHandlerImpl(
     private val eventController: EventController,
     private val sharedPrefsManager: SharedPrefsManager,
     lifecycleTrackingOptions: LifecycleTrackingOptions,
+    private val scope: CoroutineScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
 ) : RetenoSessionHandler {
 
     private var lifecycleEventConfig = lifecycleTrackingOptions.toTypeMap()
@@ -38,7 +39,6 @@ internal class RetenoSessionHandlerImpl(
     private var appPausedTimestamp: Long = -1L
 
     private var job: Job? = null
-    private val scope = CoroutineScope(Dispatchers.Default + SupervisorJob())
 
     private var scheduledMessages: MutableList<InAppWithTime> = mutableListOf()
     private var closestScheduledMessages: List<InAppWithTime> = emptyList()
