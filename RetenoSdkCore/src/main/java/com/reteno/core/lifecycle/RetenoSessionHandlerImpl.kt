@@ -17,6 +17,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.UUID
+import kotlin.time.Duration.Companion.milliseconds
 
 internal class RetenoSessionHandlerImpl(
     private val eventController: EventController,
@@ -124,10 +125,20 @@ internal class RetenoSessionHandlerImpl(
     }
 
     private fun startSession() {
+        val now = System.currentTimeMillis()
+        trackSessionEvent(
+            Event.sessionEnd(
+                sharedPrefsManager.getSessionId().orEmpty(),
+                now.asZonedDateTime(),
+                (now - sharedPrefsManager.getSessionStartTimestamp()).milliseconds.inWholeSeconds.toInt(),
+                sharedPrefsManager.getOpenCount(),
+                sharedPrefsManager.getBackgroundCount()
+            )
+        )
         sharedPrefsManager.saveOpenCount(0)
         sharedPrefsManager.saveBackgroundCount(0)
         previousForegroundTime = 0L
-        sessionStartTimestamp = System.currentTimeMillis()
+        sessionStartTimestamp = now
         sessionId = UUID.randomUUID().toString()
         sharedPrefsManager.saveSessionStartTimestamp(sessionStartTimestamp)
         sharedPrefsManager.saveSessionId(sessionId = sessionId)

@@ -109,7 +109,7 @@ sealed class Event(
             sessionId: String,
             startTime: ZonedDateTime
         ) = LifecycleEvent(
-            LifecycleEventType.SESSION,
+            LifecycleEventType.SESSION_START,
             Custom(
                 SESSION_START_EVENT_TYPE_KEY,
                 startTime,
@@ -117,6 +117,27 @@ sealed class Event(
                     Parameter(SESSION_ID_PARAM_NAME, sessionId),
                     Parameter(SESSION_START_TIME_PARAM_NAME, startTime.formatToRemote())
                 )
+            )
+        )
+
+        internal fun sessionEnd(
+            sessionId: String,
+            endTime: ZonedDateTime,
+            durationInSeconds: Int,
+            openCount: Int,
+            bgCount: Int
+        ) = LifecycleEvent(
+            LifecycleEventType.SESSION_END,
+            Custom(
+                SESSION_END_EVENT_TYPE_KEY,
+                ZonedDateTime.now(),
+                listOf(
+                    Parameter(SESSION_ID_PARAM_NAME, sessionId),
+                    Parameter(END_TIME_PARAM_NAME, endTime.formatToRemote()),
+                    Parameter(DURATION_IN_SECONDS_PARAM_NAME, durationInSeconds.toString()),
+                    Parameter(OPENED_COUNT_PARAM_NAME, openCount.toString()),
+                    Parameter(BG_COUNT_PARAM_NAME, bgCount.toString())
+                ),
             )
         )
 
@@ -133,6 +154,11 @@ sealed class Event(
         internal const val SESSION_START_TIME_PARAM_NAME = "startTime"
         internal const val SESSION_START_EVENT_TYPE_KEY = "SessionStarted"
         internal const val SESSION_ID_PARAM_NAME = "sessionID"
+        internal const val SESSION_END_EVENT_TYPE_KEY = "SessionEnded"
+        internal const val END_TIME_PARAM_NAME = "endTime"
+        internal const val DURATION_IN_SECONDS_PARAM_NAME = "durationInSeconds"
+        internal const val OPENED_COUNT_PARAM_NAME = "applicationOpenedCount"
+        internal const val BG_COUNT_PARAM_NAME = "applicationBackgroundedCount"
         internal const val LIFECYCLE_EVENT_APP_INSTALLED = "ApplicationInstalled"
         internal const val APP_VERSION_PARAM_NAME = "version"
         internal const val PREV_BUILD_PARAM_NAME = "previousBuild"

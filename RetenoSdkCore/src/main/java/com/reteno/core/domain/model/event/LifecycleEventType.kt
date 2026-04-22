@@ -4,5 +4,6 @@ enum class LifecycleEventType {
     APP_LIFECYCLE,
     FOREGROUND_LIFECYCLE,
     PUSH,
-    SESSION
+    SESSION_START,
+    SESSION_END
 }

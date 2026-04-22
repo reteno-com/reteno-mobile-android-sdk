@@ -37,7 +37,8 @@ class FragmentAppLifecycleEvents : BaseFragment() {
                 appLifecycleEnabled = configMap.getOrDefault(LifecycleEventType.APP_LIFECYCLE, false),
                 foregroundLifecycleEnabled = configMap.getOrDefault(LifecycleEventType.FOREGROUND_LIFECYCLE, false),
                 pushSubscriptionEnabled = configMap.getOrDefault(LifecycleEventType.PUSH, false),
-                sessionEventsEnabled = configMap.getOrDefault(LifecycleEventType.SESSION, false)
+                sessionStartEventsEnabled = configMap.getOrDefault(LifecycleEventType.SESSION_START, false),
+                sessionEndEventsEnabled = configMap.getOrDefault(LifecycleEventType.SESSION_END, false)
             )
         } catch (e: NoSuchFieldException) {
             e.printStackTrace()
@@ -75,10 +76,15 @@ class FragmentAppLifecycleEvents : BaseFragment() {
             itemForegroundLifecycle.cbEnabled.setOnCheckedChangeListener { _, b ->
                 config = config.copy(foregroundLifecycleEnabled = b)
             }
-            itemSession.tvTitle.text = "Sessions"
-            itemSession.cbEnabled.isChecked = config.sessionEventsEnabled
-            itemSession.cbEnabled.setOnCheckedChangeListener { _, b ->
-                config = config.copy(sessionEventsEnabled = b)
+            itemSessionStart.tvTitle.text = "Session start"
+            itemSessionStart.cbEnabled.isChecked = config.sessionStartEventsEnabled
+            itemSessionStart.cbEnabled.setOnCheckedChangeListener { _, b ->
+                config = config.copy(sessionStartEventsEnabled = b)
+            }
+            itemSessionEnd.tvTitle.text = "Session end"
+            itemSessionEnd.cbEnabled.isChecked = config.sessionEndEventsEnabled
+            itemSessionEnd.cbEnabled.setOnCheckedChangeListener { _, b ->
+                config = config.copy(sessionEndEventsEnabled = b)
             }
             btnSave.setOnClickListener {
                 appLifecycleController?.setLifecycleEventConfig(config)

@@ -286,7 +286,8 @@ object Util {
             LifecycleEventType.APP_LIFECYCLE to appLifecycleEnabled,
             LifecycleEventType.FOREGROUND_LIFECYCLE to foregroundLifecycleEnabled,
             LifecycleEventType.PUSH to pushSubscriptionEnabled,
-            LifecycleEventType.SESSION to sessionEventsEnabled
+            LifecycleEventType.SESSION_START to sessionStartEventsEnabled,
+            LifecycleEventType.SESSION_END to sessionEndEventsEnabled
         )
     }
 }
