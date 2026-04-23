@@ -13,6 +13,7 @@ import com.reteno.core.domain.model.event.LifecycleTrackingOptions
 import com.reteno.core.lifecycle.RetenoSessionHandler
 import com.reteno.sample.BaseFragment
 import com.reteno.sample.databinding.FragmentAppLifecycleEventsBinding
+import com.reteno.sample.util.AppSharedPreferencesManager
 
 class FragmentAppLifecycleEvents : BaseFragment() {
 
@@ -89,6 +90,7 @@ class FragmentAppLifecycleEvents : BaseFragment() {
             btnSave.setOnClickListener {
                 appLifecycleController?.setLifecycleEventConfig(config)
                 sessionHandler?.setLifecycleEventConfig(config)
+                AppSharedPreferencesManager.saveOptions(requireContext(), config)
                 Toast.makeText(requireContext(), "SAVED", Toast.LENGTH_SHORT).show()
             }
         }

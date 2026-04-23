@@ -6,6 +6,7 @@ import androidx.core.content.edit
 import com.reteno.core.RetenoConfig
 import com.reteno.core.data.local.config.DeviceId
 import com.reteno.core.domain.model.event.LifecycleTrackingOptions
+import com.reteno.core.lifecycle.RetenoSessionHandlerImpl
 import com.reteno.core.util.Logger
 import java.util.UUID
 
@@ -399,6 +400,7 @@ internal class SharedPrefsManager(
                 PREF_KEY_CONFIG_PUSH_TRACK,
                 config.lifecycleTrackingOptions.pushSubscriptionEnabled
             )
+            putLong(PREF_KEY_CONFIG_SESS_DURATION, config.sessionDuration)
             putString(PREF_KEY_CONFIG_ACCESS, config.accessKey)
             putBoolean(PREF_KEY_CONFIG_PUSH_IN_APP, config.isPausedPushInAppMessages)
             putString(PREF_KEY_CONFIG_PLATFORM, config.platform)
@@ -429,6 +431,7 @@ internal class SharedPrefsManager(
             )
             .setPlatform(sharedPreferences.getString(PREF_KEY_CONFIG_PLATFORM, null).orEmpty())
             .setDebug(sharedPreferences.getBoolean(PREF_KEY_CONFIG_DEBUG, false))
+            .sessionDuration(sharedPreferences.getLong(PREF_KEY_CONFIG_SESS_DURATION, RetenoSessionHandlerImpl.DEFAULT_SESSION_RESET_TIME))
             .apply {
                 if (sharedPreferences.getBoolean(PREF_KEY_CONFIG_HAS_CUSTOM_ID, false)) {
                     customDeviceIdProvider {
@@ -481,6 +484,7 @@ internal class SharedPrefsManager(
         private const val PREF_KEY_CONFIG_FG_LC_TRACK = "config_foreground_lifecycle_tracking"
         private const val PREF_KEY_CONFIG_SESS_TRACK = "config_session_tracking"
         private const val PREF_KEY_CONFIG_SESS_END_TRACK = "config_session_end_tracking"
+        private const val PREF_KEY_CONFIG_SESS_DURATION = "config_session_duration"
         private const val PREF_KEY_CONFIG_PUSH_TRACK = "config_push_tracking"
         private const val PREF_KEY_CONFIG_ACCESS = "config_access_key"
         private const val PREF_KEY_CONFIG_PUSH_IN_APP = "config_paused_push_in_app"

@@ -31,6 +31,7 @@ class SampleApp : Application(), Configuration.Provider {
                     .customDeviceIdProvider(createProvider())
                     .accessKey(BuildConfig.API_ACCESS_KEY)
                     .setDebug(BuildConfig.DEBUG)
+                    .lifecycleTrackingOptions(AppSharedPreferencesManager.getOptions(this))
                     .sessionDuration(AppSharedPreferencesManager.getSessionDuration(this))
                     .build()
             )
