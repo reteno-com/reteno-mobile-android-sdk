@@ -102,17 +102,17 @@ object AppSharedPreferencesManager {
                     PREF_KEY_LIFECYCLE_OPTIONS + "_fg",
                     LifecycleTrackingOptions.DEFAULT.foregroundLifecycleEnabled
                 ),
-                pushSubscriptionEnabled = it.getBoolean(
-                    PREF_KEY_LIFECYCLE_OPTIONS + "_sesh_start",
-                    LifecycleTrackingOptions.DEFAULT.pushSubscriptionEnabled
-                ),
                 sessionStartEventsEnabled = it.getBoolean(
-                    PREF_KEY_LIFECYCLE_OPTIONS + "_sesh_end",
+                    PREF_KEY_LIFECYCLE_OPTIONS + "_sesh_start",
                     LifecycleTrackingOptions.DEFAULT.sessionStartEventsEnabled
                 ),
                 sessionEndEventsEnabled = it.getBoolean(
-                    PREF_KEY_LIFECYCLE_OPTIONS + "_push",
+                    PREF_KEY_LIFECYCLE_OPTIONS + "_sesh_end",
                     LifecycleTrackingOptions.DEFAULT.sessionEndEventsEnabled
+                ),
+                pushSubscriptionEnabled = it.getBoolean(
+                    PREF_KEY_LIFECYCLE_OPTIONS + "_push",
+                    LifecycleTrackingOptions.DEFAULT.pushSubscriptionEnabled
                 )
             )
         }
