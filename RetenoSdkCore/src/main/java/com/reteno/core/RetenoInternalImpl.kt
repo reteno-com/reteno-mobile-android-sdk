@@ -154,6 +154,7 @@ class RetenoInternalImpl(
             }
             pauseInAppMessages(config.isPausedInAppMessages)
             pausePushInAppMessages(config.isPausedPushInAppMessages)
+            sessionHandler.setSessionResetDuration(config.sessionDuration)
         } catch (t: Throwable) {
             /*@formatter:off*/ Logger.e(TAG, "applyConfig(): ", t)
             /*@formatter:on*/
@@ -610,6 +611,10 @@ class RetenoInternalImpl(
 
     override fun executeAfterInit(action: () -> Unit) = runAfterInit {
         action()
+    }
+
+    override fun setSessionDuration(duration: Long) = runAfterInit {
+        sessionHandler.setSessionResetDuration(duration)
     }
 
     override suspend fun requestPermissionChecker(): AndroidPermissionChecker? {

@@ -11,13 +11,13 @@ import androidx.navigation.fragment.NavHostFragment
 import com.reteno.core.Reteno
 import com.reteno.core.RetenoConfig
 import com.reteno.core.RetenoInternalImpl
-import com.reteno.core.domain.model.event.LifecycleTrackingOptions.Companion.ALL
 import com.reteno.core.view.iam.callback.InAppCloseData
 import com.reteno.core.view.iam.callback.InAppData
 import com.reteno.core.view.iam.callback.InAppErrorData
 import com.reteno.core.view.iam.callback.InAppLifecycleCallback
 import com.reteno.push.RetenoNotifications
 import com.reteno.sample.databinding.ActivityMainBinding
+import com.reteno.sample.util.AppSharedPreferencesManager
 import com.reteno.sample.util.AppSharedPreferencesManager.getShouldDelayLaunch
 import com.reteno.sample.util.AppSharedPreferencesManager.setDelayLaunch
 import kotlinx.coroutines.launch
@@ -39,9 +39,10 @@ class MainActivity : AppCompatActivity() {
                     RetenoConfig.Builder()
                         .pauseInAppMessages(false)
                         .customDeviceIdProvider((application as SampleApp).createProvider())
-                        .lifecycleTrackingOptions(ALL)
+                        .lifecycleTrackingOptions(AppSharedPreferencesManager.getOptions(this))
                         .accessKey(BuildConfig.API_ACCESS_KEY)
                         .setDebug(BuildConfig.DEBUG)
+                        .sessionDuration(AppSharedPreferencesManager.getSessionDuration(this))
                         .build()
                 )
             }, 10000L)

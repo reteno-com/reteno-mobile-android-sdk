@@ -117,7 +117,6 @@ internal class FullscreenIamContainer(
         webView.setBackgroundColor(Color.TRANSPARENT)
         webView.addJavascriptInterface(jsInterface, IamViewImpl.JS_INTERFACE_NAME)
         webView.loadDataWithBaseURL("", iamFetchResult.fullHtml, "text/html", "UTF-8", "")
-        println("1: " + System.currentTimeMillis())
         return webView
     }
 

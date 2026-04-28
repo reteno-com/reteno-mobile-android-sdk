@@ -63,6 +63,7 @@ class FragmentStart : BaseFragment() {
         initPauseBehaviourSwitcher()
         initDelayedInitCheckbox()
         initIamBaseUrl()
+        initSessionDurationChange()
     }
 
     override fun onDestroyView() {
@@ -136,6 +137,25 @@ class FragmentStart : BaseFragment() {
                     .edit()
                     .putString("iam_base_url", binding!!.etBaseInAppURL.text?.toString()?.takeIf { it.isNotBlank() })
                     .apply()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+            Toast.makeText(requireContext(), "SAVED", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    private fun initSessionDurationChange() {
+        binding!!.saveSessionDuration.setOnClickListener {
+            try {
+                val durationStr = binding!!.etSessionDuration.text?.toString().orEmpty()
+                if (durationStr.isNotBlank()) {
+                    val duration = durationStr.filter { it.isDigit() }.toInt() * 1000L
+                    sessionHandler?.setSessionResetDuration(duration)
+                    Toast.makeText(requireContext(), "Session duration changed", Toast.LENGTH_SHORT)
+                        .show()
+                    binding!!.etSessionDuration.text?.clear()
+                    AppSharedPreferencesManager.saveSessionDuration(requireContext(), duration)
+                }
             } catch (e: Exception) {
                 e.printStackTrace()
             }

@@ -13,13 +13,14 @@ import com.reteno.core.domain.model.event.LifecycleTrackingOptions
 import com.reteno.core.lifecycle.RetenoSessionHandler
 import com.reteno.sample.BaseFragment
 import com.reteno.sample.databinding.FragmentAppLifecycleEventsBinding
+import com.reteno.sample.util.AppSharedPreferencesManager
 
 class FragmentAppLifecycleEvents : BaseFragment() {
 
     private var binding: FragmentAppLifecycleEventsBinding? = null
     private var sessionHandler: RetenoSessionHandler? = null
     private var appLifecycleController: AppLifecycleController? = null
-    private var config = LifecycleTrackingOptions.ALL
+    private var config = LifecycleTrackingOptions.DEFAULT
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -35,8 +36,10 @@ class FragmentAppLifecycleEvents : BaseFragment() {
             val configMap = configField[appLifecycleController] as Map<LifecycleEventType, Boolean>
             config = LifecycleTrackingOptions(
                 appLifecycleEnabled = configMap.getOrDefault(LifecycleEventType.APP_LIFECYCLE, false),
+                foregroundLifecycleEnabled = configMap.getOrDefault(LifecycleEventType.FOREGROUND_LIFECYCLE, false),
                 pushSubscriptionEnabled = configMap.getOrDefault(LifecycleEventType.PUSH, false),
-                sessionEventsEnabled = configMap.getOrDefault(LifecycleEventType.SESSION, false)
+                sessionStartEventsEnabled = configMap.getOrDefault(LifecycleEventType.SESSION_START, false),
+                sessionEndEventsEnabled = configMap.getOrDefault(LifecycleEventType.SESSION_END, false)
             )
         } catch (e: NoSuchFieldException) {
             e.printStackTrace()
@@ -69,14 +72,25 @@ class FragmentAppLifecycleEvents : BaseFragment() {
             itemPush.cbEnabled.setOnCheckedChangeListener { _, b ->
                 config = config.copy(pushSubscriptionEnabled = b)
             }
-            itemSession.tvTitle.text = "Sessions"
-            itemSession.cbEnabled.isChecked = config.sessionEventsEnabled
-            itemSession.cbEnabled.setOnCheckedChangeListener { _, b ->
-                config = config.copy(sessionEventsEnabled = b)
+            itemForegroundLifecycle.tvTitle.text = "ForegroundLifecycle"
+            itemForegroundLifecycle.cbEnabled.isChecked = config.foregroundLifecycleEnabled
+            itemForegroundLifecycle.cbEnabled.setOnCheckedChangeListener { _, b ->
+                config = config.copy(foregroundLifecycleEnabled = b)
+            }
+            itemSessionStart.tvTitle.text = "Session start"
+            itemSessionStart.cbEnabled.isChecked = config.sessionStartEventsEnabled
+            itemSessionStart.cbEnabled.setOnCheckedChangeListener { _, b ->
+                config = config.copy(sessionStartEventsEnabled = b)
+            }
+            itemSessionEnd.tvTitle.text = "Session end"
+            itemSessionEnd.cbEnabled.isChecked = config.sessionEndEventsEnabled
+            itemSessionEnd.cbEnabled.setOnCheckedChangeListener { _, b ->
+                config = config.copy(sessionEndEventsEnabled = b)
             }
             btnSave.setOnClickListener {
                 appLifecycleController?.setLifecycleEventConfig(config)
                 sessionHandler?.setLifecycleEventConfig(config)
+                AppSharedPreferencesManager.saveOptions(requireContext(), config)
                 Toast.makeText(requireContext(), "SAVED", Toast.LENGTH_SHORT).show()
             }
         }

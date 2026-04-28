@@ -159,6 +159,29 @@
             app:layout_constraintStart_toEndOf="@id/etBaseInAppURL"
             app:layout_constraintTop_toTopOf="@id/etBaseInAppURL" />
 
+        <EditText
+            android:id="@+id/etSessionDuration"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:hint="Session duration seconds"
+            android:inputType="numberDecimal"
+            app:layout_constraintEnd_toStartOf="@id/saveInAppBase"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/etBaseInAppURL" />
+
+
+        <Button
+            android:id="@+id/saveSessionDuration"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Save"
+            app:layout_constraintBottom_toBottomOf="@id/etSessionDuration"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@id/etSessionDuration"
+            app:layout_constraintTop_toTopOf="@id/etSessionDuration" />
+
+
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/recycler"
             android:layout_width="0dp"
@@ -169,7 +192,7 @@
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/etBaseInAppURL"
+            app:layout_constraintTop_toBottomOf="@id/saveSessionDuration"
             tools:context=".fragments.FragmentStart"
             tools:listitem="@layout/item_button_go_to_fragment" />
 
