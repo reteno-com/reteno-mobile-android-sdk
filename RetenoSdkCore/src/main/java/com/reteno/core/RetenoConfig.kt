@@ -3,6 +3,7 @@ package com.reteno.core
 import androidx.core.app.NotificationChannelCompat
 import com.reteno.core.domain.model.event.LifecycleTrackingOptions
 import com.reteno.core.identification.DeviceIdProvider
+import com.reteno.core.lifecycle.RetenoSessionHandlerImpl
 import com.reteno.core.util.Procedure
 
 /**
@@ -23,6 +24,7 @@ class RetenoConfig private constructor(
     val accessKey: String,
     val isPausedPushInAppMessages: Boolean,
     val defaultNotificationChannelConfig: Procedure<NotificationChannelCompat.Builder>?,
+    val sessionDuration: Long,
     val platform: String,
     val isDebug: Boolean
 ) {
@@ -32,9 +34,10 @@ class RetenoConfig private constructor(
         private var isPausedInApps: Boolean = false
         private var isPausedPushInApps: Boolean = false
         private var deviceIdProvider: DeviceIdProvider? = null
-        private var lifecycleOptions = LifecycleTrackingOptions.ALL
+        private var lifecycleOptions = LifecycleTrackingOptions.DEFAULT
         private var accessKey: String = ""
         private var currentPlatform: String = "Android"
+        private var sessionDuration = RetenoSessionHandlerImpl.DEFAULT_SESSION_RESET_TIME
         private var notificationChannelConfig: Procedure<NotificationChannelCompat.Builder>? = null
         private var isDebug: Boolean = false
 
@@ -84,6 +87,11 @@ class RetenoConfig private constructor(
             return this
         }
 
+        fun sessionDuration(durationMs: Long):Builder {
+            sessionDuration = durationMs
+            return this
+        }
+
         fun defaultNotificationChannelConfig(builder: Procedure<NotificationChannelCompat.Builder>): Builder {
             notificationChannelConfig = builder
             return this
@@ -107,6 +115,7 @@ class RetenoConfig private constructor(
                 accessKey = accessKey,
                 userIdProvider = deviceIdProvider,
                 lifecycleTrackingOptions = lifecycleOptions,
+                sessionDuration = sessionDuration,
                 defaultNotificationChannelConfig = notificationChannelConfig,
                 platform = currentPlatform,
                 isDebug = isDebug

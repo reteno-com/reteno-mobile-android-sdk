@@ -37,7 +37,7 @@ fun RetenoImpl(
 fun RetenoConfig(
     isPausedInAppMessages: Boolean = false,
     userIdProvider: DeviceIdProvider? = null,
-    lifecycleTrackingOptions: LifecycleTrackingOptions = LifecycleTrackingOptions.ALL,
+    lifecycleTrackingOptions: LifecycleTrackingOptions = LifecycleTrackingOptions.DEFAULT,
     accessKey: String = "",
     isPausedPushInAppMessages: Boolean = false
 ): RetenoConfig {

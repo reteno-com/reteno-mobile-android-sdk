@@ -61,7 +61,7 @@ sealed class Event(
         internal fun applicationOpen(
             fromBackground: Boolean
         ) = LifecycleEvent(
-            LifecycleEventType.APP_LIFECYCLE,
+            LifecycleEventType.FOREGROUND_LIFECYCLE,
             Custom(
                 typeKey = LIFECYCLE_EVENT_APP_OPENED,
                 dateOccurred = ZonedDateTime.now(),
@@ -75,7 +75,7 @@ sealed class Event(
             applicationOpenedTime: Long,
             secondsInForeground: Long
         ) = LifecycleEvent(
-            LifecycleEventType.APP_LIFECYCLE,
+            LifecycleEventType.FOREGROUND_LIFECYCLE,
             Custom(
                 typeKey = LIFECYCLE_EVENT_APP_BACKGROUNDED,
                 dateOccurred = ZonedDateTime.now(),
@@ -109,7 +109,7 @@ sealed class Event(
             sessionId: String,
             startTime: ZonedDateTime
         ) = LifecycleEvent(
-            LifecycleEventType.SESSION,
+            LifecycleEventType.SESSION_START,
             Custom(
                 SESSION_START_EVENT_TYPE_KEY,
                 startTime,
@@ -127,7 +127,7 @@ sealed class Event(
             openCount: Int,
             bgCount: Int
         ) = LifecycleEvent(
-            LifecycleEventType.SESSION,
+            LifecycleEventType.SESSION_END,
             Custom(
                 SESSION_END_EVENT_TYPE_KEY,
                 ZonedDateTime.now(),
@@ -153,12 +153,12 @@ sealed class Event(
         internal const val SCREEN_VIEW_PARAM_NAME = "screenClass"
         internal const val SESSION_START_TIME_PARAM_NAME = "startTime"
         internal const val SESSION_START_EVENT_TYPE_KEY = "SessionStarted"
+        internal const val SESSION_ID_PARAM_NAME = "sessionID"
         internal const val SESSION_END_EVENT_TYPE_KEY = "SessionEnded"
         internal const val END_TIME_PARAM_NAME = "endTime"
         internal const val DURATION_IN_SECONDS_PARAM_NAME = "durationInSeconds"
         internal const val OPENED_COUNT_PARAM_NAME = "applicationOpenedCount"
         internal const val BG_COUNT_PARAM_NAME = "applicationBackgroundedCount"
-        internal const val SESSION_ID_PARAM_NAME = "sessionID"
         internal const val LIFECYCLE_EVENT_APP_INSTALLED = "ApplicationInstalled"
         internal const val APP_VERSION_PARAM_NAME = "version"
         internal const val PREV_BUILD_PARAM_NAME = "previousBuild"

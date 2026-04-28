@@ -10,6 +10,7 @@ import com.reteno.core.Reteno;
 import com.reteno.core.RetenoConfig;
 import com.reteno.core.util.Procedure;
 import com.reteno.push.RetenoNotifications;
+import com.reteno.sample.util.AppSharedPreferencesManager;
 
 public class SampleJavaApp extends Application {
 
@@ -20,6 +21,8 @@ public class SampleJavaApp extends Application {
                 new RetenoConfig.Builder()
                         .accessKey(BuildConfig.API_ACCESS_KEY)
                         .setDebug(BuildConfig.DEBUG)
+                        .lifecycleTrackingOptions(AppSharedPreferencesManager.getOptions(this))
+                        .sessionDuration(AppSharedPreferencesManager.getSessionDuration(this))
                         .defaultNotificationChannelConfig(builder -> {
                             builder
                                     .setName("Default Channel")
