@@ -14,11 +14,19 @@
             layout="@layout/item_app_lifecycle" />
 
         <include
+            android:id="@+id/itemForegroundLifecycle"
+            layout="@layout/item_app_lifecycle" />
+
+        <include
             android:id="@+id/itemPush"
             layout="@layout/item_app_lifecycle" />
 
         <include
-            android:id="@+id/itemSession"
+            android:id="@+id/itemSessionStart"
+            layout="@layout/item_app_lifecycle" />
+
+        <include
+            android:id="@+id/itemSessionEnd"
             layout="@layout/item_app_lifecycle" />
 
         <Button

@@ -40,8 +40,9 @@ class FragmentStartSessionListener {
     }
 
     private suspend fun countTime() {
-        sessionHandler?.getForegroundTimeMillis()?.let { timeMillis ->
-            val timeSeconds = timeMillis / 1000L
+        sessionHandler?.getSessionStartTimestamp()?.let { timeMillis ->
+            val sessionStart = System.currentTimeMillis() - timeMillis
+            val timeSeconds = sessionStart / 1000L
             val timeMinutes = timeSeconds / 60L
             val timeHours = timeMinutes / 60L
             val timeMinutesInHour = timeMinutes % 60L
