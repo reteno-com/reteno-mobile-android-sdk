@@ -6,7 +6,6 @@ import com.reteno.core.domain.ResultDomain
 import com.reteno.core.features.iam.IamJsEvent
 import com.reteno.core.features.iam.InAppPauseBehaviour
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.StateFlow
 
 internal interface IamController {
 
@@ -30,6 +29,6 @@ internal interface IamController {
 
     fun preloadHtml()
 
-    val fullHtmlStateFlow: StateFlow<ResultDomain<IamFetchResult>>
+    val fullHtmlStateFlow: Flow<ResultDomain<IamFetchResult>>
     val inAppMessagesFlow: Flow<InAppMessage>
 }

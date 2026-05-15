@@ -287,16 +287,22 @@ internal class IamViewImpl(
     }
 
     private fun createIamContainer(result: ResultDomain.Success<IamFetchResult>) {
-        iamContainer = IamContainer.create(
-            context = RetenoInternalImpl.instance.application,
-            jsInterface = retenoAndroidHandler,
-            iamFetchResult = result.body,
-            dismissListener = {
-                inAppLifecycleCallback?.beforeClose(createInAppCloseData(InAppCloseAction.DISMISSED))
-                teardown()
-                inAppLifecycleCallback?.afterClose(createInAppCloseData(InAppCloseAction.DISMISSED))
-            }
-        )
+        if (isViewShown()) return
+        runCatching {
+            iamContainer = IamContainer.create(
+                context = RetenoInternalImpl.instance.application,
+                jsInterface = retenoAndroidHandler,
+                iamFetchResult = result.body,
+                dismissListener = {
+                    inAppLifecycleCallback?.beforeClose(createInAppCloseData(InAppCloseAction.DISMISSED))
+                    teardown()
+                    inAppLifecycleCallback?.afterClose(createInAppCloseData(InAppCloseAction.DISMISSED))
+                }
+            )
+        }.onFailure {
+            teardown()
+            Logger.e(TAG, "createIamContainer(): ", it)
+        }
     }
 
     override fun pause() {
@@ -341,8 +347,12 @@ internal class IamViewImpl(
         /*@formatter:off*/ Logger.i(TAG, "showIamPopupWindow(): ", "activity = [", activity, "]")
         /*@formatter:on*/
         if (activityHelper.canPresentMessages() && activityHelper.isActivityFullyReady()) {
-            iamContainer?.show(activity)
-            isViewShown.set(true)
+            runCatching {
+                iamContainer?.show(activity)
+                isViewShown.set(true)
+            }.onFailure {
+                Logger.e(TAG, "showIamPopupWindow(): ", it)
+            }
         }
     }
 
