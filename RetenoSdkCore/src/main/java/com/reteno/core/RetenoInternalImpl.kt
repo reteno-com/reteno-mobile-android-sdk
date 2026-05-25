@@ -288,6 +288,8 @@ class RetenoInternalImpl(
         if (!isOsVersionSupported()) {
             return@runAfterInit
         }
+        /*@formatter:off*/ Logger.i(TAG, "setUserAttributes(): ", "externalUserId = [" , externalUserId , "], used = [" , user , "]")
+        /*@formatter:on*/
         if (externalUserId.isBlank()) {
             val exception = IllegalArgumentException("externalUserId should not be null or blank")
             /*@formatter:off*/ Logger.e(TAG, "setUserAttributes(): ", exception)
@@ -301,6 +303,8 @@ class RetenoInternalImpl(
         if (!isOsVersionSupported()) {
             return@runAfterInit
         }
+        /*@formatter:off*/ Logger.i(TAG, "setMultiAccountUserAttributes(): ", "externalUserId = [" , externalUserId , "], used = [" , user , "]")
+        /*@formatter:on*/
         if (externalUserId.isBlank()) {
             val exception = IllegalArgumentException("externalUserId should not be null or blank")
             /*@formatter:off*/ Logger.e(TAG, "setMultiAccountUserAttributes(): ", exception)

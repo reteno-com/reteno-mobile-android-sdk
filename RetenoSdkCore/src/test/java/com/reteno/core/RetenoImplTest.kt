@@ -177,7 +177,7 @@ class RetenoImplTest : BaseRobolectricTest() {
             Logger.e(
                 any(),
                 eq("setUserAttributes():"),
-                eq(EXCEPTION)
+                match { it.message == EXCEPTION.message }
             )
         }
     }
