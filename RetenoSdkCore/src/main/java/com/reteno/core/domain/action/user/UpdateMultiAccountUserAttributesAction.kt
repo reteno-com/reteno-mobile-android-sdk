@@ -71,12 +71,6 @@ class UpdateMultiAccountUserAttributesAction(
     fun postUpdateRequest(externalUserId: String, user: User?) {
         /*@formatter:off*/ Logger.i(TAG, "setMultiAccountUserAttributes(): ", "externalUserId = [" , externalUserId , "], used = [" , user , "]")
         /*@formatter:on*/
-        if (externalUserId.isBlank()) {
-            val exception = IllegalArgumentException("externalUserId should not be null or blank")
-            /*@formatter:off*/ Logger.e(TAG, "setMultiAccountUserAttributes(): ", exception)
-            /*@formatter:on*/
-            throw exception
-        }
         user?.userAttributes?.marketId?.let { marketId ->
             val marketIdAllowedChars = listOf('-', '_')
             if (!marketId.all { it.isDigit() || it.isLetter() || it in marketIdAllowedChars } || marketId.length > 64) {
