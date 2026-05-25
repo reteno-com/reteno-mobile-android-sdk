@@ -70,6 +70,7 @@ class FragmentUserData : BaseFragment() {
             Util.getTextOrNull(binding!!.etAddress),
             Util.getTextOrNull(binding!!.etPostcode)
         )
+        val marketId = Util.getTextOrNull(binding!!.etMarketId)
         val userAttributes = UserAttributes(
             Util.getTextOrNull(binding!!.etPhone),
             Util.getTextOrNull(binding!!.etEmail),
@@ -78,7 +79,8 @@ class FragmentUserData : BaseFragment() {
             Util.getTextOrNull(binding!!.etLanguageCode),
             Util.getTextOrNull(binding!!.etTimeZone),
             address,
-            userCustomData
+            userCustomData,
+            if (marketId == "clear") "" else marketId
         )
         val subscriptionKeys = Util.getListFromEditText(
             binding!!.etSubscriptionKeys

@@ -15,6 +15,8 @@ internal data class UserAttributesRemote(
     var languageCode: String? = null,
     @SerializedName("timeZone")
     var timeZone: String? = null,
+    @SerializedName("marketId")
+    var marketId: String? = null,
     @SerializedName("address")
     var address: AddressRemote? = null,
     @SerializedName("fields")
@@ -76,6 +78,12 @@ internal data class UserAttributesRemote(
             somethingChanged = true
         }
 
+        if (marketId == olderModel.marketId) {
+            result.marketId = null
+        } else {
+            somethingChanged = true
+        }
+
         return if (somethingChanged) {
             result
         } else {
@@ -93,6 +101,7 @@ internal data class UserAttributesRemote(
         result.firstName = result.firstName ?: olderModel.firstName
         result.lastName = result.lastName ?: olderModel.lastName
         result.languageCode = result.languageCode ?: olderModel.languageCode
+        result.marketId = result.marketId ?: olderModel.marketId
         result.timeZone = result.timeZone ?: olderModel.timeZone
         result.address = result.address ?: olderModel.address
         result.fields = olderModel.fields.orEmpty().toSet().plus(result.fields.orEmpty().toSet()).toList()

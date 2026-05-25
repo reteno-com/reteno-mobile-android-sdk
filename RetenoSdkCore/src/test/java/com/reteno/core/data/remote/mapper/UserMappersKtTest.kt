@@ -29,6 +29,7 @@ class UserMappersKtTest : BaseUnitTest() {
         private const val LAST_NAME = "LAST_NAME"
         private const val LANGUAGE_CODE = "LANGUAGE_CODE"
         private const val TIME_ZONE = "TIME_ZONE"
+        private const val MARKET_ID = "MARKET_ID"
         private const val CUSTOM_FIELD_KEY_1 = "CUSTOM_FIELD_KEY_1"
         private const val CUSTOM_FIELD_VALUE_1 = "CUSTOM_FIELD_VALUE_1"
         private const val CUSTOM_FIELD_KEY_2 = "CUSTOM_FIELD_KEY_2"
@@ -121,6 +122,7 @@ class UserMappersKtTest : BaseUnitTest() {
         lastName = LAST_NAME,
         languageCode = LANGUAGE_CODE,
         timeZone = TIME_ZONE,
+        marketId = MARKET_ID,
         address = getAddressDb(),
         fields = listOf(getUserCustomFieldDb1(), getUserCustomFieldDb2())
     )
@@ -132,6 +134,7 @@ class UserMappersKtTest : BaseUnitTest() {
         lastName = LAST_NAME,
         languageCode = LANGUAGE_CODE,
         timeZone = TIME_ZONE,
+        marketId = MARKET_ID,
         address = getAddressRemote(),
         fields = listOf(getUserCustomFieldRemote1(), getUserCustomFieldRemote2())
     )

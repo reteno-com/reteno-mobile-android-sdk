@@ -40,6 +40,7 @@ fun ContentValues.putUserAttributes(parentRowId: Long, userAttributes: UserAttri
     put(UserSchema.UserAttributesSchema.COLUMN_LAST_NAME, userAttributes.lastName)
     put(UserSchema.UserAttributesSchema.COLUMN_LANGUAGE_CODE, userAttributes.languageCode)
     put(UserSchema.UserAttributesSchema.COLUMN_TIME_ZONE, userAttributes.timeZone)
+    put(UserSchema.UserAttributesSchema.COLUMN_MARKET_ID, userAttributes.marketId)
 
     userAttributes.fields?.toJson()?.let { userAttrs ->
         put(UserSchema.UserAttributesSchema.COLUMN_CUSTOM_FIELDS, userAttrs)
@@ -74,6 +75,7 @@ fun Cursor.getUser(): UserDb? {
     val languageCode = getStringOrNull(getColumnIndex(UserSchema.UserAttributesSchema.COLUMN_LANGUAGE_CODE))
     val timeZone = getStringOrNull(getColumnIndex(UserSchema.UserAttributesSchema.COLUMN_TIME_ZONE))
     val customFields = getStringOrNull(getColumnIndex(UserSchema.UserAttributesSchema.COLUMN_CUSTOM_FIELDS))?.listFromJson<UserCustomFieldDb>()
+    val marketId = getStringOrNull(getColumnIndex(UserSchema.UserAttributesSchema.COLUMN_MARKET_ID))
 
     val userAttributes = if (allElementsNull(
             phone,
@@ -83,7 +85,8 @@ fun Cursor.getUser(): UserDb? {
             languageCode,
             timeZone,
             userAddress,
-            customFields
+            customFields,
+            marketId
         )
     ) {
         null
@@ -96,7 +99,8 @@ fun Cursor.getUser(): UserDb? {
             languageCode = languageCode,
             timeZone = timeZone,
             address = userAddress,
-            fields = customFields
+            fields = customFields,
+            marketId = marketId
         )
     }
 

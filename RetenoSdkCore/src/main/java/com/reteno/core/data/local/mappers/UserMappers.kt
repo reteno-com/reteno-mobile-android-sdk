@@ -27,6 +27,7 @@ internal fun UserAttributes.toDb() = UserAttributesDb(
     languageCode = languageCode,
     timeZone = timeZone,
     address = address?.toDb(),
+    marketId = marketId,
     fields = fields?.map { it.toDb() }
 )
 

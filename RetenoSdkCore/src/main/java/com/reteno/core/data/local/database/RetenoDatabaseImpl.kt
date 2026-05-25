@@ -103,6 +103,11 @@ internal class RetenoDatabaseImpl(private val context: Context) : RetenoDatabase
                 db.execSQL(InAppMessageSchema.SQL_UPGRADE_TABLE_VERSION_9)
             }
         }
+        if (oldVersion < 11) {
+            runMigrationOperation(table = UserSchema.UserAttributesSchema.TABLE_NAME_USER_ATTRIBUTES, oldVersion, newVersion) {
+                db.execSQL(UserSchema.UserAttributesSchema.SQL_UPGRADE_TABLE_VERSION_10)
+            }
+        }
     }
 
     override fun onDowngrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
