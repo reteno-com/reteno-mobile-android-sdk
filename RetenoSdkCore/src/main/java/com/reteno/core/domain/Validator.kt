@@ -54,6 +54,7 @@ object Validator {
                 userAttributes.languageCode,
                 userAttributes.timeZone,
                 userAttributes.fields,
+                userAttributes.marketId,
                 addressValidated
             )
         ) {

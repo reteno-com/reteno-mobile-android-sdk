@@ -68,6 +68,7 @@ internal class RetenoDatabaseManagerUserImpl(private val database: RetenoDatabas
                     "  ${UserSchema.UserAttributesSchema.TABLE_NAME_USER_ATTRIBUTES}.${UserSchema.UserAttributesSchema.COLUMN_LANGUAGE_CODE} AS ${UserSchema.UserAttributesSchema.COLUMN_LANGUAGE_CODE}," +
                     "  ${UserSchema.UserAttributesSchema.TABLE_NAME_USER_ATTRIBUTES}.${UserSchema.UserAttributesSchema.COLUMN_TIME_ZONE} AS ${UserSchema.UserAttributesSchema.COLUMN_TIME_ZONE}," +
                     "  ${UserSchema.UserAttributesSchema.TABLE_NAME_USER_ATTRIBUTES}.${UserSchema.UserAttributesSchema.COLUMN_CUSTOM_FIELDS} AS ${UserSchema.UserAttributesSchema.COLUMN_CUSTOM_FIELDS}," +
+                    "  ${UserSchema.UserAttributesSchema.TABLE_NAME_USER_ATTRIBUTES}.${UserSchema.UserAttributesSchema.COLUMN_MARKET_ID} AS ${UserSchema.UserAttributesSchema.COLUMN_MARKET_ID}," +
                     "  ${UserSchema.UserAddressSchema.TABLE_NAME_USER_ADDRESS}.${UserSchema.UserAddressSchema.COLUMN_REGION} AS ${UserSchema.UserAddressSchema.COLUMN_REGION}," +
                     "  ${UserSchema.UserAddressSchema.TABLE_NAME_USER_ADDRESS}.${UserSchema.UserAddressSchema.COLUMN_TOWN} AS ${UserSchema.UserAddressSchema.COLUMN_TOWN}," +
                     "  ${UserSchema.UserAddressSchema.TABLE_NAME_USER_ADDRESS}.${UserSchema.UserAddressSchema.COLUMN_ADDRESS} AS ${UserSchema.UserAddressSchema.COLUMN_ADDRESS}," +

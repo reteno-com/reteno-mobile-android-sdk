@@ -37,6 +37,7 @@ internal object UserSchema {
         internal const val COLUMN_LANGUAGE_CODE = "languageCode"
         internal const val COLUMN_TIME_ZONE = "timeZone"
         internal const val COLUMN_CUSTOM_FIELDS = "fields"
+        internal const val COLUMN_MARKET_ID = "marketId"
 
         internal const val SQL_CREATE_TABLE =
             "CREATE TABLE IF NOT EXISTS $TABLE_NAME_USER_ATTRIBUTES" +
@@ -49,8 +50,12 @@ internal object UserSchema {
                     "$COLUMN_LANGUAGE_CODE TEXT, " +
                     "$COLUMN_TIME_ZONE TEXT, " +
                     "$COLUMN_CUSTOM_FIELDS TEXT, " +
+                    "$COLUMN_MARKET_ID TEXT, " +
                     "FOREIGN KEY (${UserSchema.COLUMN_USER_ROW_ID}) REFERENCES ${UserSchema.TABLE_NAME} (${UserSchema.COLUMN_USER_ROW_ID}) ON DELETE CASCADE" +
                     ")"
+
+        internal const val SQL_UPGRADE_TABLE_VERSION_10 =
+            "ALTER TABLE $TABLE_NAME_USER_ATTRIBUTES ADD COLUMN $COLUMN_MARKET_ID TEXT"
     }
 
     internal object UserAddressSchema {

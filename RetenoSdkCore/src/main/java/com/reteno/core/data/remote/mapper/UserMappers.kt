@@ -25,6 +25,7 @@ internal fun UserAttributesDb.toRemote() = UserAttributesRemote(
     lastName = lastName,
     languageCode = languageCode,
     timeZone = timeZone,
+    marketId = marketId,
     address = address?.toRemote(),
     fields = fields?.map { it.toRemote() }
 )
@@ -46,6 +47,7 @@ internal fun UserAttributesRemote.toDb() = UserAttributesDb(
     languageCode = languageCode,
     timeZone = timeZone,
     address = address?.toDb(),
+    marketId = marketId,
     fields = fields?.map { it.toDb() }
 )
 

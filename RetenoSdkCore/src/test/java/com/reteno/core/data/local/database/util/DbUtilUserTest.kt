@@ -44,6 +44,7 @@ class DbUtilUserTest : BaseRobolectricTest() {
         private const val FIELD_KEY3 = "key3"
         private const val FIELD_VALUE1 = "value1"
         private const val FIELD_VALUE2 = "value2"
+        private const val MARKET_ID = "testMarketId"
 
         private const val REGION = "region1"
         private const val TOWN = "town1"
@@ -70,7 +71,8 @@ class DbUtilUserTest : BaseRobolectricTest() {
             languageCode = LANGUAGE_CODE,
             timeZone = TIME_ZONE,
             address = addressFull,
-            fields = customFieldsFull
+            fields = customFieldsFull,
+            marketId = MARKET_ID
         )
         private val userFull = UserDb(
             rowId = USER_PARENT_ROW_ID.toString(),
@@ -103,6 +105,7 @@ class DbUtilUserTest : BaseRobolectricTest() {
         private const val COLUMN_INDEX_GROUP_NAMES_INCLUDE = 17
         private const val COLUMN_INDEX_GROUP_NAMES_EXCLUDE = 18
         private const val COLUMN_INDEX_SYNCHRONIZED_WITH_BACKEND = 19
+        private const val COLUMN_INDEX_MARKET_ID = 20
     }
     // endregion constants -------------------------------------------------------------------------
 
@@ -190,7 +193,8 @@ class DbUtilUserTest : BaseRobolectricTest() {
             UserSchema.UserAttributesSchema.COLUMN_FIRST_NAME,
             UserSchema.UserAttributesSchema.COLUMN_LAST_NAME,
             UserSchema.UserAttributesSchema.COLUMN_LANGUAGE_CODE,
-            UserSchema.UserAttributesSchema.COLUMN_TIME_ZONE
+            UserSchema.UserAttributesSchema.COLUMN_TIME_ZONE,
+            UserSchema.UserAttributesSchema.COLUMN_MARKET_ID
         )
 
         // When
@@ -206,6 +210,7 @@ class DbUtilUserTest : BaseRobolectricTest() {
         assertEquals(LAST_NAME, contentValues.get(UserSchema.UserAttributesSchema.COLUMN_LAST_NAME))
         assertEquals(LANGUAGE_CODE, contentValues.get(UserSchema.UserAttributesSchema.COLUMN_LANGUAGE_CODE))
         assertEquals(TIME_ZONE, contentValues.get(UserSchema.UserAttributesSchema.COLUMN_TIME_ZONE))
+        assertEquals(MARKET_ID, contentValues.get(UserSchema.UserAttributesSchema.COLUMN_MARKET_ID))
         assertNull(contentValues.get(UserSchema.UserAttributesSchema.COLUMN_CUSTOM_FIELDS))
     }
 
@@ -223,7 +228,8 @@ class DbUtilUserTest : BaseRobolectricTest() {
             UserSchema.UserAttributesSchema.COLUMN_LAST_NAME,
             UserSchema.UserAttributesSchema.COLUMN_LANGUAGE_CODE,
             UserSchema.UserAttributesSchema.COLUMN_TIME_ZONE,
-            UserSchema.UserAttributesSchema.COLUMN_CUSTOM_FIELDS
+            UserSchema.UserAttributesSchema.COLUMN_CUSTOM_FIELDS,
+            UserSchema.UserAttributesSchema.COLUMN_MARKET_ID
         )
 
         // When
@@ -239,6 +245,7 @@ class DbUtilUserTest : BaseRobolectricTest() {
         assertEquals(LAST_NAME, contentValues.get(UserSchema.UserAttributesSchema.COLUMN_LAST_NAME))
         assertEquals(LANGUAGE_CODE, contentValues.get(UserSchema.UserAttributesSchema.COLUMN_LANGUAGE_CODE))
         assertEquals(TIME_ZONE, contentValues.get(UserSchema.UserAttributesSchema.COLUMN_TIME_ZONE))
+        assertEquals(MARKET_ID, contentValues.get(UserSchema.UserAttributesSchema.COLUMN_MARKET_ID))
         assertEquals(expectedCustomFieldsResult, contentValues.get(UserSchema.UserAttributesSchema.COLUMN_CUSTOM_FIELDS))
     }
 
@@ -465,6 +472,7 @@ class DbUtilUserTest : BaseRobolectricTest() {
         every { cursor.getStringOrNull(COLUMN_INDEX_LAST_NAME) } returns LAST_NAME
         every { cursor.getStringOrNull(COLUMN_INDEX_LANGUAGE_CODE) } returns LANGUAGE_CODE
         every { cursor.getStringOrNull(COLUMN_INDEX_TIME_ZONE) } returns TIME_ZONE
+        every { cursor.getStringOrNull(COLUMN_INDEX_MARKET_ID) } returns MARKET_ID
         every { cursor.getStringOrNull(COLUMN_INDEX_FIELDS) } returns getExpectedCustomFields()
     }
 
@@ -477,6 +485,7 @@ class DbUtilUserTest : BaseRobolectricTest() {
         every { cursor.getStringOrNull(COLUMN_INDEX_LAST_NAME) } returns LAST_NAME
         every { cursor.getStringOrNull(COLUMN_INDEX_LANGUAGE_CODE) } returns LANGUAGE_CODE
         every { cursor.getStringOrNull(COLUMN_INDEX_TIME_ZONE) } returns TIME_ZONE
+        every { cursor.getStringOrNull(COLUMN_INDEX_MARKET_ID) } returns MARKET_ID
         every { cursor.getStringOrNull(COLUMN_INDEX_FIELDS) } returns null
     }
 
@@ -490,6 +499,7 @@ class DbUtilUserTest : BaseRobolectricTest() {
         every { cursor.getStringOrNull(COLUMN_INDEX_LANGUAGE_CODE) } returns null
         every { cursor.getStringOrNull(COLUMN_INDEX_TIME_ZONE) } returns null
         every { cursor.getStringOrNull(COLUMN_INDEX_FIELDS) } returns null
+        every { cursor.getStringOrNull(COLUMN_INDEX_MARKET_ID) } returns null
     }
 
 
@@ -506,6 +516,7 @@ class DbUtilUserTest : BaseRobolectricTest() {
         every { cursor.getColumnIndex(UserSchema.UserAttributesSchema.COLUMN_LANGUAGE_CODE) } returns COLUMN_INDEX_LANGUAGE_CODE
         every { cursor.getColumnIndex(UserSchema.UserAttributesSchema.COLUMN_TIME_ZONE) } returns COLUMN_INDEX_TIME_ZONE
         every { cursor.getColumnIndex(UserSchema.UserAttributesSchema.COLUMN_CUSTOM_FIELDS) } returns COLUMN_INDEX_FIELDS
+        every { cursor.getColumnIndex(UserSchema.UserAttributesSchema.COLUMN_MARKET_ID) } returns COLUMN_INDEX_MARKET_ID
 
         every { cursor.getColumnIndex(UserSchema.COLUMN_USER_ROW_ID) } returns COLUMN_INDEX_USER_ROW_ID
         every { cursor.getColumnIndex(DbSchema.COLUMN_TIMESTAMP) } returns COLUMN_INDEX_TIMESTAMP

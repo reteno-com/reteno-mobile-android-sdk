@@ -288,7 +288,6 @@ class RetenoInternalImpl(
         if (!isOsVersionSupported()) {
             return@runAfterInit
         }
-
         /*@formatter:off*/ Logger.i(TAG, "setUserAttributes(): ", "externalUserId = [" , externalUserId , "], used = [" , user , "]")
         /*@formatter:on*/
         if (externalUserId.isBlank()) {
@@ -297,7 +296,6 @@ class RetenoInternalImpl(
             /*@formatter:on*/
             throw exception
         }
-
         updateAttributesAction.postUpdateRequest(externalUserId, user)
     }
 
