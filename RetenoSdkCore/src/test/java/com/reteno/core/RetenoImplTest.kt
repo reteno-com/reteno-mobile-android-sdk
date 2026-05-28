@@ -62,6 +62,7 @@ class RetenoImplTest : BaseRobolectricTest() {
         private const val LAST_NAME = "lastName1"
         private const val LANGUAGE_CODE = "languageCode1"
         private const val TIME_ZONE = "timeZone1"
+        private const val MARKET_ID = "marketId"
         private const val FIELD_KEY1 = "key1"
         private const val FIELD_KEY2 = "key2"
         private const val FIELD_KEY3 = "key3"
@@ -561,6 +562,7 @@ class RetenoImplTest : BaseRobolectricTest() {
         lastName = LAST_NAME,
         languageCode = LANGUAGE_CODE,
         timeZone = TIME_ZONE,
+        marketId = MARKET_ID,
         address = addressFull,
         fields = customFieldsFull
     )

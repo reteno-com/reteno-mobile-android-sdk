@@ -38,6 +38,14 @@ data class UserAttributesAnonymous(
      * @see UserCustomField
      */
     val fields: List<UserCustomField>? = null,
+    /**
+     * Market ID
+     *
+     * Max length: 64 char
+     * Allowed symbols: latin symbols, numbers and `-`, `_`
+     * To be able to clear market id, pass empty string, null values are ignored
+     */
+    val marketId: String? = null,
 ) {
 
     fun toUserAttributes(): UserAttributes =
@@ -49,6 +57,7 @@ data class UserAttributesAnonymous(
             languageCode = languageCode,
             timeZone = timeZone,
             address = address,
-            fields = fields
+            fields = fields,
+            marketId = marketId
         )
 }
