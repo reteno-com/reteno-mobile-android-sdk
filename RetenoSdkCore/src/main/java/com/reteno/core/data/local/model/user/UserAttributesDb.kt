@@ -9,4 +9,5 @@ data class UserAttributesDb(
     val timeZone: String? = null,
     val address: AddressDb? = null,
     val fields: List<UserCustomFieldDb>? = null,
+    val marketId: String? = null,
 )

@@ -288,7 +288,6 @@ class RetenoInternalImpl(
         if (!isOsVersionSupported()) {
             return@runAfterInit
         }
-
         /*@formatter:off*/ Logger.i(TAG, "setUserAttributes(): ", "externalUserId = [" , externalUserId , "], used = [" , user , "]")
         /*@formatter:on*/
         if (externalUserId.isBlank()) {
@@ -297,7 +296,6 @@ class RetenoInternalImpl(
             /*@formatter:on*/
             throw exception
         }
-
         updateAttributesAction.postUpdateRequest(externalUserId, user)
     }
 
@@ -323,6 +321,12 @@ class RetenoInternalImpl(
             }
             /*@formatter:off*/ Logger.i(TAG, "setAnonymousUserAttributes(): ", "userAttributes = [", userAttributes, "]")
         /*@formatter:on*/
+            userAttributes.marketId?.let { marketId ->
+                val marketIdAllowedChars = listOf('-', '_')
+                if (!marketId.all { it.isDigit() || it.isLetter() || it in marketIdAllowedChars } || marketId.length > 64) {
+                    throw IllegalArgumentException("Invalid marketId, max length must be less than 64, allowed symbols: latin characters, digits, '-', '_' ")
+                }
+            }
             try {
                 contactController.setAnonymousUserAttributes(userAttributes)
             } catch (ex: Throwable) {

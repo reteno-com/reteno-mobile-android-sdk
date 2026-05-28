@@ -66,13 +66,15 @@ class FragmentUserAnonymousData : BaseFragment() {
             Util.getTextOrNull(binding!!.etAddress),
             Util.getTextOrNull(binding!!.etPostcode)
         )
+        val marketId = Util.getTextOrNull(binding!!.etMarketId)
         val userAttributes = UserAttributesAnonymous(
             Util.getTextOrNull(binding!!.etFirstName),
             Util.getTextOrNull(binding!!.etLastName),
             Util.getTextOrNull(binding!!.etLanguageCode),
             Util.getTextOrNull(binding!!.etTimeZone),
             address,
-            userCustomData
+            userCustomData,
+            if (marketId == "clear") "" else marketId
         )
         sendAnonymousUserAttributes(userAttributes)
     }

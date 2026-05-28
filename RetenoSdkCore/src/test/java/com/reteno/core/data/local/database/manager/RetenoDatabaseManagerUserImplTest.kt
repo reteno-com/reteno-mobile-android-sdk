@@ -52,6 +52,7 @@ class RetenoDatabaseManagerUserImplTest : BaseRobolectricTest() {
         private const val LAST_NAME = "LAST_NAME"
         private const val LANGUAGE_CODE = "LANGUAGE_CODE"
         private const val TIME_ZONE = "TIME_ZONE"
+        private const val MARKET_ID = "MARKET_ID"
         private const val CUSTOM_FIELD_KEY_1 = "CUSTOM_FIELD_KEY_1"
         private const val CUSTOM_FIELD_VALUE_1 = "CUSTOM_FIELD_VALUE_1"
         private const val CUSTOM_FIELD_KEY_2 = "CUSTOM_FIELD_KEY_2"
@@ -82,6 +83,7 @@ class RetenoDatabaseManagerUserImplTest : BaseRobolectricTest() {
             languageCode = LANGUAGE_CODE,
             timeZone = TIME_ZONE,
             address = userAddressFull,
+            marketId = MARKET_ID,
             fields = listOf(customField1, customField2)
         )
         private val userFull = UserDb(
@@ -109,6 +111,7 @@ class RetenoDatabaseManagerUserImplTest : BaseRobolectricTest() {
         private const val COLUMN_INDEX_LANGUAGE_CODE = 12
         private const val COLUMN_INDEX_TIME_ZONE = 13
         private const val COLUMN_INDEX_CUSTOM_FIELDS = 14
+        private const val COLUMN_INDEX_MARKET_ID = 15
 
         private const val COLUMN_INDEX_REGION = 15
         private const val COLUMN_INDEX_TOWN = 16
@@ -435,6 +438,7 @@ class RetenoDatabaseManagerUserImplTest : BaseRobolectricTest() {
         every { cursor.getColumnIndex(UserSchema.UserAttributesSchema.COLUMN_LANGUAGE_CODE) } returns COLUMN_INDEX_LANGUAGE_CODE
         every { cursor.getColumnIndex(UserSchema.UserAttributesSchema.COLUMN_TIME_ZONE) } returns COLUMN_INDEX_TIME_ZONE
         every { cursor.getColumnIndex(UserSchema.UserAttributesSchema.COLUMN_CUSTOM_FIELDS) } returns COLUMN_INDEX_CUSTOM_FIELDS
+        every { cursor.getColumnIndex(UserSchema.UserAttributesSchema.COLUMN_MARKET_ID) } returns COLUMN_INDEX_MARKET_ID
 
         every { cursor.getColumnIndex(UserSchema.UserAddressSchema.COLUMN_REGION) } returns COLUMN_INDEX_REGION
         every { cursor.getColumnIndex(UserSchema.UserAddressSchema.COLUMN_TOWN) } returns COLUMN_INDEX_TOWN

@@ -57,6 +57,12 @@ class UpdateUserAttributesAction(
     }
 
     fun postUpdateRequest(externalUserId: String, user: User?) {
+        user?.userAttributes?.marketId?.let { marketId ->
+            val marketIdAllowedChars = listOf('-', '_')
+            if (!marketId.all { it.isDigit() || it.isLetter() || it in marketIdAllowedChars } || marketId.length > 64) {
+                throw IllegalArgumentException("Invalid marketId, max length must be less than 64, allowed symbols: latin characters, digits, '-', '_' ")
+            }
+        }
         userAttributesUpdateRequests.trySend(externalUserId to user)
     }
 
@@ -70,7 +76,9 @@ class UpdateUserAttributesAction(
             }
             RetenoInternalImpl.instance.start()
         } else {
-            contactController.setExternalIdAndUserData(externalUserId, user)
+            withContext(ioDispatcher) {
+                contactController.setExternalIdAndUserData(externalUserId, user)
+            }
         }
         if (RetenoInternalImpl.instance.isStarted) {
             segmentationRefreshRequest.send(Unit)
