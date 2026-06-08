@@ -58,6 +58,9 @@ class RuleEventValidator {
             StringOperator.REG_EX -> {
                 checkRegex(paramFromInApp, event.params)
             }
+            StringOperator.DOES_NOT_EQUAL -> {
+                !checkEquals(paramFromInApp, event.params)
+            }
         }
     }
 
