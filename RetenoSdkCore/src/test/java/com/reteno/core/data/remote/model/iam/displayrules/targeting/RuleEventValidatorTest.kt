@@ -461,6 +461,131 @@ class RuleEventValidatorTest : BaseRobolectricTest() {
         assertEquals(true, result)
     }
 
+    @Test
+    fun givenInApp_whenRelationAndWithDOES_NOT_EQUALOperatorAndOneEqual_thenFalse() {
+        //Given
+        val sut = createValidator()
+        val inapp = createInAppWithEvent(
+            TargetingRule.Event(
+                name = "",
+                paramsRelation = RuleRelation.AND,
+                params = listOf(
+                    RuleEventParameter(
+                        name = Event.SCREEN_VIEW_PARAM_NAME,
+                        operator = StringOperator.DOES_NOT_EQUAL,
+                        values = listOf("some")
+                    ),
+                    RuleEventParameter(
+                        name = Event.SCREEN_VIEW_PARAM_NAME,
+                        operator = StringOperator.DOES_NOT_EQUAL,
+                        values = listOf("digital", "test")
+                    )
+                )
+            )
+        )
+        //When
+        val result = sut.checkEventMatchesRules(inapp, Event.ScreenView("some"))
+        //Then
+        assertEquals(false, result)
+    }
+
+    @Test
+    fun givenInApp_whenRelationAndWithDOES_NOT_EQUALOperatorAndSecondEqual_thenFalse() {
+        //Given
+        val sut = createValidator()
+        val inapp = createInAppWithEvent(
+            TargetingRule.Event(
+                name = "",
+                paramsRelation = RuleRelation.AND,
+                params = listOf(
+                    RuleEventParameter(
+                        name = Event.SCREEN_VIEW_PARAM_NAME,
+                        operator = StringOperator.DOES_NOT_EQUAL,
+                        values = listOf("some")
+                    ),
+                    RuleEventParameter(
+                        name = Event.SCREEN_VIEW_PARAM_NAME,
+                        operator = StringOperator.DOES_NOT_EQUAL,
+                        values = listOf("digital", "test")
+                    )
+                )
+            )
+        )
+        //When
+        val result = sut.checkEventMatchesRules(inapp, Event.ScreenView("test"))
+        //Then
+        assertEquals(false, result)
+    }
+
+    @Test
+    fun givenInApp_whenDOES_NOT_EQUALOperatorAndActuallyNotEqual_thenTrue() {
+        //Given
+        val sut = createValidator()
+        val inapp = createInAppWithEvent(
+            TargetingRule.Event(
+                name = "",
+                paramsRelation = RuleRelation.AND,
+                params = listOf(
+                    RuleEventParameter(
+                        name = Event.SCREEN_VIEW_PARAM_NAME,
+                        operator = StringOperator.DOES_NOT_EQUAL,
+                        values = listOf("some")
+                    )
+                )
+            )
+        )
+        //When
+        val result = sut.checkEventMatchesRules(inapp, Event.ScreenView("test"))
+        //Then
+        assertEquals(true, result)
+    }
+
+    @Test
+    fun givenInApp_whenDOES_NOT_EQUALOperatorAndActuallyEqual_thenFalse() {
+        //Given
+        val sut = createValidator()
+        val inapp = createInAppWithEvent(
+            TargetingRule.Event(
+                name = "",
+                paramsRelation = RuleRelation.AND,
+                params = listOf(
+                    RuleEventParameter(
+                        name = Event.SCREEN_VIEW_PARAM_NAME,
+                        operator = StringOperator.DOES_NOT_EQUAL,
+                        values = listOf("some")
+                    )
+                )
+            )
+        )
+        //When
+        val result = sut.checkEventMatchesRules(inapp, Event.ScreenView("some"))
+        //Then
+        assertEquals(false, result)
+    }
+
+    @Test
+    fun givenInApp_whenDOES_NOT_EQUALOperatorAndActuallyEqualPartially_thenTrue() {
+        //Given
+        val sut = createValidator()
+        val inapp = createInAppWithEvent(
+            TargetingRule.Event(
+                name = "",
+                paramsRelation = RuleRelation.AND,
+                params = listOf(
+                    RuleEventParameter(
+                        name = Event.SCREEN_VIEW_PARAM_NAME,
+                        operator = StringOperator.DOES_NOT_EQUAL,
+                        values = listOf("some")
+                    )
+                )
+            )
+        )
+        //When
+        val result = sut.checkEventMatchesRules(inapp, Event.ScreenView("sometest"))
+        //Then
+        assertEquals(true, result)
+    }
+
     private fun createValidator() = RuleEventValidator()
 
     private fun createInAppWithEvent(rule: TargetingRule.Event) = InAppWithEvent(
