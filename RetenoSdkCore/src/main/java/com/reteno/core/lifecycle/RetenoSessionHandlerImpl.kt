@@ -1,9 +1,9 @@
 package com.reteno.core.lifecycle
 
+import com.reteno.core.Reteno
 import com.reteno.core.data.local.sharedpref.SharedPrefsManager
 import com.reteno.core.data.remote.model.iam.displayrules.targeting.InAppWithTime
 import com.reteno.core.data.remote.model.iam.message.InAppMessage
-import com.reteno.core.domain.controller.EventController
 import com.reteno.core.domain.model.event.Event
 import com.reteno.core.domain.model.event.LifecycleEvent
 import com.reteno.core.domain.model.event.LifecycleTrackingOptions
@@ -20,7 +20,6 @@ import java.util.UUID
 import kotlin.time.Duration.Companion.milliseconds
 
 internal class RetenoSessionHandlerImpl(
-    private val eventController: EventController,
     private val sharedPrefsManager: SharedPrefsManager,
     lifecycleTrackingOptions: LifecycleTrackingOptions,
     private val scope: CoroutineScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
@@ -162,7 +161,7 @@ internal class RetenoSessionHandlerImpl(
 
     private fun trackSessionEvent(lifecycleEvent: LifecycleEvent) {
         if (lifecycleEventConfig.getOrElse(lifecycleEvent.type) { false }) {
-            eventController.trackEvent(lifecycleEvent.event)
+            Reteno.instance.logEvent(lifecycleEvent.event)
         }
     }
 

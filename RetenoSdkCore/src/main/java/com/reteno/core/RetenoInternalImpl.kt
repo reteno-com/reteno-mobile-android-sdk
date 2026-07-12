@@ -12,8 +12,6 @@ import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.work.Configuration
 import com.reteno.core.data.local.config.DeviceIdMode
 import com.reteno.core.di.ServiceLocator
-import com.reteno.core.domain.action.user.UpdateMultiAccountUserAttributesAction
-import com.reteno.core.domain.action.user.UpdateUserAttributesAction
 import com.reteno.core.domain.controller.ScreenTrackingController
 import com.reteno.core.domain.model.ecom.EcomEvent
 import com.reteno.core.domain.model.event.Event
@@ -23,12 +21,22 @@ import com.reteno.core.domain.model.logevent.RetenoLogEvent
 import com.reteno.core.domain.model.user.User
 import com.reteno.core.domain.model.user.UserAttributesAnonymous
 import com.reteno.core.features.iam.InAppPauseBehaviour
+import com.reteno.core.internal.action.event.LogEcomEventAction
+import com.reteno.core.internal.action.event.LogEventAction
+import com.reteno.core.internal.action.event.LogRetenoEventAction
+import com.reteno.core.internal.action.event.LogScreenViewEventAction
+import com.reteno.core.internal.action.user.UpdateMultiAccountUserAttributesAction
+import com.reteno.core.internal.action.user.UpdateUserAttributesAction
 import com.reteno.core.lifecycle.RetenoActivityHelper
 import com.reteno.core.lifecycle.ScreenTrackingConfig
 import com.reteno.core.permission.AndroidPermissionChecker
 import com.reteno.core.permission.PermissionActivityDelegate
-import com.reteno.core.util.*
 import com.reteno.core.util.Constants.BROADCAST_ACTION_PUSH_PERMISSION_CHANGED
+import com.reteno.core.util.Logger
+import com.reteno.core.util.Procedure
+import com.reteno.core.util.Util
+import com.reteno.core.util.isOsVersionSupported
+import com.reteno.core.util.queryBroadcastReceivers
 import com.reteno.core.view.iam.IamView
 import com.reteno.core.view.iam.callback.InAppLifecycleCallback
 import kotlinx.coroutines.CompletableDeferred
@@ -63,7 +71,6 @@ class RetenoInternalImpl(
     private val screenTrackingController: ScreenTrackingController by lazy { serviceLocator.screenTrackingControllerProvider.get() }
     private val contactController by lazy { serviceLocator.contactControllerProvider.get() }
     private val scheduleController by lazy { serviceLocator.scheduleControllerProvider.get() }
-    private val eventController by lazy { serviceLocator.eventsControllerProvider.get() }
     private val iamController by lazy { serviceLocator.iamControllerProvider.get() }
     private val sessionHandler by lazy { serviceLocator.retenoSessionHandlerProvider.get() }
     private val appLifecycleController by lazy { serviceLocator.appLifecycleControllerProvider.get() }
@@ -339,13 +346,8 @@ class RetenoInternalImpl(
         if (!isOsVersionSupported()) {
             return@runAfterInit
         }
-        /*@formatter:off*/ Logger.i(TAG, "logEvent(): ", "eventType = [" , event.eventTypeKey , "], date = [" , event.occurred , "], parameters = [" , event.params , "]")
-        /*@formatter:on*/
-        try {
-            eventController.trackEvent(event)
-        } catch (ex: Throwable) {
-            /*@formatter:off*/ Logger.e(TAG, "logEvent(): event = [$event]", ex)
-            /*@formatter:on*/
+        syncScope.launch {
+            LogEventAction(serviceLocator, ioDispatcher).invoke(event)
         }
     }
 
@@ -353,13 +355,8 @@ class RetenoInternalImpl(
         if (!isOsVersionSupported()) {
             return@runAfterInit
         }
-        /*@formatter:off*/ Logger.i(TAG, "logEcommerceEvent(): ", "ecomEvent = [" , ecomEvent , "]")
-        /*@formatter:on*/
-        try {
-            eventController.trackEcomEvent(ecomEvent)
-        } catch (ex: Throwable) {
-            /*@formatter:off*/ Logger.e(TAG, "logEcommerceEvent(): ecomEvent = [$ecomEvent]", ex)
-            /*@formatter:on*/
+        syncScope.launch {
+            LogEcomEventAction(serviceLocator, ioDispatcher).invoke(ecomEvent)
         }
     }
 
@@ -367,13 +364,8 @@ class RetenoInternalImpl(
         if (!isOsVersionSupported()) {
             return@runAfterInit
         }
-        /*@formatter:off*/ Logger.i(TAG, "logScreenView(): ", "screenName = [" , screenName , "]")
-        /*@formatter:on*/
-        try {
-            eventController.trackScreenViewEvent(screenName)
-        } catch (ex: Throwable) {
-            /*@formatter:off*/ Logger.e(TAG, "logScreenView(): screenName = [$screenName]", ex)
-            /*@formatter:on*/
+        syncScope.launch {
+            LogScreenViewEventAction(serviceLocator, ioDispatcher).invoke(screenName)
         }
     }
 
@@ -381,13 +373,8 @@ class RetenoInternalImpl(
         if (!isOsVersionSupported()) {
             return@runAfterInit
         }
-        /*@formatter:off*/ Logger.i(TAG, "logRetenoEvent(): ", "event = [" , event , "]")
-        /*@formatter:on*/
-        try {
-            eventController.trackRetenoEvent(event)
-        } catch (ex: Throwable) {
-            /*@formatter:off*/ Logger.e(TAG, "logRetenoEvent(): event = [$event]", ex)
-            /*@formatter:on*/
+        syncScope.launch {
+            LogRetenoEventAction(serviceLocator, ioDispatcher).invoke(event)
         }
     }
 

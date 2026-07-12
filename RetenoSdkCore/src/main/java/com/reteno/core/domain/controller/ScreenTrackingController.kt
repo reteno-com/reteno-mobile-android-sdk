@@ -4,13 +4,16 @@ import android.app.Activity
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.fragment.app.FragmentManager
+import com.reteno.core.Reteno
 import com.reteno.core.lifecycle.RetenoActivityHelper
 import com.reteno.core.lifecycle.RetenoLifecycleCallbacks
 import com.reteno.core.lifecycle.ScreenTrackingConfig
 import com.reteno.core.lifecycle.ScreenTrackingTrigger
 import com.reteno.core.util.Logger
 
-internal class ScreenTrackingController(private val retenoActivityHelper: RetenoActivityHelper, private val eventController: EventController) {
+internal class ScreenTrackingController(
+    retenoActivityHelper: RetenoActivityHelper,
+) {
 
     private var screenTrackingConfig = ScreenTrackingConfig(enable = false)
 
@@ -26,7 +29,7 @@ internal class ScreenTrackingController(private val retenoActivityHelper: Reteno
                 ) {
                     /*@formatter:off*/ Logger.i(TAG, "onFragmentStarted(): ", "trackScreen $fragmentName")
                     /*@formatter:on*/
-                    eventController.trackScreenViewEvent(fragmentName)
+                    Reteno.instance.logScreenView(fragmentName)
                 }
             } catch (t: Throwable) {
                 /*@formatter:off*/ Logger.e(TAG, "onFragmentStarted(): ", t)
@@ -45,7 +48,7 @@ internal class ScreenTrackingController(private val retenoActivityHelper: Reteno
                 ) {
                     /*@formatter:off*/ Logger.i(TAG, "onFragmentResumed(): ", "trackScreen $fragmentName")
                     /*@formatter:on*/
-                    eventController.trackScreenViewEvent(fragmentName)
+                    Reteno.instance.logScreenView(fragmentName)
                 }
             } catch (t: Throwable) {
                 /*@formatter:off*/ Logger.e(TAG, "onFragmentResumed(): ", t)

@@ -18,6 +18,7 @@ import com.reteno.core.domain.ResultDomain
 import com.reteno.core.domain.model.event.Event
 import com.reteno.core.features.iam.IamJsEvent
 import com.reteno.core.features.iam.InAppPauseBehaviour
+import com.reteno.core.internal.action.event.eventFlow
 import com.reteno.core.lifecycle.RetenoSessionHandler
 import com.reteno.core.util.Logger
 import kotlinx.coroutines.CoroutineScope
@@ -35,6 +36,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.retry
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
@@ -69,8 +71,9 @@ internal class IamControllerImpl(
         get() = _inAppMessage.receiveAsFlow()
 
     init {
-        eventController.eventFlow
+        eventFlow
             .onEach { notifyEventOccurred(it) }
+            .retry()
             .launchIn(scope)
     }
 

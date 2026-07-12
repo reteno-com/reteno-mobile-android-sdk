@@ -1,7 +1,6 @@
 package com.reteno.core.data.repository
 
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerEvents
-import com.reteno.core.data.local.mappers.toDb
 import com.reteno.core.data.local.model.event.EventDb
 import com.reteno.core.data.local.model.event.EventsDb
 import com.reteno.core.data.remote.OperationQueue
@@ -11,9 +10,7 @@ import com.reteno.core.data.remote.api.ApiContract
 import com.reteno.core.data.remote.mapper.toJson
 import com.reteno.core.data.remote.mapper.toRemote
 import com.reteno.core.domain.ResponseCallback
-import com.reteno.core.domain.model.ecom.EcomEvent
 import com.reteno.core.domain.model.ecom.RemoteConstants
-import com.reteno.core.domain.model.event.Event
 import com.reteno.core.domain.model.logevent.LogLevel
 import com.reteno.core.domain.model.logevent.RetenoLogEvent
 import com.reteno.core.util.Logger
@@ -30,39 +27,9 @@ internal class EventsRepositoryImpl(
 
     /**
      * Types that are mentioned in this list will be pushed to backend with collectLatest principle,
-     * so the most latest item will be included and others are discarded
+     * so the latest item will be included and others are discarded
      * */
     private val distinctEventTypes = listOf(RemoteConstants.EcomEvent.EVENT_TYPE_CART_UPDATED)
-
-    override fun saveEvent(event: Event) {
-        val deviceId = configRepository.getDeviceId()
-        /*@formatter:off*/ Logger.i(TAG, "saveEvent(): ", "event = [" , event , "]", ", deviceId = [" , deviceId , "]")
-        /*@formatter:on*/
-
-        val events = EventsDb(
-            deviceId = deviceId.id,
-            externalUserId = deviceId.externalId,
-            eventList = listOf(event.toDb())
-        )
-        OperationQueue.addOperation {
-            databaseManager.insertEvents(events)
-        }
-    }
-
-    override fun saveEcomEvent(ecomEvent: EcomEvent) {
-        /*@formatter:off*/ Logger.i(TAG, "saveEcomEvent(): ", "ecomEvent = [" , ecomEvent , "]")
-        /*@formatter:on*/
-
-        val deviceId = configRepository.getDeviceId()
-        val events = EventsDb(
-            deviceId = deviceId.id,
-            externalUserId = deviceId.externalId,
-            eventList = listOf(ecomEvent.toDb())
-        )
-        OperationQueue.addOperation {
-            databaseManager.insertEvents(events)
-        }
-    }
 
     override fun pushEvents(limit: Int?) {
         /*@formatter:off*/ Logger.i(TAG, "pushEvents(): ", "limit = [", limit, "]")

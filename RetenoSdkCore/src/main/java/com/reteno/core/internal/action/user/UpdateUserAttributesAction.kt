@@ -1,4 +1,4 @@
-package com.reteno.core.domain.action.user
+package com.reteno.core.internal.action.user
 
 import com.reteno.core.RetenoInternalImpl
 import com.reteno.core.di.ServiceLocator
@@ -17,29 +17,17 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
-class UpdateMultiAccountUserAttributesAction(
+class UpdateUserAttributesAction(
     private val serviceLocator: ServiceLocator,
     private val ioDispatcher: CoroutineDispatcher
 ) {
     private val userAttributesUpdateRequests = Channel<Pair<String, User?>>(
         capacity = Channel.UNLIMITED,
-        onUndeliveredElement = {
-            Logger.w(
-                TAG,
-                "onUndeliveredElement",
-                "Too much user attributes update requested, ignoring update: id = ${it.first}, user = ${it.second}"
-            )
-        }
+        onUndeliveredElement = { Logger.w(TAG, "onUndeliveredElement", "Too much user attributes update requested, ignoring update: id = ${it.first}, user = ${it.second}") }
     )
     private val segmentationRefreshRequest = Channel<Unit>(
         capacity = Channel.UNLIMITED,
-        onUndeliveredElement = {
-            Logger.w(
-                TAG,
-                "onUndeliveredElement",
-                "Too much segment update requested, ignoring update"
-            )
-        }
+        onUndeliveredElement = { Logger.w(TAG, "onUndeliveredElement", "Too much user segment update requested, ignoring") }
     )
     private val mutex = Mutex()
     private val contactController by lazy(LazyThreadSafetyMode.NONE) { serviceLocator.contactControllerProvider.get() }
@@ -51,10 +39,10 @@ class UpdateMultiAccountUserAttributesAction(
             .receiveAsFlow()
             .onEach { executeRequest(it.first, it.second) }
             .retry {
-                Logger.e(TAG, "setMultiAccountUserAttributes():", it)
+                Logger.e(TAG, "setUserAttributes():", it)
                 true
             }
-            .catch { Logger.e(TAG, "setMultiAccountUserAttributes():", it) }
+            .catch { Logger.e(TAG, "setUserAttributes():", it) }
             .launchIn(scope)
         segmentationRefreshRequest
             .receiveAsFlow()
@@ -79,11 +67,11 @@ class UpdateMultiAccountUserAttributesAction(
     }
 
     private suspend fun executeRequest(externalUserId: String, user: User?) = mutex.withLock {
-        if (contactController.getDeviceIdSuffix() != externalUserId) {
+        if (contactController.getDeviceIdSuffix() != null) {
             RetenoInternalImpl.instance.stop()
             withContext(ioDispatcher) {
                 sessionHandler.clearSessionForced()
-                contactController.setDeviceIdSuffix(externalUserId)
+                contactController.setDeviceIdSuffix(null)
                 contactController.setExternalIdAndUserData(externalUserId, user)
             }
             RetenoInternalImpl.instance.start()
@@ -98,6 +86,6 @@ class UpdateMultiAccountUserAttributesAction(
     }
 
     companion object {
-        private const val TAG = "UpdateMultiAccountUserAttributesAction"
+        private const val TAG = "UserAttributesUpdateAction"
     }
 }

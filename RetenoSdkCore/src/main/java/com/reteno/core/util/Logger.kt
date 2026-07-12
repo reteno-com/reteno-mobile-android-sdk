@@ -3,7 +3,6 @@ package com.reteno.core.util
 import android.util.Log
 import com.reteno.core.BuildConfig
 import com.reteno.core.RetenoInternalImpl
-import com.reteno.core.di.ServiceLocator
 import com.reteno.core.domain.model.logevent.LogLevel
 import com.reteno.core.domain.model.logevent.RetenoLogEvent
 
@@ -61,6 +60,16 @@ object Logger {
         createLogEvent(buildErrorMessage(methodName, tr), LogLevel.ERROR)
     }
 
+    @JvmStatic
+    fun e(tag: String, methodName: String, tr: Throwable, vararg arguments: Any?) {
+        if (BuildConfig.DEBUG || Util.isDebugView()) {
+            val message = buildMessage(methodName, arguments)
+            Log.e(tag, message, tr)
+        }
+
+        createLogEvent(buildErrorMessage(methodName, tr), LogLevel.ERROR)
+    }
+
     private fun buildMessage(methodName: String, arguments: Array<out Any?>): String {
         val builder = StringBuilder().append(methodName)
         for (arg in arguments) {
@@ -101,10 +110,7 @@ object Logger {
             runCatching {
                 RetenoInternalImpl.instance.logRetenoEvent(logEvent)
             }.onFailure {
-                ServiceLocator(RetenoInternalImpl.instance.application)
-                    .eventsControllerProvider
-                    .get()
-                    .trackRetenoEvent(logEvent)
+                TODO()
             }
         } catch (e: Exception) {
             Log.e(TAG, "saveEvent: ", e)

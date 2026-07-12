@@ -11,6 +11,7 @@ import androidx.annotation.MainThread
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleObserver
 import androidx.lifecycle.OnLifecycleEvent
+import com.reteno.core.Reteno
 import com.reteno.core.RetenoInternalImpl
 import com.reteno.core.data.repository.ConfigRepository
 import com.reteno.core.domain.model.event.Event
@@ -33,7 +34,6 @@ import kotlin.time.Duration.Companion.milliseconds
 
 class AppLifecycleController internal constructor(
     private val configRepository: ConfigRepository,
-    private val eventController: EventController,
     private val sessionHandler: RetenoSessionHandler,
     private val scheduleController: ScheduleController,
     private val iamController: IamController,
@@ -153,7 +153,7 @@ class AppLifecycleController internal constructor(
 
     private fun trackLifecycleEvent(lifecycleEvent: LifecycleEvent) {
         if (lifecycleEventConfig.getOrElse(lifecycleEvent.type) { false }) {
-            eventController.trackEvent(lifecycleEvent.event)
+            Reteno.instance.logEvent(lifecycleEvent.event)
         }
     }
 

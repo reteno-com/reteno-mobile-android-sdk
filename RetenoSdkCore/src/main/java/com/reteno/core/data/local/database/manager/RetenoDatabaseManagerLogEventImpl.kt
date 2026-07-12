@@ -17,12 +17,11 @@ internal class RetenoDatabaseManagerLogEventImpl(
     private val database: RetenoDatabase
 ) : RetenoDatabaseManagerLogEvent {
 
-    private val contentValues = ContentValues()
-
     override fun insertLogEvent(logEvent: RetenoLogEventDb) {
         /*@formatter:off*/ Logger.i(TAG, "insertLogEvent(): ", "logEvent = [", logEvent, "]")
         /*@formatter:on*/
 
+        val contentValues = ContentValues()
         contentValues.putLogEvent(logEvent)
         database.insert(table = LogEventSchema.TABLE_NAME_LOG_EVENT, contentValues = contentValues)
         contentValues.clear()
