@@ -1,7 +1,9 @@
 package com.reteno.core.domain.controller
 
 import androidx.annotation.VisibleForTesting
+import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerUser
 import com.reteno.core.data.local.mappers.toDomain
+import com.reteno.core.data.local.model.BooleanDb
 import com.reteno.core.data.remote.model.iam.displayrules.frequency.FrequencyRuleValidator
 import com.reteno.core.data.remote.model.iam.displayrules.schedule.ScheduleRuleValidator
 import com.reteno.core.data.remote.model.iam.displayrules.targeting.InAppWithEvent
@@ -20,6 +22,7 @@ import com.reteno.core.features.iam.IamJsEvent
 import com.reteno.core.features.iam.InAppPauseBehaviour
 import com.reteno.core.lifecycle.RetenoSessionHandler
 import com.reteno.core.util.Logger
+import com.reteno.core.util.bufferUntil
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -35,6 +38,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.retry
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
@@ -45,6 +49,7 @@ internal class IamControllerImpl(
     private val iamRepository: IamRepository,
     eventController: EventController,
     private val sessionHandler: RetenoSessionHandler,
+    private val userDatabase: RetenoDatabaseManagerUser,
     private val scope: CoroutineScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 ) : IamController {
 
@@ -68,9 +73,13 @@ internal class IamControllerImpl(
     override val inAppMessagesFlow: Flow<InAppMessage>
         get() = _inAppMessage.receiveAsFlow()
 
+    private val isFirstMessagesProcessed = MutableStateFlow(false)
+
     init {
         eventController.eventFlow
+            .bufferUntil(isFirstMessagesProcessed)
             .onEach { notifyEventOccurred(it) }
+            .retry()
             .launchIn(scope)
     }
 
@@ -124,8 +133,23 @@ internal class IamControllerImpl(
             try {
                 withTimeout(TIMEOUT) {
                     val baseHtml = iamRepository.getLocalBaseHtml()
-                    val widgetModel = messageContent?.model.toString()
-
+                    var widgetModel = messageContent?.model.toString()
+                    if (widgetModel.contains(Regex("\\$\\{.+\\}"))) {
+                        val users = userDatabase.getUsers()
+                        val latestPushed = users.firstOrNull { it.isSynchronizedWithBackend == BooleanDb.TRUE }
+                        val newestUpdate = users
+                            .filter { it.isSynchronizedWithBackend == BooleanDb.FALSE }
+                            .maxByOrNull { it.createdAt }
+                        widgetModel = widgetModel
+                            .replace("\${firstName}", newestUpdate?.userAttributes?.firstName ?: latestPushed?.userAttributes?.firstName.orEmpty())
+                            .replace("\${lastName}", newestUpdate?.userAttributes?.lastName ?: latestPushed?.userAttributes?.lastName.orEmpty())
+                            .replace("\${email}", newestUpdate?.userAttributes?.email ?: latestPushed?.userAttributes?.email.orEmpty())
+                            .replace("\${phone}", newestUpdate?.userAttributes?.phone ?: latestPushed?.userAttributes?.phone.orEmpty())
+                            .replace("\${languageCode}", newestUpdate?.userAttributes?.languageCode ?: latestPushed?.userAttributes?.languageCode.orEmpty())
+                            .replace("\${timeZone}", newestUpdate?.userAttributes?.timeZone ?: latestPushed?.userAttributes?.timeZone.orEmpty())
+                            .replace("\${address}", newestUpdate?.userAttributes?.address?.address ?: latestPushed?.userAttributes?.address?.address.orEmpty())
+                            .replace("\${marketId}", newestUpdate?.userAttributes?.marketId ?: latestPushed?.userAttributes?.marketId.orEmpty())
+                    }
                     var text = baseHtml
                     text = text.replace(KEY_DOCUMENT_MODEL, widgetModel)
                     text = text.replace(KEY_PERSONALISATION, "{}")
@@ -297,6 +321,7 @@ internal class IamControllerImpl(
         if (inAppsWithEvents.isNotEmpty()) {
             inAppsWaitingForEvent = inAppsWithEvents
         }
+        isFirstMessagesProcessed.value = true
         tryShowInAppFromList(inAppMessages = inAppsOnAppStart, showingOnAppStart = true)
     }
 

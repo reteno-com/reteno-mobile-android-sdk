@@ -279,7 +279,8 @@ class ServiceLocator(
     internal val iamControllerProvider: IamControllerProvider = IamControllerProvider(
         iamRepositoryProvider,
         retenoSessionHandlerProviderInternal,
-        eventsControllerProvider
+        eventsControllerProvider,
+        retenoDatabaseManagerUserProviderInternal
     )
 
     private val appLifecycleControllerProviderInternal = AppLifecycleControllerProvider(
