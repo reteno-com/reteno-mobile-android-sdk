@@ -12,6 +12,11 @@ import com.reteno.core.RetenoInternalImpl
 import com.reteno.core.domain.SchedulerUtils
 import com.reteno.core.domain.model.event.LifecycleEventType
 import com.reteno.core.domain.model.event.LifecycleTrackingOptions
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.merge
+import kotlinx.coroutines.flow.transformWhile
 import java.io.ByteArrayOutputStream
 import java.io.FileInputStream
 import java.io.IOException
@@ -289,6 +294,27 @@ object Util {
             LifecycleEventType.SESSION_START to sessionStartEventsEnabled,
             LifecycleEventType.SESSION_END to sessionEndEventsEnabled
         )
+    }
+}
+
+private sealed interface Gated<out T> {
+    data class Value<T>(val value: T) : Gated<T>
+    data class Open(val isOpen: Boolean) : Gated<Nothing>
+}
+
+fun <T> Flow<T>.bufferUntil(gate: Flow<Boolean>): Flow<T> = flow {
+    val queue = ArrayDeque<T>()
+    var open = false
+
+    merge<Gated<T>>(
+        map { Gated.Value(it) },
+        gate.transformWhile { isOpen -> emit(Gated.Open(isOpen)); !isOpen },
+    ).collect { event ->
+        when (event) {
+            is Gated.Value -> if (open) emit(event.value) else queue += event.value
+            is Gated.Open -> open = event.isOpen
+        }
+        if (open) while (queue.isNotEmpty()) emit(queue.removeFirst())
     }
 }
 
