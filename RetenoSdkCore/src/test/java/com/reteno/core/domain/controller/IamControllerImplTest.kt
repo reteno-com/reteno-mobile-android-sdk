@@ -4,6 +4,11 @@ import com.google.gson.Gson
 import com.google.gson.JsonObject
 import com.google.gson.annotations.SerializedName
 import com.reteno.core.base.robolectric.BaseRobolectricTest
+import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerUser
+import com.reteno.core.data.local.model.BooleanDb
+import com.reteno.core.data.local.model.user.AddressDb
+import com.reteno.core.data.local.model.user.UserAttributesDb
+import com.reteno.core.data.local.model.user.UserDb
 import com.reteno.core.data.remote.model.iam.displayrules.DisplayRules
 import com.reteno.core.data.remote.model.iam.displayrules.RuleRelation
 import com.reteno.core.data.remote.model.iam.displayrules.StringOperator
@@ -63,6 +68,11 @@ class IamControllerImplTest : BaseRobolectricTest() {
         val widgetContent: Int = 1
     )
 
+    class PlaceholderContent(
+        @SerializedName("text")
+        val text: String
+    )
+
     // region constants ----------------------------------------------------------------------------
     companion object {
         private const val WIDGET_ID = "widgetId"
@@ -81,6 +91,8 @@ class IamControllerImplTest : BaseRobolectricTest() {
     // region helper fields ------------------------------------------------------------------------
     @RelaxedMockK
     private lateinit var iamRepository: IamRepository
+    @RelaxedMockK
+    private lateinit var userDatabase: RetenoDatabaseManagerUser
     private val eventFlow = MutableSharedFlow<Event>()
     // endregion helper fields ---------------------------------------------------------------------
 
@@ -170,6 +182,117 @@ class IamControllerImplTest : BaseRobolectricTest() {
 
         sut.reset()
         assertEquals(ResultDomain.Idle, sut.fullHtmlStateFlow.value)
+        coroutineContext.cancelChildren()
+    }
+
+    @Test
+    fun givenModelHasNoPlaceholders_whenFetchIamFullHtmlWithContent_thenUserDatabaseIsNotQueried() = runTest {
+        // Given
+        val sut = createController()
+        val content = InAppMessageContent(
+            messageInstanceId = 1,
+            layoutType = InAppLayoutType.FULL,
+            model = Gson().toJsonTree(TestContent()),
+            layoutParams = null
+        )
+
+        // When
+        sut.fetchIamFullHtml(content)
+        advanceUntilIdle()
+
+        // Then
+        assertTrue(sut.fullHtmlStateFlow.value is ResultDomain.Success)
+        coVerify(exactly = 0) { userDatabase.getUsers() }
+        coroutineContext.cancelChildren()
+    }
+
+    @Test
+    fun givenOnlySyncedUserInDb_whenFetchIamFullHtmlWithPlaceholders_thenReplacedWithSyncedUserAttributes() = runTest {
+        // Given
+        val sut = createController()
+        val syncedUser = userDb(
+            rowId = "1",
+            createdAt = 100L,
+            isSynchronizedWithBackend = BooleanDb.TRUE,
+            firstName = "John",
+            lastName = "Doe",
+            email = "john@old.com",
+            phone = "+380990009900",
+            languageCode = "en",
+            timeZone = "UTC",
+            address = "Old street",
+            marketId = "market1"
+        )
+        every { userDatabase.getUsers() } returns listOf(syncedUser)
+
+        val content = placeholderContent()
+
+        // When
+        sut.fetchIamFullHtml(content)
+        advanceUntilIdle()
+
+        // Then
+        val html = (sut.fullHtmlStateFlow.value as ResultDomain.Success).body.fullHtml
+        assertTrue(html.contains("John|Doe|john@old.com|+380990009900|en|UTC|Old street|market1"))
+        coroutineContext.cancelChildren()
+    }
+
+    @Test
+    fun givenPendingPartialUpdateOverSyncedUser_whenFetchIamFullHtmlWithPlaceholders_thenChangedFieldTakenFromPendingAndRestFromSynced() =
+        runTest {
+            // Given
+            val sut = createController()
+            // Full snapshot as it was last synced with backend
+            val syncedUser = userDb(
+                rowId = "1",
+                createdAt = 100L,
+                isSynchronizedWithBackend = BooleanDb.TRUE,
+                firstName = "John",
+                lastName = "Doe",
+                email = "john@old.com",
+                phone = "+380990009900",
+                languageCode = "en",
+                timeZone = "UTC",
+                address = "Old street",
+                marketId = "market1"
+            )
+            // A partial update queued for the next sync - only email changed, everything else null
+            val pendingUser = userDb(
+                rowId = "2",
+                createdAt = 200L,
+                isSynchronizedWithBackend = BooleanDb.FALSE,
+                email = "john@new.com"
+            )
+            every { userDatabase.getUsers() } returns listOf(syncedUser, pendingUser)
+
+            val content = placeholderContent()
+
+            // When
+            sut.fetchIamFullHtml(content)
+            advanceUntilIdle()
+
+            // Then
+            val html = (sut.fullHtmlStateFlow.value as ResultDomain.Success).body.fullHtml
+            // email comes from the pending partial update, everything else falls back to the synced snapshot
+            assertTrue(html.contains("John|Doe|john@new.com|+380990009900|en|UTC|Old street|market1"))
+            coroutineContext.cancelChildren()
+        }
+
+    @Test
+    fun givenNoUsersInDb_whenFetchIamFullHtmlWithPlaceholders_thenReplacedWithEmptyStrings() = runTest {
+        // Given
+        val sut = createController()
+        every { userDatabase.getUsers() } returns emptyList()
+
+        val content = placeholderContent()
+
+        // When
+        sut.fetchIamFullHtml(content)
+        advanceUntilIdle()
+
+        // Then
+        val html = (sut.fullHtmlStateFlow.value as ResultDomain.Success).body.fullHtml
+        assertTrue(html.contains("|||||||"))
         coroutineContext.cancelChildren()
     }
 
@@ -539,8 +662,48 @@ class IamControllerImplTest : BaseRobolectricTest() {
 
     //region utils
 
+    private fun placeholderContent() = InAppMessageContent(
+        messageInstanceId = 1,
+        layoutType = InAppLayoutType.FULL,
+        model = Gson().toJsonTree(
+            PlaceholderContent(
+                "\${firstName}|\${lastName}|\${email}|\${phone}|\${languageCode}|\${timeZone}|\${address}|\${marketId}"
+            )
+        ),
+        layoutParams = null
+    )
+
+    private fun userDb(
+        rowId: String,
+        createdAt: Long,
+        isSynchronizedWithBackend: BooleanDb,
+        firstName: String? = null,
+        lastName: String? = null,
+        email: String? = null,
+        phone: String? = null,
+        languageCode: String? = null,
+        timeZone: String? = null,
+        address: String? = null,
+        marketId: String? = null
+    ) = UserDb(
+        rowId = rowId,
+        createdAt = createdAt,
+        deviceId = "deviceId",
+        isSynchronizedWithBackend = isSynchronizedWithBackend,
+        userAttributes = UserAttributesDb(
+            firstName = firstName,
+            lastName = lastName,
+            email = email,
+            phone = phone,
+            languageCode = languageCode,
+            timeZone = timeZone,
+            address = address?.let { AddressDb(address = it) },
+            marketId = marketId
+        )
+    )
+
     private fun TestScope.createController(): IamControllerImpl {
-        return IamControllerImpl(iamRepository, eventController, sessionHandler, this)
+        return IamControllerImpl(iamRepository, eventController, sessionHandler, userDatabase, this)
     }
 
     private fun createEventDisplayRule() = TargetingDisplayRules(

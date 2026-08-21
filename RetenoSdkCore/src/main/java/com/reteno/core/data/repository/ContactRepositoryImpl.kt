@@ -153,25 +153,25 @@ internal class ContactRepositoryImpl(
                 it.createdAt
             }
 
-        val requestModel = createUserRequestModel(latestUsers, latestSynchedUser)
+        val pushModel = createUserRequestModel(latestUsers, latestSynchedUser)
 
-        if (requestModel == null) {
+        if (pushModel == null) {
             databaseManagerUser.deleteUsers(latestUsers)
             PushOperationQueue.nextOperation()
             return
         }
 
-        /*@formatter:off*/ Logger.i(TAG, "pushUserData(): ", "user = [" , requestModel , "]")
+        /*@formatter:off*/ Logger.i(TAG, "pushUserData(): ", "user = [" , pushModel.requestModel , "]")
         /*@formatter:on*/
         apiClient.post(
             ApiContract.MobileApi.User,
-            requestModel.toJson(),
+            pushModel.requestModel.toJson(),
             object : ResponseCallback {
                 override fun onSuccess(response: String) {
                     /*@formatter:off*/ Logger.i(TAG, "onSuccess(): ", "response = [" , response , "]")
                     /*@formatter:on*/
                     databaseManagerUser.deleteUsers(users)
-                    databaseManagerUser.insertUser(requestModel.toDb().copy(isSynchronizedWithBackend = BooleanDb.TRUE))
+                    databaseManagerUser.insertUser(pushModel.fullModel.toDb().copy(isSynchronizedWithBackend = BooleanDb.TRUE))
                     PushOperationQueue.nextOperation()
                 }
 
@@ -180,7 +180,7 @@ internal class ContactRepositoryImpl(
                     /*@formatter:on*/
                     if (isNonRepeatableError(statusCode)) {
                         databaseManagerUser.deleteUsers(users)
-                        databaseManagerUser.insertUser(requestModel.toDb().copy(isSynchronizedWithBackend = BooleanDb.TRUE))
+                        databaseManagerUser.insertUser(pushModel.fullModel.toDb().copy(isSynchronizedWithBackend = BooleanDb.TRUE))
                     } else {
                         PushOperationQueue.removeAllOperations()
                     }
@@ -252,24 +252,24 @@ internal class ContactRepositoryImpl(
                 it.createdAt
             }
 
-        val requestModel = createUserRequestModel(latestUsers, latestSynchedUser)
+        val pushModel = createUserRequestModel(latestUsers, latestSynchedUser)
 
-        if (requestModel == null) {
+        if (pushModel == null) {
             databaseManagerUser.deleteUsers(latestUsers)
             return
         }
 
-        /*@formatter:off*/ Logger.i(TAG, "pushUserData(): ", "user = [" , requestModel , "]")
+        /*@formatter:off*/ Logger.i(TAG, "pushUserData(): ", "user = [" , pushModel.requestModel , "]")
         /*@formatter:on*/
         apiClient.postSync(
             ApiContract.MobileApi.User,
-            requestModel.toJson(),
+            pushModel.requestModel.toJson(),
             responseHandler = object : ResponseCallback {
                 override fun onSuccess(response: String) {
                     /*@formatter:off*/ Logger.i(TAG, "onSuccess(): ", "response = [" , response , "]")
                     /*@formatter:on*/
                     databaseManagerUser.deleteUsers(users)
-                    databaseManagerUser.insertUser(requestModel.toDb().copy(isSynchronizedWithBackend = BooleanDb.TRUE))
+                    databaseManagerUser.insertUser(pushModel.fullModel.toDb().copy(isSynchronizedWithBackend = BooleanDb.TRUE))
                 }
 
                 override fun onFailure(statusCode: Int?, response: String?, throwable: Throwable?) {
@@ -277,7 +277,7 @@ internal class ContactRepositoryImpl(
                     /*@formatter:on*/
                     if (isNonRepeatableError(statusCode)) {
                         databaseManagerUser.deleteUsers(users)
-                        databaseManagerUser.insertUser(requestModel.toDb().copy(isSynchronizedWithBackend = BooleanDb.TRUE))
+                        databaseManagerUser.insertUser(pushModel.fullModel.toDb().copy(isSynchronizedWithBackend = BooleanDb.TRUE))
                     }
                 }
             })
@@ -346,10 +346,21 @@ internal class ContactRepositoryImpl(
         }
     }
 
+    /**
+     * @property requestModel the diff sent to the backend (only changed fields, rest nulled out)
+     * @property fullModel the diff merged back on top of the last synced snapshot - this is what
+     * must be persisted locally as the new "synced" user, so attributes untouched by this push
+     * (e.g. firstName when only email changed) are not lost from local storage.
+     */
+    private data class UserPushModel(
+        val requestModel: UserRemote,
+        val fullModel: UserRemote
+    )
+
     private fun createUserRequestModel(
         usersToPush: List<UserDb>,
         latestSynchedUser: UserDb?
-    ): UserRemote? {
+    ): UserPushModel? {
         if (usersToPush.isEmpty()) return null
 
         val sorted = usersToPush.sortedBy { it.createdAt }
@@ -363,18 +374,20 @@ internal class ContactRepositoryImpl(
         if (latestSynchedUser == null) {
             /*@formatter:off*/ Logger.i(TAG, "pushUserData(): ", "No saved user found, pushing new user.")
             /*@formatter:on*/
-            return combinedUser
+            return UserPushModel(requestModel = combinedUser, fullModel = combinedUser)
         }
 
         if (Util.isTimestampOutdated(latestSynchedUser.createdAt, firstCreatedDate)) {
             /*@formatter:off*/ Logger.i(TAG, "pushUserData(): ", "Saved user is outdated, pushing new user.")
             /*@formatter:on*/
-            return combinedUser
+            return UserPushModel(requestModel = combinedUser, fullModel = combinedUser)
         }
 
         val latestSynchedUserRemote = latestSynchedUser.toRemote()
+        val diffModel = combinedUser.createDiffModel(latestSynchedUserRemote) ?: return null
+        val fullModel = combinedUser.createAccModel(latestSynchedUserRemote)
 
-        return combinedUser.createDiffModel(latestSynchedUserRemote)
+        return UserPushModel(requestModel = diffModel, fullModel = fullModel)
     }
 
     companion object {
