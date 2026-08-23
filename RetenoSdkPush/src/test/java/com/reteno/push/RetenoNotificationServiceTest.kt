@@ -1,7 +1,11 @@
 package com.reteno.push
 
 import android.app.NotificationManager
-import android.content.*
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.ContextWrapper
+import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.ActivityInfo
 import android.content.pm.ResolveInfo
 import android.os.Bundle
@@ -21,8 +25,19 @@ import com.reteno.push.Constants.KEY_ES_TITLE
 import com.reteno.push.base.robolectric.BaseRobolectricTest
 import com.reteno.push.channel.RetenoNotificationChannel
 import com.reteno.push.receiver.NotificationsEnabledManager
-import io.mockk.*
+import io.mockk.coJustRun
+import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.impl.annotations.RelaxedMockK
+import io.mockk.justRun
+import io.mockk.mockk
+import io.mockk.mockkConstructor
+import io.mockk.mockkStatic
+import io.mockk.spyk
+import io.mockk.unmockkConstructor
+import io.mockk.unmockkObject
+import io.mockk.unmockkStatic
+import io.mockk.verify
 import junit.framework.TestCase
 import junit.framework.TestCase.assertEquals
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -34,10 +49,9 @@ import org.junit.Test
 import org.robolectric.Shadows
 import org.robolectric.annotation.Config
 import org.robolectric.shadows.ShadowLooper
-import org.robolectric.shadows.ShadowNotificationManager
 
 @OptIn(ExperimentalCoroutinesApi::class)
-@Config(sdk = [26], shadows = [ShadowNotificationManager::class])
+@Config(sdk = [26])
 class RetenoNotificationServiceTest : BaseRobolectricTest() {
 
     // region constants ----------------------------------------------------------------------------
