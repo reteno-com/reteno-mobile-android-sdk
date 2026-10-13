@@ -1,6 +1,6 @@
 package com.reteno.core.internal.action.event
 
-import com.reteno.core.data.local.config.DeviceId
+import com.reteno.core.data.local.config.RestConfig
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerEvents
 import com.reteno.core.data.local.mappers.toDb
 import com.reteno.core.data.local.model.event.EventsDb
@@ -13,7 +13,7 @@ import kotlinx.coroutines.withContext
 
 internal class LogEcomEventAction(
     private val eventsDb: RetenoDatabaseManagerEvents,
-    private val deviceId: () -> DeviceId,
+    private val restConfig: RestConfig,
     private val eventBus: EventBus,
     private val dispatchers: RetenoDispatchers,
     private val runner: ActionRunner
@@ -23,7 +23,7 @@ internal class LogEcomEventAction(
         args("type" to event.typeKey)
         step("save ecommerce event to local database") {
             withContext(dispatchers.io) {
-                eventsDb.insertEvents(EventsDb(deviceId(), event.toDb()))
+                eventsDb.insertEvents(EventsDb(restConfig.deviceId, event.toDb()))
             }
         }
         step("notify in-app message triggers") { eventBus.emit(event.asRegularEvent()) }

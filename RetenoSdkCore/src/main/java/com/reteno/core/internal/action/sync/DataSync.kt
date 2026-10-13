@@ -1,30 +1,40 @@
 package com.reteno.core.internal.action.sync
 
 import com.reteno.core.internal.action.trace.ActionRunner
+import com.reteno.core.internal.config.SdkConfiguration
 import com.reteno.core.internal.coroutine.RetenoDispatchers
+import com.reteno.core.internal.platform.AppPlatform
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+internal interface SyncScheduler {
+    fun startScheduler()
+
+    fun stopScheduler()
+
+    fun clearOldData()
+}
+
 internal class DataSync(
     private val coordinator: SyncCoordinator,
-    private val clearOldData: suspend () -> Unit,
-    private val enqueueBackgroundSync: () -> Unit,
-    private val isDebugView: () -> Boolean,
+    private val clearOldDataAction: ClearOldData,
+    private val platform: AppPlatform,
+    private val configuration: SdkConfiguration,
     private val jitter: () -> Long,
     private val scope: CoroutineScope,
     private val dispatchers: RetenoDispatchers,
     private val runner: ActionRunner
-) : SyncTrigger by coordinator {
+) : SyncTrigger by coordinator, SyncScheduler {
 
     private var scheduler: Job? = null
 
     @Synchronized
-    fun startScheduler() {
+    override fun startScheduler() {
         scheduler?.cancel()
-        val period = if (isDebugView()) DEBUG_VIEW_DELAY else REGULAR_DELAY
+        val period = if (configuration.isDebug) DEBUG_VIEW_DELAY else REGULAR_DELAY
         scheduler = scope.launch {
             delay(period + jitter())
             while (true) {
@@ -35,22 +45,22 @@ internal class DataSync(
         scope.launch {
             runner("EnqueueBackgroundSync") {
                 step("schedule periodic background sync") {
-                    withContext(dispatchers.io) { enqueueBackgroundSync() }
+                    withContext(dispatchers.io) { platform.scheduleBackgroundSync() }
                 }
             }
         }
     }
 
     @Synchronized
-    fun stopScheduler() {
+    override fun stopScheduler() {
         scheduler?.cancel()
         scheduler = null
     }
 
-    fun clearOldData() {
+    override fun clearOldData() {
         scope.launch {
             delay(CLEAR_OLD_DATA_DELAY)
-            clearOldData.invoke()
+            clearOldDataAction()
         }
     }
 

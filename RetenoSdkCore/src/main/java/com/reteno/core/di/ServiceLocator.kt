@@ -1,14 +1,15 @@
 package com.reteno.core.di
 
 import android.content.Context
+import androidx.lifecycle.ProcessLifecycleOwner
 import com.reteno.core.RetenoConfig
-import com.reteno.core.RetenoInternalImpl
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerAppInbox
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerDevice
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerEvents
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerInteraction
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerUser
 import com.reteno.core.data.repository.ConfigRepository
+import com.reteno.core.di.base.Provider
 import com.reteno.core.di.base.ProviderWeakReference
 import com.reteno.core.di.provider.DeviceIdHelperProvider
 import com.reteno.core.di.provider.InteractionCacheProvider
@@ -18,12 +19,10 @@ import com.reteno.core.di.provider.RetenoConfigProvider
 import com.reteno.core.di.provider.SharedPrefsManagerProvider
 import com.reteno.core.di.provider.WorkManagerProvider
 import com.reteno.core.di.provider.controller.AppInboxControllerProvider
-import com.reteno.core.di.provider.controller.AppLifecycleControllerProvider
 import com.reteno.core.di.provider.controller.DeeplinkControllerProvider
 import com.reteno.core.di.provider.controller.IamControllerProvider
 import com.reteno.core.di.provider.controller.InteractionControllerProvider
 import com.reteno.core.di.provider.controller.RecommendationControllerProvider
-import com.reteno.core.di.provider.controller.ScreenTrackingControllerProvider
 import com.reteno.core.di.provider.database.DatabaseProvider
 import com.reteno.core.di.provider.database.RetenoDatabaseManagerAppInboxProvider
 import com.reteno.core.di.provider.database.RetenoDatabaseManagerDeviceProvider
@@ -49,18 +48,21 @@ import com.reteno.core.di.provider.repository.FileManagerProvider
 import com.reteno.core.di.provider.repository.IamRepositoryProvider
 import com.reteno.core.di.provider.repository.InteractionRepositoryProvider
 import com.reteno.core.di.provider.repository.RecommendationRepositoryProvider
-import com.reteno.core.domain.controller.AppLifecycleController
 import com.reteno.core.domain.controller.DeeplinkController
 import com.reteno.core.domain.controller.InteractionController
-import com.reteno.core.domain.model.device.Device
+import com.reteno.core.domain.model.event.LifecycleTrackingOptions
 import com.reteno.core.internal.action.sync.DataSync
+import com.reteno.core.internal.config.SdkConfigurationImpl
 import com.reteno.core.internal.coroutine.AndroidRetenoDispatchers
 import com.reteno.core.internal.coroutine.InitGate
 import com.reteno.core.internal.coroutine.RetenoDispatchers
+import com.reteno.core.internal.coroutine.retenoScope
+import com.reteno.core.internal.lifecycle.LifecycleEventFilter
 import com.reteno.core.internal.log.AndroidLogSink
+import com.reteno.core.internal.log.LoggerRemoteLog
+import com.reteno.core.internal.platform.AndroidAppPlatform
 import com.reteno.core.lifecycle.RetenoActivityHelper
 import com.reteno.core.lifecycle.RetenoSessionHandler
-import com.reteno.core.util.Logger
 import com.reteno.core.view.iam.IamView
 import kotlinx.coroutines.Dispatchers
 
@@ -72,29 +74,31 @@ class ServiceLocator internal constructor(
     constructor(context: Context) : this(context, AndroidRetenoDispatchers)
 
     internal val actions: ActionsLocator by lazy {
+        val logSink = AndroidLogSink()
         ActionsLocator(
             serviceLocator = this,
             dispatchers = dispatchers,
-            logSink = AndroidLogSink(),
-            awaitInit = initGate::awaitInit,
-            createDevice = { id, pushToken, pushSubscribed ->
-                Device.createDevice(
-                    deviceId = id.id,
-                    deviceIdSuffix = id.idSuffix,
-                    externalUserId = id.externalId,
-                    pushToken = pushToken,
-                    pushSubscribed = pushSubscribed,
-                    email = id.email,
-                    phone = id.phone
-                )
-            },
-            sdkLifecycle = { RetenoInternalImpl.instance }
-        ) { message, level -> Logger.captureMessage(message, level) }
+            logSink = logSink,
+            scope = retenoScope(dispatchers, logSink),
+            initGate = initGate,
+            configuration = configuration,
+            platform = AndroidAppPlatform(
+                context = context,
+                workManager = workManagerProvider,
+                lifecycleOwner = ProcessLifecycleOwner.get(),
+                activityHelper = retenoActivityHelperProvider.get()
+            ),
+            lifecycleEventFilter = lifecycleEventFilter,
+            remoteLog = LoggerRemoteLog,
+            clock = System::currentTimeMillis
+        )
     }
     private val dataSync: () -> DataSync = { actions.dataSync }
+    internal val lifecycleEventFilter = LifecycleEventFilter(LifecycleTrackingOptions.DEFAULT)
     internal val initGate = InitGate()
 
     private val configProvider = RetenoConfigProvider()
+    internal val configuration = SdkConfigurationImpl(configProvider, lifecycleEventFilter)
     private val retenoActivityHelperProviderInternal: RetenoActivityHelperProvider =
         RetenoActivityHelperProvider()
     val retenoActivityHelperProvider: ProviderWeakReference<RetenoActivityHelper>
@@ -240,11 +244,6 @@ class ServiceLocator internal constructor(
     private val recommendationControllerProvider: RecommendationControllerProvider =
         RecommendationControllerProvider(recommendationRepositoryProvider)
 
-    internal val screenTrackingControllerProvider: ScreenTrackingControllerProvider =
-        ScreenTrackingControllerProvider(
-            retenoActivityHelperProviderInternal
-        )
-
 
     /** Controller dependent **/
     internal val appInboxProvider: AppInboxProvider = AppInboxProvider(appInboxControllerProvider)
@@ -253,8 +252,8 @@ class ServiceLocator internal constructor(
         RecommendationProvider(recommendationControllerProvider)
 
     private val retenoSessionHandlerProviderInternal =
-        RetenoSessionHandlerProvider(sharedPrefsManagerProvider, configProvider)
-    val retenoSessionHandlerProvider: ProviderWeakReference<RetenoSessionHandler>
+        RetenoSessionHandlerProvider(sharedPrefsManagerProvider, lifecycleEventFilter) { actions.logEvent }
+    val retenoSessionHandlerProvider: Provider<RetenoSessionHandler>
         get() = retenoSessionHandlerProviderInternal
 
     internal val iamControllerProvider: IamControllerProvider = IamControllerProvider(
@@ -262,18 +261,6 @@ class ServiceLocator internal constructor(
         retenoSessionHandlerProviderInternal,
         retenoDatabaseManagerUserProviderInternal
     )
-
-    private val appLifecycleControllerProviderInternal = AppLifecycleControllerProvider(
-        configRepository = configRepositoryProviderInternal,
-        configProvider = configProvider,
-        sessionHandlerProvider = retenoSessionHandlerProviderInternal,
-        activityHelperProvider = retenoActivityHelperProviderInternal,
-        dataSync = dataSync,
-        iamControllerProvider = iamControllerProvider
-    )
-
-    val appLifecycleControllerProvider: ProviderWeakReference<AppLifecycleController>
-        get() = appLifecycleControllerProviderInternal
 
     private val iamViewProviderInternal: IamViewProvider = IamViewProvider(
         retenoActivityHelperProviderInternal,
@@ -293,6 +280,6 @@ class ServiceLocator internal constructor(
     }
 
     fun setConfig(config: RetenoConfig) {
-        configProvider.setConfig(config)
+        configuration.useUserConfig(config)
     }
 }

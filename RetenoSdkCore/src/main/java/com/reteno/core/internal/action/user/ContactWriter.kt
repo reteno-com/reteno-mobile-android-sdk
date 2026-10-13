@@ -13,6 +13,8 @@ import com.reteno.core.internal.action.trace.ActionTrace
 import com.reteno.core.internal.coroutine.RetenoDispatchers
 import com.reteno.core.internal.lifecycle.SdkLifecycle
 import com.reteno.core.internal.log.Redact
+import com.reteno.core.internal.log.RemoteLog
+import com.reteno.core.lifecycle.RetenoSessionHandler
 import kotlinx.coroutines.withContext
 
 internal class ContactWriter(
@@ -21,9 +23,9 @@ internal class ContactWriter(
     private val currentDevice: CurrentDevice,
     private val sync: SyncTrigger,
     private val session: ContactSession,
-    private val sdk: () -> SdkLifecycle,
-    private val clearSession: () -> Unit,
-    private val reportInvalid: (String) -> Unit,
+    private val sdk: SdkLifecycle,
+    private val sessionHandler: RetenoSessionHandler,
+    private val remoteLog: RemoteLog,
     private val dispatchers: RetenoDispatchers
 ) {
 
@@ -36,14 +38,14 @@ internal class ContactWriter(
     }
 
     private suspend fun switchAccount(trace: ActionTrace, suffix: String?, externalUserId: String, user: User?) {
-        trace.step("stop sdk for account switch") { withContext(dispatchers.main) { sdk().stop() } }
-        trace.step("clear current session") { withContext(dispatchers.io) { clearSession() } }
+        trace.step("stop sdk for account switch") { withContext(dispatchers.main) { sdk.stop() } }
+        trace.step("clear current session") { withContext(dispatchers.io) { sessionHandler.clearSessionForced() } }
         trace.step("save device id suffix to local settings") {
             withContext(dispatchers.io) { configRepository.setDeviceIdSuffix(suffix) }
             session.markDeviceNotSent()
         }
         writeContact(trace, externalUserId, user)
-        trace.step("start sdk after account switch") { withContext(dispatchers.main) { sdk().start() } }
+        trace.step("start sdk after account switch") { withContext(dispatchers.main) { sdk.start() } }
     }
 
     private suspend fun writeContact(trace: ActionTrace, externalUserId: String, user: User?) {
@@ -62,7 +64,7 @@ internal class ContactWriter(
     private suspend fun saveUser(trace: ActionTrace, user: User) {
         val validated = Validator.validateUser(user)
         if (validated == null) {
-            trace.step("report rejected user to remote log") { reportInvalid("SetUserAttributes: user rejected by validation") }
+            trace.step("report rejected user to remote log") { remoteLog.info("SetUserAttributes: user rejected by validation") }
             return
         }
         trace.step("save user to local database") {

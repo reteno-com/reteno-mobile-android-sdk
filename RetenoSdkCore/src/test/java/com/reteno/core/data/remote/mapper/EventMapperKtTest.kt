@@ -8,9 +8,7 @@ import com.reteno.core.data.remote.model.event.EventRemote
 import com.reteno.core.data.remote.model.event.EventsRemote
 import com.reteno.core.data.remote.model.event.ParameterRemote
 import org.junit.Assert.assertEquals
-
 import org.junit.Test
-
 import java.time.ZonedDateTime
 
 

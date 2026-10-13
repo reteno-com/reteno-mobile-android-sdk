@@ -3,6 +3,7 @@ package com.reteno.core.data.local.database.util
 import android.content.ContentValues
 import android.database.Cursor
 import androidx.core.database.getStringOrNull
+import com.reteno.core.RetenoInternalImpl
 import com.reteno.core.base.robolectric.BaseRobolectricTest
 import com.reteno.core.data.local.database.schema.DbSchema
 import com.reteno.core.data.local.database.schema.DeviceSchema
@@ -15,6 +16,7 @@ import com.reteno.core.util.Util
 import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
+import io.mockk.mockk
 import io.mockk.mockkConstructor
 import io.mockk.mockkStatic
 import io.mockk.unmockkConstructor
@@ -194,9 +196,11 @@ class DbUtilDeviceTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun givenCursorWithDeviceIdOnly_whenGetDevice_thenDeviceReturned() = runRetenoTest {
+    fun givenCursorWithDeviceIdOnly_whenGetDevice_thenDeviceReturned() {
         // Given
         mockDeviceDeviceIdOnly()
+        val app = application
+        RetenoInternalImpl.swapInstance(mockk { every { application } returns app })
 
         val expectedDevice = DeviceDb(
             rowId = null,
@@ -220,6 +224,7 @@ class DbUtilDeviceTest : BaseRobolectricTest() {
 
         // When
         val actualDevice = cursor.getDevice()
+        RetenoInternalImpl.swapInstance(null)
 
         // Then
         assertEquals(expectedDevice, actualDevice)

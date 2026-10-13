@@ -8,10 +8,17 @@ import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerRecomEve
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerWrappedLink
 import com.reteno.core.internal.action.trace.ActionRunner
 import com.reteno.core.internal.action.trace.ActionTrace
+import com.reteno.core.internal.config.SdkConfiguration
 import com.reteno.core.internal.coroutine.RetenoDispatchers
+import com.reteno.core.internal.log.RemoteLog
 import com.reteno.core.util.Util.formatToRemote
 import kotlinx.coroutines.withContext
-import java.time.ZonedDateTime
+import java.time.Instant
+import java.time.ZoneId
+
+internal interface ClearOldData {
+    suspend operator fun invoke(): Result<Unit>
+}
 
 internal class ClearOldDataAction(
     private val interactionsDb: RetenoDatabaseManagerInteraction,
@@ -20,14 +27,16 @@ internal class ClearOldDataAction(
     private val inboxDb: RetenoDatabaseManagerAppInbox,
     private val recomEventsDb: RetenoDatabaseManagerRecomEvents,
     private val wrappedLinksDb: RetenoDatabaseManagerWrappedLink,
-    private val outdatedTime: () -> ZonedDateTime,
-    private val reportRemoved: (String) -> Unit,
+    private val configuration: SdkConfiguration,
+    private val remoteLog: RemoteLog,
+    private val clock: () -> Long,
     private val dispatchers: RetenoDispatchers,
     private val runner: ActionRunner
-) {
+) : ClearOldData {
 
-    suspend operator fun invoke(): Result<Unit> = runner("ClearOldData") {
-        val before = outdatedTime().formatToRemote()
+    override suspend operator fun invoke(): Result<Unit> = runner("ClearOldData") {
+        val keepHours = if (configuration.isDebug) KEEP_DATA_HOURS_DEBUG else KEEP_DATA_HOURS
+        val before = Instant.ofEpochMilli(clock()).atZone(ZoneId.systemDefault()).minusHours(keepHours).formatToRemote()
         args("before" to before)
         clearInteractions(before)
         clearInAppInteractions(before)
@@ -80,6 +89,11 @@ internal class ClearOldDataAction(
     }
 
     private suspend fun ActionTrace.reportRemovedRows(messages: () -> List<String>) {
-        step("report removed rows to remote log") { messages().forEach(reportRemoved) }
+        step("report removed rows to remote log") { messages().forEach(remoteLog::info) }
+    }
+
+    companion object {
+        const val KEEP_DATA_HOURS = 24L
+        const val KEEP_DATA_HOURS_DEBUG = 1L
     }
 }

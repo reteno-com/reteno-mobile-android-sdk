@@ -1,10 +1,12 @@
 package com.reteno.core.di
 
-import com.reteno.core.data.local.config.DeviceId
-import com.reteno.core.data.workmanager.PushDataWorker
-import com.reteno.core.domain.SchedulerUtils
-import com.reteno.core.domain.model.device.Device
-import com.reteno.core.domain.model.logevent.LogLevel
+import com.reteno.core.RetenoConfig
+import com.reteno.core.domain.model.ecom.EcomEvent
+import com.reteno.core.domain.model.event.Event
+import com.reteno.core.domain.model.event.LifecycleTrackingOptions
+import com.reteno.core.domain.model.logevent.RetenoLogEvent
+import com.reteno.core.domain.model.user.User
+import com.reteno.core.domain.model.user.UserAttributesAnonymous
 import com.reteno.core.internal.action.device.ContactSession
 import com.reteno.core.internal.action.device.CurrentDevice
 import com.reteno.core.internal.action.device.EnsureDeviceRegisteredThisSessionAction
@@ -15,6 +17,18 @@ import com.reteno.core.internal.action.event.LogEcomEventAction
 import com.reteno.core.internal.action.event.LogEventAction
 import com.reteno.core.internal.action.event.LogRetenoEventAction
 import com.reteno.core.internal.action.event.LogScreenViewEventAction
+import com.reteno.core.internal.action.init.ApplyConfigAction
+import com.reteno.core.internal.action.init.BootSdkAction
+import com.reteno.core.internal.action.init.SetSessionDurationAction
+import com.reteno.core.internal.action.init.StartSdkAction
+import com.reteno.core.internal.action.init.StopSdkAction
+import com.reteno.core.internal.action.lifecycle.AppBackgroundedAction
+import com.reteno.core.internal.action.lifecycle.AppForegroundedAction
+import com.reteno.core.internal.action.lifecycle.EnableAutoScreenTrackingAction
+import com.reteno.core.internal.action.lifecycle.SetLifecycleEventConfigAction
+import com.reteno.core.internal.action.lifecycle.TrackPermissionDialogAction
+import com.reteno.core.internal.action.lifecycle.UpdatePushPermissionStatusAction
+import com.reteno.core.internal.action.sync.BackgroundSync
 import com.reteno.core.internal.action.sync.BackgroundSyncAction
 import com.reteno.core.internal.action.sync.ClearOldDataAction
 import com.reteno.core.internal.action.sync.DataSync
@@ -32,76 +46,87 @@ import com.reteno.core.internal.action.sync.SyncDataAction
 import com.reteno.core.internal.action.trace.ActionRunner
 import com.reteno.core.internal.action.trace.RemoteLogFailureReporter
 import com.reteno.core.internal.action.user.ContactWriter
-import com.reteno.core.internal.action.user.SegmentationRefresh
+import com.reteno.core.internal.action.user.SegmentationRefreshImpl
 import com.reteno.core.internal.action.user.SetAnonymousUserAttributesAction
 import com.reteno.core.internal.action.user.SetMultiAccountUserAttributesAction
 import com.reteno.core.internal.action.user.SetUserAttributesAction
+import com.reteno.core.internal.config.SdkConfiguration
+import com.reteno.core.internal.coroutine.InitGate
 import com.reteno.core.internal.coroutine.RetenoDispatchers
 import com.reteno.core.internal.coroutine.SerialQueue
-import com.reteno.core.internal.coroutine.retenoScope
 import com.reteno.core.internal.event.EventBus
-import com.reteno.core.internal.lifecycle.SdkLifecycle
-import com.reteno.core.internal.log.LogPriority
-import com.reteno.core.internal.log.Redact
+import com.reteno.core.internal.lifecycle.AppForegroundState
+import com.reteno.core.internal.lifecycle.AppLifecycleTracking
+import com.reteno.core.internal.lifecycle.AppLifecycleTrackingImpl
+import com.reteno.core.internal.lifecycle.LifecycleEventFilter
+import com.reteno.core.internal.lifecycle.LifecycleEvents
+import com.reteno.core.internal.lifecycle.ScreenTracker
+import com.reteno.core.internal.lifecycle.SdkRunState
+import com.reteno.core.internal.lifecycle.StartStopSequencer
+import com.reteno.core.internal.log.RemoteLog
 import com.reteno.core.internal.log.RetenoLogSink
-import com.reteno.core.internal.log.log
 import com.reteno.core.internal.network.SuspendApiClient
-import com.reteno.core.util.Util
+import com.reteno.core.internal.platform.AppPlatform
+import com.reteno.core.lifecycle.ScreenTrackingConfig
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.plus
 import kotlin.random.Random
 
 internal class ActionsLocator(
     private val serviceLocator: ServiceLocator,
     private val dispatchers: RetenoDispatchers,
     private val logSink: RetenoLogSink,
-    private val awaitInit: suspend () -> Unit,
-    private val createDevice: (DeviceId, String, Boolean) -> Device,
-    private val sdkLifecycle: () -> SdkLifecycle,
-    private val captureRemoteLog: (String, LogLevel) -> Unit
-) {
+    private val scope: CoroutineScope,
+    private val initGate: InitGate,
+    private val configuration: SdkConfiguration,
+    private val platform: AppPlatform,
+    private val lifecycleEventFilter: LifecycleEventFilter,
+    private val remoteLog: RemoteLog,
+    private val clock: () -> Long
+) : SdkActions {
 
-    private val runner = ActionRunner(logSink, RemoteLogFailureReporter { captureRemoteLog(it, LogLevel.ERROR) })
+    private val runner = ActionRunner(logSink, RemoteLogFailureReporter(remoteLog))
     private val eventBus = EventBus()
-    private val scope = retenoScope(dispatchers, logSink)
-    private val deviceId: () -> DeviceId = { serviceLocator.restConfigProvider.get().deviceId }
+    private val mainScope = scope + dispatchers.main
+    private val contactSession = ContactSession()
+    private val runState = SdkRunState()
+    private val appForegroundState = AppForegroundState()
+
+    val contactQueue = SerialQueue(scope, "Contact", logSink)
+    private val lifecycleQueue = SerialQueue(scope, "Lifecycle", logSink)
+    private val initQueue = SerialQueue(mainScope, "Init", logSink)
+
     private val api by lazy { SuspendApiClient(serviceLocator.restClientProvider.get(), dispatchers) }
     private val configRepository by lazy { serviceLocator.configRepositoryProvider.get() }
-    private val contactSession = ContactSession()
-    private val reportInvalid: (String) -> Unit = { captureRemoteLog(it, LogLevel.INFO) }
+    private val restConfig by lazy { serviceLocator.restConfigProvider.get() }
+    private val prefs by lazy { serviceLocator.sharedPrefsManagerProvider.get() }
+    private val sessionHandler by lazy { serviceLocator.retenoSessionHandlerProvider.get() }
+    private val iamController by lazy { serviceLocator.iamControllerProvider.get() }
+    private val iamView by lazy { serviceLocator.iamViewProvider.get() }
+    private val eventsDb by lazy { serviceLocator.retenoDatabaseManagerEventsProvider.get() }
+    private val devicesDb by lazy { serviceLocator.retenoDatabaseManagerDeviceProvider.get() }
+    private val usersDb by lazy { serviceLocator.retenoDatabaseManagerUserProvider.get() }
 
-    val contactQueue = SerialQueue(scope) { error ->
-        logSink.log(LogPriority.ERROR, "Reteno") { "Contact task failed: ${Redact.stackTrace(error)}" }
-    }
-
-    private val currentDevice by lazy {
-        CurrentDevice(configRepository, serviceLocator.retenoDatabaseManagerDeviceProvider.get(), createDevice, dispatchers)
-    }
-
-    private val segmentationRefresh by lazy {
-        SegmentationRefresh({ serviceLocator.iamControllerProvider.get().refreshSegmentation() }, scope, runner)
-    }
+    private val lifecycleEvents by lazy { LifecycleEvents(lifecycleEventFilter, logEvent) }
+    private val screenTracker by lazy { ScreenTracker(logScreenView, scope) }
+    private val currentDevice by lazy { CurrentDevice(configRepository, devicesDb, platform, dispatchers) }
+    private val segmentationRefresh by lazy { SegmentationRefreshImpl(iamController, scope, runner) }
+    private val sdk by lazy { StartStopSequencer(mainScope, initGate, startSdk, stopSdk, runState) }
 
     private val contactWriter by lazy {
-        ContactWriter(
-            configRepository = configRepository,
-            usersDb = serviceLocator.retenoDatabaseManagerUserProvider.get(),
-            currentDevice = currentDevice,
-            sync = dataSync,
-            session = contactSession,
-            sdk = sdkLifecycle,
-            clearSession = { serviceLocator.retenoSessionHandlerProvider.get().clearSessionForced() },
-            reportInvalid = reportInvalid,
-            dispatchers = dispatchers
-        )
+        ContactWriter(configRepository, usersDb, currentDevice, dataSync, contactSession, sdk, sessionHandler, remoteLog, dispatchers)
     }
+
+    override val isStarted: Boolean
+        get() = runState.isStarted
 
     val registerDevice: RegisterDeviceAction by lazy {
         RegisterDeviceAction(configRepository, currentDevice, dataSync, contactSession, runner)
     }
 
     val ensureDeviceRegisteredThisSession: EnsureDeviceRegisteredThisSessionAction by lazy {
-        EnsureDeviceRegisteredThisSessionAction(
-            configRepository, serviceLocator.retenoDatabaseManagerDeviceProvider.get(), currentDevice, dataSync, contactSession, dispatchers, runner
-        )
+        EnsureDeviceRegisteredThisSessionAction(configRepository, devicesDb, currentDevice, dataSync, contactSession, dispatchers, runner)
     }
 
     val updateFcmToken: UpdateFcmTokenAction by lazy {
@@ -109,29 +134,27 @@ internal class ActionsLocator(
     }
 
     val updateNotificationsEnabled: UpdateNotificationsEnabledAction by lazy {
-        UpdateNotificationsEnabledAction(configRepository, currentDevice, dataSync, contactSession, runner)
+        UpdateNotificationsEnabledAction(configRepository, currentDevice, dataSync, contactSession, lifecycleEvents, runner)
     }
 
     val setUserAttributes: SetUserAttributesAction by lazy {
-        SetUserAttributesAction(contactWriter, sdkLifecycle, segmentationRefresh::request, runner)
+        SetUserAttributesAction(contactWriter, sdk, segmentationRefresh, runner)
     }
 
     val setMultiAccountUserAttributes: SetMultiAccountUserAttributesAction by lazy {
-        SetMultiAccountUserAttributesAction(contactWriter, sdkLifecycle, segmentationRefresh::request, runner)
+        SetMultiAccountUserAttributesAction(contactWriter, sdk, segmentationRefresh, runner)
     }
 
     val setAnonymousUserAttributes: SetAnonymousUserAttributesAction by lazy {
-        SetAnonymousUserAttributesAction(
-            configRepository, serviceLocator.retenoDatabaseManagerUserProvider.get(), dataSync, reportInvalid, dispatchers, runner
-        )
+        SetAnonymousUserAttributesAction(configRepository, usersDb, dataSync, remoteLog, dispatchers, runner)
     }
 
     val logEvent: LogEventAction by lazy {
-        LogEventAction(serviceLocator.retenoDatabaseManagerEventsProvider.get(), deviceId, eventBus, dispatchers, runner)
+        LogEventAction(eventsDb, restConfig, eventBus, dispatchers, runner)
     }
 
     val logEcomEvent: LogEcomEventAction by lazy {
-        LogEcomEventAction(serviceLocator.retenoDatabaseManagerEventsProvider.get(), deviceId, eventBus, dispatchers, runner)
+        LogEcomEventAction(eventsDb, restConfig, eventBus, dispatchers, runner)
     }
 
     val logScreenView: LogScreenViewEventAction by lazy {
@@ -142,16 +165,79 @@ internal class ActionsLocator(
         LogRetenoEventAction(serviceLocator.retenoDatabaseManagerLogEventProvider.get(), dispatchers, runner)
     }
 
+    private val appForegrounded: AppForegroundedAction by lazy {
+        AppForegroundedAction(platform, dataSync, configRepository, iamController, appForegroundState, lifecycleEvents, clock, runner)
+    }
+
+    private val appBackgrounded: AppBackgroundedAction by lazy {
+        AppBackgroundedAction(sessionHandler, appForegroundState, lifecycleEvents, runner)
+    }
+
+    private val trackPermissionDialog: TrackPermissionDialogAction by lazy {
+        TrackPermissionDialogAction(platform, lifecycleEvents, runner)
+    }
+
+    val lifecycleTracking: AppLifecycleTracking by lazy {
+        AppLifecycleTrackingImpl(platform, appForegrounded, appBackgrounded, trackPermissionDialog, lifecycleQueue, dispatchers)
+    }
+
+    val setLifecycleEventConfig: SetLifecycleEventConfigAction by lazy {
+        SetLifecycleEventConfigAction(lifecycleEventFilter, runner)
+    }
+
+    val enableAutoScreenTracking: EnableAutoScreenTrackingAction by lazy {
+        EnableAutoScreenTrackingAction(screenTracker, platform, runner)
+    }
+
+    val updatePushPermissionStatus: UpdatePushPermissionStatusAction by lazy {
+        UpdatePushPermissionStatusAction(platform, runner)
+    }
+
+    private val applyConfig: ApplyConfigAction by lazy {
+        ApplyConfigAction(
+            configuration = configuration,
+            restConfig = restConfig,
+            configRepository = configRepository,
+            prefs = prefs,
+            sessionHandler = sessionHandler,
+            registerDevice = registerDevice,
+            initGate = initGate,
+            iamController = iamController,
+            iamView = iamView,
+            lifecycleTracking = lifecycleTracking,
+            interactionCache = serviceLocator.interactionCacheProvider.get(),
+            dispatchers = dispatchers,
+            runner = runner
+        )
+    }
+
+    private val bootSdk: BootSdkAction by lazy {
+        BootSdkAction(platform, prefs, restConfig, applyConfig, dispatchers, runner)
+    }
+
+    private val startSdk: StartSdkAction by lazy {
+        StartSdkAction(ensureDeviceRegisteredThisSession, sessionHandler, iamController, dataSync, iamView, runState, dispatchers, runner)
+    }
+
+    private val stopSdk: StopSdkAction by lazy {
+        StopSdkAction(runState, sessionHandler, dataSync, iamView, dispatchers, runner)
+    }
+
+    val setSessionDuration: SetSessionDurationAction by lazy {
+        SetSessionDurationAction(sessionHandler, runner)
+    }
+
     val clearOldData: ClearOldDataAction by lazy {
         ClearOldDataAction(
             interactionsDb = serviceLocator.retenoDatabaseManagerInteractionProvider.get(),
             inAppInteractionsDb = serviceLocator.retenoDatabaseManagerInAppInteractionProvider.get(),
-            eventsDb = serviceLocator.retenoDatabaseManagerEventsProvider.get(),
+            eventsDb = eventsDb,
             inboxDb = serviceLocator.retenoDatabaseManagerAppInboxProvider.get(),
             recomEventsDb = serviceLocator.retenoDatabaseManagerRecomEventsProvider.get(),
             wrappedLinksDb = serviceLocator.retenoDatabaseManagerWrappedLinksProvider.get(),
-            outdatedTime = SchedulerUtils::getOutdatedTime,
-            reportRemoved = { captureRemoteLog(it, LogLevel.INFO) },
+            configuration = configuration,
+            remoteLog = remoteLog,
+            clock = clock,
             dispatchers = dispatchers,
             runner = runner
         )
@@ -159,10 +245,10 @@ internal class ActionsLocator(
 
     val dataSync: DataSync by lazy {
         DataSync(
-            coordinator = SyncCoordinator(syncData, scope, awaitInit),
-            clearOldData = { clearOldData() },
-            enqueueBackgroundSync = { PushDataWorker.enqueuePeriodicWork(serviceLocator.workManagerProvider.get()) },
-            isDebugView = Util::isDebugView,
+            coordinator = SyncCoordinator(syncData, scope, initGate),
+            clearOldDataAction = clearOldData,
+            platform = platform,
+            configuration = configuration,
             jitter = { Random.nextLong(DataSync.RANDOM_DELAY) },
             scope = scope,
             dispatchers = dispatchers,
@@ -173,23 +259,17 @@ internal class ActionsLocator(
     private val syncData: SyncDataAction by lazy {
         SyncDataAction(
             contactSteps = listOf(
-                PushDeviceStep(
-                    serviceLocator.retenoDatabaseManagerDeviceProvider.get(),
-                    api,
-                    { serviceLocator.configRepositoryProvider.get().saveDeviceRegistered(true) },
-                    dispatchers,
-                    runner
-                ),
-                PushUserStep(serviceLocator.retenoDatabaseManagerUserProvider.get(), api, dispatchers, runner)
+                PushDeviceStep(devicesDb, api, configRepository, dispatchers, runner),
+                PushUserStep(usersDb, api, dispatchers, runner)
             ),
             dataSteps = listOf(
                 PushInteractionsStep(serviceLocator.retenoDatabaseManagerInteractionProvider.get(), api, dispatchers, runner),
                 PushInAppInteractionsStep(serviceLocator.retenoDatabaseManagerInAppInteractionProvider.get(), api, dispatchers, runner),
-                PushEventsStep(serviceLocator.retenoDatabaseManagerEventsProvider.get(), api, dispatchers, runner),
+                PushEventsStep(eventsDb, api, dispatchers, runner),
                 PushInboxStatusStep(
                     serviceLocator.retenoDatabaseManagerAppInboxProvider.get(),
                     api,
-                    { serviceLocator.appInboxRepositoryProvider.get().refreshMessagesCount() },
+                    serviceLocator.appInboxRepositoryProvider.get(),
                     dispatchers,
                     runner
                 ),
@@ -201,17 +281,88 @@ internal class ActionsLocator(
         )
     }
 
-    fun backgroundSync(
-        isForeground: () -> Boolean,
-        isInitialized: () -> Boolean,
-        hasDataForSync: () -> Boolean
-    ): BackgroundSyncAction = BackgroundSyncAction(
-        isForeground = isForeground,
-        isInitialized = isInitialized,
-        hasDataForSync = hasDataForSync,
-        sync = dataSync,
-        cancelPeriodicWork = { serviceLocator.workManagerProvider.get().cancelUniqueWork(PushDataWorker.PUSH_DATA_WORK_NAME) },
-        dispatchers = dispatchers,
-        runner = runner
-    )
+    override val backgroundSync: BackgroundSync by lazy {
+        BackgroundSyncAction(
+            activityHelper = serviceLocator.retenoActivityHelperProvider.get(),
+            initGate = initGate,
+            databaseManager = serviceLocator.retenoDatabaseManagerProvider.get(),
+            sync = dataSync,
+            platform = platform,
+            dispatchers = dispatchers,
+            runner = runner
+        )
+    }
+
+    override fun boot() {
+        initQueue.enqueue { bootSdk() }
+    }
+
+    override fun applyUserConfig(config: RetenoConfig) {
+        configuration.useUserConfig(config)
+        initQueue.enqueue { applyConfig(config, byUser = true) }
+    }
+
+    override fun requestStart() {
+        sdk.start()
+    }
+
+    override fun requestStop() {
+        sdk.stop()
+    }
+
+    override fun submitUserAttributes(externalUserId: String, user: User?) {
+        contactQueue.enqueue { setUserAttributes(externalUserId, user) }
+    }
+
+    override fun submitMultiAccountUserAttributes(externalUserId: String, user: User?) {
+        contactQueue.enqueue { setMultiAccountUserAttributes(externalUserId, user) }
+    }
+
+    override fun submitAnonymousUserAttributes(attributes: UserAttributesAnonymous) {
+        contactQueue.enqueue { setAnonymousUserAttributes(attributes) }
+    }
+
+    override fun submitFcmToken(token: String) {
+        contactQueue.enqueue { updateFcmToken(token) }
+    }
+
+    override fun submitNotificationsEnabled(enabled: Boolean) {
+        contactQueue.enqueue { updateNotificationsEnabled(enabled) }
+    }
+
+    override fun submitEvent(event: Event) {
+        scope.launch { logEvent(event) }
+    }
+
+    override fun submitEcomEvent(event: EcomEvent) {
+        scope.launch { logEcomEvent(event) }
+    }
+
+    override fun submitScreenView(screenName: String) {
+        scope.launch { logScreenView(screenName) }
+    }
+
+    override fun submitRetenoLogEvent(event: RetenoLogEvent) {
+        scope.launch { logRetenoEvent(event) }
+    }
+
+    override fun submitLifecycleEventConfig(options: LifecycleTrackingOptions) {
+        scope.launch { setLifecycleEventConfig(options) }
+    }
+
+    override fun submitAutoScreenTracking(config: ScreenTrackingConfig) {
+        mainScope.launch { enableAutoScreenTracking(config) }
+    }
+
+    override fun submitPushPermissionStatus() {
+        scope.launch(dispatchers.io) { updatePushPermissionStatus() }
+    }
+
+    override fun submitSessionDuration(durationMillis: Long) {
+        scope.launch { setSessionDuration(durationMillis) }
+    }
+
+    override fun requestSync() {
+        dataSync.request()
+    }
 }

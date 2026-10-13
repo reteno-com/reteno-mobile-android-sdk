@@ -1,10 +1,13 @@
 package com.reteno.core
 
 import android.app.Application
-import androidx.lifecycle.testing.TestLifecycleOwner
 import androidx.test.core.app.ApplicationProvider
+import com.reteno.core.di.ServiceLocator
+import com.reteno.core.fixtures.FakeSdkActions
+import com.reteno.core.fixtures.ManualLifecycleOwner
 import com.reteno.core.fixtures.stubAnonymousAttributes
 import com.reteno.core.fixtures.stubUser
+import com.reteno.core.internal.coroutine.retenoDispatchers
 import com.reteno.test.given
 import com.reteno.test.runUnitTest
 import com.reteno.test.then
@@ -25,12 +28,17 @@ import org.robolectric.annotation.Config
 internal class RetenoInternalImplUserValidationTest {
 
     private class SutFixture(scope: TestScope) {
+        private val application = ApplicationProvider.getApplicationContext<Application>()
         private val dispatcher = StandardTestDispatcher(scope.testScheduler)
+        val actions = FakeSdkActions()
         val sut = RetenoInternalImpl(
-            application = ApplicationProvider.getApplicationContext<Application>(),
+            application = application,
             mainDispatcher = dispatcher,
             ioDispatcher = dispatcher,
-            appLifecycleOwner = TestLifecycleOwner()
+            appLifecycleOwner = ManualLifecycleOwner(),
+            serviceLocator = ServiceLocator(application, retenoDispatchers(dispatcher, dispatcher)),
+            sdkActions = { actions },
+            isOsSupported = { true }
         )
     }
 
@@ -45,6 +53,7 @@ internal class RetenoInternalImplUserValidationTest {
         then()
         assertTrue(result.exceptionOrNull() is IllegalArgumentException)
         assertEquals(false, fixture.sut.isInitialized)
+        assertEquals(listOf("boot"), fixture.actions.calls)
     }
 
     @Test

@@ -1,6 +1,7 @@
 package com.reteno.core.internal.action.sync
 
 import com.reteno.core.fixtures.TestActionRunner
+import com.reteno.core.internal.coroutine.InitGate
 import com.reteno.test.given
 import com.reteno.test.runUnitTest
 import com.reteno.test.then
@@ -19,7 +20,7 @@ import org.junit.jupiter.api.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 internal class SyncCoordinatorTest {
 
-    private class SutFixture(scope: TestScope) {
+    private class SutFixture(scope: TestScope, ready: Boolean = true) {
         val scopes = mutableListOf<String>()
         var gate: CompletableDeferred<Unit>? = null
         var outcome: Result<StepOutcome> = Result.success(StepOutcome.CONTINUE)
@@ -35,8 +36,8 @@ internal class SyncCoordinatorTest {
             scopes += "data"
             Result.success(StepOutcome.CONTINUE)
         }
-        var readiness: CompletableDeferred<Unit> = CompletableDeferred<Unit>().also { it.complete(Unit) }
-        val sut = SyncCoordinator(SyncDataAction(listOf(contactStep), listOf(dataStep), traced.runner), scope.workScope()) { readiness.await() }
+        val initGate = InitGate().also { if (ready) it.markInitialized(byUser = false) }
+        val sut = SyncCoordinator(SyncDataAction(listOf(contactStep), listOf(dataStep), traced.runner), scope.workScope(), initGate)
     }
 
     @Test
@@ -146,15 +147,13 @@ internal class SyncCoordinatorTest {
     @Test
     fun `should hold requested sync until sdk is ready`() = runUnitTest {
         given()
-        val fixture = SutFixture(this)
-        val ready = CompletableDeferred<Unit>()
-        fixture.readiness = ready
+        val fixture = SutFixture(this, ready = false)
 
         whenn()
         fixture.sut.request()
         runCurrent()
         val beforeReady = fixture.scopes.toList()
-        ready.complete(Unit)
+        fixture.initGate.markInitialized(byUser = false)
         runCurrent()
 
         then()
@@ -165,8 +164,7 @@ internal class SyncCoordinatorTest {
     @Test
     fun `should not wait for readiness on immediate sync`() = runUnitTest {
         given()
-        val fixture = SutFixture(this)
-        fixture.readiness = CompletableDeferred()
+        val fixture = SutFixture(this, ready = false)
 
         whenn()
         val result = fixture.sut.syncNow(SyncScope.CONTACT)

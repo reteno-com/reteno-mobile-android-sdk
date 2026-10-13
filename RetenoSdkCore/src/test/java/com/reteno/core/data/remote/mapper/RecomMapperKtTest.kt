@@ -12,7 +12,6 @@ import com.reteno.core.data.remote.model.recommendation.post.RecomEventsRequestR
 import com.reteno.core.domain.model.recommendation.get.RecomFilter
 import com.reteno.core.domain.model.recommendation.get.RecomRequest
 import org.junit.Assert.assertEquals
-
 import org.junit.Test
 
 

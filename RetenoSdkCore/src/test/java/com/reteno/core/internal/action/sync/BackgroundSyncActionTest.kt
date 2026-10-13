@@ -1,11 +1,17 @@
 package com.reteno.core.internal.action.sync
 
+import com.reteno.core.data.local.database.manager.RetenoDatabaseManager
+import com.reteno.core.fixtures.FakeAppPlatform
 import com.reteno.core.fixtures.TestActionRunner
 import com.reteno.core.fixtures.testDispatchers
+import com.reteno.core.internal.coroutine.InitGate
+import com.reteno.core.lifecycle.RetenoActivityHelper
 import com.reteno.test.given
 import com.reteno.test.runUnitTest
 import com.reteno.test.then
 import com.reteno.test.whenn
+import io.mockk.every
+import io.mockk.mockk
 import kotlinx.coroutines.test.TestScope
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -21,7 +27,6 @@ internal class BackgroundSyncActionTest {
         syncResult: SyncResult = SyncResult.COMPLETED
     ) {
         var syncCalls = 0
-        var cancelled = 0
         var hasDataCheckedOnIo = false
         val dispatchers = scope.testDispatchers()
         val traced = TestActionRunner(scope)
@@ -33,15 +38,23 @@ internal class BackgroundSyncActionTest {
                 return syncResult
             }
         }
-        val sut = BackgroundSyncAction(
-            isForeground = { foreground },
-            isInitialized = { initialized },
-            hasDataForSync = {
+        private val activityHelper = mockk<RetenoActivityHelper>().also { every { it.canPresentMessages() } returns foreground }
+        private val initGate = InitGate().also { if (initialized) it.markInitialized(byUser = false) }
+        private val databaseManager = mockk<RetenoDatabaseManager>().also {
+            every { it.hasDataForSync() } answers {
                 hasDataCheckedOnIo = dispatchers.markedIo.isRunningHere
                 hasData
-            },
+            }
+        }
+        private val platform = FakeAppPlatform()
+        val cancelled: Int
+            get() = platform.calls.count { it == "cancel background sync" }
+        val sut = BackgroundSyncAction(
+            activityHelper = activityHelper,
+            initGate = initGate,
+            databaseManager = databaseManager,
             sync = sync,
-            cancelPeriodicWork = { cancelled++ },
+            platform = platform,
             dispatchers = dispatchers,
             runner = traced.runner
         )

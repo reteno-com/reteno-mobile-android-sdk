@@ -6,6 +6,7 @@ import com.reteno.test.then
 import com.reteno.test.whenn
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runCurrent
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -109,5 +110,25 @@ internal class InitGateTest {
 
         then()
         assertTrue(fixture.sut.isInitialized)
+    }
+
+    @Test
+    fun `should release init waiters in the order they started waiting`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val released = mutableListOf<Int>()
+        val waiters = (0..3).map { index -> launch { fixture.sut.awaitInit(); released += index } }
+        runCurrent()
+        waiters.first().cancel()
+        runCurrent()
+        launch { fixture.sut.awaitInit(); released += 4 }
+        runCurrent()
+
+        whenn()
+        fixture.sut.markInitialized(byUser = true)
+        runCurrent()
+
+        then()
+        assertEquals(listOf(1, 2, 3, 4), released)
     }
 }

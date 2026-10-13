@@ -6,6 +6,7 @@ abstract class ProviderStrongReference<T> : Provider<T>() {
 
     private var instance: T? = null
 
+    @Synchronized
     override fun get(): T {
         if (instance == null) {
             instance = create()

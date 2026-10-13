@@ -4,6 +4,7 @@ import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerDevice
 import com.reteno.core.data.local.mappers.toDb
 import com.reteno.core.data.local.model.BooleanDb
 import com.reteno.core.data.repository.ConfigRepository
+import com.reteno.core.fixtures.FakeAppPlatform
 import com.reteno.core.fixtures.TestActionRunner
 import com.reteno.core.fixtures.stubDevice
 import com.reteno.core.fixtures.stubDeviceId
@@ -30,7 +31,7 @@ internal class CurrentDeviceTest {
         val deviceId = stubDeviceId()
         val dispatchers = scope.testDispatchers()
         val traced = TestActionRunner(scope)
-        val sut = CurrentDevice(configRepository, devicesDb, ::stubDevice, dispatchers)
+        val sut = CurrentDevice(configRepository, devicesDb, FakeAppPlatform(), dispatchers)
 
         init {
             every { configRepository.getDeviceId() } returns deviceId

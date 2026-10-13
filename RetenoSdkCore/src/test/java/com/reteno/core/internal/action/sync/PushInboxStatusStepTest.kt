@@ -5,11 +5,12 @@ import com.reteno.core.data.remote.api.ApiContract
 import com.reteno.core.data.remote.api.HttpMethod
 import com.reteno.core.data.remote.mapper.toJson
 import com.reteno.core.data.remote.model.appinbox.AppInboxMessagesStatusRemote
-import com.reteno.core.fixtures.SentRequest
-import com.reteno.core.fixtures.stubAppInboxMessageDb
+import com.reteno.core.data.repository.AppInboxRepository
 import com.reteno.core.fixtures.FakeRestClient
+import com.reteno.core.fixtures.SentRequest
 import com.reteno.core.fixtures.TestActionRunner
 import com.reteno.core.fixtures.api
+import com.reteno.core.fixtures.stubAppInboxMessageDb
 import com.reteno.core.fixtures.testDispatchers
 import com.reteno.test.given
 import com.reteno.test.runUnitTest
@@ -33,7 +34,8 @@ internal class PushInboxStatusStepTest {
         val dispatchers = scope.testDispatchers()
         val traced = TestActionRunner(scope)
         var countRefreshes = 0
-        val sut = PushInboxStatusStep(inboxDb, rest.api(dispatchers), { countRefreshes++ }, dispatchers, traced.runner)
+        private val inboxRepository = mockk<AppInboxRepository>().also { every { it.refreshMessagesCount() } answers { countRefreshes++ } }
+        val sut = PushInboxStatusStep(inboxDb, rest.api(dispatchers), inboxRepository, dispatchers, traced.runner)
 
         init {
             justRun { inboxDb.deleteAppInboxMessages(any()) }

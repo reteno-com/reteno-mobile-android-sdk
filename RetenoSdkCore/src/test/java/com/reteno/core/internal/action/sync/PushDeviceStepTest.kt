@@ -6,6 +6,7 @@ import com.reteno.core.data.remote.api.ApiContract
 import com.reteno.core.data.remote.api.HttpMethod
 import com.reteno.core.data.remote.mapper.toJson
 import com.reteno.core.data.remote.mapper.toRemote
+import com.reteno.core.data.repository.ConfigRepository
 import com.reteno.core.fixtures.FakeRestClient
 import com.reteno.core.fixtures.STUB_CREATED_AT
 import com.reteno.core.fixtures.SentRequest
@@ -35,7 +36,8 @@ internal class PushDeviceStepTest {
         val dispatchers = scope.testDispatchers()
         val traced = TestActionRunner(scope)
         var registeredCount = 0
-        val sut = PushDeviceStep(devicesDb, rest.api(dispatchers), { registeredCount++ }, dispatchers, traced.runner)
+        private val configRepository = mockk<ConfigRepository>().also { every { it.saveDeviceRegistered(true) } answers { registeredCount++ } }
+        val sut = PushDeviceStep(devicesDb, rest.api(dispatchers), configRepository, dispatchers, traced.runner)
 
         init {
             justRun { devicesDb.deleteDevices(any()) }

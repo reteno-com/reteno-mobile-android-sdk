@@ -5,6 +5,7 @@ import com.reteno.core.data.remote.api.ApiContract
 import com.reteno.core.data.remote.api.HttpMethod
 import com.reteno.core.data.remote.mapper.toJson
 import com.reteno.core.data.remote.model.appinbox.AppInboxMessagesStatusRemote
+import com.reteno.core.data.repository.AppInboxRepository
 import com.reteno.core.internal.action.trace.ActionRunner
 import com.reteno.core.internal.action.trace.ActionTrace
 import com.reteno.core.internal.coroutine.RetenoDispatchers
@@ -15,7 +16,7 @@ import kotlinx.coroutines.withContext
 internal class PushInboxStatusStep(
     private val inboxDb: RetenoDatabaseManagerAppInbox,
     private val api: SuspendApiClient,
-    private val onStatusesSent: () -> Unit,
+    private val inboxRepository: AppInboxRepository,
     private val dispatchers: RetenoDispatchers,
     private val runner: ActionRunner
 ) : SyncStep {
@@ -35,7 +36,7 @@ internal class PushInboxStatusStep(
             withContext(dispatchers.io) { inboxDb.deleteAppInboxMessages(messages) }
         }
         if (result is ApiResult.Success) {
-            step("refresh unread messages count") { onStatusesSent() }
+            step("refresh unread messages count") { inboxRepository.refreshMessagesCount() }
         }
         return StepOutcome.CONTINUE
     }

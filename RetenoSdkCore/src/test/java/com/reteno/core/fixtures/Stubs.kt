@@ -1,5 +1,6 @@
 package com.reteno.core.fixtures
 
+import com.reteno.core.RetenoConfig
 import com.reteno.core.data.local.config.DeviceId
 import com.reteno.core.domain.model.device.Device
 import com.reteno.core.domain.model.device.DeviceCategory
@@ -12,6 +13,7 @@ import com.reteno.core.domain.model.logevent.RetenoLogEvent
 import com.reteno.core.domain.model.user.User
 import com.reteno.core.domain.model.user.UserAttributes
 import com.reteno.core.domain.model.user.UserAttributesAnonymous
+import com.reteno.core.identification.DeviceIdProvider
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
 
@@ -81,3 +83,18 @@ internal fun stubAnonymousAttributes(
     firstName: String? = "John",
     marketId: String? = null
 ) = UserAttributesAnonymous(firstName = firstName, marketId = marketId)
+
+internal const val STUB_ACCESS_KEY = "stub-secret-access-key"
+
+internal fun stubConfig(
+    customDeviceId: Boolean = false,
+    pausedInApps: Boolean = false,
+    pausedPushInApps: Boolean = true,
+    sessionDuration: Long = 60_000L
+): RetenoConfig = RetenoConfig.Builder()
+    .accessKey(STUB_ACCESS_KEY)
+    .customDeviceIdProvider(if (customDeviceId) DeviceIdProvider { "custom-id" } else null)
+    .pauseInAppMessages(pausedInApps)
+    .pausePushInAppMessages(pausedPushInApps)
+    .sessionDuration(sessionDuration)
+    .build()

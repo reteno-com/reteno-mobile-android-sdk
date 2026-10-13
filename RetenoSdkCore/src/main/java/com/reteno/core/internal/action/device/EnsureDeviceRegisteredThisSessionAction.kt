@@ -10,6 +10,10 @@ import com.reteno.core.internal.coroutine.RetenoDispatchers
 import com.reteno.core.internal.log.Redact
 import kotlinx.coroutines.withContext
 
+internal interface EnsureDeviceRegisteredThisSession {
+    suspend operator fun invoke(): Result<Unit>
+}
+
 internal class EnsureDeviceRegisteredThisSessionAction(
     private val configRepository: ConfigRepository,
     private val devicesDb: RetenoDatabaseManagerDevice,
@@ -18,9 +22,9 @@ internal class EnsureDeviceRegisteredThisSessionAction(
     private val session: ContactSession,
     private val dispatchers: RetenoDispatchers,
     private val runner: ActionRunner
-) {
+) : EnsureDeviceRegisteredThisSession {
 
-    suspend operator fun invoke(): Result<Unit> = runner("EnsureDeviceRegisteredThisSession") { ensure() }
+    override suspend operator fun invoke(): Result<Unit> = runner("EnsureDeviceRegisteredThisSession") { ensure() }
 
     private suspend fun ActionTrace.ensure() {
         if (session.isDeviceSent) {

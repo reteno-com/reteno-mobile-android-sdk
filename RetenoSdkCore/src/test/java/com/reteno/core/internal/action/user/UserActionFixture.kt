@@ -4,14 +4,16 @@ import com.reteno.core.data.local.config.DeviceId
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerDevice
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerUser
 import com.reteno.core.data.repository.ConfigRepository
+import com.reteno.core.fixtures.FakeAppPlatform
+import com.reteno.core.fixtures.FakeRemoteLog
 import com.reteno.core.fixtures.FakeSdkLifecycle
 import com.reteno.core.fixtures.FakeSyncTrigger
 import com.reteno.core.fixtures.TestActionRunner
-import com.reteno.core.fixtures.stubDevice
 import com.reteno.core.fixtures.stubDeviceId
 import com.reteno.core.fixtures.testDispatchers
 import com.reteno.core.internal.action.device.ContactSession
 import com.reteno.core.internal.action.device.CurrentDevice
+import com.reteno.core.lifecycle.RetenoSessionHandler
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.justRun
@@ -29,21 +31,25 @@ internal class UserActionFixture(scope: TestScope, suffix: String? = null) {
     val traced = TestActionRunner(scope)
     val sdk = FakeSdkLifecycle(onMain = { dispatchers.markedMain.isRunningHere })
     val log = mutableListOf<String>()
-    val invalidReports = mutableListOf<String>()
+    val remoteLog = FakeRemoteLog()
+    val invalidReports: List<String>
+        get() = remoteLog.infos
+    val sessionHandler = mockk<RetenoSessionHandler>()
     var sessionClearedOnIo: Boolean? = null
     val writer = ContactWriter(
         configRepository = configRepository,
         usersDb = usersDb,
-        currentDevice = CurrentDevice(configRepository, devicesDb, ::stubDevice, dispatchers),
+        currentDevice = CurrentDevice(configRepository, devicesDb, FakeAppPlatform(), dispatchers),
         sync = sync,
         session = session,
-        sdk = { sdk },
-        clearSession = { sessionClearedOnIo = dispatchers.markedIo.isRunningHere; log += "clear session" },
-        reportInvalid = { invalidReports += it },
+        sdk = sdk,
+        sessionHandler = sessionHandler,
+        remoteLog = remoteLog,
         dispatchers = dispatchers
     )
 
     init {
+        every { sessionHandler.clearSessionForced() } answers { sessionClearedOnIo = dispatchers.markedIo.isRunningHere; log += "clear session" }
         every { configRepository.getDeviceId() } answers { deviceId }
         every { configRepository.isNotificationsEnabled() } returns true
         every { configRepository.setExternalUserId(any()) } answers { log += "external id ${firstArg<String?>()}"; deviceId = deviceId.copy(externalId = firstArg()) }

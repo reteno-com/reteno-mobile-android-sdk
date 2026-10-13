@@ -8,6 +8,7 @@ import com.reteno.core.data.remote.api.HttpMethod
 import com.reteno.core.data.remote.mapper.toJson
 import com.reteno.core.data.remote.mapper.toRemote
 import com.reteno.core.data.remote.model.device.DeviceRemote
+import com.reteno.core.data.repository.ConfigRepository
 import com.reteno.core.internal.action.trace.ActionRunner
 import com.reteno.core.internal.action.trace.ActionTrace
 import com.reteno.core.internal.coroutine.RetenoDispatchers
@@ -19,7 +20,7 @@ import kotlinx.coroutines.withContext
 internal class PushDeviceStep(
     private val devicesDb: RetenoDatabaseManagerDevice,
     private val api: SuspendApiClient,
-    private val onDeviceRegistered: () -> Unit,
+    private val configRepository: ConfigRepository,
     private val dispatchers: RetenoDispatchers,
     private val runner: ActionRunner
 ) : SyncStep {
@@ -54,7 +55,7 @@ internal class PushDeviceStep(
         }
         if (result is ApiResult.Failure && result.isRepeatable) return RoundOutcome.ABORT
         if (result is ApiResult.Success) {
-            step("save device registered flag to local settings") { onDeviceRegistered() }
+            step("save device registered flag to local settings") { configRepository.saveDeviceRegistered(true) }
         }
         step("mark device as synced in local database") { markSynced(devices, unsynced) }
         val pending = step("count unsynced devices in local database", detail = { "count=$it" }) {

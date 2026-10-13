@@ -10,7 +10,7 @@ import androidx.work.WorkManager
 import androidx.work.testing.TestListenableWorkerBuilder
 import com.reteno.core.Reteno
 import com.reteno.core.RetenoInternalImpl
-import com.reteno.core.internal.action.sync.BackgroundSyncAction
+import com.reteno.core.internal.action.sync.BackgroundSync
 import com.reteno.core.internal.action.sync.BackgroundSyncOutcome
 import com.reteno.core.util.Util
 import com.reteno.test.given
@@ -35,7 +35,7 @@ internal class PushDataWorkerTest {
 
     private class SutFixture {
         private val context: Context = ApplicationProvider.getApplicationContext()
-        val sync = mockk<BackgroundSyncAction>()
+        val sync = mockk<BackgroundSync>()
         val sdk = mockk<RetenoInternalImpl>().also { every { it.backgroundSync } returns sync }
         val sut = TestListenableWorkerBuilder<PushDataWorker>(context).build()
 

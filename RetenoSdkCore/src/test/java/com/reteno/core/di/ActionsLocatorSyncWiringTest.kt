@@ -1,8 +1,6 @@
 package com.reteno.core.di
 
-import androidx.work.ExistingPeriodicWorkPolicy
 import com.reteno.core.data.remote.api.ApiContract
-import com.reteno.core.data.workmanager.PushDataWorker
 import com.reteno.core.domain.model.logevent.LogLevel
 import com.reteno.core.fixtures.LocatorFixture
 import com.reteno.core.fixtures.stubAppInboxMessageDb
@@ -88,9 +86,7 @@ internal class ActionsLocatorSyncWiringTest {
         fixture.sut.dataSync.stopScheduler()
 
         then()
-        verify(exactly = 1) {
-            fixture.workManager.enqueueUniquePeriodicWork(PushDataWorker.PUSH_DATA_WORK_NAME, ExistingPeriodicWorkPolicy.KEEP, any())
-        }
+        assertEquals(listOf("schedule background sync"), fixture.platform.calls)
     }
 
     @Test
@@ -113,21 +109,22 @@ internal class ActionsLocatorSyncWiringTest {
     fun `should cancel periodic work when background sync finds no data`() = runUnitTest {
         given()
         val fixture = LocatorFixture(this)
-        val sut = fixture.sut.backgroundSync(isForeground = { false }, isInitialized = { true }, hasDataForSync = { false })
+        val sut = fixture.sut.backgroundSync
 
         whenn()
         val outcome = sut().getOrThrow()
 
         then()
         assertEquals(BackgroundSyncOutcome.NO_DATA, outcome)
-        verify(exactly = 1) { fixture.workManager.cancelUniqueWork(PushDataWorker.PUSH_DATA_WORK_NAME) }
+        assertEquals(listOf("cancel background sync"), fixture.platform.calls)
     }
 
     @Test
     fun `should run full sync for background sync and reuse clean up action`() = runUnitTest {
         given()
         val fixture = LocatorFixture(this)
-        val sut = fixture.sut.backgroundSync(isForeground = { false }, isInitialized = { true }, hasDataForSync = { true })
+        every { fixture.databaseManager.hasDataForSync() } returns true
+        val sut = fixture.sut.backgroundSync
 
         whenn()
         val outcome = sut().getOrThrow()

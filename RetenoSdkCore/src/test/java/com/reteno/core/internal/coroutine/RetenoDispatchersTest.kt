@@ -23,4 +23,19 @@ internal class RetenoDispatchersTest {
         assertSame(Dispatchers.IO, dispatchers.second)
         assertSame(Dispatchers.Default, dispatchers.third)
     }
+
+    @Test
+    fun `should combine given main and io dispatchers with default dispatcher`() = runUnitTest {
+        given()
+        val main = Dispatchers.Unconfined
+        val io = Dispatchers.IO
+
+        whenn()
+        val sut = retenoDispatchers(main, io)
+
+        then()
+        assertSame(main, sut.main)
+        assertSame(io, sut.io)
+        assertSame(Dispatchers.Default, sut.default)
+    }
 }

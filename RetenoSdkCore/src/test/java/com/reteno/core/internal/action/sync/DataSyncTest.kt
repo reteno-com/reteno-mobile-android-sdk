@@ -1,12 +1,18 @@
 package com.reteno.core.internal.action.sync
 
+import com.reteno.core.fixtures.FakeAppPlatform
 import com.reteno.core.fixtures.TestActionRunner
 import com.reteno.core.fixtures.testDispatchers
+import com.reteno.core.internal.config.SdkConfiguration
+import com.reteno.core.internal.coroutine.InitGate
 import com.reteno.test.given
 import com.reteno.test.runUnitTest
 import com.reteno.test.then
 import com.reteno.test.whenn
 import com.reteno.test.workScope
+import io.mockk.coEvery
+import io.mockk.every
+import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
@@ -23,21 +29,27 @@ internal class DataSyncTest {
         var cleanups = 0
         var enqueuedOnIo = mutableListOf<Boolean>()
         var enqueueError: Throwable? = null
+        private val clearOldData = mockk<ClearOldData>().also { coEvery { it() } answers { cleanups++; Result.success(Unit) } }
+        private val configuration = mockk<SdkConfiguration>().also { every { it.isDebug } returns debugView }
+        private val platform = FakeAppPlatform().also {
+            it.onScheduleBackgroundSync = {
+                enqueuedOnIo += dispatchers.markedIo.isRunningHere
+                enqueueError?.let { error -> throw error }
+            }
+        }
         val dispatchers = scope.testDispatchers()
         val traced = TestActionRunner(scope)
         private val work = scope.workScope()
+        private val readyGate = InitGate().also { it.markInitialized(byUser = true) }
         private val step = SyncStep {
             syncs++
             Result.success(StepOutcome.CONTINUE)
         }
         val sut = DataSync(
-            coordinator = SyncCoordinator(SyncDataAction(listOf(step), emptyList(), traced.runner), work) {},
-            clearOldData = { cleanups++ },
-            enqueueBackgroundSync = {
-                enqueuedOnIo += dispatchers.markedIo.isRunningHere
-                enqueueError?.let { throw it }
-            },
-            isDebugView = { debugView },
+            coordinator = SyncCoordinator(SyncDataAction(listOf(step), emptyList(), traced.runner), work, readyGate),
+            clearOldDataAction = clearOldData,
+            platform = platform,
+            configuration = configuration,
             jitter = { jitter },
             scope = work,
             dispatchers = dispatchers,

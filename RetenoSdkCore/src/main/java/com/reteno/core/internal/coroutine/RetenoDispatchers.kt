@@ -14,3 +14,10 @@ internal object AndroidRetenoDispatchers : RetenoDispatchers {
     override val io: CoroutineDispatcher = Dispatchers.IO
     override val default: CoroutineDispatcher = Dispatchers.Default
 }
+
+internal fun retenoDispatchers(main: CoroutineDispatcher, io: CoroutineDispatcher): RetenoDispatchers =
+    object : RetenoDispatchers {
+        override val main: CoroutineDispatcher = main
+        override val io: CoroutineDispatcher = io
+        override val default: CoroutineDispatcher = Dispatchers.Default
+    }

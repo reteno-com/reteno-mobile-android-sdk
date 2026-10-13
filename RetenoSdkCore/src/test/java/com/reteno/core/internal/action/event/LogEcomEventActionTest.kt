@@ -1,5 +1,6 @@
 package com.reteno.core.internal.action.event
 
+import com.reteno.core.data.local.config.RestConfig
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerEvents
 import com.reteno.core.data.local.mappers.toDb
 import com.reteno.core.data.local.model.event.EventsDb
@@ -33,7 +34,8 @@ internal class LogEcomEventActionTest {
         val events = RecordingEventBus()
         val dispatchers = scope.testDispatchers()
         val traced = TestActionRunner(scope)
-        val sut = LogEcomEventAction(eventsDb, { deviceId }, events.bus, dispatchers, traced.runner)
+        val restConfig = mockk<RestConfig>().also { every { it.deviceId } returns deviceId }
+        val sut = LogEcomEventAction(eventsDb, restConfig, events.bus, dispatchers, traced.runner)
     }
 
     @Test

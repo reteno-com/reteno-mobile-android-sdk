@@ -1,5 +1,7 @@
 package com.reteno.core.internal.action.trace
 
+import com.reteno.core.domain.model.logevent.LogLevel
+import com.reteno.core.fixtures.FakeRemoteLog
 import com.reteno.test.given
 import com.reteno.test.runUnitTest
 import com.reteno.test.then
@@ -11,8 +13,10 @@ import java.io.IOException
 internal class ActionFailureReporterTest {
 
     private class SutFixture {
-        val captured = mutableListOf<String>()
-        val sut = RemoteLogFailureReporter(capture = { captured += it })
+        val remoteLog = FakeRemoteLog()
+        val captured: List<String>
+            get() = remoteLog.entries.filter { it.second == LogLevel.ERROR }.map { it.first }
+        val sut = RemoteLogFailureReporter(remoteLog)
     }
 
     @Test

@@ -1,11 +1,14 @@
 package com.reteno.core.internal.action.user
 
+import com.reteno.core.domain.controller.IamController
 import com.reteno.core.fixtures.TestActionRunner
 import com.reteno.test.given
 import com.reteno.test.runUnitTest
 import com.reteno.test.then
 import com.reteno.test.whenn
 import com.reteno.test.workScope
+import io.mockk.every
+import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
@@ -20,11 +23,14 @@ internal class SegmentationRefreshTest {
         var refreshes = 0
         var failure: Throwable? = null
         val traced = TestActionRunner(scope)
-        val sut = SegmentationRefresh(
-            refresh = {
+        val iamController = mockk<IamController>().also {
+            every { it.refreshSegmentation() } answers {
                 refreshes++
-                failure?.let { throw it }
-            },
+                failure?.let { error -> throw error }
+            }
+        }
+        val sut = SegmentationRefreshImpl(
+            iamController = iamController,
             scope = scope.workScope(),
             runner = traced.runner
         )
@@ -41,7 +47,7 @@ internal class SegmentationRefreshTest {
             fixture.sut.request()
             advanceTimeBy(1_000)
         }
-        advanceTimeBy(SegmentationRefresh.DEBOUNCE_MILLIS - 1_001)
+        advanceTimeBy(SegmentationRefreshImpl.DEBOUNCE_MILLIS - 1_001)
         runCurrent()
         val beforeQuietPeriodEnds = fixture.refreshes
         advanceTimeBy(1_001)
@@ -61,11 +67,11 @@ internal class SegmentationRefreshTest {
 
         whenn()
         fixture.sut.request()
-        advanceTimeBy(SegmentationRefresh.DEBOUNCE_MILLIS + 1)
+        advanceTimeBy(SegmentationRefreshImpl.DEBOUNCE_MILLIS + 1)
         runCurrent()
         fixture.failure = null
         fixture.sut.request()
-        advanceTimeBy(SegmentationRefresh.DEBOUNCE_MILLIS + 1)
+        advanceTimeBy(SegmentationRefreshImpl.DEBOUNCE_MILLIS + 1)
         runCurrent()
 
         then()

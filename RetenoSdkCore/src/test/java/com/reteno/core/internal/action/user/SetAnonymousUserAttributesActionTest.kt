@@ -5,6 +5,7 @@ import com.reteno.core.data.local.mappers.toDb
 import com.reteno.core.data.repository.ConfigRepository
 import com.reteno.core.domain.model.user.User
 import com.reteno.core.domain.model.user.UserAttributesAnonymous
+import com.reteno.core.fixtures.FakeRemoteLog
 import com.reteno.core.fixtures.FakeSyncTrigger
 import com.reteno.core.fixtures.TestActionRunner
 import com.reteno.core.fixtures.stubAnonymousAttributes
@@ -30,11 +31,11 @@ internal class SetAnonymousUserAttributesActionTest {
         val usersDb = mockk<RetenoDatabaseManagerUser>()
         val deviceId = stubDeviceId()
         val sync = FakeSyncTrigger()
-        val invalidReports = mutableListOf<String>()
+        val remoteLog = FakeRemoteLog()
         val dispatchers = scope.testDispatchers()
         val traced = TestActionRunner(scope)
         var insertedOnIo = false
-        val sut = SetAnonymousUserAttributesAction(configRepository, usersDb, sync, { invalidReports += it }, dispatchers, traced.runner)
+        val sut = SetAnonymousUserAttributesAction(configRepository, usersDb, sync, remoteLog, dispatchers, traced.runner)
 
         init {
             every { configRepository.getDeviceId() } returns deviceId
@@ -69,7 +70,7 @@ internal class SetAnonymousUserAttributesActionTest {
         then()
         verify(exactly = 0) { fixture.usersDb.insertUser(any()) }
         assertEquals(0, fixture.sync.requests)
-        assertEquals(listOf("SetAnonymousUserAttributes: attributes rejected by validation"), fixture.invalidReports)
+        assertEquals(listOf("SetAnonymousUserAttributes: attributes rejected by validation"), fixture.remoteLog.infos)
     }
 
     @Test

@@ -7,12 +7,14 @@ import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerInteract
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerRecomEvents
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerWrappedLink
 import com.reteno.core.data.local.model.interaction.InteractionStatusDb
+import com.reteno.core.fixtures.FakeRemoteLog
 import com.reteno.core.fixtures.STUB_TIME
 import com.reteno.core.fixtures.TestActionRunner
 import com.reteno.core.fixtures.stubEventDb
 import com.reteno.core.fixtures.stubInAppInteractionDb
 import com.reteno.core.fixtures.stubInteractionDb
 import com.reteno.core.fixtures.testDispatchers
+import com.reteno.core.internal.config.SdkConfiguration
 import com.reteno.core.util.Util.formatToRemote
 import com.reteno.test.given
 import com.reteno.test.runUnitTest
@@ -28,22 +30,26 @@ import org.junit.jupiter.api.Test
 
 internal class ClearOldDataActionTest {
 
-    private class SutFixture(scope: TestScope) {
+    private class SutFixture(scope: TestScope, debug: Boolean = false) {
         val interactionsDb = mockk<RetenoDatabaseManagerInteraction>()
         val inAppInteractionsDb = mockk<RetenoDatabaseManagerInAppInteraction>()
         val eventsDb = mockk<RetenoDatabaseManagerEvents>()
         val inboxDb = mockk<RetenoDatabaseManagerAppInbox>()
         val recomEventsDb = mockk<RetenoDatabaseManagerRecomEvents>()
         val wrappedLinksDb = mockk<RetenoDatabaseManagerWrappedLink>()
-        val threshold = STUB_TIME.formatToRemote()
-        val reports = mutableListOf<String>()
+        val threshold = STUB_TIME.minusHours(if (debug) ClearOldDataAction.KEEP_DATA_HOURS_DEBUG else ClearOldDataAction.KEEP_DATA_HOURS).formatToRemote()
+        val remoteLog = FakeRemoteLog()
+        val reports: List<String>
+            get() = remoteLog.infos
+        private val configuration = mockk<SdkConfiguration>().also { every { it.isDebug } returns debug }
         val onIo = mutableListOf<Boolean>()
         val dispatchers = scope.testDispatchers()
         val traced = TestActionRunner(scope)
         val sut = ClearOldDataAction(
             interactionsDb, inAppInteractionsDb, eventsDb, inboxDb, recomEventsDb, wrappedLinksDb,
-            outdatedTime = { STUB_TIME },
-            reportRemoved = { reports += it },
+            configuration = configuration,
+            remoteLog = remoteLog,
+            clock = { STUB_TIME.toInstant().toEpochMilli() },
             dispatchers = dispatchers,
             runner = traced.runner
         )
@@ -191,5 +197,18 @@ internal class ClearOldDataActionTest {
 
         then()
         assertTrue(fixture.traced.sink.lines.any { it.contains("✓ report removed rows to remote log") })
+    }
+
+    @Test
+    fun `should keep only one hour of data in debug mode`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this, debug = true)
+
+        whenn()
+        fixture.sut()
+
+        then()
+        assertEquals(STUB_TIME.minusHours(1).formatToRemote(), fixture.threshold)
+        verify(exactly = 1) { fixture.interactionsDb.deleteInteractionByTime(fixture.threshold) }
     }
 }

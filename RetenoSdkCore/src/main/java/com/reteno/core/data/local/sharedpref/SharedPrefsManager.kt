@@ -6,7 +6,7 @@ import androidx.core.content.edit
 import com.reteno.core.RetenoConfig
 import com.reteno.core.data.local.config.DeviceId
 import com.reteno.core.domain.model.event.LifecycleTrackingOptions
-import com.reteno.core.lifecycle.RetenoSessionHandlerImpl
+import com.reteno.core.internal.lifecycle.SessionTracker
 import com.reteno.core.util.Logger
 import java.util.UUID
 
@@ -431,7 +431,7 @@ internal class SharedPrefsManager(
             )
             .setPlatform(sharedPreferences.getString(PREF_KEY_CONFIG_PLATFORM, null).orEmpty())
             .setDebug(sharedPreferences.getBoolean(PREF_KEY_CONFIG_DEBUG, false))
-            .sessionDuration(sharedPreferences.getLong(PREF_KEY_CONFIG_SESS_DURATION, RetenoSessionHandlerImpl.DEFAULT_SESSION_RESET_TIME))
+            .sessionDuration(sharedPreferences.getLong(PREF_KEY_CONFIG_SESS_DURATION, SessionTracker.DEFAULT_SESSION_RESET_TIME))
             .apply {
                 if (sharedPreferences.getBoolean(PREF_KEY_CONFIG_HAS_CUSTOM_ID, false)) {
                     customDeviceIdProvider {

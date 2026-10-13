@@ -10,13 +10,14 @@ import com.reteno.core.internal.action.sync.SyncTrigger
 import com.reteno.core.internal.action.trace.ActionRunner
 import com.reteno.core.internal.action.trace.ActionTrace
 import com.reteno.core.internal.coroutine.RetenoDispatchers
+import com.reteno.core.internal.log.RemoteLog
 import kotlinx.coroutines.withContext
 
 internal class SetAnonymousUserAttributesAction(
     private val configRepository: ConfigRepository,
     private val usersDb: RetenoDatabaseManagerUser,
     private val sync: SyncTrigger,
-    private val reportInvalid: (String) -> Unit,
+    private val remoteLog: RemoteLog,
     private val dispatchers: RetenoDispatchers,
     private val runner: ActionRunner
 ) {
@@ -29,7 +30,7 @@ internal class SetAnonymousUserAttributesAction(
     private suspend fun ActionTrace.save(attributes: UserAttributesAnonymous) {
         val validated = Validator.validateAnonymousUserAttributes(attributes)
         if (validated == null) {
-            step("report rejected attributes to remote log") { reportInvalid("SetAnonymousUserAttributes: attributes rejected by validation") }
+            step("report rejected attributes to remote log") { remoteLog.info("SetAnonymousUserAttributes: attributes rejected by validation") }
             return
         }
         step("save anonymous user to local database") {

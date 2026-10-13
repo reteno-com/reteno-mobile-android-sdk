@@ -14,6 +14,7 @@ import com.reteno.test.whenn
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.verify
+import io.mockk.verifyOrder
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
@@ -83,6 +84,8 @@ internal class ActionsLocatorContactWiringTest {
     fun `should save user and refresh in-app segmentation after debounce`() = runUnitTest {
         given()
         val fixture = LocatorFixture(this)
+        fixture.sut.requestStart()
+        runCurrent()
 
         whenn()
         fixture.sut.setUserAttributes("user-1", stubUser())
@@ -101,10 +104,14 @@ internal class ActionsLocatorContactWiringTest {
 
         whenn()
         fixture.sut.setMultiAccountUserAttributes("account-1", null)
+        runCurrent()
 
         then()
-        assertEquals(listOf("stop on main", "start on main"), fixture.sdk.calls)
-        verify(exactly = 1) { fixture.sessionHandler.clearSessionForced() }
+        verifyOrder {
+            fixture.sessionHandler.stop()
+            fixture.sessionHandler.clearSessionForced()
+            fixture.sessionHandler.start()
+        }
         verify(exactly = 1) { fixture.configRepository.setDeviceIdSuffix("account-1") }
     }
 

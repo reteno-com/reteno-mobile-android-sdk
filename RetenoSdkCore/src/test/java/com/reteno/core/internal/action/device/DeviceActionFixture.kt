@@ -2,9 +2,9 @@ package com.reteno.core.internal.action.device
 
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerDevice
 import com.reteno.core.data.repository.ConfigRepository
+import com.reteno.core.fixtures.FakeAppPlatform
 import com.reteno.core.fixtures.FakeSyncTrigger
 import com.reteno.core.fixtures.TestActionRunner
-import com.reteno.core.fixtures.stubDevice
 import com.reteno.core.fixtures.stubDeviceId
 import com.reteno.core.fixtures.testDispatchers
 import io.mockk.every
@@ -20,7 +20,8 @@ internal class DeviceActionFixture(scope: TestScope) {
     val session = ContactSession()
     val dispatchers = scope.testDispatchers()
     val traced = TestActionRunner(scope)
-    val currentDevice = CurrentDevice(configRepository, devicesDb, ::stubDevice, dispatchers)
+    val platform = FakeAppPlatform()
+    val currentDevice = CurrentDevice(configRepository, devicesDb, platform, dispatchers)
 
     init {
         every { configRepository.getDeviceId() } returns deviceId

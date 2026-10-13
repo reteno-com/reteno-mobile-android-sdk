@@ -5,6 +5,8 @@ import com.reteno.test.given
 import com.reteno.test.runUnitTest
 import com.reteno.test.then
 import com.reteno.test.whenn
+import io.mockk.every
+import io.mockk.mockk
 import kotlinx.coroutines.test.TestScope
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -15,7 +17,8 @@ internal class SetMultiAccountUserAttributesActionTest {
     private class SutFixture(scope: TestScope, suffix: String? = null) {
         val env = UserActionFixture(scope, suffix)
         var segmentationRequests = 0
-        val sut = SetMultiAccountUserAttributesAction(env.writer, { env.sdk }, { segmentationRequests++ }, env.traced.runner)
+        val segmentationRefresh = mockk<SegmentationRefresh>().also { every { it.request() } answers { segmentationRequests++ } }
+        val sut = SetMultiAccountUserAttributesAction(env.writer, env.sdk, segmentationRefresh, env.traced.runner)
     }
 
     @Test

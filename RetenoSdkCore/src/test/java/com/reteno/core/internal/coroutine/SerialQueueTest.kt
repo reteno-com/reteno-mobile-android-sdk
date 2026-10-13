@@ -1,5 +1,7 @@
 package com.reteno.core.internal.coroutine
 
+import com.reteno.core.fixtures.FakeLogSink
+import com.reteno.core.internal.log.LogPriority
 import com.reteno.test.given
 import com.reteno.test.runUnitTest
 import com.reteno.test.then
@@ -20,8 +22,10 @@ import org.junit.jupiter.api.Test
 internal class SerialQueueTest {
 
     private class SutFixture(scope: TestScope) {
-        val failures = mutableListOf<Throwable>()
-        val sut = SerialQueue(scope.workScope()) { failures += it }
+        val sink = FakeLogSink()
+        val failures: List<String>
+            get() = sink.entries.filter { it.priority == LogPriority.ERROR }.map { it.message }
+        val sut = SerialQueue(scope.workScope(), "Test", sink)
     }
 
     @Test
@@ -59,7 +63,7 @@ internal class SerialQueueTest {
         then()
         assertTrue(secondRan)
         assertEquals(1, fixture.failures.size)
-        assertTrue(fixture.failures.single() is IllegalStateException)
+        assertTrue(fixture.failures.single().startsWith("Test task failed: java.lang.IllegalStateException"))
     }
 
     @Test
@@ -75,14 +79,14 @@ internal class SerialQueueTest {
 
         then()
         assertTrue(secondRan)
-        assertTrue(fixture.failures.single() is CancellationException)
+        assertTrue(fixture.failures.single().contains("CancellationException"))
     }
 
     @Test
     fun `should stop when queue scope is cancelled`() = runUnitTest {
         given()
         val scope = workScope()
-        val sut = SerialQueue(scope) {}
+        val sut = SerialQueue(scope, "Test", FakeLogSink())
         var ran = false
 
         whenn()

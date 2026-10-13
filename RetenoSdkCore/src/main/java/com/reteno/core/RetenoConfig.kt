@@ -3,7 +3,7 @@ package com.reteno.core
 import androidx.core.app.NotificationChannelCompat
 import com.reteno.core.domain.model.event.LifecycleTrackingOptions
 import com.reteno.core.identification.DeviceIdProvider
-import com.reteno.core.lifecycle.RetenoSessionHandlerImpl
+import com.reteno.core.internal.lifecycle.SessionTracker
 import com.reteno.core.util.Procedure
 
 /**
@@ -37,7 +37,7 @@ class RetenoConfig private constructor(
         private var lifecycleOptions = LifecycleTrackingOptions.DEFAULT
         private var accessKey: String = ""
         private var currentPlatform: String = "Android"
-        private var sessionDuration = RetenoSessionHandlerImpl.DEFAULT_SESSION_RESET_TIME
+        private var sessionDuration = SessionTracker.DEFAULT_SESSION_RESET_TIME
         private var notificationChannelConfig: Procedure<NotificationChannelCompat.Builder>? = null
         private var isDebug: Boolean = false
 

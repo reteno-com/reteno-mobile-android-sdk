@@ -1,33 +1,23 @@
 package com.reteno.core.base.robolectric
 
-import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.test.core.app.ApplicationProvider
-import com.reteno.core.Reteno
-import com.reteno.core.RetenoConfig
 import com.reteno.core.RetenoInternalImpl
 import com.reteno.core.data.local.config.RestConfig
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManager
 import com.reteno.core.data.local.file.FileManager
 import com.reteno.core.data.local.sharedpref.SharedPrefsManager
 import com.reteno.core.data.repository.ConfigRepository
-import com.reteno.core.di.ActionsLocator
 import com.reteno.core.di.ServiceLocator
-import com.reteno.core.domain.controller.AppLifecycleController
 import com.reteno.core.domain.controller.DeeplinkController
 import com.reteno.core.domain.controller.IamController
 import com.reteno.core.domain.controller.InteractionController
-import com.reteno.core.domain.controller.ScreenTrackingController
 import com.reteno.core.features.appinbox.AppInbox
 import com.reteno.core.features.recommendation.Recommendation
-import com.reteno.core.internal.action.sync.DataSync
-import com.reteno.core.internal.action.sync.SyncResult
 import com.reteno.core.lifecycle.RetenoActivityHelper
 import com.reteno.core.lifecycle.RetenoSessionHandler
 import com.reteno.core.view.iam.IamView
 import io.mockk.MockKAnnotations
 import io.mockk.clearAllMocks
-import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.impl.annotations.RelaxedMockK
 import io.mockk.mockk
@@ -36,10 +26,6 @@ import io.mockk.mockkStatic
 import io.mockk.unmockkConstructor
 import io.mockk.unmockkStatic
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.TestScope
-import kotlinx.coroutines.test.advanceUntilIdle
-import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.AfterClass
 import org.junit.Before
@@ -96,19 +82,11 @@ abstract class BaseRobolectricTest {
     @RelaxedMockK
     protected lateinit var activityHelper: RetenoActivityHelper
     @RelaxedMockK
-    internal lateinit var screenTrackingController: ScreenTrackingController
-    @RelaxedMockK
     internal lateinit var facadeConfigRepository: ConfigRepository
-    @RelaxedMockK
-    internal lateinit var actionsLocator: ActionsLocator
-    @RelaxedMockK
-    internal lateinit var dataSync: DataSync
     @RelaxedMockK
     internal lateinit var iamController: IamController
     @RelaxedMockK
     protected lateinit var sessionHandler: RetenoSessionHandler
-    @RelaxedMockK
-    protected lateinit var appLifecycleController: AppLifecycleController
     @RelaxedMockK
     protected lateinit var interactionController: InteractionController
     @RelaxedMockK
@@ -140,17 +118,11 @@ abstract class BaseRobolectricTest {
         every { anyConstructed<ServiceLocator>().sharedPrefsManagerProvider.get() } returns sharedPrefsManager
         every { anyConstructed<ServiceLocator>().restConfigProvider.get() } returns restConfig
         every { anyConstructed<ServiceLocator>().recommendationProvider.get() } returns recommendation
-        every { anyConstructed<ServiceLocator>().actions } returns actionsLocator
         every { anyConstructed<ServiceLocator>().configRepositoryProvider.get() } returns facadeConfigRepository
-        every { actionsLocator.dataSync } returns dataSync
-        coEvery { actionsLocator.registerDevice.invoke() } returns Result.success(SyncResult.COMPLETED)
-        coEvery { actionsLocator.ensureDeviceRegisteredThisSession.invoke() } returns Result.success(Unit)
         every { anyConstructed<ServiceLocator>().iamViewProvider.get() } returns iamView
         every { anyConstructed<ServiceLocator>().iamControllerProvider.get() } returns iamController
         every { anyConstructed<ServiceLocator>().retenoActivityHelperProvider.get() } returns activityHelper
         every { anyConstructed<ServiceLocator>().appInboxProvider.get() } returns appInbox
-        every { anyConstructed<ServiceLocator>().screenTrackingControllerProvider.get() } returns screenTrackingController
-        every { anyConstructed<ServiceLocator>().appLifecycleControllerProvider.get() } returns appLifecycleController
 
     }
 
@@ -160,34 +132,4 @@ abstract class BaseRobolectricTest {
         // Nothing here yet
     }
 
-    protected fun TestScope.createRetenoAndAdvanceInit(
-        lifecycleOwner: LifecycleOwner = ProcessLifecycleOwner.get()
-    ): RetenoInternalImpl {
-        return RetenoInternalImpl(
-            application = application,
-            mainDispatcher = StandardTestDispatcher(testScheduler),
-            ioDispatcher = StandardTestDispatcher(testScheduler),
-            appLifecycleOwner = lifecycleOwner
-        ).also {
-            RetenoInternalImpl.swapInstance(it)
-            Reteno.initWithConfig(
-                RetenoConfig.Builder()
-                    .accessKey("Test access key")
-                    .setPlatform("Android")
-                    .build()
-            )
-            application.retenoMock = it
-            while (!it.isInitialized) {
-                advanceUntilIdle()
-            }
-        }
-    }
-
-    fun runRetenoTest(
-        lifecycleOwner: LifecycleOwner = ProcessLifecycleOwner.get(),
-        test: TestScope.(RetenoInternalImpl) -> Unit
-    ) = runTest {
-        test(createRetenoAndAdvanceInit(lifecycleOwner))
-        RetenoInternalImpl.swapInstance(null)
-    }
 }
