@@ -697,7 +697,7 @@ class IamControllerImplTest : BaseRobolectricTest() {
     )
 
     private fun TestScope.createController(): IamControllerImpl {
-        return IamControllerImpl(iamRepository, eventController, sessionHandler, userDatabase, this)
+        return IamControllerImpl(iamRepository, sessionHandler, userDatabase, this)
     }
 
     private fun createEventDisplayRule() = TargetingDisplayRules(

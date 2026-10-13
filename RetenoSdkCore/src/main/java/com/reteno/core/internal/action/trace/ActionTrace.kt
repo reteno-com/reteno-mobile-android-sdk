@@ -73,8 +73,12 @@ internal class ActionTraceImpl(
             }
             throw error
         }
-        emit(LogPriority.DEBUG) {
-            TraceFormatter.stepSuccess(depth, id, name, detail(value), millisSince(stepStartedAt))
+        val traced = value as? TracedOutcome
+        val text = { detail(value).ifEmpty { traced?.traceLabel.orEmpty() } }
+        if (traced == null || traced.isSuccessful) {
+            emit(LogPriority.DEBUG) { TraceFormatter.stepSuccess(depth, id, name, text(), millisSince(stepStartedAt)) }
+        } else {
+            emit(LogPriority.WARN) { TraceFormatter.stepFailure(depth, id, name, text(), millisSince(stepStartedAt)) }
         }
         return value
     }
@@ -84,9 +88,15 @@ internal class ActionTraceImpl(
         emit(LogPriority.DEBUG) { TraceFormatter.note(depth, id, message()) }
     }
 
-    fun finishSuccess(label: String) {
+    fun finishSuccess(value: Any?) {
         ensureStarted()
-        emit(LogPriority.DEBUG) { TraceFormatter.end(depth, id, name, "✓ $label", millisSince(startedAt)) }
+        val traced = value as? TracedOutcome
+        if (traced == null || traced.isSuccessful) {
+            val label = if (traced == null) SUCCESS else traced.traceLabel
+            emit(LogPriority.DEBUG) { TraceFormatter.end(depth, id, name, "✓ $label", millisSince(startedAt)) }
+        } else {
+            emit(LogPriority.WARN) { TraceFormatter.end(depth, id, name, "✗ ${traced.traceLabel}", millisSince(startedAt)) }
+        }
     }
 
     fun finishCancelled() {
@@ -119,5 +129,6 @@ internal class ActionTraceImpl(
         private const val NANOS_IN_MILLI = 1_000_000L
         private const val MAX_CAUSE_DEPTH = 8
         private const val ARGS_SEPARATOR = "  "
+        private const val SUCCESS = "SUCCESS"
     }
 }

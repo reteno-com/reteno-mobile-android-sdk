@@ -12,7 +12,8 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 class ContactController(
     private val contactRepository: ContactRepository,
-    private val configRepository: ConfigRepository
+    private val configRepository: ConfigRepository,
+    private val syncContactNow: suspend () -> Unit
 ) {
 
     //This session means app opening session, not the SDK Session
@@ -63,7 +64,7 @@ class ContactController(
         if (user == null) return false
         val validatedUser = Validator.validateUser(user)
         if (validatedUser == null) {
-            Logger.captureMessage("ContactController.setUserData(): user = [$user]")
+            Logger.captureMessage("ContactController.setUserData(): user rejected by validation")
             return false
         }
         contactRepository.saveUserData(validatedUser)
@@ -81,7 +82,7 @@ class ContactController(
         validAttributes?.let {
             val userData = User(it.toUserAttributes())
             contactRepository.saveUserDataDeprecated(userData, toParallelWork = false)
-        } ?: Logger.captureMessage("setAnonymousUserAttributes(): attributes = [$attributes]")
+        } ?: Logger.captureMessage("setAnonymousUserAttributes(): attributes rejected by validation")
     }
 
     suspend fun onNewFcmToken(token: String) {
@@ -95,24 +96,12 @@ class ContactController(
         }
     }
 
-    fun pushDeviceData() {
-        /*@formatter:off*/ Logger.i(TAG, "pushDeviceData(): ", "")
-        /*@formatter:on*/
-        contactRepository.pushDeviceData()
-    }
-
-    fun pushUserData() {
-        /*@formatter:off*/ Logger.i(TAG, "pushUserData(): ", "")
-        /*@formatter:on*/
-        contactRepository.pushUserData()
-    }
-
     suspend fun registerDevice() {
         /*@formatter:off*/ Logger.i(TAG, "registerDevice(): ")
         /*@formatter:on*/
         val token = configRepository.getFcmToken()
         onNewContact(token)
-        contactRepository.pushDeviceDataImmediate()
+        syncContactNow()
         isDeviceSentThisSession.set(true)
     }
 
@@ -186,7 +175,6 @@ class ContactController(
         )
         if (pushImmediate) {
             contactRepository.saveDeviceDataImmediate(contact)
-            contactRepository.pushDeviceData()
         } else {
             contactRepository.saveDeviceData(contact, toParallelWork)
         }
@@ -197,9 +185,8 @@ class ContactController(
         setUserData(user)
         val token = configRepository.getFcmToken()
         onNewContact(token)
-        contactRepository.pushDeviceDataImmediate()
         isDeviceSentThisSession.set(true)
-        contactRepository.pushUserDataImmediate()
+        syncContactNow()
     }
 
     fun saveDefaultNotificationChannel(channel: String) {

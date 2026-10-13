@@ -331,20 +331,50 @@ Final Coverage Report (Phase 1)
 - [x] Each action created once: `ActionsLocatorTest.should create each action once`
 - Gaps: facade (`RetenoInternalImpl.logX`) wiring has no unit test yet — the facade is covered in Phase 4. Not smoke-tested on a device in this phase.
 
-### Phase 2 — Data sync pipeline ☐
-Actions (`internal/action/sync/`): `SyncDataAction` (the `syncOnce` body), `PushDeviceStep`, `PushUserStep`, `PushInteractionsStep`, `PushInAppInteractionsStep`, `PushEventsStep`, `PushInboxStatusStep`, `PushRecomEventsStep`, `PushWrappedLinksStep`, `PushLogEventsStep`, `ClearOldDataAction` (adds log-event cleanup), `ForcePushAction`.
-Infra: `SyncCoordinator`, `SyncScheduler` (30 s / 10 s debug view, 0–10 s jitter), `PushDataWorker` → `CoroutineWorker`.
-Removes: `PushOperationQueue`, `ScheduleController(Impl)`, all `push*`/`clearOld*` in repositories, `RetenoThread(Factory)`.
-Decisions: S1–S10 fixed (D2); log events join the 30 s cycle (D3).
-`PushLogEventsStep` (D3):
-- Runs **last** in `syncOnce()`, so business data (device, user, interactions, events…) is always sent first and a failing logs endpoint can't block it.
-- Sends batches of 50 (`getLogEvents(50)`, oldest first since the manager orders by timestamp ASC) and loops until the table is empty or a batch fails. Today's `pushLogEvents(null)` would send the whole backlog in one POST, which for installs that accumulated rows since `60ad093` could be thousands of stack traces in one request.
-- Backlog cap before pushing: if `getLogEventsCount() > 500`, delete the oldest excess with `getLogEvents(excess)` + `deleteLogEvents(...)`. This uses only existing DB manager methods (there's no delete-by-time on this manager, and it stays frozen).
-- Success or non-repeatable error (4xx except 429) → delete the batch and continue. Repeatable error → keep rows, stop the step, retry next cycle.
-- Its own failures are logged with `Logger.i` only, never `Logger.e`, so a failing logs endpoint can't create new log rows (no feedback loop).
-- Ships together with SEC2 (PII removed from log messages); without that, restoring the upload would start sending emails/phones embedded in messages.
-Tests: empty table → no request; batch size 50; drains multiple batches; cap deletes oldest excess; repeatable failure keeps rows and doesn't stop earlier steps; non-repeatable deletes; failure doesn't call `Logger.e`; after drain `hasDataForSync` reflects the empty table.
-Tests per step: empty table → Continue without request; success drains all batches; non-repeatable drops batch and continues; repeatable → Abort and keeps rows; request payload mapping. Coordinator: order, abort stops later steps, conflation of N requests during a run → exactly one follow-up, cancellation on stop, scheduler cadence with virtual time. Worker: background + data → awaits sync; foreground → failure; no data → cancels unique work; Abort → retry.
+### Phase 2 — Data sync pipeline ☑
+Done (`internal/action/sync/`):
+- Steps (each `SyncStep`, returns `StepOutcome.CONTINUE | ABORT`, named steps, DB on IO): `PushDeviceStep`, `PushUserStep`, `PushInteractionsStep`, `PushInAppInteractionsStep` (new), `PushEventsStep`, `PushInboxStatusStep`, `PushRecomEventsStep`, `PushWrappedLinksStep`, `PushLogEventsStep` (restored, last, batches of 50, backlog cap 500, `reportFailure = false`).
+- `SyncDataAction` (`SyncScope.CONTACT` = device+user, `ALL` = everything; stops at first ABORT; a step that fails unexpectedly counts as CONTINUE so one bad row can't block later tables).
+- `SyncCoordinator` (`SyncTrigger`: `request()` conflated, `syncNow(scope)` under one `Mutex`).
+- `DataSync` (replaces `ScheduleController`): foreground loop 30 s (10 s debug view) + 0–10 s jitter, restart-safe, enqueues `PushDataWorker`; `clearOldData()` after 3 s; delegates `request`/`syncNow`.
+- `ClearOldDataAction` (one child action per table, failures isolated, same INFO reports as before).
+- `BackgroundSyncAction` + `PushDataWorker` as `CoroutineWorker` (awaits the sync; SYNCED → success, ABORTED/NOT_INITIALIZED → retry, foreground/no data → failure).
+- Traces: `TracedOutcome` lets step values and action results mark themselves ✓/✗ (`ApiResult.Failure` → `✗ send device to server   503 repeatable`, aborted step → `✗ ABORT` at WARN).
+- Wiring: `ServiceLocator` owns `ActionsLocator`; repositories call `requestSync()` after saving (device, in-app interaction, wrapped link, inbox opened); `ContactController` uses `syncContactNow()` for registration and user updates; `IamViewImpl` and the facade request syncs; `AppLifecycleController` calls `clearOldData`.
+- Deleted: `PushOperationQueue`, `ScheduleController(Impl)` + provider, `EventController` + provider, `EventsRepository(Impl)` + provider, `LogEventRepository(Impl)` + provider, every `push*`/`clearOld*` in repositories and controllers, and their legacy tests (52 legacy tests removed, 4 legacy test files deleted; remaining legacy tests updated to assert `requestSync`).
+- SEC2 shipped with the log upload: `Logger` persists only `Redact.uploadable` text; validation messages in `ContactController` no longer contain the user/attributes.
+Fixed defects: S1–S10, plus unchanged-unsynced devices now marked synced (worker can cancel), empty event groups deleted instead of stalling, non-https wrapped links dropped instead of blocking the chain forever, registration failure no longer throws out of init (part of I1).
+Kept for later: `RetenoThreadFactory` (still used by inbox polling, Phase 6); `OperationQueue` (other flows).
+Behaviour changes to announce: technically-public internals removed (`ServiceLocator.scheduleControllerProvider`, `ServiceLocator.logEventRepositoryProvider`, `ScheduleController`, `LogEventRepository`, `ContactController` constructor and push methods). In CONTACT sync a repeatable device failure now also postpones the user push (previously both were sent independently).
+
+Final Coverage Report (Phase 2) — Kover on gated packages: 784/784 lines, 253/253 branches, 344/344 methods.
+- [x] Every step: empty table → no request; request method/endpoint/body; success deletes/marks synced; repeatable → ABORT and rows kept; non-repeatable → rows dropped and CONTINUE; IO dispatch; no PII/URL in trace — `Push*StepTest` (75 tests)
+- [x] Device rules: no synced / outdated / changed / unchanged-not-outdated, rounds and round limit — `PushDeviceStepTest`
+- [x] User merge, diff-only request, full model persisted, outdated → full send — `PushUserStepTest`
+- [x] Log events: batches, backlog cap boundary, delete-failure stop, no self-report — `PushLogEventsStepTest`
+- [x] Order, CONTACT scope, abort stop point, crashed step continues, thrown step fails once — `SyncDataActionTest`
+- [x] Conflation, syncNow serialization, crash → ABORTED — `SyncCoordinatorTest`
+- [x] Scheduler cadence/jitter/debug view/restart/stop, enqueue on IO + failure reported, cleanup delay — `DataSyncTest`
+- [x] Cleanup per table, report wording, isolation — `ClearOldDataActionTest`
+- [x] Background sync outcomes — `BackgroundSyncActionTest`; worker mapping + enqueue request — `PushDataWorkerTest`
+- [x] Real wiring order against all 9 tables/endpoints, enqueue, INFO reports, cancel on no data — `ActionsLocatorSyncWiringTest`
+- [x] Upload sanitizing — `RedactTest`, `LoggerUploadSanitizingTest`
+- Gaps: legacy repositories' new `requestSync()` calls are covered only by the updated legacy tests (Contact, AppInbox); Interaction/Deeplink `requestSync` paths are exercised indirectly and get dedicated tests when those repositories are dissolved in Phases 5–6. Not smoke-tested on a device.
+
+### Phase 2 follow-up — code review fixes ☑
+From `/code-review` of Phases 0–2:
+1. Log events stored by older SDK versions are sanitized at upload time (`PushLogEventsStep` maps every message through `Redact.uploadable`).
+2. Backlog above 500 log events is deleted in chunks of 200 (stops if a chunk can't be deleted).
+3. A crashed contact step (device/user) aborts the sync, so a user is never sent before its device; a crashed data step continues but the sync result is `INCOMPLETE`, so the background worker retries.
+4. Locking moved from the whole run to each step (`SyncDataAction.stepLock`, fair `Mutex`): `syncContactNow()` during init waits for at most one running step instead of a full sync.
+5. Requested syncs wait for SDK initialization (`InitGate`, opened by `RetenoInternalImpl` when init completes; `syncNow` is not gated because registration runs during init).
+6. `Redact.text` also masks e-mail addresses, long digit runs (phone numbers) and quoted JSON values.
+8. `PushEventsStep` loads the events table once per round and sends every group from it (50-batch budget kept).
+9. Saving the "device registered" flag and reporting removed rows are named steps.
+10. `TracedOutcome.traceLabel` defaults to `toString()`; enums no longer repeat their names.
+Not changed (7): one save still requests a full sync; requests are conflated and empty tables cost a few reads. Revisit only if profiling shows a cost.
+`public.gpg` (public keyring only) added to `.gitignore`.
+Coverage after fixes: 826/826 lines, 270/270 branches; 679 Core tests, 53 Push tests passing.
 
 ### Phase 3 — Contact, device, user ☐
 Actions (`internal/action/device|user/`): `RegisterDeviceAction` (init), `EnsureDeviceRegisteredThisSessionAction` (ON_START), `UpdateFcmTokenAction`, `UpdateNotificationsEnabledAction`, `SetUserAttributesAction`, `SetMultiAccountUserAttributesAction`, `SetAnonymousUserAttributesAction`, `RefreshSegmentationAction` (debounced trigger shared by both user actions; real implementation in Phase 8).

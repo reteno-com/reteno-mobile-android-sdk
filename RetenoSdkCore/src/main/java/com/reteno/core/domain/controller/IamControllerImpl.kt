@@ -48,7 +48,6 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 internal class IamControllerImpl(
     private val iamRepository: IamRepository,
-    eventController: EventController,
     private val sessionHandler: RetenoSessionHandler,
     private val userDatabase: RetenoDatabaseManagerUser,
     private val scope: CoroutineScope = CoroutineScope(Dispatchers.IO + SupervisorJob())

@@ -15,7 +15,6 @@ import com.reteno.core.domain.ResultDomain
 import com.reteno.core.domain.controller.IamController
 import com.reteno.core.domain.controller.IamFetchResult
 import com.reteno.core.domain.controller.InteractionController
-import com.reteno.core.domain.controller.ScheduleController
 import com.reteno.core.domain.model.interaction.InAppInteraction
 import com.reteno.core.domain.model.interaction.InteractionAction
 import com.reteno.core.features.iam.IamJsEvent
@@ -23,6 +22,7 @@ import com.reteno.core.features.iam.IamJsEventType
 import com.reteno.core.features.iam.IamJsPayload
 import com.reteno.core.features.iam.InAppPauseBehaviour
 import com.reteno.core.features.iam.RetenoAndroidHandler
+import com.reteno.core.internal.action.sync.SyncTrigger
 import com.reteno.core.lifecycle.RetenoActivityHelper
 import com.reteno.core.lifecycle.RetenoLifecycleCallBacksAdapter
 import com.reteno.core.util.Constants
@@ -49,7 +49,7 @@ internal class IamViewImpl(
     private val activityHelper: RetenoActivityHelper,
     private val iamController: IamController,
     private val interactionController: InteractionController,
-    private val scheduleController: ScheduleController
+    private val syncTrigger: SyncTrigger
 ) : IamView {
     private val iamShowScope = CoroutineScope(Dispatchers.Main.immediate)
 
@@ -202,7 +202,7 @@ internal class IamViewImpl(
                         jsEvent.payload?.url
                     )
                 )
-                scheduleController.forcePush()
+                syncTrigger.request()
             }
         }
 

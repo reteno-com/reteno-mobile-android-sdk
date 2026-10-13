@@ -156,4 +156,52 @@ internal class SuspendApiClientTest {
         then()
         assertFalse(repeatable)
     }
+
+    @Test
+    fun `should trace success as ok`() = runUnitTest {
+        given()
+        val success = ApiResult.Success("{}", emptyMap())
+
+        whenn()
+        val traced = success.traceLabel to success.isSuccessful
+
+        then()
+        assertEquals("ok" to true, traced)
+    }
+
+    @Test
+    fun `should trace repeatable failure with status`() = runUnitTest {
+        given()
+        val failure = ApiResult.Failure(503, null, null)
+
+        whenn()
+        val traced = failure.traceLabel to failure.isSuccessful
+
+        then()
+        assertEquals("503 repeatable" to false, traced)
+    }
+
+    @Test
+    fun `should trace non repeatable failure with status`() = runUnitTest {
+        given()
+        val failure = ApiResult.Failure(404, null, null)
+
+        whenn()
+        val traced = failure.traceLabel
+
+        then()
+        assertEquals("404 non-repeatable", traced)
+    }
+
+    @Test
+    fun `should trace failure without response`() = runUnitTest {
+        given()
+        val failure = ApiResult.Failure(null, null, IOException("offline"))
+
+        whenn()
+        val traced = failure.traceLabel
+
+        then()
+        assertEquals("no response repeatable", traced)
+    }
 }

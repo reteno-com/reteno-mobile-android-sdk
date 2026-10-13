@@ -5,17 +5,9 @@ import com.reteno.core.data.local.config.DeviceId
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerDevice
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerUser
 import com.reteno.core.data.local.mappers.toDb
-import com.reteno.core.data.local.model.BooleanDb
 import com.reteno.core.data.local.model.device.DeviceCategoryDb
 import com.reteno.core.data.local.model.device.DeviceDb
 import com.reteno.core.data.local.model.device.DeviceOsDb
-import com.reteno.core.data.local.model.user.UserAttributesDb
-import com.reteno.core.data.local.model.user.UserDb
-import com.reteno.core.data.remote.PushOperationQueue
-import com.reteno.core.data.remote.api.ApiClient
-import com.reteno.core.data.remote.api.ApiContract
-import com.reteno.core.data.remote.mapper.toJson
-import com.reteno.core.domain.ResponseCallback
 import com.reteno.core.domain.model.device.Device
 import com.reteno.core.domain.model.device.DeviceCategory
 import com.reteno.core.domain.model.device.DeviceOS
@@ -27,7 +19,6 @@ import io.mockk.every
 import io.mockk.impl.annotations.RelaxedMockK
 import io.mockk.mockk
 import io.mockk.mockkStatic
-import io.mockk.slot
 import io.mockk.unmockkStatic
 import io.mockk.verify
 import kotlinx.coroutines.test.runTest
@@ -85,8 +76,7 @@ class ContactRepositoryImplTest : BaseRobolectricTest() {
     // endregion constants -------------------------------------------------------------------------
 
     // region helper fields ------------------------------------------------------------------------
-    @RelaxedMockK
-    private lateinit var apiClient: ApiClient
+    private var syncRequests = 0
     @RelaxedMockK
     private lateinit var configRepository: ConfigRepository
     @RelaxedMockK
@@ -99,7 +89,8 @@ class ContactRepositoryImplTest : BaseRobolectricTest() {
 
     override fun before() {
         super.before()
-        SUT = ContactRepositoryImpl(apiClient, configRepository, databaseManagerDevice, databaseManagerUser)
+        syncRequests = 0
+        SUT = ContactRepositoryImpl(configRepository, databaseManagerDevice, databaseManagerUser) { syncRequests++ }
     }
 
     @Test
@@ -118,7 +109,7 @@ class ContactRepositoryImplTest : BaseRobolectricTest() {
 
         // Then
         verify(exactly = 1) { databaseManagerDevice.insertDevice(deviceDb) }
-        verify(exactly = 1) { apiClient.postSync(any(), any(), any(), any()) }
+        assertEquals(1, syncRequests)
     }
 
     @Test
@@ -137,148 +128,7 @@ class ContactRepositoryImplTest : BaseRobolectricTest() {
 
         // Then
         verify(exactly = 0) { databaseManagerDevice.insertDevice(deviceDb) }
-        verify(exactly = 1) { apiClient.postSync(any(), any(), any(), any()) }
-    }
-
-    @Test
-    fun whenDbHasSavedDeviceData_thenSendToApi() {
-        // Given
-        val device = getDeviceDb()
-        val expectedDeviceJson =
-            "{\"deviceId\":\"${DEVICE_ID}\",\"externalUserId\":\"${EXTERNAL_DEVICE_ID}\",\"pushToken\":\"${FCM_TOKEN_NEW}\",\"category\":\"${CATEGORY}\",\"osType\":\"${OS_TYPE}\"}"
-
-        every { databaseManagerDevice.getDevices(any()) } returnsMany listOf(
-            listOf(device),
-            emptyList()
-        )
-
-        // When
-        SUT.pushDeviceData()
-
-        // Then
-        verify(exactly = 1) { apiClient.postSync(eq(ApiContract.MobileApi.Device), eq(expectedDeviceJson), any(), any()) }
-    }
-
-    @Test
-    fun whenDevicePushSuccessfulAndCacheUpdated_thenTryPushNextDevice() {
-        // Given
-        val deviceDataDb = mockk<DeviceDb>(relaxed = true)
-        every { databaseManagerDevice.getDevices(any()) } returnsMany listOf(listOf(deviceDataDb), listOf(deviceDataDb), emptyList())
-        every { databaseManagerDevice.deleteDevices(any()) } returns Unit
-        every { apiClient.postSync(url = any(), jsonBody = any(), responseHandler = any()) } answers {
-            val callback = arg<ResponseCallback>(3)
-            callback.onSuccess("")
-        }
-
-        // When
-        SUT.pushDeviceData()
-
-        // Then
-        verify(exactly = 1) { apiClient.postSync(any(), any(), any(), any()) }
-        verify(exactly = 1) { databaseManagerDevice.deleteDevices(any()) }
-        verify(exactly = 1) { PushOperationQueue.nextOperation() }
-        verify(exactly = 1) { configRepository.saveDeviceRegistered(true) }
-    }
-
-    @Test
-    fun whenDevicePushSuccessfulAndCacheNotUpdated_thenNextOperation() {
-        // Given
-        val deviceDataDb = mockk<DeviceDb>(relaxed = true)
-        every { databaseManagerDevice.getDevices(any()) } returnsMany listOf(listOf(deviceDataDb), listOf(deviceDataDb), emptyList())
-        every { databaseManagerDevice.deleteDevices(any()) } returns Unit
-        every { apiClient.postSync(url = any(), jsonBody = any(), responseHandler = any()) } answers {
-            val callback = arg<ResponseCallback>(3)
-            callback.onSuccess("")
-        }
-
-        // When
-        SUT.pushDeviceData()
-
-        // Then
-        verify(exactly = 1) { apiClient.postSync(any(), any(), any(), any()) }
-        verify(exactly = 1) { databaseManagerDevice.deleteDevices(any()) }
-        verify(exactly = 1) { PushOperationQueue.nextOperation() }
-        verify(exactly = 1) { configRepository.saveDeviceRegistered(true) }
-    }
-
-    @Test
-    fun whenDevicePushFailedAndErrorIsRepeatable_cancelPushOperations() {
-        // Given
-        val deviceDataDb = mockk<DeviceDb>(relaxed = true)
-        every { databaseManagerDevice.getDevices(any()) } returns listOf(deviceDataDb)
-        every { apiClient.postSync(url = any(), jsonBody = any(), responseHandler = any()) } answers {
-            val callback = arg<ResponseCallback>(3)
-            callback.onFailure(SERVER_ERROR_NON_REPEATABLE, null, null)
-        }
-
-        // When
-        SUT.pushDeviceData()
-
-        // Then
-        verify(exactly = 1) { apiClient.postSync(any(), any(), any(), any()) }
-        verify(exactly = 1) { PushOperationQueue.removeAllOperations() }
-        verify(exactly = 0) { configRepository.saveDeviceRegistered(any()) }
-    }
-
-    @Test
-    fun whenDevicePushFailedAndErrorIsNonRepeatableAndUpdateCacheSuccess_thenTryPushNextDevice() {
-        // Given
-        val deviceDataDb = mockk<DeviceDb>(relaxed = true)
-        every { databaseManagerDevice.getDevices(any()) } returnsMany listOf(listOf(deviceDataDb), listOf(deviceDataDb), emptyList())
-        every { databaseManagerDevice.deleteDevices(any()) } returns Unit
-        every { databaseManagerDevice.getUnSyncedDeviceCount() } returnsMany listOf(1, 0)
-        every { apiClient.postSync(url = any(), jsonBody = any(), responseHandler = any()) } answers {
-            val callback = arg<ResponseCallback>(3)
-            callback.onFailure(SERVER_ERROR_REPEATABLE, null, null)
-        }
-
-        // When
-        SUT.pushDeviceData()
-
-        // Then
-        verify(exactly = 2) { apiClient.postSync(any(), any(), any(), any()) }
-        verify(exactly = 2) { databaseManagerDevice.getDevices(any()) }
-        verify(exactly = 2) { databaseManagerDevice.deleteDevices(any()) }
-        verify(exactly = 2) { PushOperationQueue.removeAllOperations() }
-        verify(exactly = 0) { configRepository.saveDeviceRegistered(any()) }
-    }
-
-    @Test
-    fun whenDevicePushFailedAndErrorIsNonRepeatableAndUpdateCacheFailed_thenRemoveAllOperations() {
-        // Given
-        val deviceDataDb = mockk<DeviceDb>(relaxed = true)
-        every { databaseManagerDevice.getDevices(any()) } returnsMany listOf(listOf(deviceDataDb), listOf(deviceDataDb), emptyList())
-        every { databaseManagerDevice.deleteDevice(deviceDataDb) } returns false
-        every { databaseManagerDevice.getUnSyncedDeviceCount() } returns 0
-        every { apiClient.postSync(url = any(), jsonBody = any(), responseHandler = any()) } answers {
-            val callback = arg<ResponseCallback>(3)
-            callback.onFailure(400, null, null)
-        }
-
-        // When
-        SUT.pushDeviceData()
-
-        // Then
-        verify(exactly = 1) { apiClient.postSync(any(), any(), any(),any()) }
-        verify(exactly = 1) { databaseManagerDevice.getDevices() }
-        verify(exactly = 1) { databaseManagerDevice.deleteDevices(any()) }
-        verify(exactly = 0) { PushOperationQueue.nextOperation() }
-        verify(exactly = 1) { PushOperationQueue.removeAllOperations() }
-        verify(exactly = 0) { configRepository.saveDeviceRegistered(any()) }
-    }
-
-    @Test
-    fun givenNoDeviceInDb_whenDevicePush_thenApiClientPutsDoesNotCalled() {
-        // Given
-        every { databaseManagerDevice.getDevices(any()) } returns emptyList()
-
-        // When
-        SUT.pushDeviceData()
-
-        // Then
-        verify(exactly = 0) { apiClient.post(any(), any(), any()) }
-        verify { PushOperationQueue.nextOperation() }
-        verify(exactly = 0) { configRepository.saveDeviceRegistered(any()) }
+        assertEquals(1, syncRequests)
     }
 
     @Test
@@ -312,253 +162,6 @@ class ContactRepositoryImplTest : BaseRobolectricTest() {
 
         // Then
         verify { databaseManagerUser.insertUser(userDb) }
-    }
-
-    @Test
-    fun whenDbHasSavedUser_thenSendToApi() {
-        // Given
-        val expectedUserJson =
-            "{\"deviceId\":\"${DEVICE_ID}\",\"externalUserId\":\"${EXTERNAL_DEVICE_ID}\",\"userAttributes\":{\"phone\":\"${USER_ATTRS_PHONE}\",\"email\":\"${USER_ATTRS_EMAIL}\",\"firstName\":\"${USER_ATTRS_FIRST_NAME}\",\"lastName\":\"${USER_ATTRS_LAST_NAME}\",\"languageCode\":\"${USER_ATTRS_LANGUAGE_CODE}\",\"timeZone\":\"${USER_ATTRS_TIMEZONE}\",\"address\":{\"region\":\"${USER_ATTRS_ADDRESS_REGION}\",\"town\":\"${USER_ATTRS_ADDRESS_TOWN}\",\"address\":\"${USER_ATTRS_ADDRESS_ADDRESS}\",\"postcode\":\"${USER_ATTRS_ADDRESS_POSTCODE}\"},\"fields\":[{\"key\":\"${USER_ATTRS_FIELD_KEY_1}\",\"value\":\"${USER_ATTRS_FIELD_VALUE_1}\"},{\"key\":\"${USER_ATTRS_FIELD_KEY_2}\",\"value\":\"${USER_ATTRS_FIELD_VALUE_2}\"}]},\"subscriptionKeys\":${USER_SUBSCRIPTION_KEYS.toJson()},\"groupNamesInclude\":${USER_GROUP_NAMES_INCLUDE.toJson()},\"groupNamesExclude\":${USER_GROUP_NAMES_EXCLUDE.toJson()}}"
-        val deviceId = DeviceId(DEVICE_ID, null, EXTERNAL_DEVICE_ID)
-        every { configRepository.getDeviceId() } returns deviceId
-        val userDb = getUser().toDb(deviceId)
-        every { configRepository.getDeviceId() } returns DeviceId(DEVICE_ID, null, EXTERNAL_DEVICE_ID)
-        every { databaseManagerUser.getUsers(any()) } returnsMany listOf(
-            listOf(userDb),
-            emptyList()
-        )
-
-        // When
-        SUT.pushUserData()
-
-        // Then
-        verify(exactly = 1) { apiClient.post(eq(ApiContract.MobileApi.User), eq(expectedUserJson), any()) }
-    }
-
-    @Test
-    fun whenUserPushSuccessfulAndCacheNotUpdated_thenNextOperation() {
-        // Given
-        val userData = mockk<UserDb>(relaxed = true)
-        every { databaseManagerUser.getUsers(any()) } returnsMany listOf(listOf(userData), listOf(userData), emptyList())
-        every { databaseManagerUser.deleteUsers(any()) } returns Unit
-        every { apiClient.post(url = any(), jsonBody = any(), responseHandler = any()) } answers {
-            val callback = thirdArg<ResponseCallback>()
-            callback.onSuccess("")
-        }
-
-        // When
-        SUT.pushUserData()
-
-        // Then
-        verify(exactly = 1) { apiClient.post(any(), any(), any()) }
-        verify(exactly = 1) { databaseManagerUser.deleteUsers(any()) }
-        verify(exactly = 1) { PushOperationQueue.nextOperation() }
-    }
-
-    @Test
-    fun whenUserPushFailedAndErrorIsRepeatable_cancelPushOperations() {
-        // Given
-        val userData = mockk<UserDb>(relaxed = true)
-        every { databaseManagerUser.getUsers(any()) } returns listOf(userData)
-        every { apiClient.post(url = any(), jsonBody = any(), responseHandler = any()) } answers {
-            val callback = thirdArg<ResponseCallback>()
-            callback.onFailure(SERVER_ERROR_NON_REPEATABLE, null, null)
-        }
-
-        // When
-        SUT.pushUserData()
-
-        // Then
-        verify(exactly = 1) { apiClient.post(any(), any(), any()) }
-        verify(exactly = 1) { PushOperationQueue.removeAllOperations() }
-    }
-
-    @Test
-    fun whenUserPushFailedAndErrorIsNonRepeatableAndCacheNotUpdated_thenIncorrectUserRemoved() {
-        // Given
-        val userData = mockk<UserDb>(relaxed = true)
-        every { databaseManagerUser.getUsers() } returnsMany listOf(listOf(userData), listOf(userData), emptyList())
-        every { databaseManagerUser.deleteUsers(any()) } returns Unit
-        every { apiClient.post(url = any(), jsonBody = any(), responseHandler = any()) } answers {
-            val callback = thirdArg<ResponseCallback>()
-            callback.onFailure(400, null, null)
-        }
-
-        // When
-        SUT.pushUserData()
-
-        // Then
-        verify(exactly = 1) { apiClient.post(any(), any(), any()) }
-        verify(exactly = 1) { databaseManagerUser.getUsers() }
-        verify(exactly = 1) { databaseManagerUser.deleteUsers(any()) }
-        verify(exactly = 0) { PushOperationQueue.nextOperation() }
-        verify(exactly = 0) { PushOperationQueue.removeAllOperations() }
-    }
-
-    @Test
-    fun givenPendingPartialUpdateOverSyncedUser_whenPushUserDataSucceeds_thenPersistedUserKeepsUntouchedAttributes() {
-        // Given
-        // Full snapshot as it was last synced with backend
-        val syncedUser = getUser().toDb(DeviceId(DEVICE_ID, null, EXTERNAL_DEVICE_ID)).copy(
-            rowId = "1",
-            createdAt = 100L,
-            isSynchronizedWithBackend = BooleanDb.TRUE
-        )
-        // A partial update queued for the next sync - only email changed, everything else null
-        val pendingUser = UserDb(
-            rowId = "2",
-            createdAt = 200L,
-            deviceId = DEVICE_ID,
-            userAttributes = UserAttributesDb(email = USER_ATTRS_EMAIL_NEW),
-            isSynchronizedWithBackend = BooleanDb.FALSE
-        )
-        every { configRepository.getDeviceId() } returns DeviceId(DEVICE_ID, null, EXTERNAL_DEVICE_ID)
-        every { databaseManagerUser.getUsers(any()) } returnsMany listOf(
-            listOf(syncedUser, pendingUser),
-            emptyList()
-        )
-        every { apiClient.post(url = any(), jsonBody = any(), responseHandler = any()) } answers {
-            val callback = thirdArg<ResponseCallback>()
-            callback.onSuccess("")
-        }
-        val persisted = slot<UserDb>()
-        every { databaseManagerUser.insertUser(capture(persisted)) } returns Unit
-
-        // When
-        SUT.pushUserData()
-
-        // Then
-        // Only the diff should be sent to the backend
-        verify(exactly = 1) {
-            apiClient.post(
-                any(),
-                match { it.contains("\"email\":\"${USER_ATTRS_EMAIL_NEW}\"") && !it.contains(USER_ATTRS_FIRST_NAME) },
-                any()
-            )
-        }
-        // But the locally persisted "synced" record must keep every attribute untouched by this update
-        assertEquals(USER_ATTRS_EMAIL_NEW, persisted.captured.userAttributes?.email)
-        assertEquals(USER_ATTRS_FIRST_NAME, persisted.captured.userAttributes?.firstName)
-        assertEquals(USER_ATTRS_LAST_NAME, persisted.captured.userAttributes?.lastName)
-        assertEquals(USER_ATTRS_PHONE, persisted.captured.userAttributes?.phone)
-        assertEquals(USER_ATTRS_ADDRESS_ADDRESS, persisted.captured.userAttributes?.address?.address)
-        assertEquals(BooleanDb.TRUE, persisted.captured.isSynchronizedWithBackend)
-    }
-
-    @Test
-    fun givenPendingPartialUpdateOverSyncedUser_whenPushUserDataFailsAndCacheIsUpdated_thenPersistedUserKeepsUntouchedAttributes() {
-        // Given
-        val syncedUser = getUser().toDb(DeviceId(DEVICE_ID, null, EXTERNAL_DEVICE_ID)).copy(
-            rowId = "1",
-            createdAt = 100L,
-            isSynchronizedWithBackend = BooleanDb.TRUE
-        )
-        val pendingUser = UserDb(
-            rowId = "2",
-            createdAt = 200L,
-            deviceId = DEVICE_ID,
-            userAttributes = UserAttributesDb(email = USER_ATTRS_EMAIL_NEW),
-            isSynchronizedWithBackend = BooleanDb.FALSE
-        )
-        every { configRepository.getDeviceId() } returns DeviceId(DEVICE_ID, null, EXTERNAL_DEVICE_ID)
-        every { databaseManagerUser.getUsers(any()) } returnsMany listOf(
-            listOf(syncedUser, pendingUser),
-            emptyList()
-        )
-        every { apiClient.post(url = any(), jsonBody = any(), responseHandler = any()) } answers {
-            val callback = thirdArg<ResponseCallback>()
-            // A 400 is treated as a non-repeatable error by isNonRepeatableError()
-            callback.onFailure(400, null, null)
-        }
-        val persisted = slot<UserDb>()
-        every { databaseManagerUser.insertUser(capture(persisted)) } returns Unit
-
-        // When
-        SUT.pushUserData()
-
-        // Then
-        assertEquals(USER_ATTRS_EMAIL_NEW, persisted.captured.userAttributes?.email)
-        assertEquals(USER_ATTRS_FIRST_NAME, persisted.captured.userAttributes?.firstName)
-        assertEquals(USER_ATTRS_LAST_NAME, persisted.captured.userAttributes?.lastName)
-    }
-
-    @Test
-    fun givenNoPreviousSyncedUser_whenPushUserDataSucceeds_thenPersistedUserEqualsPendingUser() {
-        // Given
-        val pendingUser = getUser().toDb(DeviceId(DEVICE_ID, null, EXTERNAL_DEVICE_ID)).copy(
-            rowId = "1",
-            createdAt = 100L,
-            isSynchronizedWithBackend = BooleanDb.FALSE
-        )
-        every { configRepository.getDeviceId() } returns DeviceId(DEVICE_ID, null, EXTERNAL_DEVICE_ID)
-        every { databaseManagerUser.getUsers(any()) } returnsMany listOf(
-            listOf(pendingUser),
-            emptyList()
-        )
-        every { apiClient.post(url = any(), jsonBody = any(), responseHandler = any()) } answers {
-            val callback = thirdArg<ResponseCallback>()
-            callback.onSuccess("")
-        }
-        val persisted = slot<UserDb>()
-        every { databaseManagerUser.insertUser(capture(persisted)) } returns Unit
-
-        // When
-        SUT.pushUserData()
-
-        // Then
-        assertEquals(USER_ATTRS_EMAIL, persisted.captured.userAttributes?.email)
-        assertEquals(USER_ATTRS_FIRST_NAME, persisted.captured.userAttributes?.firstName)
-        assertEquals(BooleanDb.TRUE, persisted.captured.isSynchronizedWithBackend)
-    }
-
-    @Test
-    fun givenPendingPartialUpdateOverSyncedUser_whenPushUserDataImmediateSucceeds_thenPersistedUserKeepsUntouchedAttributes() {
-        // Given
-        val syncedUser = getUser().toDb(DeviceId(DEVICE_ID, null, EXTERNAL_DEVICE_ID)).copy(
-            rowId = "1",
-            createdAt = 100L,
-            isSynchronizedWithBackend = BooleanDb.TRUE
-        )
-        val pendingUser = UserDb(
-            rowId = "2",
-            createdAt = 200L,
-            deviceId = DEVICE_ID,
-            userAttributes = UserAttributesDb(email = USER_ATTRS_EMAIL_NEW),
-            isSynchronizedWithBackend = BooleanDb.FALSE
-        )
-        every { configRepository.getDeviceId() } returns DeviceId(DEVICE_ID, null, EXTERNAL_DEVICE_ID)
-        every { databaseManagerUser.getUsers(any()) } returnsMany listOf(
-            listOf(syncedUser, pendingUser),
-            emptyList()
-        )
-        every { apiClient.postSync(url = any(), jsonBody = any(), responseHandler = any()) } answers {
-            val callback = arg<ResponseCallback>(3)
-            callback.onSuccess("")
-        }
-        val persisted = slot<UserDb>()
-        every { databaseManagerUser.insertUser(capture(persisted)) } returns Unit
-
-        // When
-        SUT.pushUserDataImmediate()
-
-        // Then
-        assertEquals(USER_ATTRS_EMAIL_NEW, persisted.captured.userAttributes?.email)
-        assertEquals(USER_ATTRS_FIRST_NAME, persisted.captured.userAttributes?.firstName)
-        assertEquals(USER_ATTRS_LAST_NAME, persisted.captured.userAttributes?.lastName)
-    }
-
-    @Test
-    fun givenNoUserInDb_whenUserPush_thenApiClientPutsDoesNotCalled() {
-        // Given
-        every { databaseManagerUser.getUsers(any()) } returns emptyList()
-
-        // When
-        SUT.pushUserData()
-
-        // Then
-        verify(exactly = 0) { apiClient.post(any(), any(), any()) }
-        verify { PushOperationQueue.nextOperation() }
-
     }
 
     // region helper methods -----------------------------------------------------------------------

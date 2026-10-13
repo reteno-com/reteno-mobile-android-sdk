@@ -27,7 +27,7 @@ class IamViewImplTest : BaseRobolectricTest() {
     override fun before() {
         super.before()
         every { iamController.inAppMessagesFlow } returns MutableSharedFlow()
-        SUT = IamViewImpl(activityHelper, iamController, interactionController, scheduleController)
+        SUT = IamViewImpl(activityHelper, iamController, interactionController, dataSync)
     }
 
     @Test

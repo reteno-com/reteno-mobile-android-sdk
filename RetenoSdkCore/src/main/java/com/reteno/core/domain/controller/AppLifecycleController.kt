@@ -35,7 +35,7 @@ import kotlin.time.Duration.Companion.milliseconds
 class AppLifecycleController internal constructor(
     private val configRepository: ConfigRepository,
     private val sessionHandler: RetenoSessionHandler,
-    private val scheduleController: ScheduleController,
+    private val clearOldData: () -> Unit,
     private val iamController: IamController,
     activityHelper: RetenoActivityHelper,
     lifecycleTrackingOptions: LifecycleTrackingOptions,
@@ -60,7 +60,7 @@ class AppLifecycleController internal constructor(
     @OnLifecycleEvent(Lifecycle.Event.ON_START)
     fun start() {
         sendAppResumeBroadcast()
-        scheduleController.clearOldData()
+        clearOldData()
         initMetadata()
         iamController.preloadHtml()
         if (isStarted) return

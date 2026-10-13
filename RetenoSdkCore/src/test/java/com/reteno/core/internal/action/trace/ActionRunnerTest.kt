@@ -198,16 +198,79 @@ internal class ActionRunnerTest {
         assertEquals(TraceFormatter.note(0, "r1", "nothing to send"), fixture.sink.lines[1])
     }
 
+    private enum class TestOutcome(override val traceLabel: String, override val isSuccessful: Boolean) : TracedOutcome {
+        PASSED("CONTINUE", true),
+        STOPPED("ABORT", false)
+    }
+
     @Test
-    fun `should use outcome label in end line`() = runUnitTest {
+    fun `should use successful traced outcome as end line label`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
 
         whenn()
-        fixture.sut("PushDevice", outcome = { value: String -> value }) { "CONTINUE" }
+        fixture.sut("PushDevice") { TestOutcome.PASSED }
 
         then()
-        assertEquals(TraceFormatter.end(0, "r1", "PushDevice", "✓ CONTINUE", 0), fixture.sink.lines.last())
+        val end = fixture.sink.entries.last()
+        assertEquals(TraceFormatter.end(0, "r1", "PushDevice", "✓ CONTINUE", 0), end.message)
+        assertEquals(LogPriority.DEBUG, end.priority)
+    }
+
+    @Test
+    fun `should mark unsuccessful traced outcome as warning in end line`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+
+        whenn()
+        val result = fixture.sut("PushDevice") { TestOutcome.STOPPED }
+
+        then()
+        assertEquals(TestOutcome.STOPPED, result.getOrNull())
+        val end = fixture.sink.entries.last()
+        assertEquals(TraceFormatter.end(0, "r1", "PushDevice", "✗ ABORT", 0), end.message)
+        assertEquals(LogPriority.WARN, end.priority)
+        assertTrue(fixture.reports.isEmpty())
+    }
+
+    @Test
+    fun `should show successful traced step value as detail`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+
+        whenn()
+        fixture.sut("PushDevice") { step("send device to server") { TestOutcome.PASSED } }
+
+        then()
+        val line = fixture.sink.entries[1]
+        assertEquals(TraceFormatter.stepSuccess(0, "r1", "send device to server", "CONTINUE", 0), line.message)
+        assertEquals(LogPriority.DEBUG, line.priority)
+    }
+
+    @Test
+    fun `should mark unsuccessful traced step value as warning`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+
+        whenn()
+        fixture.sut("PushDevice") { step("send device to server") { TestOutcome.STOPPED } }
+
+        then()
+        val line = fixture.sink.entries[1]
+        assertEquals(TraceFormatter.stepFailure(0, "r1", "send device to server", "ABORT", 0), line.message)
+        assertEquals(LogPriority.WARN, line.priority)
+    }
+
+    @Test
+    fun `should prefer explicit detail over traced step label`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+
+        whenn()
+        fixture.sut("PushDevice") { step("send device to server", detail = { _: TestOutcome -> "custom" }) { TestOutcome.STOPPED } }
+
+        then()
+        assertEquals(TraceFormatter.stepFailure(0, "r1", "send device to server", "custom", 0), fixture.sink.lines[1])
     }
 
     @Test

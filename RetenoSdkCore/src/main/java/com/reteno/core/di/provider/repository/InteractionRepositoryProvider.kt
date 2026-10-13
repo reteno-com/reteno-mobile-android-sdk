@@ -5,19 +5,19 @@ import com.reteno.core.data.repository.InteractionRepositoryImpl
 import com.reteno.core.di.base.ProviderWeakReference
 import com.reteno.core.di.provider.database.RetenoDatabaseManagerInAppInteractionProvider
 import com.reteno.core.di.provider.database.RetenoDatabaseManagerInteractionProvider
-import com.reteno.core.di.provider.network.ApiClientProvider
+import com.reteno.core.internal.action.sync.DataSync
 
 internal class InteractionRepositoryProvider(
-    private val apiClientProvider: ApiClientProvider,
     private val retenoDatabaseManagerInteractionProvider: RetenoDatabaseManagerInteractionProvider,
-    private val retenoDatabaseManagerInAppInteractionProvider: RetenoDatabaseManagerInAppInteractionProvider
+    private val retenoDatabaseManagerInAppInteractionProvider: RetenoDatabaseManagerInAppInteractionProvider,
+    private val dataSync: () -> DataSync
 ) : ProviderWeakReference<InteractionRepository>() {
 
     override fun create(): InteractionRepository {
         return InteractionRepositoryImpl(
-            apiClientProvider.get(),
             retenoDatabaseManagerInteractionProvider.get(),
-            retenoDatabaseManagerInAppInteractionProvider.get()
+            retenoDatabaseManagerInAppInteractionProvider.get(),
+            requestSync = { dataSync().request() }
         )
     }
 }

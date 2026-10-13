@@ -258,4 +258,104 @@ internal class RedactTest {
         then()
         assertEquals(1, trace.lines().count { it.startsWith("Caused by: ") })
     }
+
+    @Test
+    fun `should drop interpolated values from uploadable message`() = runUnitTest {
+        given()
+        val message = "getDevices(). Removed invalid entry from database. device=DeviceDb(email=john@example.com, pushToken=abc)"
+
+        whenn()
+        val uploadable = Redact.uploadable(message)
+
+        then()
+        assertEquals("getDevices(). Removed invalid entry from database. device", uploadable)
+    }
+
+    @Test
+    fun `should drop bracketed values and urls from uploadable message`() = runUnitTest {
+        given()
+        val message = "Failed on scale image https://cdn.example/x.png to (10, 20)"
+
+        whenn()
+        val uploadable = Redact.uploadable(message)
+
+        then()
+        assertEquals("Failed on scale image <url> to (10, 20)", uploadable)
+    }
+
+    @Test
+    fun `should keep uploadable message without values unchanged`() = runUnitTest {
+        given()
+        val message = "Removed events(purchase) - 3"
+
+        whenn()
+        val uploadable = Redact.uploadable(message)
+
+        then()
+        assertEquals(message, uploadable)
+    }
+
+    @Test
+    fun `should sanitize every exception message in uploadable stack trace`() = runUnitTest {
+        given()
+        val cause = IllegalStateException("recomEvents = RecomEvents(productId=secret)")
+        val error = RuntimeException("token = [fcm-secret]", cause)
+
+        whenn()
+        val trace = Redact.uploadableStackTrace(error)
+
+        then()
+        val lines = trace.lines()
+        assertEquals("java.lang.RuntimeException: token", lines.first())
+        assertTrue(lines.contains("Caused by: java.lang.IllegalStateException: recomEvents"))
+        assertFalse(trace.contains("secret"))
+    }
+
+    @Test
+    fun `should mask email addresses in text`() = runUnitTest {
+        given()
+        val text = "user john.doe+tag@example.co.uk rejected"
+
+        whenn()
+        val redacted = Redact.text(text)
+
+        then()
+        assertEquals("user <email> rejected", redacted)
+    }
+
+    @Test
+    fun `should mask long digit sequences such as phone numbers in text`() = runUnitTest {
+        given()
+        val text = "phone +38 (050) 123-45-67 is invalid"
+
+        whenn()
+        val redacted = Redact.text(text)
+
+        then()
+        assertEquals("phone <number> is invalid", redacted)
+    }
+
+    @Test
+    fun `should keep short numbers in text`() = runUnitTest {
+        given()
+        val text = "Removed events(purchase) - 123456"
+
+        whenn()
+        val redacted = Redact.text(text)
+
+        then()
+        assertEquals(text, redacted)
+    }
+
+    @Test
+    fun `should mask quoted json values in text`() = runUnitTest {
+        given()
+        val text = """Unterminated object {"firstName": "John", "email":"j@x.io"}"""
+
+        whenn()
+        val redacted = Redact.text(text)
+
+        then()
+        assertEquals("""Unterminated object {"firstName": "<hidden>", "email":"<hidden>"}""", redacted)
+    }
 }

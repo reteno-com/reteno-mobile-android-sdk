@@ -11,7 +11,6 @@ import androidx.lifecycle.OnLifecycleEvent
 import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.work.Configuration
 import com.reteno.core.data.local.config.DeviceIdMode
-import com.reteno.core.di.ActionsLocator
 import com.reteno.core.di.ServiceLocator
 import com.reteno.core.domain.controller.ScreenTrackingController
 import com.reteno.core.domain.model.ecom.EcomEvent
@@ -19,7 +18,6 @@ import com.reteno.core.domain.model.event.Event
 import com.reteno.core.domain.model.event.LifecycleTrackingOptions
 import com.reteno.core.domain.model.interaction.InteractionAction
 import com.reteno.core.domain.model.interaction.InteractionStatus
-import com.reteno.core.domain.model.logevent.LogLevel
 import com.reteno.core.domain.model.logevent.RetenoLogEvent
 import com.reteno.core.domain.model.user.User
 import com.reteno.core.domain.model.user.UserAttributesAnonymous
@@ -27,7 +25,6 @@ import com.reteno.core.features.iam.InAppPauseBehaviour
 import com.reteno.core.internal.action.user.UpdateMultiAccountUserAttributesAction
 import com.reteno.core.internal.action.user.UpdateUserAttributesAction
 import com.reteno.core.internal.coroutine.RetenoDispatchers
-import com.reteno.core.internal.log.AndroidLogSink
 import com.reteno.core.lifecycle.RetenoActivityHelper
 import com.reteno.core.lifecycle.ScreenTrackingConfig
 import com.reteno.core.permission.AndroidPermissionChecker
@@ -62,15 +59,21 @@ class RetenoInternalImpl(
     private val anrWaitCondition = CompletableDeferred<Unit>()
     private val syncScope = CoroutineScope(mainDispatcher + SupervisorJob())
 
-    //TODO make this property private
-    val serviceLocator: ServiceLocator = ServiceLocator(application)
     private val dispatchers = object : RetenoDispatchers {
         override val main: CoroutineDispatcher = mainDispatcher
         override val io: CoroutineDispatcher = ioDispatcher
         override val default: CoroutineDispatcher = Dispatchers.Default
     }
-    private val actions by lazy {
-        ActionsLocator(serviceLocator, dispatchers, AndroidLogSink()) { Logger.captureMessage(it, LogLevel.ERROR) }
+
+    //TODO make this property private
+    val serviceLocator: ServiceLocator = ServiceLocator(application, dispatchers)
+    private val actions by lazy { serviceLocator.actions }
+    internal val backgroundSync by lazy {
+        actions.backgroundSync(
+            isForeground = ::canPresentMessages,
+            isInitialized = { isInitialized },
+            hasDataForSync = ::hasDataForSync
+        )
     }
     private val updateAttributesAction by lazy { UpdateUserAttributesAction(serviceLocator, ioDispatcher) }
     private val updateMultiAccAttributesAction by lazy { UpdateMultiAccountUserAttributesAction(serviceLocator, ioDispatcher) }
@@ -79,7 +82,6 @@ class RetenoInternalImpl(
 
     private val screenTrackingController: ScreenTrackingController by lazy { serviceLocator.screenTrackingControllerProvider.get() }
     private val contactController by lazy { serviceLocator.contactControllerProvider.get() }
-    private val scheduleController by lazy { serviceLocator.scheduleControllerProvider.get() }
     private val iamController by lazy { serviceLocator.iamControllerProvider.get() }
     private val sessionHandler by lazy { serviceLocator.retenoSessionHandlerProvider.get() }
     private val appLifecycleController by lazy { serviceLocator.appLifecycleControllerProvider.get() }
@@ -148,6 +150,7 @@ class RetenoInternalImpl(
             if (isUserConfiguration) {
                 userInitWaitCondition.complete(Unit)
             }
+            serviceLocator.initGate.markInitialized(byUser = isUserConfiguration)
             withContext(ioDispatcher) {
                 interactionCache.processCachedInteractions()
             }
@@ -255,7 +258,7 @@ class RetenoInternalImpl(
                         iamController.getInAppMessages()
                     }
                 }
-                scheduleController.startScheduler()
+                actions.dataSync.startScheduler()
                 iamView.start()
             } catch (ex: Throwable) {
                 /*@formatter:off*/ Logger.e(TAG, "start(): ", ex)
@@ -461,7 +464,7 @@ class RetenoInternalImpl(
         /*@formatter:off*/ Logger.i(TAG, "forcePushData(): ", "")
         /*@formatter:on*/
         try {
-            scheduleController.forcePush()
+            actions.dataSync.request()
         } catch (ex: Throwable) {
             /*@formatter:off*/ Logger.e(TAG, "forcePushData(): ", ex)
             /*@formatter:on*/
@@ -643,7 +646,7 @@ class RetenoInternalImpl(
     }
 
     private fun stopPushScheduler() {
-        scheduleController.stopScheduler()
+        actions.dataSync.stopScheduler()
     }
 
     /**

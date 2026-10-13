@@ -3,7 +3,6 @@ package com.reteno.core.data.repository
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerAppInbox
 import com.reteno.core.data.local.model.appinbox.AppInboxMessageDb
 import com.reteno.core.data.remote.OperationQueue
-import com.reteno.core.data.remote.PushOperationQueue
 import com.reteno.core.data.remote.api.ApiClient
 import com.reteno.core.data.remote.api.ApiContract
 import com.reteno.core.data.remote.api.ApiContract.AppInbox.Companion.QUERY_PAGE
@@ -21,10 +20,8 @@ import com.reteno.core.domain.model.appinbox.AppInboxMessages
 import com.reteno.core.features.appinbox.AppInboxStatus
 import com.reteno.core.util.Logger
 import com.reteno.core.util.RetenoThreadFactory
-import com.reteno.core.util.Util.formatToRemote
-import com.reteno.core.util.isNonRepeatableError
-import java.time.ZonedDateTime
-import java.util.*
+import java.util.Collections
+import java.util.WeakHashMap
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
@@ -32,7 +29,8 @@ import java.util.concurrent.TimeUnit
 internal class AppInboxRepositoryImpl(
     private val apiClient: ApiClient,
     private val databaseManager: RetenoDatabaseManagerAppInbox,
-    private val configRepository: ConfigRepository
+    private val configRepository: ConfigRepository,
+    private val requestSync: () -> Unit
 ) : AppInboxRepository {
 
     private val listeners: MutableMap<RetenoResultCallback<Int>, RetenoResultCallback<Int>> =
@@ -53,7 +51,7 @@ internal class AppInboxRepositoryImpl(
                 deviceId = configRepository.getDeviceId().id
             )
             databaseManager.insertAppInboxMessage(inbox)
-            pushMessagesStatus()
+            requestSync()
         }
     }
 
@@ -148,61 +146,6 @@ internal class AppInboxRepositoryImpl(
         })
     }
 
-    override fun pushMessagesStatus() {
-        /*@formatter:off*/ Logger.i(TAG, "pushMessagesStatus(): ", "")
-        /*@formatter:on*/
-        val appInboxMessages: List<AppInboxMessageDb> = databaseManager.getAppInboxMessages()
-        val messagesIds: List<String> = appInboxMessages
-            .map { it.id }
-            .takeIf { it.isNotEmpty() } ?: kotlin.run {
-            PushOperationQueue.nextOperation()
-            return
-        }
-
-        val messagesStatus = AppInboxMessagesStatusRemote(ids = messagesIds)
-
-        apiClient.post(
-            ApiContract.AppInbox.MessagesStatus,
-            messagesStatus.toJson(),
-            object : ResponseCallback {
-
-                override fun onSuccess(response: String) {
-                    /*@formatter:off*/ Logger.i(TAG, "onSuccess(): ", "response = [" , response , "]")
-                    /*@formatter:on*/
-                    databaseManager.deleteAppInboxMessages(appInboxMessages)
-                    fetchCount()
-                    PushOperationQueue.nextOperation()
-                }
-
-                override fun onFailure(statusCode: Int?, response: String?, throwable: Throwable?) {
-                    /*@formatter:off*/ Logger.i(TAG, "onFailure(): ", "statusCode = [" , statusCode , "], response = [" , response , "], throwable = [" , throwable , "]")
-                    /*@formatter:on*/
-                    if (isNonRepeatableError(statusCode)) {
-                        databaseManager.deleteAppInboxMessages(appInboxMessages)
-                        PushOperationQueue.nextOperation()
-                    } else {
-                        PushOperationQueue.removeAllOperations()
-                    }
-                }
-
-            }
-        )
-    }
-
-    override fun clearOldMessages(outdatedTime: ZonedDateTime) {
-        /*@formatter:off*/ Logger.i(TAG, "clearOldMessages(): ", "outdatedTime = [" , outdatedTime , "]")
-        /*@formatter:on*/
-        OperationQueue.addOperation {
-            val removedInboxCount = databaseManager.deleteAppInboxMessagesByTime(outdatedTime.formatToRemote())
-            /*@formatter:off*/ Logger.i(TAG, "clearOldMessages(): ", "removedInboxCount = [" , removedInboxCount , "]")
-            /*@formatter:on*/
-            if (removedInboxCount > 0) {
-                val msg = "Outdated Inbox: - $removedInboxCount"
-                Logger.captureMessage(msg)
-            }
-        }
-    }
-
     override fun subscribeOnMessagesCountChanged(callback: RetenoResultCallback<Int>) {
         /*@formatter:off*/ Logger.i(TAG, "subscribeOnMessagesCountChanged(): ", "callback = [" , callback , "], listenerSet.size = [", listeners.size, "]")
         /*@formatter:on*/
@@ -249,6 +192,10 @@ internal class AppInboxRepositoryImpl(
             REGULAR_DELAY,
             TimeUnit.MILLISECONDS
         )
+    }
+
+    override fun refreshMessagesCount() {
+        fetchCount()
     }
 
     private fun fetchCount() {

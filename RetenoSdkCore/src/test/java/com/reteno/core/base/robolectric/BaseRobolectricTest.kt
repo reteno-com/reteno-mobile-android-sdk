@@ -8,25 +8,31 @@ import com.reteno.core.RetenoConfig
 import com.reteno.core.RetenoInternalImpl
 import com.reteno.core.data.local.config.RestConfig
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManager
-import com.reteno.core.data.local.database.util.*
 import com.reteno.core.data.local.file.FileManager
 import com.reteno.core.data.local.sharedpref.SharedPrefsManager
+import com.reteno.core.di.ActionsLocator
 import com.reteno.core.di.ServiceLocator
 import com.reteno.core.domain.controller.AppLifecycleController
 import com.reteno.core.domain.controller.ContactController
 import com.reteno.core.domain.controller.DeeplinkController
-import com.reteno.core.domain.controller.EventController
 import com.reteno.core.domain.controller.IamController
 import com.reteno.core.domain.controller.InteractionController
-import com.reteno.core.domain.controller.ScheduleController
 import com.reteno.core.domain.controller.ScreenTrackingController
 import com.reteno.core.features.appinbox.AppInbox
 import com.reteno.core.features.recommendation.Recommendation
+import com.reteno.core.internal.action.sync.DataSync
 import com.reteno.core.lifecycle.RetenoActivityHelper
 import com.reteno.core.lifecycle.RetenoSessionHandler
 import com.reteno.core.view.iam.IamView
-import io.mockk.*
+import io.mockk.MockKAnnotations
+import io.mockk.clearAllMocks
+import io.mockk.every
 import io.mockk.impl.annotations.RelaxedMockK
+import io.mockk.mockk
+import io.mockk.mockkConstructor
+import io.mockk.mockkStatic
+import io.mockk.unmockkConstructor
+import io.mockk.unmockkStatic
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
@@ -92,9 +98,9 @@ abstract class BaseRobolectricTest {
     @RelaxedMockK
     protected lateinit var contactController: ContactController
     @RelaxedMockK
-    protected lateinit var scheduleController: ScheduleController
+    internal lateinit var actionsLocator: ActionsLocator
     @RelaxedMockK
-    internal lateinit var eventController: EventController
+    internal lateinit var dataSync: DataSync
     @RelaxedMockK
     internal lateinit var iamController: IamController
     @RelaxedMockK
@@ -133,9 +139,9 @@ abstract class BaseRobolectricTest {
         every { anyConstructed<ServiceLocator>().sharedPrefsManagerProvider.get() } returns sharedPrefsManager
         every { anyConstructed<ServiceLocator>().restConfigProvider.get() } returns restConfig
         every { anyConstructed<ServiceLocator>().recommendationProvider.get() } returns recommendation
-        every { anyConstructed<ServiceLocator>().scheduleControllerProvider.get() } returns scheduleController
+        every { anyConstructed<ServiceLocator>().actions } returns actionsLocator
+        every { actionsLocator.dataSync } returns dataSync
         every { anyConstructed<ServiceLocator>().iamViewProvider.get() } returns iamView
-        every { anyConstructed<ServiceLocator>().eventsControllerProvider.get() } returns eventController
         every { anyConstructed<ServiceLocator>().iamControllerProvider.get() } returns iamController
         every { anyConstructed<ServiceLocator>().retenoActivityHelperProvider.get() } returns activityHelper
         every { anyConstructed<ServiceLocator>().appInboxProvider.get() } returns appInbox

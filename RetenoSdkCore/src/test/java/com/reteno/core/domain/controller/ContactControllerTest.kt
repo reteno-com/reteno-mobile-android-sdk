@@ -147,7 +147,7 @@ class ContactControllerTest : BaseUnitTest() {
 
     override fun before() {
         super.before()
-        SUT = ContactController(contactRepository, configRepository)
+        SUT = ContactController(contactRepository, configRepository) {}
     }
 
     @Test
@@ -267,25 +267,7 @@ class ContactControllerTest : BaseUnitTest() {
 
         // Then
         coVerify(exactly = 0) { contactRepository.saveUserData(any()) }
-        verify(exactly = 1) { Logger.captureMessage(eq("ContactController.setUserData(): user = [$user]")) }
-    }
-
-    @Test
-    fun whenPushDeviceData_thenInteractWithContactRepository() {
-        // When
-        SUT.pushDeviceData()
-
-        // Then
-        verify { contactRepository.pushDeviceData() }
-    }
-
-    @Test
-    fun whenPushUserData_thenInteractWithContactRepository() {
-        // When
-        SUT.pushUserData()
-
-        // Then
-        verify { contactRepository.pushUserData() }
+        verify(exactly = 1) { Logger.captureMessage(eq("ContactController.setUserData(): user rejected by validation")) }
     }
 
     @Test
@@ -363,31 +345,6 @@ class ContactControllerTest : BaseUnitTest() {
     }
 
     @Test
-    fun givenIsDeviceRegisteredFalse_whenRegisterDeviceRegistered_thenSaveDeviceDataCalledImmediately() =
-        runTest {
-            // Given
-            every { configRepository.isDeviceRegistered() } returns false
-            coEvery { configRepository.getFcmToken() } coAnswers { FCM_TOKEN_NEW }
-            every { configRepository.getDeviceId() } returns DeviceId(
-                idBody = DEVICE_ID_ANDROID,
-                externalId = EXTERNAL_DEVICE_ID
-            )
-            val expectedDevice =
-                createDevice(
-                    DEVICE_ID_ANDROID,
-                    EXTERNAL_DEVICE_ID,
-                    FCM_TOKEN_NEW,
-                    configRepository.isNotificationsEnabled()
-                )
-
-            // When
-            SUT.registerDevice()
-            // Then
-            coVerify(exactly = 1) { contactRepository.saveDeviceData(expectedDevice) }
-            coVerify(exactly = 1) { contactRepository.pushDeviceDataImmediate() }
-        }
-
-    @Test
     fun givenIsDeviceRegisteredTrue_whenRegisterDeviceRegistered_thenSaveDeviceDataNotCalled() =
         runTest {
             // Given
@@ -425,7 +382,7 @@ class ContactControllerTest : BaseUnitTest() {
 
         // Then
         verify(exactly = 0) { contactRepository.saveUserDataDeprecated(any()) }
-        verify(exactly = 1) { Logger.captureMessage(eq("setAnonymousUserAttributes(): attributes = [$anonymousUserAttributes]")) }
+        verify(exactly = 1) { Logger.captureMessage(eq("setAnonymousUserAttributes(): attributes rejected by validation")) }
     }
 
     // region helper methods -----------------------------------------------------------------------

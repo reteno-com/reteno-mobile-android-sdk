@@ -22,7 +22,7 @@ internal class RestClientImpl(
     companion object {
         private val TAG = RestClientImpl::class.java.simpleName
 
-        /** TIMEOUT should be not more than @see [com.reteno.core.domain.controller.ScheduleController.REGULAR_DELAY]
+        /** TIMEOUT should be not more than @see [com.reteno.core.internal.action.sync.DataSync.REGULAR_DELAY]
          * to prevent adding new operations while REST queries are ongoing
          **/
         private const val TIMEOUT = 10_000

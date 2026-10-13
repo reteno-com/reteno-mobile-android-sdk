@@ -1,7 +1,6 @@
 package com.reteno.core.domain.controller
 
 import com.reteno.core.data.repository.AppInboxRepository
-import com.reteno.core.domain.SchedulerUtils
 import com.reteno.core.domain.callback.appinbox.RetenoResultCallback
 import com.reteno.core.domain.model.appinbox.AppInboxMessages
 import com.reteno.core.features.appinbox.AppInboxStatus
@@ -36,19 +35,6 @@ internal class AppInboxController(private val appInboxRepository: AppInboxReposi
         /*@formatter:off*/ Logger.i(TAG, "markAllMessagesAsOpened(): ", "") 
         /*@formatter:on*/
         appInboxRepository.setAllMessageOpened(callback)
-    }
-
-    fun pushAppInboxMessagesStatus() {
-        /*@formatter:off*/ Logger.i(TAG, "pushAppInboxMessagesStatus(): ", "") 
-        /*@formatter:on*/
-        appInboxRepository.pushMessagesStatus()
-    }
-
-    fun clearOldMessagesStatus() {
-        /*@formatter:off*/ Logger.i(TAG, "clearOldMessagesStatus(): ", "") 
-        /*@formatter:on*/
-        val outdatedTime = SchedulerUtils.getOutdatedTime()
-        appInboxRepository.clearOldMessages(outdatedTime)
     }
 
     fun subscribeCountChanges(callback: RetenoResultCallback<Int>) {

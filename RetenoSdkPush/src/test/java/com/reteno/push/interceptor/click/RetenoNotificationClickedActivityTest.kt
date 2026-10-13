@@ -7,7 +7,6 @@ import com.reteno.core.di.ServiceLocator
 import com.reteno.core.domain.controller.ContactController
 import com.reteno.core.domain.controller.DeeplinkController
 import com.reteno.core.domain.controller.InteractionController
-import com.reteno.core.domain.controller.ScheduleController
 import com.reteno.core.domain.model.interaction.InteractionAction
 import com.reteno.core.domain.model.interaction.InteractionStatus
 import com.reteno.core.view.iam.IamView
@@ -77,8 +76,6 @@ class RetenoNotificationClickedActivityTest : BaseRobolectricTest() {
     @RelaxedMockK
     private lateinit var deeplinkController: DeeplinkController
 
-    @RelaxedMockK
-    private lateinit var scheduleController: ScheduleController
 
     @RelaxedMockK
     private lateinit var contactController: ContactController
@@ -89,7 +86,6 @@ class RetenoNotificationClickedActivityTest : BaseRobolectricTest() {
         super.before()
         every { anyConstructed<ServiceLocator>().interactionControllerProvider.get() } returns interactionController
         every { anyConstructed<ServiceLocator>().deeplinkControllerProvider.get() } returns deeplinkController
-        every { anyConstructed<ServiceLocator>().scheduleControllerProvider.get() } returns scheduleController
         every { anyConstructed<ServiceLocator>().contactControllerProvider.get() } returns contactController
     }
 
@@ -110,7 +106,6 @@ class RetenoNotificationClickedActivityTest : BaseRobolectricTest() {
 
         advanceUntilIdle()
         coVerify { interactionController.onInteraction(eq(interactionId), InteractionStatus.CLICKED) }
-        verify(exactly = 1) { scheduleController.forcePush() }
         assertTrue(activity.isFinishing)
     }
 
@@ -134,7 +129,6 @@ class RetenoNotificationClickedActivityTest : BaseRobolectricTest() {
         advanceUntilIdle()
         coVerify { interactionController.onInteractionClickAction(eq(interactionId), eq(
             InteractionAction("OPEN_URL", "action_id", "https://google.com"))) }
-        verify(exactly = 1) { scheduleController.forcePush() }
         assertTrue(activity.isFinishing)
     }
 

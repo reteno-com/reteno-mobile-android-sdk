@@ -11,11 +11,7 @@ interface ContactRepository {
     fun saveDeviceDataImmediate(device: Device)
     suspend fun saveDeviceData(device: Device)
 
-    fun pushDeviceData()
-    fun pushUserData()
 
-    fun pushDeviceDataImmediate()
-    fun pushUserDataImmediate()
 
     fun deleteSynchedDevices()
 }

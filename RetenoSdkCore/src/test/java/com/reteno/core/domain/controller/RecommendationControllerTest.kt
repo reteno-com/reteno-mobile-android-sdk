@@ -4,15 +4,12 @@ import com.reteno.core.base.robolectric.BaseRobolectricTest
 import com.reteno.core.data.remote.model.recommendation.get.RecomBase
 import com.reteno.core.data.remote.model.recommendation.get.Recoms
 import com.reteno.core.data.repository.RecommendationRepository
-import com.reteno.core.domain.SchedulerUtils
 import com.reteno.core.domain.model.recommendation.get.RecomRequest
 import com.reteno.core.domain.model.recommendation.post.RecomEvent
 import com.reteno.core.domain.model.recommendation.post.RecomEventType
 import com.reteno.core.domain.model.recommendation.post.RecomEvents
 import com.reteno.core.features.recommendation.GetRecommendationResponseCallback
-import io.mockk.every
 import io.mockk.impl.annotations.RelaxedMockK
-import io.mockk.mockk
 import io.mockk.verify
 import org.junit.Test
 import java.time.ZonedDateTime
@@ -81,31 +78,6 @@ class RecommendationControllerTest : BaseRobolectricTest() {
         verify(exactly = 1) {
             recommendationRepository.saveRecommendations(recomEvents)
         }
-    }
-
-    @Test
-    fun whenPushRecommendations_thenPushCalledOnRepository() {
-        // When
-        SUT.pushRecommendations()
-
-        // Then
-        verify(exactly = 1) {
-            recommendationRepository.pushRecommendations()
-        }
-    }
-
-    @Test
-    fun whenClearOldRecommendations_thenClearOldRecommendationsCalledOnRepository() {
-        // Given
-        val mockData = mockk<ZonedDateTime>()
-        every { SchedulerUtils.getOutdatedTime() } returns mockData
-
-        // When
-        SUT.clearOldRecommendations()
-
-        // Then
-        verify(exactly = 1) { recommendationRepository.clearOldRecommendations(mockData) }
-        verify(exactly = 1) { SchedulerUtils.getOutdatedTime() }
     }
 
     // region helper classes -----------------------------------------------------------------------

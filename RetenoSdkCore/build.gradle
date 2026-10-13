@@ -26,9 +26,10 @@ koverReport {
     androidReports('debug') {
         filters {
             includes {
-                classes('com.reteno.core.di.ActionsLocator*')
+                classes('com.reteno.core.di.ActionsLocator*', 'com.reteno.core.data.workmanager.PushDataWorker*')
                 packages(
                         'com.reteno.core.internal.action.event',
+                        'com.reteno.core.internal.action.sync',
                         'com.reteno.core.internal.action.trace',
                         'com.reteno.core.internal.coroutine',
                         'com.reteno.core.internal.event',

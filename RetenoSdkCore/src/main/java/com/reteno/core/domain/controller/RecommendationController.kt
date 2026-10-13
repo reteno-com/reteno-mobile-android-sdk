@@ -2,7 +2,6 @@ package com.reteno.core.domain.controller
 
 import com.reteno.core.data.remote.model.recommendation.get.RecomBase
 import com.reteno.core.data.repository.RecommendationRepository
-import com.reteno.core.domain.SchedulerUtils
 import com.reteno.core.domain.model.recommendation.get.RecomRequest
 import com.reteno.core.domain.model.recommendation.post.RecomEvents
 import com.reteno.core.features.recommendation.GetRecommendationResponseCallback
@@ -45,19 +44,6 @@ internal class RecommendationController(private val recommendationRepository: Re
         /*@formatter:off*/ Logger.i(TAG, "trackRecommendations(): ", "recomEvents = [" , recomEvents , "]")
         /*@formatter:on*/
         recommendationRepository.saveRecommendations(recomEvents)
-    }
-
-    internal fun pushRecommendations() {
-        /*@formatter:off*/ Logger.i(TAG, "pushRecommendations(): ", "")
-        /*@formatter:on*/
-        recommendationRepository.pushRecommendations()
-    }
-
-    internal fun clearOldRecommendations() {
-        /*@formatter:off*/ Logger.i(TAG, "clearOldRecommendations(): ", "")
-        /*@formatter:on*/
-        val outdatedTime = SchedulerUtils.getOutdatedTime()
-        recommendationRepository.clearOldRecommendations(outdatedTime)
     }
 
     companion object {

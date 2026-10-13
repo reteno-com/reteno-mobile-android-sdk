@@ -5,28 +5,16 @@ import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerUser
 import com.reteno.core.data.local.mappers.toDb
 import com.reteno.core.data.local.model.BooleanDb
 import com.reteno.core.data.local.model.device.DeviceDb
-import com.reteno.core.data.local.model.user.UserDb
 import com.reteno.core.data.remote.OperationQueue
-import com.reteno.core.data.remote.PushOperationQueue
-import com.reteno.core.data.remote.api.ApiClient
-import com.reteno.core.data.remote.api.ApiContract
-import com.reteno.core.data.remote.mapper.toDb
-import com.reteno.core.data.remote.mapper.toJson
-import com.reteno.core.data.remote.mapper.toRemote
-import com.reteno.core.data.remote.model.device.DeviceRemote
-import com.reteno.core.data.remote.model.user.UserRemote
-import com.reteno.core.domain.ResponseCallback
 import com.reteno.core.domain.model.device.Device
 import com.reteno.core.domain.model.user.User
 import com.reteno.core.util.Logger
-import com.reteno.core.util.Util
-import com.reteno.core.util.isNonRepeatableError
 
 internal class ContactRepositoryImpl(
-    private val apiClient: ApiClient,
     private val configRepository: ConfigRepository,
     private val databaseManagerDevice: RetenoDatabaseManagerDevice,
-    private val databaseManagerUser: RetenoDatabaseManagerUser
+    private val databaseManagerUser: RetenoDatabaseManagerUser,
+    private val requestSync: () -> Unit
 ) : ContactRepository {
 
     override fun saveDeviceData(device: Device, toParallelWork: Boolean) {
@@ -82,207 +70,6 @@ internal class ContactRepositoryImpl(
         databaseManagerUser.insertUser(user.toDb(configRepository.getDeviceId()))
     }
 
-    override fun pushDeviceData() {
-        /*@formatter:off*/ Logger.i(TAG, "pushDeviceData(): ", "")
-        /*@formatter:on*/
-        val devices: List<DeviceDb> = databaseManagerDevice.getDevices()
-
-        val latestDevice = devices.filter { it.isSynchronizedWithBackend != BooleanDb.TRUE }
-            .maxByOrNull {
-                it.createdAt
-            }
-
-        val latestSynchedDevice = devices.filter { it.isSynchronizedWithBackend == BooleanDb.TRUE }
-            .maxByOrNull {
-                it.createdAt
-            }
-
-        val requestModel = createDeviceRequestModel(latestDevice, latestSynchedDevice)
-
-        if (requestModel == null) {
-            PushOperationQueue.nextOperation()
-            return
-        }
-
-        /*@formatter:off*/ Logger.i(TAG, "pushDeviceData(): ", "device = [" , requestModel , "]")
-        /*@formatter:on*/
-        apiClient.postSync(
-            url = ApiContract.MobileApi.Device,
-            jsonBody = requestModel.toJson(),
-            responseHandler = object : ResponseCallback {
-                override fun onSuccess(response: String) {
-                    /*@formatter:off*/ Logger.i(TAG, "pushDeviceData, onSuccess(): ", "response = [" , response , "]")
-                    /*@formatter:on*/
-                    configRepository.saveDeviceRegistered(true)
-                    databaseManagerDevice.deleteDevices(devices)
-                    latestDevice?.let {
-                        databaseManagerDevice.insertDevice(it.copy(isSynchronizedWithBackend = BooleanDb.TRUE))
-                    }
-                    if (databaseManagerDevice.getUnSyncedDeviceCount() > 0) {
-                        pushDeviceData()
-                    } else {
-                        PushOperationQueue.addOperation { pushUserData() } //User data should be pushed only after device update
-                    }
-                }
-
-                override fun onFailure(statusCode: Int?, response: String?, throwable: Throwable?) {
-                    /*@formatter:off*/ Logger.i(TAG, "pushDeviceData, onFailure(): ", "statusCode = [" , statusCode , "], response = [" , response , "], throwable = [" , throwable , "]")
-                    /*@formatter:on*/
-                    if (isNonRepeatableError(statusCode)) {
-                        databaseManagerDevice.deleteDevices(devices)
-                        latestDevice?.let {
-                            databaseManagerDevice.insertDevice(it.copy(isSynchronizedWithBackend = BooleanDb.TRUE))
-                        }
-                        if (databaseManagerDevice.getUnSyncedDeviceCount() > 0) {
-                            pushDeviceData()
-                        }
-                    }
-                    PushOperationQueue.removeAllOperations()
-                }
-
-            })
-    }
-
-    override fun pushUserData() {
-        val users: List<UserDb> = databaseManagerUser.getUsers()
-
-        val latestUsers = users.filter { it.isSynchronizedWithBackend != BooleanDb.TRUE }
-
-        val latestSynchedUser = users.filter { it.isSynchronizedWithBackend == BooleanDb.TRUE }
-            .maxByOrNull {
-                it.createdAt
-            }
-
-        val pushModel = createUserRequestModel(latestUsers, latestSynchedUser)
-
-        if (pushModel == null) {
-            databaseManagerUser.deleteUsers(latestUsers)
-            PushOperationQueue.nextOperation()
-            return
-        }
-
-        /*@formatter:off*/ Logger.i(TAG, "pushUserData(): ", "user = [" , pushModel.requestModel , "]")
-        /*@formatter:on*/
-        apiClient.post(
-            ApiContract.MobileApi.User,
-            pushModel.requestModel.toJson(),
-            object : ResponseCallback {
-                override fun onSuccess(response: String) {
-                    /*@formatter:off*/ Logger.i(TAG, "onSuccess(): ", "response = [" , response , "]")
-                    /*@formatter:on*/
-                    databaseManagerUser.deleteUsers(users)
-                    databaseManagerUser.insertUser(pushModel.fullModel.toDb().copy(isSynchronizedWithBackend = BooleanDb.TRUE))
-                    PushOperationQueue.nextOperation()
-                }
-
-                override fun onFailure(statusCode: Int?, response: String?, throwable: Throwable?) {
-                    /*@formatter:off*/ Logger.i(TAG, "onFailure(): ", "statusCode = [" , statusCode , "], response = [" , response , "], throwable = [" , throwable , "]")
-                    /*@formatter:on*/
-                    if (isNonRepeatableError(statusCode)) {
-                        databaseManagerUser.deleteUsers(users)
-                        databaseManagerUser.insertUser(pushModel.fullModel.toDb().copy(isSynchronizedWithBackend = BooleanDb.TRUE))
-                    } else {
-                        PushOperationQueue.removeAllOperations()
-                    }
-                }
-
-            })
-    }
-
-    override fun pushDeviceDataImmediate() {
-        /*@formatter:off*/ Logger.i(TAG, "pushDeviceData(): ", "")
-        /*@formatter:on*/
-        val devices: List<DeviceDb> = databaseManagerDevice.getDevices()
-
-        val latestDevice = devices.filter { it.isSynchronizedWithBackend != BooleanDb.TRUE }
-            .maxByOrNull {
-                it.createdAt
-            }
-
-        val latestSynchedDevice = devices.filter { it.isSynchronizedWithBackend == BooleanDb.TRUE }
-            .maxByOrNull {
-                it.createdAt
-            }
-
-        val requestModel = createDeviceRequestModel(latestDevice, latestSynchedDevice) ?: return
-
-        /*@formatter:off*/ Logger.i(TAG, "pushDeviceData(): ", "device = [" , requestModel , "]")
-        /*@formatter:on*/
-        apiClient.postSync(
-            url = ApiContract.MobileApi.Device,
-            jsonBody = requestModel.toJson(),
-            responseHandler = object : ResponseCallback {
-                override fun onSuccess(response: String) {
-                    /*@formatter:off*/ Logger.i(TAG, "pushDeviceData, onSuccess(): ", "response = [" , response , "]")
-                    /*@formatter:on*/
-                    configRepository.saveDeviceRegistered(true)
-                    databaseManagerDevice.deleteDevices(devices)
-                    latestDevice?.let {
-                        databaseManagerDevice.insertDevice(it.copy(isSynchronizedWithBackend = BooleanDb.TRUE))
-                    }
-                    if (databaseManagerDevice.getUnSyncedDeviceCount() > 0) {
-                        pushDeviceData()
-                    }
-                }
-
-                override fun onFailure(statusCode: Int?, response: String?, throwable: Throwable?) {
-                    /*@formatter:off*/ Logger.i(TAG, "pushDeviceData, onFailure(): ", "statusCode = [" , statusCode , "], response = [" , response , "], throwable = [" , throwable , "]")
-                    /*@formatter:on*/
-                    if (isNonRepeatableError(statusCode)) {
-                        databaseManagerDevice.deleteDevices(devices)
-                        latestDevice?.let {
-                            databaseManagerDevice.insertDevice(it.copy(isSynchronizedWithBackend = BooleanDb.TRUE))
-                        }
-                        if (databaseManagerDevice.getUnSyncedDeviceCount() > 0) {
-                            pushDeviceData()
-                        }
-                    }
-                }
-
-            })
-    }
-
-    override fun pushUserDataImmediate() {
-        val users: List<UserDb> = databaseManagerUser.getUsers()
-
-        val latestUsers = users.filter { it.isSynchronizedWithBackend != BooleanDb.TRUE }
-
-        val latestSynchedUser = users.filter { it.isSynchronizedWithBackend == BooleanDb.TRUE }
-            .maxByOrNull {
-                it.createdAt
-            }
-
-        val pushModel = createUserRequestModel(latestUsers, latestSynchedUser)
-
-        if (pushModel == null) {
-            databaseManagerUser.deleteUsers(latestUsers)
-            return
-        }
-
-        /*@formatter:off*/ Logger.i(TAG, "pushUserData(): ", "user = [" , pushModel.requestModel , "]")
-        /*@formatter:on*/
-        apiClient.postSync(
-            ApiContract.MobileApi.User,
-            pushModel.requestModel.toJson(),
-            responseHandler = object : ResponseCallback {
-                override fun onSuccess(response: String) {
-                    /*@formatter:off*/ Logger.i(TAG, "onSuccess(): ", "response = [" , response , "]")
-                    /*@formatter:on*/
-                    databaseManagerUser.deleteUsers(users)
-                    databaseManagerUser.insertUser(pushModel.fullModel.toDb().copy(isSynchronizedWithBackend = BooleanDb.TRUE))
-                }
-
-                override fun onFailure(statusCode: Int?, response: String?, throwable: Throwable?) {
-                    /*@formatter:off*/ Logger.i(TAG, "onFailure(): ", "statusCode = [" , statusCode , "], response = [" , response , "], throwable = [" , throwable , "]")
-                    /*@formatter:on*/
-                    if (isNonRepeatableError(statusCode)) {
-                        databaseManagerUser.deleteUsers(users)
-                        databaseManagerUser.insertUser(pushModel.fullModel.toDb().copy(isSynchronizedWithBackend = BooleanDb.TRUE))
-                    }
-                }
-            })
-    }
-
     override fun deleteSynchedDevices() {
         val devices: List<DeviceDb> = databaseManagerDevice.getDevices()
         val synchedDevices = devices.filter { it.isSynchronizedWithBackend == BooleanDb.TRUE }
@@ -310,84 +97,11 @@ internal class ContactRepositoryImpl(
             /*@formatter:off*/ Logger.i(TAG, "saveDeviceData(): ", "Device NOT saved. Device is already present in database. Duplicates are not saved")
             /*@formatter:on*/
         }
-        OperationQueue.addOperation { pushDeviceData() }
+        requestSync()
     }
 
     private fun onSaveUserData(user: User) {
         databaseManagerUser.insertUser(user.toDb(configRepository.getDeviceId()))
-    }
-
-    private fun createDeviceRequestModel(
-        latestDevice: DeviceDb?,
-        latestSynchedDevice: DeviceDb?
-    ): DeviceRemote? {
-        if (latestDevice == null) return null
-
-        val latestDeviceRemote = latestDevice.toRemote()
-
-        if (latestSynchedDevice == null) {
-            /*@formatter:off*/ Logger.i(TAG, "pushDeviceData(): ", "No saved device found, pushing new device.")
-            /*@formatter:on*/
-            return latestDeviceRemote
-        }
-
-        if (Util.isTimestampOutdated(latestSynchedDevice.createdAt, latestDevice.createdAt)) {
-            /*@formatter:off*/ Logger.i(TAG, "pushDeviceData(): ", "Saved device is outdated, pushing new device.")
-            /*@formatter:on*/
-            return latestDeviceRemote
-        }
-
-        val latestSynchedDeviceRemote = latestSynchedDevice.toRemote()
-
-        return if (latestDeviceRemote == latestSynchedDeviceRemote) {
-            null
-        } else {
-            latestDeviceRemote
-        }
-    }
-
-    /**
-     * @property requestModel the diff sent to the backend (only changed fields, rest nulled out)
-     * @property fullModel the diff merged back on top of the last synced snapshot - this is what
-     * must be persisted locally as the new "synced" user, so attributes untouched by this push
-     * (e.g. firstName when only email changed) are not lost from local storage.
-     */
-    private data class UserPushModel(
-        val requestModel: UserRemote,
-        val fullModel: UserRemote
-    )
-
-    private fun createUserRequestModel(
-        usersToPush: List<UserDb>,
-        latestSynchedUser: UserDb?
-    ): UserPushModel? {
-        if (usersToPush.isEmpty()) return null
-
-        val sorted = usersToPush.sortedBy { it.createdAt }
-        val firstCreatedDate = sorted.first().createdAt
-        val combinedUser = sorted
-            .map { it.toRemote() }
-            .reduce { acc, userDb ->
-                userDb.createAccModel(acc)
-            }
-
-        if (latestSynchedUser == null) {
-            /*@formatter:off*/ Logger.i(TAG, "pushUserData(): ", "No saved user found, pushing new user.")
-            /*@formatter:on*/
-            return UserPushModel(requestModel = combinedUser, fullModel = combinedUser)
-        }
-
-        if (Util.isTimestampOutdated(latestSynchedUser.createdAt, firstCreatedDate)) {
-            /*@formatter:off*/ Logger.i(TAG, "pushUserData(): ", "Saved user is outdated, pushing new user.")
-            /*@formatter:on*/
-            return UserPushModel(requestModel = combinedUser, fullModel = combinedUser)
-        }
-
-        val latestSynchedUserRemote = latestSynchedUser.toRemote()
-        val diffModel = combinedUser.createDiffModel(latestSynchedUserRemote) ?: return null
-        val fullModel = combinedUser.createAccModel(latestSynchedUserRemote)
-
-        return UserPushModel(requestModel = diffModel, fullModel = fullModel)
     }
 
     companion object {

@@ -6,7 +6,6 @@ import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerDevice
 import com.reteno.core.data.local.model.appinbox.AppInboxMessageDb
 import com.reteno.core.data.local.model.appinbox.AppInboxMessageStatusDb
 import com.reteno.core.data.remote.OperationQueue
-import com.reteno.core.data.remote.PushOperationQueue
 import com.reteno.core.data.remote.api.ApiClient
 import com.reteno.core.data.remote.api.ApiContract
 import com.reteno.core.data.remote.mapper.toDomain
@@ -17,7 +16,6 @@ import com.reteno.core.domain.ResponseCallback
 import com.reteno.core.domain.callback.appinbox.RetenoResultCallback
 import com.reteno.core.domain.model.appinbox.AppInboxMessages
 import com.reteno.core.features.appinbox.AppInboxStatus
-import com.reteno.core.util.Logger
 import com.reteno.core.util.Util
 import io.mockk.MockKException
 import io.mockk.every
@@ -27,8 +25,8 @@ import io.mockk.mockkStatic
 import io.mockk.spyk
 import io.mockk.unmockkStatic
 import io.mockk.verify
+import org.junit.Assert.assertEquals
 import org.junit.Test
-import java.time.ZonedDateTime
 import java.util.concurrent.Executor
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
@@ -83,6 +81,7 @@ class AppInboxRepositoryImplTest : BaseRobolectricTest() {
     @RelaxedMockK
     private lateinit var databaseManagerDevice: RetenoDatabaseManagerDevice
 
+    private var syncRequests = 0
     private lateinit var inboxRepository: AppInboxRepositoryImpl
     // endregion helper fields ---------------------------------------------------------------------
 
@@ -90,7 +89,8 @@ class AppInboxRepositoryImplTest : BaseRobolectricTest() {
         super.before()
         mockStaticJsonMappers()
         scheduler = application.scheduler
-        inboxRepository = AppInboxRepositoryImpl(apiClient, databaseManagerAppInbox, configRepository)
+        syncRequests = 0
+        inboxRepository = AppInboxRepositoryImpl(apiClient, databaseManagerAppInbox, configRepository) { syncRequests++ }
     }
 
     override fun after() {
@@ -99,7 +99,7 @@ class AppInboxRepositoryImplTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun whenMessageOpened_thenInsertDbAndPush() {
+    fun whenMessageOpened_thenInsertDbAndRequestSync() {
         // Given
         val inboxStatus = getTestAppInboxDb()
         every { Util.getCurrentTimeStamp() } returns INBOX_OCCURRED_TIME
@@ -113,144 +113,8 @@ class AppInboxRepositoryImplTest : BaseRobolectricTest() {
         inboxRepository.saveMessageOpened(INBOX_ID)
 
         // Then
-        verify(exactly = 1) { apiClient.post(any(), any(), any()) }
+        assertEquals(1, syncRequests)
         verify(exactly = 1) { databaseManagerAppInbox.insertAppInboxMessage(inboxStatus) }
-    }
-
-    @Test
-    fun whenDbHasSavedMessage_thenSendToApi() {
-        // Given
-        val inboxStatus = getTestAppInboxDb()
-        val resultJson = "result_json"
-
-        every { any<AppInboxMessagesStatusRemote>().toJson() } returns resultJson
-        every { databaseManagerAppInbox.getAppInboxMessages(any()) } returnsMany listOf(
-            listOf(inboxStatus),
-            emptyList()
-        )
-
-        // When
-        inboxRepository.pushMessagesStatus()
-
-        // Then
-        verify(exactly = 1) { any<AppInboxMessagesStatusRemote>().toJson() }
-        verify(exactly = 1) {
-            apiClient.post(
-                eq(ApiContract.AppInbox.MessagesStatus),
-                eq(resultJson),
-                any()
-            )
-        }
-    }
-
-    @Test
-    fun whenMessagesPushSuccessful_thenNextOperation() {
-        // Given
-        val inboxStatus = getTestAppInboxDb()
-        val spyRepository = spyk(inboxRepository, recordPrivateCalls = true)
-        every { databaseManagerAppInbox.getAppInboxMessages(any()) } returnsMany listOf(
-            listOf(
-                inboxStatus
-            ), listOf(inboxStatus), emptyList()
-        )
-        every { apiClient.post(any(), any(), any()) } answers {
-            val callback = thirdArg<ResponseCallback>()
-            callback.onSuccess("")
-        }
-
-        // When
-        spyRepository.pushMessagesStatus()
-
-        // Then
-        verify(exactly = 1) { apiClient.post(any(), any(), any()) }
-        verify(exactly = 1) { databaseManagerAppInbox.deleteAppInboxMessages(listOf(inboxStatus)) }
-        verify(exactly = 1) { spyRepository["fetchCount"]() }
-        verify(exactly = 1) { PushOperationQueue.nextOperation() }
-        verify(exactly = 0) { PushOperationQueue.removeAllOperations() }
-
-    }
-
-    @Test
-    fun whenMessagesPushFailedAndErrorIsRepeatable_cancelPushOperations() {
-        // Given
-        val inboxStatus = getTestAppInboxDb()
-        every { databaseManagerAppInbox.getAppInboxMessages(any()) } returns listOf(inboxStatus)
-        every { apiClient.post(any(), any(), any()) } answers {
-            val callback = thirdArg<ResponseCallback>()
-            callback.onFailure(ERROR_CODE_REPEATABLE, null, null)
-        }
-
-        // When
-        inboxRepository.pushMessagesStatus()
-
-        // Then
-        verify(exactly = 1) { apiClient.post(any(), any(), any()) }
-        verify(exactly = 1) { PushOperationQueue.removeAllOperations() }
-    }
-
-    @Test
-    fun whenMessagesPushFailedAndErrorIsNonRepeatable_thenNextOperation() {
-        // Given
-        val inboxStatus = getTestAppInboxDb()
-        every { databaseManagerAppInbox.getAppInboxMessages(any()) } returnsMany listOf(
-            listOf(
-                inboxStatus
-            ), listOf(inboxStatus), emptyList()
-        )
-        every { apiClient.post(any(), any(), any()) } answers {
-            val callback = thirdArg<ResponseCallback>()
-            callback.onFailure(ERROR_CODE, null, null)
-        }
-
-        // When
-        inboxRepository.pushMessagesStatus()
-
-        // Then
-        verify(exactly = 1) { apiClient.post(any(), any(), any()) }
-        verify(exactly = 1) { databaseManagerAppInbox.deleteAppInboxMessages(listOf(inboxStatus)) }
-        verify(exactly = 1) { PushOperationQueue.nextOperation() }
-        verify(exactly = 0) { PushOperationQueue.removeAllOperations() }
-    }
-
-    @Test
-    fun givenNoMessagesInDb_whenDevicePush_thenApiClientPutsDoesNotCalled() {
-        // Given
-        every { databaseManagerDevice.getDevices(any()) } returns emptyList()
-
-        // When
-        inboxRepository.pushMessagesStatus()
-
-        // Then
-        verify(exactly = 0) { apiClient.post(any(), any(), any()) }
-        verify { PushOperationQueue.nextOperation() }
-    }
-
-    @Test
-    fun givenNoOutdatedAppInbox_whenClearOldAppInbox_thenSentNothing() {
-        // Given
-        every { databaseManagerAppInbox.deleteAppInboxMessagesByTime(any()) } returns 0
-
-        // When
-        inboxRepository.clearOldMessages(ZonedDateTime.now())
-
-        // Then
-        verify(exactly = 1) { databaseManagerAppInbox.deleteAppInboxMessagesByTime(any()) }
-        verify(exactly = 0) { Logger.captureMessage(any()) }
-    }
-
-    @Test
-    fun givenAreOutdatedAppInbox_whenClearOldAppInbox_thenSentCountDeleted() {
-        // Given
-        val deletedInbox = 2
-        every { databaseManagerAppInbox.deleteAppInboxMessagesByTime(any()) } returns deletedInbox
-        val expectedMsg = "Outdated Inbox: - $deletedInbox"
-
-        // When
-        inboxRepository.clearOldMessages(ZonedDateTime.now())
-
-        // Then
-        verify(exactly = 1) { databaseManagerAppInbox.deleteAppInboxMessagesByTime(any()) }
-        verify(exactly = 1) { Logger.captureMessage(eq(expectedMsg)) }
     }
 
     @Test

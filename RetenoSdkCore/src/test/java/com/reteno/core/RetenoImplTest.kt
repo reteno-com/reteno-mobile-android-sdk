@@ -7,7 +7,6 @@ import android.content.pm.ResolveInfo
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.testing.TestLifecycleOwner
 import com.reteno.core.base.robolectric.BaseRobolectricTest
-import com.reteno.core.di.ServiceLocator
 import com.reteno.core.domain.model.ecom.EcomEvent
 import com.reteno.core.domain.model.event.Event
 import com.reteno.core.domain.model.event.Parameter
@@ -294,7 +293,7 @@ class RetenoImplTest : BaseRobolectricTest() {
         advanceUntilIdle()
 
         // Then
-        verify { scheduleController.startScheduler() }
+        verify { dataSync.startScheduler() }
         coVerify(exactly = 1) { contactController.registerDevice() }
         coVerify(exactly = 1) { contactController.checkIfDeviceRequestSentThisSession() }
         verify { iamView.start() }
@@ -303,7 +302,7 @@ class RetenoImplTest : BaseRobolectricTest() {
     @Test
     fun givenExceptionThrown_whenResumeApp_thenExceptionSentToLogger() = runRetenoTest { retenoImpl ->
         // Given
-        every { scheduleController.startScheduler() } throws EXCEPTION
+        every { dataSync.startScheduler() } throws EXCEPTION
 
         // When
         val exceptionThrownOutsideSdk = try {
@@ -332,14 +331,14 @@ class RetenoImplTest : BaseRobolectricTest() {
         retenoImpl.stop()
 
         // Then
-        verify { scheduleController.stopScheduler() }
+        verify { dataSync.stopScheduler() }
         verify { iamView.pause() }
     }
 
     @Test
     fun givenExceptionThrown_whenPauseApp_thenExceptionSentToLogger() = runRetenoTest { retenoImpl ->
         // Given
-        every { scheduleController.stopScheduler() } throws EXCEPTION
+        every { dataSync.stopScheduler() } throws EXCEPTION
         // When
         val exceptionThrownOutsideSdk = try {
             retenoImpl.stop()
@@ -366,13 +365,13 @@ class RetenoImplTest : BaseRobolectricTest() {
         retenoImpl.forcePushData()
 
         // Then
-        verify(exactly = 1) { scheduleController.forcePush() }
+        verify(exactly = 1) { dataSync.request() }
     }
 
     @Test
     fun givenExceptionThrown_whenForcePush_thenExceptionSentToLogger() = runRetenoTest { retenoImpl ->
         // Given
-        every { scheduleController.forcePush() } throws EXCEPTION
+        every { dataSync.request() } throws EXCEPTION
         // When
         val exceptionThrownOutsideSdk = try {
             retenoImpl.forcePushData()
@@ -418,9 +417,7 @@ class RetenoImplTest : BaseRobolectricTest() {
         //Given
         val application = mockk<Application>()
         mockQueryBroadcastReceivers(application)
-        every { anyConstructed<ServiceLocator>().scheduleControllerProvider.get() } returns scheduleController
         coEvery { contactController.registerDevice() } returns Unit
-        every { scheduleController.clearOldData() } returns Unit
         every { application.sendBroadcast(any()) } returns Unit
         //When
         val reteno = createRetenoAndAdvanceInit()

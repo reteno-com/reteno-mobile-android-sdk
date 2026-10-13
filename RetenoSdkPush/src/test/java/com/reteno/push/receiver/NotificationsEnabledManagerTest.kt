@@ -2,13 +2,11 @@ package com.reteno.push.receiver
 
 import com.reteno.core.di.ServiceLocator
 import com.reteno.core.domain.controller.ContactController
-import com.reteno.core.domain.controller.ScheduleController
 import com.reteno.push.base.robolectric.BaseRobolectricTest
 import com.reteno.push.channel.RetenoNotificationChannel
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.impl.annotations.RelaxedMockK
-import io.mockk.justRun
 import io.mockk.mockkConstructor
 import io.mockk.mockkStatic
 import io.mockk.unmockkConstructor
@@ -43,8 +41,6 @@ class NotificationsEnabledManagerTest : BaseRobolectricTest() {
     @RelaxedMockK
     private lateinit var contactController: ContactController
 
-    @RelaxedMockK
-    private lateinit var scheduleController: ScheduleController
     // endregion helper fields ---------------------------------------------------------------------
 
     private var SUT = NotificationsEnabledManager
@@ -54,7 +50,6 @@ class NotificationsEnabledManagerTest : BaseRobolectricTest() {
         super.before()
 
         every { anyConstructed<ServiceLocator>().contactControllerProvider.get() } returns contactController
-        every { anyConstructed<ServiceLocator>().scheduleControllerProvider.get() } returns scheduleController
     }
 
     @Test
@@ -62,7 +57,6 @@ class NotificationsEnabledManagerTest : BaseRobolectricTest() {
         // Given
         every { RetenoNotificationChannel.isNotificationsEnabled(any()) } returns false
         every { RetenoNotificationChannel.isNotificationChannelEnabled(any(), any()) } returns false
-        justRun { scheduleController.startScheduler() }
 
         // When
         SUT.onCheckState(application)
@@ -76,7 +70,6 @@ class NotificationsEnabledManagerTest : BaseRobolectricTest() {
         // Given
         every { RetenoNotificationChannel.isNotificationsEnabled(any()) } returns false
         every { RetenoNotificationChannel.isNotificationChannelEnabled(any(), any()) } returns true
-        justRun { scheduleController.startScheduler() }
 
         // When
         SUT.onCheckState(application)
@@ -90,7 +83,6 @@ class NotificationsEnabledManagerTest : BaseRobolectricTest() {
         // Given
         every { RetenoNotificationChannel.isNotificationsEnabled(any()) } returns true
         every { RetenoNotificationChannel.isNotificationChannelEnabled(any(), any()) } returns false
-        justRun { scheduleController.startScheduler() }
 
         // When
         SUT.onCheckState(application)
@@ -106,7 +98,6 @@ class NotificationsEnabledManagerTest : BaseRobolectricTest() {
         // Given
         every { RetenoNotificationChannel.isNotificationsEnabled(any()) } returns true
         every { RetenoNotificationChannel.isNotificationChannelEnabled(any(), any()) } returns true
-        justRun { scheduleController.startScheduler() }
 
         // When
         SUT.onCheckState(application)

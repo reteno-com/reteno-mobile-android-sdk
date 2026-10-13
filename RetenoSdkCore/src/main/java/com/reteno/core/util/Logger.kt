@@ -5,16 +5,18 @@ import com.reteno.core.BuildConfig
 import com.reteno.core.RetenoInternalImpl
 import com.reteno.core.domain.model.logevent.LogLevel
 import com.reteno.core.domain.model.logevent.RetenoLogEvent
+import com.reteno.core.internal.log.Redact
 
 object Logger {
 
     @JvmStatic
     fun captureMessage(msg: String, logLevel: LogLevel = LogLevel.INFO) {
-        createLogEvent(msg, logLevel)
+        createLogEvent(Redact.uploadable(msg), logLevel)
     }
 
     @JvmStatic
     fun captureEvent(logEvent: RetenoLogEvent) {
+        logEvent.errorMessage = logEvent.errorMessage?.let(Redact::uploadable)
         fillEventData(logEvent)
         saveEvent(logEvent)
     }
@@ -79,7 +81,7 @@ object Logger {
     }
 
     private fun buildErrorMessage(methodName: String, tr: Throwable): String {
-        return "$methodName: ${tr.message}: ${Log.getStackTraceString(tr)}"
+        return "${Redact.uploadable(methodName)}: ${Redact.uploadableStackTrace(tr)}"
     }
 
     private fun createLogEvent(message: String, logLevel: LogLevel) {

@@ -1,7 +1,11 @@
 package com.reteno.push
 
 import android.app.NotificationManager
-import android.content.*
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.ContextWrapper
+import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.ActivityInfo
 import android.content.pm.ResolveInfo
 import android.os.Bundle
@@ -9,7 +13,6 @@ import androidx.test.core.app.ApplicationProvider
 import com.reteno.core.di.ServiceLocator
 import com.reteno.core.domain.controller.ContactController
 import com.reteno.core.domain.controller.InteractionController
-import com.reteno.core.domain.controller.ScheduleController
 import com.reteno.core.domain.model.interaction.InteractionStatus
 import com.reteno.core.lifecycle.RetenoActivityHelper
 import com.reteno.core.util.getApplicationMetaData
@@ -21,8 +24,19 @@ import com.reteno.push.Constants.KEY_ES_TITLE
 import com.reteno.push.base.robolectric.BaseRobolectricTest
 import com.reteno.push.channel.RetenoNotificationChannel
 import com.reteno.push.receiver.NotificationsEnabledManager
-import io.mockk.*
+import io.mockk.coJustRun
+import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.impl.annotations.RelaxedMockK
+import io.mockk.justRun
+import io.mockk.mockk
+import io.mockk.mockkConstructor
+import io.mockk.mockkStatic
+import io.mockk.spyk
+import io.mockk.unmockkConstructor
+import io.mockk.unmockkObject
+import io.mockk.unmockkStatic
+import io.mockk.verify
 import junit.framework.TestCase
 import junit.framework.TestCase.assertEquals
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -71,8 +85,6 @@ class RetenoNotificationServiceTest : BaseRobolectricTest() {
     @RelaxedMockK
     private lateinit var contactController: ContactController
     @RelaxedMockK
-    private lateinit var scheduleController: ScheduleController
-    @RelaxedMockK
     private lateinit var activityHelper: RetenoActivityHelper
 
     private var contextWrapper: ContextWrapper? = null
@@ -83,7 +95,6 @@ class RetenoNotificationServiceTest : BaseRobolectricTest() {
         super.before()
         every { anyConstructed<ServiceLocator>().interactionControllerProvider.get() } returns interactionController
         every { anyConstructed<ServiceLocator>().contactControllerProvider.get() } returns contactController
-        every { anyConstructed<ServiceLocator>().scheduleControllerProvider.get() } returns scheduleController
         every { anyConstructed<ServiceLocator>().retenoActivityHelperProvider.get() } returns activityHelper
         justRun { activityHelper.registerActivityLifecycleCallbacks(any(), any()) }
 
@@ -154,7 +165,6 @@ class RetenoNotificationServiceTest : BaseRobolectricTest() {
         advanceUntilIdle()
         // Then
         coVerify(exactly = 1) { interactionController.onInteraction(eq(INTERACTION_ID), eq(InteractionStatus.DELIVERED)) }
-        verify(exactly = 1) { scheduleController.forcePush() }
     }
 
     @Test
@@ -176,7 +186,6 @@ class RetenoNotificationServiceTest : BaseRobolectricTest() {
 
         // Then
         coVerify(exactly = 0) { interactionController.onInteraction(eq(INTERACTION_ID), eq(InteractionStatus.DELIVERED)) }
-        verify(exactly = 0) { scheduleController.forcePush() }
     }
 
     @Test
@@ -196,7 +205,6 @@ class RetenoNotificationServiceTest : BaseRobolectricTest() {
 
         // Then
         coVerify(exactly = 0) { interactionController.onInteraction(eq(INTERACTION_ID), eq(InteractionStatus.DELIVERED)) }
-        verify(exactly = 0) { scheduleController.forcePush() }
     }
 
     @Test

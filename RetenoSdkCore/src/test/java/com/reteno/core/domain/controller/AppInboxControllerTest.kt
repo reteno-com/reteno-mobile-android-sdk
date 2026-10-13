@@ -2,16 +2,13 @@ package com.reteno.core.domain.controller
 
 import com.reteno.core.base.robolectric.BaseRobolectricTest
 import com.reteno.core.data.repository.AppInboxRepository
-import com.reteno.core.domain.SchedulerUtils
 import com.reteno.core.domain.callback.appinbox.RetenoResultCallback
 import com.reteno.core.domain.model.appinbox.AppInboxMessages
 import com.reteno.core.features.appinbox.AppInboxStatus
-import io.mockk.every
 import io.mockk.impl.annotations.RelaxedMockK
 import io.mockk.mockk
 import io.mockk.verify
 import org.junit.Test
-import java.time.ZonedDateTime
 
 class AppInboxControllerTest : BaseRobolectricTest() {
 
@@ -152,28 +149,4 @@ class AppInboxControllerTest : BaseRobolectricTest() {
         }
     }
 
-    @Test
-    fun whenPushAppInboxMessagesStatus_thenCallAppInboxRepository() {
-        // When
-        inbox.pushAppInboxMessagesStatus()
-
-        // Then
-        verify(exactly = 1) {
-            appInboxRepository.pushMessagesStatus()
-        }
-    }
-
-    @Test
-    fun whenClearOldMessagesStatus_thenRepositoryCalledWithOutdatedDate() {
-        // Given
-        val mockData = mockk<ZonedDateTime>()
-        every { SchedulerUtils.getOutdatedTime() } returns mockData
-
-        // When
-        inbox.clearOldMessagesStatus()
-
-        // Then
-        verify(exactly = 1) { appInboxRepository.clearOldMessages(mockData) }
-        verify(exactly = 1) { SchedulerUtils.getOutdatedTime() }
-    }
 }

@@ -3,7 +3,6 @@ package com.reteno.core.domain.controller
 import com.reteno.core.base.robolectric.BaseRobolectricTest
 import com.reteno.core.data.repository.ConfigRepository
 import com.reteno.core.data.repository.InteractionRepository
-import com.reteno.core.domain.SchedulerUtils
 import com.reteno.core.domain.model.interaction.Interaction
 import com.reteno.core.domain.model.interaction.InteractionStatus
 import com.reteno.core.util.Util
@@ -12,12 +11,9 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
 import io.mockk.impl.annotations.RelaxedMockK
-import io.mockk.mockk
-import io.mockk.verify
 import kotlinx.coroutines.test.runTest
 import org.junit.Before
 import org.junit.Test
-import java.time.ZonedDateTime
 
 class InteractionControllerTest : BaseRobolectricTest() {
 
@@ -92,29 +88,6 @@ class InteractionControllerTest : BaseRobolectricTest() {
 
         // Then
         coVerify(exactly = 0) { interactionsRepository.saveInteraction(any(), any()) }
-    }
-
-    @Test
-    fun whenPushInteraction_thenRepositoryInteractionPushCalled() {
-        // When
-        SUT.pushInteractions()
-
-        // Then
-        verify(exactly = 1) { interactionsRepository.pushInteractions() }
-    }
-
-    @Test
-    fun whenClearOldInteractions_thenRepositoryInteractionClearOldCalledWithOutdatedDate() {
-        // Given
-        val mockData = mockk<ZonedDateTime>()
-        every { SchedulerUtils.getOutdatedTime() } returns mockData
-
-        // When
-        SUT.clearOldInteractions()
-
-        // Then
-        verify(exactly = 1) { interactionsRepository.clearOldInteractions(mockData) }
-        verify(exactly = 1) { SchedulerUtils.getOutdatedTime() }
     }
 
 }

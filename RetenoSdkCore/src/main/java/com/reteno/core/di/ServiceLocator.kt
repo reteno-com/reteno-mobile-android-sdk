@@ -8,7 +8,6 @@ import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerEvents
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerInteraction
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerUser
 import com.reteno.core.data.repository.ConfigRepository
-import com.reteno.core.data.repository.LogEventRepository
 import com.reteno.core.di.base.ProviderWeakReference
 import com.reteno.core.di.provider.DeviceIdHelperProvider
 import com.reteno.core.di.provider.InteractionCacheProvider
@@ -21,11 +20,9 @@ import com.reteno.core.di.provider.controller.AppInboxControllerProvider
 import com.reteno.core.di.provider.controller.AppLifecycleControllerProvider
 import com.reteno.core.di.provider.controller.ContactControllerProvider
 import com.reteno.core.di.provider.controller.DeeplinkControllerProvider
-import com.reteno.core.di.provider.controller.EventsControllerProvider
 import com.reteno.core.di.provider.controller.IamControllerProvider
 import com.reteno.core.di.provider.controller.InteractionControllerProvider
 import com.reteno.core.di.provider.controller.RecommendationControllerProvider
-import com.reteno.core.di.provider.controller.ScheduleControllerProvider
 import com.reteno.core.di.provider.controller.ScreenTrackingControllerProvider
 import com.reteno.core.di.provider.database.DatabaseProvider
 import com.reteno.core.di.provider.database.RetenoDatabaseManagerAppInboxProvider
@@ -49,25 +46,37 @@ import com.reteno.core.di.provider.repository.AppInboxRepositoryProvider
 import com.reteno.core.di.provider.repository.ConfigRepositoryProvider
 import com.reteno.core.di.provider.repository.ContactRepositoryProvider
 import com.reteno.core.di.provider.repository.DeeplinkRepositoryProvider
-import com.reteno.core.di.provider.repository.EventsRepositoryProvider
 import com.reteno.core.di.provider.repository.FileManagerProvider
 import com.reteno.core.di.provider.repository.IamRepositoryProvider
 import com.reteno.core.di.provider.repository.InteractionRepositoryProvider
-import com.reteno.core.di.provider.repository.LogEventRepositoryProvider
 import com.reteno.core.di.provider.repository.RecommendationRepositoryProvider
 import com.reteno.core.domain.controller.AppLifecycleController
 import com.reteno.core.domain.controller.ContactController
 import com.reteno.core.domain.controller.DeeplinkController
 import com.reteno.core.domain.controller.InteractionController
-import com.reteno.core.domain.controller.ScheduleController
+import com.reteno.core.internal.action.sync.DataSync
+import com.reteno.core.internal.coroutine.AndroidRetenoDispatchers
+import com.reteno.core.internal.coroutine.InitGate
+import com.reteno.core.internal.coroutine.RetenoDispatchers
+import com.reteno.core.internal.log.AndroidLogSink
 import com.reteno.core.lifecycle.RetenoActivityHelper
 import com.reteno.core.lifecycle.RetenoSessionHandler
+import com.reteno.core.util.Logger
 import com.reteno.core.view.iam.IamView
 import kotlinx.coroutines.Dispatchers
 
-class ServiceLocator(
-    context: Context
+class ServiceLocator internal constructor(
+    context: Context,
+    private val dispatchers: RetenoDispatchers
 ) {
+
+    constructor(context: Context) : this(context, AndroidRetenoDispatchers)
+
+    internal val actions: ActionsLocator by lazy {
+        ActionsLocator(this, dispatchers, AndroidLogSink(), initGate::awaitInit) { message, level -> Logger.captureMessage(message, level) }
+    }
+    private val dataSync: () -> DataSync = { actions.dataSync }
+    internal val initGate = InitGate()
 
     private val configProvider = RetenoConfigProvider()
     private val retenoActivityHelperProviderInternal: RetenoActivityHelperProvider =
@@ -77,13 +86,13 @@ class ServiceLocator(
 
     internal val sharedPrefsManagerProvider: SharedPrefsManagerProvider =
         SharedPrefsManagerProvider(context)
-    private val workManagerProvider: WorkManagerProvider = WorkManagerProvider(context)
+    internal val workManagerProvider: WorkManagerProvider = WorkManagerProvider(context)
 
     private val deviceIdHelperProvider: DeviceIdHelperProvider =
         DeviceIdHelperProvider(context, sharedPrefsManagerProvider, configProvider)
     internal val restConfigProvider: RestConfigProvider =
         RestConfigProvider(sharedPrefsManagerProvider, deviceIdHelperProvider)
-    private val restClientProvider: RestClientProvider =
+    internal val restClientProvider: RestClientProvider =
         RestClientProvider(restConfigProvider, configProvider)
 
     private val apiClientProvider: ApiClientProvider = ApiClientProvider(restClientProvider)
@@ -118,16 +127,16 @@ class ServiceLocator(
     internal val retenoDatabaseManagerLogEventProvider =
         RetenoDatabaseManagerLogEventProvider(databaseProvider)
 
-    private val retenoDatabaseManagerRecomEventsProvider =
+    internal val retenoDatabaseManagerRecomEventsProvider =
         RetenoDatabaseManagerRecomEventsProvider(databaseProvider)
 
-    private val retenoDatabaseManagerWrappedLinksProvider =
+    internal val retenoDatabaseManagerWrappedLinksProvider =
         RetenoDatabaseManagerWrappedLinkProvider(databaseProvider)
 
     private val retenoDatabaseManagerInAppMessagesProvider =
         RetenoDatabaseManagerInAppMessagesProvider(databaseProvider)
 
-    private val retenoDatabaseManagerInAppInteractionProvider =
+    internal val retenoDatabaseManagerInAppInteractionProvider =
         RetenoDatabaseManagerInAppInteractionProvider(databaseProvider)
 
     internal val retenoDatabaseManagerProvider = RetenoDatabaseManagerProvider(
@@ -152,26 +161,19 @@ class ServiceLocator(
     val configRepositoryProvider: ProviderWeakReference<ConfigRepository>
         get() = configRepositoryProviderInternal
 
-    private val eventsRepositoryProvider: EventsRepositoryProvider =
-        EventsRepositoryProvider(
-            apiClientProvider,
-            retenoDatabaseManagerEventsProviderInternal,
-            configRepositoryProviderInternal
-        )
-
     private val contactRepositoryProvider: ContactRepositoryProvider =
         ContactRepositoryProvider(
-            apiClientProvider,
             configRepositoryProviderInternal,
             retenoDatabaseManagerDeviceProviderInternal,
-            retenoDatabaseManagerUserProviderInternal
+            retenoDatabaseManagerUserProviderInternal,
+            dataSync
         )
 
     private val interactionRepositoryProvider: InteractionRepositoryProvider =
         InteractionRepositoryProvider(
-            apiClientProvider,
             retenoDatabaseManagerInteractionProviderInternal,
-            retenoDatabaseManagerInAppInteractionProvider
+            retenoDatabaseManagerInAppInteractionProvider,
+            dataSync
         )
 
     internal val interactionCacheProvider: InteractionCacheProvider =
@@ -180,13 +182,14 @@ class ServiceLocator(
         )
 
     private val deeplinkRepositoryProvider: DeeplinkRepositoryProvider =
-        DeeplinkRepositoryProvider(apiClientProvider, retenoDatabaseManagerWrappedLinksProvider)
+        DeeplinkRepositoryProvider(retenoDatabaseManagerWrappedLinksProvider, dataSync)
 
-    private val appInboxRepositoryProvider: AppInboxRepositoryProvider =
+    internal val appInboxRepositoryProvider: AppInboxRepositoryProvider =
         AppInboxRepositoryProvider(
             apiClientProvider,
             retenoDatabaseManagerAppInboxProviderInternal,
-            configRepositoryProviderInternal
+            configRepositoryProviderInternal,
+            dataSync
         )
 
     private val recommendationRepositoryProvider: RecommendationRepositoryProvider =
@@ -207,14 +210,6 @@ class ServiceLocator(
             Dispatchers.IO
         )
 
-    private val logEventRepositoryProviderInternal: LogEventRepositoryProvider =
-        LogEventRepositoryProvider(
-            retenoDatabaseManagerLogEventProvider,
-            apiClientProvider
-        )
-    val logEventRepositoryProvider: ProviderWeakReference<LogEventRepository>
-        get() = logEventRepositoryProviderInternal
-
 
     /** Controller **/
     private val deeplinkControllerProviderInternal: DeeplinkControllerProvider =
@@ -225,7 +220,8 @@ class ServiceLocator(
     private val contactControllerProviderInternal: ContactControllerProvider =
         ContactControllerProvider(
             contactRepositoryProvider,
-            configRepositoryProviderInternal
+            configRepositoryProviderInternal,
+            dataSync
         )
     val contactControllerProvider: ProviderWeakReference<ContactController>
         get() = contactControllerProviderInternal
@@ -238,25 +234,11 @@ class ServiceLocator(
     val interactionControllerProvider: ProviderWeakReference<InteractionController>
         get() = interactionControllerProviderInternal
 
-    internal val eventsControllerProvider: EventsControllerProvider =
-        EventsControllerProvider(eventsRepositoryProvider, logEventRepositoryProviderInternal)
-
     private val appInboxControllerProvider: AppInboxControllerProvider =
         AppInboxControllerProvider(appInboxRepositoryProvider)
 
     private val recommendationControllerProvider: RecommendationControllerProvider =
         RecommendationControllerProvider(recommendationRepositoryProvider)
-
-    val scheduleControllerProvider: ProviderWeakReference<ScheduleController> =
-        ScheduleControllerProvider(
-            contactControllerProviderInternal,
-            interactionControllerProviderInternal,
-            eventsControllerProvider,
-            appInboxControllerProvider,
-            recommendationControllerProvider,
-            deeplinkControllerProviderInternal,
-            workManagerProvider
-        )
 
     internal val screenTrackingControllerProvider: ScreenTrackingControllerProvider =
         ScreenTrackingControllerProvider(
@@ -278,7 +260,6 @@ class ServiceLocator(
     internal val iamControllerProvider: IamControllerProvider = IamControllerProvider(
         iamRepositoryProvider,
         retenoSessionHandlerProviderInternal,
-        eventsControllerProvider,
         retenoDatabaseManagerUserProviderInternal
     )
 
@@ -287,7 +268,7 @@ class ServiceLocator(
         configProvider = configProvider,
         sessionHandlerProvider = retenoSessionHandlerProviderInternal,
         activityHelperProvider = retenoActivityHelperProviderInternal,
-        scheduleControllerProvider = scheduleControllerProvider,
+        dataSync = dataSync,
         iamControllerProvider = iamControllerProvider
     )
 
@@ -298,7 +279,7 @@ class ServiceLocator(
         retenoActivityHelperProviderInternal,
         iamControllerProvider,
         interactionControllerProviderInternal,
-        scheduleControllerProvider
+        dataSync
     )
 
     val iamViewProvider: ProviderWeakReference<IamView> =

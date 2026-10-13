@@ -15,7 +15,6 @@ internal class ActionRunner(
 
     suspend operator fun <T> invoke(
         name: String,
-        outcome: (T) -> String = { SUCCESS },
         reportFailure: Boolean = true,
         block: suspend ActionTrace.() -> T
     ): Result<T> {
@@ -28,7 +27,7 @@ internal class ActionRunner(
         }
         return try {
             val value = withContext(ActionTraceElement(trace)) { trace.block() }
-            trace.finishSuccess(outcome(value))
+            trace.finishSuccess(value)
             Result.success(value)
         } catch (cancellation: CancellationException) {
             trace.finishCancelled()
@@ -43,7 +42,6 @@ internal class ActionRunner(
     }
 
     private companion object {
-        const val SUCCESS = "SUCCESS"
         const val ROOT_ID_LENGTH = 6
     }
 }

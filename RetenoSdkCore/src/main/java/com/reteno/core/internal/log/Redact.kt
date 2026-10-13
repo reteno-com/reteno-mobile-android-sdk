@@ -8,9 +8,13 @@ internal object Redact {
     private const val NONE = "<none>"
     private const val HIDDEN = "<hidden>"
     private const val VISIBLE_TAIL = 4
+    private const val VALUE_SEPARATOR = '='
 
     private val urlPattern = Regex("""[a-zA-Z][a-zA-Z0-9+.-]*://[^\s"'<>]+""")
     private val quotedHostPattern = Regex(""""[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+"""")
+    private val emailPattern = Regex("""[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}""")
+    private val quotedJsonValuePattern = Regex("""("[^"\\]+"\s*:\s*)"[^"]*"""")
+    private val longNumberPattern = Regex("""\+?\d[\d\s().-]{5,}\d""")
 
     fun token(value: String?): String = when {
         value.isNullOrEmpty() -> NONE
@@ -39,24 +43,33 @@ internal object Redact {
     fun text(value: String): String = value
         .replace(urlPattern, "<url>")
         .replace(quotedHostPattern, "\"<host>\"")
+        .replace(emailPattern, "<email>")
+        .replace(quotedJsonValuePattern, "$1\"<hidden>\"")
+        .replace(longNumberPattern, "<number>")
 
-    fun summary(error: Throwable): String = describe(error.javaClass.simpleName, error)
+    fun summary(error: Throwable): String = describe(error.javaClass.simpleName, error, ::text)
 
-    fun stackTrace(error: Throwable): String {
+    fun uploadable(value: String): String = text(value.substringBefore(VALUE_SEPARATOR)).trimEnd()
+
+    fun stackTrace(error: Throwable): String = stackTrace(error, ::text)
+
+    fun uploadableStackTrace(error: Throwable): String = stackTrace(error, ::uploadable)
+
+    private fun stackTrace(error: Throwable, sanitize: (String) -> String): String {
         val visited = Collections.newSetFromMap(IdentityHashMap<Throwable, Boolean>())
         val builder = StringBuilder()
         var current: Throwable? = error
         while (current != null && visited.add(current)) {
             if (current !== error) builder.append("Caused by: ")
-            builder.append(describe(current.javaClass.name, current)).append('\n')
+            builder.append(describe(current.javaClass.name, current, sanitize)).append('\n')
             current.stackTrace.forEach { builder.append("\tat ").append(it).append('\n') }
             current = current.cause
         }
         return builder.toString().trimEnd()
     }
 
-    private fun describe(className: String, error: Throwable): String {
+    private fun describe(className: String, error: Throwable, sanitize: (String) -> String): String {
         val message = error.message ?: return className
-        return "$className: ${text(message)}"
+        return "$className: ${sanitize(message)}"
     }
 }

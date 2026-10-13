@@ -5,7 +5,6 @@ import com.reteno.core.domain.model.recommendation.get.RecomRequest
 import com.reteno.core.domain.model.recommendation.post.RecomEvents
 import com.reteno.core.features.recommendation.GetRecommendationResponseCallback
 import com.reteno.core.features.recommendation.GetRecommendationResponseJsonCallback
-import java.time.ZonedDateTime
 
 internal interface RecommendationRepository {
 
@@ -22,6 +21,4 @@ internal interface RecommendationRepository {
     )
 
     fun saveRecommendations(recomEvents: RecomEvents)
-    fun pushRecommendations()
-    fun clearOldRecommendations(outdatedTime: ZonedDateTime)
 }

@@ -1,24 +1,12 @@
 package com.reteno.core.data.repository
 
-import com.reteno.core.RetenoInternalImpl
 import com.reteno.core.base.robolectric.BaseRobolectricTest
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerWrappedLink
 import com.reteno.core.data.remote.OperationQueue
-import com.reteno.core.data.remote.PushOperationQueue
 import com.reteno.core.data.remote.api.ApiClient
-import com.reteno.core.data.remote.api.ApiContract
-import com.reteno.core.domain.ResponseCallback
-import io.mockk.coEvery
-import io.mockk.every
 import io.mockk.impl.annotations.RelaxedMockK
-import io.mockk.just
-import io.mockk.mockk
-import io.mockk.runs
-import io.mockk.slot
 import io.mockk.verify
-import junit.framework.TestCase.assertEquals
 import org.junit.Test
-import java.time.ZonedDateTime
 
 
 class DeeplinkRepositoryImplTest : BaseRobolectricTest() {
@@ -44,7 +32,7 @@ class DeeplinkRepositoryImplTest : BaseRobolectricTest() {
 
     override fun before() {
         super.before()
-        deeplinkRepository = DeeplinkRepositoryImpl(apiClient, databaseManagerWrappedLink)
+        deeplinkRepository = DeeplinkRepositoryImpl(databaseManagerWrappedLink) {}
     }
 
     @Test
@@ -77,144 +65,4 @@ class DeeplinkRepositoryImplTest : BaseRobolectricTest() {
         verify(exactly = 0) { databaseManagerWrappedLink.insertWrappedLink(DEEPLINK_WRAPPED) }
     }
 
-    @Test
-    fun givenNoWrappedLinksCachedInDatabase_whenPushWrappedLink_thenNothingHappensNextOperation() {
-        // Given
-        every { databaseManagerWrappedLink.getWrappedLinks(any()) } returns emptyList<String>()
-
-        // When
-        deeplinkRepository.pushWrappedLink()
-
-        // Then
-        verify(exactly = 1) { OperationQueue.addOperation(any()) }
-        verify(exactly = 0) { apiClient.head(any(), any(), any()) }
-        verify(exactly = 1) { PushOperationQueue.nextOperation() }
-    }
-
-    @Test
-    fun givenWrappedLinkCachedInDatabase_whenPushWrappedLink_thenApiClientPutsWrappedLinkWithCorrectParameters() {
-        // Given
-        every { databaseManagerWrappedLink.getWrappedLinks(any()) } returns listOf(DEEPLINK_WRAPPED) andThen emptyList<String>()
-
-        val apiContractCaptured = slot<ApiContract>()
-        every {
-            apiClient.head(
-                url = capture(apiContractCaptured),
-                queryParams = any(),
-                responseHandler = any()
-            )
-        } just runs
-
-        // When
-        deeplinkRepository.pushWrappedLink()
-
-        // Then
-        verify(exactly = 1) { OperationQueue.addOperation(any()) }
-        verify(exactly = 0) { PushOperationQueue.nextOperation() }
-        verify { apiClient.head(any(), any(), any()) }
-        assert(apiContractCaptured.captured is ApiContract.Custom)
-        assertEquals(DEEPLINK_WRAPPED, apiContractCaptured.captured.url)
-    }
-
-    @Test
-    fun givenWrappedLink_whenPushWrappedLinkSuccessful_thenTryPushNextWrappedLink() {
-        // Given
-        every { databaseManagerWrappedLink.getWrappedLinks(any()) } returnsMany listOf(
-            listOf(DEEPLINK_WRAPPED),
-            listOf(DEEPLINK_WRAPPED_2),
-            emptyList<String>()
-        )
-
-        every { apiClient.head(url = any(), queryParams = any(), responseHandler = any()) } answers {
-            val callback = thirdArg<ResponseCallback>()
-            callback.onSuccess("")
-        }
-
-        // When
-        deeplinkRepository.pushWrappedLink()
-
-        // Then
-        verify(exactly = 3) { OperationQueue.addOperation(any()) }
-        verify(exactly = 2) { apiClient.head(any(), any(), any()) }
-        verify(exactly = 2) { databaseManagerWrappedLink.deleteWrappedLinks(1) }
-        verify(exactly = 1) { PushOperationQueue.nextOperation() }
-        verify(exactly = 0) { PushOperationQueue.removeAllOperations() }
-    }
-
-    @Test
-    fun givenWrappedLink_whenPushWrappedLinkFailedAndErrorIsNonRepeatable_thenCancelPushOperations() {
-        // Given
-        every { databaseManagerWrappedLink.getWrappedLinks(any()) } returnsMany listOf(
-            listOf(DEEPLINK_WRAPPED),
-            emptyList<String>()
-        )
-
-        every { apiClient.head(url = any(), queryParams = any(), responseHandler = any()) } answers {
-            val callback = thirdArg<ResponseCallback>()
-            callback.onFailure(SERVER_ERROR_NON_REPEATABLE, null, null)
-        }
-
-        // When
-        deeplinkRepository.pushWrappedLink()
-
-        // Then
-        verify(exactly = 1) { OperationQueue.addOperation(any()) }
-        verify(exactly = 1) { apiClient.head(any(), any(), any()) }
-        verify(exactly = 1) { PushOperationQueue.removeAllOperations() }
-    }
-
-    @Test
-    fun givenWrappedLink_whenPushWrappedLinkFailedAndErrorIsRepeatable_thenTryPushNextWrappedLink() {
-        // Given
-        every { databaseManagerWrappedLink.getWrappedLinks(any()) } returnsMany listOf(
-            listOf(DEEPLINK_WRAPPED),
-            listOf(DEEPLINK_WRAPPED_2),
-            emptyList<String>()
-        )
-
-        every { apiClient.head(url = any(), queryParams = any(), responseHandler = any()) } answers {
-            val callback = thirdArg<ResponseCallback>()
-            callback.onFailure(SERVER_ERROR_REPEATABLE, null, null)
-        }
-
-        // When
-        deeplinkRepository.pushWrappedLink()
-
-        // Then
-        verify(exactly = 3) { OperationQueue.addOperation(any()) }
-        verify(exactly = 2) { apiClient.head(any(), any(), any()) }
-        verify(exactly = 3) { databaseManagerWrappedLink.getWrappedLinks(1) }
-        verify(exactly = 2) { databaseManagerWrappedLink.deleteWrappedLinks(1) }
-        verify(exactly = 1) { PushOperationQueue.nextOperation() }
-    }
-
-    @Test
-    fun givenNoOutdatedWrappedLinks_whenClearOldWrappedLinks_thenSentNothing() {
-        // Given
-        every { databaseManagerWrappedLink.deleteWrappedLinksByTime(any()) } returns 0
-
-        // When
-        deeplinkRepository.clearOldWrappedLinks(ZonedDateTime.now())
-
-        // Then
-        verify(exactly = 1) { OperationQueue.addOperation(any()) }
-        verify(exactly = 1) { databaseManagerWrappedLink.deleteWrappedLinksByTime(any()) }
-    }
-
-    @Test
-    fun givenOutdatedWrappedLinksPresent_whenClearOldWrappedLinks_thenSentDeleteWrappedLinksDataToLogger() {
-        // Given
-        val deletedWrappedLinks = 2
-        val reteno:RetenoInternalImpl = mockk()
-        RetenoInternalImpl.swapInstance(reteno)
-        coEvery { reteno.application } returns mockk(relaxed = true)
-        every { databaseManagerWrappedLink.deleteWrappedLinksByTime(any()) } returns deletedWrappedLinks
-
-        // When
-        deeplinkRepository.clearOldWrappedLinks(ZonedDateTime.now())
-
-        // Then
-        verify(exactly = 1) { OperationQueue.addOperation(any()) }
-        verify(exactly = 1) { databaseManagerWrappedLink.deleteWrappedLinksByTime(any()) }
-    }
 }

@@ -1,22 +1,17 @@
 package com.reteno.core.di
 
-import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerEvents
-import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerLogEvent
 import com.reteno.core.data.local.mappers.toDb
 import com.reteno.core.data.local.model.event.EventsDb
-import com.reteno.core.fixtures.FakeLogSink
+import com.reteno.core.fixtures.LocatorFixture
 import com.reteno.core.fixtures.stubCustomEvent
-import com.reteno.core.fixtures.stubDeviceId
 import com.reteno.core.fixtures.stubEcomEvent
 import com.reteno.core.fixtures.stubRetenoLogEvent
-import com.reteno.core.fixtures.testDispatchers
 import com.reteno.test.given
 import com.reteno.test.runUnitTest
 import com.reteno.test.then
 import com.reteno.test.whenn
 import io.mockk.every
 import io.mockk.justRun
-import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.test.TestScope
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -28,17 +23,14 @@ import java.io.IOException
 internal class ActionsLocatorTest {
 
     private class SutFixture(scope: TestScope) {
-        val eventsDb = mockk<RetenoDatabaseManagerEvents>()
-        val logEventsDb = mockk<RetenoDatabaseManagerLogEvent>()
-        val deviceId = stubDeviceId()
-        val sink = FakeLogSink()
-        val remoteLogs = mutableListOf<String>()
-        private val serviceLocator = mockk<ServiceLocator>().also {
-            every { it.retenoDatabaseManagerEventsProvider.get() } returns eventsDb
-            every { it.retenoDatabaseManagerLogEventProvider.get() } returns logEventsDb
-            every { it.restConfigProvider.get().deviceId } returns deviceId
-        }
-        val sut = ActionsLocator(serviceLocator, scope.testDispatchers(), sink) { remoteLogs += it }
+        private val locator = LocatorFixture(scope)
+        val eventsDb = locator.eventsDb
+        val logEventsDb = locator.logEventsDb
+        val deviceId = locator.deviceId
+        val sink = locator.sink
+        val remoteLogs: List<String>
+            get() = locator.remoteLogs.map { it.first }
+        val sut = locator.sut
     }
 
     @Test
