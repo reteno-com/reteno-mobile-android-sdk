@@ -35,6 +35,7 @@ import com.reteno.core.domain.controller.IamControllerImpl.Companion.TIMEOUT
 import com.reteno.core.domain.model.event.Event
 import com.reteno.core.domain.model.event.Event.Companion.SCREEN_VIEW_EVENT_TYPE_KEY
 import com.reteno.core.features.iam.InAppPauseBehaviour
+import com.reteno.core.internal.action.event.eventFlow
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -44,7 +45,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
@@ -93,12 +93,10 @@ class IamControllerImplTest : BaseRobolectricTest() {
     private lateinit var iamRepository: IamRepository
     @RelaxedMockK
     private lateinit var userDatabase: RetenoDatabaseManagerUser
-    private val eventFlow = MutableSharedFlow<Event>()
     // endregion helper fields ---------------------------------------------------------------------
 
     override fun before() {
         super.before()
-        coEvery { eventController.eventFlow } returns eventFlow
 
         coEvery { iamRepository.getLocalBaseHtml() } coAnswers {
             delay(DELAY_BASE_HTML)
@@ -327,11 +325,9 @@ class IamControllerImplTest : BaseRobolectricTest() {
     fun givenInAppsWithNoContent_whenGetInAppMessages_thenMessagesWithoutContentShouldBeFetchedFromBackend() = runTest {
         // Given
         val sut = createController()
-        val flow = MutableSharedFlow<Event>()
         val inApps = frequencyInApps(content = null)
         val inAppList = InAppMessagesList(messages = inApps)
 
-        coEvery { eventController.eventFlow } returns flow
         coEvery { iamRepository.getInAppMessages() } returns inAppList
         coEvery { iamRepository.getInAppMessagesContent(any()) } returns buildList {
             repeat(inApps.size) {
@@ -587,7 +583,6 @@ class IamControllerImplTest : BaseRobolectricTest() {
         runTest {
             // Given
             val sut = createController()
-            val flow = MutableSharedFlow<Event>()
             val inApps = frequencyInApps(
                 content = InAppMessageContent(
                     messageInstanceId = 1,
@@ -599,7 +594,6 @@ class IamControllerImplTest : BaseRobolectricTest() {
             )
             val inAppList = InAppMessagesList(messages = inApps)
 
-            coEvery { eventController.eventFlow } returns flow
             coEvery { iamRepository.getInAppMessages() } returns inAppList
 
             // When

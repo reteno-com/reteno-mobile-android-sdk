@@ -2,9 +2,17 @@ plugins {
     id 'com.android.library'
     id 'org.jetbrains.kotlin.android'
     id 'com.vanniktech.maven.publish'
+    id 'de.mannodermaus.android-junit5'
+    id 'org.jetbrains.kotlinx.kover'
 }
 apply from: file("$project.rootDir/config.gradle")
 apply from: "$project.rootDir/test_dependencies.gradle"
+
+kover {
+    excludeInstrumentation {
+        packages('junit.framework', 'org.junit', 'org.robolectric', 'io.mockk')
+    }
+}
 
 android {
     def globalConfig = rootProject.ext

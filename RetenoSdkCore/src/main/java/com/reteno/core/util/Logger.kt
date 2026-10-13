@@ -83,11 +83,15 @@ object Logger {
     }
 
     private fun createLogEvent(message: String, logLevel: LogLevel) {
-        val logEvent = RetenoLogEvent()
-        logEvent.errorMessage = message
-        logEvent.logLevel = logLevel
-        fillEventData(logEvent)
-        saveEvent(logEvent)
+        try {
+            val logEvent = RetenoLogEvent()
+            logEvent.errorMessage = message
+            logEvent.logLevel = logLevel
+            fillEventData(logEvent)
+            saveEvent(logEvent)
+        } catch (e: Exception) {
+            Log.e(TAG, "createLogEvent: ", e)
+        }
     }
 
     private fun fillEventData(event: RetenoLogEvent) {
@@ -107,11 +111,7 @@ object Logger {
 
     private fun saveEvent(logEvent: RetenoLogEvent) {
         try {
-            runCatching {
-                RetenoInternalImpl.instance.logRetenoEvent(logEvent)
-            }.onFailure {
-                TODO()
-            }
+            RetenoInternalImpl.instance.logRetenoEvent(logEvent)
         } catch (e: Exception) {
             Log.e(TAG, "saveEvent: ", e)
         }

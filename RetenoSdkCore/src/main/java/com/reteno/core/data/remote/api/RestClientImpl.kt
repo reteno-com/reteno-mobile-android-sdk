@@ -5,6 +5,7 @@ import com.reteno.core.BuildConfig
 import com.reteno.core.RetenoConfig
 import com.reteno.core.data.local.config.RestConfig
 import com.reteno.core.domain.ResponseCallback
+import com.reteno.core.internal.log.Redact
 import com.reteno.core.util.Logger
 import com.reteno.core.util.Util
 import java.io.BufferedWriter
@@ -71,18 +72,16 @@ internal class RestClientImpl(
 
         try {
             val urlWithParams = generateUrl(apiContract.url, queryParams)
-            /*@formatter:off*/ Logger.i(TAG, "makeRequest(): ", "method = [" , method.httpMethodName , "], apiContract = [" , apiContract.url , "], body = [" , body , "], queryParams = [" , queryParams , "], responseCallback = [" , responseCallback , "]")
+            /*@formatter:off*/ Logger.i(TAG, "makeRequest(): ", "method = [" , method.httpMethodName , "]")
             /*@formatter:on*/
             urlConnection =
                 defaultHttpConnection(method, urlWithParams, headers, apiContract)
-            Logger.i(TAG, "makeRequest(): ", "request, headers: ${urlConnection.requestProperties}")
 
             if (body != null) {
                 attachBody(urlConnection, body)
             }
             urlConnection.connect()
             val headerFiles: Map<String, List<String>> = urlConnection.headerFields
-            Logger.i(TAG, "makeRequest(): ", "connect, headers: $headers")
 
             val responseCode = urlConnection.responseCode
             Logger.i(TAG, "makeRequest(): ", "responseCode: ", responseCode)
@@ -90,13 +89,11 @@ internal class RestClientImpl(
             when {
                 responseCode == 200 -> {
                     val response = urlConnection.inputStream.bufferedReader().use { it.readText() }
-                    Logger.i(TAG, "makeRequest(): ", "response: ", response)
                     responseCallback.onSuccess(headerFiles, response)
                 }
 
                 responseCode == 301 || responseCode == 302 -> {
                     val response = urlConnection.inputStream.bufferedReader().use { it.readText() }
-                    Logger.i(TAG, "makeRequest(): ", "response: ", response)
                     responseCallback.onSuccess(headerFiles, response)
                 }
 
@@ -115,21 +112,15 @@ internal class RestClientImpl(
                 else -> {
                     val response =
                         urlConnection.errorStream?.bufferedReader()?.use { it.readText() }
-                    Logger.i(TAG, "makeRequest(): ", "response: ", response)
                     responseCallback.onFailure(responseCode, response, null)
                 }
             }
 
         } catch (e: Exception) {
-            val errorMessages = """
-                    m: $method,
-                    u: ${apiContract.url},
-                    e: ${e.message}
-                """.trimIndent()
-            Logger.d(TAG, "makeRequest(): ", errorMessages)
+            Logger.d(TAG, "makeRequest(): ", "method = [", method.httpMethodName, "], error = [", Redact.summary(e), "]")
             responseCallback.onFailure(null, null, e)
         } finally {
-            /*@formatter:off*/ Logger.i(TAG, "makeRequest(): ", "method = ", method.httpMethodName, "; apiContract = ", apiContract.url, "; status = disconnected") /*@formatter:on*/
+            /*@formatter:off*/ Logger.i(TAG, "makeRequest(): ", "method = ", method.httpMethodName, "; status = disconnected") /*@formatter:on*/
             urlConnection?.disconnect()
         }
     }
@@ -152,13 +143,13 @@ internal class RestClientImpl(
             when (apiContract) {
                 is ApiContract.MobileApi -> {
                     setRequestProperty(HEADER_KEY, retenoConfigProvider().accessKey)
-                    setRequestProperty(HEADER_VERSION, "$${retenoConfigProvider().platform} ${BuildConfig.SDK_VERSION}")
+                    setRequestProperty(HEADER_VERSION, "${retenoConfigProvider().platform} ${BuildConfig.SDK_VERSION}")
                 }
                 is ApiContract.InAppMessages,
                 is ApiContract.AppInbox,
                 is ApiContract.Recommendation -> {
                     setRequestProperty(HEADER_KEY, retenoConfigProvider().accessKey)
-                    setRequestProperty(HEADER_VERSION, "$${retenoConfigProvider().platform} ${BuildConfig.SDK_VERSION}")
+                    setRequestProperty(HEADER_VERSION, "${retenoConfigProvider().platform} ${BuildConfig.SDK_VERSION}")
                     setRequestProperty(HEADER_DEVICE_ID, restConfig.deviceId.id)
                 }
                 else -> { /* NO-OP */ }

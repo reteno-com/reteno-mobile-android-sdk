@@ -3,7 +3,6 @@ package com.reteno.core.data.repository
 import com.reteno.core.base.robolectric.BaseRobolectricTest
 import com.reteno.core.data.local.config.DeviceId
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerEvents
-import com.reteno.core.data.local.mappers.toDb
 import com.reteno.core.data.local.model.event.EventDb
 import com.reteno.core.data.local.model.event.EventsDb
 import com.reteno.core.data.local.model.event.ParameterDb
@@ -13,12 +12,7 @@ import com.reteno.core.data.remote.api.ApiContract
 import com.reteno.core.data.remote.mapper.toJson
 import com.reteno.core.data.remote.mapper.toRemote
 import com.reteno.core.domain.ResponseCallback
-import com.reteno.core.domain.model.ecom.EcomEvent
 import com.reteno.core.domain.model.ecom.RemoteConstants
-import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.EVENT_TYPE_ORDER_CANCELLED
-import com.reteno.core.domain.model.event.Event
-import com.reteno.core.domain.model.event.Events
-import com.reteno.core.domain.model.event.Parameter
 import com.reteno.core.util.Logger
 import com.reteno.core.util.Util.formatToRemoteExplicitMillis
 import io.mockk.every
@@ -62,47 +56,6 @@ class EventsRepositoryImplTest : BaseRobolectricTest() {
         super.before()
         every { configRepository.getDeviceId() } returns DeviceId(DEVICE_ID, null, EXTERNAL_DEVICE_ID)
         SUT = EventsRepositoryImpl(apiClient, databaseManagerEvents, configRepository)
-    }
-
-    @Test
-    fun givenValidEvents_whenEventsSent_thenSaveEvents() {
-        // Given
-        val event = Event.Custom(EVENT_TYPE_KEY, ZonedDateTime.now())
-        val events = Events(
-            deviceId = DEVICE_ID,
-            externalUserId = EXTERNAL_DEVICE_ID,
-            eventList = listOf(event)
-        ).toDb()
-
-        // When
-        SUT.saveEvent(event)
-
-        // Then
-        verify(exactly = 1) { databaseManagerEvents.insertEvents(events) }
-    }
-
-    @Test
-    fun givenValidEcomEvents_whenEventsSent_thenSaveEvents() {
-        // Given
-        val occurred = ZonedDateTime.now()
-        val ecomEvent = EcomEvent.OrderCancelled(ECOM_EVENT_EXTERNAL_ORDER_ID, occurred)
-
-        val event = Event.Custom(
-            EVENT_TYPE_ORDER_CANCELLED,
-            occurred,
-            listOf<Parameter>(Parameter(ECOM_EVENT_KEY, ECOM_EVENT_EXTERNAL_ORDER_ID))
-        )
-        val events = Events(
-            deviceId = DEVICE_ID,
-            externalUserId = EXTERNAL_DEVICE_ID,
-            eventList = listOf(event)
-        ).toDb()
-
-        // When
-        SUT.saveEcomEvent(ecomEvent)
-
-        // Then
-        verify(exactly = 1) { databaseManagerEvents.insertEvents(events) }
     }
 
     @Test

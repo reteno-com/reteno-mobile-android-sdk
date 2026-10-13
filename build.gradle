@@ -24,6 +24,8 @@ plugins {
     // https://github.com/radarsh/gradle-test-logger-plugin
     id 'com.adarshr.test-logger' version '3.2.0'
     id 'com.google.firebase.crashlytics' version "2.9.9" apply false
+    id 'de.mannodermaus.android-junit5' version '1.10.0.0' apply false
+    id 'org.jetbrains.kotlinx.kover' version '0.7.6' apply false
 }
 subprojects { apply plugin: 'com.adarshr.test-logger' }
 
