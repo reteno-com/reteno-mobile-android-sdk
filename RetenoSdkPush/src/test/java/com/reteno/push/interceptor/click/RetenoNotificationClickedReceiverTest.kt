@@ -10,6 +10,7 @@ import com.reteno.core.domain.controller.ContactController
 import com.reteno.core.domain.controller.DeeplinkController
 import com.reteno.core.domain.controller.InteractionController
 import com.reteno.core.domain.controller.ScheduleController
+import com.reteno.core.domain.model.interaction.InteractionAction
 import com.reteno.core.domain.model.interaction.InteractionStatus
 import com.reteno.core.view.iam.IamView
 import com.reteno.push.Constants
@@ -184,6 +185,27 @@ class RetenoNotificationClickedReceiverTest : BaseRobolectricTest() {
         receiver!!.onReceive(context, intent)
         advanceUntilIdle()
         coVerify { interactionController.onInteraction(eq(interactionId), InteractionStatus.CLICKED) }
+        verify(exactly = 1) { scheduleController.forcePush() }
+
+    }
+
+    @Test
+    fun saveActionInteraction() = runRetenoTest {
+
+        val interactionId = "interaction_id"
+        val extra = Bundle().apply {
+            putString(Constants.KEY_ES_INTERACTION_ID, interactionId)
+            putBoolean(Constants.KEY_ACTION_BUTTON, true)
+            putString(Constants.KEY_BTN_ACTION_ID, "action_id")
+            putString(Constants.KEY_BTN_ACTION_LINK_UNWRAPPED, "https://google.com")
+        }
+        val intent = Intent()
+        intent.putExtras(extra)
+
+        receiver!!.onReceive(context, intent)
+        advanceUntilIdle()
+        coVerify { interactionController.onInteractionClickAction(eq(interactionId), eq(
+            InteractionAction("OPEN_URL", "action_id", "https://google.com"))) }
         verify(exactly = 1) { scheduleController.forcePush() }
 
     }

@@ -43,5 +43,6 @@ public class SampleJavaApp extends Application {
         RetenoNotifications.getClick().addListener(bundle -> {
 
         });
+        RetenoNotifications.setGroupingRule((map) -> "group_name");
     }
 }

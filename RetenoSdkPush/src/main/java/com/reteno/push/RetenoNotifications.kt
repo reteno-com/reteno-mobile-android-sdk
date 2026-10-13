@@ -3,6 +3,7 @@ package com.reteno.push
 import android.Manifest
 import android.os.Build
 import android.os.Bundle
+import androidx.annotation.MainThread
 import androidx.core.app.NotificationChannelCompat
 import androidx.core.app.NotificationManagerCompat
 import com.reteno.core.RetenoInternalImpl
@@ -30,14 +31,21 @@ object RetenoNotifications {
 
     @JvmStatic
     val click: EventListener<Bundle> = NotificationClick
+
     @JvmStatic
     val close: EventListener<Bundle> = NotificationDelete
+
     @JvmStatic
     val received: EventListener<Bundle> = NotificationReceived
+
     @JvmStatic
-    val inAppCustomDataReceived: EventListener<InAppCustomData> = NotificationInAppCustomDataReceived
+    val inAppCustomDataReceived: EventListener<InAppCustomData> =
+        NotificationInAppCustomDataReceived
+
     @JvmStatic
     val custom: EventListener<Bundle> = NotificationCustom
+
+    internal var groupingRule: ((Map<String, String?>) -> String?)? = null
 
     @JvmStatic
     fun updateDefaultNotificationChannel(name: String? = null, description: String? = null) {
@@ -104,5 +112,11 @@ object RetenoNotifications {
         return notificationScope.future {
             getNotificationPermissionStatus()
         }
+    }
+
+    @JvmStatic
+    @MainThread
+    fun setGroupingRule(transform: ((Map<String, String?>) -> String?)?) {
+        this.groupingRule = transform
     }
 }

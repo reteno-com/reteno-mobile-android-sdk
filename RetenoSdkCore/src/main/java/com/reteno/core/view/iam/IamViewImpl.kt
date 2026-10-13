@@ -194,7 +194,7 @@ internal class IamViewImpl(
         /*@formatter:on*/
         interactionId?.let { interaction ->
             iamShowScope.launch(Dispatchers.IO) {
-                interactionController.onInteractionIamClick(
+                interactionController.onInteractionClickAction(
                     interaction,
                     InteractionAction(
                         jsEvent.type.name,

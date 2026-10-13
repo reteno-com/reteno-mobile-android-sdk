@@ -51,3 +51,10 @@ internal object Util {
             context.sendBroadcast(forwardIntent)
         }
 }
+
+internal fun Bundle.toStringMap(): Map<String, String?> {
+    return keySet()
+        .associateWith {
+            getString(it)
+        }
+}

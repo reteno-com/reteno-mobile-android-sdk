@@ -2,6 +2,7 @@ package com.reteno.core
 
 import androidx.core.app.NotificationChannelCompat
 import androidx.lifecycle.LifecycleObserver
+import com.reteno.core.domain.model.interaction.InteractionAction
 import com.reteno.core.domain.model.interaction.InteractionStatus
 import com.reteno.core.domain.model.logevent.RetenoLogEvent
 import com.reteno.core.permission.AndroidPermissionChecker
@@ -17,6 +18,11 @@ internal interface RetenoInternalFacade : LifecycleObserver {
      * Method invoked by SDK itself to record interaction
      * */
     fun recordInteraction(id: String, status: InteractionStatus, forcePush: Boolean = false)
+
+    /**
+     * Method invoked by SDK itself to record interaction
+     * */
+    fun recordInteractionAction(id: String, action: InteractionAction, forcePush: Boolean = false)
 
     fun canPresentMessages(): Boolean
 

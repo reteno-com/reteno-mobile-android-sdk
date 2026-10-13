@@ -15,7 +15,7 @@ class InteractionController(
     private val interactionRepository: InteractionRepository,
 ) {
 
-    suspend fun onInteractionIamClick(interactionId: String, action: InteractionAction) {
+    suspend fun onInteractionClickAction(interactionId: String, action: InteractionAction) {
         /*@formatter:off*/ Logger.i(TAG, "onClickInteraction(): ", "interactionId = [" , interactionId , "],","action = [",action,"]")
         /*@formatter:on*/
         val timeStamp = Util.getCurrentTimeStamp()

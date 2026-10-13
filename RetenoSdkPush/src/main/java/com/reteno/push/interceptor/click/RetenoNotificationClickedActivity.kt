@@ -5,6 +5,7 @@ import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.os.Bundle
 import com.reteno.core.RetenoInternalImpl
+import com.reteno.core.domain.model.interaction.InteractionAction
 import com.reteno.core.domain.model.interaction.InteractionStatus
 import com.reteno.core.util.Logger
 import com.reteno.core.util.isOsVersionSupported
@@ -36,12 +37,30 @@ class RetenoNotificationClickedActivity : Activity() {
     }
 
     private fun sendInteractionStatus(intent: Intent?) {
-        if (intent?.extras?.getString(Constants.KEY_ES_IAM) != "1") {
-            intent?.extras?.getString(Constants.KEY_ES_INTERACTION_ID)?.let { interactionId ->
+        val extras = intent?.extras ?: return
+        if (extras.getString(Constants.KEY_ES_IAM) != "1") {
+
+            extras.getString(Constants.KEY_ES_INTERACTION_ID)?.let { interactionId ->
                 /*@formatter:off*/ Logger.i(TAG, "sendInteractionStatus(): ", "intent = [", intent, "]")
                 /*@formatter:on*/
                 val reteno = RetenoInternalImpl.instance
-                reteno.recordInteraction(interactionId, InteractionStatus.CLICKED, forcePush = true)
+                if (extras.getBoolean(KEY_ACTION_BUTTON, false)) {
+                    reteno.recordInteractionAction(
+                        interactionId,
+                        InteractionAction(
+                            type = "OPEN_URL",
+                            targetComponentId = extras.getString(Constants.KEY_BTN_ACTION_ID, null),
+                            url = extras.getString(Constants.KEY_BTN_ACTION_LINK_UNWRAPPED, null)
+                        ),
+                        forcePush = true
+                    )
+                } else {
+                    reteno.recordInteraction(
+                        interactionId,
+                        InteractionStatus.CLICKED,
+                        forcePush = true
+                    )
+                }
             }
         }
     }

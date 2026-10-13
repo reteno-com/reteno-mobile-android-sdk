@@ -5,9 +5,11 @@ import com.reteno.core.data.local.config.DeviceId
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerDevice
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerUser
 import com.reteno.core.data.local.mappers.toDb
+import com.reteno.core.data.local.model.BooleanDb
 import com.reteno.core.data.local.model.device.DeviceCategoryDb
 import com.reteno.core.data.local.model.device.DeviceDb
 import com.reteno.core.data.local.model.device.DeviceOsDb
+import com.reteno.core.data.local.model.user.UserAttributesDb
 import com.reteno.core.data.local.model.user.UserDb
 import com.reteno.core.data.remote.PushOperationQueue
 import com.reteno.core.data.remote.api.ApiClient
@@ -25,10 +27,12 @@ import io.mockk.every
 import io.mockk.impl.annotations.RelaxedMockK
 import io.mockk.mockk
 import io.mockk.mockkStatic
+import io.mockk.slot
 import io.mockk.unmockkStatic
 import io.mockk.verify
 import kotlinx.coroutines.test.runTest
 import org.junit.AfterClass
+import org.junit.Assert.assertEquals
 import org.junit.BeforeClass
 import org.junit.Test
 
@@ -44,6 +48,7 @@ class ContactRepositoryImplTest : BaseRobolectricTest() {
 
         private const val USER_ATTRS_PHONE = "+380990009900"
         private const val USER_ATTRS_EMAIL = "email@gmail.com"
+        private const val USER_ATTRS_EMAIL_NEW = "new_email@gmail.com"
         private const val USER_ATTRS_FIRST_NAME = "John"
         private const val USER_ATTRS_LAST_NAME = "Doe"
         private const val USER_ATTRS_LANGUAGE_CODE = "ua"
@@ -388,6 +393,158 @@ class ContactRepositoryImplTest : BaseRobolectricTest() {
         verify(exactly = 1) { databaseManagerUser.deleteUsers(any()) }
         verify(exactly = 0) { PushOperationQueue.nextOperation() }
         verify(exactly = 0) { PushOperationQueue.removeAllOperations() }
+    }
+
+    @Test
+    fun givenPendingPartialUpdateOverSyncedUser_whenPushUserDataSucceeds_thenPersistedUserKeepsUntouchedAttributes() {
+        // Given
+        // Full snapshot as it was last synced with backend
+        val syncedUser = getUser().toDb(DeviceId(DEVICE_ID, null, EXTERNAL_DEVICE_ID)).copy(
+            rowId = "1",
+            createdAt = 100L,
+            isSynchronizedWithBackend = BooleanDb.TRUE
+        )
+        // A partial update queued for the next sync - only email changed, everything else null
+        val pendingUser = UserDb(
+            rowId = "2",
+            createdAt = 200L,
+            deviceId = DEVICE_ID,
+            userAttributes = UserAttributesDb(email = USER_ATTRS_EMAIL_NEW),
+            isSynchronizedWithBackend = BooleanDb.FALSE
+        )
+        every { configRepository.getDeviceId() } returns DeviceId(DEVICE_ID, null, EXTERNAL_DEVICE_ID)
+        every { databaseManagerUser.getUsers(any()) } returnsMany listOf(
+            listOf(syncedUser, pendingUser),
+            emptyList()
+        )
+        every { apiClient.post(url = any(), jsonBody = any(), responseHandler = any()) } answers {
+            val callback = thirdArg<ResponseCallback>()
+            callback.onSuccess("")
+        }
+        val persisted = slot<UserDb>()
+        every { databaseManagerUser.insertUser(capture(persisted)) } returns Unit
+
+        // When
+        SUT.pushUserData()
+
+        // Then
+        // Only the diff should be sent to the backend
+        verify(exactly = 1) {
+            apiClient.post(
+                any(),
+                match { it.contains("\"email\":\"${USER_ATTRS_EMAIL_NEW}\"") && !it.contains(USER_ATTRS_FIRST_NAME) },
+                any()
+            )
+        }
+        // But the locally persisted "synced" record must keep every attribute untouched by this update
+        assertEquals(USER_ATTRS_EMAIL_NEW, persisted.captured.userAttributes?.email)
+        assertEquals(USER_ATTRS_FIRST_NAME, persisted.captured.userAttributes?.firstName)
+        assertEquals(USER_ATTRS_LAST_NAME, persisted.captured.userAttributes?.lastName)
+        assertEquals(USER_ATTRS_PHONE, persisted.captured.userAttributes?.phone)
+        assertEquals(USER_ATTRS_ADDRESS_ADDRESS, persisted.captured.userAttributes?.address?.address)
+        assertEquals(BooleanDb.TRUE, persisted.captured.isSynchronizedWithBackend)
+    }
+
+    @Test
+    fun givenPendingPartialUpdateOverSyncedUser_whenPushUserDataFailsAndCacheIsUpdated_thenPersistedUserKeepsUntouchedAttributes() {
+        // Given
+        val syncedUser = getUser().toDb(DeviceId(DEVICE_ID, null, EXTERNAL_DEVICE_ID)).copy(
+            rowId = "1",
+            createdAt = 100L,
+            isSynchronizedWithBackend = BooleanDb.TRUE
+        )
+        val pendingUser = UserDb(
+            rowId = "2",
+            createdAt = 200L,
+            deviceId = DEVICE_ID,
+            userAttributes = UserAttributesDb(email = USER_ATTRS_EMAIL_NEW),
+            isSynchronizedWithBackend = BooleanDb.FALSE
+        )
+        every { configRepository.getDeviceId() } returns DeviceId(DEVICE_ID, null, EXTERNAL_DEVICE_ID)
+        every { databaseManagerUser.getUsers(any()) } returnsMany listOf(
+            listOf(syncedUser, pendingUser),
+            emptyList()
+        )
+        every { apiClient.post(url = any(), jsonBody = any(), responseHandler = any()) } answers {
+            val callback = thirdArg<ResponseCallback>()
+            // A 400 is treated as a non-repeatable error by isNonRepeatableError()
+            callback.onFailure(400, null, null)
+        }
+        val persisted = slot<UserDb>()
+        every { databaseManagerUser.insertUser(capture(persisted)) } returns Unit
+
+        // When
+        SUT.pushUserData()
+
+        // Then
+        assertEquals(USER_ATTRS_EMAIL_NEW, persisted.captured.userAttributes?.email)
+        assertEquals(USER_ATTRS_FIRST_NAME, persisted.captured.userAttributes?.firstName)
+        assertEquals(USER_ATTRS_LAST_NAME, persisted.captured.userAttributes?.lastName)
+    }
+
+    @Test
+    fun givenNoPreviousSyncedUser_whenPushUserDataSucceeds_thenPersistedUserEqualsPendingUser() {
+        // Given
+        val pendingUser = getUser().toDb(DeviceId(DEVICE_ID, null, EXTERNAL_DEVICE_ID)).copy(
+            rowId = "1",
+            createdAt = 100L,
+            isSynchronizedWithBackend = BooleanDb.FALSE
+        )
+        every { configRepository.getDeviceId() } returns DeviceId(DEVICE_ID, null, EXTERNAL_DEVICE_ID)
+        every { databaseManagerUser.getUsers(any()) } returnsMany listOf(
+            listOf(pendingUser),
+            emptyList()
+        )
+        every { apiClient.post(url = any(), jsonBody = any(), responseHandler = any()) } answers {
+            val callback = thirdArg<ResponseCallback>()
+            callback.onSuccess("")
+        }
+        val persisted = slot<UserDb>()
+        every { databaseManagerUser.insertUser(capture(persisted)) } returns Unit
+
+        // When
+        SUT.pushUserData()
+
+        // Then
+        assertEquals(USER_ATTRS_EMAIL, persisted.captured.userAttributes?.email)
+        assertEquals(USER_ATTRS_FIRST_NAME, persisted.captured.userAttributes?.firstName)
+        assertEquals(BooleanDb.TRUE, persisted.captured.isSynchronizedWithBackend)
+    }
+
+    @Test
+    fun givenPendingPartialUpdateOverSyncedUser_whenPushUserDataImmediateSucceeds_thenPersistedUserKeepsUntouchedAttributes() {
+        // Given
+        val syncedUser = getUser().toDb(DeviceId(DEVICE_ID, null, EXTERNAL_DEVICE_ID)).copy(
+            rowId = "1",
+            createdAt = 100L,
+            isSynchronizedWithBackend = BooleanDb.TRUE
+        )
+        val pendingUser = UserDb(
+            rowId = "2",
+            createdAt = 200L,
+            deviceId = DEVICE_ID,
+            userAttributes = UserAttributesDb(email = USER_ATTRS_EMAIL_NEW),
+            isSynchronizedWithBackend = BooleanDb.FALSE
+        )
+        every { configRepository.getDeviceId() } returns DeviceId(DEVICE_ID, null, EXTERNAL_DEVICE_ID)
+        every { databaseManagerUser.getUsers(any()) } returnsMany listOf(
+            listOf(syncedUser, pendingUser),
+            emptyList()
+        )
+        every { apiClient.postSync(url = any(), jsonBody = any(), responseHandler = any()) } answers {
+            val callback = arg<ResponseCallback>(3)
+            callback.onSuccess("")
+        }
+        val persisted = slot<UserDb>()
+        every { databaseManagerUser.insertUser(capture(persisted)) } returns Unit
+
+        // When
+        SUT.pushUserDataImmediate()
+
+        // Then
+        assertEquals(USER_ATTRS_EMAIL_NEW, persisted.captured.userAttributes?.email)
+        assertEquals(USER_ATTRS_FIRST_NAME, persisted.captured.userAttributes?.firstName)
+        assertEquals(USER_ATTRS_LAST_NAME, persisted.captured.userAttributes?.lastName)
     }
 
     @Test

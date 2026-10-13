@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import com.reteno.core.RetenoInternalImpl
+import com.reteno.core.domain.model.interaction.InteractionAction
 import com.reteno.core.domain.model.interaction.InteractionStatus
 import com.reteno.core.util.Logger
 import com.reteno.core.util.isOsVersionSupported
@@ -33,12 +34,29 @@ class RetenoNotificationClickedReceiver : BroadcastReceiver() {
     }
 
     private fun sendInteractionStatus(reteno: RetenoInternalImpl, intent: Intent?) {
-        if (intent?.extras?.getString(Constants.KEY_ES_IAM) != "1") {
+        val extras = intent?.extras ?: return
+        if (extras.getString(Constants.KEY_ES_IAM) != "1") {
 
-            intent?.extras?.getString(Constants.KEY_ES_INTERACTION_ID)?.let { interactionId ->
+            extras.getString(Constants.KEY_ES_INTERACTION_ID)?.let { interactionId ->
                 /*@formatter:off*/ Logger.i(TAG, "sendInteractionStatus(): ", "intent = [", intent, "]")
                 /*@formatter:on*/
-                reteno.recordInteraction(interactionId, InteractionStatus.CLICKED, forcePush = true)
+                if (extras.getBoolean(KEY_ACTION_BUTTON, false)) {
+                    reteno.recordInteractionAction(
+                        interactionId,
+                        InteractionAction(
+                            type = "OPEN_URL",
+                            targetComponentId = extras.getString(Constants.KEY_BTN_ACTION_ID, null),
+                            url = extras.getString(Constants.KEY_BTN_ACTION_LINK_UNWRAPPED, null)
+                        ),
+                        forcePush = true
+                    )
+                } else {
+                    reteno.recordInteraction(
+                        interactionId,
+                        InteractionStatus.CLICKED,
+                        forcePush = true
+                    )
+                }
             }
         }
     }
@@ -83,7 +101,7 @@ class RetenoNotificationClickedReceiver : BroadcastReceiver() {
             return
         }
         intent.extras?.let(launchIntent::putExtras)
-        val isIam = intent.extras?.let(::checkIam)?:false
+        val isIam = intent.extras?.let(::checkIam) ?: false
         when {
             isIam && RetenoInternalImpl.instance.isActivityPresented() -> {}
             else -> {
@@ -98,7 +116,8 @@ class RetenoNotificationClickedReceiver : BroadcastReceiver() {
         bundle.getString(Constants.KEY_ES_IAM)
             .takeIf { it == "1" }
             ?.run {
-                bundle.getString(Constants.KEY_ES_INTERACTION_ID)?.let(RetenoInternalImpl.instance::initializeIamView)
+                bundle.getString(Constants.KEY_ES_INTERACTION_ID)
+                    ?.let(RetenoInternalImpl.instance::initializeIamView)
                 return true
             }
         return false

@@ -16,6 +16,7 @@ import com.reteno.core.domain.controller.ScreenTrackingController
 import com.reteno.core.domain.model.ecom.EcomEvent
 import com.reteno.core.domain.model.event.Event
 import com.reteno.core.domain.model.event.LifecycleTrackingOptions
+import com.reteno.core.domain.model.interaction.InteractionAction
 import com.reteno.core.domain.model.interaction.InteractionStatus
 import com.reteno.core.domain.model.logevent.RetenoLogEvent
 import com.reteno.core.domain.model.user.User
@@ -508,6 +509,27 @@ class RetenoInternalImpl(
                 }
             }
         }
+
+    override fun recordInteractionAction(id: String, action: InteractionAction, forcePush: Boolean) {
+        runAfterInit {
+            if (!isOsVersionSupported()) {
+                return@runAfterInit
+            }
+            /*@formatter:off*/ Logger.i(TAG, "recordInteractionAction(): ", "action = [" , action , "]", "forcePush = [", forcePush , "]")
+            /*@formatter:on*/
+            syncScope.launch(ioDispatcher) {
+                try {
+                    interactionController.onInteractionClickAction(id, action)
+                    if (forcePush) {
+                        forcePushData()
+                    }
+                } catch (ex: Throwable) {
+                    /*@formatter:off*/ Logger.e(TAG, "recordInteractionAction(): action = [$action]", ex)
+                    /*@formatter:on*/
+                }
+            }
+        }
+    }
 
     override fun canPresentMessages(): Boolean {
         if (!isOsVersionSupported()) {

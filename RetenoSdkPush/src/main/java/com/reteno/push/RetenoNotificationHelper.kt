@@ -117,6 +117,12 @@ internal class RetenoNotificationHelper(private val context: Context) {
         createDeleteIntent(bundle)?.let {
             builder.setDeleteIntent(it)
         }
+        RetenoNotifications.groupingRule?.let { grouping ->
+            val group = grouping(bundle.toStringMap())
+            if (group != null) {
+                builder.setGroup(group)
+            }
+        }
 
         val pendingIntent = createPendingIntent(bundle)
         builder.setContentIntent(pendingIntent)
