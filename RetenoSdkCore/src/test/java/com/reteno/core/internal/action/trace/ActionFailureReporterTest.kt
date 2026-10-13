@@ -5,7 +5,6 @@ import com.reteno.test.runUnitTest
 import com.reteno.test.then
 import com.reteno.test.whenn
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import java.io.IOException
 
@@ -40,17 +39,5 @@ internal class ActionFailureReporterTest {
 
         then()
         assertEquals(listOf("Action LogEvent failed: IllegalStateException: broken"), fixture.captured)
-    }
-
-    @Test
-    fun `should ignore failures when reporting disabled`() = runUnitTest {
-        given()
-        val sut = NoFailureReporting
-
-        whenn()
-        val outcome = runCatching { sut.report("LogRetenoEvent", null, IllegalStateException()) }
-
-        then()
-        assertTrue(outcome.isSuccess)
     }
 }

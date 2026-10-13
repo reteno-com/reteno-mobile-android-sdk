@@ -11,6 +11,7 @@ import androidx.lifecycle.OnLifecycleEvent
 import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.work.Configuration
 import com.reteno.core.data.local.config.DeviceIdMode
+import com.reteno.core.di.ActionsLocator
 import com.reteno.core.di.ServiceLocator
 import com.reteno.core.domain.controller.ScreenTrackingController
 import com.reteno.core.domain.model.ecom.EcomEvent
@@ -18,16 +19,15 @@ import com.reteno.core.domain.model.event.Event
 import com.reteno.core.domain.model.event.LifecycleTrackingOptions
 import com.reteno.core.domain.model.interaction.InteractionAction
 import com.reteno.core.domain.model.interaction.InteractionStatus
+import com.reteno.core.domain.model.logevent.LogLevel
 import com.reteno.core.domain.model.logevent.RetenoLogEvent
 import com.reteno.core.domain.model.user.User
 import com.reteno.core.domain.model.user.UserAttributesAnonymous
 import com.reteno.core.features.iam.InAppPauseBehaviour
-import com.reteno.core.internal.action.event.LogEcomEventAction
-import com.reteno.core.internal.action.event.LogEventAction
-import com.reteno.core.internal.action.event.LogRetenoEventAction
-import com.reteno.core.internal.action.event.LogScreenViewEventAction
 import com.reteno.core.internal.action.user.UpdateMultiAccountUserAttributesAction
 import com.reteno.core.internal.action.user.UpdateUserAttributesAction
+import com.reteno.core.internal.coroutine.RetenoDispatchers
+import com.reteno.core.internal.log.AndroidLogSink
 import com.reteno.core.lifecycle.RetenoActivityHelper
 import com.reteno.core.lifecycle.ScreenTrackingConfig
 import com.reteno.core.permission.AndroidPermissionChecker
@@ -64,6 +64,14 @@ class RetenoInternalImpl(
 
     //TODO make this property private
     val serviceLocator: ServiceLocator = ServiceLocator(application)
+    private val dispatchers = object : RetenoDispatchers {
+        override val main: CoroutineDispatcher = mainDispatcher
+        override val io: CoroutineDispatcher = ioDispatcher
+        override val default: CoroutineDispatcher = Dispatchers.Default
+    }
+    private val actions by lazy {
+        ActionsLocator(serviceLocator, dispatchers, AndroidLogSink()) { Logger.captureMessage(it, LogLevel.ERROR) }
+    }
     private val updateAttributesAction by lazy { UpdateUserAttributesAction(serviceLocator, ioDispatcher) }
     private val updateMultiAccAttributesAction by lazy { UpdateMultiAccountUserAttributesAction(serviceLocator, ioDispatcher) }
     private val permissionDelegate = PermissionActivityDelegate(application)
@@ -348,7 +356,7 @@ class RetenoInternalImpl(
             return@runAfterInit
         }
         syncScope.launch {
-            LogEventAction(serviceLocator, ioDispatcher).invoke(event)
+            actions.logEvent(event)
         }
     }
 
@@ -357,7 +365,7 @@ class RetenoInternalImpl(
             return@runAfterInit
         }
         syncScope.launch {
-            LogEcomEventAction(serviceLocator, ioDispatcher).invoke(ecomEvent)
+            actions.logEcomEvent(ecomEvent)
         }
     }
 
@@ -366,7 +374,7 @@ class RetenoInternalImpl(
             return@runAfterInit
         }
         syncScope.launch {
-            LogScreenViewEventAction(serviceLocator, ioDispatcher).invoke(screenName)
+            actions.logScreenView(screenName)
         }
     }
 
@@ -375,7 +383,7 @@ class RetenoInternalImpl(
             return@runAfterInit
         }
         syncScope.launch {
-            LogRetenoEventAction(serviceLocator, ioDispatcher).invoke(event)
+            actions.logRetenoEvent(event)
         }
     }
 

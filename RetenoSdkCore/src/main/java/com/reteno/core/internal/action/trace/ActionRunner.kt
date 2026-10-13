@@ -2,9 +2,9 @@ package com.reteno.core.internal.action.trace
 
 import com.reteno.core.internal.log.RetenoLogSink
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.withContext
 import java.util.UUID
-import kotlin.coroutines.coroutineContext
 
 internal class ActionRunner(
     private val sink: RetenoLogSink,
@@ -13,19 +13,19 @@ internal class ActionRunner(
     private val newRootId: () -> String = { UUID.randomUUID().toString().take(ROOT_ID_LENGTH) }
 ) {
 
-    suspend fun <T> run(
+    suspend operator fun <T> invoke(
         name: String,
-        args: () -> String = { "" },
         outcome: (T) -> String = { SUCCESS },
+        reportFailure: Boolean = true,
         block: suspend ActionTrace.() -> T
     ): Result<T> {
-        val parent = coroutineContext[ActionTraceElement]?.trace
+        val parent = currentCoroutineContext()[ActionTraceElement]?.trace
+        parent?.ensureStarted()
         val trace = if (parent == null) {
             ActionTraceImpl(newRootId(), depth = 0, name, sink, clock)
         } else {
             ActionTraceImpl(parent.nextChildId(), depth = parent.depth + 1, name, sink, clock)
         }
-        trace.start(args)
         return try {
             val value = withContext(ActionTraceElement(trace)) { trace.block() }
             trace.finishSuccess(outcome(value))
@@ -35,7 +35,9 @@ internal class ActionRunner(
             throw cancellation
         } catch (error: Throwable) {
             trace.finishFailure(error)
-            failureReporter.report(name, trace.failedStepOf(error), error)
+            if (reportFailure) {
+                failureReporter.report(name, trace.failedStepOf(error), error)
+            }
             Result.failure(error)
         }
     }

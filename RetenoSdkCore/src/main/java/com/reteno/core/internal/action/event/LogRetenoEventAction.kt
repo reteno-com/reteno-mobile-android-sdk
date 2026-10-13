@@ -1,27 +1,24 @@
 package com.reteno.core.internal.action.event
 
+import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerLogEvent
 import com.reteno.core.data.local.mappers.toDb
-import com.reteno.core.di.ServiceLocator
 import com.reteno.core.domain.model.logevent.RetenoLogEvent
-import com.reteno.core.internal.action.runAction
-import kotlinx.coroutines.CoroutineDispatcher
+import com.reteno.core.internal.action.trace.ActionRunner
+import com.reteno.core.internal.coroutine.RetenoDispatchers
 import kotlinx.coroutines.withContext
 
-class LogRetenoEventAction(
-    private val serviceLocator: ServiceLocator,
-    private val ioDispatcher: CoroutineDispatcher
+internal class LogRetenoEventAction(
+    private val logEventsDb: RetenoDatabaseManagerLogEvent,
+    private val dispatchers: RetenoDispatchers,
+    private val runner: ActionRunner
 ) {
 
-    suspend fun invoke(event: RetenoLogEvent) = runAction(TAG, "LogRetenoEvent") {
-        val databaseManager = serviceLocator.retenoDatabaseManagerLogEventProvider.get()
-        val logEventDb = event.toDb()
-
-        withContext(ioDispatcher) {
-            databaseManager.insertLogEvent(logEventDb)
+    suspend operator fun invoke(event: RetenoLogEvent): Result<Unit> = runner("LogRetenoEvent", reportFailure = false) {
+        args("level" to event.logLevel)
+        step("save log event to local database") {
+            withContext(dispatchers.io) {
+                logEventsDb.insertLogEvent(event.toDb())
+            }
         }
-    }
-
-    companion object {
-        private const val TAG = "LogRetenoEventAction"
     }
 }

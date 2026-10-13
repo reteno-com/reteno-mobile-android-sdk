@@ -132,9 +132,10 @@ internal class LogEventAction(
     private val dispatchers: RetenoDispatchers,
     private val runner: ActionRunner,
 ) {
-    suspend operator fun invoke(event: Event): Result<Unit> = runner.run("LogEvent", args = { "type=${event.eventTypeKey}" }) {
-        step("insert event") { withContext(dispatchers.io) { eventsDb.insertEvents(EventsDb(restConfig.deviceId, event.toDb())) } }
-        step("emit to event bus") { eventBus.emit(event) }
+    suspend operator fun invoke(event: Event): Result<Unit> = runner("LogEvent") {
+        args("type" to event.eventTypeKey)
+        step("save event to local database") { withContext(dispatchers.io) { eventsDb.insertEvents(EventsDb(restConfig.deviceId, event.toDb())) } }
+        step("notify in-app message triggers") { eventBus.emit(event) }
     }
 }
 ```
@@ -173,7 +174,7 @@ Every action logs a readable timeline of what it did. The step names double as d
 D RetenoAction: ┌─ [a1f3c2] SetUserAttributes  externalUserId=…8f21  user={firstName, email, phone}
 D RetenoAction: │  [a1f3c2] ✓ validate attributes                              0 ms
 D RetenoAction: │  [a1f3c2] ✓ compare device id suffix          unchanged      1 ms
-D RetenoAction: │  [a1f3c2] ✓ insert user                       rows=1         4 ms
+D RetenoAction: │  [a1f3c2] ✓ save user to local database       rows=1         4 ms
 D RetenoAction: │  [a1f3c2] → request sync
 D RetenoAction: └─ [a1f3c2] SetUserAttributes ✓ SUCCESS                          9 ms
 ```
@@ -201,24 +202,26 @@ internal class ActionRunner(
     clock: MonotonicClock = SystemMonotonicClock,
     newRootId: () -> String = { UUID.randomUUID().toString().take(6) },
 ) {
-    suspend fun <T> run(
+    suspend operator fun <T> invoke(
         name: String,
-        args: () -> String = { "" },
         outcome: (T) -> String = { "SUCCESS" },
+        reportFailure: Boolean = true,
         block: suspend ActionTrace.() -> T,
     ): Result<T>
 }
 
 internal interface ActionTrace {
+    fun args(vararg values: Pair<String, Any?>)
     suspend fun <T> step(name: String, detail: (T) -> String = { "" }, block: suspend () -> T): T
     fun note(message: () -> String)
 }
 ```
 Usage:
 ```kotlin
-suspend operator fun invoke(event: Event): Result<Unit> = runner.run("LogEvent", args = { "type=${event.eventTypeKey}" }) {
-    step("insert event") { withContext(dispatchers.io) { eventsDb.insertEvents(EventsDb(restConfig.deviceId, event.toDb())) } }
-    step("emit to event bus") { eventBus.emit(event) }
+suspend operator fun invoke(event: Event): Result<Unit> = runner("LogEvent") {
+    args("type" to event.eventTypeKey)
+    step("save event to local database") { withContext(dispatchers.io) { eventsDb.insertEvents(EventsDb(restConfig.deviceId, event.toDb())) } }
+    step("notify in-app message triggers") { eventBus.emit(event) }
 }
 ```
 
@@ -238,7 +241,7 @@ suspend operator fun invoke(event: Event): Result<Unit> = runner.run("LogEvent",
 
   All of this goes through `internal/action/trace/Redact.kt` helpers, so actions never format PII themselves.
 - **Durations** come from an injected monotonic clock (`() -> Long` nanos), so tests produce deterministic `ms` values. `kotlin.time.TimeSource` is still experimental on Kotlin 1.8.
-- **Nesting:** the current trace travels as a `CoroutineContext` element. A child `runner.run` called inside a parent becomes `[root.n]` and indents automatically. A trace started on another coroutine (`launch` without the element) is a new root.
+- **Nesting:** the current trace travels as a `CoroutineContext` element. A child `runner(...)` called inside a parent becomes `[root.n]` and indents automatically. A trace started on another coroutine (`launch` without the element) is a new root.
 - **Output path:** everything goes to a `RetenoLogSink` interface (default: `android.util.Log`). This part of Phase 9 moves into Phase 0, so tests capture lines with a `FakeLogSink` instead of `mockkObject(Logger)`.
 
 **Testing**
@@ -248,7 +251,7 @@ suspend operator fun invoke(event: Event): Result<Unit> = runner.run("LogEvent",
   - empty details, truncation
   - logging disabled: no lines, and the lambdas are never called
   - every redaction helper
-- **Action tests** don't assert log text, so a format change never breaks business tests. One fixture helper, `assertSteps(sink, "insert event", "emit to event bus")`, may be used where the step sequence *is* the contract (sync step order, abort point).
+- **Action tests** assert their trace only through `TestActionRunner.successfulTrace(name, args, steps…)`, which builds the expected lines with `TraceFormatter`. A format change never breaks them; a changed step name or argument does, because that is part of the action's contract.
 - Landed in **Phase 0** (`ActionRunner`). From Phase 1 on, the Definition of Done requires every action to express its work as named `step`s.
 
 ## 4. Testing standard (adapted from bookk.me-backend `AGENTS.md`)
@@ -308,10 +311,25 @@ Runtime infra (each with full tests)
 - ☑ `EventBus` wrapping today's `eventFlow`.
 - ☑ Security quick fixes: SEC1 (RestClientImpl logs only method, status and redacted error summary), SEC7 (both version headers), L1 (`Logger` never throws into the host; it also crashed earlier than expected, because `RetenoLogEvent()` defaults read `Reteno.instance`). Covered by `RestClientImplLoggingTest` (verified failing on the old code) and `LoggerWithoutSdkInstanceTest`.
 
-### Phase 1 — Events ☐ (already started)
-Actions: `LogEventAction`, `LogEcomEventAction`, `LogScreenViewEventAction`, `LogRetenoEventAction` → migrate to explicit deps + `EventBus`; `LogLifecycleEventAction` (what `AppLifecycleController.trackLifecycleEvent` does via `Reteno.instance.logEvent`).
-Fixes: L2 recursion guard (log-event insert failures never re-enter `LogRetenoEventAction`), `LogScreenViewEventAction` builds `Event.ScreenView` twice.
-Tests: insert payload/deviceId, bus emission, emission skipped on insert failure, cancellation propagates, failure logged without recursion.
+### Phase 1 — Events ☑
+Done:
+- `LogEventAction`, `LogEcomEventAction`, `LogRetenoEventAction` rewritten on `ActionRunner` with explicit deps (`RetenoDatabaseManager*`, `deviceId: () -> DeviceId`, `EventBus`, `RetenoDispatchers`). `LogScreenViewEventAction` delegates to `LogEventAction(Event.ScreenView(name))`, which also removes the double `Event.ScreenView` construction. E-commerce stays separate because it stores parameters (`EcomEvent.toDb()`) but emits `asRegularEvent()` without them.
+- `LogRetenoEventAction` runs with `reportFailure = false`, so a failing log-event insert can never produce another log event (L2 for this path). `NoFailureReporting` was removed in favour of that flag.
+- `di/ActionsLocator` builds each action once (previously one instance per call) with a shared runner using `RemoteLogFailureReporter { Logger.captureMessage(it, ERROR) }`; `RetenoInternalImpl` calls `actions.logX(...)`.
+- Old `internal/action/Action.kt` (`runAction`, swallowed cancellation — L3) deleted.
+- Coverage gate extended to `internal.action.event` + `di.ActionsLocator`.
+Deferred: `LogLifecycleEventAction` is not needed — lifecycle events already flow through `logEvent`; `AppLifecycleController` itself migrates in Phase 4. The global `eventFlow` stays as `EventBus`'s backing flow until IAM moves to `EventBus` in Phase 8.
+
+Final Coverage Report (Phase 1)
+- [x] LogEvent inserts `EventsDb(deviceId, event.toDb())`: `LogEventActionTest.should insert event for current device`, `ActionsLocatorTest.should wire log event action…`
+- [x] Insert on IO: `…should insert event on io dispatcher` (×3 actions, via `MarkingDispatcher`)
+- [x] Emission after insert / ecom emitted as regular event / screen view emits stored event: `…should emit…` tests
+- [x] Insert failure → `Result.failure`, no emission, exactly one report with failing step: `…should fail without emitting when insert fails`, `ActionsLocatorTest.should send one redacted remote log…`
+- [x] Log-event insert failure is never reported (no recursion): `LogRetenoEventActionTest.should not report its own failure…`, `ActionsLocatorTest.should not send remote log…`
+- [x] Cancellation before running → nothing inserted/emitted/reported: `LogEventActionTest.should neither insert nor emit when cancelled before running`
+- [x] Trace shows type/level and step names but no parameter values, order ids or messages: `…should trace…` tests
+- [x] Each action created once: `ActionsLocatorTest.should create each action once`
+- Gaps: facade (`RetenoInternalImpl.logX`) wiring has no unit test yet — the facade is covered in Phase 4. Not smoke-tested on a device in this phase.
 
 ### Phase 2 — Data sync pipeline ☐
 Actions (`internal/action/sync/`): `SyncDataAction` (the `syncOnce` body), `PushDeviceStep`, `PushUserStep`, `PushInteractionsStep`, `PushInAppInteractionsStep`, `PushEventsStep`, `PushInboxStatusStep`, `PushRecomEventsStep`, `PushWrappedLinksStep`, `PushLogEventsStep`, `ClearOldDataAction` (adds log-event cleanup), `ForcePushAction`.
@@ -378,7 +396,7 @@ Delete `OperationQueue`, any leftover controllers/repositories, `RetenoThread*`,
 Sync (2) comes right after events because every later slice's "persist then push" depends on `SyncCoordinator`. Init (4) after contact (3) because `ApplyConfigAction` calls `RegisterDeviceAction`. IAM (8) last among features: biggest, most stateful, depends on events, user, session and interactions.
 
 ## 6. Per-action Definition of Done
-- [ ] One file under `internal/action/<feature>/`, `internal` visibility, explicit deps, `suspend operator fun invoke`, `runner.run`.
+- [ ] One file under `internal/action/<feature>/`, `internal` visibility, explicit deps, `suspend operator fun invoke`, `runner(...)`.
 - [ ] Work expressed as named `step(...)`s (§3.3); args/details go through `Redact` helpers; logcat output checked once on the sample app.
 - [ ] No `Reteno.instance` / `RetenoInternalImpl.instance` / `ServiceLocator` access inside.
 - [ ] DB access only through existing `RetenoDatabaseManager*` on `dispatchers.io`.

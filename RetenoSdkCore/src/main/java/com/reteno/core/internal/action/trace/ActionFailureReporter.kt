@@ -6,8 +6,6 @@ internal fun interface ActionFailureReporter {
     fun report(action: String, step: String?, error: Throwable)
 }
 
-internal val NoFailureReporting = ActionFailureReporter { _, _, _ -> }
-
 internal class RemoteLogFailureReporter(
     private val capture: (String) -> Unit
 ) : ActionFailureReporter {

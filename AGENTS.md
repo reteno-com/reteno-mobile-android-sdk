@@ -25,6 +25,8 @@ The SDK is being refactored to one-file-per-operation Actions on coroutines; the
 
 ## Recipe: new Action
 
+New actions are wired in `di/ActionsLocator.kt` (one `by lazy` property per action, built from `ServiceLocator` providers) and called from the facade through `actions.<name>(...)`.
+
 ```kotlin
 internal class LogEventAction(
     private val eventsDb: RetenoDatabaseManagerEvents,
@@ -33,18 +35,20 @@ internal class LogEventAction(
     private val dispatchers: RetenoDispatchers,
     private val runner: ActionRunner,
 ) {
-    suspend operator fun invoke(event: Event): Result<Unit> = runner.run("LogEvent", args = { "type=${event.eventTypeKey}" }) {
-        step("insert event") { withContext(dispatchers.io) { eventsDb.insertEvents(EventsDb(restConfig.deviceId, event.toDb())) } }
-        step("emit to event bus") { eventBus.emit(event) }
+    suspend operator fun invoke(event: Event): Result<Unit> = runner("LogEvent") {
+        args("type" to event.eventTypeKey)
+        step("save event to local database") { withContext(dispatchers.io) { eventsDb.insertEvents(EventsDb(restConfig.deviceId, event.toDb())) } }
+        step("notify in-app message triggers") { eventBus.emit(event) }
     }
 }
 ```
 
-- One file under `internal/action/<feature>/`, `suspend operator fun invoke`, returns `Result<T>` from `runner.run`.
-- Every unit of work is a named `step(...)`. Step names read as a spec: `"load unsynced devices"`, `"send device to server"`.
+- One file under `internal/action/<feature>/`; `suspend operator fun invoke(...): Result<T> = runner("Name") { ... }` on one line.
+- Arguments go first inside the block: `args("type" to event.eventTypeKey)`. The start line is printed at `args(...)` (or before the first step/note/child/end if there are none); `args` called later prints a `→ key=value` note. Values are formatted only when logging is on; pass `"key" to { expensive() }` for values that are costly or need `Redact`.
+- Every unit of work is a named `step(...)`. A step name says **what happens and where**: verb + object + source/destination — `"save event to local database"`, `"load unsynced devices from local database"`, `"send device to server"`, `"notify in-app message triggers"`. Never a bare verb (`"insert event"`, `"emit"`).
 - Server calls are named in plain words (`"send interactions to server"`). **Never put URLs, hosts, paths, headers or bodies in step names, args, details or notes.** Never derive a step name from `ApiContract.url`.
 - Anything user-related in `args` / `detail` / `note` goes through `Redact` (`token`, `email`, `phone`, `fields`, `text`, `summary`, `stackTrace`). Never format PII yourself.
-- `runner.run` rethrows `CancellationException`, logs `✓ SUCCESS` / `✗ FAILURE` / `⊘ CANCELLED`, and reports exactly one remote log event per failed action (no args included). A child `runner.run` inside a parent nests automatically (`[root.n]`).
+- `runner(...)` rethrows `CancellationException`, logs `✓ SUCCESS` / `✗ FAILURE` / `⊘ CANCELLED`, and reports exactly one remote log event per failed action (no args included). A child `runner(...)` inside a parent nests automatically (`[root.n]`).
 - Validation the caller must see (blank `externalUserId`, invalid `marketId`) is done synchronously in the facade before deferring, not inside the Action.
 - Host callbacks are invoked via `withContext(dispatchers.main)`.
 
@@ -81,7 +85,7 @@ Coverage gate: Kover, **100 % line and branch** for the packages listed in `Rete
 ## Gotchas learned so far
 
 - **Long-running work in tests**: no `backgroundScope` on coroutines-test 1.6.4. Launch endless loops in `workScope()`; it is cancelled before `runUnitTest` returns, so `runTest` doesn't spin forever. Drive time with `runCurrent()` / `advanceTimeBy()`, never `advanceUntilIdle()` for such work.
-- **Exception identity**: Gradle runs tests with assertions on, which enables coroutines stack-trace recovery — exceptions crossing a suspension point are re-created with the original as `cause`. Don't `assertSame` exceptions that crossed `withContext`/`launch`; assert type and message. Production code that matches exceptions must walk the cause chain (see `ActionTraceImpl.failedStepOf`).
+- **Exception identity**: Gradle runs tests with assertions on, which enables coroutines stack-trace recovery — exceptions crossing a suspension point are re-created with the original as `cause`. Don't `assertSame` exceptions that crossed `withContext`/`launch`; assert type and message. Production code that matches exceptions must compare cause chains on both sides: an error thrown inside `withContext` within a step is copied at every boundary, and the copies only share the original as `cause` (see `ActionTraceImpl.failedStepOf`).
 - **Unreachable Kotlin branches fail the 100 % branch gate**: `x?.let { nonNull } ?: y` and `a?.b?.c ?: d` with a non-null `b` compile to branches no test can reach. Use `val v = x ?: return y` or an explicit `if`.
 - **`BuildConfig.DEBUG` is not a compile-time constant** (`Boolean.parseBoolean`), so `BuildConfig.DEBUG || x` has a branch the debug unit-test variant can't cover. Pass it as a defaulted parameter (`isLoggingEnabled(debugBuild = BuildConfig.DEBUG, …)`) and test the parameters.
 - **Kover instrumentation breaks JUnit 3's `TestCase.assertEquals`** (AIOOBE) used by some legacy tests; `kover { excludeInstrumentation { packages('junit.framework', 'org.junit', 'org.robolectric', 'io.mockk') } }` is required in every module applying Kover.

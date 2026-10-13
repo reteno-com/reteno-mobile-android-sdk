@@ -1,7 +1,8 @@
 package com.reteno.core.internal.action.trace
 
+import com.reteno.core.fixtures.FailureReport
 import com.reteno.core.fixtures.FakeLogSink
-import com.reteno.core.fixtures.virtualClock
+import com.reteno.core.fixtures.TestActionRunner
 import com.reteno.core.internal.log.LogPriority
 import com.reteno.test.given
 import com.reteno.test.runUnitTest
@@ -24,20 +25,11 @@ import java.io.IOException
 @OptIn(ExperimentalCoroutinesApi::class)
 internal class ActionRunnerTest {
 
-    private data class Report(val action: String, val step: String?, val errorType: Class<*>, val message: String?) {
-        constructor(action: String, step: String?, error: Throwable) : this(action, step, error.javaClass, error.message)
-    }
-
     private class SutFixture(scope: TestScope, enabled: Boolean = true) {
-        val sink = FakeLogSink(isEnabled = enabled)
-        val reports = mutableListOf<Report>()
-        private var nextRoot = 0
-        val sut = ActionRunner(
-            sink = sink,
-            failureReporter = { action, step, error -> reports += Report(action, step, error) },
-            clock = scope.virtualClock(),
-            newRootId = { "r${++nextRoot}" }
-        )
+        private val traced = TestActionRunner(scope, enabled)
+        val sink = traced.sink
+        val reports = traced.reports
+        val sut = traced.runner
     }
 
     @Test
@@ -46,8 +38,9 @@ internal class ActionRunnerTest {
         val fixture = SutFixture(this)
 
         whenn()
-        val result = fixture.sut.run("LogEvent", args = { "type=purchase" }) {
-            step("insert event", detail = { rows: Int -> "rows=$rows" }) {
+        val result = fixture.sut("LogEvent") {
+            args("type" to "purchase")
+            step("save event to local database", detail = { rows: Int -> "rows=$rows" }) {
                 delay(4)
                 1
             }
@@ -59,7 +52,7 @@ internal class ActionRunnerTest {
         assertEquals(
             listOf(
                 TraceFormatter.start(0, "r1", "LogEvent", "type=purchase"),
-                TraceFormatter.stepSuccess(0, "r1", "insert event", "rows=1", 4),
+                TraceFormatter.stepSuccess(0, "r1", "save event to local database", "rows=1", 4),
                 TraceFormatter.end(0, "r1", "LogEvent", "✓ SUCCESS", 4)
             ),
             fixture.sink.lines
@@ -69,15 +62,128 @@ internal class ActionRunnerTest {
     }
 
     @Test
+    fun `should join several arguments in start line`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+
+        whenn()
+        fixture.sut("SetUserAttributes") { args("externalUserId" to "…8f21", "user" to "{email}") }
+
+        then()
+        assertEquals(TraceFormatter.start(0, "r1", "SetUserAttributes", "externalUserId=…8f21  user={email}"), fixture.sink.lines.first())
+    }
+
+    @Test
+    fun `should evaluate lazy argument value when logging`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+
+        whenn()
+        fixture.sut("SetUserAttributes") { args("user" to { "{firstName}" }) }
+
+        then()
+        assertEquals(TraceFormatter.start(0, "r1", "SetUserAttributes", "user={firstName}"), fixture.sink.lines.first())
+    }
+
+    @Test
+    fun `should print null argument value`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+
+        whenn()
+        fixture.sut("SetUserAttributes") { args("user" to null) }
+
+        then()
+        assertEquals(TraceFormatter.start(0, "r1", "SetUserAttributes", "user=null"), fixture.sink.lines.first())
+    }
+
+    @Test
+    fun `should print start line without arguments before first step when args are not given`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+
+        whenn()
+        fixture.sut("PushUser") { step("load users") { Unit } }
+
+        then()
+        assertEquals(TraceFormatter.start(0, "r1", "PushUser", ""), fixture.sink.lines.first())
+        assertEquals(3, fixture.sink.lines.size)
+    }
+
+    @Test
+    fun `should print arguments given after first step as note`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+
+        whenn()
+        fixture.sut("PushUser") {
+            step("load users") { Unit }
+            args("count" to 2)
+        }
+
+        then()
+        assertEquals(TraceFormatter.start(0, "r1", "PushUser", ""), fixture.sink.lines[0])
+        assertEquals(TraceFormatter.note(0, "r1", "count=2"), fixture.sink.lines[2])
+    }
+
+    @Test
+    fun `should print start line once when args are given twice`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+
+        whenn()
+        fixture.sut("PushUser") {
+            args("first" to 1)
+            args("second" to 2)
+        }
+
+        then()
+        assertEquals(
+            listOf(
+                TraceFormatter.start(0, "r1", "PushUser", "first=1"),
+                TraceFormatter.note(0, "r1", "second=2"),
+                TraceFormatter.end(0, "r1", "PushUser", "✓ SUCCESS", 0)
+            ),
+            fixture.sink.lines
+        )
+    }
+
+    @Test
+    fun `should print parent start line before child start line`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+
+        whenn()
+        fixture.sut("Sync") { fixture.sut("PushDevice") { args("count" to 1) } }
+
+        then()
+        assertEquals(TraceFormatter.start(0, "r1", "Sync", ""), fixture.sink.lines[0])
+        assertEquals(TraceFormatter.start(1, "r1.1", "PushDevice", "count=1"), fixture.sink.lines[1])
+    }
+
+    @Test
+    fun `should print start line before failure end line when action fails immediately`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+
+        whenn()
+        fixture.sut<Unit>("Broken") { throw IllegalStateException("boom") }
+
+        then()
+        assertEquals(TraceFormatter.start(0, "r1", "Broken", ""), fixture.sink.lines[0])
+        assertEquals(TraceFormatter.end(0, "r1", "Broken", "✗ FAILURE IllegalStateException: boom", 0), fixture.sink.lines[1])
+    }
+
+    @Test
     fun `should log step without detail by default`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
 
         whenn()
-        fixture.sut.run("LogEvent") { step("emit to event bus") { Unit } }
+        fixture.sut("LogEvent") { step("notify in-app message triggers") { Unit } }
 
         then()
-        assertEquals(TraceFormatter.stepSuccess(0, "r1", "emit to event bus", "", 0), fixture.sink.lines[1])
+        assertEquals(TraceFormatter.stepSuccess(0, "r1", "notify in-app message triggers", "", 0), fixture.sink.lines[1])
     }
 
     @Test
@@ -86,7 +192,7 @@ internal class ActionRunnerTest {
         val fixture = SutFixture(this)
 
         whenn()
-        fixture.sut.run("PushUser") { note { "nothing to send" } }
+        fixture.sut("PushUser") { note { "nothing to send" } }
 
         then()
         assertEquals(TraceFormatter.note(0, "r1", "nothing to send"), fixture.sink.lines[1])
@@ -98,7 +204,7 @@ internal class ActionRunnerTest {
         val fixture = SutFixture(this)
 
         whenn()
-        fixture.sut.run("PushDevice", outcome = { value: String -> value }) { "CONTINUE" }
+        fixture.sut("PushDevice", outcome = { value: String -> value }) { "CONTINUE" }
 
         then()
         assertEquals(TraceFormatter.end(0, "r1", "PushDevice", "✓ CONTINUE", 0), fixture.sink.lines.last())
@@ -111,7 +217,7 @@ internal class ActionRunnerTest {
         val error = IOException("boom")
 
         whenn()
-        val result = fixture.sut.run("Sync") {
+        val result = fixture.sut("Sync") {
             step("send device to server") {
                 delay(230)
                 throw error
@@ -120,7 +226,7 @@ internal class ActionRunnerTest {
 
         then()
         assertTrue(result.exceptionOrNull() is IOException)
-        assertEquals(listOf(Report("Sync", "send device to server", error)), fixture.reports)
+        assertEquals(listOf(FailureReport("Sync", "send device to server", error)), fixture.reports)
         val entries = fixture.sink.entries
         assertEquals(TraceFormatter.stepFailure(0, "r1", "send device to server", "IOException: boom", 230), entries[1].message)
         assertEquals(TraceFormatter.end(0, "r1", "Sync", "✗ FAILURE IOException: boom", 230), entries[2].message)
@@ -135,10 +241,10 @@ internal class ActionRunnerTest {
         val error = IllegalStateException("outside")
 
         whenn()
-        fixture.sut.run<Unit>("Sync") { throw error }
+        fixture.sut<Unit>("Sync") { throw error }
 
         then()
-        assertEquals(listOf(Report("Sync", null, error)), fixture.reports)
+        assertEquals(listOf(FailureReport("Sync", null, error)), fixture.reports)
     }
 
     @Test
@@ -149,7 +255,7 @@ internal class ActionRunnerTest {
         val final = IllegalStateException("final")
 
         whenn()
-        fixture.sut.run<Unit>("Sync") {
+        fixture.sut<Unit>("Sync") {
             runCatching { step("optional step") { throw handled } }
             throw final
         }
@@ -167,7 +273,7 @@ internal class ActionRunnerTest {
 
         whenn()
         val job = launch {
-            fixture.sut.run("LongRunning") {
+            fixture.sut("LongRunning") {
                 step("wait forever") {
                     started.complete(Unit)
                     CompletableDeferred<Unit>().await()
@@ -193,11 +299,11 @@ internal class ActionRunnerTest {
         val fixture = SutFixture(this)
 
         whenn()
-        fixture.sut.run("Sync") {
-            fixture.sut.run("PushDevice") {
-                fixture.sut.run("Inner") { Unit }
+        fixture.sut("Sync") {
+            fixture.sut("PushDevice") {
+                fixture.sut("Inner") { Unit }
             }
-            fixture.sut.run("PushUser") { Unit }
+            fixture.sut("PushUser") { Unit }
         }
 
         then()
@@ -222,8 +328,8 @@ internal class ActionRunnerTest {
         val fixture = SutFixture(this)
 
         whenn()
-        fixture.sut.run("First") { Unit }
-        fixture.sut.run("Second") { Unit }
+        fixture.sut("First") { Unit }
+        fixture.sut("Second") { Unit }
 
         then()
         assertEquals(TraceFormatter.start(0, "r2", "Second", ""), fixture.sink.lines[2])
@@ -236,13 +342,13 @@ internal class ActionRunnerTest {
         val error = IOException("child")
 
         whenn()
-        val result = fixture.sut.run("Sync") {
-            fixture.sut.run<Unit>("PushDevice") { throw error }.isFailure
+        val result = fixture.sut("Sync") {
+            fixture.sut<Unit>("PushDevice") { throw error }.isFailure
         }
 
         then()
         assertEquals(true, result.getOrNull())
-        assertEquals(listOf(Report("PushDevice", null, error)), fixture.reports)
+        assertEquals(listOf(FailureReport("PushDevice", null, error)), fixture.reports)
     }
 
     @Test
@@ -252,7 +358,8 @@ internal class ActionRunnerTest {
         var messagesBuilt = 0
 
         whenn()
-        fixture.sut.run("Quiet", args = { messagesBuilt++; "args" }) {
+        fixture.sut("Quiet") {
+            args("args" to { messagesBuilt++; "args" })
             step("step", detail = { _: Unit -> messagesBuilt++; "detail" }) { Unit }
             note { messagesBuilt++; "note" }
         }
@@ -269,11 +376,26 @@ internal class ActionRunnerTest {
         val error = IOException("quiet failure")
 
         whenn()
-        fixture.sut.run<Unit>("Quiet") { step("step") { throw error } }
+        fixture.sut<Unit>("Quiet") { step("step") { throw error } }
 
         then()
         assertTrue(fixture.sink.entries.isEmpty())
-        assertEquals(listOf(Report("Quiet", "step", error)), fixture.reports)
+        assertEquals(listOf(FailureReport("Quiet", "step", error)), fixture.reports)
+    }
+
+    @Test
+    fun `should not report failure when reporting disabled for action`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        val error = IOException("insert failed")
+
+        whenn()
+        val result = fixture.sut<Unit>("LogRetenoEvent", reportFailure = false) { step("save log event to local database") { throw error } }
+
+        then()
+        assertTrue(result.isFailure)
+        assertTrue(fixture.reports.isEmpty())
+        assertEquals(LogPriority.ERROR, fixture.sink.entries.last().priority)
     }
 
     @Test
@@ -283,7 +405,7 @@ internal class ActionRunnerTest {
         val sut = ActionRunner(sink = sink, failureReporter = { _, _, _ -> })
 
         whenn()
-        sut.run("Default") { Unit }
+        sut("Default") { Unit }
 
         then()
         assertTrue(Regex("""┌─ \[[0-9a-f]{6}] Default""").matches(sink.lines.first()))
