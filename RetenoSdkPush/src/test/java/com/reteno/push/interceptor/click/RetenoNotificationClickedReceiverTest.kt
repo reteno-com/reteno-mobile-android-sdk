@@ -6,7 +6,6 @@ import android.content.Intent
 import android.os.Bundle
 import com.reteno.core.RetenoInternalImpl
 import com.reteno.core.di.ServiceLocator
-import com.reteno.core.domain.controller.ContactController
 import com.reteno.core.domain.controller.DeeplinkController
 import com.reteno.core.domain.controller.InteractionController
 import com.reteno.core.domain.model.interaction.InteractionAction
@@ -18,7 +17,6 @@ import com.reteno.push.Constants.KEY_ES_LINK_UNWRAPPED
 import com.reteno.push.Constants.KEY_ES_LINK_WRAPPED
 import com.reteno.push.Util
 import com.reteno.push.base.robolectric.BaseRobolectricTest
-import io.mockk.coEvery
 import io.mockk.coJustRun
 import io.mockk.coVerify
 import io.mockk.every
@@ -81,8 +79,6 @@ class RetenoNotificationClickedReceiverTest : BaseRobolectricTest() {
     private lateinit var deeplinkController: DeeplinkController
 
 
-    @RelaxedMockK
-    private lateinit var contactController: ContactController
 
     // endregion helper fields ---------------------------------------------------------------------
 
@@ -90,7 +86,6 @@ class RetenoNotificationClickedReceiverTest : BaseRobolectricTest() {
         super.before()
         every { anyConstructed<ServiceLocator>().interactionControllerProvider.get() } returns interactionController
         every { anyConstructed<ServiceLocator>().deeplinkControllerProvider.get() } returns deeplinkController
-        every { anyConstructed<ServiceLocator>().contactControllerProvider.get() } returns contactController
         receiver = RetenoNotificationClickedReceiver()
     }
 
@@ -261,7 +256,6 @@ class RetenoNotificationClickedReceiverTest : BaseRobolectricTest() {
     fun givenPushWithIam_whenNotificationClicked_thenIamViewInitializeCalled() = runTest {
         // Given
         val iamView = mockk<IamView>(relaxed = true)
-        val controller = mockk<ContactController>(relaxed = true)
         val iamWidgetId = "123"
 
         val extra = Bundle().apply {
@@ -272,8 +266,6 @@ class RetenoNotificationClickedReceiverTest : BaseRobolectricTest() {
         justRun { context.startActivity(any()) }
         every { IntentHandler.AppLaunchIntent.getAppLaunchIntent(any()) } returns intent
         every { anyConstructed<ServiceLocator>().iamViewProvider.get() } returns iamView
-        every { anyConstructed<ServiceLocator>().contactControllerProvider.get() } returns controller
-        coEvery { controller.awaitDeviceId() } returns "temp"
 
          createReteno()
 

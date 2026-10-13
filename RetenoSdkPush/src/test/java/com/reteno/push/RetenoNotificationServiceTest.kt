@@ -11,7 +11,6 @@ import android.content.pm.ResolveInfo
 import android.os.Bundle
 import androidx.test.core.app.ApplicationProvider
 import com.reteno.core.di.ServiceLocator
-import com.reteno.core.domain.controller.ContactController
 import com.reteno.core.domain.controller.InteractionController
 import com.reteno.core.domain.model.interaction.InteractionStatus
 import com.reteno.core.lifecycle.RetenoActivityHelper
@@ -83,8 +82,6 @@ class RetenoNotificationServiceTest : BaseRobolectricTest() {
     @RelaxedMockK
     private lateinit var interactionController: InteractionController
     @RelaxedMockK
-    private lateinit var contactController: ContactController
-    @RelaxedMockK
     private lateinit var activityHelper: RetenoActivityHelper
 
     private var contextWrapper: ContextWrapper? = null
@@ -94,7 +91,6 @@ class RetenoNotificationServiceTest : BaseRobolectricTest() {
     override fun before() {
         super.before()
         every { anyConstructed<ServiceLocator>().interactionControllerProvider.get() } returns interactionController
-        every { anyConstructed<ServiceLocator>().contactControllerProvider.get() } returns contactController
         every { anyConstructed<ServiceLocator>().retenoActivityHelperProvider.get() } returns activityHelper
         justRun { activityHelper.registerActivityLifecycleCallbacks(any(), any()) }
 
@@ -118,14 +114,13 @@ class RetenoNotificationServiceTest : BaseRobolectricTest() {
     @Test
     @Throws(Exception::class)
     fun givenValidToken_whenOnNewToken_thenSavedToRepository() = runTest {
-        every { anyConstructed<ServiceLocator>().contactControllerProvider.get() } returns contactController
-        createReteno()
+        val reteno = createReteno()
         // When
         val sut = RetenoNotificationService(application)
         sut.onNewToken(TOKEN)
         advanceUntilIdle()
         // Then
-        coVerify { contactController.onNewFcmToken(eq(TOKEN)) }
+        verify { reteno.onNewFcmToken(eq(TOKEN)) }
     }
 
     @Test

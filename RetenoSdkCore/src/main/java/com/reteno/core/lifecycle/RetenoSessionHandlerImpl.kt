@@ -161,7 +161,7 @@ internal class RetenoSessionHandlerImpl(
 
     private fun trackSessionEvent(lifecycleEvent: LifecycleEvent) {
         if (lifecycleEventConfig.getOrElse(lifecycleEvent.type) { false }) {
-            Reteno.instance.logEvent(lifecycleEvent.event)
+            Reteno.instanceInternal?.logEvent(lifecycleEvent.event)
         }
     }
 

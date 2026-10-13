@@ -2,6 +2,7 @@ package com.reteno.core.di
 
 import android.content.Context
 import com.reteno.core.RetenoConfig
+import com.reteno.core.RetenoInternalImpl
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerAppInbox
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerDevice
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerEvents
@@ -18,7 +19,6 @@ import com.reteno.core.di.provider.SharedPrefsManagerProvider
 import com.reteno.core.di.provider.WorkManagerProvider
 import com.reteno.core.di.provider.controller.AppInboxControllerProvider
 import com.reteno.core.di.provider.controller.AppLifecycleControllerProvider
-import com.reteno.core.di.provider.controller.ContactControllerProvider
 import com.reteno.core.di.provider.controller.DeeplinkControllerProvider
 import com.reteno.core.di.provider.controller.IamControllerProvider
 import com.reteno.core.di.provider.controller.InteractionControllerProvider
@@ -44,16 +44,15 @@ import com.reteno.core.di.provider.network.ApiClientProvider
 import com.reteno.core.di.provider.network.RestClientProvider
 import com.reteno.core.di.provider.repository.AppInboxRepositoryProvider
 import com.reteno.core.di.provider.repository.ConfigRepositoryProvider
-import com.reteno.core.di.provider.repository.ContactRepositoryProvider
 import com.reteno.core.di.provider.repository.DeeplinkRepositoryProvider
 import com.reteno.core.di.provider.repository.FileManagerProvider
 import com.reteno.core.di.provider.repository.IamRepositoryProvider
 import com.reteno.core.di.provider.repository.InteractionRepositoryProvider
 import com.reteno.core.di.provider.repository.RecommendationRepositoryProvider
 import com.reteno.core.domain.controller.AppLifecycleController
-import com.reteno.core.domain.controller.ContactController
 import com.reteno.core.domain.controller.DeeplinkController
 import com.reteno.core.domain.controller.InteractionController
+import com.reteno.core.domain.model.device.Device
 import com.reteno.core.internal.action.sync.DataSync
 import com.reteno.core.internal.coroutine.AndroidRetenoDispatchers
 import com.reteno.core.internal.coroutine.InitGate
@@ -73,7 +72,24 @@ class ServiceLocator internal constructor(
     constructor(context: Context) : this(context, AndroidRetenoDispatchers)
 
     internal val actions: ActionsLocator by lazy {
-        ActionsLocator(this, dispatchers, AndroidLogSink(), initGate::awaitInit) { message, level -> Logger.captureMessage(message, level) }
+        ActionsLocator(
+            serviceLocator = this,
+            dispatchers = dispatchers,
+            logSink = AndroidLogSink(),
+            awaitInit = initGate::awaitInit,
+            createDevice = { id, pushToken, pushSubscribed ->
+                Device.createDevice(
+                    deviceId = id.id,
+                    deviceIdSuffix = id.idSuffix,
+                    externalUserId = id.externalId,
+                    pushToken = pushToken,
+                    pushSubscribed = pushSubscribed,
+                    email = id.email,
+                    phone = id.phone
+                )
+            },
+            sdkLifecycle = { RetenoInternalImpl.instance }
+        ) { message, level -> Logger.captureMessage(message, level) }
     }
     private val dataSync: () -> DataSync = { actions.dataSync }
     internal val initGate = InitGate()
@@ -161,14 +177,6 @@ class ServiceLocator internal constructor(
     val configRepositoryProvider: ProviderWeakReference<ConfigRepository>
         get() = configRepositoryProviderInternal
 
-    private val contactRepositoryProvider: ContactRepositoryProvider =
-        ContactRepositoryProvider(
-            configRepositoryProviderInternal,
-            retenoDatabaseManagerDeviceProviderInternal,
-            retenoDatabaseManagerUserProviderInternal,
-            dataSync
-        )
-
     private val interactionRepositoryProvider: InteractionRepositoryProvider =
         InteractionRepositoryProvider(
             retenoDatabaseManagerInteractionProviderInternal,
@@ -217,14 +225,6 @@ class ServiceLocator internal constructor(
     val deeplinkControllerProvider: ProviderWeakReference<DeeplinkController>
         get() = deeplinkControllerProviderInternal
 
-    private val contactControllerProviderInternal: ContactControllerProvider =
-        ContactControllerProvider(
-            contactRepositoryProvider,
-            configRepositoryProviderInternal,
-            dataSync
-        )
-    val contactControllerProvider: ProviderWeakReference<ContactController>
-        get() = contactControllerProviderInternal
 
     private val interactionControllerProviderInternal: InteractionControllerProvider =
         InteractionControllerProvider(

@@ -14,8 +14,10 @@ import com.reteno.core.data.repository.AppInboxRepository
 import com.reteno.core.data.repository.ConfigRepository
 import com.reteno.core.di.ActionsLocator
 import com.reteno.core.di.ServiceLocator
+import com.reteno.core.domain.controller.IamController
 import com.reteno.core.domain.model.logevent.LogLevel
 import com.reteno.core.internal.coroutine.InitGate
+import com.reteno.core.lifecycle.RetenoSessionHandler
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.test.TestScope
@@ -34,6 +36,8 @@ internal class LocatorFixture(scope: TestScope, initialized: Boolean = true) {
     val configRepository = mockk<ConfigRepository>(relaxed = true)
     val inboxRepository = mockk<AppInboxRepository>(relaxed = true)
     val workManager = mockk<WorkManager>(relaxed = true)
+    val sessionHandler = mockk<RetenoSessionHandler>(relaxed = true)
+    val iamController = mockk<IamController>(relaxed = true)
     val rest = FakeRestClient()
     val deviceId = stubDeviceId()
     val sink = FakeLogSink()
@@ -53,6 +57,21 @@ internal class LocatorFixture(scope: TestScope, initialized: Boolean = true) {
         every { it.workManagerProvider.get() } returns workManager
         every { it.restClientProvider.get() } returns rest
         every { it.restConfigProvider.get().deviceId } returns deviceId
+        every { it.retenoSessionHandlerProvider.get() } returns sessionHandler
+        every { it.iamControllerProvider.get() } returns iamController
     }
-    val sut = ActionsLocator(serviceLocator, scope.testDispatchers(), sink, initGate::awaitInit) { message, level -> remoteLogs += message to level }
+    val sdk = FakeSdkLifecycle()
+
+    init {
+        every { configRepository.getDeviceId() } returns deviceId
+    }
+
+    val sut = ActionsLocator(
+        serviceLocator = serviceLocator,
+        dispatchers = scope.testDispatchers(),
+        logSink = sink,
+        awaitInit = initGate::awaitInit,
+        createDevice = ::stubDevice,
+        sdkLifecycle = { sdk }
+    ) { message, level -> remoteLogs += message to level }
 }

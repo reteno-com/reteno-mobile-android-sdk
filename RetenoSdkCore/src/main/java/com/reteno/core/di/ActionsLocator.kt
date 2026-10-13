@@ -3,7 +3,14 @@ package com.reteno.core.di
 import com.reteno.core.data.local.config.DeviceId
 import com.reteno.core.data.workmanager.PushDataWorker
 import com.reteno.core.domain.SchedulerUtils
+import com.reteno.core.domain.model.device.Device
 import com.reteno.core.domain.model.logevent.LogLevel
+import com.reteno.core.internal.action.device.ContactSession
+import com.reteno.core.internal.action.device.CurrentDevice
+import com.reteno.core.internal.action.device.EnsureDeviceRegisteredThisSessionAction
+import com.reteno.core.internal.action.device.RegisterDeviceAction
+import com.reteno.core.internal.action.device.UpdateFcmTokenAction
+import com.reteno.core.internal.action.device.UpdateNotificationsEnabledAction
 import com.reteno.core.internal.action.event.LogEcomEventAction
 import com.reteno.core.internal.action.event.LogEventAction
 import com.reteno.core.internal.action.event.LogRetenoEventAction
@@ -24,10 +31,20 @@ import com.reteno.core.internal.action.sync.SyncCoordinator
 import com.reteno.core.internal.action.sync.SyncDataAction
 import com.reteno.core.internal.action.trace.ActionRunner
 import com.reteno.core.internal.action.trace.RemoteLogFailureReporter
+import com.reteno.core.internal.action.user.ContactWriter
+import com.reteno.core.internal.action.user.SegmentationRefresh
+import com.reteno.core.internal.action.user.SetAnonymousUserAttributesAction
+import com.reteno.core.internal.action.user.SetMultiAccountUserAttributesAction
+import com.reteno.core.internal.action.user.SetUserAttributesAction
 import com.reteno.core.internal.coroutine.RetenoDispatchers
+import com.reteno.core.internal.coroutine.SerialQueue
 import com.reteno.core.internal.coroutine.retenoScope
 import com.reteno.core.internal.event.EventBus
+import com.reteno.core.internal.lifecycle.SdkLifecycle
+import com.reteno.core.internal.log.LogPriority
+import com.reteno.core.internal.log.Redact
 import com.reteno.core.internal.log.RetenoLogSink
+import com.reteno.core.internal.log.log
 import com.reteno.core.internal.network.SuspendApiClient
 import com.reteno.core.util.Util
 import kotlin.random.Random
@@ -35,8 +52,10 @@ import kotlin.random.Random
 internal class ActionsLocator(
     private val serviceLocator: ServiceLocator,
     private val dispatchers: RetenoDispatchers,
-    logSink: RetenoLogSink,
+    private val logSink: RetenoLogSink,
     private val awaitInit: suspend () -> Unit,
+    private val createDevice: (DeviceId, String, Boolean) -> Device,
+    private val sdkLifecycle: () -> SdkLifecycle,
     private val captureRemoteLog: (String, LogLevel) -> Unit
 ) {
 
@@ -45,6 +64,67 @@ internal class ActionsLocator(
     private val scope = retenoScope(dispatchers, logSink)
     private val deviceId: () -> DeviceId = { serviceLocator.restConfigProvider.get().deviceId }
     private val api by lazy { SuspendApiClient(serviceLocator.restClientProvider.get(), dispatchers) }
+    private val configRepository by lazy { serviceLocator.configRepositoryProvider.get() }
+    private val contactSession = ContactSession()
+    private val reportInvalid: (String) -> Unit = { captureRemoteLog(it, LogLevel.INFO) }
+
+    val contactQueue = SerialQueue(scope) { error ->
+        logSink.log(LogPriority.ERROR, "Reteno") { "Contact task failed: ${Redact.stackTrace(error)}" }
+    }
+
+    private val currentDevice by lazy {
+        CurrentDevice(configRepository, serviceLocator.retenoDatabaseManagerDeviceProvider.get(), createDevice, dispatchers)
+    }
+
+    private val segmentationRefresh by lazy {
+        SegmentationRefresh({ serviceLocator.iamControllerProvider.get().refreshSegmentation() }, scope, runner)
+    }
+
+    private val contactWriter by lazy {
+        ContactWriter(
+            configRepository = configRepository,
+            usersDb = serviceLocator.retenoDatabaseManagerUserProvider.get(),
+            currentDevice = currentDevice,
+            sync = dataSync,
+            session = contactSession,
+            sdk = sdkLifecycle,
+            clearSession = { serviceLocator.retenoSessionHandlerProvider.get().clearSessionForced() },
+            reportInvalid = reportInvalid,
+            dispatchers = dispatchers
+        )
+    }
+
+    val registerDevice: RegisterDeviceAction by lazy {
+        RegisterDeviceAction(configRepository, currentDevice, dataSync, contactSession, runner)
+    }
+
+    val ensureDeviceRegisteredThisSession: EnsureDeviceRegisteredThisSessionAction by lazy {
+        EnsureDeviceRegisteredThisSessionAction(
+            configRepository, serviceLocator.retenoDatabaseManagerDeviceProvider.get(), currentDevice, dataSync, contactSession, dispatchers, runner
+        )
+    }
+
+    val updateFcmToken: UpdateFcmTokenAction by lazy {
+        UpdateFcmTokenAction(configRepository, currentDevice, dataSync, contactSession, runner)
+    }
+
+    val updateNotificationsEnabled: UpdateNotificationsEnabledAction by lazy {
+        UpdateNotificationsEnabledAction(configRepository, currentDevice, dataSync, contactSession, runner)
+    }
+
+    val setUserAttributes: SetUserAttributesAction by lazy {
+        SetUserAttributesAction(contactWriter, sdkLifecycle, segmentationRefresh::request, runner)
+    }
+
+    val setMultiAccountUserAttributes: SetMultiAccountUserAttributesAction by lazy {
+        SetMultiAccountUserAttributesAction(contactWriter, sdkLifecycle, segmentationRefresh::request, runner)
+    }
+
+    val setAnonymousUserAttributes: SetAnonymousUserAttributesAction by lazy {
+        SetAnonymousUserAttributesAction(
+            configRepository, serviceLocator.retenoDatabaseManagerUserProvider.get(), dataSync, reportInvalid, dispatchers, runner
+        )
+    }
 
     val logEvent: LogEventAction by lazy {
         LogEventAction(serviceLocator.retenoDatabaseManagerEventsProvider.get(), deviceId, eventBus, dispatchers, runner)

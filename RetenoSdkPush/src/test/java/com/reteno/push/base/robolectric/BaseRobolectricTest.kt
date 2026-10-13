@@ -6,7 +6,15 @@ import androidx.test.core.app.ApplicationProvider
 import com.reteno.core.Reteno
 import com.reteno.core.RetenoConfig
 import com.reteno.core.RetenoInternalImpl
-import io.mockk.*
+import com.reteno.core.data.local.config.DeviceId
+import com.reteno.core.data.repository.ConfigRepository
+import com.reteno.core.di.ServiceLocator
+import io.mockk.MockKAnnotations
+import io.mockk.clearAllMocks
+import io.mockk.coEvery
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.spyk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
@@ -49,6 +57,8 @@ abstract class BaseRobolectricTest {
         )
     }
 
+    protected val configRepository: ConfigRepository = mockk(relaxed = true)
+
     @After
     open fun after() {
         application.retenoMock = mockk()
@@ -57,12 +67,15 @@ abstract class BaseRobolectricTest {
     protected fun TestScope.createReteno(
         lifecycleOwner: LifecycleOwner = TestLifecycleOwner()
     ): RetenoInternalImpl {
-        return RetenoInternalImpl(
+        every { anyConstructed<ServiceLocator>().configRepositoryProvider.get() } returns configRepository
+        coEvery { configRepository.awaitForDeviceId() } returns DeviceId("temp")
+        val reteno = RetenoInternalImpl(
             application = application,
             mainDispatcher = StandardTestDispatcher(testScheduler),
             ioDispatcher = StandardTestDispatcher(testScheduler),
             appLifecycleOwner = lifecycleOwner
-        ).also {
+        )
+        return spyk(reteno).also {
             RetenoInternalImpl.swapInstance(it)
             Reteno.initWithConfig(
                 RetenoConfig.Builder()

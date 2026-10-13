@@ -376,19 +376,44 @@ Not changed (7): one save still requests a full sync; requests are conflated and
 `public.gpg` (public keyring only) added to `.gitignore`.
 Coverage after fixes: 826/826 lines, 270/270 branches; 679 Core tests, 53 Push tests passing.
 
-### Phase 3 — Contact, device, user ☐
-Actions (`internal/action/device|user/`): `RegisterDeviceAction` (init), `EnsureDeviceRegisteredThisSessionAction` (ON_START), `UpdateFcmTokenAction`, `UpdateNotificationsEnabledAction`, `SetUserAttributesAction`, `SetMultiAccountUserAttributesAction`, `SetAnonymousUserAttributesAction`, `RefreshSegmentationAction` (debounced trigger shared by both user actions; real implementation in Phase 8).
-Changes: the two existing user actions stay separate files but lose their `Channel`/`retry{true}` loop in favour of a `Mutex`-serialized suspend invoke launched on `RetenoScope`; `RetenoInternalImpl.instance.stop()/start()` → injected `SdkLifecycle`; device/user network writes go through `SyncCoordinator` (S4); `getFcmToken`'s "fetch and save if empty" side-effect moves into `RegisterDeviceAction` only, so a later `onNewToken` with the same token isn't skipped (D4).
-Removes: `ContactController`, `ContactRepository(Impl)`; `ConfigRepositoryImpl` shrinks to `RestConfig`/prefs access.
-Tests: device dedupe vs existing rows, suffix switch restarts SDK and clears session, same suffix doesn't restart, invalid marketId rejected synchronously, segmentation refresh debounced (5 s virtual), token unchanged → no insert, token changed → insert + sync trigger, notifications toggle emits lifecycle event once.
+### Phase 3 — Contact, device, user ☑
+Done:
+- Device actions (`internal/action/device/`): `RegisterDeviceAction` (init; returns the CONTACT `SyncResult`), `EnsureDeviceRegisteredThisSessionAction` (ON_START), `UpdateFcmTokenAction`, `UpdateNotificationsEnabledAction`; shared `CurrentDevice` (injected device factory, dedupe against stored devices) and `ContactSession` (device-sent-this-session flag, replaces `ContactController.isDeviceSentThisSession`).
+- User actions (`internal/action/user/`): `SetUserAttributesAction`, `SetMultiAccountUserAttributesAction`, `SetAnonymousUserAttributesAction`; shared `ContactWriter` (external id → user → device → CONTACT sync, plus account switch: stop SDK on main, clear session on IO, change suffix, write, start SDK on main), `SegmentationRefresh` (5 s debounce), `UserAttributesValidator`, `traceFields()` (names only, no values).
+- `SerialQueue` (`internal/coroutine/`) keeps contact operations in call order (replaces the two action-owned `Channel` loops); a task cancelling itself no longer kills the queue.
+- `SdkLifecycle` (`internal/lifecycle/`) replaces `RetenoInternalImpl.instance.stop()/start()` inside actions; `RetenoInternalImpl` implements it.
+- Facade: validation runs synchronously before deferring (I2 — blank `externalUserId` / invalid `marketId` reach the caller even before init instead of crashing on Main); contact calls enqueue on `actions.contactQueue`; device id / notification channel accessors go straight to `ConfigRepository`; FCM token no longer written to the facade log.
+- `ConfigRepository.getStoredFcmToken()` added; `UpdateFcmTokenAction` compares against the stored token (D4 — a token silently fetched by `getFcmToken()` no longer hides a real change). Registration paths still use `getFcmToken()` (fetch if empty).
+- Registration failure (e.g. Firebase not initialised) is now a reported action failure, init continues (rest of I1).
+- Anonymous attributes now request a sync after saving (previously waited for the next 30 s tick).
+- Deleted: `ContactController`, `ContactRepository(Impl)`, their providers, `ServiceLocator.contactControllerProvider` (technically public), the old `Update*UserAttributesAction`s, `ContactControllerTest`, `ContactRepositoryImplTest`, 6 legacy facade contact tests.
+- Side fix: `RetenoSessionHandlerImpl.trackSessionEvent` uses `Reteno.instanceInternal?` — removes the long-standing flaky Push failure (proper fix in Phase 4).
+Not done (moved): `ConfigRepositoryImpl` still serves lifecycle/IAM/push code; it shrinks as those phases land.
+
+Final Coverage Report (Phase 3) — Kover gated packages: 1122/1122 lines, 326/326 branches.
+- [x] Device dedupe, default subscription from settings, IO, trace — `CurrentDeviceTest`
+- [x] Registration: token → device → CONTACT sync → session flag; aborted result; token failure reported, nothing sent — `RegisterDeviceActionTest`
+- [x] Once per session, synced devices forgotten (only synced, none → no delete), request sync — `EnsureDeviceRegisteredThisSessionActionTest`
+- [x] Token unchanged/changed, compares stored token without fetching, token never traced — `UpdateFcmTokenActionTest`
+- [x] Notifications unchanged/changed, device with new subscription — `UpdateNotificationsEnabledActionTest`
+- [x] External id changed/unchanged, user valid/invalid/absent/attribute-less, account switch order + threads + session flag, no restart when suffix unchanged — `ContactWriterTest`
+- [x] Single vs multi account suffix, segmentation only when started, redacted trace — `SetUserAttributesActionTest`, `SetMultiAccountUserAttributesActionTest`
+- [x] Anonymous valid/invalid, IO, trace without values — `SetAnonymousUserAttributesActionTest`
+- [x] Debounce, refresh failure reported and later refresh still runs — `SegmentationRefreshTest`
+- [x] Validation messages and boundaries — `UserAttributesValidatorTest`; synchronous throw from facade before init — `RetenoInternalImplUserValidationTest`
+- [x] Order, failure isolation, self-cancelling task, scope cancellation — `SerialQueueTest`
+- [x] Wiring of every contact action, segmentation → IAM controller, account switch → session handler, INFO reports, queue failure logged — `ActionsLocatorContactWiringTest`
+- Gaps: not smoke-tested on a device; legacy facade tests for user attributes were deleted, the facade is fully re-tested in Phase 4.
 
 ### Phase 4 — SDK init, config, start/stop, session, lifecycle ☐
+Test infrastructure goal: **remove `runRetenoTest` from Core.** `RetenoInternalImpl` gets an internal constructor taking its collaborators (an `SdkActions` interface implemented by `ActionsLocator`, `InitGate`, scope, lifecycle owner); facade tests construct it directly with a recording fake — no `mockkConstructor(ServiceLocator)`, no init loop, no static instance, no MockK on gated classes. Delete `RetenoImplTest` and Core's `runRetenoTest`/`createRetenoAndAdvanceInit`.
 Actions (`internal/action/init|lifecycle/`): `InitializeSdkAction` (cached-config boot, WorkManager/prefs warm-up), `ApplyConfigAction` (`setConfig`), `StartSdkAction` (ON_START), `StopSdkAction` (ON_STOP), `SetLifecycleEventConfigAction`, `SetSessionDurationAction`, `EnableAutoScreenTrackingAction`, `UpdatePushPermissionStatusAction`, `AppForegroundedAction` / `AppBackgroundedAction` (what `AppLifecycleController.start/stop` do: resume broadcast, install/update metadata events, html preload, open/background events), session loop as a tracked `Job` in `SessionTicker`.
 Fixes: I1 (init completes with a failed-registration state; registration retried by sync), I3 (timeouts for device-id polling, D5), I4 (`StartSdkAction` job cancelled by `StopSdkAction`; atomic config guard), E1 (cancel previous session job), I6 (inbox/recom gated on `InitGate`).
 `RetenoInternalImpl` becomes a thin facade: validate synchronously → `scope.launch { gate.await…(); action(...) }`.
 Tests: cached vs user config ordering, user config replaces device-id mode, registration failure still opens the gate, start→stop before fetch completes cancels IAM/scheduler start, session start/end events at reset duration boundaries (virtual time), double start → one ticker.
 
 ### Phase 5 — Interactions, deeplinks, Push & FCM modules ☐
+Test infrastructure goal: **remove `runRetenoTest` from Push.** Push components get the facade from an injectable entry point (`@InternalRetenoApi` opt-in, since Push is a separate module) instead of `RetenoInternalImpl.instance`; Push/FCM tests use a fake facade. Delete Push's `BaseRobolectricTest`, `RetenoTestApp`, `runRetenoTest` and the `createReteno()` spy.
 Actions (`internal/action/interaction|deeplink|push/`): `RecordInteractionAction` (DELIVERED/CLICKED), `RecordInteractionClickAction`, `RecordInAppInteractionAction`, `TrackDeeplinkClickAction`, `ProcessCachedInteractionsAction` or removal of `InteractionCacheStore` (D6), `InitializeIamFromPushAction`, `SaveDefaultNotificationChannelAction`.
 Push module: receivers/activity/`RetenoNotificationService` keep their Android entry points but delegate to the facade only; `RetenoNotificationHelper` image downloads get connect/read timeouts (P2); delete intents get unique request codes (P3); cold-start channel creation waits on `InitGate` with a bounded timeout or falls back to the raw default channel (P1).
 FCM module: first tests ever (`onMessageReceived` routing, `onNewToken`, unsupported-OS guard).
@@ -419,6 +444,7 @@ Tests: every display-rule branch, pause × behaviour matrix for both sources, ev
 `Logger` becomes a thin façade over an injected `RetenoLogSink`; persistent log events only through `LogRetenoEventAction`, recursion impossible by construction. (SEC2 PII stripping moves earlier, into Phase 2, alongside `PushLogEventsStep`.)
 
 ### Phase 10 — Removal & whole-module gate ☐
+Test infrastructure goal: after the DB-manager tests are rewritten, delete Core's `BaseRobolectricTest`, `BaseUnitTest` and `RetenoTestApp`. Only self-contained Robolectric tests (own fixture, `runUnitTest`, given/whenn/then) remain.
 Delete `OperationQueue`, any leftover controllers/repositories, `RetenoThread*`, `ProviderWeakReference` for stateful singletons (switch to `ProviderStrongReference`, I5); delete remaining legacy tests; rewrite DB manager, mapper, schema/DbUtil and validator tests in the new style; flip Kover rule to whole modules at 100 %; README/CHANGELOG; version bump.
 
 ### Suggested order & rationale

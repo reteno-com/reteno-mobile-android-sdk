@@ -18,7 +18,6 @@ import com.reteno.core.lifecycle.ScreenTrackingConfig
 import com.reteno.core.lifecycle.ScreenTrackingTrigger
 import com.reteno.core.util.Logger
 import com.reteno.core.util.queryBroadcastReceivers
-import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
@@ -113,76 +112,6 @@ class RetenoImplTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun givenExternalIdValid_whenSetUserAttributes_thenInteractWithController() = runRetenoTest { retenoImpl ->
-        // When
-        retenoImpl.setUserAttributes(externalUserId = EXTERNAL_USER_ID)
-        advanceUntilIdle()
-        // Then
-        coVerify(exactly = 1) {
-            contactController.setExternalIdAndUserData(
-                eq(EXTERNAL_USER_ID),
-                null
-            )
-        }
-        //  verify(exactly = 1) { contactController.setUserData(null) }
-    }
-
-    @Test
-    fun givenExternalIdNotNullAndUserNull_whenSetUserAttributes_thenInteractWithController() =
-        runRetenoTest {retenoImpl ->
-            // When
-            retenoImpl.setUserAttributes(EXTERNAL_USER_ID, null)
-            advanceUntilIdle()
-            // Then
-            coVerify(exactly = 1) {
-                contactController.setExternalIdAndUserData(
-                    eq(EXTERNAL_USER_ID),
-                    null
-                )
-            }
-        }
-
-    @Test
-    fun givenExternalIdAndUserProvided_whenSetUserAttributesWithUser_thenInteractWithController() =
-        runRetenoTest {retenoImpl ->
-            // Given
-            val userFull = getUserFull()
-            // When
-            retenoImpl.setUserAttributes(EXTERNAL_USER_ID, userFull)
-            advanceUntilIdle()
-            // Then
-            coVerify { contactController.setExternalIdAndUserData((eq(EXTERNAL_USER_ID)), userFull) }
-            //  verify { contactController.setUserData(userFull) }
-        }
-
-    @Test
-    fun givenExceptionThrown_whenSetUserData_thenExceptionSentToLogger() = runRetenoTest { retenoImpl ->
-        // Given
-        coEvery { contactController.setExternalIdAndUserData(any(), any()) } throws EXCEPTION
-        coEvery { contactController.getDeviceIdSuffix() } returns null
-
-        val userFull = getUserFull()
-
-        // When
-        val exceptionThrownOutsideSdk = try {
-            retenoImpl.setUserAttributes(EXTERNAL_USER_ID, userFull)
-            false
-        } catch (ex: Throwable) {
-            true
-        }
-        advanceUntilIdle()
-        // Then
-        assertFalse(exceptionThrownOutsideSdk)
-        verify(exactly = 1) {
-            Logger.e(
-                any(),
-                eq("setUserAttributes():"),
-                match { it.message == EXCEPTION.message }
-            )
-        }
-    }
-
-    @Test
     fun givenExternalIdBlank_whenSetUserAttributesWithUser_thenThrowException() = runRetenoTest {retenoImpl ->
         // Given
         val expectedException =
@@ -198,51 +127,6 @@ class RetenoImplTest : BaseRobolectricTest() {
         // Then
         assertTrue(actualException is java.lang.IllegalArgumentException)
         assertEquals(expectedException.message, actualException?.message)
-    }
-
-    @Test
-    fun givenAnonymousUserAttributesProvided_whenSetAnonymousUserAttributes_thenInteractWithController() =
-        runRetenoTest {retenoImpl ->
-            // Given
-            val userAttributesAnonymous = getUserAttributesAnonymous()
-
-            // When
-            retenoImpl.setAnonymousUserAttributes(userAttributesAnonymous)
-
-            // Then
-            coVerify(exactly = 0) { contactController.setExternalUserId(eq(EXTERNAL_USER_ID)) }
-            verify(exactly = 1) {
-                contactController.setAnonymousUserAttributes(
-                    eq(
-                        userAttributesAnonymous
-                    )
-                )
-            }
-        }
-
-    @Test
-    fun givenExceptionThrown_whenSetAnonymousUserAttributes_thenExceptionSentToLogger() = runRetenoTest {retenoImpl ->
-        // Given
-        every { contactController.setAnonymousUserAttributes(any()) } throws EXCEPTION
-        val userAttributesAnonymous = getUserAttributesAnonymous()
-
-        // When
-        val exceptionThrownOutsideSdk = try {
-            retenoImpl.setAnonymousUserAttributes(userAttributesAnonymous)
-            false
-        } catch (ex: Throwable) {
-            true
-        }
-
-        // Then
-        assertFalse(exceptionThrownOutsideSdk)
-        verify(exactly = 1) {
-            Logger.e(
-                any(),
-                eq("setAnonymousUserAttributes(): userAttributes = [$userAttributesAnonymous]"),
-                eq(EXCEPTION)
-            )
-        }
     }
 
 
@@ -294,8 +178,6 @@ class RetenoImplTest : BaseRobolectricTest() {
 
         // Then
         verify { dataSync.startScheduler() }
-        coVerify(exactly = 1) { contactController.registerDevice() }
-        coVerify(exactly = 1) { contactController.checkIfDeviceRequestSentThisSession() }
         verify { iamView.start() }
     }
 
@@ -417,7 +299,6 @@ class RetenoImplTest : BaseRobolectricTest() {
         //Given
         val application = mockk<Application>()
         mockQueryBroadcastReceivers(application)
-        coEvery { contactController.registerDevice() } returns Unit
         every { application.sendBroadcast(any()) } returns Unit
         //When
         val reteno = createRetenoAndAdvanceInit()

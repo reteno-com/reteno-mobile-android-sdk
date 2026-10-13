@@ -22,9 +22,9 @@ import com.reteno.core.domain.model.logevent.RetenoLogEvent
 import com.reteno.core.domain.model.user.User
 import com.reteno.core.domain.model.user.UserAttributesAnonymous
 import com.reteno.core.features.iam.InAppPauseBehaviour
-import com.reteno.core.internal.action.user.UpdateMultiAccountUserAttributesAction
-import com.reteno.core.internal.action.user.UpdateUserAttributesAction
+import com.reteno.core.internal.action.user.UserAttributesValidator
 import com.reteno.core.internal.coroutine.RetenoDispatchers
+import com.reteno.core.internal.lifecycle.SdkLifecycle
 import com.reteno.core.lifecycle.RetenoActivityHelper
 import com.reteno.core.lifecycle.ScreenTrackingConfig
 import com.reteno.core.permission.AndroidPermissionChecker
@@ -52,7 +52,7 @@ class RetenoInternalImpl(
     private val mainDispatcher: CoroutineDispatcher = Dispatchers.Main,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
     private val appLifecycleOwner: LifecycleOwner = ProcessLifecycleOwner.get()
-) : Reteno, RetenoInternalFacade {
+) : Reteno, RetenoInternalFacade, SdkLifecycle {
 
     private val initWaitCondition = CompletableDeferred<Unit>()
     private val userInitWaitCondition = CompletableDeferred<Unit>()
@@ -75,13 +75,11 @@ class RetenoInternalImpl(
             hasDataForSync = ::hasDataForSync
         )
     }
-    private val updateAttributesAction by lazy { UpdateUserAttributesAction(serviceLocator, ioDispatcher) }
-    private val updateMultiAccAttributesAction by lazy { UpdateMultiAccountUserAttributesAction(serviceLocator, ioDispatcher) }
     private val permissionDelegate = PermissionActivityDelegate(application)
     private val activityHelper: RetenoActivityHelper by lazy { serviceLocator.retenoActivityHelperProvider.get() }
 
     private val screenTrackingController: ScreenTrackingController by lazy { serviceLocator.screenTrackingControllerProvider.get() }
-    private val contactController by lazy { serviceLocator.contactControllerProvider.get() }
+    private val configRepository by lazy { serviceLocator.configRepositoryProvider.get() }
     private val iamController by lazy { serviceLocator.iamControllerProvider.get() }
     private val sessionHandler by lazy { serviceLocator.retenoSessionHandlerProvider.get() }
     private val appLifecycleController by lazy { serviceLocator.appLifecycleControllerProvider.get() }
@@ -101,7 +99,7 @@ class RetenoInternalImpl(
     private var isStartedAtomic: AtomicBoolean = AtomicBoolean(false)
     private var receivedConfigFromUser = false
 
-    val isStarted: Boolean
+    override val isStarted: Boolean
         get() = isStartedAtomic.get()
 
     val isInitialized: Boolean
@@ -143,7 +141,7 @@ class RetenoInternalImpl(
             applyConfig(config)
             if (isUserConfiguration) {
                 withContext(ioDispatcher) {
-                    contactController.registerDevice()
+                    actions.registerDevice()
                 }
             }
             initWaitCondition.complete(Unit)
@@ -168,7 +166,7 @@ class RetenoInternalImpl(
     private suspend fun applyConfig(config: RetenoConfig) = withContext(mainDispatcher) {
         try {
             withContext(ioDispatcher) {
-                val id = contactController.awaitDeviceId()
+                val id = configRepository.awaitForDeviceId().id
                 sharedPrefsManager.cacheConfiguration(id, config)
             }
             pauseInAppMessages(config.isPausedInAppMessages)
@@ -206,8 +204,6 @@ class RetenoInternalImpl(
         if (isOsVersionSupported()) {
             activityHelper.enableLifecycleCallbacks(application)
             appLifecycleOwner.lifecycle.addObserver(this@RetenoInternalImpl)
-            updateAttributesAction.start(syncScope)
-            updateMultiAccAttributesAction.start(syncScope)
             syncScope.launch(ioDispatcher) {
                 preventANR()
                 sharedPrefsManager.getCachedConfiguration()?.let {
@@ -241,7 +237,7 @@ class RetenoInternalImpl(
     }
 
     @OnLifecycleEvent(Lifecycle.Event.ON_START)
-    fun start() = runAfterUserInit {
+    override fun start() = runAfterUserInit {
         if (!isOsVersionSupported()) {
             return@runAfterUserInit
         }
@@ -250,7 +246,7 @@ class RetenoInternalImpl(
         syncScope.launch {
             try {
                 withContext(ioDispatcher) {
-                    contactController.checkIfDeviceRequestSentThisSession()
+                    actions.ensureDeviceRegisteredThisSession()
                 }
                 sessionHandler.start()
                 if (!isStartedAtomic.getAndSet(true)) {
@@ -268,7 +264,7 @@ class RetenoInternalImpl(
     }
 
     @OnLifecycleEvent(Lifecycle.Event.ON_STOP)
-    fun stop() = runAfterUserInit {
+    override fun stop() = runAfterUserInit {
         if (!isOsVersionSupported()) {
             return@runAfterUserInit
         }
@@ -286,73 +282,32 @@ class RetenoInternalImpl(
     }
 
     @Throws(java.lang.IllegalArgumentException::class)
-    override fun setUserAttributes(externalUserId: String) = runAfterInit {
-        if (!isOsVersionSupported()) {
-            return@runAfterInit
-        }
-        /*@formatter:off*/ Logger.i(TAG, "setUserAttributes(): ", "externalUserId = [" , externalUserId , "]")
-        /*@formatter:on*/
-        if (externalUserId.isBlank()) {
-            val exception = IllegalArgumentException("externalUserId should not be null or blank")
-            /*@formatter:off*/ Logger.e(TAG, "setUserAttributes(): ", exception)
-            /*@formatter:on*/
-            throw exception
-        }
-
+    override fun setUserAttributes(externalUserId: String) {
         setUserAttributes(externalUserId, null)
     }
 
     @Throws(java.lang.IllegalArgumentException::class)
-    override fun setUserAttributes(externalUserId: String, user: User?) = runAfterInit {
-        if (!isOsVersionSupported()) {
-            return@runAfterInit
-        }
-        /*@formatter:off*/ Logger.i(TAG, "setUserAttributes(): ", "externalUserId = [" , externalUserId , "], used = [" , user , "]")
-        /*@formatter:on*/
-        if (externalUserId.isBlank()) {
-            val exception = IllegalArgumentException("externalUserId should not be null or blank")
-            /*@formatter:off*/ Logger.e(TAG, "setUserAttributes(): ", exception)
-            /*@formatter:on*/
-            throw exception
-        }
-        updateAttributesAction.postUpdateRequest(externalUserId, user)
+    override fun setUserAttributes(externalUserId: String, user: User?) {
+        if (!isOsVersionSupported()) return
+        UserAttributesValidator.requireValidExternalUserId(externalUserId)
+        UserAttributesValidator.requireValidMarketId(user?.userAttributes?.marketId)
+        runAfterInit { actions.contactQueue.enqueue { actions.setUserAttributes(externalUserId, user) } }
     }
 
-    override fun setMultiAccountUserAttributes(externalUserId: String, user: User?) = runAfterInit {
-        if (!isOsVersionSupported()) {
-            return@runAfterInit
-        }
-        /*@formatter:off*/ Logger.i(TAG, "setMultiAccountUserAttributes(): ", "externalUserId = [" , externalUserId , "], used = [" , user , "]")
-        /*@formatter:on*/
-        if (externalUserId.isBlank()) {
-            val exception = IllegalArgumentException("externalUserId should not be null or blank")
-            /*@formatter:off*/ Logger.e(TAG, "setMultiAccountUserAttributes(): ", exception)
-            /*@formatter:on*/
-            throw exception
-        }
-        updateMultiAccAttributesAction.postUpdateRequest(externalUserId, user)
+    @Throws(java.lang.IllegalArgumentException::class)
+    override fun setMultiAccountUserAttributes(externalUserId: String, user: User?) {
+        if (!isOsVersionSupported()) return
+        UserAttributesValidator.requireValidExternalUserId(externalUserId)
+        UserAttributesValidator.requireValidMarketId(user?.userAttributes?.marketId)
+        runAfterInit { actions.contactQueue.enqueue { actions.setMultiAccountUserAttributes(externalUserId, user) } }
     }
 
-    override fun setAnonymousUserAttributes(userAttributes: UserAttributesAnonymous) =
-        runAfterInit {
-            if (!isOsVersionSupported()) {
-                return@runAfterInit
-            }
-            /*@formatter:off*/ Logger.i(TAG, "setAnonymousUserAttributes(): ", "userAttributes = [", userAttributes, "]")
-        /*@formatter:on*/
-            userAttributes.marketId?.let { marketId ->
-                val marketIdAllowedChars = listOf('-', '_')
-                if (!marketId.all { it.isDigit() || it.isLetter() || it in marketIdAllowedChars } || marketId.length > 64) {
-                    throw IllegalArgumentException("Invalid marketId, max length must be less than 64, allowed symbols: latin characters, digits, '-', '_' ")
-                }
-            }
-            try {
-                contactController.setAnonymousUserAttributes(userAttributes)
-            } catch (ex: Throwable) {
-                /*@formatter:off*/ Logger.e(TAG, "setAnonymousUserAttributes(): userAttributes = [$userAttributes]", ex)
-            /*@formatter:on*/
-            }
-        }
+    @Throws(java.lang.IllegalArgumentException::class)
+    override fun setAnonymousUserAttributes(userAttributes: UserAttributesAnonymous) {
+        if (!isOsVersionSupported()) return
+        UserAttributesValidator.requireValidMarketId(userAttributes.marketId)
+        runAfterInit { actions.contactQueue.enqueue { actions.setAnonymousUserAttributes(userAttributes) } }
+    }
 
     override fun logEvent(event: Event) = runAfterInit {
         if (!isOsVersionSupported()) {
@@ -485,20 +440,9 @@ class RetenoInternalImpl(
         }
     }
 
-    override fun onNewFcmToken(token: String) = runAfterInit {
-        if (!isOsVersionSupported()) {
-            return@runAfterInit
-        }
-        /*@formatter:off*/ Logger.i(TAG, "onNewFcmToken(): ", "token = [" , token , "]")
-        /*@formatter:on*/
-        syncScope.launch(ioDispatcher) {
-            try {
-                contactController.onNewFcmToken(token)
-            } catch (ex: Throwable) {
-                /*@formatter:off*/ Logger.e(TAG, "onNewFcmToken(): token = [$token]", ex)
-            /*@formatter:on*/
-            }
-        }
+    override fun onNewFcmToken(token: String) {
+        if (!isOsVersionSupported()) return
+        runAfterInit { actions.contactQueue.enqueue { actions.updateFcmToken(token) } }
     }
 
     override fun recordInteraction(id: String, status: InteractionStatus, forcePush: Boolean) =
@@ -562,7 +506,7 @@ class RetenoInternalImpl(
             return ""
         }
         val result = try {
-            contactController.getDeviceId()
+            configRepository.getDeviceId().id
         } catch (ex: Throwable) {
             if (isInitialized) {
                 /*@formatter:off*/ Logger.e(TAG, "getDeviceId(): ", ex)
@@ -612,17 +556,15 @@ class RetenoInternalImpl(
     }
 
     override fun getDefaultNotificationChannel(): String {
-        return contactController.getDefaultNotificationChannel()
+        return configRepository.getDefaultNotificationChannel()
     }
 
     override fun saveDefaultNotificationChannel(channel: String) = runAfterInit {
-        contactController.saveDefaultNotificationChannel(channel)
+        configRepository.saveDefaultNotificationChannel(channel)
     }
 
     override fun notificationsEnabled(enabled: Boolean) = runAfterInit {
-        syncScope.launch(ioDispatcher) {
-            contactController.notificationsEnabled(enabled)
-        }
+        actions.contactQueue.enqueue { actions.updateNotificationsEnabled(enabled) }
     }
 
     override fun deeplinkClicked(linkWrapped: String, linkUnwrapped: String) = runAfterInit {

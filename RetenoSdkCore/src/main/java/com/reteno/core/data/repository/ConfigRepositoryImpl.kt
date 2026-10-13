@@ -59,6 +59,8 @@ internal class ConfigRepositoryImpl(
         return getAndSaveFreshFcmToken().orEmpty()
     }
 
+    override fun getStoredFcmToken(): String = sharedPrefsManager.getFcmToken()
+
     private suspend fun getAndSaveFreshFcmToken(): String? {
         /*@formatter:off*/ Logger.i(TAG, "getAndSaveFreshFcmToken(): ", "")
         /*@formatter:on*/

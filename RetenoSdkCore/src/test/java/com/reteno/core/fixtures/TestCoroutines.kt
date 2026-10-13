@@ -12,8 +12,9 @@ import kotlin.coroutines.CoroutineContext
 internal class TestDispatchers(scope: TestScope) : RetenoDispatchers {
     private val base = StandardTestDispatcher(scope.testScheduler)
     val markedIo = MarkingDispatcher(base)
+    val markedMain = MarkingDispatcher(base)
 
-    override val main: CoroutineDispatcher = base
+    override val main: CoroutineDispatcher = markedMain
     override val io: CoroutineDispatcher = markedIo
     override val default: CoroutineDispatcher = base
 }

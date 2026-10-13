@@ -10,10 +10,10 @@ import com.reteno.core.data.local.config.RestConfig
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManager
 import com.reteno.core.data.local.file.FileManager
 import com.reteno.core.data.local.sharedpref.SharedPrefsManager
+import com.reteno.core.data.repository.ConfigRepository
 import com.reteno.core.di.ActionsLocator
 import com.reteno.core.di.ServiceLocator
 import com.reteno.core.domain.controller.AppLifecycleController
-import com.reteno.core.domain.controller.ContactController
 import com.reteno.core.domain.controller.DeeplinkController
 import com.reteno.core.domain.controller.IamController
 import com.reteno.core.domain.controller.InteractionController
@@ -21,11 +21,13 @@ import com.reteno.core.domain.controller.ScreenTrackingController
 import com.reteno.core.features.appinbox.AppInbox
 import com.reteno.core.features.recommendation.Recommendation
 import com.reteno.core.internal.action.sync.DataSync
+import com.reteno.core.internal.action.sync.SyncResult
 import com.reteno.core.lifecycle.RetenoActivityHelper
 import com.reteno.core.lifecycle.RetenoSessionHandler
 import com.reteno.core.view.iam.IamView
 import io.mockk.MockKAnnotations
 import io.mockk.clearAllMocks
+import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.impl.annotations.RelaxedMockK
 import io.mockk.mockk
@@ -96,7 +98,7 @@ abstract class BaseRobolectricTest {
     @RelaxedMockK
     internal lateinit var screenTrackingController: ScreenTrackingController
     @RelaxedMockK
-    protected lateinit var contactController: ContactController
+    internal lateinit var facadeConfigRepository: ConfigRepository
     @RelaxedMockK
     internal lateinit var actionsLocator: ActionsLocator
     @RelaxedMockK
@@ -131,7 +133,6 @@ abstract class BaseRobolectricTest {
     open fun before() {
         MockKAnnotations.init(this)
 
-        every { anyConstructed<ServiceLocator>().contactControllerProvider.get() } returns contactController
         every { anyConstructed<ServiceLocator>().retenoSessionHandlerProvider.get() } returns sessionHandler
         every { anyConstructed<ServiceLocator>().interactionControllerProvider.get() } returns interactionController
         every { anyConstructed<ServiceLocator>().retenoDatabaseManagerProvider.get() } returns databaseManager
@@ -140,7 +141,10 @@ abstract class BaseRobolectricTest {
         every { anyConstructed<ServiceLocator>().restConfigProvider.get() } returns restConfig
         every { anyConstructed<ServiceLocator>().recommendationProvider.get() } returns recommendation
         every { anyConstructed<ServiceLocator>().actions } returns actionsLocator
+        every { anyConstructed<ServiceLocator>().configRepositoryProvider.get() } returns facadeConfigRepository
         every { actionsLocator.dataSync } returns dataSync
+        coEvery { actionsLocator.registerDevice.invoke() } returns Result.success(SyncResult.COMPLETED)
+        coEvery { actionsLocator.ensureDeviceRegisteredThisSession.invoke() } returns Result.success(Unit)
         every { anyConstructed<ServiceLocator>().iamViewProvider.get() } returns iamView
         every { anyConstructed<ServiceLocator>().iamControllerProvider.get() } returns iamController
         every { anyConstructed<ServiceLocator>().retenoActivityHelperProvider.get() } returns activityHelper
