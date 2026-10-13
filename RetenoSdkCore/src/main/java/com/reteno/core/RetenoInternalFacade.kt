@@ -1,5 +1,6 @@
 package com.reteno.core
 
+import android.app.Application
 import androidx.core.app.NotificationChannelCompat
 import androidx.lifecycle.LifecycleObserver
 import com.reteno.core.domain.model.interaction.InteractionAction
@@ -8,7 +9,13 @@ import com.reteno.core.domain.model.logevent.RetenoLogEvent
 import com.reteno.core.permission.AndroidPermissionChecker
 import com.reteno.core.util.Procedure
 
-internal interface RetenoInternalFacade : LifecycleObserver {
+/**
+ * SDK operations used by the Reteno Push and FCM modules.
+ */
+@InternalRetenoApi
+interface RetenoInternalFacade : LifecycleObserver {
+    val application: Application
+
     /**
      * Method invoked by SDK itself when Firebase token changes
      * */
@@ -49,6 +56,8 @@ internal interface RetenoInternalFacade : LifecycleObserver {
     fun executeAfterInit(action: () -> Unit)
 
     fun setSessionDuration(duration: Long)
+
+    fun updatePushPermissionStatus()
 
     suspend fun requestPermissionChecker(): AndroidPermissionChecker?
 }

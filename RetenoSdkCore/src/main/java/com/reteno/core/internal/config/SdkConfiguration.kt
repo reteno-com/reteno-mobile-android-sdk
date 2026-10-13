@@ -8,6 +8,8 @@ import com.reteno.core.util.Util
 internal interface SdkConfiguration {
     val isDebug: Boolean
 
+    val config: RetenoConfig?
+
     fun useUserConfig(config: RetenoConfig)
 
     fun useCachedConfig(config: RetenoConfig): Boolean
@@ -38,7 +40,12 @@ internal class SdkConfigurationImpl(
         return true
     }
 
+    @Volatile
+    override var config: RetenoConfig? = null
+        private set
+
     private fun use(config: RetenoConfig) {
+        this.config = config
         configProvider.setConfig(config)
         lifecycleEventFilter.update(config.lifecycleTrackingOptions)
         isDebug = config.isDebug

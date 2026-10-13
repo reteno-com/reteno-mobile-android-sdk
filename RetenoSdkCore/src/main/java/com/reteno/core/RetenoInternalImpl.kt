@@ -39,9 +39,8 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 
 class RetenoInternalImpl internal constructor(
-    val application: Application,
+    override val application: Application,
     private val mainDispatcher: CoroutineDispatcher,
-    private val ioDispatcher: CoroutineDispatcher,
     private val appLifecycleOwner: LifecycleOwner,
     //TODO make this property private
     val serviceLocator: ServiceLocator,
@@ -57,7 +56,6 @@ class RetenoInternalImpl internal constructor(
     ) : this(
         application = application,
         mainDispatcher = mainDispatcher,
-        ioDispatcher = ioDispatcher,
         appLifecycleOwner = appLifecycleOwner,
         serviceLocator = ServiceLocator(application, retenoDispatchers(mainDispatcher, ioDispatcher)),
         sdkActions = { it.actions },
@@ -74,9 +72,7 @@ class RetenoInternalImpl internal constructor(
 
     private val configRepository by lazy { serviceLocator.configRepositoryProvider.get() }
     private val iamController by lazy { serviceLocator.iamControllerProvider.get() }
-    private val interactionController by lazy { serviceLocator.interactionControllerProvider.get() }
     private val databaseManager by lazy { serviceLocator.retenoDatabaseManagerProvider.get() }
-    private val deeplinkController by lazy { serviceLocator.deeplinkControllerProvider.get() }
 
     override val appInbox by lazy { serviceLocator.appInboxProvider.get() }
     override val recommendation by lazy { serviceLocator.recommendationProvider.get() }
@@ -281,45 +277,14 @@ class RetenoInternalImpl internal constructor(
         runAfterInit { actions.submitFcmToken(token) }
     }
 
-    override fun recordInteraction(id: String, status: InteractionStatus, forcePush: Boolean) =
-        runAfterInit {
-            if (!isOsSupported()) {
-                return@runAfterInit
-            }
-            /*@formatter:off*/ Logger.i(TAG, "recordInteraction(): ", "status = [" , status , "]", "forcePush = [", forcePush , "]")
-        /*@formatter:on*/
-            syncScope.launch(ioDispatcher) {
-                try {
-                    interactionController.onInteraction(id, status)
-                    if (forcePush) {
-                        forcePushData()
-                    }
-                } catch (ex: Throwable) {
-                    /*@formatter:off*/ Logger.e(TAG, "recordInteraction(): status = [$status]", ex)
-            /*@formatter:on*/
-                }
-            }
-        }
+    override fun recordInteraction(id: String, status: InteractionStatus, forcePush: Boolean) {
+        if (!isOsSupported()) return
+        actions.submitPushInteraction(id, status)
+    }
 
-    override fun recordInteractionAction(id: String, action: InteractionAction, forcePush: Boolean) {
-        runAfterInit {
-            if (!isOsSupported()) {
-                return@runAfterInit
-            }
-            /*@formatter:off*/ Logger.i(TAG, "recordInteractionAction(): ", "action = [" , action , "]", "forcePush = [", forcePush , "]")
-            /*@formatter:on*/
-            syncScope.launch(ioDispatcher) {
-                try {
-                    interactionController.onInteractionClickAction(id, action)
-                    if (forcePush) {
-                        forcePushData()
-                    }
-                } catch (ex: Throwable) {
-                    /*@formatter:off*/ Logger.e(TAG, "recordInteractionAction(): action = [$action]", ex)
-                    /*@formatter:on*/
-                }
-            }
-        }
+    override fun recordInteractionAction(id: String, action: InteractionAction, forcePush: Boolean) = runAfterInit {
+        if (!isOsSupported()) return@runAfterInit
+        actions.submitInteractionClick(id, action, forcePush)
     }
 
     override fun canPresentMessages(): Boolean {
@@ -378,17 +343,8 @@ class RetenoInternalImpl internal constructor(
     }
 
     override fun initializeIamView(interactionId: String) = runAfterInit {
-        if (!isOsSupported()) {
-            return@runAfterInit
-        }
-        /*@formatter:off*/ Logger.i(TAG, "initializeIamView(): ", "interactionId = [" , interactionId , "]")
-        /*@formatter:on*/
-        try {
-            iamView.initialize(interactionId)
-        } catch (ex: Throwable) {
-            /*@formatter:off*/ Logger.e(TAG, "initializeIamView(): interactionId = [$interactionId]", ex)
-            /*@formatter:on*/
-        }
+        if (!isOsSupported()) return@runAfterInit
+        actions.submitIamFromPush(interactionId)
     }
 
     override fun getDefaultNotificationChannel(): String {
@@ -396,7 +352,8 @@ class RetenoInternalImpl internal constructor(
     }
 
     override fun saveDefaultNotificationChannel(channel: String) = runAfterInit {
-        configRepository.saveDefaultNotificationChannel(channel)
+        if (!isOsSupported()) return@runAfterInit
+        actions.submitDefaultNotificationChannel(channel)
     }
 
     override fun notificationsEnabled(enabled: Boolean) = runAfterInit {
@@ -405,11 +362,12 @@ class RetenoInternalImpl internal constructor(
     }
 
     override fun deeplinkClicked(linkWrapped: String, linkUnwrapped: String) = runAfterInit {
-        deeplinkController.deeplinkClicked(linkWrapped, linkUnwrapped)
+        if (!isOsSupported()) return@runAfterInit
+        actions.submitDeeplinkClick(linkWrapped)
     }
 
     override fun getDefaultNotificationChannelConfig(): Procedure<NotificationChannelCompat.Builder>? {
-        return serviceLocator.currentConfig.defaultNotificationChannelConfig
+        return serviceLocator.configuration.config?.defaultNotificationChannelConfig
     }
 
     override fun executeAfterInit(action: () -> Unit) = runAfterInit {

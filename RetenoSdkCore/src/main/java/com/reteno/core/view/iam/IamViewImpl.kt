@@ -14,7 +14,6 @@ import com.reteno.core.data.remote.model.iam.message.InAppMessage
 import com.reteno.core.domain.ResultDomain
 import com.reteno.core.domain.controller.IamController
 import com.reteno.core.domain.controller.IamFetchResult
-import com.reteno.core.domain.controller.InteractionController
 import com.reteno.core.domain.model.interaction.InAppInteraction
 import com.reteno.core.domain.model.interaction.InteractionAction
 import com.reteno.core.features.iam.IamJsEvent
@@ -22,7 +21,7 @@ import com.reteno.core.features.iam.IamJsEventType
 import com.reteno.core.features.iam.IamJsPayload
 import com.reteno.core.features.iam.InAppPauseBehaviour
 import com.reteno.core.features.iam.RetenoAndroidHandler
-import com.reteno.core.internal.action.sync.SyncTrigger
+import com.reteno.core.internal.action.interaction.InteractionSubmitter
 import com.reteno.core.lifecycle.RetenoActivityHelper
 import com.reteno.core.lifecycle.RetenoLifecycleCallBacksAdapter
 import com.reteno.core.util.Constants
@@ -48,8 +47,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 internal class IamViewImpl(
     private val activityHelper: RetenoActivityHelper,
     private val iamController: IamController,
-    private val interactionController: InteractionController,
-    private val syncTrigger: SyncTrigger
+    private val interactions: InteractionSubmitter
 ) : IamView {
     private val iamShowScope = CoroutineScope(Dispatchers.Main.immediate)
 
@@ -160,12 +158,7 @@ internal class IamViewImpl(
         messageInstanceId?.let { instanceId ->
             val newInteractionId = UUID.randomUUID().toString()
             interactionId = newInteractionId
-            interactionController.onInAppInteraction(
-                InAppInteraction.createOpened(
-                    newInteractionId,
-                    instanceId
-                )
-            )
+            interactions.submitInAppInteraction(InAppInteraction.createOpened(newInteractionId, instanceId))
         }
     }
 
@@ -178,13 +171,7 @@ internal class IamViewImpl(
         messageInstanceId?.let { instanceId ->
             val newInteractionId = UUID.randomUUID().toString()
             interactionId = newInteractionId
-            interactionController.onInAppInteraction(
-                InAppInteraction.createFailed(
-                    newInteractionId,
-                    instanceId,
-                    jsEvent.payload?.reason
-                )
-            )
+            interactions.submitInAppInteraction(InAppInteraction.createFailed(newInteractionId, instanceId, jsEvent.payload?.reason))
         }
         teardown()
     }
@@ -193,17 +180,8 @@ internal class IamViewImpl(
         /*@formatter:off*/ Logger.i(TAG, "openUrl(): ", "interactionId = [", interactionId, "], jsEvent = [", jsEvent, "]")
         /*@formatter:on*/
         interactionId?.let { interaction ->
-            iamShowScope.launch(Dispatchers.IO) {
-                interactionController.onInteractionClickAction(
-                    interaction,
-                    InteractionAction(
-                        jsEvent.type.name,
-                        jsEvent.payload?.targetComponentId,
-                        jsEvent.payload?.url
-                    )
-                )
-                syncTrigger.request()
-            }
+            val action = InteractionAction(jsEvent.type.name, jsEvent.payload?.targetComponentId, jsEvent.payload?.url)
+            interactions.submitInteractionClick(interaction, action, forcePush = true)
         }
 
         jsEvent.payload?.let {

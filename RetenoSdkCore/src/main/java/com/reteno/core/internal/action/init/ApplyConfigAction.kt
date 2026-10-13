@@ -1,13 +1,13 @@
 package com.reteno.core.internal.action.init
 
 import com.reteno.core.RetenoConfig
-import com.reteno.core.data.local.cache.InteractionCacheStore
 import com.reteno.core.data.local.config.DeviceIdMode
 import com.reteno.core.data.local.config.RestConfig
 import com.reteno.core.data.local.sharedpref.SharedPrefsManager
 import com.reteno.core.data.repository.ConfigRepository
 import com.reteno.core.domain.controller.IamController
 import com.reteno.core.internal.action.device.RegisterDevice
+import com.reteno.core.internal.action.interaction.ProcessCachedInteractions
 import com.reteno.core.internal.action.trace.ActionRunner
 import com.reteno.core.internal.action.trace.ActionTrace
 import com.reteno.core.internal.config.SdkConfiguration
@@ -33,7 +33,7 @@ internal class ApplyConfigAction(
     private val iamController: IamController,
     private val iamView: IamView,
     private val lifecycleTracking: AppLifecycleTracking,
-    private val interactionCache: InteractionCacheStore,
+    private val processCachedInteractions: ProcessCachedInteractions,
     private val dispatchers: RetenoDispatchers,
     private val runner: ActionRunner
 ) : ApplyConfig {
@@ -65,7 +65,7 @@ internal class ApplyConfigAction(
             }
         }
         if (byUser) step("start app lifecycle tracking") { withContext(dispatchers.main) { lifecycleTracking.start() } }
-        step("process cached push interactions") { withContext(dispatchers.io) { interactionCache.processCachedInteractions() } }
+        processCachedInteractions()
     }
 
     private suspend fun ActionTrace.applyOptions(config: RetenoConfig, byUser: Boolean) {

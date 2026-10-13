@@ -7,8 +7,12 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.util.DisplayMetrics
 import android.view.WindowManager
+import com.reteno.core.InternalRetenoApi
+import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.io.InputStream
+import java.net.HttpURLConnection
+import java.net.MalformedURLException
 import java.net.URL
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -85,33 +89,59 @@ object BitmapUtil {
 
 
     /**
-     * Download a scaled bitmap.
-     *
-     * @param imageUrl The string of URL image.
-     * @param width The requested width of the image.
-     * @param height The requested height of the image.
-     * @return The scaled bitmap downloaded form URL.
+     * Opens a connection to an image with connect and read timeouts, so a slow server can't use up
+     * the time a push message handler has.
      */
-    private fun getBitmapFromUrl(imageUrl: String, width: Int, height: Int): Bitmap? {
-        var input: InputStream? = null
-        return try {
-            input = URL(imageUrl).openStream()
+    @InternalRetenoApi
+    fun openImageConnection(imageUrl: String): HttpURLConnection {
+        val url = URL(imageUrl)
+        if (url.protocol != "https" && url.protocol != "http") throw MalformedURLException("Images are loaded over http(s) only")
+        return (url.openConnection() as HttpURLConnection).apply {
+            connectTimeout = IMAGE_CONNECT_TIMEOUT_MS
+            readTimeout = IMAGE_READ_TIMEOUT_MS
+        }
+    }
 
-            // First decode with inJustDecodeBounds=true to check dimensions.
-            val options = BitmapFactory.Options()
-            options.inJustDecodeBounds = true
-            BitmapFactory.decodeStream(input, null, options)
-            closeStream(input)
-            input = URL(imageUrl).openStream()
-            options.inSampleSize = calculateInSampleSize(options, width, height)
-            // Decode bitmap with inSampleSize set.
-            options.inJustDecodeBounds = false
-            BitmapFactory.decodeStream(input, null, options)
+    /**
+     * Downloads and decodes an image, or returns null when it can't be loaded.
+     */
+    @InternalRetenoApi
+    fun downloadBitmap(imageUrl: String): Bitmap? {
+        val bytes = downloadBytes(imageUrl) ?: return null
+        return BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+    }
+
+    private fun getBitmapFromUrl(imageUrl: String, width: Int, height: Int): Bitmap? {
+        val bytes = downloadBytes(imageUrl) ?: return null
+        val options = BitmapFactory.Options()
+        options.inJustDecodeBounds = true
+        BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options)
+        options.inSampleSize = calculateInSampleSize(options, width, height)
+        options.inJustDecodeBounds = false
+        return BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options)
+    }
+
+    private fun downloadBytes(imageUrl: String): ByteArray? =
+        try {
+            val connection = openImageConnection(imageUrl)
+            try {
+                if (connection.contentLength > MAX_IMAGE_BYTES) null else connection.inputStream.use(::readUpToLimit)
+            } finally {
+                connection.disconnect()
+            }
         } catch (e: IOException) {
-            Logger.e(TAG, String.format("IOException in image download for URL: %s.", imageUrl), e)
+            Logger.e(TAG, "IOException in image download", e)
             null
-        } finally {
-            closeStream(input)
+        }
+
+    private fun readUpToLimit(input: InputStream): ByteArray? {
+        val output = ByteArrayOutputStream()
+        val buffer = ByteArray(DOWNLOAD_BUFFER_BYTES)
+        while (true) {
+            val read = input.read(buffer)
+            if (read == -1) return output.toByteArray()
+            output.write(buffer, 0, read)
+            if (output.size() > MAX_IMAGE_BYTES) return null
         }
     }
 
@@ -148,16 +178,8 @@ object BitmapUtil {
         return inSampleSize
     }
 
-    /**
-     * Method to close InputStream.
-     *
-     * @param inputStream The InputStream which must be closed.
-     */
-    private fun closeStream(inputStream: InputStream?) {
-        try {
-            inputStream?.close()
-        } catch (e: IOException) {
-            Logger.e(TAG, "IOException during closing of image download stream.", e)
-        }
-    }
+    private const val IMAGE_CONNECT_TIMEOUT_MS = 3_000
+    private const val IMAGE_READ_TIMEOUT_MS = 5_000
+    private const val MAX_IMAGE_BYTES = 5 * 1024 * 1024
+    private const val DOWNLOAD_BUFFER_BYTES = 8 * 1024
 }

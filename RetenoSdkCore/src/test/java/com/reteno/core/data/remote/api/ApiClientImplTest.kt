@@ -35,66 +35,12 @@ class ApiClientImplTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun whenPutCalled_thenMakeRequestCalledWithCorrectParams() {
-        // When
-        SUT.put(url, JSON_BODY, responseHandler)
-
-        // Then
-        verify(exactly = 1) { OperationQueue.addOperation(any()) }
-        verify(exactly = 1) {
-            restClient.makeRequest(
-                method = eq(HttpMethod.PUT),
-                apiContract = eq(url),
-                body = eq(JSON_BODY),
-                queryParams = null,
-                responseCallback = eq(responseHandler)
-            )
-        }
-    }
-
-    @Test
-    fun whenPutSyncCalled_thenMakeRequestCalledWithCorrectParams() {
-        // When
-        SUT.putSync(url, JSON_BODY, responseHandler)
-
-        // Then
-        verify(exactly = 0) { OperationQueue.addOperation(any()) }
-        verify(exactly = 1) {
-            restClient.makeRequest(
-                method = eq(HttpMethod.PUT),
-                apiContract = eq(url),
-                body = eq(JSON_BODY),
-                queryParams = null,
-                responseCallback = eq(responseHandler)
-            )
-        }
-    }
-
-    @Test
     fun whenPostCalled_thenMakeRequestCalledWithCorrectParams() {
         // When
         SUT.post(url, JSON_BODY, responseHandler)
 
         // Then
         verify(exactly = 1) { OperationQueue.addOperation(any()) }
-        verify(exactly = 1) {
-            restClient.makeRequest(
-                method = eq(HttpMethod.POST),
-                apiContract = eq(url),
-                body = eq(JSON_BODY),
-                queryParams = null,
-                responseCallback = eq(responseHandler)
-            )
-        }
-    }
-
-    @Test
-    fun whenPostSyncCalled_thenMakeRequestCalledWithCorrectParams() {
-        // When
-        SUT.postSync(url, JSON_BODY, retryCount = 0, responseHandler)
-
-        // Then
-        verify(exactly = 0) { OperationQueue.addOperation(any()) }
         verify(exactly = 1) {
             restClient.makeRequest(
                 method = eq(HttpMethod.POST),
@@ -125,24 +71,6 @@ class ApiClientImplTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun whenGetSyncCalled_thenMakeRequestCalledWithCorrectParams() {
-        // When
-        SUT.getSync(url, QUERY_PARAMS, responseHandler)
-
-        // Then
-        verify(exactly = 0) { OperationQueue.addOperation(any()) }
-        verify(exactly = 1) {
-            restClient.makeRequest(
-                method = eq(HttpMethod.GET),
-                apiContract = eq(url),
-                body = null,
-                queryParams = eq(QUERY_PARAMS),
-                responseCallback = eq(responseHandler)
-            )
-        }
-    }
-
-    @Test
     fun whenHeadCalled_thenMakeRequestCalledWithCorrectParams() {
         // When
         SUT.head(url, QUERY_PARAMS, responseHandler)
@@ -160,21 +88,4 @@ class ApiClientImplTest : BaseRobolectricTest() {
         }
     }
 
-    @Test
-    fun given_whenHeadSyncCalled_thenMakeRequestCalledWithCorrectParams() {
-        // When
-        SUT.headSync(url, QUERY_PARAMS, responseHandler)
-
-        // Then
-        verify(exactly = 0) { OperationQueue.addOperation(any()) }
-        verify(exactly = 1) {
-            restClient.makeRequest(
-                method = eq(HttpMethod.HEAD),
-                apiContract = eq(url),
-                body = null,
-                queryParams = eq(QUERY_PARAMS),
-                responseCallback = eq(responseHandler)
-            )
-        }
-    }
 }

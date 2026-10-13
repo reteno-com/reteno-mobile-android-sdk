@@ -4,9 +4,13 @@ import com.reteno.core.RetenoConfig
 import com.reteno.core.domain.model.ecom.EcomEvent
 import com.reteno.core.domain.model.event.Event
 import com.reteno.core.domain.model.event.LifecycleTrackingOptions
+import com.reteno.core.domain.model.interaction.InAppInteraction
+import com.reteno.core.domain.model.interaction.InteractionAction
+import com.reteno.core.domain.model.interaction.InteractionStatus
 import com.reteno.core.domain.model.logevent.RetenoLogEvent
 import com.reteno.core.domain.model.user.User
 import com.reteno.core.domain.model.user.UserAttributesAnonymous
+import com.reteno.core.internal.action.deeplink.TrackDeeplinkClickAction
 import com.reteno.core.internal.action.device.ContactSession
 import com.reteno.core.internal.action.device.CurrentDevice
 import com.reteno.core.internal.action.device.EnsureDeviceRegisteredThisSessionAction
@@ -22,12 +26,19 @@ import com.reteno.core.internal.action.init.BootSdkAction
 import com.reteno.core.internal.action.init.SetSessionDurationAction
 import com.reteno.core.internal.action.init.StartSdkAction
 import com.reteno.core.internal.action.init.StopSdkAction
+import com.reteno.core.internal.action.interaction.ProcessCachedInteractionsAction
+import com.reteno.core.internal.action.interaction.RecordInAppInteractionAction
+import com.reteno.core.internal.action.interaction.RecordInteractionAction
+import com.reteno.core.internal.action.interaction.RecordInteractionClickAction
+import com.reteno.core.internal.action.interaction.RecordPushInteractionAction
 import com.reteno.core.internal.action.lifecycle.AppBackgroundedAction
 import com.reteno.core.internal.action.lifecycle.AppForegroundedAction
 import com.reteno.core.internal.action.lifecycle.EnableAutoScreenTrackingAction
 import com.reteno.core.internal.action.lifecycle.SetLifecycleEventConfigAction
 import com.reteno.core.internal.action.lifecycle.TrackPermissionDialogAction
 import com.reteno.core.internal.action.lifecycle.UpdatePushPermissionStatusAction
+import com.reteno.core.internal.action.push.InitializeIamFromPushAction
+import com.reteno.core.internal.action.push.SaveDefaultNotificationChannelAction
 import com.reteno.core.internal.action.sync.BackgroundSync
 import com.reteno.core.internal.action.sync.BackgroundSyncAction
 import com.reteno.core.internal.action.sync.ClearOldDataAction
@@ -68,6 +79,7 @@ import com.reteno.core.internal.log.RetenoLogSink
 import com.reteno.core.internal.network.SuspendApiClient
 import com.reteno.core.internal.platform.AppPlatform
 import com.reteno.core.lifecycle.ScreenTrackingConfig
+import com.reteno.core.util.Util
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.plus
@@ -107,6 +119,9 @@ internal class ActionsLocator(
     private val eventsDb by lazy { serviceLocator.retenoDatabaseManagerEventsProvider.get() }
     private val devicesDb by lazy { serviceLocator.retenoDatabaseManagerDeviceProvider.get() }
     private val usersDb by lazy { serviceLocator.retenoDatabaseManagerUserProvider.get() }
+    private val interactionsDb by lazy { serviceLocator.retenoDatabaseManagerInteractionProvider.get() }
+    private val inAppInteractionsDb by lazy { serviceLocator.retenoDatabaseManagerInAppInteractionProvider.get() }
+    private val wrappedLinksDb by lazy { serviceLocator.retenoDatabaseManagerWrappedLinksProvider.get() }
 
     private val lifecycleEvents by lazy { LifecycleEvents(lifecycleEventFilter, logEvent) }
     private val screenTracker by lazy { ScreenTracker(logScreenView, scope) }
@@ -165,6 +180,38 @@ internal class ActionsLocator(
         LogRetenoEventAction(serviceLocator.retenoDatabaseManagerLogEventProvider.get(), dispatchers, runner)
     }
 
+    private val recordInteraction: RecordInteractionAction by lazy {
+        RecordInteractionAction(interactionsDb, configRepository, dispatchers, Util::getCurrentTimeStamp, runner)
+    }
+
+    private val recordPushInteraction: RecordPushInteractionAction by lazy {
+        RecordPushInteractionAction(interactionsDb, initGate, processCachedInteractions, dispatchers, runner)
+    }
+
+    private val recordInteractionClick: RecordInteractionClickAction by lazy {
+        RecordInteractionClickAction(interactionsDb, dataSync, dispatchers, Util::getCurrentTimeStamp, runner)
+    }
+
+    private val recordInAppInteraction: RecordInAppInteractionAction by lazy {
+        RecordInAppInteractionAction(inAppInteractionsDb, dataSync, dispatchers, runner)
+    }
+
+    private val processCachedInteractions: ProcessCachedInteractionsAction by lazy {
+        ProcessCachedInteractionsAction(interactionsDb, recordInteraction, dataSync, dispatchers, runner)
+    }
+
+    private val trackDeeplinkClick: TrackDeeplinkClickAction by lazy {
+        TrackDeeplinkClickAction(wrappedLinksDb, dataSync, dispatchers, runner)
+    }
+
+    private val initializeIamFromPush: InitializeIamFromPushAction by lazy {
+        InitializeIamFromPushAction(iamView, dispatchers, runner)
+    }
+
+    private val saveDefaultNotificationChannel: SaveDefaultNotificationChannelAction by lazy {
+        SaveDefaultNotificationChannelAction(configRepository, dispatchers, runner)
+    }
+
     private val appForegrounded: AppForegroundedAction by lazy {
         AppForegroundedAction(platform, dataSync, configRepository, iamController, appForegroundState, lifecycleEvents, clock, runner)
     }
@@ -205,7 +252,7 @@ internal class ActionsLocator(
             iamController = iamController,
             iamView = iamView,
             lifecycleTracking = lifecycleTracking,
-            interactionCache = serviceLocator.interactionCacheProvider.get(),
+            processCachedInteractions = processCachedInteractions,
             dispatchers = dispatchers,
             runner = runner
         )
@@ -229,12 +276,12 @@ internal class ActionsLocator(
 
     val clearOldData: ClearOldDataAction by lazy {
         ClearOldDataAction(
-            interactionsDb = serviceLocator.retenoDatabaseManagerInteractionProvider.get(),
-            inAppInteractionsDb = serviceLocator.retenoDatabaseManagerInAppInteractionProvider.get(),
+            interactionsDb = interactionsDb,
+            inAppInteractionsDb = inAppInteractionsDb,
             eventsDb = eventsDb,
             inboxDb = serviceLocator.retenoDatabaseManagerAppInboxProvider.get(),
             recomEventsDb = serviceLocator.retenoDatabaseManagerRecomEventsProvider.get(),
-            wrappedLinksDb = serviceLocator.retenoDatabaseManagerWrappedLinksProvider.get(),
+            wrappedLinksDb = wrappedLinksDb,
             configuration = configuration,
             remoteLog = remoteLog,
             clock = clock,
@@ -263,8 +310,8 @@ internal class ActionsLocator(
                 PushUserStep(usersDb, api, dispatchers, runner)
             ),
             dataSteps = listOf(
-                PushInteractionsStep(serviceLocator.retenoDatabaseManagerInteractionProvider.get(), api, dispatchers, runner),
-                PushInAppInteractionsStep(serviceLocator.retenoDatabaseManagerInAppInteractionProvider.get(), api, dispatchers, runner),
+                PushInteractionsStep(interactionsDb, api, dispatchers, runner),
+                PushInAppInteractionsStep(inAppInteractionsDb, api, dispatchers, runner),
                 PushEventsStep(eventsDb, api, dispatchers, runner),
                 PushInboxStatusStep(
                     serviceLocator.retenoDatabaseManagerAppInboxProvider.get(),
@@ -274,7 +321,7 @@ internal class ActionsLocator(
                     runner
                 ),
                 PushRecomEventsStep(serviceLocator.retenoDatabaseManagerRecomEventsProvider.get(), api, dispatchers, runner),
-                PushWrappedLinksStep(serviceLocator.retenoDatabaseManagerWrappedLinksProvider.get(), api, dispatchers, runner),
+                PushWrappedLinksStep(wrappedLinksDb, api, dispatchers, runner),
                 PushLogEventsStep(serviceLocator.retenoDatabaseManagerLogEventProvider.get(), api, dispatchers, runner)
             ),
             runner = runner
@@ -364,5 +411,29 @@ internal class ActionsLocator(
 
     override fun requestSync() {
         dataSync.request()
+    }
+
+    override fun submitPushInteraction(interactionId: String, status: InteractionStatus) {
+        scope.launch { recordPushInteraction(interactionId, status) }
+    }
+
+    override fun submitInteractionClick(interactionId: String, action: InteractionAction, forcePush: Boolean) {
+        scope.launch { recordInteractionClick(interactionId, action, forcePush) }
+    }
+
+    override fun submitInAppInteraction(interaction: InAppInteraction) {
+        scope.launch { recordInAppInteraction(interaction) }
+    }
+
+    override fun submitDeeplinkClick(wrappedLink: String) {
+        scope.launch { trackDeeplinkClick(wrappedLink) }
+    }
+
+    override fun submitIamFromPush(interactionId: String) {
+        scope.launch { initializeIamFromPush(interactionId) }
+    }
+
+    override fun submitDefaultNotificationChannel(channel: String) {
+        scope.launch { saveDefaultNotificationChannel(channel) }
     }
 }

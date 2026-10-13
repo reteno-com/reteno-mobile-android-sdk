@@ -1,137 +1,84 @@
 package com.reteno.push.interceptor.click
 
-import android.content.Context
 import android.content.Intent
-import android.content.pm.ActivityInfo
-import android.content.pm.ResolveInfo
 import android.net.Uri
 import android.os.Bundle
-import com.reteno.core.util.getResolveInfoList
-import com.reteno.push.Constants.KEY_ES_LINK_UNWRAPPED
-import com.reteno.push.Constants.KEY_ES_LINK_WRAPPED
-import com.reteno.push.base.robolectric.BaseRobolectricTest
-import io.mockk.every
-import io.mockk.mockk
-import io.mockk.mockkStatic
-import io.mockk.unmockkStatic
-import junit.framework.TestCase
-import junit.framework.TestCase.*
-import org.junit.AfterClass
-import org.junit.BeforeClass
+import com.reteno.push.Constants
+import com.reteno.test.given
+import com.reteno.test.runUnitTest
+import com.reteno.test.then
+import com.reteno.test.whenn
 import org.junit.Test
-import org.robolectric.Shadows
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
+@RunWith(RobolectricTestRunner::class)
 @Config(sdk = [26])
-class IntentHandlerTest : BaseRobolectricTest() {
+class IntentHandlerTest {
 
-    // region constants ----------------------------------------------------------------------------
-    companion object {
-        private const val DEEPLINK_WRAPPED = "https://wrapped.com"
-        private const val DEEPLINK_UNWRAPPED = "https://unwrapped.com"
-
-        @JvmStatic
-        @BeforeClass
-        fun beforeClass() {
-            mockkStatic(Context::getResolveInfoList)
-        }
-
-        @JvmStatic
-        @AfterClass
-        fun afterClass() {
-            unmockkStatic(Context::getResolveInfoList)
-        }
+    private fun links(button: Boolean, vararg links: Pair<String, String>) = Bundle().apply {
+        if (button) putBoolean(Constants.KEY_ACTION_BUTTON, true)
+        links.forEach { (key, value) -> putString(key, value) }
     }
-    // endregion constants -------------------------------------------------------------------------
+
+    private fun Bundle.deeplink(): String? = IntentHandler.getDeepLinkIntent(this)?.data?.toString()
 
     @Test
-    fun givenUnwrappedDeeplink_whenGetDeeplinkIntent_thenAppLaunchIntentWithUnwrappedDeeplinkReturned() {
-        // Given
-        val bundle = Bundle().apply {
-            putString(KEY_ES_LINK_WRAPPED, DEEPLINK_WRAPPED)
-            putString(KEY_ES_LINK_UNWRAPPED, DEEPLINK_UNWRAPPED)
-        }
+    fun `should prefer unwrapped notification link`() = runUnitTest {
+        given()
+        val bundle = links(false, Constants.KEY_ES_LINK_UNWRAPPED to "app://raw", Constants.KEY_ES_LINK_WRAPPED to "https://wrapped")
 
-        val expectedIntent = Intent(Intent.ACTION_VIEW, Uri.parse(DEEPLINK_UNWRAPPED)).apply {
-            putExtras(bundle)
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK
-        }
+        whenn()
+        val intent = IntentHandler.getDeepLinkIntent(bundle)!!
 
-        // When
-        val actualIntent = IntentHandler.getDeepLinkIntent(bundle)
-
-        // Then
-        assertNotNull(actualIntent)
-        assertEquals(expectedIntent.toString(), actualIntent.toString())
+        then()
+        assertEquals(Intent.ACTION_VIEW, intent.action)
+        assertEquals(Uri.parse("app://raw"), intent.data)
+        assertEquals(Intent.FLAG_ACTIVITY_NEW_TASK, intent.flags)
+        assertEquals("app://raw", intent.getStringExtra(Constants.KEY_ES_LINK_UNWRAPPED))
     }
 
     @Test
-    fun givenWrappedDeeplink_whenGetDeeplinkIntent_thenAppLaunchIntentWithWrappedDeeplinkReturned() {
-        // Given
-        val bundle = Bundle().apply {
-            putString(KEY_ES_LINK_WRAPPED, DEEPLINK_WRAPPED)
-        }
+    fun `should fall back through notification links`() = runUnitTest {
+        given()
+        val wrappedOnly = links(false, Constants.KEY_ES_LINK_WRAPPED to "https://wrapped")
 
-        val expectedIntent = Intent(Intent.ACTION_VIEW, Uri.parse(DEEPLINK_WRAPPED)).apply {
-            putExtras(bundle)
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK
-        }
+        whenn()
+        val results = listOf(wrappedOnly.deeplink(), links(false).deeplink())
 
-        // When
-        val actualIntent = IntentHandler.getDeepLinkIntent(bundle)
-
-        // Then
-        assertNotNull(actualIntent)
-        assertEquals(expectedIntent.toString(), actualIntent.toString())
+        then()
+        assertEquals(listOf("https://wrapped", null), results)
     }
 
     @Test
-    fun givenNullForDeeplink_whenGetDeeplinkIntent_thenNullReturned() {
-        // Given
-        val bundle = Bundle()
+    fun `should fall back from button links to notification links`() = runUnitTest {
+        given()
+        val bundles = listOf(
+            links(true, Constants.KEY_BTN_ACTION_LINK_UNWRAPPED to "app://button-raw", Constants.KEY_ES_LINK_UNWRAPPED to "app://raw"),
+            links(true, Constants.KEY_BTN_ACTION_LINK_WRAPPED to "https://button-wrapped", Constants.KEY_ES_LINK_UNWRAPPED to "app://raw"),
+            links(true, Constants.KEY_ES_LINK_UNWRAPPED to "app://raw", Constants.KEY_ES_LINK_WRAPPED to "https://wrapped"),
+            links(true, Constants.KEY_ES_LINK_WRAPPED to "https://wrapped")
+        )
 
-        // When
-        val actualIntent = IntentHandler.getDeepLinkIntent(bundle)
+        whenn()
+        val results = bundles.map { it.deeplink() }
 
-        // Then
-        assertNull(actualIntent)
+        then()
+        assertEquals(listOf("app://button-raw", "https://button-wrapped", "app://raw", "https://wrapped"), results)
     }
 
     @Test
-    fun givenAppInstalled_whenResolveAppLaunchIntent_thenAppLaunchIntentStartsApplication() {
-        // Given
-        val injectedIntent = injectAppLaunchIntent()
+    fun `should have no deeplink for button without any link`() = runUnitTest {
+        given()
+        val bundle = links(true)
 
-        // When
-        val appLaunchIntent = IntentHandler.AppLaunchIntent.getAppLaunchIntent(application)
-        application.startActivity(appLaunchIntent)
-        val shadow = Shadows.shadowOf(application)
-        val actualIntent = shadow.peekNextStartedActivity()
-        TestCase.assertNotNull(actualIntent)
+        whenn()
+        val intent = IntentHandler.getDeepLinkIntent(bundle)
 
-        // Then
-        assertEquals(injectedIntent.`package`, actualIntent.`package`)
-        assertEquals(injectedIntent.categories, actualIntent.categories)
-        assertEquals(injectedIntent.action, actualIntent.action)
+        then()
+        assertNull(intent)
     }
-
-
-    // region helper methods -----------------------------------------------------------------------
-    private fun injectAppLaunchIntent(): Intent {
-        val launchIntent = Intent(Intent.ACTION_MAIN)
-        launchIntent.addCategory(Intent.CATEGORY_LAUNCHER)
-        launchIntent.setPackage(application.packageName)
-
-        val resolveInfo = ResolveInfo()
-        val activityInfo = ActivityInfo()
-        activityInfo.packageName = application.packageName
-        activityInfo.name = "MainActivity"
-        resolveInfo.activityInfo = activityInfo
-
-        val shadowPackageManager = Shadows.shadowOf(application.packageManager)
-        shadowPackageManager.addResolveInfoForIntent(launchIntent, resolveInfo)
-
-        return launchIntent
-    }
-    // endregion helper methods --------------------------------------------------------------------
 }

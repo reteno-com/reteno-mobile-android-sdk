@@ -26,12 +26,15 @@ koverReport {
     androidReports('debug') {
         filters {
             includes {
-                classes('com.reteno.core.di.ActionsLocator*', 'com.reteno.core.data.workmanager.PushDataWorker*')
+                classes('com.reteno.core.RetenoInternalEntryPoint*', 'com.reteno.core.di.ActionsLocator*', 'com.reteno.core.data.workmanager.PushDataWorker*')
                 packages(
+                        'com.reteno.core.internal.action.deeplink',
                         'com.reteno.core.internal.action.device',
                         'com.reteno.core.internal.action.event',
                         'com.reteno.core.internal.action.init',
+                        'com.reteno.core.internal.action.interaction',
                         'com.reteno.core.internal.action.lifecycle',
+                        'com.reteno.core.internal.action.push',
                         'com.reteno.core.internal.action.sync',
                         'com.reteno.core.internal.action.trace',
                         'com.reteno.core.internal.action.user',
@@ -108,6 +111,7 @@ android {
     }
     kotlinOptions {
         jvmTarget = JavaVersion.VERSION_1_8.toString()
+        freeCompilerArgs += ['-opt-in=com.reteno.core.InternalRetenoApi']
     }
 
     testOptions {

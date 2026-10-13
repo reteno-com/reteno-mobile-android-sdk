@@ -14,6 +14,31 @@ kover {
     }
 }
 
+koverReport {
+    androidReports('debug') {
+        filters {
+            includes {
+                packages('com.reteno.push')
+            }
+            excludes {
+                classes('com.reteno.push.R', 'com.reteno.push.R$*', 'com.reteno.push.BuildConfig')
+            }
+        }
+        verify {
+            rule('Push module is fully covered') {
+                bound {
+                    minValue = 100
+                    metric = kotlinx.kover.gradle.plugin.dsl.MetricType.LINE
+                }
+                bound {
+                    minValue = 100
+                    metric = kotlinx.kover.gradle.plugin.dsl.MetricType.BRANCH
+                }
+            }
+        }
+    }
+}
+
 android {
     def globalConfig = rootProject.ext
 
@@ -50,6 +75,7 @@ android {
     }
     kotlinOptions {
         jvmTarget = '1.8'
+        freeCompilerArgs += ['-opt-in=com.reteno.core.InternalRetenoApi']
     }
 
     testOptions {

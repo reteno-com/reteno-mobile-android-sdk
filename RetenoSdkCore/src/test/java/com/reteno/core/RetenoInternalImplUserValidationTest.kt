@@ -34,7 +34,6 @@ internal class RetenoInternalImplUserValidationTest {
         val sut = RetenoInternalImpl(
             application = application,
             mainDispatcher = dispatcher,
-            ioDispatcher = dispatcher,
             appLifecycleOwner = ManualLifecycleOwner(),
             serviceLocator = ServiceLocator(application, retenoDispatchers(dispatcher, dispatcher)),
             sdkActions = { actions },

@@ -2,7 +2,12 @@ package com.reteno.core.di
 
 import com.reteno.core.domain.model.event.LifecycleEventType
 import com.reteno.core.domain.model.event.LifecycleTrackingOptions
+import com.reteno.core.domain.model.interaction.InAppInteraction
+import com.reteno.core.domain.model.interaction.InAppInteractionStatus
+import com.reteno.core.domain.model.interaction.InteractionAction
+import com.reteno.core.domain.model.interaction.InteractionStatus
 import com.reteno.core.fixtures.LocatorFixture
+import com.reteno.core.fixtures.STUB_TIME
 import com.reteno.core.fixtures.stubAnonymousAttributes
 import com.reteno.core.fixtures.stubCustomEvent
 import com.reteno.core.fixtures.stubEcomEvent
@@ -14,6 +19,7 @@ import com.reteno.test.given
 import com.reteno.test.runUnitTest
 import com.reteno.test.then
 import com.reteno.test.whenn
+import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -98,5 +104,110 @@ internal class ActionsLocatorFacadeWiringTest {
 
         then()
         verify(atLeast = 1) { fixture.devicesDb.getDevices(any()) }
+    }
+
+    @Test
+    fun `should record submitted push interaction through its stored request`() = runUnitTest {
+        given()
+        val fixture = LocatorFixture(this)
+        val cached = fixture.storeInteractionRequests()
+        coEvery { fixture.configRepository.getFcmToken() } returns "token"
+
+        whenn()
+        fixture.sut.submitPushInteraction("interaction-1", InteractionStatus.DELIVERED)
+        runCurrent()
+
+        then()
+        verify(exactly = 1) { fixture.interactionsDb.insertInteraction(match { it.interactionId == "interaction-1" && it.token == "token" }) }
+        assertTrue(cached.isEmpty())
+        verify(atLeast = 1) { fixture.interactionsDb.getInteractions(any()) }
+    }
+
+    @Test
+    fun `should record submitted interaction click`() = runUnitTest {
+        given()
+        val fixture = LocatorFixture(this)
+
+        whenn()
+        fixture.sut.submitInteractionClick("interaction-1", InteractionAction("OPEN_URL", null, null), forcePush = false)
+        runCurrent()
+
+        then()
+        verify(exactly = 1) { fixture.interactionsDb.insertInteraction(match { it.interactionId == "interaction-1" && it.action?.contains("OPEN_URL") == true }) }
+    }
+
+    @Test
+    fun `should keep push interaction stored until sdk is initialized`() = runUnitTest {
+        given()
+        val fixture = LocatorFixture(this, initialized = false)
+        val cached = fixture.storeInteractionRequests()
+        coEvery { fixture.configRepository.getFcmToken() } returns "token"
+        fixture.sut.submitPushInteraction("interaction-1", InteractionStatus.DELIVERED)
+        runCurrent()
+        val cachedBeforeInit = cached.map { it.id }
+
+        whenn()
+        fixture.initGate.markInitialized(byUser = false)
+        runCurrent()
+
+        then()
+        assertEquals(listOf("interaction-1"), cachedBeforeInit)
+        verify(exactly = 1) { fixture.interactionsDb.insertInteraction(match { it.interactionId == "interaction-1" }) }
+        assertTrue(cached.isEmpty())
+    }
+
+    @Test
+    fun `should track submitted deeplink click`() = runUnitTest {
+        given()
+        val fixture = LocatorFixture(this)
+
+        whenn()
+        fixture.sut.submitDeeplinkClick("https://track.example/c/1")
+        runCurrent()
+
+        then()
+        verify(exactly = 1) { fixture.wrappedLinksDb.insertWrappedLink("https://track.example/c/1") }
+    }
+
+    @Test
+    fun `should show in-app message from push`() = runUnitTest {
+        given()
+        val fixture = LocatorFixture(this)
+
+        whenn()
+        fixture.sut.submitIamFromPush("interaction-1")
+        runCurrent()
+
+        then()
+        verify(exactly = 1) { fixture.iamView.initialize("interaction-1") }
+    }
+
+    @Test
+    fun `should save submitted default notification channel`() = runUnitTest {
+        given()
+        val fixture = LocatorFixture(this)
+
+        whenn()
+        fixture.sut.submitDefaultNotificationChannel("{}")
+        runCurrent()
+
+        then()
+        verify(exactly = 1) { fixture.configRepository.saveDefaultNotificationChannel("{}") }
+    }
+
+    @Test
+    fun `should record submitted in-app interaction`() = runUnitTest {
+        given()
+        val fixture = LocatorFixture(this)
+        val interaction = InAppInteraction("in-app-1", STUB_TIME, 42L, InAppInteractionStatus.OPENED)
+
+        whenn()
+        fixture.sut.submitInAppInteraction(interaction)
+        fixture.sut.submitInteractionClick("in-app-1", InteractionAction("OPEN_URL", null, null), forcePush = true)
+        runCurrent()
+
+        then()
+        verify(exactly = 1) { fixture.inAppInteractionsDb.insertInteraction(any()) }
+        verify(exactly = 1) { fixture.interactionsDb.insertInteraction(match { it.interactionId == "in-app-1" }) }
     }
 }

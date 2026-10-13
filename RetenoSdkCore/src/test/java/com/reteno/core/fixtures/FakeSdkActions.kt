@@ -5,6 +5,9 @@ import com.reteno.core.di.SdkActions
 import com.reteno.core.domain.model.ecom.EcomEvent
 import com.reteno.core.domain.model.event.Event
 import com.reteno.core.domain.model.event.LifecycleTrackingOptions
+import com.reteno.core.domain.model.interaction.InAppInteraction
+import com.reteno.core.domain.model.interaction.InteractionAction
+import com.reteno.core.domain.model.interaction.InteractionStatus
 import com.reteno.core.domain.model.logevent.RetenoLogEvent
 import com.reteno.core.domain.model.user.User
 import com.reteno.core.domain.model.user.UserAttributesAnonymous
@@ -87,6 +90,30 @@ internal class FakeSdkActions : SdkActions {
 
     override fun requestSync() {
         calls += "requestSync"
+    }
+
+    override fun submitPushInteraction(interactionId: String, status: InteractionStatus) {
+        calls += "submitPushInteraction $interactionId $status"
+    }
+
+    override fun submitInteractionClick(interactionId: String, action: InteractionAction, forcePush: Boolean) {
+        calls += "submitInteractionClick $interactionId ${action.type} $forcePush"
+    }
+
+    override fun submitInAppInteraction(interaction: InAppInteraction) {
+        calls += "submitInAppInteraction ${interaction.interactionId}"
+    }
+
+    override fun submitDeeplinkClick(wrappedLink: String) {
+        calls += "submitDeeplinkClick $wrappedLink"
+    }
+
+    override fun submitIamFromPush(interactionId: String) {
+        calls += "submitIamFromPush $interactionId"
+    }
+
+    override fun submitDefaultNotificationChannel(channel: String) {
+        calls += "submitDefaultNotificationChannel $channel"
     }
 
     override val backgroundSync: BackgroundSyncAction

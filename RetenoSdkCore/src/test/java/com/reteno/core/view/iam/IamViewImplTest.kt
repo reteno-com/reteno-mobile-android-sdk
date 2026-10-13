@@ -2,9 +2,10 @@ package com.reteno.core.view.iam
 
 import com.reteno.core.base.robolectric.BaseRobolectricTest
 import com.reteno.core.data.remote.model.iam.message.InAppMessage
-import com.reteno.core.fixtures.FakeSyncTrigger
+import com.reteno.core.internal.action.interaction.InteractionSubmitter
 import io.mockk.every
 import io.mockk.impl.annotations.RelaxedMockK
+import io.mockk.mockk
 import kotlinx.coroutines.flow.MutableSharedFlow
 import org.junit.Test
 
@@ -28,7 +29,7 @@ class IamViewImplTest : BaseRobolectricTest() {
     override fun before() {
         super.before()
         every { iamController.inAppMessagesFlow } returns MutableSharedFlow()
-        SUT = IamViewImpl(activityHelper, iamController, interactionController, FakeSyncTrigger())
+        SUT = IamViewImpl(activityHelper, iamController, mockk<InteractionSubmitter>())
     }
 
     @Test

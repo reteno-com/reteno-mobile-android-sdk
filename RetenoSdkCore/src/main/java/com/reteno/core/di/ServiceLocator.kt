@@ -12,16 +12,13 @@ import com.reteno.core.data.repository.ConfigRepository
 import com.reteno.core.di.base.Provider
 import com.reteno.core.di.base.ProviderWeakReference
 import com.reteno.core.di.provider.DeviceIdHelperProvider
-import com.reteno.core.di.provider.InteractionCacheProvider
 import com.reteno.core.di.provider.RestConfigProvider
 import com.reteno.core.di.provider.RetenoActivityHelperProvider
 import com.reteno.core.di.provider.RetenoConfigProvider
 import com.reteno.core.di.provider.SharedPrefsManagerProvider
 import com.reteno.core.di.provider.WorkManagerProvider
 import com.reteno.core.di.provider.controller.AppInboxControllerProvider
-import com.reteno.core.di.provider.controller.DeeplinkControllerProvider
 import com.reteno.core.di.provider.controller.IamControllerProvider
-import com.reteno.core.di.provider.controller.InteractionControllerProvider
 import com.reteno.core.di.provider.controller.RecommendationControllerProvider
 import com.reteno.core.di.provider.database.DatabaseProvider
 import com.reteno.core.di.provider.database.RetenoDatabaseManagerAppInboxProvider
@@ -43,13 +40,9 @@ import com.reteno.core.di.provider.network.ApiClientProvider
 import com.reteno.core.di.provider.network.RestClientProvider
 import com.reteno.core.di.provider.repository.AppInboxRepositoryProvider
 import com.reteno.core.di.provider.repository.ConfigRepositoryProvider
-import com.reteno.core.di.provider.repository.DeeplinkRepositoryProvider
 import com.reteno.core.di.provider.repository.FileManagerProvider
 import com.reteno.core.di.provider.repository.IamRepositoryProvider
-import com.reteno.core.di.provider.repository.InteractionRepositoryProvider
 import com.reteno.core.di.provider.repository.RecommendationRepositoryProvider
-import com.reteno.core.domain.controller.DeeplinkController
-import com.reteno.core.domain.controller.InteractionController
 import com.reteno.core.domain.model.event.LifecycleTrackingOptions
 import com.reteno.core.internal.action.sync.DataSync
 import com.reteno.core.internal.config.SdkConfigurationImpl
@@ -181,21 +174,6 @@ class ServiceLocator internal constructor(
     val configRepositoryProvider: ProviderWeakReference<ConfigRepository>
         get() = configRepositoryProviderInternal
 
-    private val interactionRepositoryProvider: InteractionRepositoryProvider =
-        InteractionRepositoryProvider(
-            retenoDatabaseManagerInteractionProviderInternal,
-            retenoDatabaseManagerInAppInteractionProvider,
-            dataSync
-        )
-
-    internal val interactionCacheProvider: InteractionCacheProvider =
-        InteractionCacheProvider(
-            retenoDatabaseManagerInteractionProviderInternal,
-        )
-
-    private val deeplinkRepositoryProvider: DeeplinkRepositoryProvider =
-        DeeplinkRepositoryProvider(retenoDatabaseManagerWrappedLinksProvider, dataSync)
-
     internal val appInboxRepositoryProvider: AppInboxRepositoryProvider =
         AppInboxRepositoryProvider(
             apiClientProvider,
@@ -224,20 +202,6 @@ class ServiceLocator internal constructor(
 
 
     /** Controller **/
-    private val deeplinkControllerProviderInternal: DeeplinkControllerProvider =
-        DeeplinkControllerProvider(deeplinkRepositoryProvider)
-    val deeplinkControllerProvider: ProviderWeakReference<DeeplinkController>
-        get() = deeplinkControllerProviderInternal
-
-
-    private val interactionControllerProviderInternal: InteractionControllerProvider =
-        InteractionControllerProvider(
-            configRepositoryProviderInternal,
-            interactionRepositoryProvider
-        )
-    val interactionControllerProvider: ProviderWeakReference<InteractionController>
-        get() = interactionControllerProviderInternal
-
     private val appInboxControllerProvider: AppInboxControllerProvider =
         AppInboxControllerProvider(appInboxRepositoryProvider)
 
@@ -265,15 +229,11 @@ class ServiceLocator internal constructor(
     private val iamViewProviderInternal: IamViewProvider = IamViewProvider(
         retenoActivityHelperProviderInternal,
         iamControllerProvider,
-        interactionControllerProviderInternal,
-        dataSync
+        { actions }
     )
 
     val iamViewProvider: ProviderWeakReference<IamView> =
         iamViewProviderInternal
-
-    internal val currentConfig: RetenoConfig
-        get() = configProvider.get()
 
     fun initWorkManager() {
         workManagerProvider.get()

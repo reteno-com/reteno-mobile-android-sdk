@@ -84,7 +84,7 @@ internal class ActionsLocatorInitWiringTest {
         verify(exactly = 1) { fixture.env.devicesDb.insertDevice(any()) }
         verify(exactly = 1) { fixture.env.iamController.pauseInAppMessages(false) }
         verify(exactly = 1) { fixture.env.iamView.pauseIncomingPushInApps(true) }
-        verify(exactly = 1) { fixture.env.interactionCache.processCachedInteractions() }
+        verify(exactly = 1) { fixture.env.interactionsDb.getInteractionRequests() }
         assertNotNull(fixture.env.platform.onForeground)
         assertEquals(InitState.BY_USER, fixture.env.initGate.state)
     }

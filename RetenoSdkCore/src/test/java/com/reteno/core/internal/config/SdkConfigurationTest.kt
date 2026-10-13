@@ -14,6 +14,8 @@ import io.mockk.mockk
 import io.mockk.verify
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -60,5 +62,34 @@ internal class SdkConfigurationTest {
         verify(exactly = 1) { fixture.configProvider.setConfig(cached) }
         verify(exactly = 1) { fixture.configProvider.setConfig(user) }
         assertFalse(fixture.sut.isDebug)
+    }
+
+    @Test
+    fun `should expose no configuration before one is used`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+
+        whenn()
+        val config = fixture.sut.config
+
+        then()
+        assertNull(config)
+    }
+
+    @Test
+    fun `should expose configuration in use`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val cached = fixture.config()
+        val user = fixture.config()
+
+        whenn()
+        fixture.sut.useCachedConfig(cached)
+        val afterCached = fixture.sut.config
+        fixture.sut.useUserConfig(user)
+
+        then()
+        assertSame(cached, afterCached)
+        assertSame(user, fixture.sut.config)
     }
 }

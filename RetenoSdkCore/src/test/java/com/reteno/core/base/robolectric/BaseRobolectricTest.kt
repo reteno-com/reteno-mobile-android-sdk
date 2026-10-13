@@ -8,9 +8,7 @@ import com.reteno.core.data.local.file.FileManager
 import com.reteno.core.data.local.sharedpref.SharedPrefsManager
 import com.reteno.core.data.repository.ConfigRepository
 import com.reteno.core.di.ServiceLocator
-import com.reteno.core.domain.controller.DeeplinkController
 import com.reteno.core.domain.controller.IamController
-import com.reteno.core.domain.controller.InteractionController
 import com.reteno.core.features.appinbox.AppInbox
 import com.reteno.core.features.recommendation.Recommendation
 import com.reteno.core.lifecycle.RetenoActivityHelper
@@ -88,11 +86,7 @@ abstract class BaseRobolectricTest {
     @RelaxedMockK
     protected lateinit var sessionHandler: RetenoSessionHandler
     @RelaxedMockK
-    protected lateinit var interactionController: InteractionController
-    @RelaxedMockK
     internal lateinit var databaseManager: RetenoDatabaseManager
-    @RelaxedMockK
-    protected lateinit var deeplinkController: DeeplinkController
     @RelaxedMockK
     internal lateinit var sharedPrefsManager: SharedPrefsManager
     @RelaxedMockK
@@ -112,9 +106,7 @@ abstract class BaseRobolectricTest {
         MockKAnnotations.init(this)
 
         every { anyConstructed<ServiceLocator>().retenoSessionHandlerProvider.get() } returns sessionHandler
-        every { anyConstructed<ServiceLocator>().interactionControllerProvider.get() } returns interactionController
         every { anyConstructed<ServiceLocator>().retenoDatabaseManagerProvider.get() } returns databaseManager
-        every { anyConstructed<ServiceLocator>().deeplinkControllerProvider.get() } returns deeplinkController
         every { anyConstructed<ServiceLocator>().sharedPrefsManagerProvider.get() } returns sharedPrefsManager
         every { anyConstructed<ServiceLocator>().restConfigProvider.get() } returns restConfig
         every { anyConstructed<ServiceLocator>().recommendationProvider.get() } returns recommendation

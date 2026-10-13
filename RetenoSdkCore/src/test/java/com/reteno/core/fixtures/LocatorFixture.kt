@@ -1,7 +1,6 @@
 package com.reteno.core.fixtures
 
 import androidx.work.WorkManager
-import com.reteno.core.data.local.cache.InteractionCacheStore
 import com.reteno.core.data.local.config.RestConfig
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManager
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerAppInbox
@@ -14,6 +13,7 @@ import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerRecomEve
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerUser
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerWrappedLink
 import com.reteno.core.data.local.model.event.EventsDb
+import com.reteno.core.data.local.model.interaction.InteractionRequestDb
 import com.reteno.core.data.local.sharedpref.SharedPrefsManager
 import com.reteno.core.data.repository.AppInboxRepository
 import com.reteno.core.data.repository.ConfigRepository
@@ -56,7 +56,6 @@ internal class LocatorFixture(scope: TestScope, initialized: Boolean = true) {
     val iamView = mockk<IamView>(relaxed = true)
     val prefs = mockk<SharedPrefsManager>(relaxed = true)
     val restConfig = mockk<RestConfig>(relaxed = true)
-    val interactionCache = mockk<InteractionCacheStore>(relaxed = true)
     val activityHelper = mockk<RetenoActivityHelper>(relaxed = true)
     val databaseManager = mockk<RetenoDatabaseManager>(relaxed = true)
     val rest = FakeRestClient()
@@ -82,7 +81,6 @@ internal class LocatorFixture(scope: TestScope, initialized: Boolean = true) {
         every { it.restConfigProvider.get() } returns restConfig
         every { it.sharedPrefsManagerProvider.get() } returns prefs
         every { it.iamViewProvider.get() } returns iamView
-        every { it.interactionCacheProvider.get() } returns interactionCache
         every { it.retenoActivityHelperProvider.get() } returns activityHelper
         every { it.retenoDatabaseManagerProvider.get() } returns databaseManager
         every { it.retenoSessionHandlerProvider.get() } returns sessionHandler
@@ -100,6 +98,14 @@ internal class LocatorFixture(scope: TestScope, initialized: Boolean = true) {
         every { configRepository.getDeviceId() } returns deviceId
         every { restConfig.deviceId } returns deviceId
         every { eventsDb.insertEvents(capture(insertedEvents)) } returns Unit
+    }
+
+    fun storeInteractionRequests(): MutableList<InteractionRequestDb> {
+        val stored = mutableListOf<InteractionRequestDb>()
+        every { interactionsDb.insertInteractionRequest(any()) } answers { stored += firstArg<InteractionRequestDb>() }
+        every { interactionsDb.getInteractionRequests() } answers { stored.toList() }
+        every { interactionsDb.deleteInteractionRequest(any()) } answers { stored.remove(firstArg()) }
+        return stored
     }
 
     private val dispatchers = scope.testDispatchers()

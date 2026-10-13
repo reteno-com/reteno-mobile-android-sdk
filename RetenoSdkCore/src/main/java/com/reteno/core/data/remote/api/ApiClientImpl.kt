@@ -5,20 +5,8 @@ import com.reteno.core.domain.ResponseCallback
 
 internal class ApiClientImpl(private val restClient: RestClient) : ApiClient {
 
-    override fun put(url: ApiContract, jsonBody: String, responseHandler: ResponseCallback) {
-        OperationQueue.addOperation {
-            putSync(url, jsonBody, responseHandler)
-        }
-    }
-
-    override fun putSync(url: ApiContract, jsonBody: String, responseHandler: ResponseCallback) {
-        restClient.makeRequest(HttpMethod.PUT, url, jsonBody, null, null,  responseCallback = responseHandler)
-    }
-
     override fun post(url: ApiContract, jsonBody: String, responseHandler: ResponseCallback) {
-        OperationQueue.addOperation {
-            postSync(url, jsonBody, responseHandler = responseHandler)
-        }
+        postWithRetry(url, jsonBody, 0, responseHandler)
     }
 
     override fun postWithRetry(
@@ -28,17 +16,8 @@ internal class ApiClientImpl(private val restClient: RestClient) : ApiClient {
         responseHandler: ResponseCallback
     ) {
         OperationQueue.addOperation {
-            postSync(url, jsonBody, retryCount = retryCount, responseHandler = responseHandler)
+            restClient.makeRequest(HttpMethod.POST, url, jsonBody, null, null, retryCount, responseHandler)
         }
-    }
-
-    override fun postSync(
-        url: ApiContract,
-        jsonBody: String,
-        retryCount: Int,
-        responseHandler: ResponseCallback
-    ) {
-        restClient.makeRequest(HttpMethod.POST, url, jsonBody, null, null, retryCount, responseHandler)
     }
 
     override fun get(
@@ -48,7 +27,7 @@ internal class ApiClientImpl(private val restClient: RestClient) : ApiClient {
         responseHandler: ResponseCallback
     ) {
         OperationQueue.addOperation {
-            getSync(url, headers, queryParams, responseHandler)
+            restClient.makeRequest(HttpMethod.GET, url, null, headers, queryParams, responseCallback = responseHandler)
         }
     }
 
@@ -60,38 +39,13 @@ internal class ApiClientImpl(private val restClient: RestClient) : ApiClient {
         get(url, null, queryParams, responseHandler)
     }
 
-    override fun getSync(
-        url: ApiContract,
-        headers: Map<String, String>?,
-        queryParams: Map<String, String?>?,
-        responseHandler: ResponseCallback
-    ) {
-        restClient.makeRequest(HttpMethod.GET, url, null,  headers, queryParams, responseCallback = responseHandler)
-    }
-
-    override fun getSync(
-        url: ApiContract,
-        queryParams: Map<String, String?>?,
-        responseHandler: ResponseCallback
-    ) {
-        getSync(url, null, queryParams, responseHandler)
-    }
-
     override fun head(
         url: ApiContract,
         queryParams: Map<String, String?>?,
         responseHandler: ResponseCallback
     ) {
         OperationQueue.addOperation {
-            headSync(url, queryParams, responseHandler)
+            restClient.makeRequest(HttpMethod.HEAD, url, null, null, queryParams, responseCallback = responseHandler)
         }
-    }
-
-    override fun headSync(
-        url: ApiContract,
-        queryParams: Map<String, String?>?,
-        responseHandler: ResponseCallback
-    ) {
-        restClient.makeRequest(HttpMethod.HEAD, url, null, null,  queryParams, responseCallback = responseHandler)
     }
 }

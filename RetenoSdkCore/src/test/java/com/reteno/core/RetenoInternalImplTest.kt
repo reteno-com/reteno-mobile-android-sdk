@@ -1,10 +1,13 @@
 package com.reteno.core
 
 import android.app.Application
+import androidx.core.app.NotificationChannelCompat
 import androidx.lifecycle.Lifecycle
 import androidx.test.core.app.ApplicationProvider
 import com.reteno.core.di.ServiceLocator
 import com.reteno.core.domain.model.event.LifecycleTrackingOptions
+import com.reteno.core.domain.model.interaction.InteractionAction
+import com.reteno.core.domain.model.interaction.InteractionStatus
 import com.reteno.core.fixtures.FakeSdkActions
 import com.reteno.core.fixtures.ManualLifecycleOwner
 import com.reteno.core.fixtures.stubAnonymousAttributes
@@ -15,6 +18,7 @@ import com.reteno.core.fixtures.stubRetenoLogEvent
 import com.reteno.core.fixtures.stubUser
 import com.reteno.core.internal.coroutine.retenoDispatchers
 import com.reteno.core.lifecycle.ScreenTrackingConfig
+import com.reteno.core.util.Procedure
 import com.reteno.test.given
 import com.reteno.test.runUnitTest
 import com.reteno.test.then
@@ -26,6 +30,7 @@ import kotlinx.coroutines.test.runCurrent
 import org.junit.Test
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.runner.RunWith
@@ -46,7 +51,6 @@ internal class RetenoInternalImplTest {
         val sut = RetenoInternalImpl(
             application = application,
             mainDispatcher = dispatcher,
-            ioDispatcher = dispatcher,
             appLifecycleOwner = owner,
             serviceLocator = serviceLocator,
             sdkActions = { actions },
@@ -68,6 +72,10 @@ internal class RetenoInternalImplTest {
             sut.updatePushPermissionStatus()
             sut.setSessionDuration(5_000L)
             sut.forcePushData()
+            sut.recordInteractionAction("interaction-2", InteractionAction("OPEN_URL", null, null), forcePush = true)
+            sut.deeplinkClicked("https://track.example/c/1", "https://example.com")
+            sut.initializeIamView("interaction-3")
+            sut.saveDefaultNotificationChannel("{}")
         }
     }
 
@@ -128,7 +136,11 @@ internal class RetenoInternalImplTest {
                 "submitAutoScreenTracking",
                 "submitPushPermissionStatus",
                 "submitSessionDuration 5000",
-                "requestSync"
+                "requestSync",
+                "submitInteractionClick interaction-2 OPEN_URL true",
+                "submitDeeplinkClick https://track.example/c/1",
+                "submitIamFromPush interaction-3",
+                "submitDefaultNotificationChannel {}"
             ),
             fixture.actions.calls
         )
@@ -200,6 +212,56 @@ internal class RetenoInternalImplTest {
 
         then()
         assertEquals(emptyList<String>(), fixture.actions.calls)
-        assertSame(config, fixture.serviceLocator.currentConfig)
+        assertSame(config, fixture.serviceLocator.configuration.config)
+    }
+
+    @Test
+    fun `should pass push interaction to sdk without waiting for init`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+
+        whenn()
+        fixture.sut.recordInteraction("interaction-1", InteractionStatus.DELIVERED, forcePush = true)
+
+        then()
+        assertEquals(listOf("boot", "submitPushInteraction interaction-1 DELIVERED"), fixture.actions.calls)
+    }
+
+    @Test
+    fun `should ignore push interaction on unsupported os`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this, osSupported = false)
+
+        whenn()
+        fixture.sut.recordInteraction("interaction-1", InteractionStatus.CLICKED, forcePush = true)
+
+        then()
+        assertTrue(fixture.actions.calls.isEmpty())
+    }
+
+    @Test
+    fun `should have no default notification channel config before configuration`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+
+        whenn()
+        val config = fixture.sut.getDefaultNotificationChannelConfig()
+
+        then()
+        assertNull(config)
+    }
+
+    @Test
+    fun `should expose default notification channel config of applied configuration`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        val channelConfig = Procedure<NotificationChannelCompat.Builder> { }
+        val config = RetenoConfig.Builder().accessKey("key").defaultNotificationChannelConfig(channelConfig).build()
+
+        whenn()
+        fixture.serviceLocator.configuration.useUserConfig(config)
+
+        then()
+        assertSame(channelConfig, fixture.sut.getDefaultNotificationChannelConfig())
     }
 }

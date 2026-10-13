@@ -1,7 +1,6 @@
 package com.reteno.core.internal.action.init
 
 import com.reteno.core.RetenoConfig
-import com.reteno.core.data.local.cache.InteractionCacheStore
 import com.reteno.core.data.local.config.DeviceId
 import com.reteno.core.data.local.config.DeviceIdMode
 import com.reteno.core.data.local.config.RestConfig
@@ -13,6 +12,7 @@ import com.reteno.core.fixtures.TestActionRunner
 import com.reteno.core.fixtures.stubConfig
 import com.reteno.core.fixtures.testDispatchers
 import com.reteno.core.internal.action.device.RegisterDevice
+import com.reteno.core.internal.action.interaction.ProcessCachedInteractions
 import com.reteno.core.internal.action.sync.SyncResult
 import com.reteno.core.internal.config.SdkConfiguration
 import com.reteno.core.internal.coroutine.InitGate
@@ -79,12 +79,12 @@ internal class ApplyConfigActionTest {
         private val lifecycleTracking = mockk<AppLifecycleTracking>().also {
             every { it.start() } answers { calls += "start lifecycle tracking" + onMain() }
         }
-        private val interactionCache = mockk<InteractionCacheStore>().also {
-            every { it.processCachedInteractions() } answers { calls += "process cached interactions" + onIo() }
+        private val processCachedInteractions = mockk<ProcessCachedInteractions>().also {
+            coEvery { it() } answers { calls += "process cached interactions"; Result.success(Unit) }
         }
         val sut = ApplyConfigAction(
             configuration, restConfig, configRepository, prefs, sessionHandler, registerDevice, initGate,
-            iamController, iamView, lifecycleTracking, interactionCache, dispatchers, traced.runner
+            iamController, iamView, lifecycleTracking, processCachedInteractions, dispatchers, traced.runner
         )
 
         private fun onIo() = if (dispatchers.markedIo.isRunningHere) " on io" else ""
@@ -114,7 +114,7 @@ internal class ApplyConfigActionTest {
                 "pause in-apps false on main",
                 "pause push in-apps true on main",
                 "start lifecycle tracking on main",
-                "process cached interactions on io"
+                "process cached interactions"
             ),
             fixture.calls
         )
@@ -151,7 +151,7 @@ internal class ApplyConfigActionTest {
                 "gate FROM_CACHE",
                 "pause in-apps false on main",
                 "pause push in-apps true on main",
-                "process cached interactions on io"
+                "process cached interactions"
             ),
             fixture.calls
         )
@@ -181,7 +181,7 @@ internal class ApplyConfigActionTest {
 
         then()
         assertTrue(result.isSuccess)
-        assertTrue(fixture.calls.containsAll(listOf("register device", "gate BY_USER", "process cached interactions on io")))
+        assertTrue(fixture.calls.containsAll(listOf("register device", "gate BY_USER", "process cached interactions")))
         assertEquals("ApplyConfigOptions", fixture.traced.reports.single().action)
     }
 
