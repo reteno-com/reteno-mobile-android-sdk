@@ -25,7 +25,6 @@ import com.reteno.core.data.remote.model.iam.message.InAppMessageContent
 import com.reteno.core.data.remote.model.iam.message.InAppMessageContent.InAppLayoutParams
 import com.reteno.core.data.remote.model.iam.message.InAppMessageContent.InAppLayoutParams.Position
 import com.reteno.core.data.remote.model.iam.message.InAppMessageContent.InAppLayoutType
-import com.reteno.core.data.remote.model.iam.message.InAppMessagesList
 import com.reteno.core.data.remote.model.iam.widget.WidgetModel
 import com.reteno.core.data.repository.IamRepository
 import com.reteno.core.domain.ResultDomain
@@ -34,6 +33,7 @@ import com.reteno.core.domain.model.event.Event
 import com.reteno.core.domain.model.event.Event.Companion.SCREEN_VIEW_EVENT_TYPE_KEY
 import com.reteno.core.features.iam.InAppPauseBehaviour
 import com.reteno.core.internal.action.event.eventFlow
+import com.reteno.core.internal.action.iam.CheckInAppSegments
 import com.reteno.core.internal.iam.DisplayDecision
 import com.reteno.core.internal.iam.InAppDisplayRules
 import com.reteno.core.internal.iam.InAppMessagesState
@@ -103,6 +103,8 @@ class IamControllerImplTest : BaseRobolectricTest() {
     private lateinit var displayRules: InAppDisplayRules
     @RelaxedMockK
     private lateinit var state: InAppMessagesState
+    @RelaxedMockK
+    private lateinit var checkSegments: CheckInAppSegments
     // endregion helper fields ---------------------------------------------------------------------
 
     override fun before() {
@@ -125,6 +127,7 @@ class IamControllerImplTest : BaseRobolectricTest() {
         every { state.postponeIfPaused(any()) } returns false
         every { state.setPaused(any()) } returns null
         every { state.waitingForEvent() } returns emptyList()
+        coEvery { checkSegments(any(), any()) } returns Result.success(Unit)
     }
 
     override fun after() {
@@ -333,47 +336,14 @@ class IamControllerImplTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun givenInAppsWithNoContent_whenGetInAppMessages_thenMessagesWithoutContentShouldBeFetchedFromBackend() = runTest {
-        // Given
-        val sut = createController()
-        val inApps = frequencyInApps(content = null)
-        val inAppList = InAppMessagesList(messages = inApps)
-
-        coEvery { iamRepository.getInAppMessages() } returns inAppList
-        coEvery { iamRepository.getInAppMessagesContent(any()) } returns buildList {
-            repeat(inApps.size) {
-                add(
-                    InAppMessageContent(
-                        messageInstanceId = 1,
-                        layoutType = InAppLayoutType.FULL,
-                        model = JsonObject(),
-                        layoutParams = null
-                    )
-                )
-            }
-        }
-
-        // When
-        sut.pauseInAppMessages(false)
-        sut.getInAppMessages()
-        advanceUntilIdle()
-
-        // Then
-        coVerify { iamRepository.getInAppMessagesContent(inApps.map { it.messageInstanceId }) }
-        coVerify { iamRepository.saveInAppMessages(eq(inAppList)) }
-        coroutineContext.cancelChildren()
-    }
-
-    @Test
     fun `should show most recent in-app the display rules allow`() = runUnitTest {
         given()
         val sut = createWorkingController()
         val inApps = contentInApps()
-        coEvery { iamRepository.getInAppMessages() } returns InAppMessagesList(messages = inApps)
         val shown = collectShown(sut)
 
         whenn()
-        sut.getInAppMessages()
+        sut.processInAppMessages(inApps)
         runCurrent()
 
         then()
@@ -385,14 +355,13 @@ class IamControllerImplTest : BaseRobolectricTest() {
         given()
         val sut = createWorkingController()
         val inApps = contentInApps()
-        coEvery { iamRepository.getInAppMessages() } returns InAppMessagesList(messages = inApps)
         every { displayRules.decide(any(), any(), any()) } answers {
             if (firstArg<InAppMessage>().messageId == 2L) DisplayDecision.SHOW else DisplayDecision.FREQUENCY_LIMIT_REACHED
         }
         val shown = collectShown(sut)
 
         whenn()
-        sut.getInAppMessages()
+        sut.processInAppMessages(inApps)
         runCurrent()
 
         then()
@@ -404,12 +373,11 @@ class IamControllerImplTest : BaseRobolectricTest() {
         given()
         val sut = createWorkingController()
         val inApps = contentInApps()
-        coEvery { iamRepository.getInAppMessages() } returns InAppMessagesList(messages = inApps)
         every { state.postponeIfPaused(any()) } returns true
         val shown = collectShown(sut)
 
         whenn()
-        sut.getInAppMessages()
+        sut.processInAppMessages(inApps)
         runCurrent()
 
         then()
@@ -450,10 +418,9 @@ class IamControllerImplTest : BaseRobolectricTest() {
         given()
         val sut = createWorkingController()
         val inApps = contentInApps(targeting = createEventDisplayRule())
-        coEvery { iamRepository.getInAppMessages() } returns InAppMessagesList(messages = inApps)
 
         whenn()
-        sut.getInAppMessages()
+        sut.processInAppMessages(inApps)
 
         then()
         verify(exactly = 1) { state.replaceWaitingForEvent(match { waiting -> waiting.map { it.inApp } == inApps }) }
@@ -463,10 +430,9 @@ class IamControllerImplTest : BaseRobolectricTest() {
     fun `should clear in-apps waiting for event when fetch has none`() = runUnitTest {
         given()
         val sut = createWorkingController()
-        coEvery { iamRepository.getInAppMessages() } returns InAppMessagesList(messages = contentInApps())
 
         whenn()
-        sut.getInAppMessages()
+        sut.processInAppMessages(contentInApps())
 
         then()
         verify(exactly = 1) { state.replaceWaitingForEvent(emptyList()) }
@@ -478,11 +444,10 @@ class IamControllerImplTest : BaseRobolectricTest() {
         val sut = createWorkingController()
         val inApp = contentInApps().last()
         val rule = TargetingRule.Event(SCREEN_VIEW_EVENT_TYPE_KEY, RuleRelation.OR)
-        coEvery { iamRepository.getInAppMessages() } returns InAppMessagesList(messages = emptyList())
         every { state.waitingForEvent() } returns listOf(InAppWithEvent(inApp, rule))
         every { displayRules.matchesEvent(rule, any()) } returns true
         val shown = collectShown(sut)
-        sut.getInAppMessages()
+        sut.processInAppMessages(emptyList())
         runCurrent()
 
         whenn()
@@ -494,15 +459,45 @@ class IamControllerImplTest : BaseRobolectricTest() {
     }
 
     @Test
+    fun `should check and save segments of event in-apps before showing them`() = runUnitTest {
+        given()
+        val sut = createWorkingController()
+        val inApp = contentInApps().last()
+        val rule = TargetingRule.Event(SCREEN_VIEW_EVENT_TYPE_KEY, RuleRelation.OR)
+        every { state.waitingForEvent() } returns listOf(InAppWithEvent(inApp, rule))
+        every { displayRules.matchesEvent(rule, any()) } returns true
+        sut.processInAppMessages(emptyList())
+        runCurrent()
+
+        whenn()
+        eventFlow.emit(Event.ScreenView("Home"))
+        runCurrent()
+
+        then()
+        coVerify(exactly = 1) { checkSegments(listOf(inApp), true) }
+    }
+
+    @Test
+    fun `should not check segments of in-apps shown on app start`() = runUnitTest {
+        given()
+        val sut = createWorkingController()
+
+        whenn()
+        sut.processInAppMessages(contentInApps())
+
+        then()
+        coVerify(exactly = 0) { checkSegments(any(), any()) }
+    }
+
+    @Test
     fun `should not show waiting in-app whose event rule does not match`() = runUnitTest {
         given()
         val sut = createWorkingController()
         val rule = TargetingRule.Event(SCREEN_VIEW_EVENT_TYPE_KEY, RuleRelation.OR)
-        coEvery { iamRepository.getInAppMessages() } returns InAppMessagesList(messages = emptyList())
         every { state.waitingForEvent() } returns listOf(InAppWithEvent(contentInApps().last(), rule))
         every { displayRules.matchesEvent(rule, any()) } returns false
         val shown = collectShown(sut)
-        sut.getInAppMessages()
+        sut.processInAppMessages(emptyList())
         runCurrent()
 
         whenn()
@@ -556,11 +551,11 @@ class IamControllerImplTest : BaseRobolectricTest() {
     )
 
     private fun TestScope.createController(): IamControllerImpl {
-        return IamControllerImpl(iamRepository, sessionHandler, userDatabase, displayRules, state, this)
+        return IamControllerImpl(iamRepository, sessionHandler, userDatabase, displayRules, state, checkSegments, this)
     }
 
     private fun TestScope.createWorkingController(): IamControllerImpl {
-        return IamControllerImpl(iamRepository, sessionHandler, userDatabase, displayRules, state, workScope())
+        return IamControllerImpl(iamRepository, sessionHandler, userDatabase, displayRules, state, checkSegments, workScope())
     }
 
     private fun TestScope.collectShown(sut: IamControllerImpl): List<InAppMessage> {

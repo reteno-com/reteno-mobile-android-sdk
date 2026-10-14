@@ -1,6 +1,8 @@
 package com.reteno.core.di
 
 import android.app.Activity
+import com.reteno.core.data.remote.api.ApiContract
+import com.reteno.core.data.remote.api.HttpMethod
 import com.reteno.core.domain.model.event.LifecycleTrackingOptions
 import com.reteno.core.fixtures.LocatorFixture
 import com.reteno.core.internal.action.lifecycle.TrackPermissionDialogAction
@@ -49,7 +51,8 @@ internal class ActionsLocatorLifecycleWiringTest {
         then()
         assertEquals(listOf("ApplicationOpened", "ApplicationBackgrounded"), fixture.env.insertedEventKeys)
         assertEquals(listOf(Constants.BROADCAST_ACTION_RETENO_APP_RESUME), fixture.env.platform.broadcasts)
-        verify(exactly = 1) { fixture.env.iamController.preloadHtml() }
+        val versionChecks = fixture.env.rest.requests.filter { it.method == HttpMethod.HEAD }
+        assertEquals(listOf(ApiContract.InAppMessages.BaseHtml), versionChecks.map { it.contract })
     }
 
     @Test

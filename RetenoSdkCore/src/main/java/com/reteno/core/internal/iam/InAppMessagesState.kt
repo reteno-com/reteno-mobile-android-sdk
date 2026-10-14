@@ -13,6 +13,10 @@ internal interface InAppMessagesState {
 
     fun postponeIfPaused(message: InAppMessage): Boolean
 
+    fun replaceMessages(messages: List<InAppMessage>)
+
+    fun messages(): List<InAppMessage>
+
     fun replaceWaitingForEvent(inApps: List<InAppWithEvent>)
 
     fun waitingForEvent(): List<InAppWithEvent>
@@ -24,6 +28,7 @@ internal class InAppMessagesStateImpl : InAppMessagesState {
     private var paused = false
     private var pauseBehaviour = InAppPauseBehaviour.POSTPONE_IN_APPS
     private val postponed = mutableListOf<InAppMessage>()
+    private var messages: List<InAppMessage> = emptyList()
     private var waitingForEvent: List<InAppWithEvent> = emptyList()
 
     override val isPaused: Boolean
@@ -46,6 +51,12 @@ internal class InAppMessagesStateImpl : InAppMessagesState {
         if (paused) postponed += message
         paused
     }
+
+    override fun replaceMessages(messages: List<InAppMessage>) {
+        synchronized(lock) { this.messages = messages.toList() }
+    }
+
+    override fun messages(): List<InAppMessage> = synchronized(lock) { messages }
 
     override fun replaceWaitingForEvent(inApps: List<InAppWithEvent>) {
         synchronized(lock) { waitingForEvent = inApps.toList() }

@@ -176,6 +176,31 @@ internal class InAppMessagesStateTest {
     }
 
     @Test
+    fun `should start without current messages`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+
+        whenn()
+        val messages = fixture.sut.messages()
+
+        then()
+        assertTrue(messages.isEmpty())
+    }
+
+    @Test
+    fun `should replace current messages`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.sut.replaceMessages(listOf(fixture.first))
+
+        whenn()
+        fixture.sut.replaceMessages(listOf(fixture.second))
+
+        then()
+        assertEquals(listOf(fixture.second), fixture.sut.messages())
+    }
+
+    @Test
     fun `should start without messages waiting for events`() = runUnitTest {
         given()
         val fixture = SutFixture()

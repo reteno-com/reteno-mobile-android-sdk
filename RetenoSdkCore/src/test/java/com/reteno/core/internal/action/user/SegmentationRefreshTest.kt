@@ -1,13 +1,15 @@
 package com.reteno.core.internal.action.user
 
-import com.reteno.core.domain.controller.IamController
-import com.reteno.core.fixtures.TestActionRunner
+import com.reteno.core.data.remote.model.iam.message.InAppMessage
+import com.reteno.core.fixtures.stubInAppMessage
+import com.reteno.core.internal.action.iam.CheckInAppSegments
+import com.reteno.core.internal.iam.InAppMessagesStateImpl
 import com.reteno.test.given
 import com.reteno.test.runUnitTest
 import com.reteno.test.then
 import com.reteno.test.whenn
 import com.reteno.test.workScope
-import io.mockk.every
+import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
@@ -20,19 +22,19 @@ import org.junit.jupiter.api.Test
 internal class SegmentationRefreshTest {
 
     private class SutFixture(scope: TestScope) {
-        var refreshes = 0
-        var failure: Throwable? = null
-        val traced = TestActionRunner(scope)
-        val iamController = mockk<IamController>().also {
-            every { it.refreshSegmentation() } answers {
-                refreshes++
-                failure?.let { error -> throw error }
+        val checks = mutableListOf<Pair<List<Long>, Boolean>>()
+        var outcome: Result<Unit> = Result.success(Unit)
+        val state = InAppMessagesStateImpl()
+        val checkSegments = mockk<CheckInAppSegments>().also {
+            coEvery { it(any(), any()) } answers {
+                checks += firstArg<List<InAppMessage>>().map { message -> message.messageId } to secondArg<Boolean>()
+                outcome
             }
         }
         val sut = SegmentationRefreshImpl(
-            iamController = iamController,
-            scope = scope.workScope(),
-            runner = traced.runner
+            checkSegments = checkSegments,
+            state = state,
+            scope = scope.workScope()
         )
     }
 
@@ -49,33 +51,48 @@ internal class SegmentationRefreshTest {
         }
         advanceTimeBy(SegmentationRefreshImpl.DEBOUNCE_MILLIS - 1_001)
         runCurrent()
-        val beforeQuietPeriodEnds = fixture.refreshes
+        val beforeQuietPeriodEnds = fixture.checks.size
         advanceTimeBy(1_001)
         runCurrent()
 
         then()
         assertEquals(0, beforeQuietPeriodEnds)
-        assertEquals(1, fixture.refreshes)
+        assertEquals(1, fixture.checks.size)
     }
 
     @Test
-    fun `should keep refreshing on later requests after a failed refresh`() = runUnitTest {
+    fun `should check segments of current in-app messages without saving them`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
-        fixture.failure = IllegalStateException("no network")
+        fixture.state.replaceMessages(listOf(stubInAppMessage(messageId = 4), stubInAppMessage(messageId = 9)))
         runCurrent()
 
         whenn()
         fixture.sut.request()
         advanceTimeBy(SegmentationRefreshImpl.DEBOUNCE_MILLIS + 1)
         runCurrent()
-        fixture.failure = null
+
+        then()
+        assertEquals(listOf(listOf(4L, 9L) to false), fixture.checks)
+    }
+
+    @Test
+    fun `should keep refreshing on later requests after a failed refresh`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        fixture.outcome = Result.failure(IllegalStateException("no network"))
+        runCurrent()
+
+        whenn()
+        fixture.sut.request()
+        advanceTimeBy(SegmentationRefreshImpl.DEBOUNCE_MILLIS + 1)
+        runCurrent()
+        fixture.outcome = Result.success(Unit)
         fixture.sut.request()
         advanceTimeBy(SegmentationRefreshImpl.DEBOUNCE_MILLIS + 1)
         runCurrent()
 
         then()
-        assertEquals(2, fixture.refreshes)
-        assertEquals("RefreshSegmentation", fixture.traced.reports.single().action)
+        assertEquals(2, fixture.checks.size)
     }
 }

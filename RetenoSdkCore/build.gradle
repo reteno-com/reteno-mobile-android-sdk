@@ -31,6 +31,7 @@ koverReport {
                         'com.reteno.core.internal.action.deeplink',
                         'com.reteno.core.internal.action.device',
                         'com.reteno.core.internal.action.event',
+                        'com.reteno.core.internal.action.iam',
                         'com.reteno.core.internal.action.inbox',
                         'com.reteno.core.internal.action.init',
                         'com.reteno.core.internal.action.interaction',

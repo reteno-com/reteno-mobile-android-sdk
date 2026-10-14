@@ -28,6 +28,12 @@ import com.reteno.core.internal.action.event.LogEcomEventAction
 import com.reteno.core.internal.action.event.LogEventAction
 import com.reteno.core.internal.action.event.LogRetenoEventAction
 import com.reteno.core.internal.action.event.LogScreenViewEventAction
+import com.reteno.core.internal.action.iam.CheckInAppSegments
+import com.reteno.core.internal.action.iam.CheckInAppSegmentsAction
+import com.reteno.core.internal.action.iam.FetchInAppMessagesAction
+import com.reteno.core.internal.action.iam.InAppHtmlPreload
+import com.reteno.core.internal.action.iam.InAppMessagesCache
+import com.reteno.core.internal.action.iam.PreloadIamHtmlAction
 import com.reteno.core.internal.action.inbox.GetInboxMessagesAction
 import com.reteno.core.internal.action.inbox.GetInboxMessagesCountAction
 import com.reteno.core.internal.action.inbox.InboxCountPoller
@@ -143,12 +149,15 @@ internal class ActionsLocator(
     private val inAppInteractionsDb by lazy { serviceLocator.retenoDatabaseManagerInAppInteractionProvider.get() }
     private val wrappedLinksDb by lazy { serviceLocator.retenoDatabaseManagerWrappedLinksProvider.get() }
     private val inboxDb by lazy { serviceLocator.retenoDatabaseManagerAppInboxProvider.get() }
+    private val inAppCache by lazy {
+        InAppMessagesCache(serviceLocator.retenoDatabaseManagerInAppMessagesProvider.get(), dispatchers)
+    }
     private val recomEventsDb by lazy { serviceLocator.retenoDatabaseManagerRecomEventsProvider.get() }
 
     private val lifecycleEvents by lazy { LifecycleEvents(lifecycleEventFilter, logEvent) }
     private val screenTracker by lazy { ScreenTracker(logScreenView, scope) }
     private val currentDevice by lazy { CurrentDevice(configRepository, devicesDb, platform, dispatchers) }
-    private val segmentationRefresh by lazy { SegmentationRefreshImpl(iamController, scope, runner) }
+    private val segmentationRefresh by lazy { SegmentationRefreshImpl(checkInAppSegments, inAppMessagesState, scope) }
     private val sdk by lazy { StartStopSequencer(mainScope, initGate, startSdk, stopSdk, runState) }
 
     private val contactWriter by lazy {
@@ -174,6 +183,29 @@ internal class ActionsLocator(
 
     val inAppMessagesState: InAppMessagesState by lazy {
         InAppMessagesStateImpl()
+    }
+
+    val checkInAppSegments: CheckInAppSegments by lazy {
+        CheckInAppSegmentsAction(api, inAppCache, clock, runner)
+    }
+
+    private val fetchInAppMessages: FetchInAppMessagesAction by lazy {
+        FetchInAppMessagesAction(
+            api = api,
+            cache = inAppCache,
+            prefs = prefs,
+            checkSegments = checkInAppSegments,
+            state = inAppMessagesState,
+            dispatchers = dispatchers,
+            runner = runner
+        )
+    }
+
+    private val inAppHtmlPreload: InAppHtmlPreload by lazy {
+        InAppHtmlPreload(
+            preload = PreloadIamHtmlAction(api, prefs, serviceLocator.fileManagerProvider.get(), dispatchers, runner),
+            scope = scope
+        )
     }
 
     val registerDevice: RegisterDeviceAction by lazy {
@@ -312,7 +344,7 @@ internal class ActionsLocator(
             platform = platform,
             dataSync = dataSync,
             configRepository = configRepository,
-            iamController = iamController,
+            htmlPreload = inAppHtmlPreload,
             state = appForegroundState,
             lifecycleEvents = lifecycleEvents,
             clock = clock,
@@ -378,6 +410,7 @@ internal class ActionsLocator(
             ensureDeviceRegistered = ensureDeviceRegisteredThisSession,
             sessionHandler = sessionHandler,
             iamController = iamController,
+            fetchInAppMessages = fetchInAppMessages,
             dataSync = dataSync,
             iamView = iamView,
             inboxCount = inboxCountPoller,

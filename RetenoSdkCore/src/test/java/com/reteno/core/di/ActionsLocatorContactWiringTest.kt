@@ -1,9 +1,13 @@
 package com.reteno.core.di
 
+import com.reteno.core.data.remote.api.ApiContract
+import com.reteno.core.data.remote.model.iam.displayrules.async.AsyncDisplayRules
 import com.reteno.core.domain.model.logevent.LogLevel
 import com.reteno.core.domain.model.user.UserAttributesAnonymous
 import com.reteno.core.fixtures.LocatorFixture
 import com.reteno.core.fixtures.stubAnonymousAttributes
+import com.reteno.core.fixtures.stubInAppMessage
+import com.reteno.core.fixtures.stubSegment
 import com.reteno.core.fixtures.stubUser
 import com.reteno.core.internal.action.sync.SyncResult
 import com.reteno.core.internal.log.LogPriority
@@ -85,6 +89,9 @@ internal class ActionsLocatorContactWiringTest {
         val fixture = LocatorFixture(this)
         fixture.sut.requestStart()
         runCurrent()
+        fixture.sut.inAppMessagesState.replaceMessages(
+            listOf(stubInAppMessage(async = AsyncDisplayRules(segment = stubSegment(inSegment = false))))
+        )
 
         whenn()
         fixture.sut.setUserAttributes("user-1", stubUser())
@@ -93,7 +100,7 @@ internal class ActionsLocatorContactWiringTest {
 
         then()
         verify(exactly = 1) { fixture.usersDb.insertUser(any()) }
-        verify(exactly = 1) { fixture.iamController.refreshSegmentation() }
+        assertEquals(1, fixture.rest.requests.count { it.contract == ApiContract.InAppMessages.CheckUserInSegments })
     }
 
     @Test

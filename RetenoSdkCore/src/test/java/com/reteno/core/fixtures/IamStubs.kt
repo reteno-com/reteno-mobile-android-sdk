@@ -46,7 +46,8 @@ internal fun stubInAppMessage(
     showCount = showCount
 )
 
-internal fun stubSegment(inSegment: Boolean) = SegmentRule(segmentId = 1).apply { isInSegment = inSegment }
+internal fun stubSegment(inSegment: Boolean, segmentId: Long = 1) =
+    SegmentRule(segmentId = segmentId).apply { isInSegment = inSegment }
 
 internal fun stubEventRule(
     name: String = "purchase",

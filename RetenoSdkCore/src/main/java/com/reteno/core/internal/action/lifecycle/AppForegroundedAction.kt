@@ -1,8 +1,8 @@
 package com.reteno.core.internal.action.lifecycle
 
 import com.reteno.core.data.repository.ConfigRepository
-import com.reteno.core.domain.controller.IamController
 import com.reteno.core.domain.model.event.Event
+import com.reteno.core.internal.action.iam.InAppHtmlPreloading
 import com.reteno.core.internal.action.sync.SyncScheduler
 import com.reteno.core.internal.action.trace.ActionRunner
 import com.reteno.core.internal.action.trace.ActionTrace
@@ -20,7 +20,7 @@ internal class AppForegroundedAction(
     private val platform: AppPlatform,
     private val dataSync: SyncScheduler,
     private val configRepository: ConfigRepository,
-    private val iamController: IamController,
+    private val htmlPreload: InAppHtmlPreloading,
     private val state: AppForegroundState,
     private val lifecycleEvents: LifecycleEvents,
     private val clock: () -> Long,
@@ -36,7 +36,7 @@ internal class AppForegroundedAction(
         }
         trackAppVersion()
         step("preload in-app message html") {
-            iamController.preloadHtml()
+            htmlPreload.request()
         }
         trackAppOpened()
     }

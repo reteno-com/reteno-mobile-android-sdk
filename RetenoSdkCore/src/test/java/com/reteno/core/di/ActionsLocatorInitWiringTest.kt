@@ -1,6 +1,7 @@
 package com.reteno.core.di
 
 import com.reteno.core.data.local.config.DeviceIdMode
+import com.reteno.core.data.remote.api.ApiContract
 import com.reteno.core.fixtures.LocatorFixture
 import com.reteno.core.fixtures.stubConfig
 import com.reteno.core.internal.coroutine.InitState
@@ -137,7 +138,8 @@ internal class ActionsLocatorInitWiringTest {
         assertTrue(startedAfterStart)
         assertFalse(fixture.env.sut.isStarted)
         verify(exactly = 1) { fixture.env.sessionHandler.start() }
-        coVerify(exactly = 1) { fixture.env.iamController.getInAppMessages() }
+        assertEquals(1, fixture.env.rest.requests.count { it.contract == ApiContract.InAppMessages.GetInAppMessages })
+        coVerify(exactly = 1) { fixture.env.iamController.processInAppMessages(any()) }
         verify(exactly = 1) { fixture.env.iamView.start() }
         verify(exactly = 1) { fixture.env.sessionHandler.stop() }
         verify(exactly = 1) { fixture.env.iamView.pause() }

@@ -7,11 +7,13 @@ import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerAppInbox
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerDevice
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerEvents
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerInAppInteraction
+import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerInAppMessages
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerInteraction
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerLogEvent
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerRecomEvents
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerUser
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerWrappedLink
+import com.reteno.core.data.local.file.FileManager
 import com.reteno.core.data.local.model.event.EventsDb
 import com.reteno.core.data.local.model.interaction.InteractionRequestDb
 import com.reteno.core.data.local.sharedpref.SharedPrefsManager
@@ -44,6 +46,8 @@ internal class LocatorFixture(scope: TestScope, initialized: Boolean = true) {
     val inAppInteractionsDb = mockk<RetenoDatabaseManagerInAppInteraction>(relaxed = true)
     val eventsDb = mockk<RetenoDatabaseManagerEvents>(relaxed = true)
     val inboxDb = mockk<RetenoDatabaseManagerAppInbox>(relaxed = true)
+    val inAppDb = mockk<RetenoDatabaseManagerInAppMessages>(relaxed = true)
+    val files = mockk<FileManager>(relaxed = true)
     val recomEventsDb = mockk<RetenoDatabaseManagerRecomEvents>(relaxed = true)
     val wrappedLinksDb = mockk<RetenoDatabaseManagerWrappedLink>(relaxed = true)
     val logEventsDb = mockk<RetenoDatabaseManagerLogEvent>(relaxed = true)
@@ -69,6 +73,8 @@ internal class LocatorFixture(scope: TestScope, initialized: Boolean = true) {
         every { it.retenoDatabaseManagerInAppInteractionProvider.get() } returns inAppInteractionsDb
         every { it.retenoDatabaseManagerEventsProvider.get() } returns eventsDb
         every { it.retenoDatabaseManagerAppInboxProvider.get() } returns inboxDb
+        every { it.retenoDatabaseManagerInAppMessagesProvider.get() } returns inAppDb
+        every { it.fileManagerProvider.get() } returns files
         every { it.retenoDatabaseManagerRecomEventsProvider.get() } returns recomEventsDb
         every { it.retenoDatabaseManagerWrappedLinksProvider.get() } returns wrappedLinksDb
         every { it.retenoDatabaseManagerLogEventProvider.get() } returns logEventsDb
@@ -94,6 +100,7 @@ internal class LocatorFixture(scope: TestScope, initialized: Boolean = true) {
     init {
         every { configRepository.getDeviceId() } returns deviceId
         every { restConfig.deviceId } returns deviceId
+        every { prefs.getIamBaseUrl() } returns null
         every { eventsDb.insertEvents(capture(insertedEvents)) } returns Unit
     }
 

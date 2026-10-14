@@ -1,9 +1,9 @@
 package com.reteno.core.internal.action.lifecycle
 
 import com.reteno.core.data.repository.ConfigRepository
-import com.reteno.core.domain.controller.IamController
 import com.reteno.core.domain.model.event.LifecycleTrackingOptions
 import com.reteno.core.domain.model.event.Parameter
+import com.reteno.core.internal.action.iam.InAppHtmlPreloading
 import com.reteno.core.internal.action.sync.SyncScheduler
 import com.reteno.core.internal.platform.AppPlatform
 import com.reteno.core.internal.platform.AppVersion
@@ -37,14 +37,14 @@ internal class AppForegroundedActionTest {
         private val dataSync = mockk<SyncScheduler>().also {
             every { it.clearOldData() } answers { calls += "clear old data" }
         }
-        private val iamController = mockk<IamController>().also {
-            every { it.preloadHtml() } answers { calls += "preload html" }
+        private val htmlPreload = mockk<InAppHtmlPreloading>().also {
+            every { it.request() } answers { calls += "preload html" }
         }
         val sut = AppForegroundedAction(
             platform = platform,
             dataSync = dataSync,
             configRepository = configRepository,
-            iamController = iamController,
+            htmlPreload = htmlPreload,
             state = env.state,
             lifecycleEvents = env.lifecycleEvents,
             clock = { 1_000L },

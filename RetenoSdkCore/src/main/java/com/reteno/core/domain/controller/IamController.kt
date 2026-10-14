@@ -17,17 +17,13 @@ internal interface IamController {
 
     fun reset()
 
-    suspend fun getInAppMessages()
+    suspend fun processInAppMessages(messages: List<InAppMessage>)
 
     fun pauseInAppMessages(isPaused: Boolean)
 
     fun updateInAppMessage(inAppMessage: InAppMessage)
 
     fun setPauseBehaviour(behaviour: InAppPauseBehaviour)
-
-    fun refreshSegmentation()
-
-    fun preloadHtml()
 
     val fullHtmlStateFlow: Flow<ResultDomain<IamFetchResult>>
     val inAppMessagesFlow: Flow<InAppMessage>

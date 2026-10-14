@@ -140,7 +140,7 @@ class ServiceLocator internal constructor(
     internal val retenoDatabaseManagerWrappedLinksProvider =
         RetenoDatabaseManagerWrappedLinkProvider(databaseProvider)
 
-    private val retenoDatabaseManagerInAppMessagesProvider =
+    internal val retenoDatabaseManagerInAppMessagesProvider =
         RetenoDatabaseManagerInAppMessagesProvider(databaseProvider)
 
     internal val retenoDatabaseManagerInAppInteractionProvider =
@@ -168,14 +168,13 @@ class ServiceLocator internal constructor(
     val configRepositoryProvider: ProviderWeakReference<ConfigRepository>
         get() = configRepositoryProviderInternal
 
-    private val fileManagerProvider:FileManagerProvider = FileManagerProvider(context)
+    internal val fileManagerProvider: FileManagerProvider = FileManagerProvider(context)
 
     private val iamRepositoryProvider: IamRepositoryProvider =
         IamRepositoryProvider(
             context,
             fileManagerProvider,
             apiClientProvider,
-            sharedPrefsManagerProvider,
             retenoDatabaseManagerInAppMessagesProvider,
             Dispatchers.IO
         )
@@ -191,7 +190,8 @@ class ServiceLocator internal constructor(
         retenoSessionHandlerProviderInternal,
         retenoDatabaseManagerUserProviderInternal,
         { actions.inAppDisplayRules },
-        { actions.inAppMessagesState }
+        { actions.inAppMessagesState },
+        { actions.checkInAppSegments }
     )
 
     private val iamViewProviderInternal: IamViewProvider = IamViewProvider(

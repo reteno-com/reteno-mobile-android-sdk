@@ -1,7 +1,7 @@
 package com.reteno.core.internal.action.user
 
-import com.reteno.core.domain.controller.IamController
-import com.reteno.core.internal.action.trace.ActionRunner
+import com.reteno.core.internal.action.iam.CheckInAppSegments
+import com.reteno.core.internal.iam.InAppMessagesState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.channels.BufferOverflow
@@ -15,9 +15,9 @@ internal interface SegmentationRefresh {
 
 @OptIn(FlowPreview::class)
 internal class SegmentationRefreshImpl(
-    private val iamController: IamController,
-    scope: CoroutineScope,
-    private val runner: ActionRunner
+    private val checkSegments: CheckInAppSegments,
+    private val state: InAppMessagesState,
+    scope: CoroutineScope
 ) : SegmentationRefresh {
 
     private val requests = MutableSharedFlow<Unit>(
@@ -28,11 +28,7 @@ internal class SegmentationRefreshImpl(
     init {
         scope.launch {
             requests.debounce(DEBOUNCE_MILLIS).collect {
-                runner("RefreshSegmentation") {
-                    step("refresh in-app segmentation") {
-                        iamController.refreshSegmentation()
-                    }
-                }
+                checkSegments(state.messages(), persist = false)
             }
         }
     }

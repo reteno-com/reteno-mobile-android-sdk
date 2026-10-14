@@ -2,6 +2,7 @@ package com.reteno.core.internal.action.init
 
 import com.reteno.core.domain.controller.IamController
 import com.reteno.core.internal.action.device.EnsureDeviceRegisteredThisSession
+import com.reteno.core.internal.action.iam.FetchInAppMessages
 import com.reteno.core.internal.action.inbox.InboxCountPolling
 import com.reteno.core.internal.action.sync.SyncScheduler
 import com.reteno.core.internal.action.trace.ActionRunner
@@ -20,6 +21,7 @@ internal class StartSdkAction(
     private val ensureDeviceRegistered: EnsureDeviceRegisteredThisSession,
     private val sessionHandler: RetenoSessionHandler,
     private val iamController: IamController,
+    private val fetchInAppMessages: FetchInAppMessages,
     private val dataSync: SyncScheduler,
     private val iamView: IamView,
     private val inboxCount: InboxCountPolling,
@@ -38,8 +40,9 @@ internal class StartSdkAction(
             sessionHandler.start()
         }
         if (state.markStarted()) {
-            step("fetch in-app messages from server") {
-                withContext(dispatchers.io) { iamController.getInAppMessages() }
+            val messages = withContext(dispatchers.io) { fetchInAppMessages() }.getOrDefault(emptyList())
+            step("schedule in-app messages by their triggers") {
+                withContext(dispatchers.io) { iamController.processInAppMessages(messages) }
             }
         } else {
             note { "sdk already started, in-app messages are fetched" }

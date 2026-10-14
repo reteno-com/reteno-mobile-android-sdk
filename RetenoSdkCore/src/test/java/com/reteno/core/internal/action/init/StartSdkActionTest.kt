@@ -1,9 +1,12 @@
 package com.reteno.core.internal.action.init
 
+import com.reteno.core.data.remote.model.iam.message.InAppMessage
 import com.reteno.core.domain.controller.IamController
 import com.reteno.core.fixtures.TestActionRunner
+import com.reteno.core.fixtures.stubInAppMessage
 import com.reteno.core.fixtures.testDispatchers
 import com.reteno.core.internal.action.device.EnsureDeviceRegisteredThisSession
+import com.reteno.core.internal.action.iam.FetchInAppMessages
 import com.reteno.core.internal.action.inbox.InboxCountPolling
 import com.reteno.core.internal.action.sync.SyncScheduler
 import com.reteno.core.internal.lifecycle.SdkRunState
@@ -25,6 +28,7 @@ internal class StartSdkActionTest {
 
     private class SutFixture(scope: TestScope) {
         val calls = mutableListOf<String>()
+        var fetched: Result<List<InAppMessage>> = Result.success(listOf(stubInAppMessage(messageId = 7)))
         val dispatchers = scope.testDispatchers()
         val state = SdkRunState()
         val traced = TestActionRunner(scope)
@@ -34,8 +38,16 @@ internal class StartSdkActionTest {
         private val sessionHandler = mockk<RetenoSessionHandler>().also {
             every { it.start() } answers { calls += "start session" }
         }
+        private val fetchInAppMessages = mockk<FetchInAppMessages>().also {
+            coEvery { it() } answers {
+                calls += "fetch in-apps" + onIo()
+                fetched
+            }
+        }
         private val iamController = mockk<IamController>().also {
-            coEvery { it.getInAppMessages() } answers { calls += "fetch in-apps" + onIo() }
+            coEvery { it.processInAppMessages(any()) } answers {
+                calls += "schedule in-apps ${firstArg<List<InAppMessage>>().map { it.messageId }}" + onIo()
+            }
         }
         private val dataSync = mockk<SyncScheduler>().also {
             every { it.startScheduler() } answers { calls += "start scheduler" }
@@ -50,6 +62,7 @@ internal class StartSdkActionTest {
             ensureDeviceRegistered = ensureDeviceRegistered,
             sessionHandler = sessionHandler,
             iamController = iamController,
+            fetchInAppMessages = fetchInAppMessages,
             dataSync = dataSync,
             iamView = iamView,
             inboxCount = inboxCount,
@@ -77,6 +90,7 @@ internal class StartSdkActionTest {
                 "ensure device on io",
                 "start session",
                 "fetch in-apps on io",
+                "schedule in-apps [7] on io",
                 "start scheduler",
                 "start in-app view on main",
                 "resume inbox count polling"
@@ -84,6 +98,19 @@ internal class StartSdkActionTest {
             fixture.calls
         )
         assertTrue(fixture.state.isStarted)
+    }
+
+    @Test
+    fun `should schedule no in-apps when they cannot be fetched`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        fixture.fetched = Result.failure(IllegalStateException("database closed"))
+
+        whenn()
+        fixture.sut()
+
+        then()
+        assertTrue("schedule in-apps [] on io" in fixture.calls)
     }
 
     @Test
