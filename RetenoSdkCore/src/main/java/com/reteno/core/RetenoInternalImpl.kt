@@ -76,7 +76,6 @@ class RetenoInternalImpl internal constructor(
     private val activityHelper: RetenoActivityHelper by lazy { serviceLocator.retenoActivityHelperProvider.get() }
 
     private val configRepository by lazy { serviceLocator.configRepositoryProvider.get() }
-    private val iamController by lazy { serviceLocator.iamControllerProvider.get() }
     private val databaseManager by lazy { serviceLocator.retenoDatabaseManagerProvider.get() }
 
     override val appInbox: AppInbox by lazy { AppInboxImpl(actions, LoggerRemoteLog, isOsSupported) }
@@ -226,8 +225,7 @@ class RetenoInternalImpl internal constructor(
     }
 
     override fun pauseInAppMessages(isPaused: Boolean) = runAfterInit {
-        Logger.i(TAG, "pauseInAppMessages(): isPaused = [$isPaused]")
-        iamController.pauseInAppMessages(isPaused)
+        actions.submitInAppPause(isPaused)
     }
 
     override fun pausePushInAppMessages(isPaused: Boolean) = runAfterInit {
@@ -267,14 +265,7 @@ class RetenoInternalImpl internal constructor(
         if (!isOsSupported()) {
             return@runAfterInit
         }
-        /*@formatter:off*/ Logger.i(TAG, "setInAppMessagesPauseBehaviour(): ", "behaviour = [" , behaviour , "]")
-        /*@formatter:on*/
-        try {
-            iamController.setPauseBehaviour(behaviour)
-        } catch (ex: Throwable) {
-            /*@formatter:off*/ Logger.e(TAG, "setInAppMessagesPauseBehaviour(): behaviour = [$behaviour]", ex)
-            /*@formatter:on*/
-        }
+        actions.submitInAppPauseBehaviour(behaviour)
     }
 
     override fun onNewFcmToken(token: String) {

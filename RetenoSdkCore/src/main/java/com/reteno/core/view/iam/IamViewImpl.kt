@@ -59,6 +59,7 @@ internal class IamViewImpl(
     private var interactionId: String? = null
     private var messageId: Long? = null
     private var messageInstanceId: Long? = null
+    private var shownMessage: InAppMessage? = null
     private var iamContainer: IamContainer? = null
 
     private var pauseIncomingPushInApps = AtomicBoolean(false)
@@ -155,6 +156,8 @@ internal class IamViewImpl(
         if (checkPauseState()) return
         showIamOnceReady(DELAY_UI_ATTEMPTS)
         inAppLifecycleCallback?.onDisplay(createInAppData())
+        shownMessage?.let(interactions::submitInAppShown)
+        shownMessage = null
         messageInstanceId?.let { instanceId ->
             val newInteractionId = UUID.randomUUID().toString()
             interactionId = newInteractionId
@@ -219,6 +222,7 @@ internal class IamViewImpl(
             inAppSource = InAppSource.PUSH_NOTIFICATION
             messageId = null
             messageInstanceId = null
+            shownMessage = null
 
             iamShowScope.launch {
                 inAppLifecycleCallback?.beforeDisplay(createInAppData())
@@ -235,9 +239,8 @@ internal class IamViewImpl(
         /*@formatter:off*/ Logger.i(TAG, "initialize(): ", "inAppMessageId = [", inAppMessage.messageId, "], messageInstanceId = [", inAppMessage.messageInstanceId, "]")
         /*@formatter:on*/
         try {
-            inAppMessage.notifyShown()
-            iamController.updateInAppMessage(inAppMessage)
             iamShowScope.launch {
+                shownMessage = inAppMessage
                 messageId = inAppMessage.messageId
                 messageInstanceId = inAppMessage.messageInstanceId
                 inAppSource = InAppSource.DISPLAY_RULES
@@ -341,6 +344,7 @@ internal class IamViewImpl(
         interactionId = null
         messageId = null
         messageInstanceId = null
+        shownMessage = null
         iamShowScope.launch {
             iamContainer?.destroy()
             iamContainer = null

@@ -21,6 +21,7 @@ import com.reteno.test.whenn
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.test.TestScope
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -39,6 +40,7 @@ internal class CheckInAppSegmentsActionTest {
             api = rest.api(dispatchers),
             cache = InAppMessagesCache(inAppDb, dispatchers),
             clock = { NOW },
+            lock = Mutex(),
             runner = traced.runner
         )
 

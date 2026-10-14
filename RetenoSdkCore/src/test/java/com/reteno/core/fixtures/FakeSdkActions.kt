@@ -1,6 +1,7 @@
 package com.reteno.core.fixtures
 
 import com.reteno.core.RetenoConfig
+import com.reteno.core.data.remote.model.iam.message.InAppMessage
 import com.reteno.core.data.remote.model.recommendation.get.RecomBase
 import com.reteno.core.di.SdkActions
 import com.reteno.core.domain.callback.appinbox.RetenoResultCallback
@@ -16,6 +17,7 @@ import com.reteno.core.domain.model.recommendation.post.RecomEvents
 import com.reteno.core.domain.model.user.User
 import com.reteno.core.domain.model.user.UserAttributesAnonymous
 import com.reteno.core.features.appinbox.AppInboxStatus
+import com.reteno.core.features.iam.InAppPauseBehaviour
 import com.reteno.core.features.recommendation.GetRecommendationResponseCallback
 import com.reteno.core.features.recommendation.GetRecommendationResponseJsonCallback
 import com.reteno.core.internal.action.sync.BackgroundSyncAction
@@ -196,6 +198,18 @@ internal class FakeSdkActions : SdkActions {
     override fun submitRecommendationEvents(events: RecomEvents) {
         record("submitRecommendationEvents ${events.recomVariantId}")
         recomEvents += events
+    }
+
+    override fun submitInAppShown(message: InAppMessage) {
+        record("submitInAppShown ${message.messageId}")
+    }
+
+    override fun submitInAppPause(paused: Boolean) {
+        record("submitInAppPause $paused")
+    }
+
+    override fun submitInAppPauseBehaviour(behaviour: InAppPauseBehaviour) {
+        record("submitInAppPauseBehaviour $behaviour")
     }
 
     override val backgroundSync: BackgroundSyncAction

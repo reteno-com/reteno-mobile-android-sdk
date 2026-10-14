@@ -8,6 +8,7 @@ import com.reteno.core.di.ServiceLocator
 import com.reteno.core.domain.model.event.LifecycleTrackingOptions
 import com.reteno.core.domain.model.interaction.InteractionAction
 import com.reteno.core.domain.model.interaction.InteractionStatus
+import com.reteno.core.features.iam.InAppPauseBehaviour
 import com.reteno.core.fixtures.FakeSdkActions
 import com.reteno.core.fixtures.ManualLifecycleOwner
 import com.reteno.core.fixtures.stubAnonymousAttributes
@@ -308,6 +309,49 @@ internal class RetenoInternalImplTest {
 
         then()
         assertEquals(listOf("boot", "submitPushInteraction interaction-1 DELIVERED"), fixture.actions.calls)
+    }
+
+    @Test
+    fun `should pass in-app pause to sdk once initialized`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        fixture.sut.pauseInAppMessages(true)
+        runCurrent()
+        val beforeInit = fixture.actions.calls.toList()
+
+        whenn()
+        fixture.serviceLocator.initGate.markInitialized(byUser = false)
+        runCurrent()
+
+        then()
+        assertEquals(listOf("boot"), beforeInit)
+        assertEquals(listOf("boot", "submitInAppPause true"), fixture.actions.calls)
+    }
+
+    @Test
+    fun `should pass in-app pause behaviour to sdk once initialized`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        fixture.serviceLocator.initGate.markInitialized(byUser = true)
+
+        whenn()
+        fixture.sut.setInAppMessagesPauseBehaviour(InAppPauseBehaviour.SKIP_IN_APPS)
+
+        then()
+        assertEquals(listOf("boot", "submitInAppPauseBehaviour SKIP_IN_APPS"), fixture.actions.calls)
+    }
+
+    @Test
+    fun `should ignore in-app pause behaviour on unsupported os`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this, osSupported = false)
+        fixture.serviceLocator.initGate.markInitialized(byUser = true)
+
+        whenn()
+        fixture.sut.setInAppMessagesPauseBehaviour(InAppPauseBehaviour.SKIP_IN_APPS)
+
+        then()
+        assertTrue(fixture.actions.calls.isEmpty())
     }
 
     @Test

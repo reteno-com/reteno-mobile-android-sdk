@@ -2,9 +2,7 @@ package com.reteno.core.data.repository
 
 import android.content.Context
 import com.reteno.core.R
-import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerInAppMessages
 import com.reteno.core.data.local.file.FileManager
-import com.reteno.core.data.local.mappers.toDB
 import com.reteno.core.data.remote.api.ApiClient
 import com.reteno.core.data.remote.api.ApiContract
 import com.reteno.core.data.remote.mapper.fromJson
@@ -12,7 +10,6 @@ import com.reteno.core.data.remote.mapper.toJson
 import com.reteno.core.data.remote.model.iam.initfailed.Data
 import com.reteno.core.data.remote.model.iam.initfailed.IamJsWidgetInitiFailed
 import com.reteno.core.data.remote.model.iam.initfailed.Payload
-import com.reteno.core.data.remote.model.iam.message.InAppMessage
 import com.reteno.core.data.remote.model.iam.message.InAppMessageContent
 import com.reteno.core.data.remote.model.iam.widget.WidgetModel
 import com.reteno.core.domain.ResponseCallback
@@ -28,7 +25,6 @@ internal class IamRepositoryImpl(
     private val context: Context,
     private val apiClient: ApiClient,
     private val fileManager: FileManager,
-    private val databaseManager: RetenoDatabaseManagerInAppMessages,
     private val coroutineDispatcher: CoroutineDispatcher
 ) : IamRepository {
 
@@ -96,14 +92,6 @@ internal class IamRepositoryImpl(
                     /*@formatter:on*/
                 }
             })
-    }
-
-    override suspend fun updateInAppMessages(inAppMessages: List<InAppMessage>) {
-        /*@formatter:off*/ Logger.i(TAG, "updateInAppMessages(): ", "inAppMessages = [", inAppMessages, "]")
-        /*@formatter:on*/
-        val messages = inAppMessages.map { it.toDB() }
-        databaseManager.deleteInAppMessages(messages)
-        databaseManager.insertInAppMessages(messages)
     }
 
     companion object {

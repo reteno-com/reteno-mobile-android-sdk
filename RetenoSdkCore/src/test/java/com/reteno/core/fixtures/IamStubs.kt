@@ -12,7 +12,10 @@ import com.reteno.core.data.remote.model.iam.displayrules.schedule.ScheduleDispl
 import com.reteno.core.data.remote.model.iam.displayrules.schedule.ScheduleRule
 import com.reteno.core.data.remote.model.iam.displayrules.targeting.InAppWithEvent
 import com.reteno.core.data.remote.model.iam.displayrules.targeting.RuleEventParameter
+import com.reteno.core.data.remote.model.iam.displayrules.targeting.TargetingDisplayRules
 import com.reteno.core.data.remote.model.iam.displayrules.targeting.TargetingRule
+import com.reteno.core.data.remote.model.iam.displayrules.targeting.TargetingRuleConditionsGroup
+import com.reteno.core.data.remote.model.iam.displayrules.targeting.TargetingRuleGroup
 import com.reteno.core.data.remote.model.iam.message.InAppMessage
 import com.reteno.core.data.remote.model.iam.message.InAppMessageContent
 
@@ -29,6 +32,7 @@ internal fun stubInAppMessage(
     frequency: List<FrequencyRule>? = null,
     schedule: List<ScheduleRule>? = null,
     async: AsyncDisplayRules? = null,
+    targeting: TargetingDisplayRules? = null,
     lastShowTime: Long? = null,
     showCount: Long = 0
 ) = InAppMessage(
@@ -37,7 +41,7 @@ internal fun stubInAppMessage(
     displayRulesJson = JsonObject(),
     displayRules = DisplayRules(
         frequency = frequency?.let { rules -> FrequencyDisplayRules().apply { predicates.addAll(rules) } },
-        targeting = null,
+        targeting = targeting,
         schedule = schedule?.let { rules -> ScheduleDisplayRules().apply { predicates.addAll(rules) } },
         async = async
     ),
@@ -72,4 +76,12 @@ internal fun stubDaysAndTime(
     fromMinutes = from.second,
     toHours = to.first,
     toMinutes = to.second
+)
+
+internal fun stubTargeting(vararg conditions: TargetingRule) = TargetingDisplayRules(
+    include = TargetingRuleGroup(
+        relation = RuleRelation.OR,
+        groups = listOf(TargetingRuleConditionsGroup(relation = RuleRelation.OR, conditions = conditions.toList()))
+    ),
+    exclude = null
 )

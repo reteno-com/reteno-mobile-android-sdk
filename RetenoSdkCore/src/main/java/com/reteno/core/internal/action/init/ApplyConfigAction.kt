@@ -5,8 +5,8 @@ import com.reteno.core.data.local.config.DeviceIdMode
 import com.reteno.core.data.local.config.RestConfig
 import com.reteno.core.data.local.sharedpref.SharedPrefsManager
 import com.reteno.core.data.repository.ConfigRepository
-import com.reteno.core.domain.controller.IamController
 import com.reteno.core.internal.action.device.RegisterDevice
+import com.reteno.core.internal.action.iam.PauseInAppMessages
 import com.reteno.core.internal.action.interaction.ProcessCachedInteractions
 import com.reteno.core.internal.action.trace.ActionRunner
 import com.reteno.core.internal.action.trace.ActionTrace
@@ -30,7 +30,7 @@ internal class ApplyConfigAction(
     private val sessionHandler: RetenoSessionHandler,
     private val registerDevice: RegisterDevice,
     private val initGate: InitGate,
-    private val iamController: IamController,
+    private val pauseInApps: PauseInAppMessages,
     private val iamView: IamView,
     private val lifecycleTracking: AppLifecycleTracking,
     private val processCachedInteractions: ProcessCachedInteractions,
@@ -62,18 +62,15 @@ internal class ApplyConfigAction(
         runner("ApplyConfigOptions") {
             applyOptions(config, byUser)
         }
-        if (byUser) registerDevice()
+        if (byUser) {
+            registerDevice()
+        }
         step("open init gate") {
             initGate.markInitialized(byUser)
         }
-        step(
-            "apply in-app pause options",
-            detail = { "inApps=${config.isPausedInAppMessages}  pushInApps=${config.isPausedPushInAppMessages}" }
-        ) {
-            withContext(dispatchers.main) {
-                iamController.pauseInAppMessages(config.isPausedInAppMessages)
-                iamView.pauseIncomingPushInApps(config.isPausedPushInAppMessages)
-            }
+        pauseInApps(config.isPausedInAppMessages)
+        step("apply push in-app pause option", detail = { "pushInApps=${config.isPausedPushInAppMessages}" }) {
+            withContext(dispatchers.main) { iamView.pauseIncomingPushInApps(config.isPausedPushInAppMessages) }
         }
         if (byUser) {
             step("start app lifecycle tracking") {

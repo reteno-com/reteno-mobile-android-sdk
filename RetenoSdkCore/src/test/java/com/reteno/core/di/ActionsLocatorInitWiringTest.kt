@@ -85,7 +85,7 @@ internal class ActionsLocatorInitWiringTest {
     fun `should apply user configuration register device and start lifecycle tracking`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
-        val config = stubConfig(customDeviceId = true)
+        val config = stubConfig(customDeviceId = true, pausedInApps = true)
         coEvery { fixture.env.configRepository.getFcmToken() } returns "token"
 
         whenn()
@@ -95,7 +95,7 @@ internal class ActionsLocatorInitWiringTest {
         then()
         coVerify(exactly = 1) { fixture.env.restConfig.initDeviceId(DeviceIdMode.CLIENT_UUID) }
         verify(exactly = 1) { fixture.env.devicesDb.insertDevice(any()) }
-        verify(exactly = 1) { fixture.env.iamController.pauseInAppMessages(false) }
+        assertTrue(fixture.env.sut.inAppMessagesState.isPaused)
         verify(exactly = 1) { fixture.env.iamView.pauseIncomingPushInApps(true) }
         verify(exactly = 1) { fixture.env.interactionsDb.getInteractionRequests() }
         assertNotNull(fixture.env.platform.onForeground)
@@ -139,7 +139,6 @@ internal class ActionsLocatorInitWiringTest {
         assertFalse(fixture.env.sut.isStarted)
         verify(exactly = 1) { fixture.env.sessionHandler.start() }
         assertEquals(1, fixture.env.rest.requests.count { it.contract == ApiContract.InAppMessages.GetInAppMessages })
-        coVerify(exactly = 1) { fixture.env.iamController.processInAppMessages(any()) }
         verify(exactly = 1) { fixture.env.iamView.start() }
         verify(exactly = 1) { fixture.env.sessionHandler.stop() }
         verify(exactly = 1) { fixture.env.iamView.pause() }

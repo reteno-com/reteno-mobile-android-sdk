@@ -8,6 +8,7 @@ import com.reteno.core.domain.model.interaction.InteractionStatus
 import com.reteno.core.domain.model.logevent.RetenoLogEvent
 import com.reteno.core.domain.model.user.User
 import com.reteno.core.domain.model.user.UserAttributesAnonymous
+import com.reteno.core.features.iam.InAppPauseBehaviour
 import com.reteno.core.internal.action.inbox.InboxActions
 import com.reteno.core.internal.action.interaction.InteractionSubmitter
 import com.reteno.core.internal.action.recommendation.RecommendationActions
@@ -60,6 +61,10 @@ internal interface SdkActions : InteractionSubmitter, InboxActions, Recommendati
     fun submitIamFromPush(interactionId: String)
 
     fun submitDefaultNotificationChannel(channel: String)
+
+    fun submitInAppPause(paused: Boolean)
+
+    fun submitInAppPauseBehaviour(behaviour: InAppPauseBehaviour)
 
     val backgroundSync: BackgroundSync
 }

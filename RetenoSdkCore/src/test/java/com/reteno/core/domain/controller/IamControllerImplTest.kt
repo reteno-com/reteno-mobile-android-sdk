@@ -14,7 +14,6 @@ import com.reteno.core.data.remote.model.iam.displayrules.RuleRelation
 import com.reteno.core.data.remote.model.iam.displayrules.StringOperator
 import com.reteno.core.data.remote.model.iam.displayrules.frequency.FrequencyDisplayRules
 import com.reteno.core.data.remote.model.iam.displayrules.frequency.FrequencyRule
-import com.reteno.core.data.remote.model.iam.displayrules.targeting.InAppWithEvent
 import com.reteno.core.data.remote.model.iam.displayrules.targeting.RuleEventParameter
 import com.reteno.core.data.remote.model.iam.displayrules.targeting.TargetingDisplayRules
 import com.reteno.core.data.remote.model.iam.displayrules.targeting.TargetingRule
@@ -29,14 +28,7 @@ import com.reteno.core.data.remote.model.iam.widget.WidgetModel
 import com.reteno.core.data.repository.IamRepository
 import com.reteno.core.domain.ResultDomain
 import com.reteno.core.domain.controller.IamControllerImpl.Companion.TIMEOUT
-import com.reteno.core.domain.model.event.Event
 import com.reteno.core.domain.model.event.Event.Companion.SCREEN_VIEW_EVENT_TYPE_KEY
-import com.reteno.core.features.iam.InAppPauseBehaviour
-import com.reteno.core.internal.action.event.eventFlow
-import com.reteno.core.internal.action.iam.CheckInAppSegments
-import com.reteno.core.internal.iam.DisplayDecision
-import com.reteno.core.internal.iam.InAppDisplayRules
-import com.reteno.core.internal.iam.InAppMessagesState
 import com.reteno.test.given
 import com.reteno.test.runUnitTest
 import com.reteno.test.then
@@ -46,7 +38,6 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.impl.annotations.RelaxedMockK
-import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancelChildren
@@ -99,12 +90,6 @@ class IamControllerImplTest : BaseRobolectricTest() {
     private lateinit var iamRepository: IamRepository
     @RelaxedMockK
     private lateinit var userDatabase: RetenoDatabaseManagerUser
-    @RelaxedMockK
-    private lateinit var displayRules: InAppDisplayRules
-    @RelaxedMockK
-    private lateinit var state: InAppMessagesState
-    @RelaxedMockK
-    private lateinit var checkSegments: CheckInAppSegments
     // endregion helper fields ---------------------------------------------------------------------
 
     override fun before() {
@@ -123,11 +108,6 @@ class IamControllerImplTest : BaseRobolectricTest() {
                 personalization = null
             )
         }
-        every { displayRules.decide(any(), any(), any()) } returns DisplayDecision.SHOW
-        every { state.postponeIfPaused(any()) } returns false
-        every { state.setPaused(any()) } returns null
-        every { state.waitingForEvent() } returns emptyList()
-        coEvery { checkSegments(any(), any()) } returns Result.success(Unit)
     }
 
     override fun after() {
@@ -336,172 +316,29 @@ class IamControllerImplTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun `should show most recent in-app the display rules allow`() = runUnitTest {
+    fun `should pass in-app message to view when nothing is loading`() = runUnitTest {
         given()
         val sut = createWorkingController()
-        val inApps = contentInApps()
+        val message = contentInApps().first()
         val shown = collectShown(sut)
 
         whenn()
-        sut.processInAppMessages(inApps)
+        sut.show(message)
         runCurrent()
 
         then()
-        assertEquals(listOf(inApps.maxBy { it.messageId }), shown)
+        assertEquals(listOf(message), shown)
     }
 
     @Test
-    fun `should skip in-apps the display rules reject`() = runUnitTest {
+    fun `should drop in-app message while another one is loading`() = runUnitTest {
         given()
         val sut = createWorkingController()
-        val inApps = contentInApps()
-        every { displayRules.decide(any(), any(), any()) } answers {
-            if (firstArg<InAppMessage>().messageId == 2L) DisplayDecision.SHOW else DisplayDecision.FREQUENCY_LIMIT_REACHED
-        }
         val shown = collectShown(sut)
+        sut.fetchIamFullHtml(WIDGET_ID)
 
         whenn()
-        sut.processInAppMessages(inApps)
-        runCurrent()
-
-        then()
-        assertEquals(listOf(inApps.first { it.messageId == 2L }), shown)
-    }
-
-    @Test
-    fun `should postpone allowed in-app through state while paused`() = runUnitTest {
-        given()
-        val sut = createWorkingController()
-        val inApps = contentInApps()
-        every { state.postponeIfPaused(any()) } returns true
-        val shown = collectShown(sut)
-
-        whenn()
-        sut.processInAppMessages(inApps)
-        runCurrent()
-
-        then()
-        assertTrue(shown.isEmpty())
-        verify(exactly = 1) { state.postponeIfPaused(inApps.maxBy { it.messageId }) }
-    }
-
-    @Test
-    fun `should show in-app handed back by state when resumed`() = runUnitTest {
-        given()
-        val sut = createWorkingController()
-        val postponed = contentInApps().first()
-        every { state.setPaused(false) } returns postponed
-        val shown = collectShown(sut)
-
-        whenn()
-        sut.pauseInAppMessages(false)
-        runCurrent()
-
-        then()
-        assertEquals(listOf(postponed), shown)
-    }
-
-    @Test
-    fun `should pass pause behaviour to state`() = runUnitTest {
-        given()
-        val sut = createWorkingController()
-
-        whenn()
-        sut.setPauseBehaviour(InAppPauseBehaviour.SKIP_IN_APPS)
-
-        then()
-        verify(exactly = 1) { state.setPauseBehaviour(InAppPauseBehaviour.SKIP_IN_APPS) }
-    }
-
-    @Test
-    fun `should replace in-apps waiting for event with fetched event in-apps`() = runUnitTest {
-        given()
-        val sut = createWorkingController()
-        val inApps = contentInApps(targeting = createEventDisplayRule())
-
-        whenn()
-        sut.processInAppMessages(inApps)
-
-        then()
-        verify(exactly = 1) { state.replaceWaitingForEvent(match { waiting -> waiting.map { it.inApp } == inApps }) }
-    }
-
-    @Test
-    fun `should clear in-apps waiting for event when fetch has none`() = runUnitTest {
-        given()
-        val sut = createWorkingController()
-
-        whenn()
-        sut.processInAppMessages(contentInApps())
-
-        then()
-        verify(exactly = 1) { state.replaceWaitingForEvent(emptyList()) }
-    }
-
-    @Test
-    fun `should show waiting in-app whose event rule matches`() = runUnitTest {
-        given()
-        val sut = createWorkingController()
-        val inApp = contentInApps().last()
-        val rule = TargetingRule.Event(SCREEN_VIEW_EVENT_TYPE_KEY, RuleRelation.OR)
-        every { state.waitingForEvent() } returns listOf(InAppWithEvent(inApp, rule))
-        every { displayRules.matchesEvent(rule, any()) } returns true
-        val shown = collectShown(sut)
-        sut.processInAppMessages(emptyList())
-        runCurrent()
-
-        whenn()
-        eventFlow.emit(Event.ScreenView("Home"))
-        runCurrent()
-
-        then()
-        assertEquals(listOf(inApp), shown)
-    }
-
-    @Test
-    fun `should check and save segments of event in-apps before showing them`() = runUnitTest {
-        given()
-        val sut = createWorkingController()
-        val inApp = contentInApps().last()
-        val rule = TargetingRule.Event(SCREEN_VIEW_EVENT_TYPE_KEY, RuleRelation.OR)
-        every { state.waitingForEvent() } returns listOf(InAppWithEvent(inApp, rule))
-        every { displayRules.matchesEvent(rule, any()) } returns true
-        sut.processInAppMessages(emptyList())
-        runCurrent()
-
-        whenn()
-        eventFlow.emit(Event.ScreenView("Home"))
-        runCurrent()
-
-        then()
-        coVerify(exactly = 1) { checkSegments(listOf(inApp), true) }
-    }
-
-    @Test
-    fun `should not check segments of in-apps shown on app start`() = runUnitTest {
-        given()
-        val sut = createWorkingController()
-
-        whenn()
-        sut.processInAppMessages(contentInApps())
-
-        then()
-        coVerify(exactly = 0) { checkSegments(any(), any()) }
-    }
-
-    @Test
-    fun `should not show waiting in-app whose event rule does not match`() = runUnitTest {
-        given()
-        val sut = createWorkingController()
-        val rule = TargetingRule.Event(SCREEN_VIEW_EVENT_TYPE_KEY, RuleRelation.OR)
-        every { state.waitingForEvent() } returns listOf(InAppWithEvent(contentInApps().last(), rule))
-        every { displayRules.matchesEvent(rule, any()) } returns false
-        val shown = collectShown(sut)
-        sut.processInAppMessages(emptyList())
-        runCurrent()
-
-        whenn()
-        eventFlow.emit(Event.ScreenView("Home"))
+        sut.show(contentInApps().first())
         runCurrent()
 
         then()
@@ -551,11 +388,11 @@ class IamControllerImplTest : BaseRobolectricTest() {
     )
 
     private fun TestScope.createController(): IamControllerImpl {
-        return IamControllerImpl(iamRepository, sessionHandler, userDatabase, displayRules, state, checkSegments, this)
+        return IamControllerImpl(iamRepository, userDatabase, this)
     }
 
     private fun TestScope.createWorkingController(): IamControllerImpl {
-        return IamControllerImpl(iamRepository, sessionHandler, userDatabase, displayRules, state, checkSegments, workScope())
+        return IamControllerImpl(iamRepository, userDatabase, workScope())
     }
 
     private fun TestScope.collectShown(sut: IamControllerImpl): List<InAppMessage> {

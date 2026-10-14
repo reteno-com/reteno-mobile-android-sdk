@@ -15,6 +15,8 @@ import com.reteno.core.internal.action.trace.ActionTrace
 import com.reteno.core.internal.action.trace.stepOrNull
 import com.reteno.core.internal.network.ApiResult
 import com.reteno.core.internal.network.SuspendApiClient
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 internal interface CheckInAppSegments {
     suspend operator fun invoke(messages: List<InAppMessage>, persist: Boolean): Result<Unit>
@@ -24,6 +26,7 @@ internal class CheckInAppSegmentsAction(
     private val api: SuspendApiClient,
     private val cache: InAppMessagesCache,
     private val clock: () -> Long,
+    private val lock: Mutex,
     private val runner: ActionRunner
 ) : CheckInAppSegments {
 
@@ -42,15 +45,17 @@ internal class CheckInAppSegmentsAction(
             return
         }
         val checks = loadChecks(segmented.map { it.segment.segmentId }.distinct())
-        val checked = step<List<InAppMessage>>(
-            "apply segment checks to in-app messages",
-            detail = { "count=${it.size}" }
-        ) {
-            segmented.filter { apply(it.segment, checks) }.map { it.message }
-        }
-        if (persist && checked.isNotEmpty()) {
-            step("save checked in-app messages to local database") {
-                cache.update(checked)
+        lock.withLock {
+            val checked = step<List<InAppMessage>>(
+                "apply segment checks to in-app messages",
+                detail = { "count=${it.size}" }
+            ) {
+                segmented.filter { apply(it.segment, checks) }.map { it.message }
+            }
+            if (persist && checked.isNotEmpty()) {
+                step("save checked in-app messages to local database") {
+                    cache.update(checked)
+                }
             }
         }
     }

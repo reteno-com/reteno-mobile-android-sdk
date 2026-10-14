@@ -6,12 +6,12 @@ import com.reteno.core.data.local.config.DeviceIdMode
 import com.reteno.core.data.local.config.RestConfig
 import com.reteno.core.data.local.sharedpref.SharedPrefsManager
 import com.reteno.core.data.repository.ConfigRepository
-import com.reteno.core.domain.controller.IamController
 import com.reteno.core.fixtures.STUB_ACCESS_KEY
 import com.reteno.core.fixtures.TestActionRunner
 import com.reteno.core.fixtures.stubConfig
 import com.reteno.core.fixtures.testDispatchers
 import com.reteno.core.internal.action.device.RegisterDevice
+import com.reteno.core.internal.action.iam.PauseInAppMessages
 import com.reteno.core.internal.action.interaction.ProcessCachedInteractions
 import com.reteno.core.internal.action.sync.SyncResult
 import com.reteno.core.internal.config.SdkConfiguration
@@ -69,10 +69,11 @@ internal class ApplyConfigActionTest {
             coEvery { it() } answers { calls += "register device"; Result.success(SyncResult.COMPLETED) }
         }
         private val initGate = InitGate()
-        private val iamController = mockk<IamController>().also {
-            every { it.pauseInAppMessages(any()) } answers {
+        private val pauseInApps = mockk<PauseInAppMessages>().also {
+            coEvery { it(any()) } answers {
                 calls += "gate ${initGate.state}"
-                calls += "pause in-apps ${firstArg<Boolean>()}" + onMain()
+                calls += "pause in-apps ${firstArg<Boolean>()}"
+                Result.success(Unit)
             }
         }
         private val iamView = mockk<IamView>().also {
@@ -94,7 +95,7 @@ internal class ApplyConfigActionTest {
             sessionHandler = sessionHandler,
             registerDevice = registerDevice,
             initGate = initGate,
-            iamController = iamController,
+            pauseInApps = pauseInApps,
             iamView = iamView,
             lifecycleTracking = lifecycleTracking,
             processCachedInteractions = processCachedInteractions,
@@ -126,7 +127,7 @@ internal class ApplyConfigActionTest {
                 "session duration 60000",
                 "register device",
                 "gate BY_USER",
-                "pause in-apps false on main",
+                "pause in-apps false",
                 "pause push in-apps true on main",
                 "start lifecycle tracking on main",
                 "process cached interactions"
@@ -164,7 +165,7 @@ internal class ApplyConfigActionTest {
                 "cache config for device-1 on io",
                 "session duration 60000",
                 "gate FROM_CACHE",
-                "pause in-apps false on main",
+                "pause in-apps false",
                 "pause push in-apps true on main",
                 "process cached interactions"
             ),

@@ -63,7 +63,9 @@ internal class ContactWriter(
             if (changed) withContext(dispatchers.io) { configRepository.setExternalUserId(externalUserId) }
             changed
         }
-        if (user != null) saveUser(trace, user)
+        if (user != null) {
+            saveUser(trace, user)
+        }
         val token = trace.step("read push token", detail = { Redact.token(it) }) {
             configRepository.getFcmToken()
         }

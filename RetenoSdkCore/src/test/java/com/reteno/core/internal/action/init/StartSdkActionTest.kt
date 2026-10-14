@@ -1,12 +1,12 @@
 package com.reteno.core.internal.action.init
 
 import com.reteno.core.data.remote.model.iam.message.InAppMessage
-import com.reteno.core.domain.controller.IamController
 import com.reteno.core.fixtures.TestActionRunner
 import com.reteno.core.fixtures.stubInAppMessage
 import com.reteno.core.fixtures.testDispatchers
 import com.reteno.core.internal.action.device.EnsureDeviceRegisteredThisSession
 import com.reteno.core.internal.action.iam.FetchInAppMessages
+import com.reteno.core.internal.action.iam.ProcessInAppMessages
 import com.reteno.core.internal.action.inbox.InboxCountPolling
 import com.reteno.core.internal.action.sync.SyncScheduler
 import com.reteno.core.internal.lifecycle.SdkRunState
@@ -44,9 +44,10 @@ internal class StartSdkActionTest {
                 fetched
             }
         }
-        private val iamController = mockk<IamController>().also {
-            coEvery { it.processInAppMessages(any()) } answers {
+        private val processInAppMessages = mockk<ProcessInAppMessages>().also {
+            coEvery { it(any()) } answers {
                 calls += "schedule in-apps ${firstArg<List<InAppMessage>>().map { it.messageId }}" + onIo()
+                Result.success(Unit)
             }
         }
         private val dataSync = mockk<SyncScheduler>().also {
@@ -61,8 +62,8 @@ internal class StartSdkActionTest {
         val sut = StartSdkAction(
             ensureDeviceRegistered = ensureDeviceRegistered,
             sessionHandler = sessionHandler,
-            iamController = iamController,
             fetchInAppMessages = fetchInAppMessages,
+            processInAppMessages = processInAppMessages,
             dataSync = dataSync,
             iamView = iamView,
             inboxCount = inboxCount,

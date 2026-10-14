@@ -1,6 +1,7 @@
 package com.reteno.core.di
 
 import com.reteno.core.RetenoConfig
+import com.reteno.core.data.remote.model.iam.message.InAppMessage
 import com.reteno.core.data.remote.model.recommendation.get.RecomBase
 import com.reteno.core.domain.callback.appinbox.RetenoResultCallback
 import com.reteno.core.domain.model.appinbox.AppInboxMessages
@@ -15,6 +16,7 @@ import com.reteno.core.domain.model.recommendation.post.RecomEvents
 import com.reteno.core.domain.model.user.User
 import com.reteno.core.domain.model.user.UserAttributesAnonymous
 import com.reteno.core.features.appinbox.AppInboxStatus
+import com.reteno.core.features.iam.InAppPauseBehaviour
 import com.reteno.core.features.recommendation.GetRecommendationResponseCallback
 import com.reteno.core.features.recommendation.GetRecommendationResponseJsonCallback
 import com.reteno.core.internal.action.deeplink.TrackDeeplinkClickAction
@@ -33,7 +35,13 @@ import com.reteno.core.internal.action.iam.CheckInAppSegmentsAction
 import com.reteno.core.internal.action.iam.FetchInAppMessagesAction
 import com.reteno.core.internal.action.iam.InAppHtmlPreload
 import com.reteno.core.internal.action.iam.InAppMessagesCache
+import com.reteno.core.internal.action.iam.InAppTriggers
+import com.reteno.core.internal.action.iam.PauseInAppMessagesAction
 import com.reteno.core.internal.action.iam.PreloadIamHtmlAction
+import com.reteno.core.internal.action.iam.ProcessInAppMessagesAction
+import com.reteno.core.internal.action.iam.RecordInAppShownAction
+import com.reteno.core.internal.action.iam.SetInAppPauseBehaviourAction
+import com.reteno.core.internal.action.iam.ShowInAppAction
 import com.reteno.core.internal.action.inbox.GetInboxMessagesAction
 import com.reteno.core.internal.action.inbox.GetInboxMessagesCountAction
 import com.reteno.core.internal.action.inbox.InboxCountPoller
@@ -108,6 +116,7 @@ import com.reteno.core.util.Util
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.plus
+import kotlinx.coroutines.sync.Mutex
 import kotlin.random.Random
 
 internal class ActionsLocator(
@@ -133,6 +142,7 @@ internal class ActionsLocator(
     val contactQueue = SerialQueue(scope, "Contact", logSink)
     private val lifecycleQueue = SerialQueue(scope, "Lifecycle", logSink)
     private val initQueue = SerialQueue(mainScope, "Init", logSink)
+    private val inAppQueue = SerialQueue(scope, "InApp", logSink)
     private val recommendationEventsQueue = SerialQueue(scope, "RecommendationEvents", logSink)
 
     private val api by lazy { SuspendApiClient(serviceLocator.restClientProvider.get(), dispatchers) }
@@ -157,7 +167,9 @@ internal class ActionsLocator(
     private val lifecycleEvents by lazy { LifecycleEvents(lifecycleEventFilter, logEvent) }
     private val screenTracker by lazy { ScreenTracker(logScreenView, scope) }
     private val currentDevice by lazy { CurrentDevice(configRepository, devicesDb, platform, dispatchers) }
-    private val segmentationRefresh by lazy { SegmentationRefreshImpl(checkInAppSegments, inAppMessagesState, scope) }
+    private val segmentationRefresh by lazy {
+        SegmentationRefreshImpl(checkInAppSegments, inAppMessagesState, scope)
+    }
     private val sdk by lazy { StartStopSequencer(mainScope, initGate, startSdk, stopSdk, runState) }
 
     private val contactWriter by lazy {
@@ -186,7 +198,48 @@ internal class ActionsLocator(
     }
 
     val checkInAppSegments: CheckInAppSegments by lazy {
-        CheckInAppSegmentsAction(api, inAppCache, clock, runner)
+        CheckInAppSegmentsAction(api, inAppCache, clock, inAppTriggerLock, runner)
+    }
+
+    private val inAppTriggerLock = Mutex()
+
+    private val showInApp: ShowInAppAction by lazy {
+        ShowInAppAction(
+            rules = inAppDisplayRules,
+            state = inAppMessagesState,
+            checkSegments = checkInAppSegments,
+            sessionHandler = sessionHandler,
+            display = iamController,
+            lock = inAppTriggerLock,
+            runner = runner
+        )
+    }
+
+    val inAppTriggers: InAppTriggers by lazy {
+        InAppTriggers(
+            eventBus = eventBus,
+            state = inAppMessagesState,
+            rules = inAppDisplayRules,
+            showInApp = lazy { showInApp },
+            sink = logSink,
+            scope = scope
+        )
+    }
+
+    private val processInAppMessages: ProcessInAppMessagesAction by lazy {
+        ProcessInAppMessagesAction(inAppMessagesState, sessionHandler, inAppTriggers, showInApp, runner)
+    }
+
+    private val pauseInApps: PauseInAppMessagesAction by lazy {
+        PauseInAppMessagesAction(inAppMessagesState, iamController, runner)
+    }
+
+    private val setInAppPauseBehaviour: SetInAppPauseBehaviourAction by lazy {
+        SetInAppPauseBehaviourAction(inAppMessagesState, runner)
+    }
+
+    private val recordInAppShown: RecordInAppShownAction by lazy {
+        RecordInAppShownAction(inAppCache, clock, inAppTriggerLock, runner)
     }
 
     private val fetchInAppMessages: FetchInAppMessagesAction by lazy {
@@ -392,7 +445,7 @@ internal class ActionsLocator(
             sessionHandler = sessionHandler,
             registerDevice = registerDevice,
             initGate = initGate,
-            iamController = iamController,
+            pauseInApps = pauseInApps,
             iamView = iamView,
             lifecycleTracking = lifecycleTracking,
             processCachedInteractions = processCachedInteractions,
@@ -409,8 +462,8 @@ internal class ActionsLocator(
         StartSdkAction(
             ensureDeviceRegistered = ensureDeviceRegisteredThisSession,
             sessionHandler = sessionHandler,
-            iamController = iamController,
             fetchInAppMessages = fetchInAppMessages,
+            processInAppMessages = processInAppMessages,
             dataSync = dataSync,
             iamView = iamView,
             inboxCount = inboxCountPoller,
@@ -489,6 +542,7 @@ internal class ActionsLocator(
     }
 
     override fun boot() {
+        inAppTriggers.listen()
         initQueue.enqueue { bootSdk() }
     }
 
@@ -571,6 +625,18 @@ internal class ActionsLocator(
 
     override fun submitInAppInteraction(interaction: InAppInteraction) {
         scope.launch { recordInAppInteraction(interaction) }
+    }
+
+    override fun submitInAppShown(message: InAppMessage) {
+        scope.launch { recordInAppShown(message) }
+    }
+
+    override fun submitInAppPause(paused: Boolean) {
+        inAppQueue.enqueue { pauseInApps(paused) }
+    }
+
+    override fun submitInAppPauseBehaviour(behaviour: InAppPauseBehaviour) {
+        inAppQueue.enqueue { setInAppPauseBehaviour(behaviour) }
     }
 
     override fun submitDeeplinkClick(wrappedLink: String) {

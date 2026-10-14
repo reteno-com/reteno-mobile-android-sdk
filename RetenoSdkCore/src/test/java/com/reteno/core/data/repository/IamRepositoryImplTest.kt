@@ -1,17 +1,11 @@
 package com.reteno.core.data.repository
 
-import com.google.gson.JsonObject
 import com.reteno.core.R
 import com.reteno.core.base.robolectric.BaseRobolectricTest
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerInAppMessages
-import com.reteno.core.data.local.mappers.toDB
 import com.reteno.core.data.remote.api.ApiClient
 import com.reteno.core.data.remote.api.ApiContract
 import com.reteno.core.data.remote.mapper.fromJson
-import com.reteno.core.data.remote.model.iam.displayrules.DisplayRules
-import com.reteno.core.data.remote.model.iam.displayrules.frequency.FrequencyDisplayRules
-import com.reteno.core.data.remote.model.iam.displayrules.frequency.FrequencyRule
-import com.reteno.core.data.remote.model.iam.message.InAppMessage
 import com.reteno.core.data.remote.model.iam.message.InAppMessageContent
 import com.reteno.core.data.remote.model.iam.widget.WidgetModel
 import com.reteno.core.domain.ResponseCallback
@@ -19,7 +13,6 @@ import com.reteno.core.features.iam.IamJsEvent
 import com.reteno.core.features.iam.IamJsEventType
 import com.reteno.core.util.Util
 import io.mockk.coEvery
-import io.mockk.every
 import io.mockk.impl.annotations.RelaxedMockK
 import io.mockk.verify
 import kotlinx.coroutines.CoroutineDispatcher
@@ -30,7 +23,6 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Test
-import java.util.concurrent.TimeUnit
 
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -165,44 +157,11 @@ class IamRepositoryImplTest : BaseRobolectricTest() {
         }
     }
 
-    @Test
-    fun givenUpdateInAppMessages_whenNotFromRemote_thenIgnore() {
-        runTest {
-            // Given
-            createRepository(StandardTestDispatcher(testScheduler))
-            every { sharedPrefsManager.getIamEtag() } returns null
-            val inapp = InAppMessage(
-                messageId = 2,
-                messageInstanceId = 2,
-                displayRules = DisplayRules(
-                    frequency = FrequencyDisplayRules().apply {
-                        predicates.add(FrequencyRule.TimesPerTimeUnit(TimeUnit.MINUTES, 2))
-                    },
-                    targeting = null,
-                    schedule = null,
-                    async = null
-                ),
-                content = null,
-                lastShowTime = System.currentTimeMillis() - 60000L,
-                showCount = 1,
-                displayRulesJson = JsonObject()
-            )
-
-            // When
-            SUT.updateInAppMessages(listOf(inapp))
-
-            // Then
-            verify { databaseManagerInApp.deleteInAppMessages(listOf(inapp.toDB())) }
-            verify { databaseManagerInApp.insertInAppMessages(listOf(inapp.toDB())) }
-        }
-    }
-
     private fun createRepository(dispatcher: CoroutineDispatcher) {
         SUT = IamRepositoryImpl(
             application,
             apiClient,
             fileManager,
-            databaseManagerInApp,
             dispatcher
         )
     }

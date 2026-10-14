@@ -175,7 +175,6 @@ class ServiceLocator internal constructor(
             context,
             fileManagerProvider,
             apiClientProvider,
-            retenoDatabaseManagerInAppMessagesProvider,
             Dispatchers.IO
         )
 
@@ -187,11 +186,7 @@ class ServiceLocator internal constructor(
 
     internal val iamControllerProvider: IamControllerProvider = IamControllerProvider(
         iamRepositoryProvider,
-        retenoSessionHandlerProviderInternal,
-        retenoDatabaseManagerUserProviderInternal,
-        { actions.inAppDisplayRules },
-        { actions.inAppMessagesState },
-        { actions.checkInAppSegments }
+        retenoDatabaseManagerUserProviderInternal
     )
 
     private val iamViewProviderInternal: IamViewProvider = IamViewProvider(

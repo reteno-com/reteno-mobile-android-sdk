@@ -107,9 +107,8 @@ internal class DisplayRulesEvaluator(
     }
 
     private fun matchesTimesPerTimeUnit(message: InAppMessage, rule: FrequencyRule.TimesPerTimeUnit): Boolean {
-        if (message.showCount <= 0) return true
-        if (message.showCount >= rule.count) return false
-        val lastShowTime = message.lastShowTime ?: 0L
+        if (message.showCount < rule.count) return true
+        val lastShowTime = message.lastShowTime ?: return true
         return clock() - lastShowTime > rule.timeUnit.toMillis(1)
     }
 

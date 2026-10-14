@@ -2,9 +2,6 @@ package com.reteno.core.domain.controller
 
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerUser
 import com.reteno.core.data.local.model.BooleanDb
-import com.reteno.core.data.remote.model.iam.displayrules.targeting.InAppWithEvent
-import com.reteno.core.data.remote.model.iam.displayrules.targeting.InAppWithTime
-import com.reteno.core.data.remote.model.iam.displayrules.targeting.TargetingRule
 import com.reteno.core.data.remote.model.iam.message.InAppMessage
 import com.reteno.core.data.remote.model.iam.message.InAppMessageContent
 import com.reteno.core.data.remote.model.iam.message.InAppMessageContent.InAppLayoutParams
@@ -12,17 +9,8 @@ import com.reteno.core.data.remote.model.iam.message.InAppMessageContent.InAppLa
 import com.reteno.core.data.remote.model.iam.message.InAppMessageContent.InAppLayoutType
 import com.reteno.core.data.repository.IamRepository
 import com.reteno.core.domain.ResultDomain
-import com.reteno.core.domain.model.event.Event
 import com.reteno.core.features.iam.IamJsEvent
-import com.reteno.core.features.iam.InAppPauseBehaviour
-import com.reteno.core.internal.action.event.eventFlow
-import com.reteno.core.internal.action.iam.CheckInAppSegments
-import com.reteno.core.internal.iam.DisplayDecision
-import com.reteno.core.internal.iam.InAppDisplayRules
-import com.reteno.core.internal.iam.InAppMessagesState
-import com.reteno.core.lifecycle.RetenoSessionHandler
 import com.reteno.core.util.Logger
-import com.reteno.core.util.bufferUntil
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -34,25 +22,16 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.receiveAsFlow
-import kotlinx.coroutines.flow.retry
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import java.util.UUID
 
 internal class IamControllerImpl(
     private val iamRepository: IamRepository,
-    private val sessionHandler: RetenoSessionHandler,
     private val userDatabase: RetenoDatabaseManagerUser,
-    private val displayRules: InAppDisplayRules,
-    private val state: InAppMessagesState,
-    private val checkSegments: CheckInAppSegments,
     private val scope: CoroutineScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 ) : IamController {
-
 
     private val _fullHtmlStateFlow: MutableStateFlow<ResultDomain<IamFetchResult>> =
         MutableStateFlow(ResultDomain.Idle)
@@ -66,16 +45,6 @@ internal class IamControllerImpl(
     )
     override val inAppMessagesFlow: Flow<InAppMessage>
         get() = _inAppMessage.receiveAsFlow()
-
-    private val isFirstMessagesProcessed = MutableStateFlow(false)
-
-    init {
-        eventFlow
-            .bufferUntil(isFirstMessagesProcessed)
-            .onEach { notifyEventOccurred(it) }
-            .retry()
-            .launchIn(scope)
-    }
 
     override fun fetchIamFullHtml(interactionId: String) {
         /*@formatter:off*/ Logger.i(TAG, "fetchIamFullHtml(): ", "widgetId = [", interactionId, "]")
@@ -178,128 +147,9 @@ internal class IamControllerImpl(
         htmlJob = null
     }
 
-    override suspend fun processInAppMessages(messages: List<InAppMessage>) {
-        try {
-            sortMessages(messages)
-        } catch (e: Exception) {
-            Logger.e(TAG, "processInAppMessages():", e)
-        }
-    }
-
-    private suspend fun notifyEventOccurred(event: Event): Boolean {
-        val inAppsMatchingEvent = state.waitingForEvent().filter { inapp ->
-            displayRules.matchesEvent(inapp.event, event)
-        }
-        if (inAppsMatchingEvent.isEmpty()) return false
-
-        return tryShowInAppFromList(inAppsMatchingEvent.map { it.inApp }.toMutableList())
-    }
-
-    override fun pauseInAppMessages(isPaused: Boolean) {
-        state.setPaused(isPaused)?.let(::showInApp)
-    }
-
-    override fun updateInAppMessage(inAppMessage: InAppMessage) {
-        scope.launch {
-            withContext(Dispatchers.IO) {
-                iamRepository.updateInAppMessages(listOf(inAppMessage))
-            }
-        }
-    }
-
-    override fun setPauseBehaviour(behaviour: InAppPauseBehaviour) {
-        state.setPauseBehaviour(behaviour)
-    }
-
-    private suspend fun sortMessages(inAppMessages: List<InAppMessage>) {
-        val inAppsWithEvents = mutableListOf<InAppWithEvent>()
-        val inAppsWithTimer = mutableListOf<InAppWithTime>()
-        val inAppsOnAppStart = mutableListOf<InAppMessage>()
-
-        inAppMessages.forEach { message ->
-            val includeRules = message.displayRules.targeting?.include
-            if (includeRules != null) {
-                includeRules.groups.forEach { includeGroup ->
-                    includeGroup.conditions.forEach { rule ->
-                        when (rule) {
-                            is TargetingRule.TimeSpentInApp -> inAppsWithTimer.add(
-                                InAppWithTime(
-                                    message,
-                                    rule.timeSpentMillis
-                                )
-                            )
-
-                            is TargetingRule.Event -> inAppsWithEvents.add(
-                                InAppWithEvent(
-                                    message,
-                                    rule
-                                )
-                            )
-                        }
-                    }
-                }
-            } else {
-                inAppsOnAppStart.add(message)
-            }
-        }
-
-        if (inAppsWithTimer.isNotEmpty()) {
-            sessionHandler.scheduleInAppMessages(inAppsWithTimer) { messagesToShow ->
-                scope.launch { tryShowInAppFromList(messagesToShow.toMutableList()) }
-            }
-        }
-
-        state.replaceWaitingForEvent(inAppsWithEvents)
-        isFirstMessagesProcessed.value = true
-        tryShowInAppFromList(inAppMessages = inAppsOnAppStart, showingOnAppStart = true)
-    }
-
-    private suspend fun tryShowInAppFromList(
-        inAppMessages: MutableList<InAppMessage>,
-        showingOnAppStart: Boolean = false
-    ): Boolean {
-        if (!showingOnAppStart) {
-            checkSegments(inAppMessages, persist = true)
-        }
-
-        while (true) {
-            if (inAppMessages.isEmpty()) break
-
-            val inAppWithHighestId = inAppMessages.maxBy { it.messageId }
-            val showedInApp = tryShowInApp(
-                inAppMessage = inAppWithHighestId,
-                showingOnAppStart = showingOnAppStart
-            )
-
-            if (showedInApp) {
-                return true
-            }
-            inAppMessages.remove(inAppWithHighestId)
-        }
-        return false
-    }
-
-    private fun tryShowInApp(
-        inAppMessage: InAppMessage,
-        showingOnAppStart: Boolean = false
-    ): Boolean {
-        val decision = displayRules.decide(
-            message = inAppMessage,
-            sessionStartTimestamp = sessionHandler.getSessionStartTimestamp(),
-            showingOnAppStart = showingOnAppStart
-        )
-        if (decision != DisplayDecision.SHOW) {
-            return false
-        }
-
-        showInApp(inAppMessage)
-        return true
-    }
-
-    private fun showInApp(inAppMessage: InAppMessage) {
-        if (state.postponeIfPaused(inAppMessage)) return
+    override fun show(message: InAppMessage) {
         if (!canShowInApp()) return
-        scope.launch { _inAppMessage.send(inAppMessage) }
+        scope.launch { _inAppMessage.send(message) }
     }
 
     private fun canShowInApp(): Boolean {

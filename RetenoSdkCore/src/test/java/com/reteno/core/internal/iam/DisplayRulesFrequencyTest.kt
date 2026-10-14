@@ -197,48 +197,61 @@ internal class DisplayRulesFrequencyTest {
     }
 
     @Test
-    fun `should not show times per time unit message once shown as many times as allowed`() = runUnitTest {
+    fun `should show times per time unit message again right away while below the limit`() = runUnitTest {
         given()
         val fixture = SutFixture()
 
         whenn()
-        val decision = fixture.decide(TWICE_PER_MINUTE, lastShowTime = 1L, showCount = 2)
-
-        then()
-        assertEquals(DisplayDecision.FREQUENCY_LIMIT_REACHED, decision)
-    }
-
-    @Test
-    fun `should show times per time unit message again after a time unit`() = runUnitTest {
-        given()
-        val fixture = SutFixture()
-
-        whenn()
-        val decision = fixture.decide(TWICE_PER_MINUTE, lastShowTime = NOW - MINUTE - 1, showCount = 1)
+        val decision = fixture.decide(TWICE_PER_MINUTE, lastShowTime = NOW, showCount = 1)
 
         then()
         assertEquals(DisplayDecision.SHOW, decision)
     }
 
     @Test
-    fun `should not show times per time unit message exactly one time unit after last show`() = runUnitTest {
+    fun `should not show times per time unit message at the limit within a time unit`() = runUnitTest {
         given()
         val fixture = SutFixture()
 
         whenn()
-        val decision = fixture.decide(TWICE_PER_MINUTE, lastShowTime = NOW - MINUTE, showCount = 1)
+        val decision = fixture.decide(TWICE_PER_MINUTE, lastShowTime = NOW - MINUTE + 1, showCount = 2)
 
         then()
         assertEquals(DisplayDecision.FREQUENCY_LIMIT_REACHED, decision)
     }
 
     @Test
-    fun `should show times per time unit message with count but no last show time`() = runUnitTest {
+    fun `should not show times per time unit message at the limit exactly one time unit after last show`() =
+        runUnitTest {
+            given()
+            val fixture = SutFixture()
+
+            whenn()
+            val decision = fixture.decide(TWICE_PER_MINUTE, lastShowTime = NOW - MINUTE, showCount = 2)
+
+            then()
+            assertEquals(DisplayDecision.FREQUENCY_LIMIT_REACHED, decision)
+        }
+
+    @Test
+    fun `should show times per time unit message at the limit once a time unit has passed`() = runUnitTest {
         given()
         val fixture = SutFixture()
 
         whenn()
-        val decision = fixture.decide(TWICE_PER_MINUTE, lastShowTime = null, showCount = 1)
+        val decision = fixture.decide(TWICE_PER_MINUTE, lastShowTime = NOW - MINUTE - 1, showCount = 5)
+
+        then()
+        assertEquals(DisplayDecision.SHOW, decision)
+    }
+
+    @Test
+    fun `should show times per time unit message at the limit without last show time`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+
+        whenn()
+        val decision = fixture.decide(TWICE_PER_MINUTE, lastShowTime = null, showCount = 2)
 
         then()
         assertEquals(DisplayDecision.SHOW, decision)
