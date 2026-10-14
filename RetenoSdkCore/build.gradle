@@ -42,6 +42,7 @@ koverReport {
                         'com.reteno.core.internal.action.user',
                         'com.reteno.core.internal.coroutine',
                         'com.reteno.core.internal.event',
+                        'com.reteno.core.internal.iam',
                         'com.reteno.core.internal.lifecycle',
                         'com.reteno.core.internal.log',
                         'com.reteno.core.internal.network',

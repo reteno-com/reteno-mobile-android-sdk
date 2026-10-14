@@ -1,14 +1,10 @@
 package com.reteno.core.domain.controller
 
-import androidx.annotation.VisibleForTesting
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerUser
 import com.reteno.core.data.local.mappers.toDomain
 import com.reteno.core.data.local.model.BooleanDb
-import com.reteno.core.data.remote.model.iam.displayrules.frequency.FrequencyRuleValidator
-import com.reteno.core.data.remote.model.iam.displayrules.schedule.ScheduleRuleValidator
 import com.reteno.core.data.remote.model.iam.displayrules.targeting.InAppWithEvent
 import com.reteno.core.data.remote.model.iam.displayrules.targeting.InAppWithTime
-import com.reteno.core.data.remote.model.iam.displayrules.targeting.RuleEventValidator
 import com.reteno.core.data.remote.model.iam.displayrules.targeting.TargetingRule
 import com.reteno.core.data.remote.model.iam.message.InAppMessage
 import com.reteno.core.data.remote.model.iam.message.InAppMessageContent
@@ -21,6 +17,9 @@ import com.reteno.core.domain.model.event.Event
 import com.reteno.core.features.iam.IamJsEvent
 import com.reteno.core.features.iam.InAppPauseBehaviour
 import com.reteno.core.internal.action.event.eventFlow
+import com.reteno.core.internal.iam.DisplayDecision
+import com.reteno.core.internal.iam.InAppDisplayRules
+import com.reteno.core.internal.iam.InAppMessagesState
 import com.reteno.core.lifecycle.RetenoSessionHandler
 import com.reteno.core.util.Logger
 import com.reteno.core.util.bufferUntil
@@ -44,32 +43,27 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import java.util.UUID
-import java.util.concurrent.atomic.AtomicBoolean
 
 internal class IamControllerImpl(
     private val iamRepository: IamRepository,
     private val sessionHandler: RetenoSessionHandler,
     private val userDatabase: RetenoDatabaseManagerUser,
+    private val displayRules: InAppDisplayRules,
+    private val state: InAppMessagesState,
     private val scope: CoroutineScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 ) : IamController {
 
-    private val isPausedInAppMessages = AtomicBoolean(false)
-    private var pauseBehaviour = InAppPauseBehaviour.POSTPONE_IN_APPS
 
     private val _fullHtmlStateFlow: MutableStateFlow<ResultDomain<IamFetchResult>> =
         MutableStateFlow(ResultDomain.Idle)
     override val fullHtmlStateFlow: StateFlow<ResultDomain<IamFetchResult>> = _fullHtmlStateFlow
 
-    @VisibleForTesting
-    var inAppsWaitingForEvent: MutableList<InAppWithEvent>? = null
-        private set
     private var htmlJob: Job? = null
 
     private val _inAppMessage = Channel<InAppMessage>(
         capacity = 2,
         onBufferOverflow = BufferOverflow.DROP_OLDEST
     )
-    private val postponedNotifications = mutableListOf<InAppMessage>()
     override val inAppMessagesFlow: Flow<InAppMessage>
         get() = _inAppMessage.receiveAsFlow()
 
@@ -229,27 +223,16 @@ internal class IamControllerImpl(
     }
 
     private suspend fun notifyEventOccurred(event: Event): Boolean {
-        val inapps = inAppsWaitingForEvent
-        if (inapps.isNullOrEmpty()) return false
-
-        val inAppsWithCurrentEvent = inapps.filter { inapp ->
-            inapp.event.name == event.eventTypeKey
+        val inAppsMatchingEvent = state.waitingForEvent().filter { inapp ->
+            displayRules.matchesEvent(inapp.event, event)
         }
+        if (inAppsMatchingEvent.isEmpty()) return false
 
-        val validator = RuleEventValidator()
-        val inAppsMatchingEventParams = inAppsWithCurrentEvent.filter { inapp ->
-            validator.checkEventMatchesRules(inapp, event)
-        }
-
-        return tryShowInAppFromList(inAppsMatchingEventParams.map { it.inApp }.toMutableList())
+        return tryShowInAppFromList(inAppsMatchingEvent.map { it.inApp }.toMutableList())
     }
 
     override fun pauseInAppMessages(isPaused: Boolean) {
-        val wasDisabled = isPausedInAppMessages.get()
-        isPausedInAppMessages.set(isPaused)
-        if (wasDisabled && !isPaused) {
-            showPostponedNotifications()
-        }
+        state.setPaused(isPaused)?.let(::showInApp)
     }
 
     override fun updateInAppMessage(inAppMessage: InAppMessage) {
@@ -261,22 +244,12 @@ internal class IamControllerImpl(
     }
 
     override fun setPauseBehaviour(behaviour: InAppPauseBehaviour) {
-        pauseBehaviour = behaviour
+        state.setPauseBehaviour(behaviour)
     }
 
     override fun preloadHtml() {
         scope.launch {
             iamRepository.getBaseHtml()
-        }
-    }
-
-    private fun showPostponedNotifications() {
-        when (pauseBehaviour) {
-            InAppPauseBehaviour.SKIP_IN_APPS -> postponedNotifications.clear()
-            InAppPauseBehaviour.POSTPONE_IN_APPS -> {
-                postponedNotifications.firstOrNull()?.let(::showInApp)
-                postponedNotifications.clear()
-            }
         }
     }
 
@@ -318,9 +291,7 @@ internal class IamControllerImpl(
             }
         }
 
-        if (inAppsWithEvents.isNotEmpty()) {
-            inAppsWaitingForEvent = inAppsWithEvents
-        }
+        state.replaceWaitingForEvent(inAppsWithEvents)
         isFirstMessagesProcessed.value = true
         tryShowInAppFromList(inAppMessages = inAppsOnAppStart, showingOnAppStart = true)
     }
@@ -333,16 +304,12 @@ internal class IamControllerImpl(
             updateSegmentStatuses(inAppMessages, updateCacheOnSuccess = true)
         }
 
-        val frequencyValidator = FrequencyRuleValidator()
-        val scheduleValidator = ScheduleRuleValidator()
         while (true) {
             if (inAppMessages.isEmpty()) break
 
             val inAppWithHighestId = inAppMessages.maxBy { it.messageId }
             val showedInApp = tryShowInApp(
                 inAppMessage = inAppWithHighestId,
-                frequencyValidator = frequencyValidator,
-                scheduleValidator = scheduleValidator,
                 showingOnAppStart = showingOnAppStart
             )
 
@@ -388,28 +355,14 @@ internal class IamControllerImpl(
 
     private fun tryShowInApp(
         inAppMessage: InAppMessage,
-        frequencyValidator: FrequencyRuleValidator = FrequencyRuleValidator(),
-        scheduleValidator: ScheduleRuleValidator = ScheduleRuleValidator(),
         showingOnAppStart: Boolean = false
     ): Boolean {
-        val content = inAppMessage.content
-        if (content == null || content.model.isJsonNull) {
-            return false
-        }
-        if (checkSegmentRuleMatches(inAppMessage).not()) {
-            return false
-        }
-
-        if (!frequencyValidator.checkInAppMatchesFrequencyRules(
-                inAppMessage = inAppMessage,
-                sessionStartTimestamp = sessionHandler.getSessionStartTimestamp(),
-                showingOnAppStart = showingOnAppStart
-            )
-        ) {
-            return false
-        }
-
-        if (!scheduleValidator.checkInAppMatchesScheduleRules(inAppMessage)) {
+        val decision = displayRules.decide(
+            message = inAppMessage,
+            sessionStartTimestamp = sessionHandler.getSessionStartTimestamp(),
+            showingOnAppStart = showingOnAppStart
+        )
+        if (decision != DisplayDecision.SHOW) {
             return false
         }
 
@@ -418,17 +371,13 @@ internal class IamControllerImpl(
     }
 
     private fun showInApp(inAppMessage: InAppMessage) {
-        if (isPausedInAppMessages.get()) postponedNotifications.add(inAppMessage)
+        if (state.postponeIfPaused(inAppMessage)) return
         if (!canShowInApp()) return
         scope.launch { _inAppMessage.send(inAppMessage) }
     }
 
-    private fun checkSegmentRuleMatches(inAppMessage: InAppMessage): Boolean {
-        return inAppMessage.displayRules.async?.segment?.isInSegment ?: true
-    }
-
     private fun canShowInApp(): Boolean {
-        return isPausedInAppMessages.get().not() && _fullHtmlStateFlow.value == ResultDomain.Idle
+        return _fullHtmlStateFlow.value == ResultDomain.Idle
     }
 
 

@@ -14,10 +14,8 @@ import com.reteno.core.data.remote.model.iam.displayrules.RuleRelation
 import com.reteno.core.data.remote.model.iam.displayrules.StringOperator
 import com.reteno.core.data.remote.model.iam.displayrules.frequency.FrequencyDisplayRules
 import com.reteno.core.data.remote.model.iam.displayrules.frequency.FrequencyRule
-import com.reteno.core.data.remote.model.iam.displayrules.frequency.FrequencyRuleValidator
-import com.reteno.core.data.remote.model.iam.displayrules.schedule.ScheduleRuleValidator
+import com.reteno.core.data.remote.model.iam.displayrules.targeting.InAppWithEvent
 import com.reteno.core.data.remote.model.iam.displayrules.targeting.RuleEventParameter
-import com.reteno.core.data.remote.model.iam.displayrules.targeting.RuleEventValidator
 import com.reteno.core.data.remote.model.iam.displayrules.targeting.TargetingDisplayRules
 import com.reteno.core.data.remote.model.iam.displayrules.targeting.TargetingRule
 import com.reteno.core.data.remote.model.iam.displayrules.targeting.TargetingRuleConditionsGroup
@@ -36,11 +34,19 @@ import com.reteno.core.domain.model.event.Event
 import com.reteno.core.domain.model.event.Event.Companion.SCREEN_VIEW_EVENT_TYPE_KEY
 import com.reteno.core.features.iam.InAppPauseBehaviour
 import com.reteno.core.internal.action.event.eventFlow
+import com.reteno.core.internal.iam.DisplayDecision
+import com.reteno.core.internal.iam.InAppDisplayRules
+import com.reteno.core.internal.iam.InAppMessagesState
+import com.reteno.test.given
+import com.reteno.test.runUnitTest
+import com.reteno.test.then
+import com.reteno.test.whenn
+import com.reteno.test.workScope
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.impl.annotations.RelaxedMockK
-import io.mockk.mockkConstructor
+import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancelChildren
@@ -93,6 +99,10 @@ class IamControllerImplTest : BaseRobolectricTest() {
     private lateinit var iamRepository: IamRepository
     @RelaxedMockK
     private lateinit var userDatabase: RetenoDatabaseManagerUser
+    @RelaxedMockK
+    private lateinit var displayRules: InAppDisplayRules
+    @RelaxedMockK
+    private lateinit var state: InAppMessagesState
     // endregion helper fields ---------------------------------------------------------------------
 
     override fun before() {
@@ -111,9 +121,10 @@ class IamControllerImplTest : BaseRobolectricTest() {
                 personalization = null
             )
         }
-        mockkConstructor(FrequencyRuleValidator::class)
-        mockkConstructor(ScheduleRuleValidator::class)
-        mockkConstructor(RuleEventValidator::class)
+        every { displayRules.decide(any(), any(), any()) } returns DisplayDecision.SHOW
+        every { state.postponeIfPaused(any()) } returns false
+        every { state.setPaused(any()) } returns null
+        every { state.waitingForEvent() } returns emptyList()
     }
 
     override fun after() {
@@ -354,305 +365,153 @@ class IamControllerImplTest : BaseRobolectricTest() {
     }
 
     @Test
-    fun givenInAppsWithContent_whenGetInAppMessagesThatMathesRules_thenShowMostRecentMessage() =
-        runTest {
-            // Given
-            val sut = createController()
-            val inApps = frequencyInApps(
-                content = InAppMessageContent(
-                    messageInstanceId = 1,
-                    layoutType = InAppLayoutType.FULL,
-                    model = JsonObject(),
-                    layoutParams = null
-                )
-            )
-            val inAppList = InAppMessagesList(messages = inApps)
+    fun `should show most recent in-app the display rules allow`() = runUnitTest {
+        given()
+        val sut = createWorkingController()
+        val inApps = contentInApps()
+        coEvery { iamRepository.getInAppMessages() } returns InAppMessagesList(messages = inApps)
+        val shown = collectShown(sut)
 
-            coEvery { iamRepository.getInAppMessages() } returns inAppList
-            every {
-                anyConstructed<FrequencyRuleValidator>().checkInAppMatchesFrequencyRules(
-                    any(),
-                    any(),
-                    any()
-                )
-            } returns true
-            every { anyConstructed<ScheduleRuleValidator>().checkInAppMatchesScheduleRules(any()) } returns true
+        whenn()
+        sut.getInAppMessages()
+        runCurrent()
 
-            val results = mutableListOf<InAppMessage>()
-            val job = launch {
-                sut.inAppMessagesFlow.toList(results)
-            }
-            // When
-            sut.getInAppMessages()
-            advanceUntilIdle()
-
-            // Then
-            assertEquals(
-                results.first(),
-                inApps.maxBy { it.messageId }
-            )
-            job.cancel()
-            coroutineContext.cancelChildren()
-        }
+        then()
+        assertEquals(listOf(inApps.maxBy { it.messageId }), shown)
+    }
 
     @Test
-    fun givenInAppsWithContent_whenInAppsDisabled_thenDoNotShowInApps() =
-        runTest {
-            // Given
-            val sut = createController()
-            val inApps = frequencyInApps(
-                content = InAppMessageContent(
-                    messageInstanceId = 1,
-                    layoutType = InAppLayoutType.FULL,
-                    model = JsonObject(),
-                    layoutParams = null
-                )
-            )
-            val inAppList = InAppMessagesList(messages = inApps)
-
-            coEvery { iamRepository.getInAppMessages() } returns inAppList
-            every {
-                anyConstructed<FrequencyRuleValidator>().checkInAppMatchesFrequencyRules(
-                    any(),
-                    any(),
-                    any()
-                )
-            } returns true
-            every { anyConstructed<ScheduleRuleValidator>().checkInAppMatchesScheduleRules(any()) } returns true
-
-            val results = mutableListOf<InAppMessage>()
-            val job = launch {
-                sut.inAppMessagesFlow.toList(results)
-            }
-            // When
-            sut.pauseInAppMessages(true)
-            sut.getInAppMessages()
-            advanceUntilIdle()
-
-            // Then
-            assertEquals(
-                results,
-                emptyList<InAppMessage>()
-            )
-            job.cancel()
-            coroutineContext.cancelChildren()
+    fun `should skip in-apps the display rules reject`() = runUnitTest {
+        given()
+        val sut = createWorkingController()
+        val inApps = contentInApps()
+        coEvery { iamRepository.getInAppMessages() } returns InAppMessagesList(messages = inApps)
+        every { displayRules.decide(any(), any(), any()) } answers {
+            if (firstArg<InAppMessage>().messageId == 2L) DisplayDecision.SHOW else DisplayDecision.FREQUENCY_LIMIT_REACHED
         }
+        val shown = collectShown(sut)
+
+        whenn()
+        sut.getInAppMessages()
+        runCurrent()
+
+        then()
+        assertEquals(listOf(inApps.first { it.messageId == 2L }), shown)
+    }
 
     @Test
-    fun givenInAppsWithContent_whenInAppsDisabledWithSkipBehavior_thenDoNotShowInAppsWhenInAppsEnabled() =
-        runTest {
-            // Given
-            val sut = createController()
-            val inApps = frequencyInApps(
-                content = InAppMessageContent(
-                    messageInstanceId = 1,
-                    layoutType = InAppLayoutType.FULL,
-                    model = JsonObject(),
-                    layoutParams = null
-                )
-            )
-            val inAppList = InAppMessagesList(messages = inApps)
+    fun `should postpone allowed in-app through state while paused`() = runUnitTest {
+        given()
+        val sut = createWorkingController()
+        val inApps = contentInApps()
+        coEvery { iamRepository.getInAppMessages() } returns InAppMessagesList(messages = inApps)
+        every { state.postponeIfPaused(any()) } returns true
+        val shown = collectShown(sut)
 
-            coEvery { iamRepository.getInAppMessages() } returns inAppList
+        whenn()
+        sut.getInAppMessages()
+        runCurrent()
 
-            val results = mutableListOf<InAppMessage>()
-            val job = launch {
-                sut.inAppMessagesFlow.toList(results)
-            }
-            // When
-            every {
-                anyConstructed<FrequencyRuleValidator>().checkInAppMatchesFrequencyRules(
-                    any(),
-                    any(),
-                    any()
-                )
-            } returns true
-            every { anyConstructed<ScheduleRuleValidator>().checkInAppMatchesScheduleRules(any()) } returns true
-            sut.setPauseBehaviour(InAppPauseBehaviour.SKIP_IN_APPS)
-            sut.pauseInAppMessages(true)
-            sut.getInAppMessages()
-            advanceUntilIdle()
-            sut.pauseInAppMessages(false)
-            advanceUntilIdle()
-
-            // Then
-            assertEquals(
-                results,
-                emptyList<InAppMessage>()
-            )
-            job.cancel()
-            coroutineContext.cancelChildren()
-        }
+        then()
+        assertTrue(shown.isEmpty())
+        verify(exactly = 1) { state.postponeIfPaused(inApps.maxBy { it.messageId }) }
+    }
 
     @Test
-    fun givenInAppsWithContent_whenInAppsDisabledWithPostponeFirstBehavior_thenShowFirstInAppWhenInAppsEnabled() =
-        runTest {
-            // Given
-            val sut = createController()
-            val inApps = frequencyInApps(
-                content = InAppMessageContent(
-                    messageInstanceId = 1,
-                    layoutType = InAppLayoutType.FULL,
-                    model = JsonObject(),
-                    layoutParams = null
-                )
-            )
-            val inAppList = InAppMessagesList(messages = inApps)
+    fun `should show in-app handed back by state when resumed`() = runUnitTest {
+        given()
+        val sut = createWorkingController()
+        val postponed = contentInApps().first()
+        every { state.setPaused(false) } returns postponed
+        val shown = collectShown(sut)
 
-            coEvery { iamRepository.getInAppMessages() } returns inAppList
+        whenn()
+        sut.pauseInAppMessages(false)
+        runCurrent()
 
-            val results = mutableListOf<InAppMessage>()
-            val job = launch {
-                sut.inAppMessagesFlow.toList(results)
-            }
-            // When
-            every {
-                anyConstructed<FrequencyRuleValidator>().checkInAppMatchesFrequencyRules(
-                    any(),
-                    any(),
-                    any()
-                )
-            } returns true
-            every { anyConstructed<ScheduleRuleValidator>().checkInAppMatchesScheduleRules(any()) } returns true
-            sut.setPauseBehaviour(InAppPauseBehaviour.POSTPONE_IN_APPS)
-            sut.pauseInAppMessages(true)
-            sut.getInAppMessages()
-            advanceUntilIdle()
-            sut.pauseInAppMessages(false)
-            advanceUntilIdle()
-
-            // Then
-            assertEquals(
-                results,
-                listOf(inApps.maxByOrNull { it.messageId }!!)
-            )
-            job.cancel()
-            coroutineContext.cancelChildren()
-        }
+        then()
+        assertEquals(listOf(postponed), shown)
+    }
 
     @Test
-    fun givenInAppsWithContent_whenInAppsDisabledWithPostponeFirstBehaviorAndOnly4InAppIsAllowed_thenShowThisInAppWhenInAppsEnabled() =
-        runTest {
-            // Given
-            val sut = createController()
-            val inApps = frequencyInApps(
-                content = InAppMessageContent(
-                    messageInstanceId = 1,
-                    layoutType = InAppLayoutType.FULL,
-                    model = JsonObject(),
-                    layoutParams = null
-                )
-            )
-            val inAppList = InAppMessagesList(messages = inApps)
+    fun `should pass pause behaviour to state`() = runUnitTest {
+        given()
+        val sut = createWorkingController()
 
-            coEvery { iamRepository.getInAppMessages() } returns inAppList
+        whenn()
+        sut.setPauseBehaviour(InAppPauseBehaviour.SKIP_IN_APPS)
 
-            val results = mutableListOf<InAppMessage>()
-            val job = launch {
-                sut.inAppMessagesFlow.toList(results)
-            }
-            // When
-            every {
-                anyConstructed<FrequencyRuleValidator>().checkInAppMatchesFrequencyRules(
-                    any(),
-                    any(),
-                    any()
-                )
-            } answers {
-                firstArg<InAppMessage>().messageId == 4L
-            }
-            every { anyConstructed<ScheduleRuleValidator>().checkInAppMatchesScheduleRules(any()) } returns true
-            sut.setPauseBehaviour(InAppPauseBehaviour.POSTPONE_IN_APPS)
-            sut.pauseInAppMessages(true)
-            sut.getInAppMessages()
-            advanceUntilIdle()
-            sut.pauseInAppMessages(false)
-            advanceUntilIdle()
-
-            // Then
-            assertEquals(
-                results,
-                listOf(inApps.first { it.messageId == 4L })
-            )
-            job.cancel()
-            coroutineContext.cancelChildren()
-        }
+        then()
+        verify(exactly = 1) { state.setPauseBehaviour(InAppPauseBehaviour.SKIP_IN_APPS) }
+    }
 
     @Test
-    fun givenInAppsWithContent_whenGetInAppMessagesWithEventTargetRule_thenWaitingListIsFilled() =
-        runTest {
-            // Given
-            val sut = createController()
-            val inApps = frequencyInApps(
-                content = InAppMessageContent(
-                    messageInstanceId = 1,
-                    layoutType = InAppLayoutType.FULL,
-                    model = JsonObject(),
-                    layoutParams = null
-                ),
-                targeting = createEventDisplayRule()
-            )
-            val inAppList = InAppMessagesList(messages = inApps)
+    fun `should replace in-apps waiting for event with fetched event in-apps`() = runUnitTest {
+        given()
+        val sut = createWorkingController()
+        val inApps = contentInApps(targeting = createEventDisplayRule())
+        coEvery { iamRepository.getInAppMessages() } returns InAppMessagesList(messages = inApps)
 
-            coEvery { iamRepository.getInAppMessages() } returns inAppList
+        whenn()
+        sut.getInAppMessages()
 
-            // When
-            sut.getInAppMessages()
-            advanceUntilIdle()
-
-            // Then
-            assertEquals(
-                sut.inAppsWaitingForEvent?.map { it.inApp },
-                inApps
-            )
-            coroutineContext.cancelChildren()
-        }
+        then()
+        verify(exactly = 1) { state.replaceWaitingForEvent(match { waiting -> waiting.map { it.inApp } == inApps }) }
+    }
 
     @Test
-    fun givenFilledEventWaitingList_whenEventHappened_thenInAppEmitted() =
-        runTest {
-            // Given
-            val sut = createController()
-            val inApps = frequencyInApps(
-                content = InAppMessageContent(
-                    messageInstanceId = 1,
-                    layoutType = InAppLayoutType.FULL,
-                    model = JsonObject(),
-                    layoutParams = null
-                ),
-                targeting = createEventDisplayRule()
-            )
-            val inAppList = InAppMessagesList(messages = inApps)
-            coEvery { iamRepository.getInAppMessages() } returns inAppList
-            every {
-                anyConstructed<RuleEventValidator>().checkEventMatchesRules(
-                    any(),
-                    any()
-                )
-            } returns true
+    fun `should clear in-apps waiting for event when fetch has none`() = runUnitTest {
+        given()
+        val sut = createWorkingController()
+        coEvery { iamRepository.getInAppMessages() } returns InAppMessagesList(messages = contentInApps())
 
-            val results = mutableListOf<InAppMessage>()
-            val job = launch {
-                sut.inAppMessagesFlow.toList(results)
-            }
+        whenn()
+        sut.getInAppMessages()
 
-            // When
-            sut.getInAppMessages()
+        then()
+        verify(exactly = 1) { state.replaceWaitingForEvent(emptyList()) }
+    }
 
-            advanceUntilIdle()
+    @Test
+    fun `should show waiting in-app whose event rule matches`() = runUnitTest {
+        given()
+        val sut = createWorkingController()
+        val inApp = contentInApps().last()
+        val rule = TargetingRule.Event(SCREEN_VIEW_EVENT_TYPE_KEY, RuleRelation.OR)
+        coEvery { iamRepository.getInAppMessages() } returns InAppMessagesList(messages = emptyList())
+        every { state.waitingForEvent() } returns listOf(InAppWithEvent(inApp, rule))
+        every { displayRules.matchesEvent(rule, any()) } returns true
+        val shown = collectShown(sut)
+        sut.getInAppMessages()
+        runCurrent()
 
-            eventFlow.emit(Event.ScreenView("SomeEvent"))
+        whenn()
+        eventFlow.emit(Event.ScreenView("Home"))
+        runCurrent()
 
-            advanceUntilIdle()
+        then()
+        assertEquals(listOf(inApp), shown)
+    }
 
-            // Then
-            assertEquals(
-                results.first(),
-                inApps.last() //InApp with largest id in dataset
-            )
-            job.cancel()
-            coroutineContext.cancelChildren()
-        }
+    @Test
+    fun `should not show waiting in-app whose event rule does not match`() = runUnitTest {
+        given()
+        val sut = createWorkingController()
+        val rule = TargetingRule.Event(SCREEN_VIEW_EVENT_TYPE_KEY, RuleRelation.OR)
+        coEvery { iamRepository.getInAppMessages() } returns InAppMessagesList(messages = emptyList())
+        every { state.waitingForEvent() } returns listOf(InAppWithEvent(contentInApps().last(), rule))
+        every { displayRules.matchesEvent(rule, any()) } returns false
+        val shown = collectShown(sut)
+        sut.getInAppMessages()
+        runCurrent()
+
+        whenn()
+        eventFlow.emit(Event.ScreenView("Home"))
+        runCurrent()
+
+        then()
+        assertTrue(shown.isEmpty())
+    }
 
     //region utils
 
@@ -697,8 +556,28 @@ class IamControllerImplTest : BaseRobolectricTest() {
     )
 
     private fun TestScope.createController(): IamControllerImpl {
-        return IamControllerImpl(iamRepository, sessionHandler, userDatabase, this)
+        return IamControllerImpl(iamRepository, sessionHandler, userDatabase, displayRules, state, this)
     }
+
+    private fun TestScope.createWorkingController(): IamControllerImpl {
+        return IamControllerImpl(iamRepository, sessionHandler, userDatabase, displayRules, state, workScope())
+    }
+
+    private fun TestScope.collectShown(sut: IamControllerImpl): List<InAppMessage> {
+        val shown = mutableListOf<InAppMessage>()
+        workScope().launch { sut.inAppMessagesFlow.toList(shown) }
+        return shown
+    }
+
+    private fun contentInApps(targeting: TargetingDisplayRules? = null) = frequencyInApps(
+        content = InAppMessageContent(
+            messageInstanceId = 1,
+            layoutType = InAppLayoutType.FULL,
+            model = JsonObject(),
+            layoutParams = null
+        ),
+        targeting = targeting
+    )
 
     private fun createEventDisplayRule() = TargetingDisplayRules(
         include = TargetingRuleGroup(

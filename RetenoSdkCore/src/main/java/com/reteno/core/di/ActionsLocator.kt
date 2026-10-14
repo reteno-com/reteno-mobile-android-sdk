@@ -81,6 +81,10 @@ import com.reteno.core.internal.coroutine.InitGate
 import com.reteno.core.internal.coroutine.RetenoDispatchers
 import com.reteno.core.internal.coroutine.SerialQueue
 import com.reteno.core.internal.event.EventBus
+import com.reteno.core.internal.iam.DisplayRulesEvaluator
+import com.reteno.core.internal.iam.InAppDisplayRules
+import com.reteno.core.internal.iam.InAppMessagesState
+import com.reteno.core.internal.iam.InAppMessagesStateImpl
 import com.reteno.core.internal.lifecycle.AppForegroundState
 import com.reteno.core.internal.lifecycle.AppLifecycleTracking
 import com.reteno.core.internal.lifecycle.AppLifecycleTrackingImpl
@@ -163,6 +167,14 @@ internal class ActionsLocator(
 
     override val isStarted: Boolean
         get() = runState.isStarted
+
+    val inAppDisplayRules: InAppDisplayRules by lazy {
+        DisplayRulesEvaluator(clock, logSink)
+    }
+
+    val inAppMessagesState: InAppMessagesState by lazy {
+        InAppMessagesStateImpl()
+    }
 
     val registerDevice: RegisterDeviceAction by lazy {
         RegisterDeviceAction(configRepository, currentDevice, dataSync, contactSession, runner)
