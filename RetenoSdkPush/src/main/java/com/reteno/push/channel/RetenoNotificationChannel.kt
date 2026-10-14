@@ -71,17 +71,27 @@ internal object RetenoNotificationChannel {
     }
 
     private fun retrieveDefaultNotificationChannelData(context: Context): NotificationChannelData =
-        parseChannelData(RetenoInternalEntryPoint.facade.getDefaultNotificationChannel()) ?: readBundledChannelData(context)
+        orNull { readStoredChannelData() } ?: orNull { readBundledChannelData(context) } ?: fallbackChannelData()
 
-    private fun readBundledChannelData(context: Context): NotificationChannelData {
-        val json = Util.readFromRaw(context, R.raw.default_channel) ?: return fallbackChannelData()
-        val channelData = parseChannelData(json) ?: return fallbackChannelData()
-        RetenoInternalEntryPoint.facade.saveDefaultNotificationChannel(json)
+    private fun readStoredChannelData(): NotificationChannelData? =
+        parseChannelData(RetenoInternalEntryPoint.facade.getDefaultNotificationChannel())
+
+    private fun readBundledChannelData(context: Context): NotificationChannelData? {
+        val json = Util.readFromRaw(context, R.raw.default_channel) ?: return null
+        val channelData = parseChannelData(json) ?: return null
+        orNull { RetenoInternalEntryPoint.facade.saveDefaultNotificationChannel(json) }
         return channelData
     }
 
     private fun parseChannelData(json: String): NotificationChannelData? =
-        runCatching { json.fromJsonOrNull<NotificationChannelData>() }.getOrNull()
+        orNull { json.fromJsonOrNull<NotificationChannelJson>()?.toChannelData() }
+
+    private fun <T> orNull(block: () -> T): T? =
+        try {
+            block()
+        } catch (error: Exception) {
+            null
+        }
 
     private fun fallbackChannelData() = NotificationChannelData(
         DEFAULT_CHANNEL_ID,

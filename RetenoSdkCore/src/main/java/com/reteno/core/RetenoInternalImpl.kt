@@ -20,9 +20,12 @@ import com.reteno.core.domain.model.user.UserAttributesAnonymous
 import com.reteno.core.features.appinbox.AppInbox
 import com.reteno.core.features.appinbox.AppInboxImpl
 import com.reteno.core.features.iam.InAppPauseBehaviour
+import com.reteno.core.features.recommendation.Recommendation
+import com.reteno.core.features.recommendation.RecommendationImpl
 import com.reteno.core.internal.action.user.UserAttributesValidator
 import com.reteno.core.internal.coroutine.retenoDispatchers
 import com.reteno.core.internal.lifecycle.SdkLifecycle
+import com.reteno.core.internal.log.LoggerRemoteLog
 import com.reteno.core.lifecycle.RetenoActivityHelper
 import com.reteno.core.lifecycle.ScreenTrackingConfig
 import com.reteno.core.permission.AndroidPermissionChecker
@@ -76,8 +79,8 @@ class RetenoInternalImpl internal constructor(
     private val iamController by lazy { serviceLocator.iamControllerProvider.get() }
     private val databaseManager by lazy { serviceLocator.retenoDatabaseManagerProvider.get() }
 
-    override val appInbox: AppInbox by lazy { AppInboxImpl(actions, isOsSupported) }
-    override val recommendation by lazy { serviceLocator.recommendationProvider.get() }
+    override val appInbox: AppInbox by lazy { AppInboxImpl(actions, LoggerRemoteLog, isOsSupported) }
+    override val recommendation: Recommendation by lazy { RecommendationImpl(actions, LoggerRemoteLog, isOsSupported) }
     private val iamView: IamView by lazy { serviceLocator.iamViewProvider.get() }
 
     private val receivedConfigFromUser = AtomicBoolean(false)

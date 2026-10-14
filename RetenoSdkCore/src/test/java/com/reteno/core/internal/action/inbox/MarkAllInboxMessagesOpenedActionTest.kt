@@ -32,13 +32,24 @@ internal class MarkAllInboxMessagesOpenedActionTest {
         val rest = FakeRestClient()
         val dispatchers = scope.testDispatchers()
         val inboxDb = mockk<RetenoDatabaseManagerAppInbox>().also {
-            every { it.deleteAllAppInboxMessages() } answers { calls += "delete local statuses" + if (dispatchers.markedIo.isRunningHere) " on io" else "" }
+            every { it.deleteAllAppInboxMessages() } answers {
+                calls += "delete local statuses" + if (dispatchers.markedIo.isRunningHere) " on io" else ""
+            }
         }
-        val inboxCount = mockk<InboxCountPolling>().also { every { it.refresh() } answers { calls += "refresh count" } }
+        val inboxCount = mockk<InboxCountPolling>().also {
+            every { it.refresh() } answers { calls += "refresh count" }
+        }
         val initGate = InitGate().also { if (initialized) it.markInitialized(byUser = true) }
         val traced = TestActionRunner(scope)
         val callback = RecordingResultCallback<Unit>(dispatchers.markedMain)
-        val sut = MarkAllInboxMessagesOpenedAction(rest.api(dispatchers), inboxDb, inboxCount, initGate, dispatchers, traced.runner)
+        val sut = MarkAllInboxMessagesOpenedAction(
+            rest.api(dispatchers),
+            inboxDb,
+            inboxCount,
+            initGate,
+            dispatchers,
+            traced.runner
+        )
     }
 
     @Test
@@ -51,7 +62,10 @@ internal class MarkAllInboxMessagesOpenedActionTest {
 
         then()
         assertTrue(result.isSuccess)
-        assertEquals(listOf(SentRequest(HttpMethod.POST, ApiContract.AppInbox.MessagesStatus, """{"status":"OPENED"}""")), fixture.rest.requests)
+        assertEquals(
+            listOf(SentRequest(HttpMethod.POST, ApiContract.AppInbox.MessagesStatus, """{"status":"OPENED"}""")),
+            fixture.rest.requests
+        )
         assertEquals(listOf("delete local statuses on io", "refresh count"), fixture.calls)
         assertEquals(listOf(Unit), fixture.callback.results)
         assertEquals(listOf(true), fixture.callback.calledOnMain)

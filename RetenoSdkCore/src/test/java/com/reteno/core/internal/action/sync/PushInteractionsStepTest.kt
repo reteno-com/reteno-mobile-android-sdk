@@ -5,17 +5,16 @@ import com.reteno.core.data.remote.api.ApiContract
 import com.reteno.core.data.remote.api.HttpMethod
 import com.reteno.core.data.remote.mapper.toJson
 import com.reteno.core.data.remote.mapper.toRemote
-import com.reteno.core.fixtures.stubInteractionDb
 import com.reteno.core.fixtures.FakeRestClient
 import com.reteno.core.fixtures.TestActionRunner
 import com.reteno.core.fixtures.api
+import com.reteno.core.fixtures.stubInteractionDb
 import com.reteno.core.fixtures.testDispatchers
 import com.reteno.test.given
 import com.reteno.test.runUnitTest
 import com.reteno.test.then
 import com.reteno.test.whenn
 import io.mockk.every
-import io.mockk.justRun
 import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.test.TestScope
@@ -141,6 +140,26 @@ internal class PushInteractionsStepTest {
     }
 
     @Test
+    fun `should stop after rejected interaction cannot be deleted`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        every { fixture.interactionsDb.getInteractions(1) } returnsMany listOf(
+            listOf(stubInteractionDb(rowId = "1")),
+            listOf(stubInteractionDb(rowId = "2")),
+            emptyList()
+        )
+        every { fixture.interactionsDb.deleteInteraction(any()) } returns false
+        fixture.rest.failWith(400)
+
+        whenn()
+        val outcome = fixture.sut().getOrThrow()
+
+        then()
+        assertEquals(StepOutcome.CONTINUE, outcome)
+        assertEquals(1, fixture.rest.requests.size)
+    }
+
+    @Test
     fun `should access local database on io dispatcher`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
@@ -161,7 +180,10 @@ internal class PushInteractionsStepTest {
     fun `should trace steps without push token or interaction id`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
-        every { fixture.interactionsDb.getInteractions(1) } returnsMany listOf(listOf(stubInteractionDb(interactionId = "secret-id")), emptyList())
+        every { fixture.interactionsDb.getInteractions(1) } returnsMany listOf(
+            listOf(stubInteractionDb(interactionId = "secret-id")),
+            emptyList()
+        )
 
         whenn()
         fixture.sut()

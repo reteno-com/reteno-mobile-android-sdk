@@ -20,14 +20,20 @@ internal class UpdateFcmTokenAction(
     }
 
     private suspend fun ActionTrace.update(token: String) {
-        val stored = step("read stored push token", detail = { Redact.token(it) }) { configRepository.getStoredFcmToken() }
+        val stored = step("read stored push token", detail = { Redact.token(it) }) {
+            configRepository.getStoredFcmToken()
+        }
         if (token == stored) {
             note { "push token unchanged" }
             return
         }
-        step("save push token to local settings") { configRepository.saveFcmToken(token) }
+        step("save push token to local settings") {
+            configRepository.saveFcmToken(token)
+        }
         currentDevice.save(this, token)
-        step("request data sync") { sync.request() }
+        step("request data sync") {
+            sync.request()
+        }
         session.markDeviceSent()
     }
 }

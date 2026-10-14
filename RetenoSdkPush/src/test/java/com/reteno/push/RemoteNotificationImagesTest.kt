@@ -50,7 +50,8 @@ class RemoteNotificationImagesTest {
             val output = it.getOutputStream()
             when {
                 requestLine.contains("/declared-huge.png") -> {
-                    output.write("HTTP/1.1 200 OK\r\nContent-Length: ${HUGE_PNG.size}\r\nConnection: close\r\n\r\n".toByteArray())
+                    val headers = "HTTP/1.1 200 OK\r\nContent-Length: ${HUGE_PNG.size}\r\nConnection: close\r\n\r\n"
+                    output.write(headers.toByteArray())
                     output.write(HUGE_PNG)
                 }
                 requestLine.contains("/streamed-huge.png") -> {
@@ -58,10 +59,15 @@ class RemoteNotificationImagesTest {
                     output.write(HUGE_PNG)
                 }
                 requestLine.contains("/image.png") -> {
-                    output.write("HTTP/1.1 200 OK\r\nContent-Type: image/png\r\nContent-Length: ${PNG.size}\r\nConnection: close\r\n\r\n".toByteArray())
+                    val headers = "HTTP/1.1 200 OK\r\nContent-Type: image/png\r\n" +
+                        "Content-Length: ${PNG.size}\r\nConnection: close\r\n\r\n"
+                    output.write(headers.toByteArray())
                     output.write(PNG)
                 }
-                else -> output.write("HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n".toByteArray())
+                else -> {
+                    val headers = "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
+                    output.write(headers.toByteArray())
+                }
             }
             output.flush()
         }
@@ -113,7 +119,8 @@ class RemoteNotificationImagesTest {
         val fixture = SutFixture()
 
         whenn()
-        val images = listOf("file:///data/local/image.png", "ftp://cdn.example/image.png").map(fixture.sut::carouselImage)
+        val images = listOf("file:///data/local/image.png", "ftp://cdn.example/image.png")
+            .map(fixture.sut::carouselImage)
 
         then()
         assertEquals(listOf(null, null), images)

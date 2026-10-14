@@ -50,8 +50,14 @@ internal class AppBroadcasterTest {
         then()
         assertEquals(2, sent)
         val intents = shadowOf(fixture.application).broadcastIntents
-        assertEquals(listOf("com.example.FirstReceiver", "com.example.SecondReceiver"), intents.map { it.component?.className })
-        assertEquals(Intent.FLAG_INCLUDE_STOPPED_PACKAGES, intents.first().flags and Intent.FLAG_INCLUDE_STOPPED_PACKAGES)
+        assertEquals(
+            listOf("com.example.FirstReceiver", "com.example.SecondReceiver"),
+            intents.map { it.component?.className }
+        )
+        assertEquals(
+            Intent.FLAG_INCLUDE_STOPPED_PACKAGES,
+            intents.first().flags and Intent.FLAG_INCLUDE_STOPPED_PACKAGES
+        )
     }
 
     @Test

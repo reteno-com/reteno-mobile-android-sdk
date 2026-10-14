@@ -11,6 +11,8 @@ internal class SetLifecycleEventConfigAction(
 
     suspend operator fun invoke(options: LifecycleTrackingOptions): Result<Unit> = runner("SetLifecycleEventConfig") {
         args("options" to options)
-        step("apply lifecycle tracking options") { filter.update(options) }
+        step("apply lifecycle tracking options") {
+            filter.update(options)
+        }
     }
 }

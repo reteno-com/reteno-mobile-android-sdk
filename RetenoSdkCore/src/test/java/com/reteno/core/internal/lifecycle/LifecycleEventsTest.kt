@@ -28,7 +28,9 @@ internal class LifecycleEventsTest {
         val event = Event.applicationOpen(fromBackground = false)
 
         whenn()
-        fixture.traced.runner("Test") { fixture.sut.log(this, event) }
+        fixture.traced.runner("Test") {
+            fixture.sut.log(this, event)
+        }
 
         then()
         assertEquals(listOf(event.event), fixture.logged)
@@ -41,10 +43,13 @@ internal class LifecycleEventsTest {
         val fixture = SutFixture(this, LifecycleTrackingOptions.NONE)
 
         whenn()
-        fixture.traced.runner("Test") { fixture.sut.log(this, Event.applicationOpen(fromBackground = true)) }
+        fixture.traced.runner("Test") {
+            fixture.sut.log(this, Event.applicationOpen(fromBackground = true))
+        }
 
         then()
         assertTrue(fixture.logged.isEmpty())
-        assertTrue(fixture.traced.sink.lines.any { it.contains("→ ApplicationOpened event disabled by lifecycle tracking options") })
+        val note = "→ ApplicationOpened event disabled by lifecycle tracking options"
+        assertTrue(fixture.traced.sink.lines.any { it.contains(note) })
     }
 }

@@ -22,7 +22,9 @@ internal class InitializeIamFromPushActionTest {
         val traced = TestActionRunner(this)
         val shown = mutableListOf<Pair<String, Boolean>>()
         val iamView = mockk<IamView>().also {
-            every { it.initialize(any<String>()) } answers { shown += firstArg<String>() to dispatchers.markedMain.isRunningHere }
+            every { it.initialize(any<String>()) } answers {
+                shown += firstArg<String>() to dispatchers.markedMain.isRunningHere
+            }
         }
         val sut = InitializeIamFromPushAction(iamView, dispatchers, traced.runner)
 
@@ -33,7 +35,11 @@ internal class InitializeIamFromPushActionTest {
         assertTrue(result.isSuccess)
         assertEquals(listOf("interaction-1" to true), shown)
         assertEquals(
-            traced.successfulTrace("InitializeIamFromPush", "interactionId=interaction-1", "show in-app message from push"),
+            traced.successfulTrace(
+                "InitializeIamFromPush",
+                "interactionId=interaction-1",
+                "show in-app message from push"
+            ),
             traced.sink.lines
         )
     }

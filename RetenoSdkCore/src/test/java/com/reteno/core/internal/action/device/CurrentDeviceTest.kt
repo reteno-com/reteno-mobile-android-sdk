@@ -47,7 +47,9 @@ internal class CurrentDeviceTest {
         every { fixture.devicesDb.getDevices(any()) } returns emptyList()
 
         whenn()
-        val saved = fixture.traced.runner("Test") { fixture.sut.save(this, pushToken = "new-token", pushSubscribed = false) }.getOrThrow()
+        val saved = fixture.traced.runner("Test") {
+            fixture.sut.save(this, pushToken = "new-token", pushSubscribed = false)
+        }.getOrThrow()
 
         then()
         assertTrue(saved)
@@ -62,7 +64,9 @@ internal class CurrentDeviceTest {
         every { fixture.configRepository.isNotificationsEnabled() } returns false
 
         whenn()
-        fixture.traced.runner("Test") { fixture.sut.save(this, pushToken = "token") }
+        fixture.traced.runner("Test") {
+            fixture.sut.save(this, pushToken = "token")
+        }
 
         then()
         verify(exactly = 1) { fixture.devicesDb.insertDevice(stubDevice(fixture.deviceId, "token", false).toDb()) }
@@ -72,11 +76,17 @@ internal class CurrentDeviceTest {
     fun `should skip device identical to a stored one regardless of row id time and sync flag`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
-        val stored = stubDevice(fixture.deviceId, "token", true).toDb().copy(rowId = "9", createdAt = 123L, isSynchronizedWithBackend = BooleanDb.TRUE)
+        val stored = stubDevice(fixture.deviceId, "token", true).toDb().copy(
+            rowId = "9",
+            createdAt = 123L,
+            isSynchronizedWithBackend = BooleanDb.TRUE
+        )
         every { fixture.devicesDb.getDevices(any()) } returns listOf(stored)
 
         whenn()
-        val saved = fixture.traced.runner("Test") { fixture.sut.save(this, pushToken = "token", pushSubscribed = true) }.getOrThrow()
+        val saved = fixture.traced.runner("Test") {
+            fixture.sut.save(this, pushToken = "token", pushSubscribed = true)
+        }.getOrThrow()
 
         then()
         assertFalse(saved)
@@ -84,7 +94,7 @@ internal class CurrentDeviceTest {
     }
 
     @Test
-    fun `should access local database on io dispatcher and trace outcome`() = runUnitTest {
+    fun `should load stored devices from local database on io dispatcher`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
         var loadedOnIo = false
@@ -94,13 +104,64 @@ internal class CurrentDeviceTest {
         }
 
         whenn()
-        fixture.traced.runner("Test") { fixture.sut.save(this, pushToken = "secret-token") }
+        fixture.traced.runner("Test") {
+            fixture.sut.save(this, pushToken = "token")
+        }
 
         then()
         assertTrue(loadedOnIo)
-        val lines = fixture.traced.sink.lines
-        assertTrue(lines.any { it.contains("✓ save current device to local database") && it.contains("saved") })
-        assertFalse(lines.any { it.contains("secret-token") })
+    }
+
+    @Test
+    fun `should insert device into local database on io dispatcher`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        var insertedOnIo = false
+        every { fixture.devicesDb.getDevices(any()) } returns emptyList()
+        every { fixture.devicesDb.insertDevice(any()) } answers {
+            insertedOnIo = fixture.dispatchers.markedIo.isRunningHere
+        }
+
+        whenn()
+        fixture.traced.runner("Test") {
+            fixture.sut.save(this, pushToken = "token")
+        }
+
+        then()
+        assertTrue(insertedOnIo)
+    }
+
+    @Test
+    fun `should trace saved device`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        every { fixture.devicesDb.getDevices(any()) } returns emptyList()
+
+        whenn()
+        fixture.traced.runner("Test") {
+            fixture.sut.save(this, pushToken = "token")
+        }
+
+        then()
+        val savedLines = fixture.traced.sink.lines.count {
+            it.contains("✓ save current device to local database") && it.contains("saved")
+        }
+        assertEquals(1, savedLines)
+    }
+
+    @Test
+    fun `should not write push token to trace`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        every { fixture.devicesDb.getDevices(any()) } returns emptyList()
+
+        whenn()
+        fixture.traced.runner("Test") {
+            fixture.sut.save(this, pushToken = "secret-token")
+        }
+
+        then()
+        assertFalse(fixture.traced.sink.lines.any { it.contains("secret-token") })
     }
 
     @Test
@@ -110,9 +171,14 @@ internal class CurrentDeviceTest {
         every { fixture.devicesDb.getDevices(any()) } returns listOf(stubDevice(fixture.deviceId, "token", true).toDb())
 
         whenn()
-        fixture.traced.runner("Test") { fixture.sut.save(this, pushToken = "token") }
+        fixture.traced.runner("Test") {
+            fixture.sut.save(this, pushToken = "token")
+        }
 
         then()
-        assertEquals(1, fixture.traced.sink.lines.count { it.contains("save current device to local database") && it.contains("unchanged") })
+        val unchangedLines = fixture.traced.sink.lines.count {
+            it.contains("save current device to local database") && it.contains("unchanged")
+        }
+        assertEquals(1, unchangedLines)
     }
 }

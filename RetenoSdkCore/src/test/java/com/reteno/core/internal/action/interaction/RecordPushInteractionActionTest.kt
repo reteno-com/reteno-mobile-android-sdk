@@ -32,7 +32,8 @@ internal class RecordPushInteractionActionTest {
         val interactionsDb = mockk<RetenoDatabaseManagerInteraction>().also {
             every { it.insertInteractionRequest(any()) } answers {
                 val request = firstArg<InteractionRequestDb>()
-                calls += "save ${request.id} ${request.status}" + if (dispatchers.markedIo.isRunningHere) " on io" else ""
+                val onIo = if (dispatchers.markedIo.isRunningHere) " on io" else ""
+                calls += "save ${request.id} ${request.status}" + onIo
             }
         }
         val processCachedInteractions = mockk<ProcessCachedInteractions>().also {
@@ -42,7 +43,13 @@ internal class RecordPushInteractionActionTest {
             }
         }
         val traced = TestActionRunner(scope)
-        val sut = RecordPushInteractionAction(interactionsDb, initGate, processCachedInteractions, dispatchers, traced.runner)
+        val sut = RecordPushInteractionAction(
+            interactionsDb = interactionsDb,
+            initGate = initGate,
+            processCachedInteractions = processCachedInteractions,
+            dispatchers = dispatchers,
+            runner = traced.runner
+        )
     }
 
     @Test
@@ -59,7 +66,10 @@ internal class RecordPushInteractionActionTest {
 
         then()
         assertEquals(listOf("save interaction-1 ${InteractionStatusDb.DELIVERED} on io"), beforeInit)
-        assertEquals(listOf("save interaction-1 ${InteractionStatusDb.DELIVERED} on io", "process cached interactions"), fixture.calls)
+        assertEquals(
+            listOf("save interaction-1 ${InteractionStatusDb.DELIVERED} on io", "process cached interactions"),
+            fixture.calls
+        )
     }
 
     @Test
@@ -73,8 +83,12 @@ internal class RecordPushInteractionActionTest {
 
         then()
         assertTrue(result.isSuccess)
-        assertEquals(listOf("save interaction-1 ${InteractionStatusDb.CLICKED} on io", "process cached interactions"), fixture.calls)
-        assertTrue(fixture.traced.sink.lines.first().contains("RecordPushInteraction  id=interaction-1  status=CLICKED"))
-        assertTrue(fixture.traced.sink.lines.any { it.contains("✓ wait for sdk initialization") })
+        assertEquals(
+            listOf("save interaction-1 ${InteractionStatusDb.CLICKED} on io", "process cached interactions"),
+            fixture.calls
+        )
+        val lines = fixture.traced.sink.lines
+        assertTrue(lines.first().contains("RecordPushInteraction  id=interaction-1  status=CLICKED"))
+        assertTrue(lines.any { it.contains("✓ wait for sdk initialization") })
     }
 }

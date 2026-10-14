@@ -3,9 +3,12 @@ package com.reteno.core.features.appinbox
 import com.reteno.core.domain.callback.appinbox.RetenoResultCallback
 import com.reteno.core.domain.model.appinbox.AppInboxMessages
 import com.reteno.core.internal.action.inbox.InboxActions
+import com.reteno.core.internal.log.Redact
+import com.reteno.core.internal.log.RemoteLog
 
 internal class AppInboxImpl(
     private val actions: InboxActions,
+    private val remoteLog: RemoteLog,
     private val isOsSupported: () -> Boolean
 ) : AppInbox {
 
@@ -15,37 +18,53 @@ internal class AppInboxImpl(
         status: AppInboxStatus?,
         callback: RetenoResultCallback<AppInboxMessages>
     ) {
-        if (!isOsSupported()) return
-        actions.submitInboxMessagesRequest(page, pageSize, status, callback)
+        passToSdk("getAppInboxMessages") {
+            actions.submitInboxMessagesRequest(page, pageSize, status, callback)
+        }
     }
 
     override fun getAppInboxMessagesCount(callback: RetenoResultCallback<Int>) {
-        if (!isOsSupported()) return
-        actions.submitInboxCountRequest(callback)
+        passToSdk("getAppInboxMessagesCount") {
+            actions.submitInboxCountRequest(callback)
+        }
     }
 
     override fun subscribeOnMessagesCountChanged(callback: RetenoResultCallback<Int>) {
-        if (!isOsSupported()) return
-        actions.subscribeInboxCount(callback)
+        passToSdk("subscribeOnMessagesCountChanged") {
+            actions.subscribeInboxCount(callback)
+        }
     }
 
     override fun unsubscribeMessagesCountChanged(callback: RetenoResultCallback<Int>) {
-        if (!isOsSupported()) return
-        actions.unsubscribeInboxCount(callback)
+        passToSdk("unsubscribeMessagesCountChanged") {
+            actions.unsubscribeInboxCount(callback)
+        }
     }
 
     override fun unsubscribeAllMessagesCountChanged() {
-        if (!isOsSupported()) return
-        actions.unsubscribeAllInboxCount()
+        passToSdk("unsubscribeAllMessagesCountChanged") {
+            actions.unsubscribeAllInboxCount()
+        }
     }
 
     override fun markAsOpened(messageId: String) {
-        if (!isOsSupported()) return
-        actions.submitInboxMessageOpened(messageId)
+        passToSdk("markAsOpened") {
+            actions.submitInboxMessageOpened(messageId)
+        }
     }
 
     override fun markAllMessagesAsOpened(callback: RetenoResultCallback<Unit>) {
+        passToSdk("markAllMessagesAsOpened") {
+            actions.submitAllInboxMessagesOpened(callback)
+        }
+    }
+
+    private fun passToSdk(call: String, submit: () -> Unit) {
         if (!isOsSupported()) return
-        actions.submitAllInboxMessagesOpened(callback)
+        try {
+            submit()
+        } catch (error: Throwable) {
+            remoteLog.error("AppInbox.$call failed: ${Redact.summary(error)}")
+        }
     }
 }

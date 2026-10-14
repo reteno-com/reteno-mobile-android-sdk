@@ -1,7 +1,9 @@
 package com.reteno.core.internal.platform
 
 import android.app.Activity
+import android.app.ActivityManager
 import android.app.Application
+import android.content.ComponentName
 import android.content.Context
 import android.content.ContextWrapper
 import android.content.Intent
@@ -108,7 +110,29 @@ internal class AndroidAppPlatformTest {
     fun `should read package on top of activity task`() = runUnitTest {
         given()
         val fixture = SutFixture()
-        val activity = mockk<Activity>().also { every { it.getSystemService(any()) } throws SecurityException("denied") }
+        val taskInfo = ActivityManager.RecentTaskInfo().apply {
+            topActivity = ComponentName("com.example.top", "com.example.top.Top")
+        }
+        val task = mockk<ActivityManager.AppTask>().also { every { it.taskInfo } returns taskInfo }
+        val manager = mockk<ActivityManager>().also { every { it.appTasks } returns listOf(task) }
+        val activity = mockk<Activity>().also {
+            every { it.getSystemService(Context.ACTIVITY_SERVICE) } returns manager
+        }
+
+        whenn()
+        val topPackage = fixture.sut.packageOnTop(activity)
+
+        then()
+        assertEquals("com.example.top", topPackage)
+    }
+
+    @Test
+    fun `should return no top package when activity manager access is denied`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val activity = mockk<Activity>().also {
+            every { it.getSystemService(any()) } throws SecurityException("denied")
+        }
 
         whenn()
         val topPackage = fixture.sut.packageOnTop(activity)
@@ -125,13 +149,21 @@ internal class AndroidAppPlatformTest {
 
         whenn()
         fixture.sut.watchFragmentScreens { name, _ -> calls += name }
-        fixture.sut.watchAppLifecycle(onForeground = { calls += "foreground" }, onBackground = {}, onActivityPaused = {})
+        fixture.sut.watchAppLifecycle(
+            onForeground = { calls += "foreground" },
+            onBackground = {},
+            onActivityPaused = {}
+        )
         fixture.owner.registry.handleLifecycleEvent(Lifecycle.Event.ON_START)
 
         then()
         assertEquals(listOf("foreground"), calls)
-        verify(exactly = 1) { fixture.activityHelper.registerActivityLifecycleCallbacks("FragmentScreenWatcher", any()) }
-        verify(exactly = 1) { fixture.activityHelper.registerActivityLifecycleCallbacks("AppLifecycleWatcher", any()) }
+        verify(exactly = 1) {
+            fixture.activityHelper.registerActivityLifecycleCallbacks("FragmentScreenWatcher", any())
+        }
+        verify(exactly = 1) {
+            fixture.activityHelper.registerActivityLifecycleCallbacks("AppLifecycleWatcher", any())
+        }
     }
 
     @Test
@@ -168,7 +200,9 @@ internal class AndroidAppPlatformTest {
         fixture.sut.cancelBackgroundSync()
 
         then()
-        verify(exactly = 1) { fixture.workManager.enqueueUniquePeriodicWork(PushDataWorker.PUSH_DATA_WORK_NAME, any(), any()) }
+        verify(exactly = 1) {
+            fixture.workManager.enqueueUniquePeriodicWork(PushDataWorker.PUSH_DATA_WORK_NAME, any(), any())
+        }
         verify(exactly = 1) { fixture.workManager.cancelUniqueWork(PushDataWorker.PUSH_DATA_WORK_NAME) }
     }
 
@@ -178,7 +212,13 @@ internal class AndroidAppPlatformTest {
         val fixture = SutFixture()
         val app = fixture.application
         RetenoInternalImpl.swapInstance(mockk { every { application } returns app })
-        val deviceId = DeviceId(idBody = "body", idSuffix = "suffix", externalId = "user-1", email = "a@b.c", phone = "+100")
+        val deviceId = DeviceId(
+            idBody = "body",
+            idSuffix = "suffix",
+            externalId = "user-1",
+            email = "a@b.c",
+            phone = "+100"
+        )
 
         whenn()
         val device = try {
@@ -190,7 +230,15 @@ internal class AndroidAppPlatformTest {
         then()
         assertEquals(
             listOf(deviceId.id, "suffix", "user-1", "token", false, "a@b.c", "+100"),
-            listOf(device.deviceId, device.deviceIdSuffix, device.externalUserId, device.pushToken, device.pushSubscribed, device.email, device.phone)
+            listOf(
+                device.deviceId,
+                device.deviceIdSuffix,
+                device.externalUserId,
+                device.pushToken,
+                device.pushSubscribed,
+                device.email,
+                device.phone
+            )
         )
     }
 }

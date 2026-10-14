@@ -22,7 +22,9 @@ internal class PushEventsStep(
     private val runner: ActionRunner
 ) : SyncStep {
 
-    override suspend fun invoke(): Result<StepOutcome> = runner("PushEvents") { push() }
+    override suspend fun invoke(): Result<StepOutcome> = runner("PushEvents") {
+        push()
+    }
 
     private suspend fun ActionTrace.push(): StepOutcome {
         var budget = MAX_BATCHES
@@ -43,7 +45,11 @@ internal class PushEventsStep(
     private suspend fun ActionTrace.send(events: EventsDb): StepOutcome {
         if (events.eventList.isNotEmpty()) {
             val result = step("send events to server", detail = { "count=${events.eventList.size}  $it" }) {
-                api.request(HttpMethod.POST, ApiContract.MobileApi.Events, events.latestOfDistinctTypes().toRemote().toJson())
+                api.request(
+                    HttpMethod.POST,
+                    ApiContract.MobileApi.Events,
+                    events.latestOfDistinctTypes().toRemote().toJson()
+                )
             }
             if (result is ApiResult.Failure && result.isRepeatable) return StepOutcome.ABORT
         }

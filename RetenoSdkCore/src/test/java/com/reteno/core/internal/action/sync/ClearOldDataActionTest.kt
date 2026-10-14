@@ -15,7 +15,6 @@ import com.reteno.core.fixtures.stubInAppInteractionDb
 import com.reteno.core.fixtures.stubInteractionDb
 import com.reteno.core.fixtures.testDispatchers
 import com.reteno.core.internal.config.SdkConfiguration
-import com.reteno.core.util.Util.formatToRemote
 import com.reteno.test.given
 import com.reteno.test.runUnitTest
 import com.reteno.test.then
@@ -37,7 +36,7 @@ internal class ClearOldDataActionTest {
         val inboxDb = mockk<RetenoDatabaseManagerAppInbox>()
         val recomEventsDb = mockk<RetenoDatabaseManagerRecomEvents>()
         val wrappedLinksDb = mockk<RetenoDatabaseManagerWrappedLink>()
-        val threshold = STUB_TIME.minusHours(if (debug) ClearOldDataAction.KEEP_DATA_HOURS_DEBUG else ClearOldDataAction.KEEP_DATA_HOURS).formatToRemote()
+        val threshold = if (debug) HOUR_BEFORE_STUB_TIME else DAY_BEFORE_STUB_TIME
         val remoteLog = FakeRemoteLog()
         val reports: List<String>
             get() = remoteLog.infos
@@ -46,7 +45,12 @@ internal class ClearOldDataActionTest {
         val dispatchers = scope.testDispatchers()
         val traced = TestActionRunner(scope)
         val sut = ClearOldDataAction(
-            interactionsDb, inAppInteractionsDb, eventsDb, inboxDb, recomEventsDb, wrappedLinksDb,
+            interactionsDb = interactionsDb,
+            inAppInteractionsDb = inAppInteractionsDb,
+            eventsDb = eventsDb,
+            inboxDb = inboxDb,
+            recomEventsDb = recomEventsDb,
+            wrappedLinksDb = wrappedLinksDb,
             configuration = configuration,
             remoteLog = remoteLog,
             clock = { STUB_TIME.toInstant().toEpochMilli() },
@@ -55,7 +59,10 @@ internal class ClearOldDataActionTest {
         )
 
         init {
-            every { interactionsDb.deleteInteractionByTime(threshold) } answers { onIo += dispatchers.markedIo.isRunningHere; emptyList() }
+            every { interactionsDb.deleteInteractionByTime(threshold) } answers {
+                onIo += dispatchers.markedIo.isRunningHere
+                emptyList()
+            }
             every { inAppInteractionsDb.deleteInteractionsByTime(threshold) } returns emptyList()
             every { eventsDb.deleteEventsByTime(threshold) } returns emptyList()
             every { inboxDb.deleteAppInboxMessagesByTime(threshold) } returns 0
@@ -84,6 +91,18 @@ internal class ClearOldDataActionTest {
     }
 
     @Test
+    fun `should delete rows older than 24 hours before now by default`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+
+        whenn()
+        fixture.sut()
+
+        then()
+        verify(exactly = 1) { fixture.interactionsDb.deleteInteractionByTime("2026-01-01T03:04:05Z") }
+    }
+
+    @Test
     fun `should not report anything when nothing was outdated`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
@@ -109,14 +128,19 @@ internal class ClearOldDataActionTest {
         fixture.sut()
 
         then()
-        assertEquals(listOf("Removed interactions(CLICKED) - 2", "Removed interactions(DELIVERED) - 1"), fixture.reports)
+        assertEquals(
+            listOf("Removed interactions(CLICKED) - 2", "Removed interactions(DELIVERED) - 1"),
+            fixture.reports
+        )
     }
 
     @Test
     fun `should report removed in app interactions per status`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
-        every { fixture.inAppInteractionsDb.deleteInteractionsByTime(fixture.threshold) } returns listOf(stubInAppInteractionDb(status = "OPEN"))
+        every {
+            fixture.inAppInteractionsDb.deleteInteractionsByTime(fixture.threshold)
+        } returns listOf(stubInAppInteractionDb(status = "OPEN"))
 
         whenn()
         fixture.sut()
@@ -129,7 +153,10 @@ internal class ClearOldDataActionTest {
     fun `should report removed events per type`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
-        every { fixture.eventsDb.deleteEventsByTime(fixture.threshold) } returns listOf(stubEventDb(rowId = "1"), stubEventDb(rowId = "2"))
+        every { fixture.eventsDb.deleteEventsByTime(fixture.threshold) } returns listOf(
+            stubEventDb(rowId = "1"),
+            stubEventDb(rowId = "2")
+        )
 
         whenn()
         fixture.sut()
@@ -182,7 +209,9 @@ internal class ClearOldDataActionTest {
         then()
         val lines = fixture.traced.sink.lines
         assertTrue(lines.first().contains("ClearOldData  before=${fixture.threshold}"))
-        assertTrue(lines.any { it.contains("✓ delete outdated interactions from local database") && it.contains("count=0") })
+        assertTrue(
+            lines.any { it.contains("✓ delete outdated interactions from local database") && it.contains("count=0") }
+        )
         assertTrue(lines.any { it.contains("[r1.6] ClearOldWrappedLinks") })
     }
 
@@ -208,7 +237,11 @@ internal class ClearOldDataActionTest {
         fixture.sut()
 
         then()
-        assertEquals(STUB_TIME.minusHours(1).formatToRemote(), fixture.threshold)
-        verify(exactly = 1) { fixture.interactionsDb.deleteInteractionByTime(fixture.threshold) }
+        verify(exactly = 1) { fixture.interactionsDb.deleteInteractionByTime("2026-01-02T02:04:05Z") }
+    }
+
+    companion object {
+        const val DAY_BEFORE_STUB_TIME = "2026-01-01T03:04:05Z"
+        const val HOUR_BEFORE_STUB_TIME = "2026-01-02T02:04:05Z"
     }
 }

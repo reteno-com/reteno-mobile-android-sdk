@@ -49,7 +49,9 @@ internal class ApplyConfigActionTest {
             }
         }
         private val restConfig = mockk<RestConfig>().also {
-            coEvery { it.initDeviceId(any()) } answers { calls += "init device id ${firstArg<DeviceIdMode>()}" + onIo() }
+            coEvery { it.initDeviceId(any()) } answers {
+                calls += "init device id ${firstArg<DeviceIdMode>()}" + onIo()
+            }
         }
         private val configRepository = mockk<ConfigRepository>().also {
             coEvery { it.awaitForDeviceId() } answers { calls += "await device id" + onIo(); DeviceId("device-1") }
@@ -74,7 +76,9 @@ internal class ApplyConfigActionTest {
             }
         }
         private val iamView = mockk<IamView>().also {
-            every { it.pauseIncomingPushInApps(any()) } answers { calls += "pause push in-apps ${firstArg<Boolean>()}" + onMain() }
+            every { it.pauseIncomingPushInApps(any()) } answers {
+                calls += "pause push in-apps ${firstArg<Boolean>()}" + onMain()
+            }
         }
         private val lifecycleTracking = mockk<AppLifecycleTracking>().also {
             every { it.start() } answers { calls += "start lifecycle tracking" + onMain() }
@@ -83,8 +87,19 @@ internal class ApplyConfigActionTest {
             coEvery { it() } answers { calls += "process cached interactions"; Result.success(Unit) }
         }
         val sut = ApplyConfigAction(
-            configuration, restConfig, configRepository, prefs, sessionHandler, registerDevice, initGate,
-            iamController, iamView, lifecycleTracking, processCachedInteractions, dispatchers, traced.runner
+            configuration = configuration,
+            restConfig = restConfig,
+            configRepository = configRepository,
+            prefs = prefs,
+            sessionHandler = sessionHandler,
+            registerDevice = registerDevice,
+            initGate = initGate,
+            iamController = iamController,
+            iamView = iamView,
+            lifecycleTracking = lifecycleTracking,
+            processCachedInteractions = processCachedInteractions,
+            dispatchers = dispatchers,
+            runner = traced.runner
         )
 
         private fun onIo() = if (dispatchers.markedIo.isRunningHere) " on io" else ""
@@ -195,7 +210,8 @@ internal class ApplyConfigActionTest {
 
         then()
         val lines = fixture.traced.sink.lines
-        assertTrue(lines.first().contains("ApplyConfig  source=user  debug=false  customDeviceId=false  sessionDurationMillis=60000"))
+        val expectedStart = "ApplyConfig  source=user  debug=false  customDeviceId=false  sessionDurationMillis=60000"
+        assertTrue(lines.first().contains(expectedStart))
         assertTrue(lines.none { it.contains(STUB_ACCESS_KEY) })
     }
 }

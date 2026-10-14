@@ -22,7 +22,9 @@ internal class ContactWriterTest {
         val env = UserActionFixture(scope, suffix)
 
         suspend fun write(suffix: String?, externalUserId: String, user: User?) =
-            env.traced.runner("Test") { env.writer.write(this, suffix, externalUserId, user) }
+            env.traced.runner("Test") {
+                env.writer.write(this, suffix, externalUserId, user)
+            }
     }
 
     @Test
@@ -40,7 +42,9 @@ internal class ContactWriterTest {
         verify(exactly = 1) { fixture.env.usersDb.insertUser(user.toDb(deviceIdBeforeUser)) }
         verify(exactly = 1) { fixture.env.configRepository.setUserEmail("john@example.com") }
         verify(exactly = 1) { fixture.env.configRepository.setUserPhone("+380501234567") }
-        verify(exactly = 1) { fixture.env.devicesDb.insertDevice(stubDevice(fixture.env.deviceId, "token", true).toDb()) }
+        verify(exactly = 1) {
+            fixture.env.devicesDb.insertDevice(stubDevice(fixture.env.deviceId, "token", true).toDb())
+        }
         assertEquals(listOf(SyncScope.CONTACT), fixture.env.sync.immediateScopes)
         assertTrue(fixture.env.session.isDeviceSent)
     }
@@ -70,7 +74,8 @@ internal class ContactWriterTest {
 
         then()
         verify(exactly = 0) { fixture.env.configRepository.setExternalUserId(any()) }
-        assertTrue(fixture.env.traced.sink.lines.any { it.contains("save external user id to local settings") && it.contains("unchanged") })
+        val lines = fixture.env.traced.sink.lines
+        assertTrue(lines.any { it.contains("save external user id to local settings") && it.contains("unchanged") })
     }
 
     @Test
@@ -137,7 +142,9 @@ internal class ContactWriterTest {
         val fixture = SutFixture(this, suffix = "old-account")
         fixture.env.session.markDeviceSent()
         var sentWhenExternalIdSaved: Boolean? = null
-        every { fixture.env.configRepository.setExternalUserId(any()) } answers { sentWhenExternalIdSaved = fixture.env.session.isDeviceSent }
+        every { fixture.env.configRepository.setExternalUserId(any()) } answers {
+            sentWhenExternalIdSaved = fixture.env.session.isDeviceSent
+        }
 
         whenn()
         fixture.write(suffix = null, externalUserId = "new-user", user = null)

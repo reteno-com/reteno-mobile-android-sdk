@@ -48,7 +48,7 @@ internal class UserAttributesValidatorTest {
     }
 
     @Test
-    fun `should accept market id of letters digits dash and underscore up to 64 characters`() = runUnitTest {
+    fun `should accept market id of letters digits dash and underscore that is exactly 64 characters long`() = runUnitTest {
         given()
         val marketId = "Ab-9_" + "x".repeat(59)
 
@@ -60,7 +60,7 @@ internal class UserAttributesValidatorTest {
     }
 
     @Test
-    fun `should reject market id longer than 64 characters`() = runUnitTest {
+    fun `should reject market id that is 65 characters long`() = runUnitTest {
         given()
         val marketId = "x".repeat(65)
 
@@ -69,6 +69,7 @@ internal class UserAttributesValidatorTest {
 
         then()
         assertTrue(result.exceptionOrNull() is IllegalArgumentException)
+        assertEquals(INVALID_MARKET_ID_MESSAGE, result.exceptionOrNull()?.message)
     }
 
     @Test
@@ -80,9 +81,12 @@ internal class UserAttributesValidatorTest {
         val result = runCatching { UserAttributesValidator.requireValidMarketId(marketId) }
 
         then()
-        assertEquals(
-            "Invalid marketId, max length must be less than 64, allowed symbols: latin characters, digits, '-', '_' ",
-            result.exceptionOrNull()?.message
-        )
+        assertTrue(result.exceptionOrNull() is IllegalArgumentException)
+        assertEquals(INVALID_MARKET_ID_MESSAGE, result.exceptionOrNull()?.message)
+    }
+
+    private companion object {
+        const val INVALID_MARKET_ID_MESSAGE =
+            "Invalid marketId, max length is 64, allowed symbols: latin characters, digits, '-', '_'"
     }
 }

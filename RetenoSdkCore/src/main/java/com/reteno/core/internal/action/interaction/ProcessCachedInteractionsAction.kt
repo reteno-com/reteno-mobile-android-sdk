@@ -30,7 +30,10 @@ internal class ProcessCachedInteractionsAction(
     }
 
     private suspend fun ActionTrace.process() {
-        val requests = step<List<InteractionRequestDb>>("load interaction requests from local database", detail = { "count=${it.size}" }) {
+        val requests = step<List<InteractionRequestDb>>(
+            "load interaction requests from local database",
+            detail = { "count=${it.size}" }
+        ) {
             withContext(dispatchers.io) { interactionsDb.getInteractionRequests() }
         }
         if (requests.isEmpty()) {
@@ -38,7 +41,11 @@ internal class ProcessCachedInteractionsAction(
             return
         }
         val recorded = requests.count { record(it) }
-        if (recorded > 0) step("request data sync") { sync.request() }
+        if (recorded > 0) {
+            step("request data sync") {
+                sync.request()
+            }
+        }
     }
 
     private suspend fun ActionTrace.record(request: InteractionRequestDb): Boolean {
@@ -47,7 +54,9 @@ internal class ProcessCachedInteractionsAction(
             note { "interaction kept for next start" }
             return false
         }
-        step("delete interaction request from local database") { withContext(dispatchers.io) { interactionsDb.deleteInteractionRequest(request) } }
+        step("delete interaction request from local database") {
+            withContext(dispatchers.io) { interactionsDb.deleteInteractionRequest(request) }
+        }
         return true
     }
 }

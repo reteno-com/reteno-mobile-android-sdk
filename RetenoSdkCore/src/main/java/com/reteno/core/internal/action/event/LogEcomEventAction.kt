@@ -22,10 +22,10 @@ internal class LogEcomEventAction(
     suspend operator fun invoke(event: EcomEvent): Result<Unit> = runner("LogEcomEvent") {
         args("type" to event.typeKey)
         step("save ecommerce event to local database") {
-            withContext(dispatchers.io) {
-                eventsDb.insertEvents(EventsDb(restConfig.deviceId, event.toDb()))
-            }
+            withContext(dispatchers.io) { eventsDb.insertEvents(EventsDb(restConfig.deviceId, event.toDb())) }
         }
-        step("notify in-app message triggers") { eventBus.emit(event.asRegularEvent()) }
+        step("notify in-app message triggers") {
+            eventBus.emit(event.asRegularEvent())
+        }
     }
 }

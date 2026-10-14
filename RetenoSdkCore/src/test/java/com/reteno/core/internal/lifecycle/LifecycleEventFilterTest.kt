@@ -43,4 +43,64 @@ internal class LifecycleEventFilterTest {
         then()
         assertEquals(true, LifecycleEventType.values().all { sut.isEnabled(it) })
     }
+
+    @Test
+    fun `should disable only app lifecycle events when app lifecycle tracking is off`() = runUnitTest {
+        given()
+        val sut = LifecycleEventFilter(LifecycleTrackingOptions.ALL.copy(appLifecycleEnabled = false))
+
+        whenn()
+        val disabled = LifecycleEventType.values().filterNot { sut.isEnabled(it) }
+
+        then()
+        assertEquals(listOf(LifecycleEventType.APP_LIFECYCLE), disabled)
+    }
+
+    @Test
+    fun `should disable only foreground lifecycle events when foreground lifecycle tracking is off`() = runUnitTest {
+        given()
+        val sut = LifecycleEventFilter(LifecycleTrackingOptions.ALL.copy(foregroundLifecycleEnabled = false))
+
+        whenn()
+        val disabled = LifecycleEventType.values().filterNot { sut.isEnabled(it) }
+
+        then()
+        assertEquals(listOf(LifecycleEventType.FOREGROUND_LIFECYCLE), disabled)
+    }
+
+    @Test
+    fun `should disable only push events when push subscription tracking is off`() = runUnitTest {
+        given()
+        val sut = LifecycleEventFilter(LifecycleTrackingOptions.ALL.copy(pushSubscriptionEnabled = false))
+
+        whenn()
+        val disabled = LifecycleEventType.values().filterNot { sut.isEnabled(it) }
+
+        then()
+        assertEquals(listOf(LifecycleEventType.PUSH), disabled)
+    }
+
+    @Test
+    fun `should disable only session start events when session start tracking is off`() = runUnitTest {
+        given()
+        val sut = LifecycleEventFilter(LifecycleTrackingOptions.ALL.copy(sessionStartEventsEnabled = false))
+
+        whenn()
+        val disabled = LifecycleEventType.values().filterNot { sut.isEnabled(it) }
+
+        then()
+        assertEquals(listOf(LifecycleEventType.SESSION_START), disabled)
+    }
+
+    @Test
+    fun `should disable only session end events when session end tracking is off`() = runUnitTest {
+        given()
+        val sut = LifecycleEventFilter(LifecycleTrackingOptions.ALL.copy(sessionEndEventsEnabled = false))
+
+        whenn()
+        val disabled = LifecycleEventType.values().filterNot { sut.isEnabled(it) }
+
+        then()
+        assertEquals(listOf(LifecycleEventType.SESSION_END), disabled)
+    }
 }

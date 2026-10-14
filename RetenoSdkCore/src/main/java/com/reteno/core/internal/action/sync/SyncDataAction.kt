@@ -32,8 +32,8 @@ internal class SyncDataAction(
 
     private suspend fun ActionTrace.runSteps(steps: List<SyncStep>): SyncResult {
         var result = SyncResult.COMPLETED
-        steps.forEachIndexed { index, step ->
-            val outcome = stepLock.withLock { step() }
+        steps.forEachIndexed { index, syncStep ->
+            val outcome = stepLock.withLock { syncStep() }
             val position = "step ${index + 1} of ${steps.size}"
             when {
                 outcome.isFailure && index < contactSteps.size -> {

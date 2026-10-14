@@ -32,7 +32,8 @@ class RetenoNotificationServiceTest {
         val manager = application.notificationManager()
         val sut = RetenoNotificationService(application)
 
-        fun broadcastsTo(receiver: Class<*>) = shadowOf(application).broadcastIntents.filter { it.component?.className == receiver.name }
+        fun broadcastsTo(receiver: Class<*>) =
+            shadowOf(application).broadcastIntents.filter { it.component?.className == receiver.name }
     }
 
     @Test
@@ -81,6 +82,24 @@ class RetenoNotificationServiceTest {
     }
 
     @Test
+    fun `should not report notifications state to sdk when handling push`() = runUnitTest {
+        withFakeFacade { facade ->
+            given()
+            val fixture = SutFixture()
+
+            whenn()
+            fixture.sut.handleNotification(stubPushBundle())
+
+            then()
+            val expected = listOf(
+                "saveDefaultNotificationChannel",
+                "recordInteraction $STUB_INTERACTION_ID DELIVERED forcePush=true"
+            )
+            assertEquals(expected, facade.calls)
+        }
+    }
+
+    @Test
     fun `should not record delivery when notifications are disabled`() = runUnitTest {
         withFakeFacade { facade ->
             given()
@@ -100,7 +119,8 @@ class RetenoNotificationServiceTest {
         withFakeFacade { facade ->
             given()
             val fixture = SutFixture()
-            fixture.manager.createNotificationChannel(NotificationChannel("defaultId", "name", NotificationManager.IMPORTANCE_NONE))
+            val blockedChannel = NotificationChannel("defaultId", "name", NotificationManager.IMPORTANCE_NONE)
+            fixture.manager.createNotificationChannel(blockedChannel)
 
             whenn()
             fixture.sut.handleNotification(stubPushBundle())
@@ -121,7 +141,8 @@ class RetenoNotificationServiceTest {
 
             then()
             val forwarded = fixture.broadcastsTo(PushReceivedReceiver::class.java)
-            assertEquals(listOf(STUB_INTERACTION_ID), forwarded.map { it.getStringExtra(Constants.KEY_ES_INTERACTION_ID) })
+            val forwardedIds = forwarded.map { it.getStringExtra(Constants.KEY_ES_INTERACTION_ID) }
+            assertEquals(listOf(STUB_INTERACTION_ID), forwardedIds)
         }
     }
 

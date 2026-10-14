@@ -10,6 +10,11 @@ import com.reteno.core.domain.model.event.Event
 import com.reteno.core.domain.model.event.Parameter
 import com.reteno.core.domain.model.logevent.LogLevel
 import com.reteno.core.domain.model.logevent.RetenoLogEvent
+import com.reteno.core.domain.model.recommendation.get.RecomFilter
+import com.reteno.core.domain.model.recommendation.get.RecomRequest
+import com.reteno.core.domain.model.recommendation.post.RecomEvent
+import com.reteno.core.domain.model.recommendation.post.RecomEventType
+import com.reteno.core.domain.model.recommendation.post.RecomEvents
 import com.reteno.core.domain.model.user.User
 import com.reteno.core.domain.model.user.UserAttributes
 import com.reteno.core.domain.model.user.UserAttributesAnonymous
@@ -98,3 +103,15 @@ internal fun stubConfig(
     .pausePushInAppMessages(pausedPushInApps)
     .sessionDuration(sessionDuration)
     .build()
+
+internal fun stubRecomRequest(
+    products: List<String>? = listOf("sku-1"),
+    category: String? = "shoes",
+    fields: List<String>? = listOf("name"),
+    filters: List<RecomFilter>? = listOf(RecomFilter("color", listOf("red")))
+) = RecomRequest(products = products, category = category, fields = fields, filters = filters)
+
+internal fun stubRecomEvents(
+    recomVariantId: String = "r1v2",
+    recomEvents: List<RecomEvent>? = listOf(RecomEvent(RecomEventType.CLICKS, STUB_TIME, "sku-1"))
+) = RecomEvents(recomVariantId = recomVariantId, recomEvents = recomEvents)

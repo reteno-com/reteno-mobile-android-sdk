@@ -49,11 +49,17 @@ internal class FragmentScreenWatcherTest {
         fixture.callbacks.captured.start(activity)
 
         whenn()
-        activity.supportFragmentManager.beginTransaction().add(android.R.id.content, WatchedHomeFragment()).commitNow()
+        activity.supportFragmentManager
+            .beginTransaction()
+            .add(android.R.id.content, WatchedHomeFragment())
+            .commitNow()
 
         then()
         assertEquals(
-            listOf("WatchedHomeFragment" to ScreenTrackingTrigger.ON_START, "WatchedHomeFragment" to ScreenTrackingTrigger.ON_RESUME),
+            listOf(
+                "WatchedHomeFragment" to ScreenTrackingTrigger.ON_START,
+                "WatchedHomeFragment" to ScreenTrackingTrigger.ON_RESUME
+            ),
             fixture.screens
         )
     }
@@ -68,7 +74,10 @@ internal class FragmentScreenWatcherTest {
         fixture.callbacks.captured.stop(activity)
 
         whenn()
-        activity.supportFragmentManager.beginTransaction().add(android.R.id.content, WatchedDetailsFragment()).commitNow()
+        activity.supportFragmentManager
+            .beginTransaction()
+            .add(android.R.id.content, WatchedDetailsFragment())
+            .commitNow()
 
         then()
         assertTrue(fixture.screens.isEmpty())

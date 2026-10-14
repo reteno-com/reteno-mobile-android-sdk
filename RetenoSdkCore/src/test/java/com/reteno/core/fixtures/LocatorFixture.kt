@@ -111,7 +111,9 @@ internal class LocatorFixture(scope: TestScope, initialized: Boolean = true) {
         serviceLocator = serviceLocator,
         dispatchers = dispatchers,
         logSink = sink,
-        scope = scope.workScope().let { work -> work + SupervisorJob(work.coroutineContext[Job]) + dispatchers.default },
+        scope = scope.workScope().let { work ->
+            work + SupervisorJob(work.coroutineContext[Job]) + dispatchers.default
+        },
         initGate = initGate,
         configuration = configuration,
         platform = platform,

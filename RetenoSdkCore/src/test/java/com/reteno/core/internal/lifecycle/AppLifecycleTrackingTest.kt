@@ -29,16 +29,30 @@ internal class AppLifecycleTrackingTest {
         val platform = FakeAppPlatform()
         private val dispatchers = scope.testDispatchers()
         private val appForegrounded = mockk<AppForegrounded>().also {
-            coEvery { it() } answers { calls += "foregrounded io=${dispatchers.markedIo.isRunningHere}"; Result.success(Unit) }
+            coEvery { it() } answers {
+                calls += "foregrounded io=${dispatchers.markedIo.isRunningHere}"
+                Result.success(Unit)
+            }
         }
         private val appBackgrounded = mockk<AppBackgrounded>().also {
-            coEvery { it() } answers { calls += "backgrounded io=${dispatchers.markedIo.isRunningHere}"; Result.success(Unit) }
+            coEvery { it() } answers {
+                calls += "backgrounded io=${dispatchers.markedIo.isRunningHere}"
+                Result.success(Unit)
+            }
         }
         private val trackPermissionDialog = mockk<TrackPermissionDialog>().also {
-            coEvery { it(any()) } answers { calls += "activity paused"; Result.success(Unit) }
+            coEvery { it(any()) } answers {
+                calls += "activity paused"
+                Result.success(Unit)
+            }
         }
         val sut = AppLifecycleTrackingImpl(
-            platform, appForegrounded, appBackgrounded, trackPermissionDialog, SerialQueue(scope.workScope(), "Lifecycle", FakeLogSink()), dispatchers
+            platform,
+            appForegrounded,
+            appBackgrounded,
+            trackPermissionDialog,
+            SerialQueue(scope.workScope(), "Lifecycle", FakeLogSink()),
+            dispatchers
         )
     }
 
@@ -55,6 +69,7 @@ internal class AppLifecycleTrackingTest {
         runCurrent()
 
         then()
-        assertEquals(listOf("foregrounded io=true", "activity paused", "backgrounded io=true"), fixture.calls)
+        val expected = listOf("foregrounded io=true", "activity paused", "backgrounded io=true")
+        assertEquals(expected, fixture.calls)
     }
 }

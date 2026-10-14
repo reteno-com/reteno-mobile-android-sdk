@@ -1,6 +1,7 @@
 package com.reteno.core.di
 
 import com.reteno.core.RetenoConfig
+import com.reteno.core.data.remote.model.recommendation.get.RecomBase
 import com.reteno.core.domain.callback.appinbox.RetenoResultCallback
 import com.reteno.core.domain.model.appinbox.AppInboxMessages
 import com.reteno.core.domain.model.ecom.EcomEvent
@@ -10,9 +11,12 @@ import com.reteno.core.domain.model.interaction.InAppInteraction
 import com.reteno.core.domain.model.interaction.InteractionAction
 import com.reteno.core.domain.model.interaction.InteractionStatus
 import com.reteno.core.domain.model.logevent.RetenoLogEvent
+import com.reteno.core.domain.model.recommendation.post.RecomEvents
 import com.reteno.core.domain.model.user.User
 import com.reteno.core.domain.model.user.UserAttributesAnonymous
 import com.reteno.core.features.appinbox.AppInboxStatus
+import com.reteno.core.features.recommendation.GetRecommendationResponseCallback
+import com.reteno.core.features.recommendation.GetRecommendationResponseJsonCallback
 import com.reteno.core.internal.action.deeplink.TrackDeeplinkClickAction
 import com.reteno.core.internal.action.device.ContactSession
 import com.reteno.core.internal.action.device.CurrentDevice
@@ -47,6 +51,9 @@ import com.reteno.core.internal.action.lifecycle.TrackPermissionDialogAction
 import com.reteno.core.internal.action.lifecycle.UpdatePushPermissionStatusAction
 import com.reteno.core.internal.action.push.InitializeIamFromPushAction
 import com.reteno.core.internal.action.push.SaveDefaultNotificationChannelAction
+import com.reteno.core.internal.action.recommendation.FetchRecommendationAction
+import com.reteno.core.internal.action.recommendation.FetchRecommendationJsonAction
+import com.reteno.core.internal.action.recommendation.LogRecommendationEventsAction
 import com.reteno.core.internal.action.sync.BackgroundSync
 import com.reteno.core.internal.action.sync.BackgroundSyncAction
 import com.reteno.core.internal.action.sync.ClearOldDataAction
@@ -116,6 +123,7 @@ internal class ActionsLocator(
     val contactQueue = SerialQueue(scope, "Contact", logSink)
     private val lifecycleQueue = SerialQueue(scope, "Lifecycle", logSink)
     private val initQueue = SerialQueue(mainScope, "Init", logSink)
+    private val recommendationEventsQueue = SerialQueue(scope, "RecommendationEvents", logSink)
 
     private val api by lazy { SuspendApiClient(serviceLocator.restClientProvider.get(), dispatchers) }
     private val configRepository by lazy { serviceLocator.configRepositoryProvider.get() }
@@ -131,6 +139,7 @@ internal class ActionsLocator(
     private val inAppInteractionsDb by lazy { serviceLocator.retenoDatabaseManagerInAppInteractionProvider.get() }
     private val wrappedLinksDb by lazy { serviceLocator.retenoDatabaseManagerWrappedLinksProvider.get() }
     private val inboxDb by lazy { serviceLocator.retenoDatabaseManagerAppInboxProvider.get() }
+    private val recomEventsDb by lazy { serviceLocator.retenoDatabaseManagerRecomEventsProvider.get() }
 
     private val lifecycleEvents by lazy { LifecycleEvents(lifecycleEventFilter, logEvent) }
     private val screenTracker by lazy { ScreenTracker(logScreenView, scope) }
@@ -139,7 +148,17 @@ internal class ActionsLocator(
     private val sdk by lazy { StartStopSequencer(mainScope, initGate, startSdk, stopSdk, runState) }
 
     private val contactWriter by lazy {
-        ContactWriter(configRepository, usersDb, currentDevice, dataSync, contactSession, sdk, sessionHandler, remoteLog, dispatchers)
+        ContactWriter(
+            configRepository = configRepository,
+            usersDb = usersDb,
+            currentDevice = currentDevice,
+            sync = dataSync,
+            session = contactSession,
+            sdk = sdk,
+            sessionHandler = sessionHandler,
+            remoteLog = remoteLog,
+            dispatchers = dispatchers
+        )
     }
 
     override val isStarted: Boolean
@@ -150,7 +169,15 @@ internal class ActionsLocator(
     }
 
     val ensureDeviceRegisteredThisSession: EnsureDeviceRegisteredThisSessionAction by lazy {
-        EnsureDeviceRegisteredThisSessionAction(configRepository, devicesDb, currentDevice, dataSync, contactSession, dispatchers, runner)
+        EnsureDeviceRegisteredThisSessionAction(
+            configRepository = configRepository,
+            devicesDb = devicesDb,
+            currentDevice = currentDevice,
+            sync = dataSync,
+            session = contactSession,
+            dispatchers = dispatchers,
+            runner = runner
+        )
     }
 
     val updateFcmToken: UpdateFcmTokenAction by lazy {
@@ -158,7 +185,14 @@ internal class ActionsLocator(
     }
 
     val updateNotificationsEnabled: UpdateNotificationsEnabledAction by lazy {
-        UpdateNotificationsEnabledAction(configRepository, currentDevice, dataSync, contactSession, lifecycleEvents, runner)
+        UpdateNotificationsEnabledAction(
+            configRepository = configRepository,
+            currentDevice = currentDevice,
+            sync = dataSync,
+            session = contactSession,
+            lifecycleEvents = lifecycleEvents,
+            runner = runner
+        )
     }
 
     val setUserAttributes: SetUserAttributesAction by lazy {
@@ -234,15 +268,44 @@ internal class ActionsLocator(
     }
 
     private val markInboxMessageOpened: MarkInboxMessageOpenedAction by lazy {
-        MarkInboxMessageOpenedAction(inboxDb, configRepository, dataSync, initGate, dispatchers, Util::getCurrentTimeStamp, runner)
+        MarkInboxMessageOpenedAction(
+            inboxDb = inboxDb,
+            configRepository = configRepository,
+            sync = dataSync,
+            initGate = initGate,
+            dispatchers = dispatchers,
+            timestamp = Util::getCurrentTimeStamp,
+            runner = runner
+        )
     }
 
     private val markAllInboxMessagesOpened: MarkAllInboxMessagesOpenedAction by lazy {
         MarkAllInboxMessagesOpenedAction(api, inboxDb, inboxCountPoller, initGate, dispatchers, runner)
     }
 
+    private val fetchRecommendation: FetchRecommendationAction by lazy {
+        FetchRecommendationAction(api, initGate, dispatchers, runner)
+    }
+
+    private val fetchRecommendationJson: FetchRecommendationJsonAction by lazy {
+        FetchRecommendationJsonAction(api, initGate, dispatchers, runner)
+    }
+
+    private val logRecommendationEvents: LogRecommendationEventsAction by lazy {
+        LogRecommendationEventsAction(recomEventsDb, dispatchers, runner)
+    }
+
     private val appForegrounded: AppForegroundedAction by lazy {
-        AppForegroundedAction(platform, dataSync, configRepository, iamController, appForegroundState, lifecycleEvents, clock, runner)
+        AppForegroundedAction(
+            platform = platform,
+            dataSync = dataSync,
+            configRepository = configRepository,
+            iamController = iamController,
+            state = appForegroundState,
+            lifecycleEvents = lifecycleEvents,
+            clock = clock,
+            runner = runner
+        )
     }
 
     private val appBackgrounded: AppBackgroundedAction by lazy {
@@ -254,7 +317,14 @@ internal class ActionsLocator(
     }
 
     val lifecycleTracking: AppLifecycleTracking by lazy {
-        AppLifecycleTrackingImpl(platform, appForegrounded, appBackgrounded, trackPermissionDialog, lifecycleQueue, dispatchers)
+        AppLifecycleTrackingImpl(
+            platform = platform,
+            appForegrounded = appForegrounded,
+            appBackgrounded = appBackgrounded,
+            trackPermissionDialog = trackPermissionDialog,
+            queue = lifecycleQueue,
+            dispatchers = dispatchers
+        )
     }
 
     val setLifecycleEventConfig: SetLifecycleEventConfigAction by lazy {
@@ -292,7 +362,17 @@ internal class ActionsLocator(
     }
 
     private val startSdk: StartSdkAction by lazy {
-        StartSdkAction(ensureDeviceRegisteredThisSession, sessionHandler, iamController, dataSync, iamView, inboxCountPoller, runState, dispatchers, runner)
+        StartSdkAction(
+            ensureDeviceRegistered = ensureDeviceRegisteredThisSession,
+            sessionHandler = sessionHandler,
+            iamController = iamController,
+            dataSync = dataSync,
+            iamView = iamView,
+            inboxCount = inboxCountPoller,
+            state = runState,
+            dispatchers = dispatchers,
+            runner = runner
+        )
     }
 
     private val stopSdk: StopSdkAction by lazy {
@@ -309,7 +389,7 @@ internal class ActionsLocator(
             inAppInteractionsDb = inAppInteractionsDb,
             eventsDb = eventsDb,
             inboxDb = inboxDb,
-            recomEventsDb = serviceLocator.retenoDatabaseManagerRecomEventsProvider.get(),
+            recomEventsDb = recomEventsDb,
             wrappedLinksDb = wrappedLinksDb,
             configuration = configuration,
             remoteLog = remoteLog,
@@ -343,7 +423,7 @@ internal class ActionsLocator(
                 PushInAppInteractionsStep(inAppInteractionsDb, api, dispatchers, runner),
                 PushEventsStep(eventsDb, api, dispatchers, runner),
                 PushInboxStatusStep(inboxDb, api, inboxCountPoller, dispatchers, runner),
-                PushRecomEventsStep(serviceLocator.retenoDatabaseManagerRecomEventsProvider.get(), api, dispatchers, runner),
+                PushRecomEventsStep(recomEventsDb, api, dispatchers, runner),
                 PushWrappedLinksStep(wrappedLinksDb, api, dispatchers, runner),
                 PushLogEventsStep(serviceLocator.retenoDatabaseManagerLogEventProvider.get(), api, dispatchers, runner)
             ),
@@ -460,7 +540,12 @@ internal class ActionsLocator(
         scope.launch { saveDefaultNotificationChannel(channel) }
     }
 
-    override fun submitInboxMessagesRequest(page: Int?, pageSize: Int?, status: AppInboxStatus?, callback: RetenoResultCallback<AppInboxMessages>) {
+    override fun submitInboxMessagesRequest(
+        page: Int?,
+        pageSize: Int?,
+        status: AppInboxStatus?,
+        callback: RetenoResultCallback<AppInboxMessages>
+    ) {
         scope.launch { getInboxMessages(page, pageSize, status, callback) }
     }
 
@@ -486,5 +571,26 @@ internal class ActionsLocator(
 
     override fun submitAllInboxMessagesOpened(callback: RetenoResultCallback<Unit>) {
         scope.launch { markAllInboxMessagesOpened(callback) }
+    }
+
+    override fun <T : RecomBase> submitRecommendationRequest(
+        recomVariantId: String,
+        requestBody: String,
+        responseClass: Class<T>,
+        callback: GetRecommendationResponseCallback<T>
+    ) {
+        scope.launch { fetchRecommendation(recomVariantId, requestBody, responseClass, callback) }
+    }
+
+    override fun submitRecommendationJsonRequest(
+        recomVariantId: String,
+        requestBody: String,
+        callback: GetRecommendationResponseJsonCallback
+    ) {
+        scope.launch { fetchRecommendationJson(recomVariantId, requestBody, callback) }
+    }
+
+    override fun submitRecommendationEvents(events: RecomEvents) {
+        recommendationEventsQueue.enqueue { logRecommendationEvents(events) }
     }
 }

@@ -63,7 +63,13 @@ internal class TraceFormatterTest {
         val error = "IOException"
 
         whenn()
-        val line = TraceFormatter.stepFailure(depth = 1, id = "a1.2", name = "send device to server", error = error, millis = 230)
+        val line = TraceFormatter.stepFailure(
+            depth = 1,
+            id = "a1.2",
+            name = "send device to server",
+            error = error,
+            millis = 230
+        )
 
         then()
         assertEquals("│  │  [a1.2] ✗ send device to server${" ".repeat(12)}IOException${" ".repeat(5)}230 ms", line)

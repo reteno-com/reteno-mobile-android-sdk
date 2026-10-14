@@ -15,6 +15,10 @@ internal class SetUserAttributesAction(
     suspend operator fun invoke(externalUserId: String, user: User?): Result<Unit> = runner("SetUserAttributes") {
         args("externalUserId" to { Redact.token(externalUserId) }, "user" to { user.traceFields() })
         writer.write(this, suffix = null, externalUserId = externalUserId, user = user)
-        if (sdk.isStarted) step("schedule segmentation refresh") { segmentationRefresh.request() }
+        if (sdk.isStarted) {
+            step("schedule segmentation refresh") {
+                segmentationRefresh.request()
+            }
+        }
     }
 }

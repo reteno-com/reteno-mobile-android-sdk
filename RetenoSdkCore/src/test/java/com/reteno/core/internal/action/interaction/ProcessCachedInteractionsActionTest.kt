@@ -71,7 +71,10 @@ internal class ProcessCachedInteractionsActionTest {
 
         then()
         assertTrue(result.isSuccess)
-        assertEquals(listOf("delivered-1" to InteractionStatus.DELIVERED, "clicked-1" to InteractionStatus.CLICKED), fixture.recorded)
+        assertEquals(
+            listOf("delivered-1" to InteractionStatus.DELIVERED, "clicked-1" to InteractionStatus.CLICKED),
+            fixture.recorded
+        )
         assertTrue(fixture.requests.isEmpty())
         assertTrue(fixture.loadedOnIo)
         assertTrue(fixture.deletedOnIo)

@@ -61,7 +61,9 @@ internal class LogEventActionTest {
         given()
         val fixture = SutFixture(this)
         var insertedOnIo = false
-        every { fixture.eventsDb.insertEvents(any()) } answers { insertedOnIo = fixture.dispatchers.markedIo.isRunningHere }
+        every { fixture.eventsDb.insertEvents(any()) } answers {
+            insertedOnIo = fixture.dispatchers.markedIo.isRunningHere
+        }
 
         whenn()
         fixture.sut(stubCustomEvent())
@@ -129,7 +131,12 @@ internal class LogEventActionTest {
 
         then()
         assertEquals(
-            fixture.traced.successfulTrace("LogEvent", "type=purchase", "save event to local database", "notify in-app message triggers"),
+            fixture.traced.successfulTrace(
+                "LogEvent",
+                "type=purchase",
+                "save event to local database",
+                "notify in-app message triggers"
+            ),
             fixture.traced.sink.lines
         )
         assertFalse(fixture.traced.sink.lines.any { it.contains("A-1") })

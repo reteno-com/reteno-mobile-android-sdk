@@ -44,7 +44,10 @@ internal class GetInboxMessagesCountActionTest {
         fixture.sut(fixture.callback)
 
         then()
-        assertEquals(listOf(SentRequest(HttpMethod.GET, ApiContract.AppInbox.MessagesCount, null, null)), fixture.rest.requests)
+        assertEquals(
+            listOf(SentRequest(HttpMethod.GET, ApiContract.AppInbox.MessagesCount, null, null)),
+            fixture.rest.requests
+        )
         assertEquals(listOf(7), fixture.callback.results)
         assertEquals(listOf(true), fixture.callback.calledOnMain)
     }

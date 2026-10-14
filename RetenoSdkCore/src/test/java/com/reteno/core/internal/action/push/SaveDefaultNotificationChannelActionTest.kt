@@ -22,7 +22,9 @@ internal class SaveDefaultNotificationChannelActionTest {
         val traced = TestActionRunner(this)
         val saved = mutableListOf<Pair<String, Boolean>>()
         val configRepository = mockk<ConfigRepository>().also {
-            every { it.saveDefaultNotificationChannel(any()) } answers { saved += firstArg<String>() to dispatchers.markedIo.isRunningHere }
+            every { it.saveDefaultNotificationChannel(any()) } answers {
+                saved += firstArg<String>() to dispatchers.markedIo.isRunningHere
+            }
         }
         val sut = SaveDefaultNotificationChannelAction(configRepository, dispatchers, traced.runner)
 
@@ -33,7 +35,11 @@ internal class SaveDefaultNotificationChannelActionTest {
         assertTrue(result.isSuccess)
         assertEquals(listOf(CHANNEL to true), saved)
         assertEquals(
-            traced.successfulTrace("SaveDefaultNotificationChannel", "", "save default notification channel to local settings"),
+            traced.successfulTrace(
+                "SaveDefaultNotificationChannel",
+                "",
+                "save default notification channel to local settings"
+            ),
             traced.sink.lines
         )
     }

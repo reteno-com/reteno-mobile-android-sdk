@@ -12,9 +12,16 @@ internal class SetMultiAccountUserAttributesAction(
     private val runner: ActionRunner
 ) {
 
-    suspend operator fun invoke(externalUserId: String, user: User?): Result<Unit> = runner("SetMultiAccountUserAttributes") {
+    suspend operator fun invoke(
+        externalUserId: String,
+        user: User?
+    ): Result<Unit> = runner("SetMultiAccountUserAttributes") {
         args("externalUserId" to { Redact.token(externalUserId) }, "user" to { user.traceFields() })
         writer.write(this, suffix = externalUserId, externalUserId = externalUserId, user = user)
-        if (sdk.isStarted) step("schedule segmentation refresh") { segmentationRefresh.request() }
+        if (sdk.isStarted) {
+            step("schedule segmentation refresh") {
+                segmentationRefresh.request()
+            }
+        }
     }
 }

@@ -38,7 +38,12 @@ internal class StartStopSequencerTest {
                 Result.success(Unit)
             }
         }
-        private val stopSdk = mockk<StopSdk>().also { coEvery { it() } coAnswers { calls += "stop"; Result.success(Unit) } }
+        private val stopSdk = mockk<StopSdk>().also {
+            coEvery { it() } coAnswers {
+                calls += "stop"
+                Result.success(Unit)
+            }
+        }
         val sut = StartStopSequencer(scope.workScope(), initGate, startSdk, stopSdk, state)
     }
 

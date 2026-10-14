@@ -21,7 +21,9 @@ internal class PushInboxStatusStep(
     private val runner: ActionRunner
 ) : SyncStep {
 
-    override suspend fun invoke(): Result<StepOutcome> = runner("PushInboxStatus") { push() }
+    override suspend fun invoke(): Result<StepOutcome> = runner("PushInboxStatus") {
+        push()
+    }
 
     private suspend fun ActionTrace.push(): StepOutcome {
         val messages = step("load opened inbox messages from local database", detail = { "count=${it.size}" }) {
@@ -29,14 +31,20 @@ internal class PushInboxStatusStep(
         }
         if (messages.isEmpty()) return nothingToSend()
         val result = step("send opened status to server") {
-            api.request(HttpMethod.POST, ApiContract.AppInbox.MessagesStatus, AppInboxMessagesStatusRemote(ids = messages.map { it.id }).toJson())
+            api.request(
+                HttpMethod.POST,
+                ApiContract.AppInbox.MessagesStatus,
+                AppInboxMessagesStatusRemote(ids = messages.map { it.id }).toJson()
+            )
         }
         if (result is ApiResult.Failure && result.isRepeatable) return StepOutcome.ABORT
         step("delete sent statuses from local database") {
             withContext(dispatchers.io) { inboxDb.deleteAppInboxMessages(messages) }
         }
         if (result is ApiResult.Success) {
-            step("refresh unread messages count") { inboxCount.refresh() }
+            step("refresh unread messages count") {
+                inboxCount.refresh()
+            }
         }
         return StepOutcome.CONTINUE
     }

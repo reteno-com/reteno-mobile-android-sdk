@@ -134,8 +134,12 @@ internal class LogEventAction(
 ) {
     suspend operator fun invoke(event: Event): Result<Unit> = runner("LogEvent") {
         args("type" to event.eventTypeKey)
-        step("save event to local database") { withContext(dispatchers.io) { eventsDb.insertEvents(EventsDb(restConfig.deviceId, event.toDb())) } }
-        step("notify in-app message triggers") { eventBus.emit(event) }
+        step("save event to local database") {
+            withContext(dispatchers.io) { eventsDb.insertEvents(EventsDb(restConfig.deviceId, event.toDb())) }
+        }
+        step("notify in-app message triggers") {
+            eventBus.emit(event)
+        }
     }
 }
 ```
@@ -220,8 +224,12 @@ Usage:
 ```kotlin
 suspend operator fun invoke(event: Event): Result<Unit> = runner("LogEvent") {
     args("type" to event.eventTypeKey)
-    step("save event to local database") { withContext(dispatchers.io) { eventsDb.insertEvents(EventsDb(restConfig.deviceId, event.toDb())) } }
-    step("notify in-app message triggers") { eventBus.emit(event) }
+    step("save event to local database") {
+        withContext(dispatchers.io) { eventsDb.insertEvents(EventsDb(restConfig.deviceId, event.toDb())) }
+    }
+    step("notify in-app message triggers") {
+        eventBus.emit(event)
+    }
 }
 ```
 
@@ -485,10 +493,55 @@ Final Coverage Report (Phase 6) — Kover: Core gated packages 1994/1994 lines, 
 - [x] Facade mapping + unsupported OS — `AppInboxImplTest`; locator ports (page, count, subscribe after start, unsubscribe, opened/mark-all) — `ActionsLocatorInboxWiringTest`; Start/Stop resume/pause order — `StartSdkActionTest`, `StopSdkActionTest`; sync step refresh — `PushInboxStatusStepTest`, `ActionsLocatorSyncWiringTest`
 - Gaps: `RetenoInternalImpl.appInbox` is not tested directly (building `AppInboxImpl` in the Robolectric facade test would load a gated class in a sandbox); not smoke-tested on a device.
 
-### Phase 7 — Recommendations ☐
-Actions (`internal/action/recommendation/`): `FetchRecommendationAction<T>` (typed with JSON fallback), `FetchRecommendationJsonAction`, `LogRecommendationEventsAction`.
-Fixes: R1 (empty rows deleted in `PushRecomEventsStep`), failed fetch no longer produces an ERROR log event with a synthetic `Throwable("null")`.
-Removes: `RecommendationController`, `RecommendationRepository(Impl)`.
+### Phase 7 — Recommendations ☑
+Done (`internal/action/recommendation/`):
+- `FetchRecommendationAction` (generic `invoke<T : RecomBase>`): wait for init → POST the request for the variant → recommendations parsed into `responseClass` go to `onSuccess`; a response that can't be read into it goes to `onSuccessFallbackToJson(body)` (documented contract, so the action succeeds and nothing is reported; the failed read step still shows in the trace); server failure → `onFailure(code, body, error)`, traced, not reported. All host callbacks on main.
+- `FetchRecommendationJsonAction`: same request, raw body → `onSuccess`, server failure → `onFailure` (not reported).
+- `LogRecommendationEventsAction`: saves the events on IO; a null or empty event list is skipped with a note instead of reaching the DB manager (which logged it as an ERROR remote event). No sync request and no init wait — same as before, the 30 s cycle sends them.
+- `RecommendationImpl` is a thin facade over the `RecommendationActions` port (`SdkActions` extends it; `ActionsLocator` launches the actions on its scope); `RetenoInternalImpl.recommendation` builds it directly. `ActionsLocator` now holds one `recomEventsDb` for cleanup, sync and logging.
+- Fixes: **I6** for recommendations (fetches before init are held until the gate opens instead of going out without device id / access key); failed fetch no longer produces an ERROR log event with a synthetic `Throwable("null")`; **B2** for recommendations (parsing happens inside the action, so the callback is answered once the SDK is initialized — a fetch made before init is held, with no timeout, until init completes; see open decisions below). **R1**: the "empty rows" part was already closed in Phase 2 (`PushRecomEventsStep` deletes all-empty groups, the DB manager never returns empty groups) and empty groups can no longer be logged; the batch-limit part is not done (see gaps).
+- Deleted: `RecommendationController`, `RecommendationRepository(Impl)`, `RecommendationControllerProvider`, `RecommendationRepositoryProvider`, `RecommendationProvider`, `ServiceLocator.recommendationProvider` (internal), 3 legacy test files (9 legacy tests), the `recommendation` mock in `BaseRobolectricTest`.
+- Gate: `internal.action.recommendation` and `RecommendationImpl` added.
+
+Review follow-up (`/code-review` of Phase 7):
+- The request is serialized in `RecommendationImpl` on the caller's thread, as before the migration, so a host that clears or reuses its `products`/`fields` lists after the call no longer changes (or breaks) the request; actions take the JSON body.
+- Recommendation events are saved through a `SerialQueue` (`RecommendationEvents`): the frozen DB manager does an unguarded check-then-insert of the variant row and shares one `ContentValues`, so parallel saves for a new variant could drop events (also true before the migration).
+- `stepOrNull` (`internal.action.trace`) reads with a fallback and rethrows `CancellationException`; `runCatching { step(…) }` turned cancellation into the fallback path.
+- The variant id is URL-encoded in `ApiContract.Recommendation.GetRecoms`: it was put into the request path raw, so an id like `../../v1/user?x=` sent the request (with the access key) to another endpoint on the same host. Pre-existing; low risk because the id comes from the host app, but worth mentioning to the security owner.
+- The two fetch actions' private host-answer helpers are named `answerHost`, so they no longer shadow the inbox `passResponseToHost`. The init wait and the request stay written out in each action (a shared helper was tried and reverted: it hid the steps from a top-to-bottom read).
+
+### Legacy test migration audit (after Phase 7) ☑
+Every legacy test method deleted or changed on the branch (27 deleted files, 17 modified, about 320 methods) was mapped to the new test that asserts the same behaviour. Almost everything is covered, mostly more strictly; dropped tests match decisions above (queue chaining, 1 s force-push throttle, fire-and-forget pushes, PII in log messages). Fixed from the findings:
+- **Default notification channel fallback restored** (regression from Phase 5): reading the stored channel, reading the bundled `default_channel` resource and storing it are each guarded again as on master, so a failure falls back to the bundled description or the fallback channel instead of dropping the push (FCM handler path) — `RetenoNotificationChannelTest`.
+- **`AppInboxImpl` / `RecommendationImpl` catch failures again** (as on master): a failing SDK call (including request serialization, which runs on the caller's thread since Phase 7) never reaches the host; it is reported once through `RemoteLog.error("<Facade>.<call> failed: <redacted summary>")` — `AppInboxImplTest`, `RecommendationImplTest`.
+- **Kept by decision:** `RetenoNotificationService` recognises a Reteno push only when `es_interaction_id` holds a string (`getString(...) != null`); on master `containsKey` sent a push whose key is present but null down the Reteno path. Such a push is now handled as a custom push.
+Corrections: Phase 4 "sync not gated" is stale — `forcePushData()` waits for init; the 5 files Phase 0 called broken on master compiled on master and broke at `60ad093` on this branch; Phase 6 deleted 3 inbox test files and rewrote the fourth.
+Coverage gaps found by the audit — closed in the test-quality pass below, except `RetenoInternalImpl.backgroundSync`/`appInbox`/`recommendation` wiring (the Robolectric facade test must not load gated classes; resolved by D12 in Phase 10) and `IamViewImpl` interaction recording (Phase 8).
+
+### Readability pass (after Phase 7) ☑
+Every action, sync step and helper that runs steps was reformatted so it reads top to bottom (rules in `AGENTS.md` → "An action reads top to bottom like its spec"): step and runner bodies always on their own lines (every one-line step and runner body rewritten), conditional steps as braced blocks, a step result used in a condition named first (`BackgroundSyncAction`), every line within 120 columns (long `api.request`/`args`/signatures/constructor calls wrapped, locator constructor calls with named arguments), consistent blank lines. Small readability extractions: `CurrentDevice.withoutLocalState()`, the opened inbox message built as a named value, `SyncDataAction`'s loop variable renamed `syncStep` so it isn't confused with a trace step. No behaviour change.
+Tests got the same pass: the 142 new-style test and fixture files on the branch (legacy-style tests awaiting their Phase 8/10 rewrite left as they are) — runner/step bodies on their own lines, 120 columns, wrapped calls or named `expected` values, given/whenn/then spacing, `SutFixture` first and constants last. Assertion/verify/stub tokens per file are unchanged against HEAD apart from the new tests above. Gate after both passes: Core 2215/2215 lines, 494/494 branches (872 tests; branches fell from 510 because the facades check the OS in one place), Push 105 and FCM 7 tests at 100 %.
+Test-quality pass (after the readability pass) ☑ — test-only, no production change:
+- Fixed: `ActionsLocatorSyncWiringTest` is plain JUnit 5 now (it no longer needed Robolectric) and its self-comparing assertion became a real one; `TopActivityTest` back on the single sdk 26 sandbox with an `SDK_INT` pin; `SuspendApiClientTest` asserts type and message; no `advanceUntilIdle()`; `PushDataWorkerTest` asserts inside `runUnitTest`; misleading names fixed; multi-behaviour tests split; `by lazy` identity tests removed.
+- Gaps closed: user merge keeps synced attributes (both persist paths, literal expected row); device/user wire JSON pinned to literal field names; lifecycle event parameters, version/build saved while events are disabled, per-option `toTypeMap` mapping; `FakeSdkActions` records forwarded objects and callbacks (`assertSame` in facade tests); invalid user input never forwarded after init; notifications false→true saved value and `pushSubscribed`; background sync keeps periodic work in foreground/before init; retention as literal 24 h / 1 h; non-repeatable interaction + failed delete; single-callback unsubscribe at locator level; `RetenoActivityHelperImpl` start/resume dispatch and late-registration replay; channel attribute mapping; real system block-state broadcasts; notifications and channel both off; no state check while handling a push; receiver without extras doesn't forward; activity-level button click and host forward.
+- Mutation-checked (each killed by the new tests): persist merged instead of full user, skip saving build number, swap `toTypeMap` entries, 23 h retention, facade drops the user, channel ignores `show_badge`.
+- Gate: Core 2215/2215 lines, 494/494 branches (941 tests), Push 129, FCM 8 tests at 100 %, fixtures and `:app:compileDebugKotlin` green.
+Production issues found by these tests:
+- **Fixed — default notification channel parsing:** `NotificationChannelData` was parsed by Gson without a no-arg constructor, so its Kotlin defaults were ignored (a description without `importance` created the default channel blocked, without `lockscreen_visibility` private; a missing `id`/`name` put null into non-null fields and channel creation threw, leaking the half-set channel id). Parsing now goes through `NotificationChannelJson` (all fields nullable with defaults, so Gson calls its constructor): missing optional fields take `NotificationChannelData` defaults, a description without `id`, `name` or `description` is treated as invalid and falls back to the bundled description, then the fallback channel — `RetenoNotificationChannelTest`.
+- **Fixed — market id message:** "max length must be less than 64" → "max length is 64" (64 characters are accepted). "latin characters" stays: the backend accepts only latin letters. **Open:** the rule uses `isLetterOrDigit()`, so the SDK accepts non-latin letters (e.g. Cyrillic) that the backend rejects — decide whether to tighten the rule to latin letters.
+- **Later (decided):** `RetenoActivityHelperImpl` remembers the current activity only on resume, so a callback registered between an activity's start and resume (e.g. `FragmentScreenWatcher`) never gets `start` for it.
+Open decisions (same behaviour as App Inbox, Phase 6 — decide for both together):
+- **Init wait without timeout:** a fetch made before init (or when the host never initializes) keeps its callback, and whatever it captures, until init. Options: keep; or answer `onFailure(null, null, error)` after a bounded wait.
+- **Host callback exceptions:** an exception thrown by the host's callback is caught by `ActionRunner` and uploaded as an SDK failure report (stack trace through `Redact.uploadableStackTrace`); before, it crashed the host on the main thread. Options: keep; or rethrow host callback exceptions on main and not report them.
+
+Final Coverage Report (Phase 7, after review fixes) — Kover: Core gated packages 2085/2085 lines, 510/510 branches (870 Core tests); Push 102 and FCM 7 tests at 100 %; fixtures self-tests and `:app:compileDebugKotlin` green.
+- [x] Typed fetch: POST body/variant, typed result on main, unreadable → raw JSON fallback on main without report, server failure on main without report, waits for init, cancelled before init → no request/callback, trace without URL/response content — `FetchRecommendationActionTest`
+- [x] JSON fetch: request, raw body on main, server failure on main without report, waits for init, trace — `FetchRecommendationJsonActionTest`
+- [x] Events: mapped events saved on IO, empty and null lists skipped, insert failure → one report at the save step, trace args — `LogRecommendationEventsActionTest`
+- [x] Variant id encoded in the request path — `FetchRecommendationActionTest`; read fallback keeps cancellation — `StepOrNullTest`
+- [x] Facade mapping, request serialized at call time, unsupported OS — `RecommendationImplTest`; locator ports (typed, JSON, events, events saved in call order) — `ActionsLocatorRecommendationWiringTest`
+- Gaps: the serial event queue is checked by call order only — the single-threaded test dispatcher can't show the race it prevents; `RetenoInternalImpl.recommendation` not tested directly (same reason as `appInbox`: the Robolectric facade test must not load a gated class); `PushRecomEventsStep` still sends the whole table in one request (`getRecomEvents(limit)` limits events *per variant*, so a real batch needs a draining loop; the backlog stays bounded by `ClearOldData`'s time-based cleanup); not smoke-tested on a device.
+Behaviour changes to announce: recommendation fetches wait for SDK initialization; internal `ServiceLocator.recommendationProvider` removed.
 
 ### Phase 8 — In-app messages ☐ (largest; split in sub-PRs)
 8a State & rules: `InAppMessagesState` (thread-safe holder: messages, waiting-for-event, scheduled, postponed, pause behaviour), pure `DisplayRulesEvaluator` (frequency/schedule/targeting/segment) with exhaustive table tests.

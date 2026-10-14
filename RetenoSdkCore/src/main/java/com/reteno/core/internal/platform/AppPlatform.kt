@@ -52,8 +52,18 @@ internal class AndroidAppPlatform(
         FragmentScreenWatcher(activityHelper, onScreen).register()
     }
 
-    override fun watchAppLifecycle(onForeground: () -> Unit, onBackground: () -> Unit, onActivityPaused: (Activity) -> Unit) {
-        AppLifecycleWatcher(lifecycleOwner.lifecycle, activityHelper, onForeground, onBackground, onActivityPaused).register()
+    override fun watchAppLifecycle(
+        onForeground: () -> Unit,
+        onBackground: () -> Unit,
+        onActivityPaused: (Activity) -> Unit
+    ) {
+        AppLifecycleWatcher(
+            lifecycle = lifecycleOwner.lifecycle,
+            activityHelper = activityHelper,
+            onForeground = onForeground,
+            onBackground = onBackground,
+            onActivityPaused = onActivityPaused
+        ).register()
     }
 
     override fun initWorkManager() {
@@ -68,7 +78,11 @@ internal class AndroidAppPlatform(
         workManager.get().cancelUniqueWork(PushDataWorker.PUSH_DATA_WORK_NAME)
     }
 
-    override fun createDevice(deviceId: DeviceId, pushToken: String, pushSubscribed: Boolean): Device = Device.createDevice(
+    override fun createDevice(
+        deviceId: DeviceId,
+        pushToken: String,
+        pushSubscribed: Boolean
+    ): Device = Device.createDevice(
         deviceId = deviceId.id,
         deviceIdSuffix = deviceId.idSuffix,
         externalUserId = deviceId.externalId,

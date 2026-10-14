@@ -34,7 +34,9 @@ internal class LoggerWithoutSdkInstanceTest {
         val previous = Reteno.instanceInternal
 
         whenn()
-        val outcome = withoutSdkInstance(previous) { runCatching { Logger.e("Tag", "method", IllegalStateException("boom")) } }
+        val outcome = withoutSdkInstance(previous) {
+            runCatching { Logger.e("Tag", "method", IllegalStateException("boom")) }
+        }
 
         then()
         assertTrue(outcome.isSuccess) { "Logger threw ${outcome.exceptionOrNull()}" }

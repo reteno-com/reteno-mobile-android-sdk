@@ -16,8 +16,16 @@ internal class RecordInAppInteractionAction(
 ) {
 
     suspend operator fun invoke(interaction: InAppInteraction): Result<Unit> = runner("RecordInAppInteraction") {
-        args("id" to interaction.interactionId, "messageInstanceId" to interaction.messageInstanceId, "status" to interaction.status)
-        step("save in-app interaction to local database") { withContext(dispatchers.io) { inAppInteractionsDb.insertInteraction(interaction.toDb()) } }
-        step("request data sync") { sync.request() }
+        args(
+            "id" to interaction.interactionId,
+            "messageInstanceId" to interaction.messageInstanceId,
+            "status" to interaction.status
+        )
+        step("save in-app interaction to local database") {
+            withContext(dispatchers.io) { inAppInteractionsDb.insertInteraction(interaction.toDb()) }
+        }
+        step("request data sync") {
+            sync.request()
+        }
     }
 }

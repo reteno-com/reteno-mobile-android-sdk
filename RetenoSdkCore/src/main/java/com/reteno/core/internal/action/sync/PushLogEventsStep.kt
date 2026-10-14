@@ -34,7 +34,10 @@ internal class PushLogEventsStep(
         var excess = count - MAX_BACKLOG
         while (excess > 0) {
             val chunk = minOf(excess, DELETE_CHUNK.toLong()).toInt()
-            val deleted = step("delete oldest log events above limit from local database", detail = { "count=$chunk" }) {
+            val deleted = step(
+                "delete oldest log events above limit from local database",
+                detail = { "count=$chunk" }
+            ) {
                 withContext(dispatchers.io) { logEventsDb.deleteLogEvents(logEventsDb.getLogEvents(chunk)) }
             }
             if (!deleted) return
@@ -50,7 +53,11 @@ internal class PushLogEventsStep(
             }
             if (batch.isEmpty()) return finishedAfter(handled)
             val result = step("send log events to server") {
-                api.request(HttpMethod.POST, ApiContract.LogEvent.Events, RetenoLogEventListRemote(batch.map { it.toUploadableRemote() }).toJson())
+                api.request(
+                    HttpMethod.POST,
+                    ApiContract.LogEvent.Events,
+                    RetenoLogEventListRemote(batch.map { it.toUploadableRemote() }).toJson()
+                )
             }
             if (result is ApiResult.Failure && result.isRepeatable) return StepOutcome.ABORT
             val deleted = step("delete sent log events from local database") {

@@ -9,6 +9,7 @@ import android.content.pm.ActivityInfo
 import android.content.pm.ResolveInfo
 import android.os.Build
 import android.os.Bundle
+import androidx.core.app.NotificationCompat
 import androidx.test.core.app.ApplicationProvider
 import com.reteno.push.Constants
 import org.robolectric.Shadows.shadowOf
@@ -23,6 +24,26 @@ internal fun stubPushBundle(
     interactionId?.let { putString(Constants.KEY_ES_INTERACTION_ID, it) }
     putString(Constants.KEY_ES_TITLE, "Title")
     extras.forEach { (key, value) -> putString(key, value) }
+}
+
+internal const val STUB_NOTIFICATION_ID = 7
+internal const val STUB_BUTTON_ID = "button-1"
+internal const val STUB_BUTTON_URL = "https://example.com/offer"
+
+internal fun stubActionButtonBundle(): Bundle = stubPushBundle(
+    STUB_INTERACTION_ID,
+    Constants.KEY_BTN_ACTION_ID to STUB_BUTTON_ID,
+    Constants.KEY_BTN_ACTION_LINK_UNWRAPPED to STUB_BUTTON_URL
+).apply {
+    putBoolean(Constants.KEY_ACTION_BUTTON, true)
+    putInt(Constants.KEY_NOTIFICATION_ID, STUB_NOTIFICATION_ID)
+}
+
+internal fun Context.postStubNotification() {
+    val notification = NotificationCompat.Builder(this, "defaultId")
+        .setSmallIcon(android.R.drawable.ic_dialog_info)
+        .build()
+    notificationManager().notify(STUB_NOTIFICATION_ID, notification)
 }
 
 internal fun testApplication(): Application = ApplicationProvider.getApplicationContext()

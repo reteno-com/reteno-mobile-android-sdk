@@ -14,14 +14,20 @@ internal class TrackDeeplinkClickAction(
     private val runner: ActionRunner
 ) {
 
-    suspend operator fun invoke(wrappedLink: String): Result<Unit> = runner("TrackDeeplinkClick") { track(wrappedLink) }
+    suspend operator fun invoke(wrappedLink: String): Result<Unit> = runner("TrackDeeplinkClick") {
+        track(wrappedLink)
+    }
 
     private suspend fun ActionTrace.track(wrappedLink: String) {
         if (wrappedLink.isBlank()) {
             note { "no wrapped link, nothing to track" }
             return
         }
-        step("save link click to local database") { withContext(dispatchers.io) { wrappedLinksDb.insertWrappedLink(wrappedLink) } }
-        step("request data sync") { sync.request() }
+        step("save link click to local database") {
+            withContext(dispatchers.io) { wrappedLinksDb.insertWrappedLink(wrappedLink) }
+        }
+        step("request data sync") {
+            sync.request()
+        }
     }
 }

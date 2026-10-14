@@ -58,7 +58,9 @@ internal class LogEcomEventActionTest {
         given()
         val fixture = SutFixture(this)
         var insertedOnIo = false
-        every { fixture.eventsDb.insertEvents(any()) } answers { insertedOnIo = fixture.dispatchers.markedIo.isRunningHere }
+        every { fixture.eventsDb.insertEvents(any()) } answers {
+            insertedOnIo = fixture.dispatchers.markedIo.isRunningHere
+        }
 
         whenn()
         fixture.sut(stubEcomEvent())
@@ -94,7 +96,10 @@ internal class LogEcomEventActionTest {
         then()
         assertTrue(result.exceptionOrNull() is IOException)
         assertTrue(fixture.events.emitted.isEmpty())
-        assertEquals(listOf(FailureReport("LogEcomEvent", "save ecommerce event to local database", error)), fixture.traced.reports)
+        assertEquals(
+            listOf(FailureReport("LogEcomEvent", "save ecommerce event to local database", error)),
+            fixture.traced.reports
+        )
     }
 
     @Test
@@ -108,7 +113,12 @@ internal class LogEcomEventActionTest {
 
         then()
         assertEquals(
-            fixture.traced.successfulTrace("LogEcomEvent", "type=orderCancelled", "save ecommerce event to local database", "notify in-app message triggers"),
+            fixture.traced.successfulTrace(
+                "LogEcomEvent",
+                "type=orderCancelled",
+                "save ecommerce event to local database",
+                "notify in-app message triggers"
+            ),
             fixture.traced.sink.lines
         )
         assertFalse(fixture.traced.sink.lines.any { it.contains("order-secret-1") })

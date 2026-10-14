@@ -29,13 +29,23 @@ internal class MarkInboxMessageOpenedActionTest {
         val saved = mutableListOf<Pair<AppInboxMessageDb, Boolean>>()
         val dispatchers = scope.testDispatchers()
         val inboxDb = mockk<RetenoDatabaseManagerAppInbox>().also {
-            every { it.insertAppInboxMessage(any()) } answers { saved += firstArg<AppInboxMessageDb>() to dispatchers.markedIo.isRunningHere }
+            every { it.insertAppInboxMessage(any()) } answers {
+                saved += firstArg<AppInboxMessageDb>() to dispatchers.markedIo.isRunningHere
+            }
         }
         val configRepository = mockk<ConfigRepository>().also { every { it.getDeviceId() } returns stubDeviceId() }
         val sync = FakeSyncTrigger()
         val initGate = InitGate().also { if (initialized) it.markInitialized(byUser = true) }
         val traced = TestActionRunner(scope)
-        val sut = MarkInboxMessageOpenedAction(inboxDb, configRepository, sync, initGate, dispatchers, { TIME }, traced.runner)
+        val sut = MarkInboxMessageOpenedAction(
+            inboxDb = inboxDb,
+            configRepository = configRepository,
+            sync = sync,
+            initGate = initGate,
+            dispatchers = dispatchers,
+            timestamp = { TIME },
+            runner = traced.runner
+        )
     }
 
     @Test
@@ -48,7 +58,8 @@ internal class MarkInboxMessageOpenedActionTest {
 
         then()
         assertTrue(result.isSuccess)
-        assertEquals(listOf(AppInboxMessageDb(id = "m1", deviceId = stubDeviceId().id, occurredDate = TIME) to true), fixture.saved)
+        val expected = AppInboxMessageDb(id = "m1", deviceId = stubDeviceId().id, occurredDate = TIME) to true
+        assertEquals(listOf(expected), fixture.saved)
         assertEquals(1, fixture.sync.requests)
         assertTrue(fixture.traced.sink.lines.first().contains("MarkInboxMessageOpened  messageId=m1"))
     }

@@ -12,6 +12,8 @@ internal class SaveDefaultNotificationChannelAction(
 ) {
 
     suspend operator fun invoke(channel: String): Result<Unit> = runner("SaveDefaultNotificationChannel") {
-        step("save default notification channel to local settings") { withContext(dispatchers.io) { configRepository.saveDefaultNotificationChannel(channel) } }
+        step("save default notification channel to local settings") {
+            withContext(dispatchers.io) { configRepository.saveDefaultNotificationChannel(channel) }
+        }
     }
 }

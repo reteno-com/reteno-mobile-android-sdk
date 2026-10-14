@@ -36,7 +36,9 @@ internal class PushDeviceStepTest {
         val dispatchers = scope.testDispatchers()
         val traced = TestActionRunner(scope)
         var registeredCount = 0
-        private val configRepository = mockk<ConfigRepository>().also { every { it.saveDeviceRegistered(true) } answers { registeredCount++ } }
+        private val configRepository = mockk<ConfigRepository>().also {
+            every { it.saveDeviceRegistered(true) } answers { registeredCount++ }
+        }
         val sut = PushDeviceStep(devicesDb, rest.api(dispatchers), configRepository, dispatchers, traced.runner)
 
         init {
@@ -89,7 +91,23 @@ internal class PushDeviceStepTest {
 
         then()
         assertEquals(StepOutcome.CONTINUE, outcome)
-        assertEquals(listOf(SentRequest(HttpMethod.POST, ApiContract.MobileApi.Device, latest.toRemote().toJson())), fixture.rest.requests)
+        assertEquals(
+            listOf(SentRequest(HttpMethod.POST, ApiContract.MobileApi.Device, latest.toRemote().toJson())),
+            fixture.rest.requests
+        )
+    }
+
+    @Test
+    fun `should send device under its wire field names`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        every { fixture.devicesDb.getDevices(any()) } returns listOf(stubDeviceDb())
+
+        whenn()
+        fixture.sut()
+
+        then()
+        assertEquals(DEVICE_JSON, fixture.rest.requests.single().body)
     }
 
     @Test
@@ -270,5 +288,11 @@ internal class PushDeviceStepTest {
         assertTrue(lines.any { it.contains("✓ save device registered flag to local settings") })
         assertTrue(lines.last().contains("PushDevice ✓ CONTINUE"))
         assertFalse(lines.any { it.contains("secret-push-token") })
+    }
+
+    companion object {
+        const val DEVICE_JSON = """{"deviceId":"device-body","externalUserId":"external-user","pushToken":"token",""" +
+            """"pushSubscribed":true,"category":"MOBILE","osType":"ANDROID","osVersion":"14",""" +
+            """"deviceModel":"Pixel","appVersion":"1.0","languageCode":"en","timeZone":"UTC"}"""
     }
 }

@@ -17,7 +17,9 @@ internal class SetMultiAccountUserAttributesActionTest {
     private class SutFixture(scope: TestScope, suffix: String? = null) {
         val env = UserActionFixture(scope, suffix)
         var segmentationRequests = 0
-        val segmentationRefresh = mockk<SegmentationRefresh>().also { every { it.request() } answers { segmentationRequests++ } }
+        val segmentationRefresh = mockk<SegmentationRefresh>().also {
+            every { it.request() } answers { segmentationRequests++ }
+        }
         val sut = SetMultiAccountUserAttributesAction(env.writer, env.sdk, segmentationRefresh, env.traced.runner)
     }
 
@@ -59,6 +61,7 @@ internal class SetMultiAccountUserAttributesActionTest {
 
         then()
         assertEquals(0, fixture.segmentationRequests)
-        assertTrue(fixture.env.traced.sink.lines.first().contains("SetMultiAccountUserAttributes  externalUserId=…nt-2  user={}"))
+        val start = fixture.env.traced.sink.lines.first()
+        assertTrue(start.contains("SetMultiAccountUserAttributes  externalUserId=…nt-2  user={}"))
     }
 }

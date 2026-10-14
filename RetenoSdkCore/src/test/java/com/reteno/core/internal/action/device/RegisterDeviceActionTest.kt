@@ -20,7 +20,13 @@ internal class RegisterDeviceActionTest {
 
     private class SutFixture(scope: TestScope) {
         val env = DeviceActionFixture(scope)
-        val sut = RegisterDeviceAction(env.configRepository, env.currentDevice, env.sync, env.session, env.traced.runner)
+        val sut = RegisterDeviceAction(
+            configRepository = env.configRepository,
+            currentDevice = env.currentDevice,
+            sync = env.sync,
+            session = env.session,
+            runner = env.traced.runner
+        )
     }
 
     @Test
@@ -34,7 +40,9 @@ internal class RegisterDeviceActionTest {
 
         then()
         assertEquals(SyncResult.COMPLETED, result)
-        verify(exactly = 1) { fixture.env.devicesDb.insertDevice(stubDevice(fixture.env.deviceId, "token", true).toDb()) }
+        verify(exactly = 1) {
+            fixture.env.devicesDb.insertDevice(stubDevice(fixture.env.deviceId, "token", true).toDb())
+        }
         assertEquals(listOf(SyncScope.CONTACT), fixture.env.sync.immediateScopes)
         assertTrue(fixture.env.session.isDeviceSent)
     }
@@ -58,7 +66,9 @@ internal class RegisterDeviceActionTest {
     fun `should fail without sending when push token cannot be read`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
-        coEvery { fixture.env.configRepository.getFcmToken() } throws IllegalStateException("Default FirebaseApp is not initialized")
+        coEvery {
+            fixture.env.configRepository.getFcmToken()
+        } throws IllegalStateException("Default FirebaseApp is not initialized")
 
         whenn()
         val result = fixture.sut()

@@ -6,12 +6,12 @@ import com.reteno.core.data.remote.api.HttpMethod
 import com.reteno.core.data.remote.mapper.toJson
 import com.reteno.core.data.remote.mapper.toRemote
 import com.reteno.core.domain.model.ecom.RemoteConstants
-import com.reteno.core.fixtures.SentRequest
-import com.reteno.core.fixtures.stubEventDb
-import com.reteno.core.fixtures.stubEventsDb
 import com.reteno.core.fixtures.FakeRestClient
+import com.reteno.core.fixtures.SentRequest
 import com.reteno.core.fixtures.TestActionRunner
 import com.reteno.core.fixtures.api
+import com.reteno.core.fixtures.stubEventDb
+import com.reteno.core.fixtures.stubEventsDb
 import com.reteno.core.fixtures.testDispatchers
 import com.reteno.test.given
 import com.reteno.test.runUnitTest
@@ -68,7 +68,10 @@ internal class PushEventsStepTest {
 
         then()
         assertEquals(StepOutcome.CONTINUE, outcome)
-        assertEquals(listOf(SentRequest(HttpMethod.POST, ApiContract.MobileApi.Events, events.toRemote().toJson())), fixture.rest.requests)
+        assertEquals(
+            listOf(SentRequest(HttpMethod.POST, ApiContract.MobileApi.Events, events.toRemote().toJson())),
+            fixture.rest.requests
+        )
         verify(exactly = 1) { fixture.eventsDb.deleteEvents(events) }
     }
 
@@ -208,7 +211,10 @@ internal class PushEventsStepTest {
     fun `should abort on repeatable failure without sending remaining groups`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
-        every { fixture.eventsDb.getEvents(any()) } returns listOf(stubEventsDb(), stubEventsDb().copy(deviceId = "other-device"))
+        every { fixture.eventsDb.getEvents(any()) } returns listOf(
+            stubEventsDb(),
+            stubEventsDb().copy(deviceId = "other-device")
+        )
         fixture.rest.failWith(503)
 
         whenn()

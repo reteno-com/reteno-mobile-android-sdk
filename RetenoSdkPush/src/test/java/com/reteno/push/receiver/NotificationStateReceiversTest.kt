@@ -6,6 +6,7 @@ import android.content.BroadcastReceiver
 import android.content.Intent
 import android.os.Build
 import com.reteno.core.util.Constants
+import com.reteno.push.fixtures.FakeRetenoFacade
 import com.reteno.push.fixtures.notificationManager
 import com.reteno.push.fixtures.onAndroidSdk
 import com.reteno.push.fixtures.testApplication
@@ -30,11 +31,20 @@ class NotificationStateReceiversTest {
     private class SutFixture {
         val application = testApplication()
         val manager = application.notificationManager()
-        val receivers: List<BroadcastReceiver> = listOf(AppResumeReceiver(), NotificationChannelStateChangeReceiver(), PushPermissionChangedReceiver())
+        val receivers: List<BroadcastReceiver> = listOf(
+            AppResumeReceiver(),
+            NotificationChannelStateChangeReceiver(),
+            PushPermissionChangedReceiver()
+        )
 
         fun broadcast(action: String) {
             application.sendBroadcast(Intent(action).setPackage(application.packageName))
             ShadowLooper.idleMainLooper()
+        }
+
+        fun blockDefaultChannel() {
+            val blockedChannel = NotificationChannel(DEFAULT_CHANNEL_ID, "name", NotificationManager.IMPORTANCE_NONE)
+            manager.createNotificationChannel(blockedChannel)
         }
     }
 
@@ -48,7 +58,8 @@ class NotificationStateReceiversTest {
             fixture.receivers.forEach { it.onReceive(fixture.application, Intent()) }
 
             then()
-            assertEquals(List(3) { "notificationsEnabled true" }, facade.calls.filter { it.startsWith("notificationsEnabled") })
+            val reportedStates = facade.calls.filter { it.startsWith("notificationsEnabled") }
+            assertEquals(List(3) { "notificationsEnabled true" }, reportedStates)
         }
     }
 
@@ -72,13 +83,71 @@ class NotificationStateReceiversTest {
         withFakeFacade { facade ->
             given()
             val fixture = SutFixture()
-            fixture.manager.createNotificationChannel(NotificationChannel("defaultId", "name", NotificationManager.IMPORTANCE_NONE))
+            fixture.blockDefaultChannel()
 
             whenn()
             NotificationsEnabledManager.onCheckState(fixture.application)
 
             then()
             assertEquals(listOf("notificationsEnabled false"), facade.calls)
+        }
+    }
+
+    @Test
+    fun `should report disabled notifications when app notifications and default channel are blocked`() = runUnitTest {
+        withFakeFacade { facade ->
+            given()
+            val fixture = SutFixture()
+            shadowOf(fixture.manager).setNotificationsEnabled(false)
+            fixture.blockDefaultChannel()
+
+            whenn()
+            NotificationsEnabledManager.onCheckState(fixture.application)
+
+            then()
+            assertEquals(listOf("notificationsEnabled false"), facade.calls)
+        }
+    }
+
+    @Test
+    fun `should check notification state when system changes app block state`() = runUnitTest {
+        withFakeFacade { facade ->
+            given()
+            val fixture = SutFixture()
+
+            whenn()
+            fixture.broadcast(NotificationManager.ACTION_APP_BLOCK_STATE_CHANGED)
+
+            then()
+            assertEquals(listOf("notificationsEnabled true"), facade.reportedStates())
+        }
+    }
+
+    @Test
+    fun `should check notification state when system changes channel block state`() = runUnitTest {
+        withFakeFacade { facade ->
+            given()
+            val fixture = SutFixture()
+
+            whenn()
+            fixture.broadcast(NotificationManager.ACTION_NOTIFICATION_CHANNEL_BLOCK_STATE_CHANGED)
+
+            then()
+            assertEquals(listOf("notificationsEnabled true"), facade.reportedStates())
+        }
+    }
+
+    @Test
+    fun `should check notification state when system changes channel group block state`() = runUnitTest {
+        withFakeFacade { facade ->
+            given()
+            val fixture = SutFixture()
+
+            whenn()
+            fixture.broadcast(NotificationManager.ACTION_NOTIFICATION_CHANNEL_GROUP_BLOCK_STATE_CHANGED)
+
+            then()
+            assertEquals(listOf("notificationsEnabled true"), facade.reportedStates())
         }
     }
 
@@ -120,7 +189,9 @@ class NotificationStateReceiversTest {
             facade.failure = IllegalStateException("sdk not ready")
 
             whenn()
-            val results = fixture.receivers.map { receiver -> runCatching { receiver.onReceive(fixture.application, Intent()) } }
+            val results = fixture.receivers.map { receiver ->
+                runCatching { receiver.onReceive(fixture.application, Intent()) }
+            }
 
             then()
             assertTrue(results.all { it.isSuccess })
@@ -134,10 +205,19 @@ class NotificationStateReceiversTest {
             val fixture = SutFixture()
 
             whenn()
-            onAndroidSdk(Build.VERSION_CODES.N_MR1) { fixture.receivers.forEach { it.onReceive(fixture.application, Intent()) } }
+            onAndroidSdk(Build.VERSION_CODES.N_MR1) {
+                fixture.receivers.forEach { it.onReceive(fixture.application, Intent()) }
+            }
 
             then()
             assertTrue(facade.calls.isEmpty())
         }
+    }
+
+    private fun FakeRetenoFacade.reportedStates(): List<String> =
+        calls.filter { it.startsWith("notificationsEnabled") }
+
+    private companion object {
+        const val DEFAULT_CHANNEL_ID = "defaultId"
     }
 }

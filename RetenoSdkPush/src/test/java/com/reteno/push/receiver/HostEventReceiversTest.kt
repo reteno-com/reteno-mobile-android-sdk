@@ -66,8 +66,18 @@ class HostEventReceiversTest {
     fun `should notify listeners with empty bundle when push event has no extras`() = runUnitTest {
         given()
         val fixture = SutFixture()
-        val receivers = listOf(PushReceivedReceiver(), ReceiverNotificationClicked(), ReceiverNotificationDeleted(), CustomPushReceiver())
-        val events = listOf(RetenoNotifications.received, RetenoNotifications.click, RetenoNotifications.close, RetenoNotifications.custom)
+        val receivers = listOf(
+            PushReceivedReceiver(),
+            ReceiverNotificationClicked(),
+            ReceiverNotificationDeleted(),
+            CustomPushReceiver()
+        )
+        val events = listOf(
+            RetenoNotifications.received,
+            RetenoNotifications.click,
+            RetenoNotifications.close,
+            RetenoNotifications.custom
+        )
         val delivered = mutableListOf<Bundle>()
 
         whenn()
@@ -92,9 +102,14 @@ class HostEventReceiversTest {
         RetenoNotifications.received.removeListener(removed)
 
         whenn()
-        PushReceivedReceiver().onReceive(fixture.application, Intent())
+        var keptCalls = 0
+        fixture.listening(RetenoNotifications.received) { kept ->
+            PushReceivedReceiver().onReceive(fixture.application, Intent())
+            keptCalls = kept.size
+        }
 
         then()
+        assertEquals(1, keptCalls)
         assertEquals(0, removedCalls)
     }
 
@@ -117,7 +132,8 @@ class HostEventReceiversTest {
         }
 
         then()
-        assertEquals(listOf(InAppCustomData("https://example.com", "PUSH_NOTIFICATION", "in-app-1", mapOf("promo" to "SALE"))), received)
+        val expected = InAppCustomData("https://example.com", "PUSH_NOTIFICATION", "in-app-1", mapOf("promo" to "SALE"))
+        assertEquals(listOf(expected), received)
     }
 
     @Test

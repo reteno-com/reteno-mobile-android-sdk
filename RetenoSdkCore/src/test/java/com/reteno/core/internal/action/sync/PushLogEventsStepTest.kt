@@ -6,18 +6,17 @@ import com.reteno.core.data.remote.api.HttpMethod
 import com.reteno.core.data.remote.mapper.toJson
 import com.reteno.core.data.remote.mapper.toRemote
 import com.reteno.core.data.remote.model.logevent.RetenoLogEventListRemote
-import com.reteno.core.fixtures.SentRequest
-import com.reteno.core.fixtures.stubRetenoLogEventDb
 import com.reteno.core.fixtures.FakeRestClient
+import com.reteno.core.fixtures.SentRequest
 import com.reteno.core.fixtures.TestActionRunner
 import com.reteno.core.fixtures.api
+import com.reteno.core.fixtures.stubRetenoLogEventDb
 import com.reteno.core.fixtures.testDispatchers
 import com.reteno.test.given
 import com.reteno.test.runUnitTest
 import com.reteno.test.then
 import com.reteno.test.whenn
 import io.mockk.every
-import io.mockk.justRun
 import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.test.TestScope
@@ -62,7 +61,11 @@ internal class PushLogEventsStepTest {
         val fixture = SutFixture(this)
         val first = listOf(stubRetenoLogEventDb(rowId = "1"))
         val second = listOf(stubRetenoLogEventDb(rowId = "2"))
-        every { fixture.logsDb.getLogEvents(PushLogEventsStep.BATCH_SIZE) } returnsMany listOf(first, second, emptyList())
+        every { fixture.logsDb.getLogEvents(PushLogEventsStep.BATCH_SIZE) } returnsMany listOf(
+            first,
+            second,
+            emptyList()
+        )
 
         whenn()
         fixture.sut()
@@ -70,8 +73,16 @@ internal class PushLogEventsStepTest {
         then()
         assertEquals(
             listOf(
-                SentRequest(HttpMethod.POST, ApiContract.LogEvent.Events, RetenoLogEventListRemote(first.map { it.toRemote() }).toJson()),
-                SentRequest(HttpMethod.POST, ApiContract.LogEvent.Events, RetenoLogEventListRemote(second.map { it.toRemote() }).toJson())
+                SentRequest(
+                    HttpMethod.POST,
+                    ApiContract.LogEvent.Events,
+                    RetenoLogEventListRemote(first.map { it.toRemote() }).toJson()
+                ),
+                SentRequest(
+                    HttpMethod.POST,
+                    ApiContract.LogEvent.Events,
+                    RetenoLogEventListRemote(second.map { it.toRemote() }).toJson()
+                )
             ),
             fixture.rest.requests
         )
@@ -117,7 +128,8 @@ internal class PushLogEventsStepTest {
     fun `should stop deleting backlog when a chunk cannot be deleted`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
-        every { fixture.logsDb.getLogEventsCount() } returns PushLogEventsStep.MAX_BACKLOG + 3L * PushLogEventsStep.DELETE_CHUNK
+        val backlog = PushLogEventsStep.MAX_BACKLOG + 3L * PushLogEventsStep.DELETE_CHUNK
+        every { fixture.logsDb.getLogEventsCount() } returns backlog
         every { fixture.logsDb.getLogEvents(any()) } returns listOf(stubRetenoLogEventDb())
         every { fixture.logsDb.getLogEvents(PushLogEventsStep.BATCH_SIZE) } returns emptyList()
         every { fixture.logsDb.deleteLogEvents(any()) } returns false
@@ -133,8 +145,13 @@ internal class PushLogEventsStepTest {
     fun `should sanitize messages stored by older sdk versions before upload`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
-        val legacy = stubRetenoLogEventDb(errorMessage = "setUserData(): user = [User(email=john@example.com)] at https://mobile-api.reteno.com/x")
-        every { fixture.logsDb.getLogEvents(PushLogEventsStep.BATCH_SIZE) } returnsMany listOf(listOf(legacy), emptyList())
+        val legacy = stubRetenoLogEventDb(
+            errorMessage = "setUserData(): user = [User(email=john@example.com)] at https://mobile-api.reteno.com/x"
+        )
+        every { fixture.logsDb.getLogEvents(PushLogEventsStep.BATCH_SIZE) } returnsMany listOf(
+            listOf(legacy),
+            emptyList()
+        )
 
         whenn()
         fixture.sut()
@@ -178,7 +195,10 @@ internal class PushLogEventsStepTest {
     fun `should drop rejected batch and continue`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
-        every { fixture.logsDb.getLogEvents(PushLogEventsStep.BATCH_SIZE) } returnsMany listOf(listOf(stubRetenoLogEventDb()), emptyList())
+        every { fixture.logsDb.getLogEvents(PushLogEventsStep.BATCH_SIZE) } returnsMany listOf(
+            listOf(stubRetenoLogEventDb()),
+            emptyList()
+        )
         fixture.rest.failWith(413)
 
         whenn()
@@ -241,12 +261,18 @@ internal class PushLogEventsStepTest {
         given()
         val fixture = SutFixture(this)
         val withoutMessage = stubRetenoLogEventDb(errorMessage = null)
-        every { fixture.logsDb.getLogEvents(PushLogEventsStep.BATCH_SIZE) } returnsMany listOf(listOf(withoutMessage), emptyList())
+        every { fixture.logsDb.getLogEvents(PushLogEventsStep.BATCH_SIZE) } returnsMany listOf(
+            listOf(withoutMessage),
+            emptyList()
+        )
 
         whenn()
         fixture.sut()
 
         then()
-        assertEquals(RetenoLogEventListRemote(listOf(withoutMessage.toRemote())).toJson(), fixture.rest.requests.single().body)
+        assertEquals(
+            RetenoLogEventListRemote(listOf(withoutMessage.toRemote())).toJson(),
+            fixture.rest.requests.single().body
+        )
     }
 }

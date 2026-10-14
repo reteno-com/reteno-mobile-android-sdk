@@ -29,7 +29,12 @@ internal class DataSyncTest {
         var cleanups = 0
         var enqueuedOnIo = mutableListOf<Boolean>()
         var enqueueError: Throwable? = null
-        private val clearOldData = mockk<ClearOldData>().also { coEvery { it() } answers { cleanups++; Result.success(Unit) } }
+        private val clearOldData = mockk<ClearOldData>().also {
+            coEvery { it() } answers {
+                cleanups++
+                Result.success(Unit)
+            }
+        }
         private val configuration = mockk<SdkConfiguration>().also { every { it.isDebug } returns debugView }
         private val platform = FakeAppPlatform().also {
             it.onScheduleBackgroundSync = {

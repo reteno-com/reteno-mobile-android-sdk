@@ -28,22 +28,45 @@ internal class TrackDeeplinkClickActionTest {
         val sut = TrackDeeplinkClickAction(wrappedLinksDb, sync, dispatchers, traced.runner)
 
         init {
-            every { wrappedLinksDb.insertWrappedLink(any()) } answers { insertedOnIo = dispatchers.markedIo.isRunningHere }
+            every { wrappedLinksDb.insertWrappedLink(any()) } answers {
+                insertedOnIo = dispatchers.markedIo.isRunningHere
+            }
         }
     }
 
     @Test
-    fun `should save wrapped link click and request sync`() = runUnitTest {
+    fun `should save wrapped link click to local database`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
 
         whenn()
-        val result = fixture.sut(WRAPPED)
+        fixture.sut(WRAPPED)
 
         then()
-        assertTrue(result.isSuccess)
         verify(exactly = 1) { fixture.wrappedLinksDb.insertWrappedLink(WRAPPED) }
+    }
+
+    @Test
+    fun `should save wrapped link click on io dispatcher`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+
+        whenn()
+        fixture.sut(WRAPPED)
+
+        then()
         assertTrue(fixture.insertedOnIo)
+    }
+
+    @Test
+    fun `should request data sync after saving wrapped link click`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+
+        whenn()
+        fixture.sut(WRAPPED)
+
+        then()
         assertEquals(1, fixture.sync.requests)
     }
 

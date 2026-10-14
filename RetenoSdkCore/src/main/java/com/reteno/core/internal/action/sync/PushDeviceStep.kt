@@ -47,7 +47,9 @@ internal class PushDeviceStep(
         val synced = devices.filter { it.isSynchronizedWithBackend == BooleanDb.TRUE }.maxByOrNull { it.createdAt }
         val request = requestFor(unsynced, synced)
         if (request == null) {
-            step("mark unchanged device as synced in local database") { markSynced(devices, unsynced) }
+            step("mark unchanged device as synced in local database") {
+                markSynced(devices, unsynced)
+            }
             return RoundOutcome.DONE
         }
         val result = step("send device to server") {
@@ -55,9 +57,13 @@ internal class PushDeviceStep(
         }
         if (result is ApiResult.Failure && result.isRepeatable) return RoundOutcome.ABORT
         if (result is ApiResult.Success) {
-            step("save device registered flag to local settings") { configRepository.saveDeviceRegistered(true) }
+            step("save device registered flag to local settings") {
+                configRepository.saveDeviceRegistered(true)
+            }
         }
-        step("mark device as synced in local database") { markSynced(devices, unsynced) }
+        step("mark device as synced in local database") {
+            markSynced(devices, unsynced)
+        }
         val pending = step("count unsynced devices in local database", detail = { "count=$it" }) {
             withContext(dispatchers.io) { devicesDb.getUnSyncedDeviceCount() }
         }

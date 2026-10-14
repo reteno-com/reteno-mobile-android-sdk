@@ -33,22 +33,45 @@ internal class RecordInAppInteractionActionTest {
         val sut = RecordInAppInteractionAction(inAppInteractionsDb, sync, dispatchers, traced.runner)
 
         init {
-            every { inAppInteractionsDb.insertInteraction(any()) } answers { insertedOnIo = dispatchers.markedIo.isRunningHere }
+            every { inAppInteractionsDb.insertInteraction(any()) } answers {
+                insertedOnIo = dispatchers.markedIo.isRunningHere
+            }
         }
     }
 
     @Test
-    fun `should save in-app interaction and request sync`() = runUnitTest {
+    fun `should save in-app interaction to local database`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
 
         whenn()
-        val result = fixture.sut(INTERACTION)
+        fixture.sut(INTERACTION)
 
         then()
-        assertTrue(result.isSuccess)
         verify(exactly = 1) { fixture.inAppInteractionsDb.insertInteraction(INTERACTION.toDb()) }
+    }
+
+    @Test
+    fun `should save in-app interaction on io dispatcher`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+
+        whenn()
+        fixture.sut(INTERACTION)
+
+        then()
         assertTrue(fixture.insertedOnIo)
+    }
+
+    @Test
+    fun `should request data sync after saving in-app interaction`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+
+        whenn()
+        fixture.sut(INTERACTION)
+
+        then()
         assertEquals(1, fixture.sync.requests)
     }
 
@@ -67,7 +90,7 @@ internal class RecordInAppInteractionActionTest {
     }
 
     @Test
-    fun `should trace status without failure description`() = runUnitTest {
+    fun `should trace in-app interaction id message instance and status`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
 
@@ -75,9 +98,20 @@ internal class RecordInAppInteractionActionTest {
         fixture.sut(INTERACTION)
 
         then()
-        val lines = fixture.traced.sink.lines
-        assertTrue(lines.first().contains("RecordInAppInteraction  id=in-app-1  messageInstanceId=42  status=FAILED"))
-        assertFalse(lines.any { it.contains("widget crashed") })
+        val expected = "RecordInAppInteraction  id=in-app-1  messageInstanceId=42  status=FAILED"
+        assertTrue(fixture.traced.sink.lines.first().contains(expected))
+    }
+
+    @Test
+    fun `should not write failure description to trace`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+
+        whenn()
+        fixture.sut(INTERACTION)
+
+        then()
+        assertFalse(fixture.traced.sink.lines.any { it.contains("widget crashed") })
     }
 
     private companion object {

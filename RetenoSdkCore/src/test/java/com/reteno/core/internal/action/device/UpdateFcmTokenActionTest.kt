@@ -20,7 +20,13 @@ internal class UpdateFcmTokenActionTest {
 
     private class SutFixture(scope: TestScope) {
         val env = DeviceActionFixture(scope)
-        val sut = UpdateFcmTokenAction(env.configRepository, env.currentDevice, env.sync, env.session, env.traced.runner)
+        val sut = UpdateFcmTokenAction(
+            configRepository = env.configRepository,
+            currentDevice = env.currentDevice,
+            sync = env.sync,
+            session = env.session,
+            runner = env.traced.runner
+        )
 
         init {
             justRun { env.configRepository.saveFcmToken(any()) }
@@ -54,7 +60,9 @@ internal class UpdateFcmTokenActionTest {
 
         then()
         verify(exactly = 1) { fixture.env.configRepository.saveFcmToken("new-token") }
-        verify(exactly = 1) { fixture.env.devicesDb.insertDevice(stubDevice(fixture.env.deviceId, "new-token", true).toDb()) }
+        verify(exactly = 1) {
+            fixture.env.devicesDb.insertDevice(stubDevice(fixture.env.deviceId, "new-token", true).toDb())
+        }
         assertEquals(1, fixture.env.sync.requests)
         assertTrue(fixture.env.session.isDeviceSent)
     }

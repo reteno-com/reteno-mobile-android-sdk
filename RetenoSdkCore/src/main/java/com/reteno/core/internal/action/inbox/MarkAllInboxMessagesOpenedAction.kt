@@ -22,14 +22,22 @@ internal class MarkAllInboxMessagesOpenedAction(
     private val runner: ActionRunner
 ) {
 
-    suspend operator fun invoke(callback: RetenoResultCallback<Unit>): Result<Unit> = runner("MarkAllInboxMessagesOpened") {
-        step("wait for sdk initialization") { initGate.awaitInit() }
+    suspend operator fun invoke(
+        callback: RetenoResultCallback<Unit>
+    ): Result<Unit> = runner("MarkAllInboxMessagesOpened") {
+        step("wait for sdk initialization") {
+            initGate.awaitInit()
+        }
         val response = step("send all messages opened to server") {
             api.request(HttpMethod.POST, ApiContract.AppInbox.MessagesStatus, AppInboxMessagesStatusRemote().toJson())
         }
         if (response is ApiResult.Success) {
-            step("delete opened statuses from local database") { withContext(dispatchers.io) { inboxDb.deleteAllAppInboxMessages() } }
-            step("refresh unread messages count") { inboxCount.refresh() }
+            step("delete opened statuses from local database") {
+                withContext(dispatchers.io) { inboxDb.deleteAllAppInboxMessages() }
+            }
+            step("refresh unread messages count") {
+                inboxCount.refresh()
+            }
         }
         passResponseToHost(response, callback, dispatchers) { }
     }

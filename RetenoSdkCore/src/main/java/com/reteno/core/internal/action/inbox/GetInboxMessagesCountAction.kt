@@ -21,9 +21,15 @@ internal class GetInboxMessagesCountAction(
     private val runner: ActionRunner
 ) : GetInboxMessagesCount {
 
-    override suspend operator fun invoke(callback: RetenoResultCallback<Int>): Result<Unit> = runner("GetInboxMessagesCount") {
-        step("wait for sdk initialization") { initGate.awaitInit() }
-        val response = step("load unread messages count from server") { api.request(HttpMethod.GET, ApiContract.AppInbox.MessagesCount) }
+    override suspend operator fun invoke(
+        callback: RetenoResultCallback<Int>
+    ): Result<Unit> = runner("GetInboxMessagesCount") {
+        step("wait for sdk initialization") {
+            initGate.awaitInit()
+        }
+        val response = step("load unread messages count from server") {
+            api.request(HttpMethod.GET, ApiContract.AppInbox.MessagesCount)
+        }
         passResponseToHost(response, callback, dispatchers) { it.fromJson<InboxMessagesCountRemote>().unreadCount }
     }
 }

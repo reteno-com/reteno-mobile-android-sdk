@@ -25,7 +25,9 @@ internal class FakeRestClient : RestClient {
 
     fun failWith(statusCode: Int, body: String) = responses.addLast { it.onFailure(statusCode, body, null) }
 
-    fun failWith(statusCode: Int, times: Int = 1) = repeat(times) { responses.addLast { it.onFailure(statusCode, null, null) } }
+    fun failWith(statusCode: Int, times: Int = 1) = repeat(times) {
+        responses.addLast { it.onFailure(statusCode, null, null) }
+    }
 
     fun failOffline() = responses.addLast { it.onFailure(null, null, IOException("offline")) }
 
@@ -39,7 +41,8 @@ internal class FakeRestClient : RestClient {
         responseCallback: ResponseCallback
     ) {
         requests += SentRequest(method, apiContract, body, queryParams)
-        val respond = responses.removeFirstOrNull() ?: { callback: ResponseCallback -> callback.onSuccess(emptyMap(), "") }
+        val respond = responses.removeFirstOrNull()
+            ?: { callback: ResponseCallback -> callback.onSuccess(emptyMap(), "") }
         respond(responseCallback)
     }
 }

@@ -66,7 +66,13 @@ internal class BootSdkActionTest {
 
         then()
         assertEquals(
-            listOf("init WorkManager on io", "load local settings on io", "read cached config on io", "restore device id on io", "apply cached config"),
+            listOf(
+                "init WorkManager on io",
+                "load local settings on io",
+                "read cached config on io",
+                "restore device id on io",
+                "apply cached config"
+            ),
             fixture.calls
         )
         assertSame(config, fixture.applied.single())
@@ -81,9 +87,15 @@ internal class BootSdkActionTest {
         fixture.sut()
 
         then()
-        assertEquals(listOf("init WorkManager on io", "load local settings on io", "read cached config on io"), fixture.calls)
-        assertTrue(fixture.traced.sink.lines.any { it.contains("✓ read cached configuration from local settings") && it.contains("none") })
-        assertTrue(fixture.traced.sink.lines.any { it.contains("→ no cached configuration, waiting for user configuration") })
+        assertEquals(
+            listOf("init WorkManager on io", "load local settings on io", "read cached config on io"),
+            fixture.calls
+        )
+        val lines = fixture.traced.sink.lines
+        assertTrue(
+            lines.any { it.contains("✓ read cached configuration from local settings") && it.contains("none") }
+        )
+        assertTrue(lines.any { it.contains("→ no cached configuration, waiting for user configuration") })
     }
 
     @Test
@@ -110,7 +122,8 @@ internal class BootSdkActionTest {
         fixture.sut()
 
         then()
-        assertTrue(fixture.traced.sink.lines.any { it.contains("read cached configuration from local settings") && it.contains("found") })
-        assertTrue(fixture.traced.sink.lines.none { it.contains(STUB_ACCESS_KEY) })
+        val lines = fixture.traced.sink.lines
+        assertTrue(lines.any { it.contains("read cached configuration from local settings") && it.contains("found") })
+        assertTrue(lines.none { it.contains(STUB_ACCESS_KEY) })
     }
 }

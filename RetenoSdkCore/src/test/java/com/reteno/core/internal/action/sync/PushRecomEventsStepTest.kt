@@ -5,11 +5,11 @@ import com.reteno.core.data.remote.api.ApiContract
 import com.reteno.core.data.remote.api.HttpMethod
 import com.reteno.core.data.remote.mapper.toJson
 import com.reteno.core.data.remote.mapper.toRemote
-import com.reteno.core.fixtures.SentRequest
-import com.reteno.core.fixtures.stubRecomEventsDb
 import com.reteno.core.fixtures.FakeRestClient
+import com.reteno.core.fixtures.SentRequest
 import com.reteno.core.fixtures.TestActionRunner
 import com.reteno.core.fixtures.api
+import com.reteno.core.fixtures.stubRecomEventsDb
 import com.reteno.core.fixtures.testDispatchers
 import com.reteno.test.given
 import com.reteno.test.runUnitTest
@@ -21,7 +21,6 @@ import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.test.TestScope
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -58,7 +57,10 @@ internal class PushRecomEventsStepTest {
     fun `should delete groups without events instead of sending them`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
-        val empty = listOf(stubRecomEventsDb(recomEvents = null), stubRecomEventsDb(recomVariantId = "v2", recomEvents = emptyList()))
+        val empty = listOf(
+            stubRecomEventsDb(recomEvents = null),
+            stubRecomEventsDb(recomVariantId = "v2", recomEvents = emptyList())
+        )
         every { fixture.recomDb.getRecomEvents(any()) } returns empty
 
         whenn()
@@ -82,7 +84,10 @@ internal class PushRecomEventsStepTest {
 
         then()
         assertEquals(StepOutcome.CONTINUE, outcome)
-        assertEquals(listOf(SentRequest(HttpMethod.POST, ApiContract.Recommendation.PostRecoms, events.toRemote().toJson())), fixture.rest.requests)
+        assertEquals(
+            listOf(SentRequest(HttpMethod.POST, ApiContract.Recommendation.PostRecoms, events.toRemote().toJson())),
+            fixture.rest.requests
+        )
         verify(exactly = 1) { fixture.recomDb.deleteRecomEvents(events) }
     }
 

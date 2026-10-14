@@ -23,16 +23,11 @@ import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
-import org.junit.Test
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
-import org.junit.runner.RunWith
-import org.robolectric.RobolectricTestRunner
-import org.robolectric.annotation.Config
+import org.junit.jupiter.api.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
-@RunWith(RobolectricTestRunner::class)
-@Config(sdk = [26])
 internal class ActionsLocatorSyncWiringTest {
 
     @Test
@@ -41,13 +36,25 @@ internal class ActionsLocatorSyncWiringTest {
         val fixture = LocatorFixture(this)
         every { fixture.devicesDb.getDevices(any()) } returns listOf(stubDeviceDb())
         every { fixture.usersDb.getUsers(any()) } returns listOf(stubUserDb())
-        every { fixture.interactionsDb.getInteractions(1) } returnsMany listOf(listOf(stubInteractionDb(interactionId = "i1")), emptyList())
-        every { fixture.inAppInteractionsDb.getInteractions(1) } returnsMany listOf(listOf(stubInAppInteractionDb()), emptyList())
+        every { fixture.interactionsDb.getInteractions(1) } returnsMany listOf(
+            listOf(stubInteractionDb(interactionId = "i1")),
+            emptyList()
+        )
+        every { fixture.inAppInteractionsDb.getInteractions(1) } returnsMany listOf(
+            listOf(stubInAppInteractionDb()),
+            emptyList()
+        )
         every { fixture.eventsDb.getEvents(any()) } returnsMany listOf(listOf(stubEventsDb()), emptyList())
         every { fixture.inboxDb.getAppInboxMessages(any()) } returns listOf(stubAppInboxMessageDb())
         every { fixture.recomEventsDb.getRecomEvents(any()) } returns listOf(stubRecomEventsDb())
-        every { fixture.wrappedLinksDb.getWrappedLinks(1) } returnsMany listOf(listOf("https://t.example/1"), emptyList())
-        every { fixture.logEventsDb.getLogEvents(any()) } returnsMany listOf(listOf(stubRetenoLogEventDb()), emptyList())
+        every { fixture.wrappedLinksDb.getWrappedLinks(1) } returnsMany listOf(
+            listOf("https://t.example/1"),
+            emptyList()
+        )
+        every { fixture.logEventsDb.getLogEvents(any()) } returnsMany listOf(
+            listOf(stubRetenoLogEventDb()),
+            emptyList()
+        )
         every { fixture.interactionsDb.deleteInteraction(any()) } returns true
         every { fixture.inAppInteractionsDb.deleteInteraction(any()) } returns true
         every { fixture.logEventsDb.deleteLogEvents(any()) } returns true
@@ -120,10 +127,11 @@ internal class ActionsLocatorSyncWiringTest {
     }
 
     @Test
-    fun `should run full sync for background sync and reuse clean up action`() = runUnitTest {
+    fun `should run full sync when background sync finds unsent data`() = runUnitTest {
         given()
         val fixture = LocatorFixture(this)
         every { fixture.databaseManager.hasDataForSync() } returns true
+        every { fixture.devicesDb.getDevices(any()) } returns listOf(stubDeviceDb())
         val sut = fixture.sut.backgroundSync
 
         whenn()
@@ -131,7 +139,7 @@ internal class ActionsLocatorSyncWiringTest {
 
         then()
         assertEquals(BackgroundSyncOutcome.SYNCED, outcome)
-        assertTrue(fixture.sut.clearOldData === fixture.sut.clearOldData)
+        assertEquals(ApiContract.MobileApi.Device.url, fixture.rest.requests.first().contract.url)
     }
 
     @Test

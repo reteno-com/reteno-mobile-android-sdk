@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import com.reteno.push.NotificationImages
 
 internal class FakeNotificationImages(private val available: Map<String, Bitmap> = emptyMap()) : NotificationImages {
+
     val requested = mutableListOf<String>()
 
     override fun bigPicture(imageUrl: String): Bitmap? {

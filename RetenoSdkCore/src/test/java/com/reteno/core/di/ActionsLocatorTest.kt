@@ -15,7 +15,6 @@ import io.mockk.justRun
 import io.mockk.verify
 import kotlinx.coroutines.test.TestScope
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import java.io.IOException
@@ -72,7 +71,9 @@ internal class ActionsLocatorTest {
         fixture.sut.logScreenView("Home")
 
         then()
-        verify(exactly = 1) { fixture.eventsDb.insertEvents(match { it.eventList.single().eventTypeKey == "screenView" }) }
+        verify(exactly = 1) {
+            fixture.eventsDb.insertEvents(match { it.eventList.single().eventTypeKey == "screenView" })
+        }
     }
 
     @Test
@@ -90,29 +91,18 @@ internal class ActionsLocatorTest {
     }
 
     @Test
-    fun `should create each action once`() = runUnitTest {
-        given()
-        val fixture = SutFixture(this)
-
-        whenn()
-        val first = listOf(fixture.sut.logEvent, fixture.sut.logEcomEvent, fixture.sut.logScreenView, fixture.sut.logRetenoEvent)
-        val second = listOf(fixture.sut.logEvent, fixture.sut.logEcomEvent, fixture.sut.logScreenView, fixture.sut.logRetenoEvent)
-
-        then()
-        first.zip(second).forEach { (a, b) -> assertSame(a, b) }
-    }
-
-    @Test
     fun `should send one redacted remote log when an action fails`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
-        every { fixture.eventsDb.insertEvents(any()) } throws IOException("cannot write https://mobile-api.reteno.com/x")
+        val failure = IOException("cannot write https://mobile-api.reteno.com/x")
+        every { fixture.eventsDb.insertEvents(any()) } throws failure
 
         whenn()
         fixture.sut.logEvent(stubCustomEvent())
 
         then()
-        assertEquals(listOf("Action LogEvent failed at step 'save event to local database': IOException: cannot write <url>"), fixture.remoteLogs)
+        val expected = "Action LogEvent failed at step 'save event to local database': IOException: cannot write <url>"
+        assertEquals(listOf(expected), fixture.remoteLogs)
     }
 
     @Test

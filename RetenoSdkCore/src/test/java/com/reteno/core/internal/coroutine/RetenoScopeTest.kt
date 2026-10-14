@@ -1,14 +1,15 @@
 package com.reteno.core.internal.coroutine
 
 import com.reteno.core.fixtures.FakeLogSink
+import com.reteno.core.fixtures.MarkingDispatcher
 import com.reteno.core.fixtures.testDispatchers
 import com.reteno.core.internal.log.LogPriority
 import com.reteno.test.given
 import com.reteno.test.runUnitTest
 import com.reteno.test.then
 import com.reteno.test.whenn
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
@@ -22,8 +23,15 @@ import java.io.IOException
 internal class RetenoScopeTest {
 
     private class SutFixture(testScope: TestScope, enabled: Boolean = true) {
+        private val dispatchers = testScope.testDispatchers()
+        val markedDefault = MarkingDispatcher(dispatchers.default)
         val sink = FakeLogSink(isEnabled = enabled)
-        val sut = retenoScope(testScope.testDispatchers(), sink)
+        val sut = retenoScope(
+            object : RetenoDispatchers by dispatchers {
+                override val default: CoroutineDispatcher = markedDefault
+            },
+            sink
+        )
     }
 
     @Test
@@ -40,7 +48,6 @@ internal class RetenoScopeTest {
         assertEquals(LogPriority.ERROR, entry.priority)
         assertEquals("Reteno", entry.tag)
         assertTrue(entry.message.startsWith("Uncaught: java.io.IOException: down <url>"))
-        fixture.sut.cancel()
     }
 
     @Test
@@ -57,7 +64,6 @@ internal class RetenoScopeTest {
 
         then()
         assertTrue(secondRan)
-        fixture.sut.cancel()
     }
 
     @Test
@@ -71,11 +77,24 @@ internal class RetenoScopeTest {
 
         then()
         assertTrue(fixture.sink.entries.isEmpty())
-        fixture.sut.cancel()
     }
 
     @Test
     fun `should run work on default dispatcher`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        var ranOnDefault = false
+
+        whenn()
+        fixture.sut.launch { ranOnDefault = fixture.markedDefault.isRunningHere }
+        runCurrent()
+
+        then()
+        assertTrue(ranOnDefault)
+    }
+
+    @Test
+    fun `should dispatch launched work instead of running it in place`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
         var ran = false
@@ -85,8 +104,5 @@ internal class RetenoScopeTest {
 
         then()
         assertFalse(ran)
-        runCurrent()
-        assertTrue(ran)
-        fixture.sut.cancel()
     }
 }

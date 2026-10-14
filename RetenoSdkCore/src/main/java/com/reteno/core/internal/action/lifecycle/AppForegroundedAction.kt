@@ -28,15 +28,23 @@ internal class AppForegroundedAction(
 ) : AppForegrounded {
 
     override suspend operator fun invoke(): Result<Unit> = runner("AppForegrounded") {
-        step("notify app resume receivers", detail = { "receivers=$it" }) { platform.sendBroadcast(Constants.BROADCAST_ACTION_RETENO_APP_RESUME) }
-        step("schedule outdated data cleanup in local database") { dataSync.clearOldData() }
+        step("notify app resume receivers", detail = { "receivers=$it" }) {
+            platform.sendBroadcast(Constants.BROADCAST_ACTION_RETENO_APP_RESUME)
+        }
+        step("schedule outdated data cleanup in local database") {
+            dataSync.clearOldData()
+        }
         trackAppVersion()
-        step("preload in-app message html") { iamController.preloadHtml() }
+        step("preload in-app message html") {
+            iamController.preloadHtml()
+        }
         trackAppOpened()
     }
 
     private suspend fun ActionTrace.trackAppVersion() {
-        val installed = step("read installed app version", detail = { it.toString() }) { platform.installedVersion() }
+        val installed = step("read installed app version", detail = { it.toString() }) {
+            platform.installedVersion()
+        }
         val saved = step("read saved app version from local settings", detail = { it.toString() }) {
             AppVersion(configRepository.getAppVersion(), configRepository.getAppBuildNumber())
         }
@@ -47,7 +55,12 @@ internal class AppForegroundedAction(
         val event = if (saved.name.isEmpty()) {
             Event.applicationInstall(installed.name, installed.code)
         } else {
-            Event.applicationUpdate(version = installed.name, build = installed.code, prevVersion = saved.name, prevBuild = saved.code)
+            Event.applicationUpdate(
+                version = installed.name,
+                build = installed.code,
+                prevVersion = saved.name,
+                prevBuild = saved.code
+            )
         }
         lifecycleEvents.log(this, event)
         step("save app version to local settings") {

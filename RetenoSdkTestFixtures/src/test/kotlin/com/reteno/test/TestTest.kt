@@ -22,6 +22,7 @@ internal class TestTest {
         val error = assertThrows(IllegalStateException::class.java) {
             runUnitTest {
                 whenn()
+
                 then()
             }
         }
@@ -34,6 +35,7 @@ internal class TestTest {
         val error = assertThrows(IllegalStateException::class.java) {
             runUnitTest {
                 given()
+
                 then()
             }
         }
@@ -46,6 +48,7 @@ internal class TestTest {
         val error = assertThrows(IllegalStateException::class.java) {
             runUnitTest {
                 given()
+
                 whenn()
             }
         }
@@ -89,7 +92,9 @@ internal class TestTest {
                 given()
                 job = workScope().launch { awaitCancellation() }
                 runCurrent()
+
                 whenn()
+
                 then()
                 throw IllegalArgumentException("boom")
             }

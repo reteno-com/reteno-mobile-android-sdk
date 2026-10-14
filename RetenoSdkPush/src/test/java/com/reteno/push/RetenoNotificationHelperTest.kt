@@ -2,6 +2,7 @@ package com.reteno.push
 
 import android.app.Notification
 import android.app.PendingIntent
+import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import com.reteno.push.fixtures.FakeNotificationImages
@@ -39,6 +40,9 @@ class RetenoNotificationHelperTest {
         val sut = RetenoNotificationHelper(application, images)
 
         fun build(bundle: Bundle): Notification = sut.getNotificationBuilderCompat(bundle).build()
+
+        fun buttonIntents(bundle: Bundle): List<Intent> =
+            build(bundle).actions.map { shadowOf(it.actionIntent).savedIntent }
 
         fun putMetaData(key: Int, value: Int) {
             application.applicationMetaData().putInt(application.getString(key), value)
@@ -106,7 +110,10 @@ class RetenoNotificationHelperTest {
         val notification = fixture.build(stubPushBundle(STUB_INTERACTION_ID, Constants.KEY_ES_CONTENT to longText))
 
         then()
-        assertEquals(Notification.BigTextStyle::class.java.name, notification.extras.getString(Notification.EXTRA_TEMPLATE))
+        assertEquals(
+            Notification.BigTextStyle::class.java.name,
+            notification.extras.getString(Notification.EXTRA_TEMPLATE)
+        )
         assertEquals(longText, notification.extras.getCharSequence(Notification.EXTRA_BIG_TEXT).toString())
     }
 
@@ -118,11 +125,18 @@ class RetenoNotificationHelperTest {
 
         whenn()
         val notification = fixture.build(
-            stubPushBundle(STUB_INTERACTION_ID, Constants.KEY_ES_CONTENT to longText, Constants.KEY_ES_NOTIFICATION_IMAGE to IMAGE)
+            stubPushBundle(
+                STUB_INTERACTION_ID,
+                Constants.KEY_ES_CONTENT to longText,
+                Constants.KEY_ES_NOTIFICATION_IMAGE to IMAGE
+            )
         )
 
         then()
-        assertEquals(Notification.BigPictureStyle::class.java.name, notification.extras.getString(Notification.EXTRA_TEMPLATE))
+        assertEquals(
+            Notification.BigPictureStyle::class.java.name,
+            notification.extras.getString(Notification.EXTRA_TEMPLATE)
+        )
         assertEquals(longText, notification.extras.getCharSequence(Notification.EXTRA_TEXT).toString())
         assertEquals(listOf(IMAGE), fixture.images.requested)
     }
@@ -133,7 +147,9 @@ class RetenoNotificationHelperTest {
         val fixture = SutFixture()
 
         whenn()
-        val notification = fixture.build(stubPushBundle(STUB_INTERACTION_ID, Constants.KEY_ES_NOTIFICATION_IMAGE to IMAGE))
+        val notification = fixture.build(
+            stubPushBundle(STUB_INTERACTION_ID, Constants.KEY_ES_NOTIFICATION_IMAGE to IMAGE)
+        )
 
         then()
         assertNull(notification.extras.getString(Notification.EXTRA_TEMPLATE))
@@ -160,13 +176,20 @@ class RetenoNotificationHelperTest {
 
         whenn()
         val builder = fixture.sut.getNotificationBuilderCompat(
-            stubPushBundle(STUB_INTERACTION_ID, Constants.KEY_ES_NOTIFICATION_CAROUSEL_IMAGES to carousel, Constants.KEY_ES_CONTENT to "x".repeat(101))
+            stubPushBundle(
+                STUB_INTERACTION_ID,
+                Constants.KEY_ES_NOTIFICATION_CAROUSEL_IMAGES to carousel,
+                Constants.KEY_ES_CONTENT to "x".repeat(101)
+            )
         )
 
         then()
         assertEquals(listOf(IMAGE, "https://cdn.example/missing.png"), fixture.images.requested)
         assertNotNull(builder.bigContentView)
-        assertEquals(Notification.DecoratedCustomViewStyle::class.java.name, builder.build().extras.getString(Notification.EXTRA_TEMPLATE))
+        assertEquals(
+            Notification.DecoratedCustomViewStyle::class.java.name,
+            builder.build().extras.getString(Notification.EXTRA_TEMPLATE)
+        )
     }
 
     @Test
@@ -191,7 +214,9 @@ class RetenoNotificationHelperTest {
         val fixture = SutFixture()
 
         whenn()
-        val numbers = listOf("5", "many").map { fixture.build(stubPushBundle(STUB_INTERACTION_ID, Constants.KEY_ES_BADGE_COUNT to it)).number }
+        val numbers = listOf("5", "many").map { count ->
+            fixture.build(stubPushBundle(STUB_INTERACTION_ID, Constants.KEY_ES_BADGE_COUNT to count)).number
+        }
 
         then()
         assertEquals(listOf(5, 0), numbers)
@@ -223,44 +248,75 @@ class RetenoNotificationHelperTest {
         then()
         assertEquals(android.R.drawable.ic_dialog_email, notification.smallIcon.resId)
         assertEquals(fixture.application.getColor(android.R.color.holo_red_dark), notification.color)
-        assertEquals(Notification.DecoratedCustomViewStyle::class.java.name, notification.extras.getString(Notification.EXTRA_TEMPLATE))
+        assertEquals(
+            Notification.DecoratedCustomViewStyle::class.java.name,
+            notification.extras.getString(Notification.EXTRA_TEMPLATE)
+        )
     }
 
     @Test
-    fun `should add at most three action buttons carrying their links and custom data`() = runUnitTest {
+    fun `should add at most three action buttons`() = runUnitTest {
         given()
         val fixture = SutFixture()
-        val buttons = """[
-            {"action_id":"b1","label":"Open","link":"https://track.example/b1","link_raw":"https://example.com/b1","custom_data":{"tier":"gold","tags":["a",{"k":1}]}},
-            {"label":"Second"},
-            {},
-            {"label":"Fourth"}
-        ]"""
 
         whenn()
-        val notification = fixture.build(stubPushBundle(STUB_INTERACTION_ID, Constants.KEY_ES_BUTTONS to buttons))
+        val notification = fixture.build(stubPushBundle(STUB_INTERACTION_ID, Constants.KEY_ES_BUTTONS to BUTTONS))
 
         then()
         assertEquals(listOf("Open", "Second", null), notification.actions.map { it.title?.toString() })
-        val first = shadowOf(notification.actions[0].actionIntent).savedIntent
+    }
+
+    @Test
+    fun `should pass button id label and links to its click intent`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val push = stubPushBundle(STUB_INTERACTION_ID, Constants.KEY_ES_BUTTONS to BUTTONS)
+
+        whenn()
+        val first = fixture.buttonIntents(push).first()
+
+        then()
         assertTrue(first.getBooleanExtra(Constants.KEY_ACTION_BUTTON, false))
         assertEquals("b1", first.getStringExtra(Constants.KEY_BTN_ACTION_ID))
         assertEquals("Open", first.getStringExtra(Constants.KEY_BTN_ACTION_LABEL))
         assertEquals("https://track.example/b1", first.getStringExtra(Constants.KEY_BTN_ACTION_LINK_WRAPPED))
         assertEquals("https://example.com/b1", first.getStringExtra(Constants.KEY_BTN_ACTION_LINK_UNWRAPPED))
+    }
+
+    @Test
+    fun `should pass button custom data to its click intent`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val push = stubPushBundle(STUB_INTERACTION_ID, Constants.KEY_ES_BUTTONS to BUTTONS)
+
+        whenn()
+        val first = fixture.buttonIntents(push).first()
+
+        then()
         assertEquals(
             hashMapOf("tier" to "gold", "tags" to listOf("a", hashMapOf("k" to 1))),
             first.getSerializableExtra(Constants.KEY_BTN_ACTION_CUSTOM_DATA)
         )
-        val second = shadowOf(notification.actions[1].actionIntent).savedIntent
+    }
+
+    @Test
+    fun `should leave out button extras the push does not define`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
         val absentKeys = listOf(
             Constants.KEY_BTN_ACTION_ID,
             Constants.KEY_BTN_ACTION_LINK_WRAPPED,
             Constants.KEY_BTN_ACTION_LINK_UNWRAPPED,
             Constants.KEY_BTN_ACTION_CUSTOM_DATA
         )
-        assertTrue(absentKeys.none(second::hasExtra))
-        assertFalse(shadowOf(notification.actions[2].actionIntent).savedIntent.hasExtra(Constants.KEY_BTN_ACTION_LABEL))
+        val push = stubPushBundle(STUB_INTERACTION_ID, Constants.KEY_ES_BUTTONS to BUTTONS)
+
+        whenn()
+        val intents = fixture.buttonIntents(push)
+
+        then()
+        assertTrue(absentKeys.none(intents[1]::hasExtra))
+        assertFalse(intents[2].hasExtra(Constants.KEY_BTN_ACTION_LABEL))
     }
 
     @Test
@@ -327,24 +383,58 @@ class RetenoNotificationHelperTest {
     fun `should group notification by host grouping rule`() = runUnitTest {
         given()
         val fixture = SutFixture()
-        val seen = mutableListOf<Map<String, String?>>()
 
         whenn()
-        val groups = fixture.withGroupingRule({ data -> seen += data; data["category"] }) {
-            listOf(
-                fixture.build(stubPushBundle(STUB_INTERACTION_ID, "category" to "promo")),
-                fixture.build(stubPushBundle())
-            ).map { it.group }
+        val notification = fixture.withGroupingRule(CATEGORY_RULE) {
+            fixture.build(stubPushBundle(STUB_INTERACTION_ID, "category" to "promo"))
         }
-        val ungrouped = fixture.build(stubPushBundle()).group
 
         then()
-        assertEquals(listOf("promo", null), groups)
-        assertNull(ungrouped)
-        assertEquals("promo", seen.first()["category"])
+        assertEquals("promo", notification.group)
+    }
+
+    @Test
+    fun `should leave notification ungrouped when grouping rule returns no group`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+
+        whenn()
+        val notification = fixture.withGroupingRule(CATEGORY_RULE) {
+            fixture.build(stubPushBundle())
+        }
+
+        then()
+        assertNull(notification.group)
+    }
+
+    @Test
+    fun `should leave notification ungrouped without grouping rule`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+
+        whenn()
+        val notification = fixture.withGroupingRule(null) {
+            fixture.build(stubPushBundle(STUB_INTERACTION_ID, "category" to "promo"))
+        }
+
+        then()
+        assertNull(notification.group)
     }
 
     private companion object {
         const val IMAGE = "https://cdn.example/image.png"
+        val CATEGORY_RULE: (Map<String, String?>) -> String? = { data -> data["category"] }
+        val BUTTONS = """[
+            {
+                "action_id":"b1",
+                "label":"Open",
+                "link":"https://track.example/b1",
+                "link_raw":"https://example.com/b1",
+                "custom_data":{"tier":"gold","tags":["a",{"k":1}]}
+            },
+            {"label":"Second"},
+            {},
+            {"label":"Fourth"}
+        ]"""
     }
 }

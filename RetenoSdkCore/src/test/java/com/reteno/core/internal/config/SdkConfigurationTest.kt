@@ -26,8 +26,15 @@ internal class SdkConfigurationTest {
         val filter = LifecycleEventFilter(LifecycleTrackingOptions.ALL)
         val sut = SdkConfigurationImpl(configProvider, filter)
 
-        fun config(debug: Boolean = false, options: LifecycleTrackingOptions = LifecycleTrackingOptions.ALL): RetenoConfig =
-            RetenoConfig.Builder().accessKey(STUB_ACCESS_KEY).setDebug(debug).lifecycleTrackingOptions(options).build()
+        fun config(
+            debug: Boolean = false,
+            options: LifecycleTrackingOptions = LifecycleTrackingOptions.ALL
+        ): RetenoConfig =
+            RetenoConfig.Builder()
+                .accessKey(STUB_ACCESS_KEY)
+                .setDebug(debug)
+                .lifecycleTrackingOptions(options)
+                .build()
     }
 
     @Test

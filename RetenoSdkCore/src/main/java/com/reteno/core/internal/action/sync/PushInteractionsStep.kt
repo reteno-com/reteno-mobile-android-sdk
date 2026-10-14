@@ -19,7 +19,9 @@ internal class PushInteractionsStep(
     private val runner: ActionRunner
 ) : SyncStep {
 
-    override suspend fun invoke(): Result<StepOutcome> = runner("PushInteractions") { push() }
+    override suspend fun invoke(): Result<StepOutcome> = runner("PushInteractions") {
+        push()
+    }
 
     private suspend fun ActionTrace.push(): StepOutcome {
         var handled = 0

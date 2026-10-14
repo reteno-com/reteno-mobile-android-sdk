@@ -4,6 +4,7 @@ import com.reteno.test.given
 import com.reteno.test.runUnitTest
 import com.reteno.test.then
 import com.reteno.test.whenn
+import com.reteno.test.workScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
@@ -35,12 +36,24 @@ internal class InitGateTest {
     }
 
     @Test
+    fun `should keep init waiters suspended while not initialized`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val waiter = workScope().async { fixture.sut.awaitInit() }
+
+        whenn()
+        runCurrent()
+
+        then()
+        assertFalse(waiter.isCompleted)
+    }
+
+    @Test
     fun `should release init waiters when initialized from cache`() = runUnitTest {
         given()
         val fixture = SutFixture()
         val waiter = async { fixture.sut.awaitInit() }
         runCurrent()
-        assertFalse(waiter.isCompleted)
 
         whenn()
         fixture.sut.markInitialized(byUser = false)
@@ -48,6 +61,17 @@ internal class InitGateTest {
 
         then()
         assertTrue(waiter.isCompleted)
+    }
+
+    @Test
+    fun `should report initialized but not by user when initialized from cache`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+
+        whenn()
+        fixture.sut.markInitialized(byUser = false)
+
+        then()
         assertEquals(InitState.FROM_CACHE, fixture.sut.state)
         assertTrue(fixture.sut.isInitialized)
         assertFalse(fixture.sut.isInitializedByUser)
@@ -57,7 +81,7 @@ internal class InitGateTest {
     fun `should keep user init waiters suspended when initialized from cache`() = runUnitTest {
         given()
         val fixture = SutFixture()
-        val waiter = async { fixture.sut.awaitUserInit() }
+        val waiter = workScope().async { fixture.sut.awaitUserInit() }
 
         whenn()
         fixture.sut.markInitialized(byUser = false)
@@ -65,7 +89,6 @@ internal class InitGateTest {
 
         then()
         assertFalse(waiter.isCompleted)
-        waiter.cancel()
     }
 
     @Test
@@ -117,11 +140,19 @@ internal class InitGateTest {
         given()
         val fixture = SutFixture()
         val released = mutableListOf<Int>()
-        val waiters = (0..3).map { index -> launch { fixture.sut.awaitInit(); released += index } }
+        val waiters = (0..3).map { index ->
+            launch {
+                fixture.sut.awaitInit()
+                released += index
+            }
+        }
         runCurrent()
         waiters.first().cancel()
         runCurrent()
-        launch { fixture.sut.awaitInit(); released += 4 }
+        launch {
+            fixture.sut.awaitInit()
+            released += 4
+        }
         runCurrent()
 
         whenn()

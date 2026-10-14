@@ -19,7 +19,9 @@ internal class AppBackgroundedAction(
     private val runner: ActionRunner
 ) : AppBackgrounded {
 
-    override suspend operator fun invoke(): Result<Unit> = runner("AppBackgrounded") { trackBackgrounded() }
+    override suspend operator fun invoke(): Result<Unit> = runner("AppBackgrounded") {
+        trackBackgrounded()
+    }
 
     private suspend fun ActionTrace.trackBackgrounded() {
         val openedAt = state.enterBackground()

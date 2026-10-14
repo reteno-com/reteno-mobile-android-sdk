@@ -38,33 +38,48 @@ internal class ContactWriter(
     }
 
     private suspend fun switchAccount(trace: ActionTrace, suffix: String?, externalUserId: String, user: User?) {
-        trace.step("stop sdk for account switch") { withContext(dispatchers.main) { sdk.stop() } }
-        trace.step("clear current session") { withContext(dispatchers.io) { sessionHandler.clearSessionForced() } }
+        trace.step("stop sdk for account switch") {
+            withContext(dispatchers.main) { sdk.stop() }
+        }
+        trace.step("clear current session") {
+            withContext(dispatchers.io) { sessionHandler.clearSessionForced() }
+        }
         trace.step("save device id suffix to local settings") {
             withContext(dispatchers.io) { configRepository.setDeviceIdSuffix(suffix) }
             session.markDeviceNotSent()
         }
         writeContact(trace, externalUserId, user)
-        trace.step("start sdk after account switch") { withContext(dispatchers.main) { sdk.start() } }
+        trace.step("start sdk after account switch") {
+            withContext(dispatchers.main) { sdk.start() }
+        }
     }
 
     private suspend fun writeContact(trace: ActionTrace, externalUserId: String, user: User?) {
-        trace.step("save external user id to local settings", detail = { changed -> if (changed) "changed" else "unchanged" }) {
+        trace.step(
+            "save external user id to local settings",
+            detail = { changed -> if (changed) "changed" else "unchanged" }
+        ) {
             val changed = configRepository.getDeviceId().externalId != externalUserId
             if (changed) withContext(dispatchers.io) { configRepository.setExternalUserId(externalUserId) }
             changed
         }
         if (user != null) saveUser(trace, user)
-        val token = trace.step("read push token", detail = { Redact.token(it) }) { configRepository.getFcmToken() }
+        val token = trace.step("read push token", detail = { Redact.token(it) }) {
+            configRepository.getFcmToken()
+        }
         currentDevice.save(trace, token)
         session.markDeviceSent()
-        trace.step("send device and user to server") { sync.syncNow(SyncScope.CONTACT) }
+        trace.step("send device and user to server") {
+            sync.syncNow(SyncScope.CONTACT)
+        }
     }
 
     private suspend fun saveUser(trace: ActionTrace, user: User) {
         val validated = Validator.validateUser(user)
         if (validated == null) {
-            trace.step("report rejected user to remote log") { remoteLog.info("SetUserAttributes: user rejected by validation") }
+            trace.step("report rejected user to remote log") {
+                remoteLog.info("SetUserAttributes: user rejected by validation")
+            }
             return
         }
         trace.step("save user to local database") {

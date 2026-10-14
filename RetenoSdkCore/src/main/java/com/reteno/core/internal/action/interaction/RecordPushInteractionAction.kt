@@ -17,11 +17,18 @@ internal class RecordPushInteractionAction(
     private val runner: ActionRunner
 ) {
 
-    suspend operator fun invoke(interactionId: String, status: InteractionStatus): Result<Unit> = runner("RecordPushInteraction") {
+    suspend operator fun invoke(
+        interactionId: String,
+        status: InteractionStatus
+    ): Result<Unit> = runner("RecordPushInteraction") {
         args("id" to interactionId, "status" to status)
         val request = InteractionRequestDb(id = interactionId, status = status.toDb())
-        step("save interaction request to local database") { withContext(dispatchers.io) { interactionsDb.insertInteractionRequest(request) } }
-        step("wait for sdk initialization") { initGate.awaitInit() }
+        step("save interaction request to local database") {
+            withContext(dispatchers.io) { interactionsDb.insertInteractionRequest(request) }
+        }
+        step("wait for sdk initialization") {
+            initGate.awaitInit()
+        }
         processCachedInteractions()
     }
 }

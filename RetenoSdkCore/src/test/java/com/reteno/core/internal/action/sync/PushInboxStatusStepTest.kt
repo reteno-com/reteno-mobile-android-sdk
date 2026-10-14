@@ -70,8 +70,9 @@ internal class PushInboxStatusStepTest {
 
         then()
         assertEquals(StepOutcome.CONTINUE, outcome)
+        val expectedBody = AppInboxMessagesStatusRemote(ids = listOf("m1", "m2")).toJson()
         assertEquals(
-            listOf(SentRequest(HttpMethod.POST, ApiContract.AppInbox.MessagesStatus, AppInboxMessagesStatusRemote(ids = listOf("m1", "m2")).toJson())),
+            listOf(SentRequest(HttpMethod.POST, ApiContract.AppInbox.MessagesStatus, expectedBody)),
             fixture.rest.requests
         )
         verify(exactly = 1) { fixture.inboxDb.deleteAppInboxMessages(messages) }
@@ -124,7 +125,11 @@ internal class PushInboxStatusStepTest {
 
         then()
         assertTrue(loadedOnIo)
-        assertTrue(fixture.traced.sink.lines.any { it.contains("✓ load opened inbox messages from local database") && it.contains("count=1") })
+        assertTrue(
+            fixture.traced.sink.lines.any {
+                it.contains("✓ load opened inbox messages from local database") && it.contains("count=1")
+            }
+        )
         assertFalse(fixture.traced.sink.lines.any { it.contains("secret-message") })
     }
 }

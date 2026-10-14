@@ -20,7 +20,8 @@ internal class AppLifecycleWatcher(
     }
 
     fun register() {
-        activityHelper.registerActivityLifecycleCallbacks(KEY, RetenoLifecycleCallBacksAdapter(onPause = onActivityPaused))
+        val pauseCallbacks = RetenoLifecycleCallBacksAdapter(onPause = onActivityPaused)
+        activityHelper.registerActivityLifecycleCallbacks(KEY, pauseCallbacks)
         lifecycle.addObserver(observer)
     }
 

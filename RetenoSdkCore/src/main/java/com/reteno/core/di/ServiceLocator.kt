@@ -18,7 +18,6 @@ import com.reteno.core.di.provider.RetenoConfigProvider
 import com.reteno.core.di.provider.SharedPrefsManagerProvider
 import com.reteno.core.di.provider.WorkManagerProvider
 import com.reteno.core.di.provider.controller.IamControllerProvider
-import com.reteno.core.di.provider.controller.RecommendationControllerProvider
 import com.reteno.core.di.provider.database.DatabaseProvider
 import com.reteno.core.di.provider.database.RetenoDatabaseManagerAppInboxProvider
 import com.reteno.core.di.provider.database.RetenoDatabaseManagerDeviceProvider
@@ -32,14 +31,12 @@ import com.reteno.core.di.provider.database.RetenoDatabaseManagerRecomEventsProv
 import com.reteno.core.di.provider.database.RetenoDatabaseManagerUserProvider
 import com.reteno.core.di.provider.database.RetenoDatabaseManagerWrappedLinkProvider
 import com.reteno.core.di.provider.features.IamViewProvider
-import com.reteno.core.di.provider.features.RecommendationProvider
 import com.reteno.core.di.provider.features.RetenoSessionHandlerProvider
 import com.reteno.core.di.provider.network.ApiClientProvider
 import com.reteno.core.di.provider.network.RestClientProvider
 import com.reteno.core.di.provider.repository.ConfigRepositoryProvider
 import com.reteno.core.di.provider.repository.FileManagerProvider
 import com.reteno.core.di.provider.repository.IamRepositoryProvider
-import com.reteno.core.di.provider.repository.RecommendationRepositoryProvider
 import com.reteno.core.domain.model.event.LifecycleTrackingOptions
 import com.reteno.core.internal.action.sync.DataSync
 import com.reteno.core.internal.config.SdkConfigurationImpl
@@ -171,12 +168,6 @@ class ServiceLocator internal constructor(
     val configRepositoryProvider: ProviderWeakReference<ConfigRepository>
         get() = configRepositoryProviderInternal
 
-    private val recommendationRepositoryProvider: RecommendationRepositoryProvider =
-        RecommendationRepositoryProvider(
-            retenoDatabaseManagerRecomEventsProvider,
-            apiClientProvider
-        )
-
     private val fileManagerProvider:FileManagerProvider = FileManagerProvider(context)
 
     private val iamRepositoryProvider: IamRepositoryProvider =
@@ -189,15 +180,6 @@ class ServiceLocator internal constructor(
             Dispatchers.IO
         )
 
-
-    /** Controller **/
-    private val recommendationControllerProvider: RecommendationControllerProvider =
-        RecommendationControllerProvider(recommendationRepositoryProvider)
-
-
-    /** Controller dependent **/
-    internal val recommendationProvider: RecommendationProvider =
-        RecommendationProvider(recommendationControllerProvider)
 
     private val retenoSessionHandlerProviderInternal =
         RetenoSessionHandlerProvider(sharedPrefsManagerProvider, lifecycleEventFilter) { actions.logEvent }

@@ -17,10 +17,14 @@ internal class TrackPermissionDialogAction(
     private val runner: ActionRunner
 ) : TrackPermissionDialog {
 
-    override suspend operator fun invoke(activity: Activity): Result<Unit> = runner("TrackPermissionDialog") { track(activity) }
+    override suspend operator fun invoke(activity: Activity): Result<Unit> = runner("TrackPermissionDialog") {
+        track(activity)
+    }
 
     private suspend fun ActionTrace.track(activity: Activity) {
-        val top = step("read package of activity on top of the task") { platform.packageOnTop(activity) }
+        val top = step("read package of activity on top of the task") {
+            platform.packageOnTop(activity)
+        }
         if (top != PERMISSION_DIALOG_PACKAGE) {
             note { "permission dialog is not shown" }
             return

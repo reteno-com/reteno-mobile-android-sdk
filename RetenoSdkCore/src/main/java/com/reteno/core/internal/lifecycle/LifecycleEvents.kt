@@ -15,6 +15,8 @@ internal class LifecycleEvents(
             trace.note { "$key event disabled by lifecycle tracking options" }
             return
         }
-        trace.step("log $key event") { logEvent(lifecycleEvent.event) }
+        trace.step("log $key event") {
+            logEvent(lifecycleEvent.event)
+        }
     }
 }

@@ -78,7 +78,12 @@ internal class RestClientImplLoggingTest {
         whenn()
         fixture.withCapturedLogs {
             every { ConnectionManager.openConnection(any()) } returns fixture.connection
-            fixture.sut.makeRequest(HttpMethod.POST, ApiContract.MobileApi.Device, fixture.requestBody, responseCallback = fixture.callback)
+            fixture.sut.makeRequest(
+                HttpMethod.POST,
+                ApiContract.MobileApi.Device,
+                fixture.requestBody,
+                responseCallback = fixture.callback
+            )
         }
 
         then()
@@ -98,7 +103,12 @@ internal class RestClientImplLoggingTest {
         whenn()
         fixture.withCapturedLogs {
             every { ConnectionManager.openConnection(any()) } returns fixture.connection
-            fixture.sut.makeRequest(HttpMethod.POST, ApiContract.MobileApi.Device, fixture.requestBody, responseCallback = fixture.callback)
+            fixture.sut.makeRequest(
+                HttpMethod.POST,
+                ApiContract.MobileApi.Device,
+                fixture.requestBody,
+                responseCallback = fixture.callback
+            )
         }
 
         then()
@@ -115,7 +125,12 @@ internal class RestClientImplLoggingTest {
         whenn()
         fixture.withCapturedLogs {
             every { ConnectionManager.openConnection(any()) } throws error
-            fixture.sut.makeRequest(HttpMethod.POST, ApiContract.MobileApi.Device, fixture.requestBody, responseCallback = fixture.callback)
+            fixture.sut.makeRequest(
+                HttpMethod.POST,
+                ApiContract.MobileApi.Device,
+                fixture.requestBody,
+                responseCallback = fixture.callback
+            )
         }
 
         then()
@@ -136,7 +151,12 @@ internal class RestClientImplLoggingTest {
         whenn()
         fixture.withCapturedLogs {
             every { ConnectionManager.openConnection(any()) } returns fixture.connection
-            fixture.sut.makeRequest(HttpMethod.GET, ApiContract.MobileApi.Device, null, responseCallback = fixture.callback)
+            fixture.sut.makeRequest(
+                HttpMethod.GET,
+                ApiContract.MobileApi.Device,
+                null,
+                responseCallback = fixture.callback
+            )
         }
 
         then()

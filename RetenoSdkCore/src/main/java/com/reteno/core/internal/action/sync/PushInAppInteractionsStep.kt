@@ -19,7 +19,9 @@ internal class PushInAppInteractionsStep(
     private val runner: ActionRunner
 ) : SyncStep {
 
-    override suspend fun invoke(): Result<StepOutcome> = runner("PushInAppInteractions") { push() }
+    override suspend fun invoke(): Result<StepOutcome> = runner("PushInAppInteractions") {
+        push()
+    }
 
     private suspend fun ActionTrace.push(): StepOutcome {
         var handled = 0
@@ -28,7 +30,11 @@ internal class PushInAppInteractionsStep(
                 withContext(dispatchers.io) { inAppInteractionsDb.getInteractions(1).firstOrNull() }
             } ?: return finishedAfter(handled)
             val result = step("send in-app interaction to server") {
-                api.request(HttpMethod.POST, ApiContract.InAppMessages.RegisterInteraction, interaction.toRemote().toJson())
+                api.request(
+                    HttpMethod.POST,
+                    ApiContract.InAppMessages.RegisterInteraction,
+                    interaction.toRemote().toJson()
+                )
             }
             if (result is ApiResult.Failure && result.isRepeatable) return StepOutcome.ABORT
             val deleted = step("delete sent in-app interaction from local database") {

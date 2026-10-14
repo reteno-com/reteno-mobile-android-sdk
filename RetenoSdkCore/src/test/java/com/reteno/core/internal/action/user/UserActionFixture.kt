@@ -49,11 +49,20 @@ internal class UserActionFixture(scope: TestScope, suffix: String? = null) {
     )
 
     init {
-        every { sessionHandler.clearSessionForced() } answers { sessionClearedOnIo = dispatchers.markedIo.isRunningHere; log += "clear session" }
+        every { sessionHandler.clearSessionForced() } answers {
+            sessionClearedOnIo = dispatchers.markedIo.isRunningHere
+            log += "clear session"
+        }
         every { configRepository.getDeviceId() } answers { deviceId }
         every { configRepository.isNotificationsEnabled() } returns true
-        every { configRepository.setExternalUserId(any()) } answers { log += "external id ${firstArg<String?>()}"; deviceId = deviceId.copy(externalId = firstArg()) }
-        every { configRepository.setDeviceIdSuffix(any()) } answers { log += "suffix ${firstArg<String?>()}"; deviceId = deviceId.copy(idSuffix = firstArg()) }
+        every { configRepository.setExternalUserId(any()) } answers {
+            log += "external id ${firstArg<String?>()}"
+            deviceId = deviceId.copy(externalId = firstArg())
+        }
+        every { configRepository.setDeviceIdSuffix(any()) } answers {
+            log += "suffix ${firstArg<String?>()}"
+            deviceId = deviceId.copy(idSuffix = firstArg())
+        }
         justRun { configRepository.setUserEmail(any()) }
         justRun { configRepository.setUserPhone(any()) }
         coEvery { configRepository.getFcmToken() } returns "token"

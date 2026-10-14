@@ -262,7 +262,8 @@ internal class RedactTest {
     @Test
     fun `should drop interpolated values from uploadable message`() = runUnitTest {
         given()
-        val message = "getDevices(). Removed invalid entry from database. device=DeviceDb(email=john@example.com, pushToken=abc)"
+        val message = "getDevices(). Removed invalid entry from database. " +
+            "device=DeviceDb(email=john@example.com, pushToken=abc)"
 
         whenn()
         val uploadable = Redact.uploadable(message)

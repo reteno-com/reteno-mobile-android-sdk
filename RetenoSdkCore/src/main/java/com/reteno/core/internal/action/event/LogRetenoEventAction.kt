@@ -16,9 +16,7 @@ internal class LogRetenoEventAction(
     suspend operator fun invoke(event: RetenoLogEvent): Result<Unit> = runner("LogRetenoEvent", reportFailure = false) {
         args("level" to event.logLevel)
         step("save log event to local database") {
-            withContext(dispatchers.io) {
-                logEventsDb.insertLogEvent(event.toDb())
-            }
+            withContext(dispatchers.io) { logEventsDb.insertLogEvent(event.toDb()) }
         }
     }
 }

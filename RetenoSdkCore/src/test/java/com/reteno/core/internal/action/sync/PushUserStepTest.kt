@@ -2,6 +2,8 @@ package com.reteno.core.internal.action.sync
 
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerUser
 import com.reteno.core.data.local.model.BooleanDb
+import com.reteno.core.data.local.model.user.UserAttributesDb
+import com.reteno.core.data.local.model.user.UserDb
 import com.reteno.core.data.remote.api.ApiContract
 import com.reteno.core.data.remote.api.HttpMethod
 import com.reteno.core.data.remote.mapper.toDb
@@ -87,7 +89,10 @@ internal class PushUserStepTest {
 
         then()
         assertEquals(StepOutcome.CONTINUE, outcome)
-        assertEquals(listOf(SentRequest(HttpMethod.POST, ApiContract.MobileApi.User, merged.toJson())), fixture.rest.requests)
+        assertEquals(
+            listOf(SentRequest(HttpMethod.POST, ApiContract.MobileApi.User, merged.toJson())),
+            fixture.rest.requests
+        )
     }
 
     @Test
@@ -102,7 +107,8 @@ internal class PushUserStepTest {
 
         then()
         verify(exactly = 1) { fixture.usersDb.deleteUsers(listOf(user)) }
-        verify(exactly = 1) { fixture.usersDb.insertUser(user.toRemote().toDb().copy(isSynchronizedWithBackend = BooleanDb.TRUE)) }
+        val syncedUser = user.toRemote().toDb().copy(isSynchronizedWithBackend = BooleanDb.TRUE)
+        verify(exactly = 1) { fixture.usersDb.insertUser(syncedUser) }
     }
 
     @Test
@@ -110,7 +116,12 @@ internal class PushUserStepTest {
         given()
         val fixture = SutFixture(this)
         val synced = stubUserDb(rowId = "1", firstName = "John", email = null, synced = BooleanDb.TRUE)
-        val changed = stubUserDb(rowId = "2", createdAt = STUB_CREATED_AT + 60_000, firstName = "John", email = "j@example.com")
+        val changed = stubUserDb(
+            rowId = "2",
+            createdAt = STUB_CREATED_AT + 60_000,
+            firstName = "John",
+            email = "j@example.com"
+        )
         every { fixture.usersDb.getUsers(any()) } returns listOf(synced, changed)
         val diff = requireNotNull(changed.toRemote().createDiffModel(synced.toRemote()))
         val full = changed.toRemote().createAccModel(synced.toRemote())
@@ -121,6 +132,48 @@ internal class PushUserStepTest {
         then()
         assertEquals(diff.toJson(), fixture.rest.requests.single().body)
         verify(exactly = 1) { fixture.usersDb.insertUser(full.toDb().copy(isSynchronizedWithBackend = BooleanDb.TRUE)) }
+    }
+
+    @Test
+    fun `should send user attributes under their wire field names`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        val user = stubUserDb(email = "j@example.com").copy(subscriptionKeys = listOf("news"))
+        every { fixture.usersDb.getUsers(any()) } returns listOf(user)
+
+        whenn()
+        fixture.sut()
+
+        then()
+        assertEquals(USER_JSON, fixture.rest.requests.single().body)
+    }
+
+    @Test
+    fun `should keep synced attributes missing from pending user when marking it synced`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        every { fixture.usersDb.getUsers(any()) } returns listOf(richSyncedUser(), emailOnlyPendingUser())
+
+        whenn()
+        fixture.sut()
+
+        then()
+        verify(exactly = 1) { fixture.usersDb.insertUser(MERGED_SYNCED_USER) }
+    }
+
+    @Test
+    fun `should keep synced attributes missing from pending user when server rejects it`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        every { fixture.usersDb.getUsers(any()) } returns listOf(richSyncedUser(), emailOnlyPendingUser())
+        fixture.rest.failWith(422)
+
+        whenn()
+        val outcome = fixture.sut().getOrThrow()
+
+        then()
+        assertEquals(StepOutcome.CONTINUE, outcome)
+        verify(exactly = 1) { fixture.usersDb.insertUser(MERGED_SYNCED_USER) }
     }
 
     @Test
@@ -184,7 +237,8 @@ internal class PushUserStepTest {
 
         then()
         assertEquals(StepOutcome.CONTINUE, outcome)
-        verify(exactly = 1) { fixture.usersDb.insertUser(user.toRemote().toDb().copy(isSynchronizedWithBackend = BooleanDb.TRUE)) }
+        val syncedUser = user.toRemote().toDb().copy(isSynchronizedWithBackend = BooleanDb.TRUE)
+        verify(exactly = 1) { fixture.usersDb.insertUser(syncedUser) }
     }
 
     @Test
@@ -208,7 +262,9 @@ internal class PushUserStepTest {
     fun `should trace steps without user attributes`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
-        every { fixture.usersDb.getUsers(any()) } returns listOf(stubUserDb(firstName = "Secretname", email = "secret@example.com"))
+        every { fixture.usersDb.getUsers(any()) } returns listOf(
+            stubUserDb(firstName = "Secretname", email = "secret@example.com")
+        )
 
         whenn()
         fixture.sut()
@@ -219,5 +275,31 @@ internal class PushUserStepTest {
         assertTrue(lines.any { it.contains("✓ send user to server") })
         assertTrue(lines.any { it.contains("✓ mark user as synced in local database") })
         assertFalse(lines.any { it.contains("Secretname") || it.contains("secret@example.com") })
+    }
+
+    private fun richSyncedUser() = stubUserDb(rowId = "1", synced = BooleanDb.TRUE).copy(
+        userAttributes = UserAttributesDb(phone = "+380501234567", firstName = "John", lastName = "Doe")
+    )
+
+    private fun emailOnlyPendingUser() = stubUserDb(rowId = "2", createdAt = STUB_CREATED_AT + 60_000).copy(
+        userAttributes = UserAttributesDb(email = "j@example.com")
+    )
+
+    companion object {
+        const val USER_JSON = """{"deviceId":"device-body","externalUserId":"external-user",""" +
+            """"userAttributes":{"email":"j@example.com","firstName":"John"},"subscriptionKeys":["news"]}"""
+
+        val MERGED_SYNCED_USER = UserDb(
+            deviceId = "device-body",
+            externalUserId = "external-user",
+            userAttributes = UserAttributesDb(
+                phone = "+380501234567",
+                email = "j@example.com",
+                firstName = "John",
+                lastName = "Doe",
+                fields = emptyList()
+            ),
+            isSynchronizedWithBackend = BooleanDb.TRUE
+        )
     }
 }

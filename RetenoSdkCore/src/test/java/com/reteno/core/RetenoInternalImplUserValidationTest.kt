@@ -31,11 +31,12 @@ internal class RetenoInternalImplUserValidationTest {
         private val application = ApplicationProvider.getApplicationContext<Application>()
         private val dispatcher = StandardTestDispatcher(scope.testScheduler)
         val actions = FakeSdkActions()
+        val serviceLocator = ServiceLocator(application, retenoDispatchers(dispatcher, dispatcher))
         val sut = RetenoInternalImpl(
             application = application,
             mainDispatcher = dispatcher,
             appLifecycleOwner = ManualLifecycleOwner(),
-            serviceLocator = ServiceLocator(application, retenoDispatchers(dispatcher, dispatcher)),
+            serviceLocator = serviceLocator,
             sdkActions = { actions },
             isOsSupported = { true }
         )
@@ -95,12 +96,53 @@ internal class RetenoInternalImplUserValidationTest {
     fun `should throw to caller for invalid anonymous market id`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
+        val attributes = stubAnonymousAttributes(marketId = "x".repeat(65))
 
         whenn()
-        val result = runCatching { fixture.sut.setAnonymousUserAttributes(stubAnonymousAttributes(marketId = "x".repeat(65))) }
+        val result = runCatching { fixture.sut.setAnonymousUserAttributes(attributes) }
 
         then()
         assertTrue(result.exceptionOrNull() is IllegalArgumentException)
+    }
+
+    @Test
+    fun `should not forward user attributes with invalid market id once sdk is initialized`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        fixture.serviceLocator.initGate.markInitialized(byUser = true)
+
+        whenn()
+        runCatching { fixture.sut.setUserAttributes("user-1", stubUser(marketId = "bad market!")) }
+
+        then()
+        assertEquals(listOf("boot"), fixture.actions.calls)
+    }
+
+    @Test
+    fun `should not forward multi account user attributes with blank user id once sdk is initialized`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        fixture.serviceLocator.initGate.markInitialized(byUser = true)
+
+        whenn()
+        runCatching { fixture.sut.setMultiAccountUserAttributes(" ", stubUser()) }
+
+        then()
+        assertEquals(listOf("boot"), fixture.actions.calls)
+    }
+
+    @Test
+    fun `should not forward anonymous user attributes with invalid market id once sdk is initialized`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        fixture.serviceLocator.initGate.markInitialized(byUser = true)
+        val attributes = stubAnonymousAttributes(marketId = "x".repeat(65))
+
+        whenn()
+        runCatching { fixture.sut.setAnonymousUserAttributes(attributes) }
+
+        then()
+        assertEquals(listOf("boot"), fixture.actions.calls)
     }
 
     @Test

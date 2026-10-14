@@ -26,9 +26,17 @@ internal class UpdateNotificationsEnabledActionTest {
     private class SutFixture(scope: TestScope) {
         val env = DeviceActionFixture(scope)
         val logged = mutableListOf<Event>()
-        val lifecycleEvents = LifecycleEvents(LifecycleEventFilter(LifecycleTrackingOptions.ALL), recordingLogEvent(logged))
+        val lifecycleEvents = LifecycleEvents(
+            LifecycleEventFilter(LifecycleTrackingOptions.ALL),
+            recordingLogEvent(logged)
+        )
         val sut = UpdateNotificationsEnabledAction(
-            env.configRepository, env.currentDevice, env.sync, env.session, lifecycleEvents, env.traced.runner
+            configRepository = env.configRepository,
+            currentDevice = env.currentDevice,
+            sync = env.sync,
+            session = env.session,
+            lifecycleEvents = lifecycleEvents,
+            runner = env.traced.runner
         )
 
         init {
@@ -55,7 +63,7 @@ internal class UpdateNotificationsEnabledActionTest {
     }
 
     @Test
-    fun `should store new state save device with it and request sync`() = runUnitTest {
+    fun `should save disabled state when notifications become disabled`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
         every { fixture.env.configRepository.isNotificationsEnabled() } returns true
@@ -65,8 +73,74 @@ internal class UpdateNotificationsEnabledActionTest {
 
         then()
         verify(exactly = 1) { fixture.env.configRepository.saveNotificationsEnabled(false) }
-        verify(exactly = 1) { fixture.env.devicesDb.insertDevice(stubDevice(fixture.env.deviceId, "token", false).toDb()) }
+    }
+
+    @Test
+    fun `should save device as not push subscribed when notifications become disabled`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        every { fixture.env.configRepository.isNotificationsEnabled() } returns true
+
+        whenn()
+        fixture.sut(false)
+
+        then()
+        verify(exactly = 1) {
+            fixture.env.devicesDb.insertDevice(stubDevice(fixture.env.deviceId, "token", false).toDb())
+        }
+    }
+
+    @Test
+    fun `should save enabled state when notifications become enabled`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        every { fixture.env.configRepository.isNotificationsEnabled() } returns false
+
+        whenn()
+        fixture.sut(true)
+
+        then()
+        verify(exactly = 1) { fixture.env.configRepository.saveNotificationsEnabled(true) }
+    }
+
+    @Test
+    fun `should save device as push subscribed when notifications become enabled`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        every { fixture.env.configRepository.isNotificationsEnabled() } returns false
+
+        whenn()
+        fixture.sut(true)
+
+        then()
+        verify(exactly = 1) {
+            fixture.env.devicesDb.insertDevice(stubDevice(fixture.env.deviceId, "token", true).toDb())
+        }
+    }
+
+    @Test
+    fun `should request data sync when notifications state changed`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        every { fixture.env.configRepository.isNotificationsEnabled() } returns true
+
+        whenn()
+        fixture.sut(false)
+
+        then()
         assertEquals(1, fixture.env.sync.requests)
+    }
+
+    @Test
+    fun `should mark device as sent this session when notifications state changed`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        every { fixture.env.configRepository.isNotificationsEnabled() } returns true
+
+        whenn()
+        fixture.sut(false)
+
+        then()
         assertTrue(fixture.env.session.isDeviceSent)
     }
 

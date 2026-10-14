@@ -4,6 +4,7 @@ import android.app.Activity
 import android.app.ActivityManager
 import android.content.ComponentName
 import android.content.Context
+import android.os.Build
 import com.reteno.test.given
 import com.reteno.test.runUnitTest
 import com.reteno.test.then
@@ -16,6 +17,7 @@ import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import org.robolectric.util.ReflectionHelpers
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [26])
@@ -32,6 +34,16 @@ internal class TopActivityTest {
             topActivity = topPackage?.let { ComponentName(it, "$it.Top") }
         }
         return mockk<ActivityManager.AppTask>().also { every { it.taskInfo } returns info }
+    }
+
+    private fun <T> onAndroidSdk(sdk: Int, block: () -> T): T {
+        val actual = Build.VERSION.SDK_INT
+        ReflectionHelpers.setStaticField(Build.VERSION::class.java, "SDK_INT", sdk)
+        try {
+            return block()
+        } finally {
+            ReflectionHelpers.setStaticField(Build.VERSION::class.java, "SDK_INT", actual)
+        }
     }
 
     @Test
@@ -71,18 +83,21 @@ internal class TopActivityTest {
     }
 
     @Test
-    @Config(sdk = [22])
     fun `should read top activity from running tasks before android m`() = runUnitTest {
         given()
         val manager = mockk<ActivityManager>()
         @Suppress("DEPRECATION")
-        val running = ActivityManager.RunningTaskInfo().apply { topActivity = ComponentName("com.example.legacy", "com.example.legacy.Top") }
+        val running = ActivityManager.RunningTaskInfo().apply {
+            topActivity = ComponentName("com.example.legacy", "com.example.legacy.Top")
+        }
         @Suppress("DEPRECATION")
         every { manager.getRunningTasks(1) } returns listOf(running)
-        val activity = mockk<Activity>().also { every { it.getSystemService(Context.ACTIVITY_SERVICE) } returns manager }
+        val activity = mockk<Activity>().also {
+            every { it.getSystemService(Context.ACTIVITY_SERVICE) } returns manager
+        }
 
         whenn()
-        val topPackage = TopActivity.packageOf(activity)
+        val topPackage = onAndroidSdk(Build.VERSION_CODES.LOLLIPOP_MR1) { TopActivity.packageOf(activity) }
 
         then()
         assertEquals("com.example.legacy", topPackage)
@@ -91,7 +106,9 @@ internal class TopActivityTest {
     @Test
     fun `should return null when activity manager is unavailable`() = runUnitTest {
         given()
-        val activity = mockk<Activity>().also { every { it.getSystemService(Context.ACTIVITY_SERVICE) } throws SecurityException("denied") }
+        val activity = mockk<Activity>().also {
+            every { it.getSystemService(Context.ACTIVITY_SERVICE) } throws SecurityException("denied")
+        }
 
         whenn()
         val topPackage = TopActivity.packageOf(activity)

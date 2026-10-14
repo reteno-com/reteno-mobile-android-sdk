@@ -23,7 +23,10 @@ internal class RecordInteractionAction(
     private val runner: ActionRunner
 ) : RecordInteraction {
 
-    override suspend operator fun invoke(interactionId: String, status: InteractionStatus): Result<Boolean> = runner("RecordInteraction") {
+    override suspend operator fun invoke(
+        interactionId: String,
+        status: InteractionStatus
+    ): Result<Boolean> = runner("RecordInteraction") {
         args("id" to interactionId, "status" to status)
         record(interactionId, status)
     }

@@ -10,7 +10,10 @@ import com.reteno.core.internal.lifecycle.LifecycleEventFilter
 import com.reteno.core.internal.lifecycle.LifecycleEvents
 import kotlinx.coroutines.test.TestScope
 
-internal class LifecycleActionFixture(scope: TestScope, options: LifecycleTrackingOptions = LifecycleTrackingOptions.ALL) {
+internal class LifecycleActionFixture(
+    scope: TestScope,
+    options: LifecycleTrackingOptions = LifecycleTrackingOptions.ALL
+) {
     val logged = mutableListOf<Event>()
     val filter = LifecycleEventFilter(options)
     val lifecycleEvents = LifecycleEvents(filter, recordingLogEvent(logged))

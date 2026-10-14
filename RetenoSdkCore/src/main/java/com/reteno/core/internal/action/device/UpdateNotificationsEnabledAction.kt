@@ -23,16 +23,24 @@ internal class UpdateNotificationsEnabledAction(
     }
 
     private suspend fun ActionTrace.update(enabled: Boolean) {
-        val stored = step("read stored notifications state", detail = { "enabled=$it" }) { configRepository.isNotificationsEnabled() }
+        val stored = step("read stored notifications state", detail = { "enabled=$it" }) {
+            configRepository.isNotificationsEnabled()
+        }
         if (enabled == stored) {
             note { "notifications state unchanged" }
             return
         }
         session.markDeviceSent()
-        step("save notifications state to local settings") { configRepository.saveNotificationsEnabled(enabled) }
+        step("save notifications state to local settings") {
+            configRepository.saveNotificationsEnabled(enabled)
+        }
         lifecycleEvents.log(this, if (enabled) Event.notificationsEnabled() else Event.notificationsDisabled())
-        val token = step("read push token", detail = { Redact.token(it) }) { configRepository.getFcmToken() }
+        val token = step("read push token", detail = { Redact.token(it) }) {
+            configRepository.getFcmToken()
+        }
         currentDevice.save(this, token, pushSubscribed = enabled)
-        step("request data sync") { sync.request() }
+        step("request data sync") {
+            sync.request()
+        }
     }
 }

@@ -30,6 +30,7 @@ import org.junit.Test
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.runner.RunWith
 import org.robolectric.Robolectric
@@ -59,7 +60,8 @@ class RetenoNotificationsTest {
         }
 
         fun showRationale() {
-            shadowOf(application.packageManager).setShouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS, true)
+            shadowOf(application.packageManager)
+                .setShouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS, true)
         }
 
         inline fun <T> onTestMain(scope: TestScope, block: () -> T): T {
@@ -92,7 +94,9 @@ class RetenoNotificationsTest {
         withFakeFacade { facade ->
             given()
             val fixture = SutFixture(facade)
-            fixture.manager.createNotificationChannel(NotificationChannel("defaultId", "name", NotificationManager.IMPORTANCE_HIGH).apply { description = "old" })
+            val existingChannel = NotificationChannel("defaultId", "name", NotificationManager.IMPORTANCE_HIGH)
+                .apply { description = "old" }
+            fixture.manager.createNotificationChannel(existingChannel)
 
             whenn()
             RetenoNotifications.updateDefaultNotificationChannel(name = "Offers")
@@ -110,7 +114,8 @@ class RetenoNotificationsTest {
         withFakeFacade { facade ->
             given()
             val fixture = SutFixture(facade)
-            fixture.manager.createNotificationChannel(NotificationChannel("defaultId", "name", NotificationManager.IMPORTANCE_HIGH))
+            val existingChannel = NotificationChannel("defaultId", "name", NotificationManager.IMPORTANCE_HIGH)
+            fixture.manager.createNotificationChannel(existingChannel)
 
             whenn()
             RetenoNotifications.updateDefaultNotificationChannel(description = "Discounts")
@@ -176,7 +181,9 @@ class RetenoNotificationsTest {
             fixture.grantNotificationPermission()
 
             whenn()
-            val granted = fixture.onTestMain(this) { onAndroidSdk(Build.VERSION_CODES.TIRAMISU) { RetenoNotifications.requestNotificationPermission() } }
+            val granted = fixture.onTestMain(this) {
+                onAndroidSdk(Build.VERSION_CODES.TIRAMISU) { RetenoNotifications.requestNotificationPermission() }
+            }
 
             then()
             assertTrue(granted)
@@ -192,7 +199,9 @@ class RetenoNotificationsTest {
             coEvery { fixture.checker.check(Manifest.permission.POST_NOTIFICATIONS) } returns true
 
             whenn()
-            val granted = fixture.onTestMain(this) { onAndroidSdk(Build.VERSION_CODES.TIRAMISU) { RetenoNotifications.requestNotificationPermission() } }
+            val granted = fixture.onTestMain(this) {
+                onAndroidSdk(Build.VERSION_CODES.TIRAMISU) { RetenoNotifications.requestNotificationPermission() }
+            }
 
             then()
             assertTrue(granted)
@@ -207,7 +216,9 @@ class RetenoNotificationsTest {
             val fixture = SutFixture(facade).withChecker()
 
             whenn()
-            val granted = fixture.onTestMain(this) { onAndroidSdk(Build.VERSION_CODES.TIRAMISU) { RetenoNotifications.requestNotificationPermission() } }
+            val granted = fixture.onTestMain(this) {
+                onAndroidSdk(Build.VERSION_CODES.TIRAMISU) { RetenoNotifications.requestNotificationPermission() }
+            }
 
             then()
             assertFalse(granted)
@@ -216,10 +227,10 @@ class RetenoNotificationsTest {
     }
 
     @Test
-    fun `should resolve permission request future`() = runUnitTest {
+    fun `should resolve permission request future as not granted without an activity to ask from`() = runUnitTest {
         withFakeFacade { facade ->
             given()
-            SutFixture(facade)
+            facade.permissionChecker = null
 
             whenn()
             val granted = RetenoNotifications.requestNotificationPermissionFuture().await()
@@ -233,7 +244,7 @@ class RetenoNotificationsTest {
     fun `should report denied status without an activity to ask from`() = runUnitTest {
         withFakeFacade { facade ->
             given()
-            SutFixture(facade)
+            facade.permissionChecker = null
 
             whenn()
             val status = RetenoNotifications.getNotificationPermissionStatusFuture().await()
@@ -280,7 +291,9 @@ class RetenoNotificationsTest {
             fixture.grantNotificationPermission()
 
             whenn()
-            val status = fixture.onTestMain(this) { onAndroidSdk(Build.VERSION_CODES.TIRAMISU) { RetenoNotifications.getNotificationPermissionStatus() } }
+            val status = fixture.onTestMain(this) {
+                onAndroidSdk(Build.VERSION_CODES.TIRAMISU) { RetenoNotifications.getNotificationPermissionStatus() }
+            }
 
             then()
             assertEquals(NotificationStatus.ALLOWED, status)
@@ -295,7 +308,9 @@ class RetenoNotificationsTest {
             fixture.showRationale()
 
             whenn()
-            val status = fixture.onTestMain(this) { onAndroidSdk(Build.VERSION_CODES.TIRAMISU) { RetenoNotifications.getNotificationPermissionStatus() } }
+            val status = fixture.onTestMain(this) {
+                onAndroidSdk(Build.VERSION_CODES.TIRAMISU) { RetenoNotifications.getNotificationPermissionStatus() }
+            }
 
             then()
             assertEquals(NotificationStatus.DENIED, status)
@@ -309,7 +324,9 @@ class RetenoNotificationsTest {
             val fixture = SutFixture(facade).withChecker()
 
             whenn()
-            val status = fixture.onTestMain(this) { onAndroidSdk(Build.VERSION_CODES.TIRAMISU) { RetenoNotifications.getNotificationPermissionStatus() } }
+            val status = fixture.onTestMain(this) {
+                onAndroidSdk(Build.VERSION_CODES.TIRAMISU) { RetenoNotifications.getNotificationPermissionStatus() }
+            }
 
             then()
             assertEquals(NotificationStatus.PERMANENTLY_DENIED, status)
@@ -317,17 +334,40 @@ class RetenoNotificationsTest {
     }
 
     @Test
-    fun `should keep grouping rule for new notifications`() = runUnitTest {
+    fun `should keep grouping rule set by host`() = runUnitTest {
         given()
         val rule: (Map<String, String?>) -> String? = { "group" }
 
         whenn()
-        RetenoNotifications.setGroupingRule(rule)
-        val stored = RetenoNotifications.groupingRule
-        RetenoNotifications.setGroupingRule(null)
+        val stored = withGroupingRuleReset {
+            RetenoNotifications.setGroupingRule(rule)
+            RetenoNotifications.groupingRule
+        }
 
         then()
-        assertEquals(rule, stored)
-        assertNull(RetenoNotifications.groupingRule)
+        assertSame(rule, stored)
+    }
+
+    @Test
+    fun `should clear grouping rule when host sets none`() = runUnitTest {
+        given()
+        RetenoNotifications.groupingRule = { "group" }
+
+        whenn()
+        val stored = withGroupingRuleReset {
+            RetenoNotifications.setGroupingRule(null)
+            RetenoNotifications.groupingRule
+        }
+
+        then()
+        assertNull(stored)
+    }
+
+    private inline fun <T> withGroupingRuleReset(block: () -> T): T {
+        try {
+            return block()
+        } finally {
+            RetenoNotifications.groupingRule = null
+        }
     }
 }

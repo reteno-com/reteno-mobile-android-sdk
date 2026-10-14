@@ -20,9 +20,13 @@ internal class RegisterDeviceAction(
 ) : RegisterDevice {
 
     override suspend operator fun invoke(): Result<SyncResult> = runner("RegisterDevice") {
-        val token = step("read push token", detail = { Redact.token(it) }) { configRepository.getFcmToken() }
+        val token = step("read push token", detail = { Redact.token(it) }) {
+            configRepository.getFcmToken()
+        }
         currentDevice.save(this, token)
-        val result = step("send device and user to server") { sync.syncNow(SyncScope.CONTACT) }
+        val result = step("send device and user to server") {
+            sync.syncNow(SyncScope.CONTACT)
+        }
         session.markDeviceSent()
         result
     }

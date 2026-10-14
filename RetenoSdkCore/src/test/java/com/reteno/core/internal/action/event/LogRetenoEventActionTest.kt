@@ -51,7 +51,9 @@ internal class LogRetenoEventActionTest {
         given()
         val fixture = SutFixture(this)
         var insertedOnIo = false
-        every { fixture.logEventsDb.insertLogEvent(any()) } answers { insertedOnIo = fixture.dispatchers.markedIo.isRunningHere }
+        every { fixture.logEventsDb.insertLogEvent(any()) } answers {
+            insertedOnIo = fixture.dispatchers.markedIo.isRunningHere
+        }
 
         whenn()
         fixture.sut(stubRetenoLogEvent())

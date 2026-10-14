@@ -50,46 +50,78 @@ internal class ClearOldDataAction(
         val removed = step("delete outdated interactions from local database", detail = { "count=${it.size}" }) {
             withContext(dispatchers.io) { interactionsDb.deleteInteractionByTime(before) }
         }
-        if (removed.isNotEmpty()) reportRemovedRows { removed.groupingBy { it.status }.eachCount().map { (status, count) -> "Removed interactions($status) - $count" } }
+        if (removed.isNotEmpty()) {
+            reportRemovedRows {
+                removed.groupingBy { it.status }
+                    .eachCount()
+                    .map { (status, count) -> "Removed interactions($status) - $count" }
+            }
+        }
     }
 
     private suspend fun clearInAppInteractions(before: String) = runner("ClearOldInAppInteractions") {
         val removed = step("delete outdated in-app interactions from local database", detail = { "count=${it.size}" }) {
             withContext(dispatchers.io) { inAppInteractionsDb.deleteInteractionsByTime(before) }
         }
-        if (removed.isNotEmpty()) reportRemovedRows { removed.groupingBy { it.status }.eachCount().map { (status, count) -> "Removed inAppInteractions($status) - $count" } }
+        if (removed.isNotEmpty()) {
+            reportRemovedRows {
+                removed.groupingBy { it.status }
+                    .eachCount()
+                    .map { (status, count) -> "Removed inAppInteractions($status) - $count" }
+            }
+        }
     }
 
     private suspend fun clearEvents(before: String) = runner("ClearOldEvents") {
         val removed = step("delete outdated events from local database", detail = { "count=${it.size}" }) {
             withContext(dispatchers.io) { eventsDb.deleteEventsByTime(before) }
         }
-        if (removed.isNotEmpty()) reportRemovedRows { removed.groupingBy { it.eventTypeKey }.eachCount().map { (type, count) -> "Removed events($type) - $count" } }
+        if (removed.isNotEmpty()) {
+            reportRemovedRows {
+                removed.groupingBy { it.eventTypeKey }
+                    .eachCount()
+                    .map { (type, count) -> "Removed events($type) - $count" }
+            }
+        }
     }
 
     private suspend fun clearInboxStatuses(before: String) = runner("ClearOldInboxStatuses") {
         val removed = step("delete outdated inbox statuses from local database", detail = { "count=$it" }) {
             withContext(dispatchers.io) { inboxDb.deleteAppInboxMessagesByTime(before) }
         }
-        if (removed > 0) reportRemovedRows { listOf("Outdated Inbox: - $removed") }
+        if (removed > 0) {
+            reportRemovedRows {
+                listOf("Outdated Inbox: - $removed")
+            }
+        }
     }
 
     private suspend fun clearRecommendationEvents(before: String) = runner("ClearOldRecommendationEvents") {
         val removed = step("delete outdated recommendation events from local database", detail = { "count=$it" }) {
             withContext(dispatchers.io) { recomEventsDb.deleteRecomEventsByTime(before) }
         }
-        if (removed > 0) reportRemovedRows { listOf("Outdated Recommendation Events: - $removed") }
+        if (removed > 0) {
+            reportRemovedRows {
+                listOf("Outdated Recommendation Events: - $removed")
+            }
+        }
     }
 
     private suspend fun clearWrappedLinks(before: String) = runner("ClearOldWrappedLinks") {
         val removed = step("delete outdated link clicks from local database", detail = { "count=$it" }) {
             withContext(dispatchers.io) { wrappedLinksDb.deleteWrappedLinksByTime(before) }
         }
-        if (removed > 0) reportRemovedRows { listOf("Removed wrapped links - $removed") }
+        if (removed > 0) {
+            reportRemovedRows {
+                listOf("Removed wrapped links - $removed")
+            }
+        }
     }
 
     private suspend fun ActionTrace.reportRemovedRows(messages: () -> List<String>) {
-        step("report removed rows to remote log") { messages().forEach(remoteLog::info) }
+        step("report removed rows to remote log") {
+            messages().forEach(remoteLog::info)
+        }
     }
 
     companion object {

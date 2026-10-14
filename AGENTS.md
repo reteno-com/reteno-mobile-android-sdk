@@ -38,14 +38,25 @@ internal class LogEventAction(
 ) {
     suspend operator fun invoke(event: Event): Result<Unit> = runner("LogEvent") {
         args("type" to event.eventTypeKey)
-        step("save event to local database") { withContext(dispatchers.io) { eventsDb.insertEvents(EventsDb(restConfig.deviceId, event.toDb())) } }
-        step("notify in-app message triggers") { eventBus.emit(event) }
+        step("save event to local database") {
+            withContext(dispatchers.io) { eventsDb.insertEvents(EventsDb(restConfig.deviceId, event.toDb())) }
+        }
+        step("notify in-app message triggers") {
+            eventBus.emit(event)
+        }
     }
 }
 ```
 
 - **An action's logic lives in its own file.** Its constructor takes real collaborators — DB managers, repositories, controllers, `RetenoSessionHandler`, `SharedPrefsManager`, `RestConfig`, `InitGate`, `SdkConfiguration`, `AppPlatform`, `RemoteLog`, other actions — and the action calls them inside its named steps. Function-typed dependencies are only for sources of time and identity (`clock`, `jitter`, id generators). Never build behaviour in a lambda inside `ActionsLocator` or `ServiceLocator`; the locator only constructs objects and routes facade calls onto queues and scopes. Android framework calls go through a named `AppPlatform` method.
-- One file under `internal/action/<feature>/`; `suspend operator fun invoke(...): Result<T> = runner("Name") { ... }` on one line.
+- One file under `internal/action/<feature>/`; `suspend operator fun invoke(...): Result<T> = runner("Name") {` on one line, or with one parameter per line when it doesn't fit in 120 columns.
+- **An action reads top to bottom like its spec.** Kotlin official style, 120-column limit, 4-space indent:
+  - Every `step`/`stepOrNull` body, and every `runner(...)` body, starts on a new line and the closing `}` gets its own line — never `step("…") { call() }`. A dispatcher switch inside a step stays on one line when it fits (`withContext(dispatchers.io) { eventsDb.insertEvents(...) }`).
+  - A conditional step is a braced block (`if (forcePush) {` / `step(…) {` …), never `if (x) step(…) { … }`; a step's result used in a condition goes into a named value first (`val inForeground = step(…) { … }`, then `if (inForeground)`).
+  - When a `step(...)` call, `args(...)`, `api.request(...)`, a signature or a constructor call doesn't fit, put one argument per line; locator constructor calls that wrap use named arguments.
+  - The wait for init and the server call are written in the action itself, not hidden in a shared helper; a few repeated lines are cheaper than an action you can't read in one pass.
+  - One blank line after a class header and between members, none after a function's opening brace or before a closing one, never two in a row; files end with one newline.
+  - Tests and fixtures follow the same layout: 120 columns (only a backticked test name may be longer), `runner`/`step` bodies on their own lines, wrapped calls one argument per line or a named `val expected`, one blank line before `whenn()` and `then()`, `SutFixture` first and `companion object` constants last. Legacy-style tests that are still waiting for their rewrite (Phase 8/10) are left as they are.
 - Arguments go first inside the block: `args("type" to event.eventTypeKey)`. The start line is printed at `args(...)` (or before the first step/note/child/end if there are none); `args` called later prints a `→ key=value` note. Values are formatted only when logging is on; pass `"key" to { expensive() }` for values that are costly or need `Redact`.
 - Every unit of work is a named `step(...)`. A step name says **what happens and where**: verb + object + source/destination — `"save event to local database"`, `"load unsynced devices from local database"`, `"send device to server"`, `"notify in-app message triggers"`. Never a bare verb (`"insert event"`, `"emit"`).
 - Sync steps end an empty run with `nothingToSend()` (or `finishedAfter(handled)` in draining loops), so every step prints `→ nothing to send` when it sent nothing and stays quiet after it drained rows.
@@ -54,7 +65,8 @@ internal class LogEventAction(
 - `runner(...)` rethrows `CancellationException`, logs `✓ SUCCESS` / `✗ FAILURE` / `⊘ CANCELLED`, and reports exactly one remote log event per failed action (no args included). A child `runner(...)` inside a parent nests automatically (`[root.n]`).
 - Validation the caller must see (blank `externalUserId`, invalid `marketId`) is done synchronously in the facade before deferring, not inside the Action.
 - Host callbacks are invoked via `withContext(dispatchers.main)`. Actions that answer a host `RetenoResultCallback` from a server call use `passResponseToHost` (`internal/action/inbox/HostResponse.kt`): a server failure goes to `onFailure(code, body, error)` and is only traced, never uploaded; a response that can't be read goes to `onFailure(null, null, error)` **and** fails the action, so it is reported once.
-- Operations that need the SDK configured (network, device id) wait with a named step `step("wait for sdk initialization") { initGate.awaitInit() }` inside the action instead of being gated in a facade.
+- A documented fallback is not a failure. When the host contract has one (recommendations' `onSuccessFallbackToJson`), read with `stepOrNull(…)` (`internal.action.trace`), answer the fallback callback and let the action succeed: the failed step stays in the trace, nothing is reported. Never `runCatching { step(…) }` for this: it swallows `CancellationException` and turns cancellation into the fallback.
+- Operations that need the SDK configured (network, device id) wait with a named step `step("wait for sdk initialization")` (body `initGate.awaitInit()`) inside the action instead of being gated in a facade.
 
 ## Logging
 

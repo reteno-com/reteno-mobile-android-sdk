@@ -20,7 +20,8 @@ import org.junit.jupiter.api.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 internal class ActionsLocatorInboxWiringTest {
 
-    private fun LocatorFixture.countRequests() = rest.requests.count { it.contract == ApiContract.AppInbox.MessagesCount }
+    private fun LocatorFixture.countRequests() =
+        rest.requests.count { it.contract == ApiContract.AppInbox.MessagesCount }
 
     @Test
     fun `should load submitted inbox page`() = runUnitTest {
@@ -72,18 +73,39 @@ internal class ActionsLocatorInboxWiringTest {
     }
 
     @Test
-    fun `should stop polling unread count for removed subscribers`() = runUnitTest {
+    fun `should stop delivering unread count to unsubscribed callback while others keep polling`() = runUnitTest {
         given()
         val fixture = LocatorFixture(this)
-        val first = RecordingResultCallback<Int>()
-        val second = RecordingResultCallback<Int>()
+        val removed = RecordingResultCallback<Int>()
+        val kept = RecordingResultCallback<Int>()
+        fixture.rest.succeedWith("""{"unreadCount":2}""")
+        fixture.sut.subscribeInboxCount(removed)
+        fixture.sut.subscribeInboxCount(kept)
         fixture.sut.requestStart()
-        fixture.sut.subscribeInboxCount(first)
-        fixture.sut.subscribeInboxCount(second)
+        runCurrent()
+        fixture.sut.dataSync.stopScheduler()
+        fixture.rest.succeedWith("""{"unreadCount":5}""")
+
+        whenn()
+        fixture.sut.unsubscribeInboxCount(removed)
+        advanceTimeBy(InboxCountPoller.POLL_INTERVAL_MILLIS)
+        runCurrent()
+
+        then()
+        assertEquals(listOf(2), removed.results)
+        assertEquals(listOf(2, 5), kept.results)
+    }
+
+    @Test
+    fun `should stop polling unread count after unsubscribing all callbacks`() = runUnitTest {
+        given()
+        val fixture = LocatorFixture(this)
+        fixture.sut.requestStart()
+        fixture.sut.subscribeInboxCount(RecordingResultCallback())
+        fixture.sut.subscribeInboxCount(RecordingResultCallback())
         runCurrent()
 
         whenn()
-        fixture.sut.unsubscribeInboxCount(first)
         fixture.sut.unsubscribeAllInboxCount()
         advanceTimeBy(InboxCountPoller.POLL_INTERVAL_MILLIS * 2)
         runCurrent()

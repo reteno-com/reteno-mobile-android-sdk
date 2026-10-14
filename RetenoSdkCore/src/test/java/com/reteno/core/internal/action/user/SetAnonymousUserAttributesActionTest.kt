@@ -35,7 +35,14 @@ internal class SetAnonymousUserAttributesActionTest {
         val dispatchers = scope.testDispatchers()
         val traced = TestActionRunner(scope)
         var insertedOnIo = false
-        val sut = SetAnonymousUserAttributesAction(configRepository, usersDb, sync, remoteLog, dispatchers, traced.runner)
+        val sut = SetAnonymousUserAttributesAction(
+            configRepository = configRepository,
+            usersDb = usersDb,
+            sync = sync,
+            remoteLog = remoteLog,
+            dispatchers = dispatchers,
+            runner = traced.runner
+        )
 
         init {
             every { configRepository.getDeviceId() } returns deviceId

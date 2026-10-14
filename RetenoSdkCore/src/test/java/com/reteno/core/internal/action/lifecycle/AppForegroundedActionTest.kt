@@ -2,6 +2,8 @@ package com.reteno.core.internal.action.lifecycle
 
 import com.reteno.core.data.repository.ConfigRepository
 import com.reteno.core.domain.controller.IamController
+import com.reteno.core.domain.model.event.LifecycleTrackingOptions
+import com.reteno.core.domain.model.event.Parameter
 import com.reteno.core.internal.action.sync.SyncScheduler
 import com.reteno.core.internal.platform.AppPlatform
 import com.reteno.core.internal.platform.AppVersion
@@ -21,16 +23,23 @@ import org.junit.jupiter.api.Test
 
 internal class AppForegroundedActionTest {
 
-    private class SutFixture(scope: TestScope, installed: AppVersion = AppVersion("2.0", 20L)) {
-        val env = LifecycleActionFixture(scope)
+    private class SutFixture(
+        scope: TestScope,
+        options: LifecycleTrackingOptions = LifecycleTrackingOptions.ALL
+    ) {
+        val env = LifecycleActionFixture(scope, options)
         val configRepository = mockk<ConfigRepository>()
         val calls = mutableListOf<String>()
         private val platform = mockk<AppPlatform>().also {
             every { it.sendBroadcast(any()) } answers { calls += "broadcast ${firstArg<String>()}"; 1 }
-            every { it.installedVersion() } returns installed
+            every { it.installedVersion() } returns AppVersion(INSTALLED_VERSION, INSTALLED_BUILD)
         }
-        private val dataSync = mockk<SyncScheduler>().also { every { it.clearOldData() } answers { calls += "clear old data" } }
-        private val iamController = mockk<IamController>().also { every { it.preloadHtml() } answers { calls += "preload html" } }
+        private val dataSync = mockk<SyncScheduler>().also {
+            every { it.clearOldData() } answers { calls += "clear old data" }
+        }
+        private val iamController = mockk<IamController>().also {
+            every { it.preloadHtml() } answers { calls += "preload html" }
+        }
         val sut = AppForegroundedAction(
             platform = platform,
             dataSync = dataSync,
@@ -43,11 +52,14 @@ internal class AppForegroundedActionTest {
         )
 
         init {
-            every { configRepository.getAppVersion() } returns "2.0"
-            every { configRepository.getAppBuildNumber() } returns 20L
+            every { configRepository.getAppVersion() } returns INSTALLED_VERSION
+            every { configRepository.getAppBuildNumber() } returns INSTALLED_BUILD
             justRun { configRepository.saveAppVersion(any()) }
             justRun { configRepository.saveAppBuildNumber(any()) }
         }
+
+        fun paramsOf(eventTypeKey: String): List<Parameter>? =
+            env.logged.single { it.eventTypeKey == eventTypeKey }.params
     }
 
     @Test
@@ -59,7 +71,10 @@ internal class AppForegroundedActionTest {
         fixture.sut()
 
         then()
-        assertEquals(listOf("broadcast ${Constants.BROADCAST_ACTION_RETENO_APP_RESUME}", "clear old data", "preload html"), fixture.calls)
+        assertEquals(
+            listOf("broadcast ${Constants.BROADCAST_ACTION_RETENO_APP_RESUME}", "clear old data", "preload html"),
+            fixture.calls
+        )
     }
 
     @Test
@@ -73,7 +88,31 @@ internal class AppForegroundedActionTest {
 
         then()
         assertEquals(listOf("ApplicationOpened"), fixture.env.loggedKeys)
+    }
+
+    @Test
+    fun `should note in trace that app is already in foreground on second foreground`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        fixture.sut()
+
+        whenn()
+        fixture.sut()
+
+        then()
         assertTrue(fixture.env.traced.sink.lines.any { it.contains("→ app already in foreground") })
+    }
+
+    @Test
+    fun `should log first app opened as not from background`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+
+        whenn()
+        fixture.sut()
+
+        then()
+        assertEquals(listOf(Parameter("fromBackground", "false")), fixture.paramsOf("ApplicationOpened"))
     }
 
     @Test
@@ -87,11 +126,11 @@ internal class AppForegroundedActionTest {
         fixture.sut()
 
         then()
-        assertTrue(fixture.env.logged.single().params.orEmpty().any { it.name == "fromBackground" && it.value == "true" })
+        assertEquals(listOf(Parameter("fromBackground", "true")), fixture.paramsOf("ApplicationOpened"))
     }
 
     @Test
-    fun `should log install and save version when no version was saved`() = runUnitTest {
+    fun `should log install before app opened when no version was saved`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
         every { fixture.configRepository.getAppVersion() } returns ""
@@ -101,39 +140,151 @@ internal class AppForegroundedActionTest {
 
         then()
         assertEquals(listOf("ApplicationInstalled", "ApplicationOpened"), fixture.env.loggedKeys)
-        verify(exactly = 1) { fixture.configRepository.saveAppVersion("2.0") }
-        verify(exactly = 1) { fixture.configRepository.saveAppBuildNumber(20L) }
     }
 
     @Test
-    fun `should log update when version name changed`() = runUnitTest {
+    fun `should log install with installed version and build`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
-        every { fixture.configRepository.getAppVersion() } returns "1.0"
+        every { fixture.configRepository.getAppVersion() } returns ""
+
+        whenn()
+        fixture.sut()
+
+        then()
+        val expected = listOf(
+            Parameter("version", INSTALLED_VERSION),
+            Parameter("build", INSTALLED_BUILD.toString())
+        )
+        assertEquals(expected, fixture.paramsOf("ApplicationInstalled"))
+    }
+
+    @Test
+    fun `should save installed version and build when no version was saved`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        every { fixture.configRepository.getAppVersion() } returns ""
+
+        whenn()
+        fixture.sut()
+
+        then()
+        verify(exactly = 1) { fixture.configRepository.saveAppVersion(INSTALLED_VERSION) }
+        verify(exactly = 1) { fixture.configRepository.saveAppBuildNumber(INSTALLED_BUILD) }
+    }
+
+    @Test
+    fun `should save installed version and build when install event is disabled by tracking options`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this, LifecycleTrackingOptions.ALL.copy(appLifecycleEnabled = false))
+        every { fixture.configRepository.getAppVersion() } returns ""
+
+        whenn()
+        fixture.sut()
+
+        then()
+        verify(exactly = 1) { fixture.configRepository.saveAppVersion(INSTALLED_VERSION) }
+        verify(exactly = 1) { fixture.configRepository.saveAppBuildNumber(INSTALLED_BUILD) }
+    }
+
+    @Test
+    fun `should log update before app opened when version name changed`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        every { fixture.configRepository.getAppVersion() } returns PREVIOUS_VERSION
 
         whenn()
         fixture.sut()
 
         then()
         assertEquals(listOf("ApplicationUpdated", "ApplicationOpened"), fixture.env.loggedKeys)
-        verify(exactly = 1) { fixture.configRepository.saveAppVersion("2.0") }
     }
 
     @Test
-    fun `should log update when only build number changed`() = runUnitTest {
+    fun `should log update with installed and previous version and build when version name changed`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
-        every { fixture.configRepository.getAppBuildNumber() } returns 19L
+        every { fixture.configRepository.getAppVersion() } returns PREVIOUS_VERSION
+        every { fixture.configRepository.getAppBuildNumber() } returns PREVIOUS_BUILD
 
         whenn()
         fixture.sut()
 
         then()
-        assertEquals(listOf("ApplicationUpdated", "ApplicationOpened"), fixture.env.loggedKeys)
+        val expected = listOf(
+            Parameter("version", INSTALLED_VERSION),
+            Parameter("build", INSTALLED_BUILD.toString()),
+            Parameter("previousVersion", PREVIOUS_VERSION),
+            Parameter("previousBuild", PREVIOUS_BUILD.toString())
+        )
+        assertEquals(expected, fixture.paramsOf("ApplicationUpdated"))
     }
 
     @Test
-    fun `should not touch saved version when unchanged`() = runUnitTest {
+    fun `should save installed version and build when version name changed`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        every { fixture.configRepository.getAppVersion() } returns PREVIOUS_VERSION
+        every { fixture.configRepository.getAppBuildNumber() } returns PREVIOUS_BUILD
+
+        whenn()
+        fixture.sut()
+
+        then()
+        verify(exactly = 1) { fixture.configRepository.saveAppVersion(INSTALLED_VERSION) }
+        verify(exactly = 1) { fixture.configRepository.saveAppBuildNumber(INSTALLED_BUILD) }
+    }
+
+    @Test
+    fun `should save installed version and build when update event is disabled by tracking options`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this, LifecycleTrackingOptions.ALL.copy(appLifecycleEnabled = false))
+        every { fixture.configRepository.getAppVersion() } returns PREVIOUS_VERSION
+        every { fixture.configRepository.getAppBuildNumber() } returns PREVIOUS_BUILD
+
+        whenn()
+        fixture.sut()
+
+        then()
+        verify(exactly = 1) { fixture.configRepository.saveAppVersion(INSTALLED_VERSION) }
+        verify(exactly = 1) { fixture.configRepository.saveAppBuildNumber(INSTALLED_BUILD) }
+    }
+
+    @Test
+    fun `should log update with same version and previous build when only build number changed`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        every { fixture.configRepository.getAppBuildNumber() } returns PREVIOUS_BUILD
+
+        whenn()
+        fixture.sut()
+
+        then()
+        val expected = listOf(
+            Parameter("version", INSTALLED_VERSION),
+            Parameter("build", INSTALLED_BUILD.toString()),
+            Parameter("previousVersion", INSTALLED_VERSION),
+            Parameter("previousBuild", PREVIOUS_BUILD.toString())
+        )
+        assertEquals(expected, fixture.paramsOf("ApplicationUpdated"))
+    }
+
+    @Test
+    fun `should save installed version and build when only build number changed`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        every { fixture.configRepository.getAppBuildNumber() } returns PREVIOUS_BUILD
+
+        whenn()
+        fixture.sut()
+
+        then()
+        verify(exactly = 1) { fixture.configRepository.saveAppVersion(INSTALLED_VERSION) }
+        verify(exactly = 1) { fixture.configRepository.saveAppBuildNumber(INSTALLED_BUILD) }
+    }
+
+    @Test
+    fun `should not save app version when unchanged`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
 
@@ -142,7 +293,41 @@ internal class AppForegroundedActionTest {
 
         then()
         verify(exactly = 0) { fixture.configRepository.saveAppVersion(any()) }
+        verify(exactly = 0) { fixture.configRepository.saveAppBuildNumber(any()) }
+    }
+
+    @Test
+    fun `should note in trace that app version is unchanged`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+
+        whenn()
+        fixture.sut()
+
+        then()
         assertTrue(fixture.env.traced.sink.lines.any { it.contains("→ app version unchanged") })
-        assertTrue(fixture.env.traced.sink.lines.any { it.contains("✓ read installed app version") && it.contains("2.0 (20)") })
+    }
+
+    @Test
+    fun `should trace installed app version`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+
+        whenn()
+        fixture.sut()
+
+        then()
+        assertTrue(
+            fixture.env.traced.sink.lines.any {
+                it.contains("✓ read installed app version") && it.contains("$INSTALLED_VERSION ($INSTALLED_BUILD)")
+            }
+        )
+    }
+
+    companion object {
+        private const val INSTALLED_VERSION = "2.0"
+        private const val INSTALLED_BUILD = 20L
+        private const val PREVIOUS_VERSION = "1.0"
+        private const val PREVIOUS_BUILD = 19L
     }
 }

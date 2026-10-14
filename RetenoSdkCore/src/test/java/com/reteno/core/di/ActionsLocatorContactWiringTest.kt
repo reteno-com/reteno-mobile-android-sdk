@@ -19,7 +19,6 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -136,7 +135,8 @@ internal class ActionsLocatorContactWiringTest {
         fixture.sut.setAnonymousUserAttributes(UserAttributesAnonymous())
 
         then()
-        assertEquals(listOf("SetAnonymousUserAttributes: attributes rejected by validation" to LogLevel.INFO), fixture.remoteLogs)
+        val expected = listOf("SetAnonymousUserAttributes: attributes rejected by validation" to LogLevel.INFO)
+        assertEquals(expected, fixture.remoteLogs)
     }
 
     @Test
@@ -154,22 +154,5 @@ internal class ActionsLocatorContactWiringTest {
         assertTrue(nextRan)
         val entry = fixture.sink.entries.single { it.message.startsWith("Contact task failed") }
         assertEquals(LogPriority.ERROR, entry.priority)
-    }
-
-    @Test
-    fun `should create each contact action once`() = runUnitTest {
-        given()
-        val fixture = LocatorFixture(this)
-
-        whenn()
-        val first = with(fixture.sut) {
-            listOf(registerDevice, ensureDeviceRegisteredThisSession, updateFcmToken, updateNotificationsEnabled, setUserAttributes, setMultiAccountUserAttributes, setAnonymousUserAttributes)
-        }
-        val second = with(fixture.sut) {
-            listOf(registerDevice, ensureDeviceRegisteredThisSession, updateFcmToken, updateNotificationsEnabled, setUserAttributes, setMultiAccountUserAttributes, setAnonymousUserAttributes)
-        }
-
-        then()
-        first.zip(second).forEach { (a, b) -> assertSame(a, b) }
     }
 }

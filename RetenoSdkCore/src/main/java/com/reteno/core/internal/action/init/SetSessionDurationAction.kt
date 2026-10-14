@@ -10,6 +10,8 @@ internal class SetSessionDurationAction(
 
     suspend operator fun invoke(durationMillis: Long): Result<Unit> = runner("SetSessionDuration") {
         args("durationMillis" to durationMillis)
-        step("apply session duration to session tracking") { sessionHandler.setSessionResetDuration(durationMillis) }
+        step("apply session duration to session tracking") {
+            sessionHandler.setSessionResetDuration(durationMillis)
+        }
     }
 }

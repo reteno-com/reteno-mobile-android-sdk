@@ -27,6 +27,7 @@ internal class UpdatePushPermissionStatusActionTest {
 
         then()
         verify(exactly = 1) { platform.sendBroadcast(Constants.BROADCAST_ACTION_PUSH_PERMISSION_CHANGED) }
-        assertTrue(traced.sink.lines.any { it.contains("✓ notify push permission receivers") && it.contains("receivers=2") })
+        val lines = traced.sink.lines
+        assertTrue(lines.any { it.contains("✓ notify push permission receivers") && it.contains("receivers=2") })
     }
 }

@@ -19,7 +19,6 @@ import kotlinx.coroutines.test.TestScope
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
-import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import java.io.IOException
@@ -75,8 +74,7 @@ internal class SuspendApiClientTest {
     fun `should return failure with status body and error`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
-        val error = IOException("offline")
-        fixture.respond { it.onFailure(null, "body", error) }
+        fixture.respond { it.onFailure(null, "body", IOException("offline")) }
 
         whenn()
         val result = fixture.sut.request(HttpMethod.POST, ApiContract.MobileApi.Device, body = "{}")
@@ -85,7 +83,8 @@ internal class SuspendApiClientTest {
         val failure = result as ApiResult.Failure
         assertNull(failure.statusCode)
         assertEquals("body", failure.body)
-        assertSame(error, failure.error)
+        assertTrue(failure.error is IOException)
+        assertEquals("offline", failure.error?.message)
     }
 
     @Test

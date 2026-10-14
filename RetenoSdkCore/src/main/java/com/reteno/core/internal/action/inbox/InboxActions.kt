@@ -5,7 +5,12 @@ import com.reteno.core.domain.model.appinbox.AppInboxMessages
 import com.reteno.core.features.appinbox.AppInboxStatus
 
 internal interface InboxActions {
-    fun submitInboxMessagesRequest(page: Int?, pageSize: Int?, status: AppInboxStatus?, callback: RetenoResultCallback<AppInboxMessages>)
+    fun submitInboxMessagesRequest(
+        page: Int?,
+        pageSize: Int?,
+        status: AppInboxStatus?,
+        callback: RetenoResultCallback<AppInboxMessages>
+    )
 
     fun submitInboxCountRequest(callback: RetenoResultCallback<Int>)
 

@@ -4,6 +4,7 @@ import android.app.Activity
 import com.reteno.core.domain.model.event.LifecycleTrackingOptions
 import com.reteno.core.fixtures.LocatorFixture
 import com.reteno.core.internal.action.lifecycle.TrackPermissionDialogAction
+import com.reteno.core.internal.action.sync.DataSync
 import com.reteno.core.lifecycle.ScreenTrackingConfig
 import com.reteno.core.lifecycle.ScreenTrackingTrigger
 import com.reteno.core.util.Constants
@@ -16,7 +17,7 @@ import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
-import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -59,7 +60,8 @@ internal class ActionsLocatorLifecycleWiringTest {
 
         whenn()
         fixture.env.platform.onForeground!!.invoke()
-        advanceUntilIdle()
+        advanceTimeBy(DataSync.CLEAR_OLD_DATA_DELAY)
+        runCurrent()
 
         then()
         verify(exactly = 1) { fixture.env.eventsDb.deleteEventsByTime(any()) }

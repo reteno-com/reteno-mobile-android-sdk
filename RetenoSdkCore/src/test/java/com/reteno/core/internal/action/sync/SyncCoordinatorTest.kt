@@ -37,7 +37,11 @@ internal class SyncCoordinatorTest {
             Result.success(StepOutcome.CONTINUE)
         }
         val initGate = InitGate().also { if (ready) it.markInitialized(byUser = false) }
-        val sut = SyncCoordinator(SyncDataAction(listOf(contactStep), listOf(dataStep), traced.runner), scope.workScope(), initGate)
+        val sut = SyncCoordinator(
+            syncData = SyncDataAction(listOf(contactStep), listOf(dataStep), traced.runner),
+            scope = scope.workScope(),
+            initGate = initGate
+        )
     }
 
     @Test

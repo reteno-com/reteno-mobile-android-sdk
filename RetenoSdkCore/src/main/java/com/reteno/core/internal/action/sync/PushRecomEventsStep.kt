@@ -19,7 +19,9 @@ internal class PushRecomEventsStep(
     private val runner: ActionRunner
 ) : SyncStep {
 
-    override suspend fun invoke(): Result<StepOutcome> = runner("PushRecomEvents") { push() }
+    override suspend fun invoke(): Result<StepOutcome> = runner("PushRecomEvents") {
+        push()
+    }
 
     private suspend fun ActionTrace.push(): StepOutcome {
         val groups = step("load recommendation events from local database", detail = { "groups=${it.size}" }) {

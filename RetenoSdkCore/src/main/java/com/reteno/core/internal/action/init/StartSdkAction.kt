@@ -28,18 +28,30 @@ internal class StartSdkAction(
     private val runner: ActionRunner
 ) : StartSdk {
 
-    override suspend operator fun invoke(): Result<Unit> = runner("StartSdk") { start() }
+    override suspend operator fun invoke(): Result<Unit> = runner("StartSdk") {
+        start()
+    }
 
     private suspend fun ActionTrace.start() {
         withContext(dispatchers.io) { ensureDeviceRegistered() }
-        step("start session tracking") { sessionHandler.start() }
+        step("start session tracking") {
+            sessionHandler.start()
+        }
         if (state.markStarted()) {
-            step("fetch in-app messages from server") { withContext(dispatchers.io) { iamController.getInAppMessages() } }
+            step("fetch in-app messages from server") {
+                withContext(dispatchers.io) { iamController.getInAppMessages() }
+            }
         } else {
             note { "sdk already started, in-app messages are fetched" }
         }
-        step("start data sync scheduler") { dataSync.startScheduler() }
-        step("start in-app message view") { withContext(dispatchers.main) { iamView.start() } }
-        step("resume inbox count polling") { inboxCount.resume() }
+        step("start data sync scheduler") {
+            dataSync.startScheduler()
+        }
+        step("start in-app message view") {
+            withContext(dispatchers.main) { iamView.start() }
+        }
+        step("resume inbox count polling") {
+            inboxCount.resume()
+        }
     }
 }

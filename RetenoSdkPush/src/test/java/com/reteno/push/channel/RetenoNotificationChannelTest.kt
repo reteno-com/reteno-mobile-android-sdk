@@ -1,7 +1,9 @@
 package com.reteno.push.channel
 
+import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.content.res.Resources
 import android.os.Build
 import androidx.core.app.NotificationChannelCompat
 import com.reteno.core.util.Procedure
@@ -54,9 +56,33 @@ class RetenoNotificationChannelTest {
             }
         }
 
+        inline fun withUnreadableBundledChannel(block: () -> Unit) {
+            mockkStatic(Util::class)
+            try {
+                every { Util.readFromRaw(any(), any()) } throws Resources.NotFoundException("default_channel")
+                block()
+            } finally {
+                unmockkStatic(Util::class)
+            }
+        }
+
         fun restoreDefaultChannelId() {
             withFakeFacade(FakeRetenoFacade()) { RetenoNotificationChannel.createDefaultChannel(application) }
         }
+
+        fun createDefaultChannelFromStoredDescription(
+            description: String = STORED_DESCRIPTION,
+            channelId: String = STORED_ID
+        ): NotificationChannel =
+            try {
+                withFakeFacade { facade ->
+                    facade.storedChannel = description
+                    RetenoNotificationChannel.createDefaultChannel(application)
+                    channel(channelId)!!
+                }
+            } finally {
+                restoreDefaultChannelId()
+            }
     }
 
     @Test
@@ -81,11 +107,19 @@ class RetenoNotificationChannelTest {
 
     @Test
     fun `should create default channel from stored description`() = runUnitTest {
+        given()
         val fixture = SutFixture()
         try {
             withFakeFacade { facade ->
-                given()
-                facade.storedChannel = """{"id":"stored-id","name":"Stored","description":"Stored channel","importance":2,"vibration_pattern":[10,20]}"""
+                facade.storedChannel = """
+                    {
+                        "id":"stored-id",
+                        "name":"Stored",
+                        "description":"Stored channel",
+                        "importance":2,
+                        "vibration_pattern":[10,20]
+                    }
+                """.trimIndent()
 
                 whenn()
                 RetenoNotificationChannel.createDefaultChannel(fixture.application)
@@ -104,12 +138,86 @@ class RetenoNotificationChannelTest {
     }
 
     @Test
+    fun `should use description text from stored description`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+
+        whenn()
+        val channel = fixture.createDefaultChannelFromStoredDescription()
+
+        then()
+        assertEquals("Stored channel", channel.description)
+    }
+
+    @Test
+    fun `should enable lights when stored description asks for them`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+
+        whenn()
+        val channel = fixture.createDefaultChannelFromStoredDescription()
+
+        then()
+        assertTrue(channel.shouldShowLights())
+    }
+
+    @Test
+    fun `should use light color from stored description`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+
+        whenn()
+        val channel = fixture.createDefaultChannelFromStoredDescription()
+
+        then()
+        assertEquals(STORED_LIGHT_COLOR, channel.lightColor)
+    }
+
+    @Test
+    fun `should use lockscreen visibility from stored description`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+
+        whenn()
+        val channel = fixture.createDefaultChannelFromStoredDescription()
+
+        then()
+        assertEquals(Notification.VISIBILITY_SECRET, channel.lockscreenVisibility)
+    }
+
+    @Test
+    fun `should let channel bypass do not disturb when stored description allows it`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+
+        whenn()
+        val channel = fixture.createDefaultChannelFromStoredDescription()
+
+        then()
+        assertTrue(channel.canBypassDnd())
+    }
+
+    @Test
+    fun `should hide badge when stored description disables it`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+
+        whenn()
+        val channel = fixture.createDefaultChannelFromStoredDescription()
+
+        then()
+        assertFalse(channel.canShowBadge())
+    }
+
+    @Test
     fun `should keep vibration enabled when stored description has no pattern`() = runUnitTest {
+        given()
         val fixture = SutFixture()
         try {
             withFakeFacade { facade ->
-                given()
-                facade.storedChannel = """{"id":"vibrating","name":"Vibrating","description":"d","enable_vibration":true}"""
+                facade.storedChannel = """
+                    {"id":"vibrating","name":"Vibrating","description":"d","enable_vibration":true}
+                """.trimIndent()
 
                 whenn()
                 RetenoNotificationChannel.createDefaultChannel(fixture.application)
@@ -119,6 +227,75 @@ class RetenoNotificationChannelTest {
             }
         } finally {
             fixture.restoreDefaultChannelId()
+        }
+    }
+
+    @Test
+    fun `should not block default channel when stored description has no importance`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+
+        whenn()
+        val channel = fixture.createDefaultChannelFromStoredDescription(MINIMAL_DESCRIPTION, MINIMAL_ID)
+
+        then()
+        assertEquals(NotificationManager.IMPORTANCE_HIGH, channel.importance)
+    }
+
+    @Test
+    fun `should show default channel on lockscreen when stored description has no visibility`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+
+        whenn()
+        val channel = fixture.createDefaultChannelFromStoredDescription(MINIMAL_DESCRIPTION, MINIMAL_ID)
+
+        then()
+        assertEquals(Notification.VISIBILITY_PUBLIC, channel.lockscreenVisibility)
+    }
+
+    @Test
+    fun `should use bundled description when stored one has no id`() = runUnitTest {
+        withFakeFacade { facade ->
+            given()
+            val fixture = SutFixture()
+            facade.storedChannel = """{"name":"Stored","description":"Stored channel"}"""
+
+            whenn()
+            RetenoNotificationChannel.createDefaultChannel(fixture.application)
+
+            then()
+            assertEquals("name", fixture.channel()!!.name)
+        }
+    }
+
+    @Test
+    fun `should use bundled description when stored one has no name`() = runUnitTest {
+        withFakeFacade { facade ->
+            given()
+            val fixture = SutFixture()
+            facade.storedChannel = """{"id":"no-name","description":"Stored channel"}"""
+
+            whenn()
+            RetenoNotificationChannel.createDefaultChannel(fixture.application)
+
+            then()
+            assertEquals("name", fixture.channel()!!.name)
+        }
+    }
+
+    @Test
+    fun `should use bundled description when stored one has no description`() = runUnitTest {
+        withFakeFacade { facade ->
+            given()
+            val fixture = SutFixture()
+            facade.storedChannel = """{"id":"no-description","name":"Stored"}"""
+
+            whenn()
+            RetenoNotificationChannel.createDefaultChannel(fixture.application)
+
+            then()
+            assertEquals("name", fixture.channel()!!.name)
         }
     }
 
@@ -134,6 +311,52 @@ class RetenoNotificationChannelTest {
 
             then()
             assertEquals("name", fixture.channel()!!.name)
+        }
+    }
+
+    @Test
+    fun `should use bundled description when stored one cannot be read`() = runUnitTest {
+        withFakeFacade { facade ->
+            given()
+            val fixture = SutFixture()
+            facade.storedChannelFailure = IllegalStateException("settings unavailable")
+
+            whenn()
+            RetenoNotificationChannel.createDefaultChannel(fixture.application)
+
+            then()
+            assertEquals("name", fixture.channel()!!.name)
+        }
+    }
+
+    @Test
+    fun `should create channel from bundled description when it cannot be stored`() = runUnitTest {
+        withFakeFacade { facade ->
+            given()
+            val fixture = SutFixture()
+            facade.failure = IllegalStateException("settings unavailable")
+
+            whenn()
+            RetenoNotificationChannel.createDefaultChannel(fixture.application)
+
+            then()
+            assertEquals("name", fixture.channel()!!.name)
+            assertEquals("description", fixture.channel()!!.description)
+        }
+    }
+
+    @Test
+    fun `should create fallback channel when bundled description cannot be opened`() = runUnitTest {
+        withFakeFacade { facade ->
+            given()
+            val fixture = SutFixture()
+
+            whenn()
+            fixture.withUnreadableBundledChannel { RetenoNotificationChannel.createDefaultChannel(fixture.application) }
+
+            then()
+            assertFallbackChannel(fixture.channel()!!)
+            assertTrue(facade.calls.isEmpty())
         }
     }
 
@@ -159,7 +382,9 @@ class RetenoNotificationChannelTest {
             val fixture = SutFixture()
 
             whenn()
-            fixture.withBundledChannel("[broken") { RetenoNotificationChannel.createDefaultChannel(fixture.application) }
+            fixture.withBundledChannel("[broken") {
+                RetenoNotificationChannel.createDefaultChannel(fixture.application)
+            }
 
             then()
             assertFallbackChannel(fixture.channel()!!)
@@ -193,7 +418,9 @@ class RetenoNotificationChannelTest {
             facade.channelConfig = fixture.hostConfig
 
             whenn()
-            onAndroidSdk(Build.VERSION_CODES.N_MR1) { RetenoNotificationChannel.createDefaultChannel(fixture.application) }
+            onAndroidSdk(Build.VERSION_CODES.N_MR1) {
+                RetenoNotificationChannel.createDefaultChannel(fixture.application)
+            }
 
             then()
             assertEquals(0, fixture.configApplied)
@@ -202,19 +429,28 @@ class RetenoNotificationChannelTest {
     }
 
     @Test
-    fun `should report notifications enabled state`() = runUnitTest {
-        withFakeFacade {
-            given()
-            val fixture = SutFixture()
-            val enabledBefore = RetenoNotificationChannel.isNotificationsEnabled(fixture.application)
+    fun `should report notifications enabled when system allows them`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
 
-            whenn()
-            shadowOf(fixture.manager).setNotificationsEnabled(false)
+        whenn()
+        val enabled = RetenoNotificationChannel.isNotificationsEnabled(fixture.application)
 
-            then()
-            assertTrue(enabledBefore)
-            assertFalse(RetenoNotificationChannel.isNotificationsEnabled(fixture.application))
-        }
+        then()
+        assertTrue(enabled)
+    }
+
+    @Test
+    fun `should report notifications disabled when system blocks them`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        shadowOf(fixture.manager).setNotificationsEnabled(false)
+
+        whenn()
+        val enabled = RetenoNotificationChannel.isNotificationsEnabled(fixture.application)
+
+        then()
+        assertFalse(enabled)
     }
 
     @Test
@@ -224,7 +460,9 @@ class RetenoNotificationChannelTest {
             val fixture = SutFixture()
 
             whenn()
-            val results = listOf(null, " ").map { RetenoNotificationChannel.isNotificationChannelEnabled(fixture.application, it) }
+            val results = listOf(null, " ").map { channelId ->
+                RetenoNotificationChannel.isNotificationChannelEnabled(fixture.application, channelId)
+            }
 
             then()
             assertEquals(listOf(false, false), results)
@@ -252,7 +490,8 @@ class RetenoNotificationChannelTest {
         withFakeFacade {
             given()
             val fixture = SutFixture()
-            fixture.manager.createNotificationChannel(NotificationChannel(BUNDLED_ID, "name", NotificationManager.IMPORTANCE_NONE))
+            val blockedChannel = NotificationChannel(BUNDLED_ID, "name", NotificationManager.IMPORTANCE_NONE)
+            fixture.manager.createNotificationChannel(blockedChannel)
 
             whenn()
             val enabled = RetenoNotificationChannel.isNotificationChannelEnabled(fixture.application, BUNDLED_ID)
@@ -268,7 +507,8 @@ class RetenoNotificationChannelTest {
             given()
             val fixture = SutFixture()
             facade.channelConfig = fixture.hostConfig
-            fixture.manager.createNotificationChannel(NotificationChannel(BUNDLED_ID, "name", NotificationManager.IMPORTANCE_HIGH))
+            val existingChannel = NotificationChannel(BUNDLED_ID, "name", NotificationManager.IMPORTANCE_HIGH)
+            fixture.manager.createNotificationChannel(existingChannel)
 
             whenn()
             val enabled = RetenoNotificationChannel.isNotificationChannelEnabled(fixture.application, BUNDLED_ID)
@@ -288,5 +528,22 @@ class RetenoNotificationChannelTest {
 
     private companion object {
         const val BUNDLED_ID = "defaultId"
+        const val STORED_ID = "stored-attributes"
+        const val STORED_LIGHT_COLOR = 0x00FF00
+        const val MINIMAL_ID = "minimal"
+        const val MINIMAL_DESCRIPTION = """{"id":"$MINIMAL_ID","name":"Minimal","description":"Minimal channel"}"""
+        val STORED_DESCRIPTION = """
+            {
+                "id":"$STORED_ID",
+                "name":"Stored",
+                "description":"Stored channel",
+                "importance":4,
+                "enable_lights":true,
+                "light_color":$STORED_LIGHT_COLOR,
+                "lockscreen_visibility":${Notification.VISIBILITY_SECRET},
+                "bypass_dnd":true,
+                "show_badge":false
+            }
+        """.trimIndent()
     }
 }

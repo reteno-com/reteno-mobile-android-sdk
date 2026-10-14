@@ -61,7 +61,10 @@ internal class SessionTracker(
     }
 
     @Synchronized
-    override fun scheduleInAppMessages(messages: MutableList<InAppWithTime>, onTimeMatch: (List<InAppMessage>) -> Unit) {
+    override fun scheduleInAppMessages(
+        messages: MutableList<InAppWithTime>,
+        onTimeMatch: (List<InAppMessage>) -> Unit
+    ) {
         if (messages.isEmpty()) return
         messages.sortBy { it.time }
         showInApp = onTimeMatch

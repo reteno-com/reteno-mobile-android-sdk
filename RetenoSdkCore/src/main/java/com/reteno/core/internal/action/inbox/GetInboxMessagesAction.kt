@@ -30,8 +30,14 @@ internal class GetInboxMessagesAction(
         callback: RetenoResultCallback<AppInboxMessages>
     ): Result<Unit> = runner("GetInboxMessages") {
         args("page" to page, "pageSize" to pageSize, "status" to status)
-        step("wait for sdk initialization") { initGate.awaitInit() }
-        val filters = mapOf(QUERY_PAGE to page?.toString(), QUERY_PAGE_SIZE to pageSize?.toString(), QUERY_STATUS to status?.str)
+        step("wait for sdk initialization") {
+            initGate.awaitInit()
+        }
+        val filters = mapOf(
+            QUERY_PAGE to page?.toString(),
+            QUERY_PAGE_SIZE to pageSize?.toString(),
+            QUERY_STATUS to status?.str
+        )
         val response = step("load inbox messages from server") {
             api.request(HttpMethod.GET, ApiContract.AppInbox.Messages, queryParams = filters)
         }

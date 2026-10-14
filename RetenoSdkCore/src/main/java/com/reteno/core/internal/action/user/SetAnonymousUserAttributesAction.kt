@@ -22,7 +22,9 @@ internal class SetAnonymousUserAttributesAction(
     private val runner: ActionRunner
 ) {
 
-    suspend operator fun invoke(attributes: UserAttributesAnonymous): Result<Unit> = runner("SetAnonymousUserAttributes") {
+    suspend operator fun invoke(
+        attributes: UserAttributesAnonymous
+    ): Result<Unit> = runner("SetAnonymousUserAttributes") {
         args("attributes" to { attributes.traceFields() })
         save(attributes)
     }
@@ -30,12 +32,19 @@ internal class SetAnonymousUserAttributesAction(
     private suspend fun ActionTrace.save(attributes: UserAttributesAnonymous) {
         val validated = Validator.validateAnonymousUserAttributes(attributes)
         if (validated == null) {
-            step("report rejected attributes to remote log") { remoteLog.info("SetAnonymousUserAttributes: attributes rejected by validation") }
+            step("report rejected attributes to remote log") {
+                remoteLog.info("SetAnonymousUserAttributes: attributes rejected by validation")
+            }
             return
         }
         step("save anonymous user to local database") {
-            withContext(dispatchers.io) { usersDb.insertUser(User(validated.toUserAttributes()).toDb(configRepository.getDeviceId())) }
+            withContext(dispatchers.io) {
+                val user = User(validated.toUserAttributes()).toDb(configRepository.getDeviceId())
+                usersDb.insertUser(user)
+            }
         }
-        step("request data sync") { sync.request() }
+        step("request data sync") {
+            sync.request()
+        }
     }
 }

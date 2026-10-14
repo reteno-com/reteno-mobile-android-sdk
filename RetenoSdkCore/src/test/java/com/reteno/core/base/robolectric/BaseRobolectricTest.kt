@@ -9,7 +9,6 @@ import com.reteno.core.data.local.sharedpref.SharedPrefsManager
 import com.reteno.core.data.repository.ConfigRepository
 import com.reteno.core.di.ServiceLocator
 import com.reteno.core.domain.controller.IamController
-import com.reteno.core.features.recommendation.Recommendation
 import com.reteno.core.lifecycle.RetenoActivityHelper
 import com.reteno.core.lifecycle.RetenoSessionHandler
 import com.reteno.core.view.iam.IamView
@@ -93,8 +92,6 @@ abstract class BaseRobolectricTest {
     @RelaxedMockK
     internal lateinit var restConfig: RestConfig
     @RelaxedMockK
-    protected lateinit var recommendation: Recommendation
-    @RelaxedMockK
     protected lateinit var iamView: IamView
 
     @Before
@@ -106,7 +103,6 @@ abstract class BaseRobolectricTest {
         every { anyConstructed<ServiceLocator>().retenoDatabaseManagerProvider.get() } returns databaseManager
         every { anyConstructed<ServiceLocator>().sharedPrefsManagerProvider.get() } returns sharedPrefsManager
         every { anyConstructed<ServiceLocator>().restConfigProvider.get() } returns restConfig
-        every { anyConstructed<ServiceLocator>().recommendationProvider.get() } returns recommendation
         every { anyConstructed<ServiceLocator>().configRepositoryProvider.get() } returns facadeConfigRepository
         every { anyConstructed<ServiceLocator>().iamViewProvider.get() } returns iamView
         every { anyConstructed<ServiceLocator>().iamControllerProvider.get() } returns iamController

@@ -19,9 +19,17 @@ internal suspend fun <T> ActionTrace.passResponseToHost(
         return
     }
     val body = (response as ApiResult.Success).body
-    val result = runCatching { step("read result from server response") { read(body) } }.getOrElse { error ->
-        step("pass unreadable response to host callback") { withContext(dispatchers.main) { callback.onFailure(null, null, error) } }
+    val result = runCatching {
+        step("read result from server response") {
+            read(body)
+        }
+    }.getOrElse { error ->
+        step("pass unreadable response to host callback") {
+            withContext(dispatchers.main) { callback.onFailure(null, null, error) }
+        }
         throw error
     }
-    step("pass result to host callback") { withContext(dispatchers.main) { callback.onSuccess(result) } }
+    step("pass result to host callback") {
+        withContext(dispatchers.main) { callback.onSuccess(result) }
+    }
 }

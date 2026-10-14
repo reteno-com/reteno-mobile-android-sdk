@@ -1,14 +1,19 @@
 package com.reteno.core.features.recommendation
 
+import com.reteno.core.data.remote.mapper.toJson
+import com.reteno.core.data.remote.mapper.toRemote
 import com.reteno.core.data.remote.model.recommendation.get.RecomBase
-import com.reteno.core.domain.controller.RecommendationController
 import com.reteno.core.domain.model.recommendation.get.RecomRequest
 import com.reteno.core.domain.model.recommendation.post.RecomEvents
-import com.reteno.core.util.Logger
-import com.reteno.core.util.isOsVersionSupported
+import com.reteno.core.internal.action.recommendation.RecommendationActions
+import com.reteno.core.internal.log.Redact
+import com.reteno.core.internal.log.RemoteLog
 
-internal class RecommendationImpl(private val recommendationController: RecommendationController) :
-    Recommendation {
+internal class RecommendationImpl(
+    private val actions: RecommendationActions,
+    private val remoteLog: RemoteLog,
+    private val isOsSupported: () -> Boolean
+) : Recommendation {
 
     override fun <T : RecomBase> fetchRecommendation(
         recomVariantId: String,
@@ -16,20 +21,9 @@ internal class RecommendationImpl(private val recommendationController: Recommen
         responseClass: Class<T>,
         responseCallback: GetRecommendationResponseCallback<T>
     ) {
-        if (!isOsVersionSupported()) {
-            return
-        }
-        /*@formatter:off*/ Logger.i(TAG, "fetchRecommendation(): ", "recomVariantId = [" , recomVariantId , "], recomRequest = [" , recomRequest , "], responseClass = [" , responseClass , "], responseCallback = [" , responseCallback , "]")
-        /*@formatter:on*/
-        try {
-            recommendationController.getRecommendation(
-                recomVariantId,
-                recomRequest,
-                responseClass,
-                responseCallback
-            )
-        } catch (ex: Throwable) {
-            Logger.e(TAG, "fetchRecommendation(): ", ex)
+        passToSdk("fetchRecommendation") {
+            val requestBody = recomRequest.toRemote().toJson()
+            actions.submitRecommendationRequest(recomVariantId, requestBody, responseClass, responseCallback)
         }
     }
 
@@ -38,36 +32,24 @@ internal class RecommendationImpl(private val recommendationController: Recommen
         recomRequest: RecomRequest,
         responseCallback: GetRecommendationResponseJsonCallback
     ) {
-        if (!isOsVersionSupported()) {
-            return
-        }
-        /*@formatter:off*/ Logger.i(TAG, "fetchRecommendationJson(): ", "recomVariantId = [" , recomVariantId , "], recomRequest = [" , recomRequest , "], responseCallback = [" , responseCallback , "]")
-        /*@formatter:on*/
-        try {
-            recommendationController.getRecommendationJson(
-                recomVariantId,
-                recomRequest,
-                responseCallback
-            )
-        } catch (ex: Throwable) {
-            Logger.e(TAG, "fetchRecommendationJson(): ", ex)
+        passToSdk("fetchRecommendationJson") {
+            val requestBody = recomRequest.toRemote().toJson()
+            actions.submitRecommendationJsonRequest(recomVariantId, requestBody, responseCallback)
         }
     }
 
     override fun logRecommendations(recomEvents: RecomEvents) {
-        if (!isOsVersionSupported()) {
-            return
-        }
-        /*@formatter:off*/ Logger.i(TAG, "logRecommendations(): ", "recomEvents = [" , recomEvents , "]")
-        /*@formatter:on*/
-        try {
-            recommendationController.trackRecommendations(recomEvents)
-        } catch (ex: Throwable) {
-            Logger.e(TAG, "logRecommendations(): ", ex)
+        passToSdk("logRecommendations") {
+            actions.submitRecommendationEvents(recomEvents)
         }
     }
 
-    companion object {
-        private val TAG: String = RecommendationImpl::class.java.simpleName
+    private fun passToSdk(call: String, submit: () -> Unit) {
+        if (!isOsSupported()) return
+        try {
+            submit()
+        } catch (error: Throwable) {
+            remoteLog.error("Recommendation.$call failed: ${Redact.summary(error)}")
+        }
     }
 }

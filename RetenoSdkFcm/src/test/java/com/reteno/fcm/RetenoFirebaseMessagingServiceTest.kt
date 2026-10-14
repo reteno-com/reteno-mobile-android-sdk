@@ -75,9 +75,13 @@ class RetenoFirebaseMessagingServiceTest {
         given()
         val fixture = SutFixture()
         val service = fixture.createService()
+        val message = fixture.message(
+            Constants.KEY_ES_INTERACTION_ID to "interaction-1",
+            Constants.KEY_ES_TITLE to "Title"
+        )
 
         whenn()
-        fixture.withFacade { service.onMessageReceived(fixture.message(Constants.KEY_ES_INTERACTION_ID to "interaction-1", Constants.KEY_ES_TITLE to "Title")) }
+        fixture.withFacade { service.onMessageReceived(message) }
 
         then()
         assertEquals(1, shadowOf(fixture.notifications).allNotifications.size)
@@ -129,23 +133,32 @@ class RetenoFirebaseMessagingServiceTest {
     }
 
     @Test
-    fun `should not crash when sdk fails to handle push`() = runUnitTest {
+    fun `should not crash when sdk fails to take new token`() = runUnitTest {
         given()
         val fixture = SutFixture()
         val service = fixture.createService()
         every { fixture.facade.onNewFcmToken(any()) } throws IllegalStateException("sdk not ready")
-        every { fixture.facade.getDefaultNotificationChannelConfig() } throws IllegalStateException("sdk not ready")
 
         whenn()
-        val results = fixture.withFacade {
-            listOf(
-                runCatching { service.onNewToken("new-token") },
-                runCatching { service.onMessageReceived(fixture.message(Constants.KEY_ES_INTERACTION_ID to "interaction-1")) }
-            )
-        }
+        val result = fixture.withFacade { runCatching { service.onNewToken("new-token") } }
 
         then()
-        assertTrue(results.all { it.isSuccess })
+        assertTrue(result.isSuccess)
+    }
+
+    @Test
+    fun `should not crash when sdk fails to handle push message`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val service = fixture.createService()
+        every { fixture.facade.getDefaultNotificationChannelConfig() } throws IllegalStateException("sdk not ready")
+        val message = fixture.message(Constants.KEY_ES_INTERACTION_ID to "interaction-1")
+
+        whenn()
+        val result = fixture.withFacade { runCatching { service.onMessageReceived(message) } }
+
+        then()
+        assertTrue(result.isSuccess)
         assertTrue(shadowOf(fixture.notifications).allNotifications.isEmpty())
     }
 

@@ -110,7 +110,16 @@ internal class SyncDataActionTest {
         val lock = Mutex(locked = true)
         val calls = mutableListOf<String>()
         val traced = TestActionRunner(this)
-        val sut = SyncDataAction(listOf(SyncStep { calls += "device"; Result.success(StepOutcome.CONTINUE) }), emptyList(), traced.runner, lock)
+        val deviceStep = SyncStep {
+            calls += "device"
+            Result.success(StepOutcome.CONTINUE)
+        }
+        val sut = SyncDataAction(
+            contactSteps = listOf(deviceStep),
+            dataSteps = emptyList(),
+            runner = traced.runner,
+            stepLock = lock
+        )
 
         whenn()
         val run = async { sut(SyncScope.ALL) }

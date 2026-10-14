@@ -50,51 +50,82 @@ internal class PushDataWorkerTest {
         }
     }
 
-    private fun resultFor(outcome: Result<BackgroundSyncOutcome>): ListenableWorker.Result = runUnitTestResult(outcome)
+    @Test
+    fun `should succeed when background sync completed`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        coEvery { fixture.sync.invoke() } returns Result.success(BackgroundSyncOutcome.SYNCED)
 
-    private fun runUnitTestResult(outcome: Result<BackgroundSyncOutcome>): ListenableWorker.Result {
-        lateinit var result: ListenableWorker.Result
-        runUnitTest {
-            given()
-            val fixture = SutFixture()
-            coEvery { fixture.sync.invoke() } returns outcome
+        whenn()
+        val result = fixture.doWork()
 
-            whenn()
-            result = fixture.doWork()
-
-            then()
-        }
-        return result
+        then()
+        assertEquals(ListenableWorker.Result.success(), result)
     }
 
     @Test
-    fun `should succeed when background sync completed`() {
-        assertEquals(ListenableWorker.Result.success(), resultFor(Result.success(BackgroundSyncOutcome.SYNCED)))
+    fun `should retry when background sync aborted`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        coEvery { fixture.sync.invoke() } returns Result.success(BackgroundSyncOutcome.ABORTED)
+
+        whenn()
+        val result = fixture.doWork()
+
+        then()
+        assertEquals(ListenableWorker.Result.retry(), result)
     }
 
     @Test
-    fun `should retry when background sync aborted`() {
-        assertEquals(ListenableWorker.Result.retry(), resultFor(Result.success(BackgroundSyncOutcome.ABORTED)))
+    fun `should retry when sdk is not initialized yet`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        coEvery { fixture.sync.invoke() } returns Result.success(BackgroundSyncOutcome.NOT_INITIALIZED)
+
+        whenn()
+        val result = fixture.doWork()
+
+        then()
+        assertEquals(ListenableWorker.Result.retry(), result)
     }
 
     @Test
-    fun `should retry when sdk is not initialized yet`() {
-        assertEquals(ListenableWorker.Result.retry(), resultFor(Result.success(BackgroundSyncOutcome.NOT_INITIALIZED)))
+    fun `should fail when app is in foreground`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        coEvery { fixture.sync.invoke() } returns Result.success(BackgroundSyncOutcome.SKIPPED_IN_FOREGROUND)
+
+        whenn()
+        val result = fixture.doWork()
+
+        then()
+        assertEquals(ListenableWorker.Result.failure(), result)
     }
 
     @Test
-    fun `should fail when app is in foreground`() {
-        assertEquals(ListenableWorker.Result.failure(), resultFor(Result.success(BackgroundSyncOutcome.SKIPPED_IN_FOREGROUND)))
+    fun `should fail when there is nothing to sync`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        coEvery { fixture.sync.invoke() } returns Result.success(BackgroundSyncOutcome.NO_DATA)
+
+        whenn()
+        val result = fixture.doWork()
+
+        then()
+        assertEquals(ListenableWorker.Result.failure(), result)
     }
 
     @Test
-    fun `should fail when there is nothing to sync`() {
-        assertEquals(ListenableWorker.Result.failure(), resultFor(Result.success(BackgroundSyncOutcome.NO_DATA)))
-    }
+    fun `should fail when background sync action failed`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        coEvery { fixture.sync.invoke() } returns Result.failure(IllegalStateException("boom"))
 
-    @Test
-    fun `should fail when background sync action failed`() {
-        assertEquals(ListenableWorker.Result.failure(), resultFor(Result.failure(IllegalStateException("boom"))))
+        whenn()
+        val result = fixture.doWork()
+
+        then()
+        assertEquals(ListenableWorker.Result.failure(), result)
     }
 
     @Test
@@ -125,7 +156,13 @@ internal class PushDataWorkerTest {
         }
 
         then()
-        verify(exactly = 1) { workManager.enqueueUniquePeriodicWork(PushDataWorker.PUSH_DATA_WORK_NAME, ExistingPeriodicWorkPolicy.KEEP, capture(request)) }
+        verify(exactly = 1) {
+            workManager.enqueueUniquePeriodicWork(
+                PushDataWorker.PUSH_DATA_WORK_NAME,
+                ExistingPeriodicWorkPolicy.KEEP,
+                capture(request)
+            )
+        }
         assertEquals(id, request.captured.id)
         assertEquals(TimeUnit.MINUTES.toMillis(15), request.captured.workSpec.initialDelay)
         assertEquals(NetworkType.CONNECTED, request.captured.workSpec.constraints.requiredNetworkType)

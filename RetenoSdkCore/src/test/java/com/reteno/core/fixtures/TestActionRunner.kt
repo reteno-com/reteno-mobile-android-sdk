@@ -4,7 +4,12 @@ import com.reteno.core.internal.action.trace.ActionRunner
 import com.reteno.core.internal.action.trace.TraceFormatter
 import kotlinx.coroutines.test.TestScope
 
-internal data class FailureReport(val action: String, val step: String?, val errorType: Class<*>, val message: String?) {
+internal data class FailureReport(
+    val action: String,
+    val step: String?,
+    val errorType: Class<*>,
+    val message: String?
+) {
     constructor(action: String, step: String?, error: Throwable) : this(action, step, error.javaClass, error.message)
 }
 

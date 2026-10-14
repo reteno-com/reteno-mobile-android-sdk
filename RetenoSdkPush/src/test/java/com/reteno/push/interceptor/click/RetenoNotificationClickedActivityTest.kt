@@ -6,12 +6,19 @@ import android.os.Build
 import android.os.Bundle
 import com.reteno.push.Constants
 import com.reteno.push.fixtures.LAUNCH_ACTIVITY
+import com.reteno.push.fixtures.STUB_BUTTON_ID
+import com.reteno.push.fixtures.STUB_BUTTON_URL
 import com.reteno.push.fixtures.STUB_INTERACTION_ID
+import com.reteno.push.fixtures.STUB_NOTIFICATION_ID
+import com.reteno.push.fixtures.notificationManager
 import com.reteno.push.fixtures.onAndroidSdk
+import com.reteno.push.fixtures.postStubNotification
 import com.reteno.push.fixtures.registerLaunchActivity
+import com.reteno.push.fixtures.stubActionButtonBundle
 import com.reteno.push.fixtures.stubPushBundle
 import com.reteno.push.fixtures.testApplication
 import com.reteno.push.fixtures.withFakeFacade
+import com.reteno.push.receiver.ReceiverNotificationClicked
 import com.reteno.test.given
 import com.reteno.test.runUnitTest
 import com.reteno.test.then
@@ -38,12 +45,16 @@ class RetenoNotificationClickedActivityTest {
         }
 
         fun click(extras: Bundle?): RetenoNotificationClickedActivity {
-            val intent = Intent(application, RetenoNotificationClickedActivity::class.java).apply { extras?.let(::putExtras) }
+            val intent = Intent(application, RetenoNotificationClickedActivity::class.java)
+                .apply { extras?.let(::putExtras) }
             return Robolectric.buildActivity(RetenoNotificationClickedActivity::class.java, intent).create().get()
         }
 
         fun startedActivities(activity: RetenoNotificationClickedActivity): List<Intent> =
             generateSequence { shadowOf(activity).nextStartedActivity }.toList()
+
+        fun hostBroadcasts(): List<Intent> = shadowOf(application).broadcastIntents
+            .filter { it.component?.className == ReceiverNotificationClicked::class.java.name }
     }
 
     @Test
@@ -58,6 +69,81 @@ class RetenoNotificationClickedActivityTest {
             then()
             assertEquals(listOf("recordInteraction $STUB_INTERACTION_ID CLICKED forcePush=true"), facade.calls)
             assertTrue(activity.isFinishing)
+        }
+    }
+
+    @Test
+    fun `should record action button click as open url action`() = runUnitTest {
+        withFakeFacade { facade ->
+            given()
+            val fixture = SutFixture()
+
+            whenn()
+            fixture.click(stubActionButtonBundle())
+
+            then()
+            val expected = "recordInteractionAction $STUB_INTERACTION_ID OPEN_URL $STUB_BUTTON_ID " +
+                "$STUB_BUTTON_URL forcePush=true"
+            assertEquals(listOf(expected), facade.calls.filter { it.startsWith("recordInteraction") })
+        }
+    }
+
+    @Test
+    fun `should dismiss notification of clicked action button`() = runUnitTest {
+        withFakeFacade {
+            given()
+            val fixture = SutFixture()
+            fixture.application.postStubNotification()
+
+            whenn()
+            fixture.click(stubActionButtonBundle())
+
+            then()
+            assertTrue(shadowOf(fixture.application.notificationManager()).allNotifications.isEmpty())
+        }
+    }
+
+    @Test
+    fun `should finish after action button click`() = runUnitTest {
+        withFakeFacade {
+            given()
+            val fixture = SutFixture()
+
+            whenn()
+            val activity = fixture.click(stubActionButtonBundle())
+
+            then()
+            assertTrue(activity.isFinishing)
+        }
+    }
+
+    @Test
+    fun `should forward click to host receiver`() = runUnitTest {
+        withFakeFacade {
+            given()
+            val fixture = SutFixture()
+
+            whenn()
+            fixture.click(stubPushBundle())
+
+            then()
+            val forwarded = fixture.hostBroadcasts().single()
+            assertEquals(STUB_INTERACTION_ID, forwarded.getStringExtra(Constants.KEY_ES_INTERACTION_ID))
+        }
+    }
+
+    @Test
+    fun `should not forward notification id to host receiver`() = runUnitTest {
+        withFakeFacade {
+            given()
+            val fixture = SutFixture()
+            val extras = stubPushBundle().apply { putInt(Constants.KEY_NOTIFICATION_ID, STUB_NOTIFICATION_ID) }
+
+            whenn()
+            fixture.click(extras)
+
+            then()
+            assertFalse(fixture.hostBroadcasts().single().hasExtra(Constants.KEY_NOTIFICATION_ID))
         }
     }
 
@@ -103,9 +189,10 @@ class RetenoNotificationClickedActivityTest {
             given()
             val fixture = SutFixture()
             shadowOf(fixture.application).checkActivities(true)
+            val extras = stubPushBundle(STUB_INTERACTION_ID, Constants.KEY_ES_LINK_UNWRAPPED to "unknown://offer")
 
             whenn()
-            val activity = fixture.click(stubPushBundle(STUB_INTERACTION_ID, Constants.KEY_ES_LINK_UNWRAPPED to "unknown://offer"))
+            val activity = fixture.click(extras)
 
             then()
             assertEquals(LAUNCH_ACTIVITY, fixture.startedActivities(activity).single().component?.className)

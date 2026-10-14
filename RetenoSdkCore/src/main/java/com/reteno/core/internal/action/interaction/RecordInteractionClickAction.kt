@@ -18,10 +18,20 @@ internal class RecordInteractionClickAction(
     private val runner: ActionRunner
 ) {
 
-    suspend operator fun invoke(interactionId: String, action: InteractionAction, forcePush: Boolean): Result<Unit> = runner("RecordInteractionClick") {
+    suspend operator fun invoke(
+        interactionId: String,
+        action: InteractionAction,
+        forcePush: Boolean
+    ): Result<Unit> = runner("RecordInteractionClick") {
         args("id" to interactionId, "action" to action.type, "forcePush" to forcePush)
         val interaction = Interaction(InteractionStatus.CLICKED, timestamp(), action = action)
-        step("save clicked interaction to local database") { withContext(dispatchers.io) { interactionsDb.insertInteraction(interaction.toDb(interactionId)) } }
-        if (forcePush) step("request data sync") { sync.request() }
+        step("save clicked interaction to local database") {
+            withContext(dispatchers.io) { interactionsDb.insertInteraction(interaction.toDb(interactionId)) }
+        }
+        if (forcePush) {
+            step("request data sync") {
+                sync.request()
+            }
+        }
     }
 }

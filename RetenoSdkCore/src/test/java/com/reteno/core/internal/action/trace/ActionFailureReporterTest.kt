@@ -29,7 +29,10 @@ internal class ActionFailureReporterTest {
         fixture.sut.report("Sync", "send device to server", error)
 
         then()
-        assertEquals(listOf("Action Sync failed at step 'send device to server': IOException: cannot reach <url>"), fixture.captured)
+        assertEquals(
+            listOf("Action Sync failed at step 'send device to server': IOException: cannot reach <url>"),
+            fixture.captured
+        )
     }
 
     @Test

@@ -3,8 +3,8 @@ package com.reteno.core.internal.action.sync
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerWrappedLink
 import com.reteno.core.data.remote.api.ApiContract
 import com.reteno.core.data.remote.api.HttpMethod
-import com.reteno.core.fixtures.SentRequest
 import com.reteno.core.fixtures.FakeRestClient
+import com.reteno.core.fixtures.SentRequest
 import com.reteno.core.fixtures.TestActionRunner
 import com.reteno.core.fixtures.api
 import com.reteno.core.fixtures.testDispatchers
@@ -55,7 +55,11 @@ internal class PushWrappedLinksStepTest {
     fun `should open every link with head request and delete it`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
-        every { fixture.linksDb.getWrappedLinks(1) } returnsMany listOf(listOf("https://t.example/1"), listOf("https://t.example/2"), emptyList())
+        every { fixture.linksDb.getWrappedLinks(1) } returnsMany listOf(
+            listOf("https://t.example/1"),
+            listOf("https://t.example/2"),
+            emptyList()
+        )
 
         whenn()
         val outcome = fixture.sut().getOrThrow()

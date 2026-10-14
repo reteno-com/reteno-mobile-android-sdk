@@ -13,7 +13,7 @@ internal object UserAttributesValidator {
         if (marketId == null) return
         val allowedSymbols = marketId.all { it.isLetterOrDigit() || it in marketIdSymbols }
         require(allowedSymbols && marketId.length <= MAX_MARKET_ID_LENGTH) {
-            "Invalid marketId, max length must be less than 64, allowed symbols: latin characters, digits, '-', '_' "
+            "Invalid marketId, max length is 64, allowed symbols: latin characters, digits, '-', '_'"
         }
     }
 }

@@ -118,7 +118,11 @@ internal class ActionsLocatorFacadeWiringTest {
         runCurrent()
 
         then()
-        verify(exactly = 1) { fixture.interactionsDb.insertInteraction(match { it.interactionId == "interaction-1" && it.token == "token" }) }
+        verify(exactly = 1) {
+            fixture.interactionsDb.insertInteraction(
+                match { it.interactionId == "interaction-1" && it.token == "token" }
+            )
+        }
         assertTrue(cached.isEmpty())
         verify(atLeast = 1) { fixture.interactionsDb.getInteractions(any()) }
     }
@@ -127,13 +131,18 @@ internal class ActionsLocatorFacadeWiringTest {
     fun `should record submitted interaction click`() = runUnitTest {
         given()
         val fixture = LocatorFixture(this)
+        val action = InteractionAction("OPEN_URL", null, null)
 
         whenn()
-        fixture.sut.submitInteractionClick("interaction-1", InteractionAction("OPEN_URL", null, null), forcePush = false)
+        fixture.sut.submitInteractionClick("interaction-1", action, forcePush = false)
         runCurrent()
 
         then()
-        verify(exactly = 1) { fixture.interactionsDb.insertInteraction(match { it.interactionId == "interaction-1" && it.action?.contains("OPEN_URL") == true }) }
+        verify(exactly = 1) {
+            fixture.interactionsDb.insertInteraction(
+                match { it.interactionId == "interaction-1" && it.action?.contains("OPEN_URL") == true }
+            )
+        }
     }
 
     @Test

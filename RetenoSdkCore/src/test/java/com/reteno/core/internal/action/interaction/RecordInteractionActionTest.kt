@@ -39,7 +39,9 @@ internal class RecordInteractionActionTest {
                 tokenReadOnIo = dispatchers.markedIo.isRunningHere
                 token
             }
-            every { interactionsDb.insertInteraction(any()) } answers { insertedOnIo = dispatchers.markedIo.isRunningHere }
+            every { interactionsDb.insertInteraction(any()) } answers {
+                insertedOnIo = dispatchers.markedIo.isRunningHere
+            }
         }
     }
 
@@ -53,9 +55,8 @@ internal class RecordInteractionActionTest {
 
         then()
         assertEquals(true, result.getOrNull())
-        verify(exactly = 1) {
-            fixture.interactionsDb.insertInteraction(Interaction(InteractionStatus.DELIVERED, TIME, token = TOKEN).toDb("interaction-1"))
-        }
+        val expectedInteraction = Interaction(InteractionStatus.DELIVERED, TIME, token = TOKEN).toDb("interaction-1")
+        verify(exactly = 1) { fixture.interactionsDb.insertInteraction(expectedInteraction) }
         assertTrue(fixture.insertedOnIo)
     }
 
@@ -97,7 +98,14 @@ internal class RecordInteractionActionTest {
         then()
         assertTrue(result.exceptionOrNull() is IOException)
         assertEquals(
-            listOf(FailureReport("RecordInteraction", "save interaction to local database", IOException::class.java, "disk full")),
+            listOf(
+                FailureReport(
+                    action = "RecordInteraction",
+                    step = "save interaction to local database",
+                    errorType = IOException::class.java,
+                    message = "disk full"
+                )
+            ),
             fixture.traced.reports
         )
     }

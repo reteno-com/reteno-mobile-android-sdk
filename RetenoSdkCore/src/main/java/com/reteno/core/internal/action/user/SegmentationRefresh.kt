@@ -20,12 +20,19 @@ internal class SegmentationRefreshImpl(
     private val runner: ActionRunner
 ) : SegmentationRefresh {
 
-    private val requests = MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+    private val requests = MutableSharedFlow<Unit>(
+        extraBufferCapacity = 1,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    )
 
     init {
         scope.launch {
             requests.debounce(DEBOUNCE_MILLIS).collect {
-                runner("RefreshSegmentation") { step("refresh in-app segmentation") { iamController.refreshSegmentation() } }
+                runner("RefreshSegmentation") {
+                    step("refresh in-app segmentation") {
+                        iamController.refreshSegmentation()
+                    }
+                }
             }
         }
     }

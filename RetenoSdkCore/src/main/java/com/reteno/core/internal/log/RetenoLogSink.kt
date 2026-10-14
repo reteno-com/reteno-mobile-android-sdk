@@ -23,7 +23,9 @@ internal fun isLoggingEnabled(
 
 internal class AndroidLogSink(
     private val enabled: () -> Boolean = { isLoggingEnabled() },
-    private val printer: (Int, String, String) -> Unit = { priority, tag, message -> Log.println(priority, tag, message) }
+    private val printer: (Int, String, String) -> Unit = { priority, tag, message ->
+        Log.println(priority, tag, message)
+    }
 ) : RetenoLogSink {
 
     override val isEnabled: Boolean

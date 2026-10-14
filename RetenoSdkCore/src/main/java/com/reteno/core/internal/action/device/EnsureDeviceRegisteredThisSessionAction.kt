@@ -24,7 +24,9 @@ internal class EnsureDeviceRegisteredThisSessionAction(
     private val runner: ActionRunner
 ) : EnsureDeviceRegisteredThisSession {
 
-    override suspend operator fun invoke(): Result<Unit> = runner("EnsureDeviceRegisteredThisSession") { ensure() }
+    override suspend operator fun invoke(): Result<Unit> = runner("EnsureDeviceRegisteredThisSession") {
+        ensure()
+    }
 
     private suspend fun ActionTrace.ensure() {
         if (session.isDeviceSent) {
@@ -38,9 +40,13 @@ internal class EnsureDeviceRegisteredThisSessionAction(
                 synced.size
             }
         }
-        val token = step("read push token", detail = { Redact.token(it) }) { configRepository.getFcmToken() }
+        val token = step("read push token", detail = { Redact.token(it) }) {
+            configRepository.getFcmToken()
+        }
         currentDevice.save(this, token)
-        step("request data sync") { sync.request() }
+        step("request data sync") {
+            sync.request()
+        }
         session.markDeviceSent()
     }
 }

@@ -26,7 +26,7 @@ koverReport {
     androidReports('debug') {
         filters {
             includes {
-                classes('com.reteno.core.RetenoInternalEntryPoint*', 'com.reteno.core.features.appinbox.AppInboxImpl*', 'com.reteno.core.di.ActionsLocator*', 'com.reteno.core.data.workmanager.PushDataWorker*')
+                classes('com.reteno.core.RetenoInternalEntryPoint*', 'com.reteno.core.features.appinbox.AppInboxImpl*', 'com.reteno.core.features.recommendation.RecommendationImpl*', 'com.reteno.core.di.ActionsLocator*', 'com.reteno.core.data.workmanager.PushDataWorker*')
                 packages(
                         'com.reteno.core.internal.action.deeplink',
                         'com.reteno.core.internal.action.device',
@@ -36,6 +36,7 @@ koverReport {
                         'com.reteno.core.internal.action.interaction',
                         'com.reteno.core.internal.action.lifecycle',
                         'com.reteno.core.internal.action.push',
+                        'com.reteno.core.internal.action.recommendation',
                         'com.reteno.core.internal.action.sync',
                         'com.reteno.core.internal.action.trace',
                         'com.reteno.core.internal.action.user',

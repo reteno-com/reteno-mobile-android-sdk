@@ -24,10 +24,20 @@ internal class StopSdkAction(
 ) : StopSdk {
 
     override suspend operator fun invoke(): Result<Unit> = runner("StopSdk") {
-        step("mark sdk stopped") { state.markStopped() }
-        step("stop session tracking") { sessionHandler.stop() }
-        step("stop data sync scheduler") { dataSync.stopScheduler() }
-        step("pause in-app message view") { withContext(dispatchers.main) { iamView.pause() } }
-        step("pause inbox count polling") { inboxCount.pause() }
+        step("mark sdk stopped") {
+            state.markStopped()
+        }
+        step("stop session tracking") {
+            sessionHandler.stop()
+        }
+        step("stop data sync scheduler") {
+            dataSync.stopScheduler()
+        }
+        step("pause in-app message view") {
+            withContext(dispatchers.main) { iamView.pause() }
+        }
+        step("pause inbox count polling") {
+            inboxCount.pause()
+        }
     }
 }

@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.SharedFlow
 internal class EventBus(
     private val flow: MutableSharedFlow<Event> = eventFlow
 ) {
+
     val events: SharedFlow<Event>
         get() = flow
 

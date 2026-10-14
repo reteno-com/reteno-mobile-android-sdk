@@ -160,6 +160,89 @@ internal class RetenoInternalImplTest {
     }
 
     @Test
+    fun `should forward no user when user attributes are set with external id only`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        fixture.serviceLocator.initGate.markInitialized(byUser = true)
+
+        whenn()
+        fixture.sut.setUserAttributes("user-1")
+
+        then()
+        assertEquals(listOf<Any?>(null), fixture.actions.users)
+    }
+
+    @Test
+    fun `should forward the same user with user attributes`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        fixture.serviceLocator.initGate.markInitialized(byUser = true)
+        val user = stubUser()
+
+        whenn()
+        fixture.sut.setUserAttributes("user-1", user)
+
+        then()
+        assertSame(user, fixture.actions.users.single())
+    }
+
+    @Test
+    fun `should forward the same user with multi account user attributes`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        fixture.serviceLocator.initGate.markInitialized(byUser = true)
+        val user = stubUser()
+
+        whenn()
+        fixture.sut.setMultiAccountUserAttributes("account-1", user)
+
+        then()
+        assertSame(user, fixture.actions.multiAccountUsers.single())
+    }
+
+    @Test
+    fun `should forward the same anonymous user attributes`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        fixture.serviceLocator.initGate.markInitialized(byUser = true)
+        val attributes = stubAnonymousAttributes()
+
+        whenn()
+        fixture.sut.setAnonymousUserAttributes(attributes)
+
+        then()
+        assertSame(attributes, fixture.actions.anonymousAttributes.single())
+    }
+
+    @Test
+    fun `should forward the same ecommerce event`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        fixture.serviceLocator.initGate.markInitialized(byUser = true)
+        val event = stubEcomEvent()
+
+        whenn()
+        fixture.sut.logEcommerceEvent(event)
+
+        then()
+        assertSame(event, fixture.actions.ecomEvents.single())
+    }
+
+    @Test
+    fun `should forward the same auto screen tracking config`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        fixture.serviceLocator.initGate.markInitialized(byUser = true)
+        val config = ScreenTrackingConfig(enable = true, excludeScreens = listOf("Splash"))
+
+        whenn()
+        fixture.sut.autoScreenTracking(config)
+
+        then()
+        assertSame(config, fixture.actions.screenTrackingConfigs.single())
+    }
+
+    @Test
     fun `should run after init callbacks once initialized`() = runUnitTest {
         given()
         val fixture = SutFixture(this)

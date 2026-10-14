@@ -24,7 +24,9 @@ internal class PushUserStep(
     private val runner: ActionRunner
 ) : SyncStep {
 
-    override suspend fun invoke(): Result<StepOutcome> = runner("PushUser") { push() }
+    override suspend fun invoke(): Result<StepOutcome> = runner("PushUser") {
+        push()
+    }
 
     private suspend fun ActionTrace.push(): StepOutcome {
         val users = step("load users from local database", detail = { "count=${it.size}" }) {

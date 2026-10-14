@@ -95,7 +95,9 @@ internal class ActionTraceImpl(
             val label = if (traced == null) SUCCESS else traced.traceLabel
             emit(LogPriority.DEBUG) { TraceFormatter.end(depth, id, name, "✓ $label", millisSince(startedAt)) }
         } else {
-            emit(LogPriority.WARN) { TraceFormatter.end(depth, id, name, "✗ ${traced.traceLabel}", millisSince(startedAt)) }
+            emit(LogPriority.WARN) {
+                TraceFormatter.end(depth, id, name, "✗ ${traced.traceLabel}", millisSince(startedAt))
+            }
         }
     }
 

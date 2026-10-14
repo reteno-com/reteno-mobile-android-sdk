@@ -19,7 +19,9 @@ internal class SetUserAttributesActionTest {
     private class SutFixture(scope: TestScope, suffix: String? = null) {
         val env = UserActionFixture(scope, suffix)
         var segmentationRequests = 0
-        val segmentationRefresh = mockk<SegmentationRefresh>().also { every { it.request() } answers { segmentationRequests++ } }
+        val segmentationRefresh = mockk<SegmentationRefresh>().also {
+            every { it.request() } answers { segmentationRequests++ }
+        }
         val sut = SetUserAttributesAction(env.writer, env.sdk, segmentationRefresh, env.traced.runner)
     }
 

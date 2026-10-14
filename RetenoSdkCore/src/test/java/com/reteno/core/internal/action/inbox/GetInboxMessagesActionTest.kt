@@ -71,7 +71,10 @@ internal class GetInboxMessagesActionTest {
         fixture.sut(page = null, pageSize = null, status = null, callback = fixture.callback)
 
         then()
-        assertEquals(mapOf("page" to null, "pageSize" to null, "status" to null), fixture.rest.requests.single().queryParams)
+        assertEquals(
+            mapOf("page" to null, "pageSize" to null, "status" to null),
+            fixture.rest.requests.single().queryParams
+        )
     }
 
     @Test
@@ -176,6 +179,7 @@ internal class GetInboxMessagesActionTest {
     }
 
     private companion object {
-        const val MESSAGES_JSON = """{"list":[{"id":"m1","title":"Sale","createDate":"2026-01-02","newMessage":true,"content":"Up to 50%","status":"UNOPENED"}],"totalPages":3}"""
+        const val MESSAGES_JSON = """{"list":[{"id":"m1","title":"Sale","createDate":"2026-01-02",""" +
+            """"newMessage":true,"content":"Up to 50%","status":"UNOPENED"}],"totalPages":3}"""
     }
 }

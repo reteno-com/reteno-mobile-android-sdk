@@ -12,9 +12,11 @@ import com.reteno.core.permission.AndroidPermissionChecker
 import com.reteno.core.util.Procedure
 
 internal class FakeRetenoFacade : RetenoInternalFacade {
+
     val calls = mutableListOf<String>()
     var channelConfig: Procedure<NotificationChannelCompat.Builder>? = null
     var storedChannel: String = ""
+    var storedChannelFailure: Throwable? = null
     var activityPresented = false
     var permissionChecker: AndroidPermissionChecker? = null
     var failure: Throwable? = null
@@ -30,7 +32,9 @@ internal class FakeRetenoFacade : RetenoInternalFacade {
     }
 
     override fun recordInteractionAction(id: String, action: InteractionAction, forcePush: Boolean) {
-        record("recordInteractionAction $id ${action.type} ${action.targetComponentId} ${action.url} forcePush=$forcePush")
+        record(
+            "recordInteractionAction $id ${action.type} ${action.targetComponentId} ${action.url} forcePush=$forcePush"
+        )
     }
 
     override fun canPresentMessages(): Boolean = true
@@ -54,7 +58,10 @@ internal class FakeRetenoFacade : RetenoInternalFacade {
         storedChannel = channel
     }
 
-    override fun getDefaultNotificationChannel(): String = storedChannel
+    override fun getDefaultNotificationChannel(): String {
+        storedChannelFailure?.let { throw it }
+        return storedChannel
+    }
 
     override fun notificationsEnabled(enabled: Boolean) {
         record("notificationsEnabled $enabled")
@@ -87,7 +94,10 @@ internal class FakeRetenoFacade : RetenoInternalFacade {
     }
 }
 
-internal inline fun <T> withFakeFacade(facade: FakeRetenoFacade = FakeRetenoFacade(), block: (FakeRetenoFacade) -> T): T {
+internal inline fun <T> withFakeFacade(
+    facade: FakeRetenoFacade = FakeRetenoFacade(),
+    block: (FakeRetenoFacade) -> T
+): T {
     RetenoInternalEntryPoint.install(facade)
     try {
         return block(facade)

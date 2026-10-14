@@ -4,13 +4,16 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import androidx.core.app.NotificationCompat
 import com.reteno.push.Constants
 import com.reteno.push.fixtures.LAUNCH_ACTIVITY
+import com.reteno.push.fixtures.STUB_BUTTON_ID
+import com.reteno.push.fixtures.STUB_BUTTON_URL
 import com.reteno.push.fixtures.STUB_INTERACTION_ID
 import com.reteno.push.fixtures.notificationManager
 import com.reteno.push.fixtures.onAndroidSdk
+import com.reteno.push.fixtures.postStubNotification
 import com.reteno.push.fixtures.registerLaunchActivity
+import com.reteno.push.fixtures.stubActionButtonBundle
 import com.reteno.push.fixtures.stubPushBundle
 import com.reteno.push.fixtures.testApplication
 import com.reteno.push.fixtures.withFakeFacade
@@ -44,6 +47,9 @@ class RetenoNotificationClickedReceiverTest {
         fun click(extras: Bundle?) = sut.onReceive(application, Intent().apply { extras?.let(::putExtras) })
 
         fun startedActivities(): List<Intent> = generateSequence { shadowOf(application).nextStartedActivity }.toList()
+
+        fun hostBroadcasts(): List<Intent> = shadowOf(application).broadcastIntents
+            .filter { it.component?.className == ReceiverNotificationClicked::class.java.name }
     }
 
     @Test
@@ -65,26 +71,16 @@ class RetenoNotificationClickedReceiverTest {
         withFakeFacade { facade ->
             given()
             val fixture = SutFixture()
-            val manager = fixture.application.notificationManager()
-            manager.notify(7, NotificationCompat.Builder(fixture.application, "defaultId").setSmallIcon(android.R.drawable.ic_dialog_info).build())
-            val extras = stubPushBundle(
-                STUB_INTERACTION_ID,
-                Constants.KEY_BTN_ACTION_ID to "button-1",
-                Constants.KEY_BTN_ACTION_LINK_UNWRAPPED to "https://example.com/offer"
-            ).apply {
-                putBoolean(Constants.KEY_ACTION_BUTTON, true)
-                putInt(Constants.KEY_NOTIFICATION_ID, 7)
-            }
+            fixture.application.postStubNotification()
 
             whenn()
-            fixture.click(extras)
+            fixture.click(stubActionButtonBundle())
 
             then()
-            assertEquals(
-                "recordInteractionAction $STUB_INTERACTION_ID OPEN_URL button-1 https://example.com/offer forcePush=true",
-                facade.calls.first()
-            )
-            assertTrue(shadowOf(manager).allNotifications.isEmpty())
+            val expectedCall = "recordInteractionAction $STUB_INTERACTION_ID OPEN_URL $STUB_BUTTON_ID " +
+                "$STUB_BUTTON_URL forcePush=true"
+            assertEquals(expectedCall, facade.calls.first())
+            assertTrue(shadowOf(fixture.application.notificationManager()).allNotifications.isEmpty())
         }
     }
 
@@ -114,8 +110,7 @@ class RetenoNotificationClickedReceiverTest {
             fixture.click(extras)
 
             then()
-            val forwarded = shadowOf(fixture.application).broadcastIntents
-                .single { it.component?.className == ReceiverNotificationClicked::class.java.name }
+            val forwarded = fixture.hostBroadcasts().single()
             assertEquals(STUB_INTERACTION_ID, forwarded.getStringExtra(Constants.KEY_ES_INTERACTION_ID))
             assertFalse(forwarded.hasExtra(Constants.KEY_NOTIFICATION_ID))
         }
@@ -234,6 +229,20 @@ class RetenoNotificationClickedReceiverTest {
             then()
             assertTrue(facade.calls.isEmpty())
             assertEquals(LAUNCH_ACTIVITY, fixture.startedActivities().single().component?.className)
+        }
+    }
+
+    @Test
+    fun `should not forward click without extras to host receiver`() = runUnitTest {
+        withFakeFacade {
+            given()
+            val fixture = SutFixture()
+
+            whenn()
+            fixture.click(null)
+
+            then()
+            assertTrue(fixture.hostBroadcasts().isEmpty())
         }
     }
 

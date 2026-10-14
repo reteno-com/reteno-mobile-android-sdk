@@ -67,6 +67,20 @@ internal class ActionsLocatorInitWiringTest {
     }
 
     @Test
+    fun `should set user configuration before queued initialization runs`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        val config = stubConfig(customDeviceId = true)
+
+        whenn()
+        fixture.env.sut.applyUserConfig(config)
+
+        then()
+        verify(exactly = 1) { fixture.env.configProvider.setConfig(config) }
+        assertEquals(InitState.NOT_INITIALIZED, fixture.env.initGate.state)
+    }
+
+    @Test
     fun `should apply user configuration register device and start lifecycle tracking`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
@@ -75,11 +89,9 @@ internal class ActionsLocatorInitWiringTest {
 
         whenn()
         fixture.env.sut.applyUserConfig(config)
-        val configSetImmediately = runCatching { verify(exactly = 1) { fixture.env.configProvider.setConfig(config) } }.isSuccess
         runCurrent()
 
         then()
-        assertTrue(configSetImmediately)
         coVerify(exactly = 1) { fixture.env.restConfig.initDeviceId(DeviceIdMode.CLIENT_UUID) }
         verify(exactly = 1) { fixture.env.devicesDb.insertDevice(any()) }
         verify(exactly = 1) { fixture.env.iamController.pauseInAppMessages(false) }

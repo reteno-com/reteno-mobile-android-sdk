@@ -62,12 +62,24 @@ internal fun stubInteractionDb(
     rowId: String? = "1",
     interactionId: String = "interaction-1",
     status: InteractionStatusDb = InteractionStatusDb.CLICKED
-) = InteractionDb(rowId = rowId, interactionId = interactionId, status = status, time = "2026-01-02T03:04:05Z", token = "token")
+) = InteractionDb(
+    rowId = rowId,
+    interactionId = interactionId,
+    status = status,
+    time = "2026-01-02T03:04:05Z",
+    token = "token"
+)
 
 internal fun stubInAppInteractionDb(
     rowId: String? = "1",
     status: String = "OPEN"
-) = InAppInteractionDb(rowId = rowId, interactionId = "in-app-1", time = "2026-01-02T03:04:05Z", messageInstanceId = 7, status = status)
+) = InAppInteractionDb(
+    rowId = rowId,
+    interactionId = "in-app-1",
+    time = "2026-01-02T03:04:05Z",
+    messageInstanceId = 7,
+    status = status
+)
 
 internal fun stubEventDb(
     rowId: String? = "1",
@@ -84,11 +96,19 @@ internal fun stubAppInboxMessageDb(id: String = "message-1") =
 internal fun stubRecomEventsDb(
     recomVariantId: String = "variant-1",
     recomEvents: List<RecomEventDb>? = listOf(
-        RecomEventDb(rowId = "1", recomEventType = RecomEventTypeDb.CLICKS, occurred = "2026-01-02T03:04:05Z", productId = "sku-1")
+        RecomEventDb(
+            rowId = "1",
+            recomEventType = RecomEventTypeDb.CLICKS,
+            occurred = "2026-01-02T03:04:05Z",
+            productId = "sku-1"
+        )
     )
 ) = RecomEventsDb(recomVariantId = recomVariantId, recomEvents = recomEvents)
 
-internal fun stubRetenoLogEventDb(rowId: String? = "1", errorMessage: String? = "Action Sync failed") = RetenoLogEventDb(
+internal fun stubRetenoLogEventDb(
+    rowId: String? = "1",
+    errorMessage: String? = "Action Sync failed"
+) = RetenoLogEventDb(
     rowId = rowId,
     osVersion = "14",
     version = "1.0 (1)",

@@ -25,10 +25,10 @@ internal class LogEventAction(
     override suspend operator fun invoke(event: Event): Result<Unit> = runner("LogEvent") {
         args("type" to event.eventTypeKey)
         step("save event to local database") {
-            withContext(dispatchers.io) {
-                eventsDb.insertEvents(EventsDb(restConfig.deviceId, event.toDb()))
-            }
+            withContext(dispatchers.io) { eventsDb.insertEvents(EventsDb(restConfig.deviceId, event.toDb())) }
         }
-        step("notify in-app message triggers") { eventBus.emit(event) }
+        step("notify in-app message triggers") {
+            eventBus.emit(event)
+        }
     }
 }

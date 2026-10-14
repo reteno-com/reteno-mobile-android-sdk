@@ -32,7 +32,11 @@ internal class FakeAppPlatform : AppPlatform {
         calls += "watch fragment screens"
     }
 
-    override fun watchAppLifecycle(onForeground: () -> Unit, onBackground: () -> Unit, onActivityPaused: (Activity) -> Unit) {
+    override fun watchAppLifecycle(
+        onForeground: () -> Unit,
+        onBackground: () -> Unit,
+        onActivityPaused: (Activity) -> Unit
+    ) {
         this.onForeground = onForeground
         this.onBackground = onBackground
         this.onActivityPaused = onActivityPaused

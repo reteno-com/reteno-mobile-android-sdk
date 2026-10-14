@@ -19,17 +19,14 @@ import org.robolectric.annotation.Config
 @Config(sdk = [26])
 class IntentHandlerTest {
 
-    private fun links(button: Boolean, vararg links: Pair<String, String>) = Bundle().apply {
-        if (button) putBoolean(Constants.KEY_ACTION_BUTTON, true)
-        links.forEach { (key, value) -> putString(key, value) }
-    }
-
-    private fun Bundle.deeplink(): String? = IntentHandler.getDeepLinkIntent(this)?.data?.toString()
-
     @Test
     fun `should prefer unwrapped notification link`() = runUnitTest {
         given()
-        val bundle = links(false, Constants.KEY_ES_LINK_UNWRAPPED to "app://raw", Constants.KEY_ES_LINK_WRAPPED to "https://wrapped")
+        val bundle = links(
+            false,
+            Constants.KEY_ES_LINK_UNWRAPPED to "app://raw",
+            Constants.KEY_ES_LINK_WRAPPED to "https://wrapped"
+        )
 
         whenn()
         val intent = IntentHandler.getDeepLinkIntent(bundle)!!
@@ -57,9 +54,21 @@ class IntentHandlerTest {
     fun `should fall back from button links to notification links`() = runUnitTest {
         given()
         val bundles = listOf(
-            links(true, Constants.KEY_BTN_ACTION_LINK_UNWRAPPED to "app://button-raw", Constants.KEY_ES_LINK_UNWRAPPED to "app://raw"),
-            links(true, Constants.KEY_BTN_ACTION_LINK_WRAPPED to "https://button-wrapped", Constants.KEY_ES_LINK_UNWRAPPED to "app://raw"),
-            links(true, Constants.KEY_ES_LINK_UNWRAPPED to "app://raw", Constants.KEY_ES_LINK_WRAPPED to "https://wrapped"),
+            links(
+                true,
+                Constants.KEY_BTN_ACTION_LINK_UNWRAPPED to "app://button-raw",
+                Constants.KEY_ES_LINK_UNWRAPPED to "app://raw"
+            ),
+            links(
+                true,
+                Constants.KEY_BTN_ACTION_LINK_WRAPPED to "https://button-wrapped",
+                Constants.KEY_ES_LINK_UNWRAPPED to "app://raw"
+            ),
+            links(
+                true,
+                Constants.KEY_ES_LINK_UNWRAPPED to "app://raw",
+                Constants.KEY_ES_LINK_WRAPPED to "https://wrapped"
+            ),
             links(true, Constants.KEY_ES_LINK_WRAPPED to "https://wrapped")
         )
 
@@ -81,4 +90,11 @@ class IntentHandlerTest {
         then()
         assertNull(intent)
     }
+
+    private fun links(button: Boolean, vararg links: Pair<String, String>) = Bundle().apply {
+        if (button) putBoolean(Constants.KEY_ACTION_BUTTON, true)
+        links.forEach { (key, value) -> putString(key, value) }
+    }
+
+    private fun Bundle.deeplink(): String? = IntentHandler.getDeepLinkIntent(this)?.data?.toString()
 }

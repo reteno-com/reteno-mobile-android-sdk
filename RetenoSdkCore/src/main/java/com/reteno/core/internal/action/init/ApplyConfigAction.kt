@@ -50,31 +50,54 @@ internal class ApplyConfigAction(
 
     private suspend fun ActionTrace.apply(config: RetenoConfig, byUser: Boolean) {
         if (byUser) {
-            step("use user configuration") { configuration.useUserConfig(config) }
+            step("use user configuration") {
+                configuration.useUserConfig(config)
+            }
         } else {
-            val used = step("use cached configuration") { configuration.useCachedConfig(config) }
+            val used = step("use cached configuration") {
+                configuration.useCachedConfig(config)
+            }
             if (!used) note { "user configuration already in use" }
         }
-        runner("ApplyConfigOptions") { applyOptions(config, byUser) }
+        runner("ApplyConfigOptions") {
+            applyOptions(config, byUser)
+        }
         if (byUser) registerDevice()
-        step("open init gate") { initGate.markInitialized(byUser) }
-        step("apply in-app pause options", detail = { "inApps=${config.isPausedInAppMessages}  pushInApps=${config.isPausedPushInAppMessages}" }) {
+        step("open init gate") {
+            initGate.markInitialized(byUser)
+        }
+        step(
+            "apply in-app pause options",
+            detail = { "inApps=${config.isPausedInAppMessages}  pushInApps=${config.isPausedPushInAppMessages}" }
+        ) {
             withContext(dispatchers.main) {
                 iamController.pauseInAppMessages(config.isPausedInAppMessages)
                 iamView.pauseIncomingPushInApps(config.isPausedPushInAppMessages)
             }
         }
-        if (byUser) step("start app lifecycle tracking") { withContext(dispatchers.main) { lifecycleTracking.start() } }
+        if (byUser) {
+            step("start app lifecycle tracking") {
+                withContext(dispatchers.main) { lifecycleTracking.start() }
+            }
+        }
         processCachedInteractions()
     }
 
     private suspend fun ActionTrace.applyOptions(config: RetenoConfig, byUser: Boolean) {
         if (byUser) {
             val mode = if (config.userIdProvider != null) DeviceIdMode.CLIENT_UUID else DeviceIdMode.ANDROID_ID
-            step("init device id", detail = { "mode=$mode" }) { withContext(dispatchers.io) { restConfig.initDeviceId(mode) } }
+            step("init device id", detail = { "mode=$mode" }) {
+                withContext(dispatchers.io) { restConfig.initDeviceId(mode) }
+            }
         }
-        val deviceId = step("wait for device id") { withContext(dispatchers.io) { configRepository.awaitForDeviceId() } }
-        step("cache configuration in local settings") { withContext(dispatchers.io) { prefs.cacheConfiguration(deviceId.id, config) } }
-        step("apply session duration") { sessionHandler.setSessionResetDuration(config.sessionDuration) }
+        val deviceId = step("wait for device id") {
+            withContext(dispatchers.io) { configRepository.awaitForDeviceId() }
+        }
+        step("cache configuration in local settings") {
+            withContext(dispatchers.io) { prefs.cacheConfiguration(deviceId.id, config) }
+        }
+        step("apply session duration") {
+            sessionHandler.setSessionResetDuration(config.sessionDuration)
+        }
     }
 }

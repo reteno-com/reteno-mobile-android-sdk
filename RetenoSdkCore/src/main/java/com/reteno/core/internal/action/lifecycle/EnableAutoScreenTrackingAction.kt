@@ -22,10 +22,14 @@ internal class EnableAutoScreenTrackingAction(
 
     private suspend fun ActionTrace.configure(config: ScreenTrackingConfig) {
         if (watching.compareAndSet(false, true)) {
-            step("start watching fragment screens") { platform.watchFragmentScreens(tracker::onScreen) }
+            step("start watching fragment screens") {
+                platform.watchFragmentScreens(tracker::onScreen)
+            }
         } else {
             note { "already watching fragment screens" }
         }
-        step("apply screen tracking options") { tracker.configure(config) }
+        step("apply screen tracking options") {
+            tracker.configure(config)
+        }
     }
 }

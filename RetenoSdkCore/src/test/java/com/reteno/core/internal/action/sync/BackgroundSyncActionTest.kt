@@ -38,7 +38,9 @@ internal class BackgroundSyncActionTest {
                 return syncResult
             }
         }
-        private val activityHelper = mockk<RetenoActivityHelper>().also { every { it.canPresentMessages() } returns foreground }
+        private val activityHelper = mockk<RetenoActivityHelper>().also {
+            every { it.canPresentMessages() } returns foreground
+        }
         private val initGate = InitGate().also { if (initialized) it.markInitialized(byUser = false) }
         private val databaseManager = mockk<RetenoDatabaseManager>().also {
             every { it.hasDataForSync() } answers {
@@ -71,6 +73,7 @@ internal class BackgroundSyncActionTest {
         then()
         assertEquals(BackgroundSyncOutcome.SKIPPED_IN_FOREGROUND, outcome)
         assertEquals(0, fixture.syncCalls)
+        assertEquals(0, fixture.cancelled)
     }
 
     @Test
@@ -84,6 +87,7 @@ internal class BackgroundSyncActionTest {
         then()
         assertEquals(BackgroundSyncOutcome.NOT_INITIALIZED, outcome)
         assertEquals(0, fixture.syncCalls)
+        assertEquals(0, fixture.cancelled)
     }
 
     @Test

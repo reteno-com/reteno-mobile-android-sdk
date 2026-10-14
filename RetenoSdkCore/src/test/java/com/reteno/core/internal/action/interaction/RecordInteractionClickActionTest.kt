@@ -32,24 +32,46 @@ internal class RecordInteractionClickActionTest {
         val sut = RecordInteractionClickAction(interactionsDb, sync, dispatchers, { TIME }, traced.runner)
 
         init {
-            every { interactionsDb.insertInteraction(any()) } answers { insertedOnIo = dispatchers.markedIo.isRunningHere }
+            every { interactionsDb.insertInteraction(any()) } answers {
+                insertedOnIo = dispatchers.markedIo.isRunningHere
+            }
         }
     }
 
     @Test
-    fun `should save clicked interaction with its action`() = runUnitTest {
+    fun `should save clicked interaction with its action to local database`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
 
         whenn()
-        val result = fixture.sut("interaction-1", ACTION, forcePush = false)
+        fixture.sut("interaction-1", ACTION, forcePush = false)
 
         then()
-        assertTrue(result.isSuccess)
-        verify(exactly = 1) {
-            fixture.interactionsDb.insertInteraction(Interaction(InteractionStatus.CLICKED, TIME, action = ACTION).toDb("interaction-1"))
-        }
+        val expected = Interaction(InteractionStatus.CLICKED, TIME, action = ACTION).toDb("interaction-1")
+        verify(exactly = 1) { fixture.interactionsDb.insertInteraction(expected) }
+    }
+
+    @Test
+    fun `should save clicked interaction on io dispatcher`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+
+        whenn()
+        fixture.sut("interaction-1", ACTION, forcePush = false)
+
+        then()
         assertTrue(fixture.insertedOnIo)
+    }
+
+    @Test
+    fun `should not request sync when force push is not set`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+
+        whenn()
+        fixture.sut("interaction-1", ACTION, forcePush = false)
+
+        then()
         assertEquals(0, fixture.sync.requests)
     }
 
@@ -66,7 +88,7 @@ internal class RecordInteractionClickActionTest {
     }
 
     @Test
-    fun `should trace action type without its url`() = runUnitTest {
+    fun `should trace interaction id action type and force push`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
 
@@ -74,9 +96,20 @@ internal class RecordInteractionClickActionTest {
         fixture.sut("interaction-1", ACTION, forcePush = true)
 
         then()
-        val lines = fixture.traced.sink.lines
-        assertTrue(lines.first().contains("RecordInteractionClick  id=interaction-1  action=OPEN_URL  forcePush=true"))
-        assertFalse(lines.any { it.contains("example.com") })
+        val expected = "RecordInteractionClick  id=interaction-1  action=OPEN_URL  forcePush=true"
+        assertTrue(fixture.traced.sink.lines.first().contains(expected))
+    }
+
+    @Test
+    fun `should not write action url to trace`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+
+        whenn()
+        fixture.sut("interaction-1", ACTION, forcePush = true)
+
+        then()
+        assertFalse(fixture.traced.sink.lines.any { it.contains("example.com") })
     }
 
     private companion object {

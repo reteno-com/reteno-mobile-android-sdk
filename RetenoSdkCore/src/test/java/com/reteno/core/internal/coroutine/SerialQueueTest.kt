@@ -36,7 +36,11 @@ internal class SerialQueueTest {
         val firstGate = CompletableDeferred<Unit>()
 
         whenn()
-        fixture.sut.enqueue { log += "first start"; firstGate.await(); log += "first end" }
+        fixture.sut.enqueue {
+            log += "first start"
+            firstGate.await()
+            log += "first end"
+        }
         fixture.sut.enqueue { log += "second" }
         runCurrent()
         val whileFirstRuns = log.toList()

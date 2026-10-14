@@ -48,14 +48,19 @@ internal class LoggerUploadSanitizingTest {
     fun `should persist error log without interpolated values or urls`() = runUnitTest {
         given()
         val fixture = SutFixture()
-        val error = IllegalStateException("request to https://mobile-api.reteno.com/api/v1/user failed, email = john@example.com")
+        val error = IllegalStateException(
+            "request to https://mobile-api.reteno.com/api/v1/user failed, email = john@example.com"
+        )
+        val loggedMessage = "getUser(). Removed invalid entry from database. user=UserDb(email=john@example.com)"
 
         whenn()
-        fixture.withSdk { Logger.e("Tag", "getUser(). Removed invalid entry from database. user=UserDb(email=john@example.com)", error) }
+        fixture.withSdk { Logger.e("Tag", loggedMessage, error) }
 
         then()
         val message = requireNotNull(fixture.saved.captured.errorMessage)
-        assertTrue(message.startsWith("getUser(). Removed invalid entry from database. user: java.lang.IllegalStateException: request to <url> failed, email"))
+        val expectedPrefix = "getUser(). Removed invalid entry from database. user: " +
+            "java.lang.IllegalStateException: request to <url> failed, email"
+        assertTrue(message.startsWith(expectedPrefix))
         assertFalse(message.contains("john@example.com"))
         assertFalse(message.contains("reteno.com"))
         assertEquals(LogLevel.ERROR, fixture.saved.captured.logLevel)
@@ -77,7 +82,9 @@ internal class LoggerUploadSanitizingTest {
     fun `should persist captured event without interpolated values`() = runUnitTest {
         given()
         val fixture = SutFixture()
-        val event = fixture.withSdk { RetenoLogEvent(logLevel = LogLevel.INFO, errorMessage = "token = [secret-token]") }
+        val event = fixture.withSdk {
+            RetenoLogEvent(logLevel = LogLevel.INFO, errorMessage = "token = [secret-token]")
+        }
 
         whenn()
         fixture.withSdk { Logger.captureEvent(event) }

@@ -21,12 +21,21 @@ internal class MarkInboxMessageOpenedAction(
 
     suspend operator fun invoke(messageId: String): Result<Unit> = runner("MarkInboxMessageOpened") {
         args("messageId" to messageId)
-        step("wait for sdk initialization") { initGate.awaitInit() }
+        step("wait for sdk initialization") {
+            initGate.awaitInit()
+        }
         step("save opened message to local database") {
             withContext(dispatchers.io) {
-                inboxDb.insertAppInboxMessage(AppInboxMessageDb(id = messageId, deviceId = configRepository.getDeviceId().id, occurredDate = timestamp()))
+                val openedMessage = AppInboxMessageDb(
+                    id = messageId,
+                    deviceId = configRepository.getDeviceId().id,
+                    occurredDate = timestamp()
+                )
+                inboxDb.insertAppInboxMessage(openedMessage)
             }
         }
-        step("request data sync") { sync.request() }
+        step("request data sync") {
+            sync.request()
+        }
     }
 }
