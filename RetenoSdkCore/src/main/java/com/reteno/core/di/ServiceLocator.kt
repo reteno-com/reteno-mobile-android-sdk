@@ -17,7 +17,6 @@ import com.reteno.core.di.provider.RetenoActivityHelperProvider
 import com.reteno.core.di.provider.RetenoConfigProvider
 import com.reteno.core.di.provider.SharedPrefsManagerProvider
 import com.reteno.core.di.provider.WorkManagerProvider
-import com.reteno.core.di.provider.controller.AppInboxControllerProvider
 import com.reteno.core.di.provider.controller.IamControllerProvider
 import com.reteno.core.di.provider.controller.RecommendationControllerProvider
 import com.reteno.core.di.provider.database.DatabaseProvider
@@ -32,13 +31,11 @@ import com.reteno.core.di.provider.database.RetenoDatabaseManagerProvider
 import com.reteno.core.di.provider.database.RetenoDatabaseManagerRecomEventsProvider
 import com.reteno.core.di.provider.database.RetenoDatabaseManagerUserProvider
 import com.reteno.core.di.provider.database.RetenoDatabaseManagerWrappedLinkProvider
-import com.reteno.core.di.provider.features.AppInboxProvider
 import com.reteno.core.di.provider.features.IamViewProvider
 import com.reteno.core.di.provider.features.RecommendationProvider
 import com.reteno.core.di.provider.features.RetenoSessionHandlerProvider
 import com.reteno.core.di.provider.network.ApiClientProvider
 import com.reteno.core.di.provider.network.RestClientProvider
-import com.reteno.core.di.provider.repository.AppInboxRepositoryProvider
 import com.reteno.core.di.provider.repository.ConfigRepositoryProvider
 import com.reteno.core.di.provider.repository.FileManagerProvider
 import com.reteno.core.di.provider.repository.IamRepositoryProvider
@@ -174,14 +171,6 @@ class ServiceLocator internal constructor(
     val configRepositoryProvider: ProviderWeakReference<ConfigRepository>
         get() = configRepositoryProviderInternal
 
-    internal val appInboxRepositoryProvider: AppInboxRepositoryProvider =
-        AppInboxRepositoryProvider(
-            apiClientProvider,
-            retenoDatabaseManagerAppInboxProviderInternal,
-            configRepositoryProviderInternal,
-            dataSync
-        )
-
     private val recommendationRepositoryProvider: RecommendationRepositoryProvider =
         RecommendationRepositoryProvider(
             retenoDatabaseManagerRecomEventsProvider,
@@ -202,16 +191,11 @@ class ServiceLocator internal constructor(
 
 
     /** Controller **/
-    private val appInboxControllerProvider: AppInboxControllerProvider =
-        AppInboxControllerProvider(appInboxRepositoryProvider)
-
     private val recommendationControllerProvider: RecommendationControllerProvider =
         RecommendationControllerProvider(recommendationRepositoryProvider)
 
 
     /** Controller dependent **/
-    internal val appInboxProvider: AppInboxProvider = AppInboxProvider(appInboxControllerProvider)
-
     internal val recommendationProvider: RecommendationProvider =
         RecommendationProvider(recommendationControllerProvider)
 

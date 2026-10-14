@@ -4,6 +4,7 @@ import com.reteno.core.domain.controller.IamController
 import com.reteno.core.fixtures.TestActionRunner
 import com.reteno.core.fixtures.testDispatchers
 import com.reteno.core.internal.action.device.EnsureDeviceRegisteredThisSession
+import com.reteno.core.internal.action.inbox.InboxCountPolling
 import com.reteno.core.internal.action.sync.SyncScheduler
 import com.reteno.core.internal.lifecycle.SdkRunState
 import com.reteno.core.lifecycle.RetenoSessionHandler
@@ -34,7 +35,8 @@ internal class StartSdkActionTest {
         private val iamController = mockk<IamController>().also { coEvery { it.getInAppMessages() } answers { calls += "fetch in-apps" + onIo() } }
         private val dataSync = mockk<SyncScheduler>().also { every { it.startScheduler() } answers { calls += "start scheduler" } }
         private val iamView = mockk<IamView>().also { every { it.start() } answers { calls += "start in-app view" + onMain() } }
-        val sut = StartSdkAction(ensureDeviceRegistered, sessionHandler, iamController, dataSync, iamView, state, dispatchers, traced.runner)
+        private val inboxCount = mockk<InboxCountPolling>().also { every { it.resume() } answers { calls += "resume inbox count polling" } }
+        val sut = StartSdkAction(ensureDeviceRegistered, sessionHandler, iamController, dataSync, iamView, inboxCount, state, dispatchers, traced.runner)
 
         private fun onIo() = if (dispatchers.markedIo.isRunningHere) " on io" else ""
 
@@ -51,7 +53,7 @@ internal class StartSdkActionTest {
 
         then()
         assertEquals(
-            listOf("ensure device on io", "start session", "fetch in-apps on io", "start scheduler", "start in-app view on main"),
+            listOf("ensure device on io", "start session", "fetch in-apps on io", "start scheduler", "start in-app view on main", "resume inbox count polling"),
             fixture.calls
         )
         assertTrue(fixture.state.isStarted)
@@ -68,7 +70,7 @@ internal class StartSdkActionTest {
         fixture.sut()
 
         then()
-        assertEquals(listOf("ensure device on io", "start session", "start scheduler", "start in-app view on main"), fixture.calls)
+        assertEquals(listOf("ensure device on io", "start session", "start scheduler", "start in-app view on main", "resume inbox count polling"), fixture.calls)
         assertTrue(fixture.traced.sink.lines.any { it.contains("→ sdk already started, in-app messages are fetched") })
     }
 }

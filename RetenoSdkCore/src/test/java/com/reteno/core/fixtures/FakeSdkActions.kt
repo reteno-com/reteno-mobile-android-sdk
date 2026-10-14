@@ -2,6 +2,8 @@ package com.reteno.core.fixtures
 
 import com.reteno.core.RetenoConfig
 import com.reteno.core.di.SdkActions
+import com.reteno.core.domain.callback.appinbox.RetenoResultCallback
+import com.reteno.core.domain.model.appinbox.AppInboxMessages
 import com.reteno.core.domain.model.ecom.EcomEvent
 import com.reteno.core.domain.model.event.Event
 import com.reteno.core.domain.model.event.LifecycleTrackingOptions
@@ -11,6 +13,7 @@ import com.reteno.core.domain.model.interaction.InteractionStatus
 import com.reteno.core.domain.model.logevent.RetenoLogEvent
 import com.reteno.core.domain.model.user.User
 import com.reteno.core.domain.model.user.UserAttributesAnonymous
+import com.reteno.core.features.appinbox.AppInboxStatus
 import com.reteno.core.internal.action.sync.BackgroundSyncAction
 import com.reteno.core.lifecycle.ScreenTrackingConfig
 
@@ -114,6 +117,34 @@ internal class FakeSdkActions : SdkActions {
 
     override fun submitDefaultNotificationChannel(channel: String) {
         calls += "submitDefaultNotificationChannel $channel"
+    }
+
+    override fun submitInboxMessagesRequest(page: Int?, pageSize: Int?, status: AppInboxStatus?, callback: RetenoResultCallback<AppInboxMessages>) {
+        calls += "submitInboxMessagesRequest $page $pageSize $status"
+    }
+
+    override fun submitInboxCountRequest(callback: RetenoResultCallback<Int>) {
+        calls += "submitInboxCountRequest"
+    }
+
+    override fun subscribeInboxCount(callback: RetenoResultCallback<Int>) {
+        calls += "subscribeInboxCount"
+    }
+
+    override fun unsubscribeInboxCount(callback: RetenoResultCallback<Int>) {
+        calls += "unsubscribeInboxCount"
+    }
+
+    override fun unsubscribeAllInboxCount() {
+        calls += "unsubscribeAllInboxCount"
+    }
+
+    override fun submitInboxMessageOpened(messageId: String) {
+        calls += "submitInboxMessageOpened $messageId"
+    }
+
+    override fun submitAllInboxMessagesOpened(callback: RetenoResultCallback<Unit>) {
+        calls += "submitAllInboxMessagesOpened"
     }
 
     override val backgroundSync: BackgroundSyncAction

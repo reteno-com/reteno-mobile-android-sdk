@@ -26,11 +26,12 @@ koverReport {
     androidReports('debug') {
         filters {
             includes {
-                classes('com.reteno.core.RetenoInternalEntryPoint*', 'com.reteno.core.di.ActionsLocator*', 'com.reteno.core.data.workmanager.PushDataWorker*')
+                classes('com.reteno.core.RetenoInternalEntryPoint*', 'com.reteno.core.features.appinbox.AppInboxImpl*', 'com.reteno.core.di.ActionsLocator*', 'com.reteno.core.data.workmanager.PushDataWorker*')
                 packages(
                         'com.reteno.core.internal.action.deeplink',
                         'com.reteno.core.internal.action.device',
                         'com.reteno.core.internal.action.event',
+                        'com.reteno.core.internal.action.inbox',
                         'com.reteno.core.internal.action.init',
                         'com.reteno.core.internal.action.interaction',
                         'com.reteno.core.internal.action.lifecycle',

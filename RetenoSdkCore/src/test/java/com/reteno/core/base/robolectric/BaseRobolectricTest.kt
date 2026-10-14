@@ -9,7 +9,6 @@ import com.reteno.core.data.local.sharedpref.SharedPrefsManager
 import com.reteno.core.data.repository.ConfigRepository
 import com.reteno.core.di.ServiceLocator
 import com.reteno.core.domain.controller.IamController
-import com.reteno.core.features.appinbox.AppInbox
 import com.reteno.core.features.recommendation.Recommendation
 import com.reteno.core.lifecycle.RetenoActivityHelper
 import com.reteno.core.lifecycle.RetenoSessionHandler
@@ -94,8 +93,6 @@ abstract class BaseRobolectricTest {
     @RelaxedMockK
     internal lateinit var restConfig: RestConfig
     @RelaxedMockK
-    protected lateinit var appInbox: AppInbox
-    @RelaxedMockK
     protected lateinit var recommendation: Recommendation
     @RelaxedMockK
     protected lateinit var iamView: IamView
@@ -114,7 +111,6 @@ abstract class BaseRobolectricTest {
         every { anyConstructed<ServiceLocator>().iamViewProvider.get() } returns iamView
         every { anyConstructed<ServiceLocator>().iamControllerProvider.get() } returns iamController
         every { anyConstructed<ServiceLocator>().retenoActivityHelperProvider.get() } returns activityHelper
-        every { anyConstructed<ServiceLocator>().appInboxProvider.get() } returns appInbox
 
     }
 

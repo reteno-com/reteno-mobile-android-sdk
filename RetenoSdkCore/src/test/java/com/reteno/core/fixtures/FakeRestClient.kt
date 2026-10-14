@@ -8,13 +8,22 @@ import com.reteno.core.internal.coroutine.RetenoDispatchers
 import com.reteno.core.internal.network.SuspendApiClient
 import java.io.IOException
 
-internal data class SentRequest(val method: HttpMethod, val contract: ApiContract, val body: String?)
+internal data class SentRequest(
+    val method: HttpMethod,
+    val contract: ApiContract,
+    val body: String?,
+    val queryParams: Map<String, String?>? = null
+)
 
 internal class FakeRestClient : RestClient {
     val requests = mutableListOf<SentRequest>()
     private val responses = ArrayDeque<(ResponseCallback) -> Unit>()
 
     fun succeed(times: Int = 1) = repeat(times) { responses.addLast { it.onSuccess(emptyMap(), "") } }
+
+    fun succeedWith(body: String) = responses.addLast { it.onSuccess(emptyMap(), body) }
+
+    fun failWith(statusCode: Int, body: String) = responses.addLast { it.onFailure(statusCode, body, null) }
 
     fun failWith(statusCode: Int, times: Int = 1) = repeat(times) { responses.addLast { it.onFailure(statusCode, null, null) } }
 
@@ -29,7 +38,7 @@ internal class FakeRestClient : RestClient {
         retryCount: Int,
         responseCallback: ResponseCallback
     ) {
-        requests += SentRequest(method, apiContract, body)
+        requests += SentRequest(method, apiContract, body, queryParams)
         val respond = responses.removeFirstOrNull() ?: { callback: ResponseCallback -> callback.onSuccess(emptyMap(), "") }
         respond(responseCallback)
     }

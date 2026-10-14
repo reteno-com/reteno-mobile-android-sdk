@@ -468,12 +468,22 @@ Final Coverage Report (Phase 5, after review fixes) — Kover: Core gated packag
 - [x] FCM: reteno push shown + DELIVERED, other message → custom broadcast, token, `isRetenoMessage`, failures swallowed, unsupported OS, host handler forwarding — `RetenoFirebaseMessagingServiceTest`
 - Gaps: not smoke-tested on a device. Push/FCM tests were written against the rewritten code (characterisation of kept behaviour); red was observed for the Core actions (compile), the channel-update bug and P3 (mutation check), not for every Push branch. Android 13 branches are covered by pinning `SDK_INT` on the API 26 framework (Robolectric 4.8.1 has no API 33). Carousel downloads are still sequential, so many slow images can add up to several timeouts.
 
-### Phase 6 — App Inbox ☐
-Actions (`internal/action/inbox/`): `GetInboxMessagesAction`, `GetInboxMessagesCountAction`, `MarkInboxMessageOpenedAction`, `MarkAllInboxMessagesOpenedAction`, `SubscribeInboxCountAction` / `UnsubscribeInboxCountAction` backed by an `InboxCountPoller` (`Job` + `delay(30 s)`, emits only on change, stops when no subscribers; optional pause in background, D8).
-`AppInboxImpl` keeps its public callback API and maps `Result` → `onSuccess`/`onFailure` on main.
-Fixes: B1 (subscriber set with strong refs and explicit unsubscribe), B2.
-Removes: `AppInboxController`, `AppInboxRepository(Impl)`.
-Tests: query params mapping, callback thread is main, parse error → `onFailure`, polling cadence, change-only emission, last value replay to late subscriber, unsubscribe-all stops polling.
+### Phase 6 — App Inbox ☑
+Done (`internal/action/inbox/`):
+- `GetInboxMessagesAction` (page / pageSize / status filters), `GetInboxMessagesCountAction`, `MarkInboxMessageOpenedAction` (save opened status for the current device → request sync), `MarkAllInboxMessagesOpenedAction` (POST all opened → clear local statuses → refresh count). Each waits for the init gate as a named step (**fixes I6**: inbox calls before init no longer go out without device id / access key).
+- `passResponseToHost` (`HostResponse.kt`): host callbacks always on main; server failure → `onFailure(code, body, error)`, traced but not uploaded (old behaviour); unreadable response → `onFailure(null, null, error)` **and** one reported action failure (**fixes B2**: the callback is always answered).
+- `InboxCountPoller` (`InboxCountPolling`) replaces the repository's scheduler and `WeakHashMap`: subscribers held strongly until unsubscribed (**fixes B1**), one 30 s polling `Job` only while there are subscribers and the app is in foreground (**D8 implemented as recommended, to confirm**: `StartSdkAction` resumes, `StopSdkAction` pauses), counts emitted only when they change, last count replayed on main to late subscribers, everything forgotten when the last subscriber leaves, `refresh()` used by `PushInboxStatusStep` and mark-all. There is now one poller per SDK instead of possibly two repository instances behind weak-reference providers (I5 for inbox).
+- `AppInboxImpl` is a thin facade over the `InboxActions` port (`SdkActions` extends it; `ActionsLocator` launches the actions on its scope); `RetenoInternalImpl.appInbox` builds it directly.
+- Deleted: `AppInboxController`, `AppInboxRepository(Impl)`, their providers, `ServiceLocator.appInboxProvider` / `appInboxRepositoryProvider` (internal), 4 legacy test files (47 legacy tests). Callbacks of `subscribeOnMessagesCountChanged` now receive the replayed value asynchronously on main instead of synchronously on the caller's thread.
+- Gate: `internal.action.inbox` and `AppInboxImpl` added.
+
+Final Coverage Report (Phase 6) — Kover: Core gated packages 1994/1994 lines, 494/494 branches (851 Core tests); Push 102 and FCM 7 tests still at 100 %; `:app:compileDebugKotlin` green.
+- [x] Query params mapping incl. no filters, messages on main, server failure on main and not reported, unreadable response → `onFailure` + one report at the read step, waits for init, no response content in trace — `GetInboxMessagesActionTest`
+- [x] Count on main, network failure passed through, waits for init — `GetInboxMessagesCountActionTest`
+- [x] Opened status saved for current device on IO + sync, waits for init — `MarkInboxMessageOpenedActionTest`; mark all: request body, clear local on IO, refresh count, success/failure on main, failure keeps local statuses and isn't reported, waits for init — `MarkAllInboxMessagesOpenedActionTest`
+- [x] Poller: immediate first fetch, 30 s cadence, change-only emission, failure to every subscriber, replay on main, duplicate subscribe, partial unsubscribe keeps polling, last unsubscribe stops and forgets, unsubscribe-all, background no polling, pause/resume, resume without subscribers, subscriber removed in background, refresh while polling / not polling, late count after everyone left dropped — `InboxCountPollerTest`
+- [x] Facade mapping + unsupported OS — `AppInboxImplTest`; locator ports (page, count, subscribe after start, unsubscribe, opened/mark-all) — `ActionsLocatorInboxWiringTest`; Start/Stop resume/pause order — `StartSdkActionTest`, `StopSdkActionTest`; sync step refresh — `PushInboxStatusStepTest`, `ActionsLocatorSyncWiringTest`
+- Gaps: `RetenoInternalImpl.appInbox` is not tested directly (building `AppInboxImpl` in the Robolectric facade test would load a gated class in a sandbox); not smoke-tested on a device.
 
 ### Phase 7 — Recommendations ☐
 Actions (`internal/action/recommendation/`): `FetchRecommendationAction<T>` (typed with JSON fallback), `FetchRecommendationJsonAction`, `LogRecommendationEventsAction`.
@@ -520,7 +530,7 @@ Sync (2) comes right after events because every later slice's "persist then push
 | D5 | Timeout for CLIENT_UUID device-id polling | Bounded (e.g. 10 s) then fall back to cached/random id with an error log. |
 | D6 | `InteractionCacheStore` (dead write path) — implement persistence for pre-init interactions or remove? | **Implemented as recommended in Phase 5 (to confirm):** interaction-request table before init, processed after init; store removed. |
 | D7 | Kover exclusion list (BuildConfig, R, deprecated shims) | Keep minimal; deprecated shims are tested rather than excluded if cheap. |
-| D8 | Inbox count polling in background | Pause on ON_STOP, resume on ON_START. |
+| D8 | Inbox count polling in background | **Implemented as recommended in Phase 6 (to confirm):** paused by `StopSdk`, resumed by `StartSdk`. |
 | D9 | Send ETag for in-app list (M1) | Yes, if backend supports 304 on that endpoint. |
 | D10 | Count in-app show only after confirmed display (M6) | Yes. |
 | D11 | Push/FCM modules in the 100 % gate from Phase 5? | **Implemented as recommended in Phase 5 (to confirm):** whole modules gated. |

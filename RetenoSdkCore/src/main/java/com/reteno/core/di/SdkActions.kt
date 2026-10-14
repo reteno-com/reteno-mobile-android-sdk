@@ -8,11 +8,12 @@ import com.reteno.core.domain.model.interaction.InteractionStatus
 import com.reteno.core.domain.model.logevent.RetenoLogEvent
 import com.reteno.core.domain.model.user.User
 import com.reteno.core.domain.model.user.UserAttributesAnonymous
+import com.reteno.core.internal.action.inbox.InboxActions
 import com.reteno.core.internal.action.interaction.InteractionSubmitter
 import com.reteno.core.internal.action.sync.BackgroundSync
 import com.reteno.core.lifecycle.ScreenTrackingConfig
 
-internal interface SdkActions : InteractionSubmitter {
+internal interface SdkActions : InteractionSubmitter, InboxActions {
     val isStarted: Boolean
 
     fun boot()

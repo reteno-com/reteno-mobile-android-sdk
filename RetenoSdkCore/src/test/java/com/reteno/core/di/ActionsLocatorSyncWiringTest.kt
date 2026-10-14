@@ -72,7 +72,7 @@ internal class ActionsLocatorSyncWiringTest {
             fixture.rest.requests.map { it.contract.url }
         )
         verify(exactly = 1) { fixture.configRepository.saveDeviceRegistered(true) }
-        verify(exactly = 1) { fixture.inboxRepository.refreshMessagesCount() }
+        assertTrue(fixture.sink.lines.any { it.contains("✓ refresh unread messages count") })
     }
 
     @Test

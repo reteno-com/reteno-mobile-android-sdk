@@ -15,7 +15,6 @@ import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerWrappedL
 import com.reteno.core.data.local.model.event.EventsDb
 import com.reteno.core.data.local.model.interaction.InteractionRequestDb
 import com.reteno.core.data.local.sharedpref.SharedPrefsManager
-import com.reteno.core.data.repository.AppInboxRepository
 import com.reteno.core.data.repository.ConfigRepository
 import com.reteno.core.di.ActionsLocator
 import com.reteno.core.di.ServiceLocator
@@ -49,7 +48,6 @@ internal class LocatorFixture(scope: TestScope, initialized: Boolean = true) {
     val wrappedLinksDb = mockk<RetenoDatabaseManagerWrappedLink>(relaxed = true)
     val logEventsDb = mockk<RetenoDatabaseManagerLogEvent>(relaxed = true)
     val configRepository = mockk<ConfigRepository>(relaxed = true)
-    val inboxRepository = mockk<AppInboxRepository>(relaxed = true)
     val workManager = mockk<WorkManager>(relaxed = true)
     val sessionHandler = mockk<RetenoSessionHandler>(relaxed = true)
     val iamController = mockk<IamController>(relaxed = true)
@@ -75,7 +73,6 @@ internal class LocatorFixture(scope: TestScope, initialized: Boolean = true) {
         every { it.retenoDatabaseManagerWrappedLinksProvider.get() } returns wrappedLinksDb
         every { it.retenoDatabaseManagerLogEventProvider.get() } returns logEventsDb
         every { it.configRepositoryProvider.get() } returns configRepository
-        every { it.appInboxRepositoryProvider.get() } returns inboxRepository
         every { it.workManagerProvider.get() } returns workManager
         every { it.restClientProvider.get() } returns rest
         every { it.restConfigProvider.get() } returns restConfig

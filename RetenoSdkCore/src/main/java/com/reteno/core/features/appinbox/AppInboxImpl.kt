@@ -1,13 +1,12 @@
 package com.reteno.core.features.appinbox
 
 import com.reteno.core.domain.callback.appinbox.RetenoResultCallback
-import com.reteno.core.domain.controller.AppInboxController
 import com.reteno.core.domain.model.appinbox.AppInboxMessages
-import com.reteno.core.util.Logger
-import com.reteno.core.util.isOsVersionSupported
+import com.reteno.core.internal.action.inbox.InboxActions
 
 internal class AppInboxImpl(
-    private val appInboxController: AppInboxController
+    private val actions: InboxActions,
+    private val isOsSupported: () -> Boolean
 ) : AppInbox {
 
     override fun getAppInboxMessages(
@@ -16,97 +15,37 @@ internal class AppInboxImpl(
         status: AppInboxStatus?,
         callback: RetenoResultCallback<AppInboxMessages>
     ) {
-        if (!isOsVersionSupported()) {
-            return
-        }
-        /*@formatter:off*/ Logger.i(TAG, "getAppInboxMessages(): ", "page = [", page, "], pageSize = [", pageSize, "], callback = [", callback, "]")
-        /*@formatter:on*/
-        try {
-            appInboxController.getAppInboxMessages(page, pageSize, status, callback)
-        } catch (ex: Throwable) {
-            Logger.e(TAG, "getAppInboxMessages(): ", ex)
-        }
+        if (!isOsSupported()) return
+        actions.submitInboxMessagesRequest(page, pageSize, status, callback)
     }
 
     override fun getAppInboxMessagesCount(callback: RetenoResultCallback<Int>) {
-        if (!isOsVersionSupported()) {
-            return
-        }
-        /*@formatter:off*/ Logger.i(TAG, "getAppInboxMessagesCount(): ", "callback = [", callback, "]")
-        /*@formatter:on*/
-        try {
-            appInboxController.getMessagesCount(callback)
-        } catch (ex: Throwable) {
-            Logger.e(TAG, "getAppInboxMessagesCount(): ", ex)
-        }
+        if (!isOsSupported()) return
+        actions.submitInboxCountRequest(callback)
     }
 
     override fun subscribeOnMessagesCountChanged(callback: RetenoResultCallback<Int>) {
-        if (!isOsVersionSupported()) {
-            return
-        }
-        /*@formatter:off*/ Logger.i(TAG, "subscribeOnMessagesCountChanged(): ", "callback = [", callback, "]")
-        /*@formatter:on*/
-        try {
-            appInboxController.subscribeCountChanges(callback)
-        } catch (ex: Throwable) {
-            Logger.e(TAG, "subscribeOnMessagesCountChanged(): ", ex)
-        }
+        if (!isOsSupported()) return
+        actions.subscribeInboxCount(callback)
     }
 
     override fun unsubscribeMessagesCountChanged(callback: RetenoResultCallback<Int>) {
-        if (!isOsVersionSupported()) {
-            return
-        }
-        /*@formatter:off*/ Logger.i(TAG, "unsubscribeMessagesCountChanged(): ", "callback = [", callback, "]")
-        /*@formatter:on*/
-        try {
-            appInboxController.unsubscribeCountChanges(callback)
-        } catch (ex: Throwable) {
-            Logger.e(TAG, "unsubscribeMessagesCountChanged(): ", ex)
-        }
+        if (!isOsSupported()) return
+        actions.unsubscribeInboxCount(callback)
     }
 
     override fun unsubscribeAllMessagesCountChanged() {
-        if (!isOsVersionSupported()) {
-            return
-        }
-        /*@formatter:off*/ Logger.i(TAG, "unsubscribeAllMessagesCountChanged(): ", "")
-        /*@formatter:on*/
-        try {
-            appInboxController.unsubscribeAllCountChanges()
-        } catch (ex: Throwable) {
-            Logger.e(TAG, "unsubscribeAllMessagesCountChanged(): ", ex)
-        }
+        if (!isOsSupported()) return
+        actions.unsubscribeAllInboxCount()
     }
 
     override fun markAsOpened(messageId: String) {
-        if (!isOsVersionSupported()) {
-            return
-        }
-        /*@formatter:off*/ Logger.i(TAG, "markAsOpened(): ", "messageId = [", messageId, "]")
-        /*@formatter:on*/
-        try {
-            appInboxController.markAsOpened(messageId)
-        } catch (ex: Throwable) {
-            Logger.e(TAG, "markAsOpened(): ", ex)
-        }
+        if (!isOsSupported()) return
+        actions.submitInboxMessageOpened(messageId)
     }
 
     override fun markAllMessagesAsOpened(callback: RetenoResultCallback<Unit>) {
-        if (!isOsVersionSupported()) {
-            return
-        }
-        /*@formatter:off*/ Logger.i(TAG, "markAllMessagesAsOpened(): ", "callback = [", callback, "]")
-        /*@formatter:on*/
-        try {
-            appInboxController.markAllMessagesAsOpened(callback)
-        } catch (ex: Throwable) {
-            Logger.e(TAG, "markAllMessagesAsOpened(): ", ex)
-        }
-    }
-
-    companion object {
-        private val TAG: String = AppInboxImpl::class.java.simpleName
+        if (!isOsSupported()) return
+        actions.submitAllInboxMessagesOpened(callback)
     }
 }

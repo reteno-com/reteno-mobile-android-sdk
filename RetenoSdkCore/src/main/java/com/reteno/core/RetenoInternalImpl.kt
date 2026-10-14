@@ -17,6 +17,8 @@ import com.reteno.core.domain.model.interaction.InteractionStatus
 import com.reteno.core.domain.model.logevent.RetenoLogEvent
 import com.reteno.core.domain.model.user.User
 import com.reteno.core.domain.model.user.UserAttributesAnonymous
+import com.reteno.core.features.appinbox.AppInbox
+import com.reteno.core.features.appinbox.AppInboxImpl
 import com.reteno.core.features.iam.InAppPauseBehaviour
 import com.reteno.core.internal.action.user.UserAttributesValidator
 import com.reteno.core.internal.coroutine.retenoDispatchers
@@ -74,7 +76,7 @@ class RetenoInternalImpl internal constructor(
     private val iamController by lazy { serviceLocator.iamControllerProvider.get() }
     private val databaseManager by lazy { serviceLocator.retenoDatabaseManagerProvider.get() }
 
-    override val appInbox by lazy { serviceLocator.appInboxProvider.get() }
+    override val appInbox: AppInbox by lazy { AppInboxImpl(actions, isOsSupported) }
     override val recommendation by lazy { serviceLocator.recommendationProvider.get() }
     private val iamView: IamView by lazy { serviceLocator.iamViewProvider.get() }
 

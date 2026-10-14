@@ -1,6 +1,8 @@
 package com.reteno.core.di
 
 import com.reteno.core.RetenoConfig
+import com.reteno.core.domain.callback.appinbox.RetenoResultCallback
+import com.reteno.core.domain.model.appinbox.AppInboxMessages
 import com.reteno.core.domain.model.ecom.EcomEvent
 import com.reteno.core.domain.model.event.Event
 import com.reteno.core.domain.model.event.LifecycleTrackingOptions
@@ -10,6 +12,7 @@ import com.reteno.core.domain.model.interaction.InteractionStatus
 import com.reteno.core.domain.model.logevent.RetenoLogEvent
 import com.reteno.core.domain.model.user.User
 import com.reteno.core.domain.model.user.UserAttributesAnonymous
+import com.reteno.core.features.appinbox.AppInboxStatus
 import com.reteno.core.internal.action.deeplink.TrackDeeplinkClickAction
 import com.reteno.core.internal.action.device.ContactSession
 import com.reteno.core.internal.action.device.CurrentDevice
@@ -21,6 +24,11 @@ import com.reteno.core.internal.action.event.LogEcomEventAction
 import com.reteno.core.internal.action.event.LogEventAction
 import com.reteno.core.internal.action.event.LogRetenoEventAction
 import com.reteno.core.internal.action.event.LogScreenViewEventAction
+import com.reteno.core.internal.action.inbox.GetInboxMessagesAction
+import com.reteno.core.internal.action.inbox.GetInboxMessagesCountAction
+import com.reteno.core.internal.action.inbox.InboxCountPoller
+import com.reteno.core.internal.action.inbox.MarkAllInboxMessagesOpenedAction
+import com.reteno.core.internal.action.inbox.MarkInboxMessageOpenedAction
 import com.reteno.core.internal.action.init.ApplyConfigAction
 import com.reteno.core.internal.action.init.BootSdkAction
 import com.reteno.core.internal.action.init.SetSessionDurationAction
@@ -122,6 +130,7 @@ internal class ActionsLocator(
     private val interactionsDb by lazy { serviceLocator.retenoDatabaseManagerInteractionProvider.get() }
     private val inAppInteractionsDb by lazy { serviceLocator.retenoDatabaseManagerInAppInteractionProvider.get() }
     private val wrappedLinksDb by lazy { serviceLocator.retenoDatabaseManagerWrappedLinksProvider.get() }
+    private val inboxDb by lazy { serviceLocator.retenoDatabaseManagerAppInboxProvider.get() }
 
     private val lifecycleEvents by lazy { LifecycleEvents(lifecycleEventFilter, logEvent) }
     private val screenTracker by lazy { ScreenTracker(logScreenView, scope) }
@@ -212,6 +221,26 @@ internal class ActionsLocator(
         SaveDefaultNotificationChannelAction(configRepository, dispatchers, runner)
     }
 
+    private val getInboxMessages: GetInboxMessagesAction by lazy {
+        GetInboxMessagesAction(api, initGate, dispatchers, runner)
+    }
+
+    private val getInboxMessagesCount: GetInboxMessagesCountAction by lazy {
+        GetInboxMessagesCountAction(api, initGate, dispatchers, runner)
+    }
+
+    private val inboxCountPoller: InboxCountPoller by lazy {
+        InboxCountPoller(getInboxMessagesCount, scope, dispatchers)
+    }
+
+    private val markInboxMessageOpened: MarkInboxMessageOpenedAction by lazy {
+        MarkInboxMessageOpenedAction(inboxDb, configRepository, dataSync, initGate, dispatchers, Util::getCurrentTimeStamp, runner)
+    }
+
+    private val markAllInboxMessagesOpened: MarkAllInboxMessagesOpenedAction by lazy {
+        MarkAllInboxMessagesOpenedAction(api, inboxDb, inboxCountPoller, initGate, dispatchers, runner)
+    }
+
     private val appForegrounded: AppForegroundedAction by lazy {
         AppForegroundedAction(platform, dataSync, configRepository, iamController, appForegroundState, lifecycleEvents, clock, runner)
     }
@@ -263,11 +292,11 @@ internal class ActionsLocator(
     }
 
     private val startSdk: StartSdkAction by lazy {
-        StartSdkAction(ensureDeviceRegisteredThisSession, sessionHandler, iamController, dataSync, iamView, runState, dispatchers, runner)
+        StartSdkAction(ensureDeviceRegisteredThisSession, sessionHandler, iamController, dataSync, iamView, inboxCountPoller, runState, dispatchers, runner)
     }
 
     private val stopSdk: StopSdkAction by lazy {
-        StopSdkAction(runState, sessionHandler, dataSync, iamView, dispatchers, runner)
+        StopSdkAction(runState, sessionHandler, dataSync, iamView, inboxCountPoller, dispatchers, runner)
     }
 
     val setSessionDuration: SetSessionDurationAction by lazy {
@@ -279,7 +308,7 @@ internal class ActionsLocator(
             interactionsDb = interactionsDb,
             inAppInteractionsDb = inAppInteractionsDb,
             eventsDb = eventsDb,
-            inboxDb = serviceLocator.retenoDatabaseManagerAppInboxProvider.get(),
+            inboxDb = inboxDb,
             recomEventsDb = serviceLocator.retenoDatabaseManagerRecomEventsProvider.get(),
             wrappedLinksDb = wrappedLinksDb,
             configuration = configuration,
@@ -313,13 +342,7 @@ internal class ActionsLocator(
                 PushInteractionsStep(interactionsDb, api, dispatchers, runner),
                 PushInAppInteractionsStep(inAppInteractionsDb, api, dispatchers, runner),
                 PushEventsStep(eventsDb, api, dispatchers, runner),
-                PushInboxStatusStep(
-                    serviceLocator.retenoDatabaseManagerAppInboxProvider.get(),
-                    api,
-                    serviceLocator.appInboxRepositoryProvider.get(),
-                    dispatchers,
-                    runner
-                ),
+                PushInboxStatusStep(inboxDb, api, inboxCountPoller, dispatchers, runner),
                 PushRecomEventsStep(serviceLocator.retenoDatabaseManagerRecomEventsProvider.get(), api, dispatchers, runner),
                 PushWrappedLinksStep(wrappedLinksDb, api, dispatchers, runner),
                 PushLogEventsStep(serviceLocator.retenoDatabaseManagerLogEventProvider.get(), api, dispatchers, runner)
@@ -435,5 +458,33 @@ internal class ActionsLocator(
 
     override fun submitDefaultNotificationChannel(channel: String) {
         scope.launch { saveDefaultNotificationChannel(channel) }
+    }
+
+    override fun submitInboxMessagesRequest(page: Int?, pageSize: Int?, status: AppInboxStatus?, callback: RetenoResultCallback<AppInboxMessages>) {
+        scope.launch { getInboxMessages(page, pageSize, status, callback) }
+    }
+
+    override fun submitInboxCountRequest(callback: RetenoResultCallback<Int>) {
+        scope.launch { getInboxMessagesCount(callback) }
+    }
+
+    override fun subscribeInboxCount(callback: RetenoResultCallback<Int>) {
+        inboxCountPoller.subscribe(callback)
+    }
+
+    override fun unsubscribeInboxCount(callback: RetenoResultCallback<Int>) {
+        inboxCountPoller.unsubscribe(callback)
+    }
+
+    override fun unsubscribeAllInboxCount() {
+        inboxCountPoller.unsubscribeAll()
+    }
+
+    override fun submitInboxMessageOpened(messageId: String) {
+        scope.launch { markInboxMessageOpened(messageId) }
+    }
+
+    override fun submitAllInboxMessagesOpened(callback: RetenoResultCallback<Unit>) {
+        scope.launch { markAllInboxMessagesOpened(callback) }
     }
 }
