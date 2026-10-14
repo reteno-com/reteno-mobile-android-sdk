@@ -5,12 +5,17 @@ import android.content.Context
 import androidx.lifecycle.LifecycleOwner
 import androidx.work.Configuration
 import androidx.work.WorkManager
+import com.reteno.core.R
 import com.reteno.core.data.local.config.DeviceId
 import com.reteno.core.data.workmanager.PushDataWorker
 import com.reteno.core.di.base.Provider
 import com.reteno.core.domain.model.device.Device
+import com.reteno.core.internal.iam.InAppScreen
 import com.reteno.core.lifecycle.RetenoActivityHelper
 import com.reteno.core.lifecycle.ScreenTrackingTrigger
+import com.reteno.core.util.DeviceInfo
+import com.reteno.core.util.Util
+import com.reteno.core.view.iam.AndroidInAppScreen
 
 internal interface AppPlatform {
     fun sendBroadcast(action: String): Int
@@ -30,6 +35,12 @@ internal interface AppPlatform {
     fun cancelBackgroundSync()
 
     fun createDevice(deviceId: DeviceId, pushToken: String, pushSubscribed: Boolean): Device
+
+    fun bundledWidget(): String?
+
+    fun inAppScreen(): InAppScreen
+
+    fun logEventOrigin(): LogEventOrigin
 }
 
 internal class AndroidAppPlatform(
@@ -77,6 +88,17 @@ internal class AndroidAppPlatform(
     override fun cancelBackgroundSync() {
         workManager.get().cancelUniqueWork(PushDataWorker.PUSH_DATA_WORK_NAME)
     }
+
+    override fun bundledWidget(): String? = Util.readFromRaw(context, R.raw.widget)
+
+    override fun inAppScreen(): InAppScreen = AndroidInAppScreen(context, activityHelper, broadcaster)
+
+    override fun logEventOrigin(): LogEventOrigin = LogEventOrigin(
+        packageName = context.packageName,
+        osVersion = DeviceInfo.fetchOsVersion(),
+        appVersion = appInfo.installedVersion().toString(),
+        deviceModel = DeviceInfo.fetchDeviceModel()
+    )
 
     override fun createDevice(
         deviceId: DeviceId,

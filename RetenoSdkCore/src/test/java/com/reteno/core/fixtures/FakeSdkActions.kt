@@ -22,6 +22,7 @@ import com.reteno.core.features.recommendation.GetRecommendationResponseCallback
 import com.reteno.core.features.recommendation.GetRecommendationResponseJsonCallback
 import com.reteno.core.internal.action.sync.BackgroundSyncAction
 import com.reteno.core.lifecycle.ScreenTrackingConfig
+import com.reteno.core.view.iam.callback.InAppLifecycleCallback
 
 internal class FakeSdkActions : SdkActions {
     val calls = mutableListOf<String>()
@@ -210,6 +211,18 @@ internal class FakeSdkActions : SdkActions {
 
     override fun submitInAppPauseBehaviour(behaviour: InAppPauseBehaviour) {
         record("submitInAppPauseBehaviour $behaviour")
+    }
+
+    override fun submitPushInAppPause(paused: Boolean) {
+        record("submitPushInAppPause $paused")
+    }
+
+    override fun submitPushInAppPauseBehaviour(behaviour: InAppPauseBehaviour) {
+        record("submitPushInAppPauseBehaviour $behaviour")
+    }
+
+    override fun submitInAppLifecycleCallback(callback: InAppLifecycleCallback?) {
+        record("submitInAppLifecycleCallback ${callback != null}")
     }
 
     override val backgroundSync: BackgroundSyncAction

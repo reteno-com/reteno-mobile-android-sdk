@@ -20,7 +20,7 @@ import com.reteno.core.data.remote.model.iam.message.InAppMessageContent.InAppLa
 import com.reteno.core.domain.controller.IamFetchResult
 import com.reteno.core.features.iam.RetenoAndroidHandler
 import com.reteno.core.util.Logger
-import com.reteno.core.view.iam.IamViewImpl
+import com.reteno.core.view.iam.AndroidInAppScreen
 import com.reteno.core.view.iam.container.IamContainer
 import com.reteno.core.view.iam.container.IamContainer.IamDismissListener
 
@@ -92,7 +92,7 @@ internal class SlideUpIamContainer(
             databaseEnabled = true
         }
         webView.setBackgroundColor(Color.TRANSPARENT)
-        webView.addJavascriptInterface(jsInterface, IamViewImpl.JS_INTERFACE_NAME)
+        webView.addJavascriptInterface(jsInterface, AndroidInAppScreen.JS_INTERFACE_NAME)
         webView.loadDataWithBaseURL("", fetchResult.fullHtml, "text/html", "UTF-8", "")
         return webView
     }
@@ -114,7 +114,7 @@ internal class SlideUpIamContainer(
             parentLayout.isVisible = false
             container?.removeView(parentLayout)
             parentLayout.removeAllViews()
-            webView.removeJavascriptInterface(IamViewImpl.JS_INTERFACE_NAME)
+            webView.removeJavascriptInterface(AndroidInAppScreen.JS_INTERFACE_NAME)
         } catch (e: Exception) {
             /*@formatter:off*/ Logger.e(TAG, "destroy(): SlideUpIamContainer.destroy() ", e)
             /*@formatter:on*/

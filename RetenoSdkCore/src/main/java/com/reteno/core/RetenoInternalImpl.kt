@@ -14,7 +14,6 @@ import com.reteno.core.domain.model.event.Event
 import com.reteno.core.domain.model.event.LifecycleTrackingOptions
 import com.reteno.core.domain.model.interaction.InteractionAction
 import com.reteno.core.domain.model.interaction.InteractionStatus
-import com.reteno.core.domain.model.logevent.RetenoLogEvent
 import com.reteno.core.domain.model.user.User
 import com.reteno.core.domain.model.user.UserAttributesAnonymous
 import com.reteno.core.features.appinbox.AppInbox
@@ -33,7 +32,6 @@ import com.reteno.core.permission.PermissionActivityDelegate
 import com.reteno.core.util.Logger
 import com.reteno.core.util.Procedure
 import com.reteno.core.util.isOsVersionSupported
-import com.reteno.core.view.iam.IamView
 import com.reteno.core.view.iam.callback.InAppLifecycleCallback
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -80,7 +78,6 @@ class RetenoInternalImpl internal constructor(
 
     override val appInbox: AppInbox by lazy { AppInboxImpl(actions, LoggerRemoteLog, isOsSupported) }
     override val recommendation: Recommendation by lazy { RecommendationImpl(actions, LoggerRemoteLog, isOsSupported) }
-    private val iamView: IamView by lazy { serviceLocator.iamViewProvider.get() }
 
     private val receivedConfigFromUser = AtomicBoolean(false)
 
@@ -197,13 +194,6 @@ class RetenoInternalImpl internal constructor(
         actions.submitScreenView(screenName)
     }
 
-    override fun logRetenoEvent(event: RetenoLogEvent) = runAfterInit {
-        if (!isOsSupported()) {
-            return@runAfterInit
-        }
-        actions.submitRetenoLogEvent(event)
-    }
-
     override fun setLifecycleEventConfig(lifecycleTrackingOptions: LifecycleTrackingOptions) =
         runAfterInit {
             if (!isOsSupported()) {
@@ -230,12 +220,14 @@ class RetenoInternalImpl internal constructor(
 
     override fun pausePushInAppMessages(isPaused: Boolean) = runAfterInit {
         Logger.i(TAG, "pausePushInAppMessages(): isPaused = [$isPaused]")
-        iamView.pauseIncomingPushInApps(isPaused)
+        if (!isOsSupported()) return@runAfterInit
+        actions.submitPushInAppPause(isPaused)
     }
 
     override fun setPushInAppMessagesPauseBehaviour(behaviour: InAppPauseBehaviour) = runAfterInit {
         Logger.i(TAG, "setPushInAppMessagesPauseBehaviour(): behaviour = [$behaviour]")
-        iamView.setPauseBehaviour(behaviour)
+        if (!isOsSupported()) return@runAfterInit
+        actions.submitPushInAppPauseBehaviour(behaviour)
     }
 
     override fun setInAppLifecycleCallback(inAppLifecycleCallback: InAppLifecycleCallback?) =
@@ -244,7 +236,8 @@ class RetenoInternalImpl internal constructor(
                 TAG,
                 "setInAppLifecycleCallback(): inAppLifecycleCallback = [$inAppLifecycleCallback]"
             )
-            iamView.setInAppLifecycleCallback(inAppLifecycleCallback)
+            if (!isOsSupported()) return@runAfterInit
+            actions.submitInAppLifecycleCallback(inAppLifecycleCallback)
         }
 
     override fun forcePushData() = runAfterInit {

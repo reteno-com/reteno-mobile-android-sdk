@@ -2,8 +2,11 @@ package com.reteno.core.fixtures
 
 import com.reteno.core.internal.action.trace.MonotonicClock
 import com.reteno.core.internal.coroutine.RetenoDispatchers
+import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Delay
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.InternalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlin.coroutines.CoroutineContext
@@ -34,20 +37,29 @@ internal class CountingDispatcher(private val delegate: CoroutineDispatcher) : C
     }
 }
 
-internal class MarkingDispatcher(private val delegate: CoroutineDispatcher) : CoroutineDispatcher() {
+@OptIn(InternalCoroutinesApi::class, ExperimentalCoroutinesApi::class)
+internal class MarkingDispatcher(private val delegate: CoroutineDispatcher) : CoroutineDispatcher(), Delay {
     private val running = ThreadLocal<Boolean>()
 
     val isRunningHere: Boolean
         get() = running.get() == true
 
     override fun dispatch(context: CoroutineContext, block: Runnable) {
-        delegate.dispatch(context, Runnable {
-            running.set(true)
-            try {
-                block.run()
-            } finally {
-                running.set(false)
-            }
-        })
+        delegate.dispatch(context, marked(block))
+    }
+
+    override fun scheduleResumeAfterDelay(timeMillis: Long, continuation: CancellableContinuation<Unit>) {
+        val resume = marked(Runnable { with(continuation) { resumeUndispatched(Unit) } })
+        val handle = (delegate as Delay).invokeOnTimeout(timeMillis, resume, continuation.context)
+        continuation.invokeOnCancellation { handle.dispose() }
+    }
+
+    private fun marked(block: Runnable) = Runnable {
+        running.set(true)
+        try {
+            block.run()
+        } finally {
+            running.set(false)
+        }
     }
 }

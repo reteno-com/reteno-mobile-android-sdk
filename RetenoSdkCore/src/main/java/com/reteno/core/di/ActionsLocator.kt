@@ -36,10 +36,13 @@ import com.reteno.core.internal.action.iam.FetchInAppMessagesAction
 import com.reteno.core.internal.action.iam.InAppHtmlPreload
 import com.reteno.core.internal.action.iam.InAppMessagesCache
 import com.reteno.core.internal.action.iam.InAppTriggers
+import com.reteno.core.internal.action.iam.LoadInAppHtmlAction
+import com.reteno.core.internal.action.iam.LoadPushInAppHtmlAction
 import com.reteno.core.internal.action.iam.PauseInAppMessagesAction
 import com.reteno.core.internal.action.iam.PreloadIamHtmlAction
 import com.reteno.core.internal.action.iam.ProcessInAppMessagesAction
 import com.reteno.core.internal.action.iam.RecordInAppShownAction
+import com.reteno.core.internal.action.iam.ReportWidgetFailureAction
 import com.reteno.core.internal.action.iam.SetInAppPauseBehaviourAction
 import com.reteno.core.internal.action.iam.ShowInAppAction
 import com.reteno.core.internal.action.inbox.GetInboxMessagesAction
@@ -99,6 +102,7 @@ import com.reteno.core.internal.iam.DisplayRulesEvaluator
 import com.reteno.core.internal.iam.InAppDisplayRules
 import com.reteno.core.internal.iam.InAppMessagesState
 import com.reteno.core.internal.iam.InAppMessagesStateImpl
+import com.reteno.core.internal.iam.InAppPresenter
 import com.reteno.core.internal.lifecycle.AppForegroundState
 import com.reteno.core.internal.lifecycle.AppLifecycleTracking
 import com.reteno.core.internal.lifecycle.AppLifecycleTrackingImpl
@@ -108,15 +112,20 @@ import com.reteno.core.internal.lifecycle.ScreenTracker
 import com.reteno.core.internal.lifecycle.SdkRunState
 import com.reteno.core.internal.lifecycle.StartStopSequencer
 import com.reteno.core.internal.log.RemoteLog
+import com.reteno.core.internal.log.RemoteLogRecorder
 import com.reteno.core.internal.log.RetenoLogSink
 import com.reteno.core.internal.network.SuspendApiClient
 import com.reteno.core.internal.platform.AppPlatform
 import com.reteno.core.lifecycle.ScreenTrackingConfig
+import com.reteno.core.util.Logger
 import com.reteno.core.util.Util
+import com.reteno.core.view.iam.IamView
+import com.reteno.core.view.iam.callback.InAppLifecycleCallback
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.plus
 import kotlinx.coroutines.sync.Mutex
+import java.util.UUID
 import kotlin.random.Random
 
 internal class ActionsLocator(
@@ -128,11 +137,16 @@ internal class ActionsLocator(
     private val configuration: SdkConfiguration,
     private val platform: AppPlatform,
     private val lifecycleEventFilter: LifecycleEventFilter,
-    private val remoteLog: RemoteLog,
     private val clock: () -> Long
 ) : SdkActions {
 
+    private val remoteLog: RemoteLog = RemoteLogRecorder(
+        configRepository = lazy { serviceLocator.configRepositoryProvider.get() },
+        platform = platform,
+        queue = this
+    )
     private val runner = ActionRunner(logSink, RemoteLogFailureReporter(remoteLog))
+    private val newId: () -> String = { UUID.randomUUID().toString() }
     private val eventBus = EventBus()
     private val mainScope = scope + dispatchers.main
     private val contactSession = ContactSession()
@@ -150,8 +164,6 @@ internal class ActionsLocator(
     private val restConfig by lazy { serviceLocator.restConfigProvider.get() }
     private val prefs by lazy { serviceLocator.sharedPrefsManagerProvider.get() }
     private val sessionHandler by lazy { serviceLocator.retenoSessionHandlerProvider.get() }
-    private val iamController by lazy { serviceLocator.iamControllerProvider.get() }
-    private val iamView by lazy { serviceLocator.iamViewProvider.get() }
     private val eventsDb by lazy { serviceLocator.retenoDatabaseManagerEventsProvider.get() }
     private val devicesDb by lazy { serviceLocator.retenoDatabaseManagerDeviceProvider.get() }
     private val usersDb by lazy { serviceLocator.retenoDatabaseManagerUserProvider.get() }
@@ -162,6 +174,7 @@ internal class ActionsLocator(
     private val inAppCache by lazy {
         InAppMessagesCache(serviceLocator.retenoDatabaseManagerInAppMessagesProvider.get(), dispatchers)
     }
+    private val files by lazy { serviceLocator.fileManagerProvider.get() }
     private val recomEventsDb by lazy { serviceLocator.retenoDatabaseManagerRecomEventsProvider.get() }
 
     private val lifecycleEvents by lazy { LifecycleEvents(lifecycleEventFilter, logEvent) }
@@ -209,7 +222,7 @@ internal class ActionsLocator(
             state = inAppMessagesState,
             checkSegments = checkInAppSegments,
             sessionHandler = sessionHandler,
-            display = iamController,
+            display = inAppPresenter,
             lock = inAppTriggerLock,
             runner = runner
         )
@@ -231,7 +244,7 @@ internal class ActionsLocator(
     }
 
     private val pauseInApps: PauseInAppMessagesAction by lazy {
-        PauseInAppMessagesAction(inAppMessagesState, iamController, runner)
+        PauseInAppMessagesAction(inAppMessagesState, inAppPresenter, runner)
     }
 
     private val setInAppPauseBehaviour: SetInAppPauseBehaviourAction by lazy {
@@ -256,9 +269,52 @@ internal class ActionsLocator(
 
     private val inAppHtmlPreload: InAppHtmlPreload by lazy {
         InAppHtmlPreload(
-            preload = PreloadIamHtmlAction(api, prefs, serviceLocator.fileManagerProvider.get(), dispatchers, runner),
+            preload = PreloadIamHtmlAction(api, prefs, files, dispatchers, runner),
             scope = scope
         )
+    }
+
+    private val inAppPresenter: InAppPresenter by lazy {
+        InAppPresenter(
+            screen = platform.inAppScreen(),
+            loadHtml = loadInAppHtml,
+            loadPushHtml = loadPushInAppHtml,
+            reportFailure = reportWidgetFailure,
+            interactions = this,
+            remoteLog = remoteLog,
+            scope = scope,
+            dispatchers = dispatchers,
+            newId = newId
+        )
+    }
+
+    val iamView: IamView
+        get() = inAppPresenter
+
+    private val loadInAppHtml: LoadInAppHtmlAction by lazy {
+        LoadInAppHtmlAction(
+            files = files,
+            usersDb = usersDb,
+            dispatchers = dispatchers,
+            newId = newId,
+            runner = runner
+        )
+    }
+
+    private val loadPushInAppHtml: LoadPushInAppHtmlAction by lazy {
+        LoadPushInAppHtmlAction(
+            api = api,
+            files = files,
+            platform = platform,
+            initGate = initGate,
+            dispatchers = dispatchers,
+            newId = newId,
+            runner = runner
+        )
+    }
+
+    private val reportWidgetFailure: ReportWidgetFailureAction by lazy {
+        ReportWidgetFailureAction(api, initGate, runner)
     }
 
     val registerDevice: RegisterDeviceAction by lazy {
@@ -345,7 +401,7 @@ internal class ActionsLocator(
     }
 
     private val initializeIamFromPush: InitializeIamFromPushAction by lazy {
-        InitializeIamFromPushAction(iamView, dispatchers, runner)
+        InitializeIamFromPushAction(inAppPresenter, runner)
     }
 
     private val saveDefaultNotificationChannel: SaveDefaultNotificationChannelAction by lazy {
@@ -446,7 +502,7 @@ internal class ActionsLocator(
             registerDevice = registerDevice,
             initGate = initGate,
             pauseInApps = pauseInApps,
-            iamView = iamView,
+            iamView = inAppPresenter,
             lifecycleTracking = lifecycleTracking,
             processCachedInteractions = processCachedInteractions,
             dispatchers = dispatchers,
@@ -465,7 +521,7 @@ internal class ActionsLocator(
             fetchInAppMessages = fetchInAppMessages,
             processInAppMessages = processInAppMessages,
             dataSync = dataSync,
-            iamView = iamView,
+            iamView = inAppPresenter,
             inboxCount = inboxCountPoller,
             state = runState,
             dispatchers = dispatchers,
@@ -474,7 +530,7 @@ internal class ActionsLocator(
     }
 
     private val stopSdk: StopSdkAction by lazy {
-        StopSdkAction(runState, sessionHandler, dataSync, iamView, inboxCountPoller, dispatchers, runner)
+        StopSdkAction(runState, sessionHandler, dataSync, inAppPresenter, inboxCountPoller, runner)
     }
 
     val setSessionDuration: SetSessionDurationAction by lazy {
@@ -539,6 +595,10 @@ internal class ActionsLocator(
             dispatchers = dispatchers,
             runner = runner
         )
+    }
+
+    fun installLogging() {
+        Logger.install(logSink, remoteLog)
     }
 
     override fun boot() {
@@ -637,6 +697,18 @@ internal class ActionsLocator(
 
     override fun submitInAppPauseBehaviour(behaviour: InAppPauseBehaviour) {
         inAppQueue.enqueue { setInAppPauseBehaviour(behaviour) }
+    }
+
+    override fun submitPushInAppPause(paused: Boolean) {
+        inAppPresenter.pauseIncomingPushInApps(paused)
+    }
+
+    override fun submitPushInAppPauseBehaviour(behaviour: InAppPauseBehaviour) {
+        inAppPresenter.setPauseBehaviour(behaviour)
+    }
+
+    override fun submitInAppLifecycleCallback(callback: InAppLifecycleCallback?) {
+        inAppPresenter.setInAppLifecycleCallback(callback)
     }
 
     override fun submitDeeplinkClick(wrappedLink: String) {

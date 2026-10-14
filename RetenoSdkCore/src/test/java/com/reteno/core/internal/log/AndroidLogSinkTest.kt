@@ -115,6 +115,7 @@ internal class AndroidLogSinkTest {
     fun `should map every priority to android log priority`() = runUnitTest {
         given()
         val expected = mapOf(
+            LogPriority.VERBOSE to Log.VERBOSE,
             LogPriority.DEBUG to Log.DEBUG,
             LogPriority.INFO to Log.INFO,
             LogPriority.WARN to Log.WARN,

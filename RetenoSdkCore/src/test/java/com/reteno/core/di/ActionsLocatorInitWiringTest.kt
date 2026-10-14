@@ -4,6 +4,7 @@ import com.reteno.core.data.local.config.DeviceIdMode
 import com.reteno.core.data.remote.api.ApiContract
 import com.reteno.core.fixtures.LocatorFixture
 import com.reteno.core.fixtures.stubConfig
+import com.reteno.core.fixtures.stubInAppMessage
 import com.reteno.core.internal.coroutine.InitState
 import com.reteno.test.given
 import com.reteno.test.runUnitTest
@@ -96,7 +97,6 @@ internal class ActionsLocatorInitWiringTest {
         coVerify(exactly = 1) { fixture.env.restConfig.initDeviceId(DeviceIdMode.CLIENT_UUID) }
         verify(exactly = 1) { fixture.env.devicesDb.insertDevice(any()) }
         assertTrue(fixture.env.sut.inAppMessagesState.isPaused)
-        verify(exactly = 1) { fixture.env.iamView.pauseIncomingPushInApps(true) }
         verify(exactly = 1) { fixture.env.interactionsDb.getInteractionRequests() }
         assertNotNull(fixture.env.platform.onForeground)
         assertEquals(InitState.BY_USER, fixture.env.initGate.state)
@@ -139,9 +139,58 @@ internal class ActionsLocatorInitWiringTest {
         assertFalse(fixture.env.sut.isStarted)
         verify(exactly = 1) { fixture.env.sessionHandler.start() }
         assertEquals(1, fixture.env.rest.requests.count { it.contract == ApiContract.InAppMessages.GetInAppMessages })
-        verify(exactly = 1) { fixture.env.iamView.start() }
         verify(exactly = 1) { fixture.env.sessionHandler.stop() }
-        verify(exactly = 1) { fixture.env.iamView.pause() }
+    }
+
+    @Test
+    fun `should show in-app offered before start once sdk starts`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this, initialized = true)
+        fixture.env.sut.iamView.initialize(stubInAppMessage())
+        runCurrent()
+        val createdBeforeStart = fixture.env.platform.screen.calls.toList()
+
+        whenn()
+        fixture.env.sut.requestStart()
+        runCurrent()
+
+        then()
+        assertTrue(createdBeforeStart.isEmpty())
+        assertTrue(fixture.env.platform.screen.calls.single().startsWith("create"))
+    }
+
+    @Test
+    fun `should hold in-app offered after sdk stops`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this, initialized = true)
+        fixture.env.sut.requestStart()
+        runCurrent()
+        fixture.env.sut.requestStop()
+        runCurrent()
+
+        whenn()
+        fixture.env.sut.iamView.initialize(stubInAppMessage())
+        runCurrent()
+
+        then()
+        assertTrue(fixture.env.platform.screen.calls.isEmpty())
+    }
+
+    @Test
+    fun `should hold push in-app when user configuration pauses push in-apps`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        fixture.env.sut.applyUserConfig(stubConfig(pausedPushInApps = true))
+        runCurrent()
+        fixture.env.sut.submitIamFromPush("interaction-1")
+        runCurrent()
+
+        whenn()
+        fixture.env.platform.screen.postWidgetMessage("""{"type":"WIDGET_INIT_SUCCESS"}""")
+        runCurrent()
+
+        then()
+        assertTrue(fixture.env.platform.screen.calls.single().startsWith("create"))
     }
 
     @Test

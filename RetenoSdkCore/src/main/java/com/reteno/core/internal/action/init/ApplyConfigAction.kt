@@ -70,7 +70,7 @@ internal class ApplyConfigAction(
         }
         pauseInApps(config.isPausedInAppMessages)
         step("apply push in-app pause option", detail = { "pushInApps=${config.isPausedPushInAppMessages}" }) {
-            withContext(dispatchers.main) { iamView.pauseIncomingPushInApps(config.isPausedPushInAppMessages) }
+            iamView.pauseIncomingPushInApps(config.isPausedPushInAppMessages)
         }
         if (byUser) {
             step("start app lifecycle tracking") {

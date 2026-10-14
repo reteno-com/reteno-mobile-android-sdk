@@ -1,5 +1,6 @@
 package com.reteno.core.di
 
+import com.reteno.core.data.remote.api.ApiContract
 import com.reteno.core.domain.model.event.LifecycleEventType
 import com.reteno.core.domain.model.event.LifecycleTrackingOptions
 import com.reteno.core.domain.model.interaction.InAppInteraction
@@ -188,7 +189,11 @@ internal class ActionsLocatorFacadeWiringTest {
         runCurrent()
 
         then()
-        verify(exactly = 1) { fixture.iamView.initialize("interaction-1") }
+        assertTrue(fixture.platform.screen.calls.single().startsWith("create"))
+        val widgetRequests = fixture.rest.requests.filter {
+            it.contract is ApiContract.InAppMessages.GetInnAppWidgetByInteractionId
+        }
+        assertEquals(1, widgetRequests.size)
     }
 
     @Test

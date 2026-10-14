@@ -7,9 +7,11 @@ import com.reteno.core.data.remote.mapper.toJson
 import com.reteno.core.data.remote.mapper.toRemote
 import com.reteno.core.data.remote.model.logevent.RetenoLogEventListRemote
 import com.reteno.core.fixtures.FakeRestClient
+import com.reteno.core.fixtures.RecordingLogEventQueue
 import com.reteno.core.fixtures.SentRequest
 import com.reteno.core.fixtures.TestActionRunner
 import com.reteno.core.fixtures.api
+import com.reteno.core.fixtures.recordingRemoteLog
 import com.reteno.core.fixtures.stubRetenoLogEventDb
 import com.reteno.core.fixtures.testDispatchers
 import com.reteno.test.given
@@ -274,5 +276,37 @@ internal class PushLogEventsStepTest {
             RetenoLogEventListRemote(listOf(withoutMessage.toRemote())).toJson(),
             fixture.rest.requests.single().body
         )
+    }
+
+    @Test
+    fun `should not record new log events while reading and deleting log events fails and logs errors`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        val queue = RecordingLogEventQueue()
+        val remoteLog = recordingRemoteLog(queue)
+        val failing = IllegalStateException("database is locked")
+        every { fixture.logsDb.getLogEventsCount() } answers {
+            remoteLog.recordError("getLogEventsCount()", failing)
+            PushLogEventsStep.MAX_BACKLOG + 1L
+        }
+        every { fixture.logsDb.getLogEvents(any()) } answers {
+            remoteLog.recordError("getLogEvents()", failing)
+            listOf(stubRetenoLogEventDb())
+        }
+        every { fixture.logsDb.getLogEvents(PushLogEventsStep.BATCH_SIZE) } answers {
+            remoteLog.recordError("getLogEvents()", failing)
+            emptyList()
+        }
+        every { fixture.logsDb.deleteLogEvents(any()) } answers {
+            remoteLog.recordError("deleteLogEvents()", failing)
+            true
+        }
+
+        whenn()
+        fixture.sut()
+
+        then()
+        verify(exactly = 1) { fixture.logsDb.deleteLogEvents(any()) }
+        assertTrue(queue.events.isEmpty())
     }
 }

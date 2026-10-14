@@ -6,6 +6,8 @@ import com.reteno.core.fixtures.LocatorFixture
 import com.reteno.core.fixtures.stubCustomEvent
 import com.reteno.core.fixtures.stubEcomEvent
 import com.reteno.core.fixtures.stubRetenoLogEvent
+import com.reteno.core.internal.log.AndroidLogSink
+import com.reteno.core.util.Logger
 import com.reteno.test.given
 import com.reteno.test.runUnitTest
 import com.reteno.test.then
@@ -13,12 +15,15 @@ import com.reteno.test.whenn
 import io.mockk.every
 import io.mockk.justRun
 import io.mockk.verify
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.runCurrent
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import java.io.IOException
 
+@OptIn(ExperimentalCoroutinesApi::class)
 internal class ActionsLocatorTest {
 
     private class SutFixture(scope: TestScope) {
@@ -27,7 +32,7 @@ internal class ActionsLocatorTest {
         val logEventsDb = locator.logEventsDb
         val deviceId = locator.deviceId
         val sink = locator.sink
-        val remoteLogs: List<String>
+        val remoteLogs: List<String?>
             get() = locator.remoteLogs.map { it.first }
         val sut = locator.sut
     }
@@ -99,6 +104,7 @@ internal class ActionsLocatorTest {
 
         whenn()
         fixture.sut.logEvent(stubCustomEvent())
+        runCurrent()
 
         then()
         val expected = "Action LogEvent failed at step 'save event to local database': IOException: cannot write <url>"
@@ -116,5 +122,23 @@ internal class ActionsLocatorTest {
 
         then()
         assertTrue(fixture.remoteLogs.isEmpty())
+    }
+
+    @Test
+    fun `should save messages logged through logger once logging is installed`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+
+        whenn()
+        try {
+            fixture.sut.installLogging()
+            Logger.captureMessage("cache cleared = 3 entries")
+            runCurrent()
+        } finally {
+            Logger.install(AndroidLogSink(), null)
+        }
+
+        then()
+        assertEquals(listOf("cache cleared"), fixture.remoteLogs)
     }
 }

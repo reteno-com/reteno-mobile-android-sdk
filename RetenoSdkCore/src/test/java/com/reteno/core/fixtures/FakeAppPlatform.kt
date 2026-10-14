@@ -3,8 +3,10 @@ package com.reteno.core.fixtures
 import android.app.Activity
 import com.reteno.core.data.local.config.DeviceId
 import com.reteno.core.domain.model.device.Device
+import com.reteno.core.internal.iam.InAppScreen
 import com.reteno.core.internal.platform.AppPlatform
 import com.reteno.core.internal.platform.AppVersion
+import com.reteno.core.internal.platform.LogEventOrigin
 import com.reteno.core.lifecycle.ScreenTrackingTrigger
 
 internal class FakeAppPlatform : AppPlatform {
@@ -17,6 +19,16 @@ internal class FakeAppPlatform : AppPlatform {
     var onActivityPaused: ((Activity) -> Unit)? = null
     val calls = mutableListOf<String>()
     var onScheduleBackgroundSync: () -> Unit = {}
+    var bundledWidget: String? = "{}"
+    var onBundledWidget: () -> Unit = {}
+    val screen = FakeInAppScreen()
+    var origin = LogEventOrigin(
+        packageName = "com.example.app",
+        osVersion = "14 (API 34)",
+        appVersion = "1.0 (1)",
+        deviceModel = "PIXEL 8"
+    )
+    var originReads = 0
 
     override fun sendBroadcast(action: String): Int {
         broadcasts += action
@@ -57,4 +69,16 @@ internal class FakeAppPlatform : AppPlatform {
 
     override fun createDevice(deviceId: DeviceId, pushToken: String, pushSubscribed: Boolean): Device =
         stubDevice(deviceId, pushToken, pushSubscribed)
+
+    override fun bundledWidget(): String? {
+        onBundledWidget()
+        return bundledWidget
+    }
+
+    override fun inAppScreen(): InAppScreen = screen
+
+    override fun logEventOrigin(): LogEventOrigin {
+        originReads++
+        return origin
+    }
 }

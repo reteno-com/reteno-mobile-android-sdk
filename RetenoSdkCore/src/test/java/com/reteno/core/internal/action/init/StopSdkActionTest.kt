@@ -1,7 +1,6 @@
 package com.reteno.core.internal.action.init
 
 import com.reteno.core.fixtures.TestActionRunner
-import com.reteno.core.fixtures.testDispatchers
 import com.reteno.core.internal.action.inbox.InboxCountPolling
 import com.reteno.core.internal.action.sync.SyncScheduler
 import com.reteno.core.internal.lifecycle.SdkRunState
@@ -22,7 +21,6 @@ internal class StopSdkActionTest {
     fun `should mark sdk stopped and stop its parts in order`() = runUnitTest {
         given()
         val calls = mutableListOf<String>()
-        val dispatchers = testDispatchers()
         val state = SdkRunState().also { it.markStarted() }
         val sessionHandler = mockk<RetenoSessionHandler>().also {
             every { it.stop() } answers { calls += "stop session started=${state.isStarted}" }
@@ -31,7 +29,7 @@ internal class StopSdkActionTest {
             every { it.stopScheduler() } answers { calls += "stop scheduler" }
         }
         val iamView = mockk<IamView>().also {
-            every { it.pause() } answers { calls += "pause in-app view main=${dispatchers.markedMain.isRunningHere}" }
+            every { it.pause() } answers { calls += "pause in-app view" }
         }
         val inboxCount = mockk<InboxCountPolling>().also {
             every { it.pause() } answers { calls += "pause inbox count polling" }
@@ -42,7 +40,6 @@ internal class StopSdkActionTest {
             dataSync = dataSync,
             iamView = iamView,
             inboxCount = inboxCount,
-            dispatchers = dispatchers,
             runner = TestActionRunner(this).runner
         )
 
@@ -54,7 +51,7 @@ internal class StopSdkActionTest {
             listOf(
                 "stop session started=false",
                 "stop scheduler",
-                "pause in-app view main=true",
+                "pause in-app view",
                 "pause inbox count polling"
             ),
             calls

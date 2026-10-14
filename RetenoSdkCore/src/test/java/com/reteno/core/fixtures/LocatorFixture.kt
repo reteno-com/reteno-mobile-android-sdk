@@ -16,12 +16,12 @@ import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerWrappedL
 import com.reteno.core.data.local.file.FileManager
 import com.reteno.core.data.local.model.event.EventsDb
 import com.reteno.core.data.local.model.interaction.InteractionRequestDb
+import com.reteno.core.data.local.model.logevent.RetenoLogEventDb
 import com.reteno.core.data.local.sharedpref.SharedPrefsManager
 import com.reteno.core.data.repository.ConfigRepository
 import com.reteno.core.di.ActionsLocator
 import com.reteno.core.di.ServiceLocator
 import com.reteno.core.di.provider.RetenoConfigProvider
-import com.reteno.core.domain.controller.IamController
 import com.reteno.core.domain.model.event.LifecycleTrackingOptions
 import com.reteno.core.domain.model.logevent.LogLevel
 import com.reteno.core.internal.config.SdkConfigurationImpl
@@ -29,7 +29,6 @@ import com.reteno.core.internal.coroutine.InitGate
 import com.reteno.core.internal.lifecycle.LifecycleEventFilter
 import com.reteno.core.lifecycle.RetenoActivityHelper
 import com.reteno.core.lifecycle.RetenoSessionHandler
-import com.reteno.core.view.iam.IamView
 import com.reteno.test.workScope
 import io.mockk.every
 import io.mockk.mockk
@@ -54,8 +53,6 @@ internal class LocatorFixture(scope: TestScope, initialized: Boolean = true) {
     val configRepository = mockk<ConfigRepository>(relaxed = true)
     val workManager = mockk<WorkManager>(relaxed = true)
     val sessionHandler = mockk<RetenoSessionHandler>(relaxed = true)
-    val iamController = mockk<IamController>(relaxed = true)
-    val iamView = mockk<IamView>(relaxed = true)
     val prefs = mockk<SharedPrefsManager>(relaxed = true)
     val restConfig = mockk<RestConfig>(relaxed = true)
     val activityHelper = mockk<RetenoActivityHelper>(relaxed = true)
@@ -63,9 +60,9 @@ internal class LocatorFixture(scope: TestScope, initialized: Boolean = true) {
     val rest = FakeRestClient()
     val deviceId = stubDeviceId()
     val sink = FakeLogSink()
-    val remoteLog = FakeRemoteLog()
-    val remoteLogs: List<Pair<String, LogLevel>>
-        get() = remoteLog.entries
+    val savedLogEvents = mutableListOf<RetenoLogEventDb>()
+    val remoteLogs: List<Pair<String?, LogLevel>>
+        get() = savedLogEvents.map { it.errorMessage to LogLevel.valueOf(it.logLevel.name) }
     val serviceLocator = mockk<ServiceLocator>().also {
         every { it.retenoDatabaseManagerDeviceProvider.get() } returns devicesDb
         every { it.retenoDatabaseManagerUserProvider.get() } returns usersDb
@@ -83,11 +80,9 @@ internal class LocatorFixture(scope: TestScope, initialized: Boolean = true) {
         every { it.restClientProvider.get() } returns rest
         every { it.restConfigProvider.get() } returns restConfig
         every { it.sharedPrefsManagerProvider.get() } returns prefs
-        every { it.iamViewProvider.get() } returns iamView
         every { it.retenoActivityHelperProvider.get() } returns activityHelper
         every { it.retenoDatabaseManagerProvider.get() } returns databaseManager
         every { it.retenoSessionHandlerProvider.get() } returns sessionHandler
-        every { it.iamControllerProvider.get() } returns iamController
     }
     val platform = FakeAppPlatform()
     val lifecycleEventFilter = LifecycleEventFilter(LifecycleTrackingOptions.ALL)
@@ -102,6 +97,7 @@ internal class LocatorFixture(scope: TestScope, initialized: Boolean = true) {
         every { restConfig.deviceId } returns deviceId
         every { prefs.getIamBaseUrl() } returns null
         every { eventsDb.insertEvents(capture(insertedEvents)) } returns Unit
+        every { logEventsDb.insertLogEvent(any()) } answers { savedLogEvents += firstArg<RetenoLogEventDb>() }
     }
 
     fun storeInteractionRequests(): MutableList<InteractionRequestDb> {
@@ -112,7 +108,7 @@ internal class LocatorFixture(scope: TestScope, initialized: Boolean = true) {
         return stored
     }
 
-    private val dispatchers = scope.testDispatchers()
+    val dispatchers = scope.testDispatchers()
 
     val sut = ActionsLocator(
         serviceLocator = serviceLocator,
@@ -125,7 +121,6 @@ internal class LocatorFixture(scope: TestScope, initialized: Boolean = true) {
         configuration = configuration,
         platform = platform,
         lifecycleEventFilter = lifecycleEventFilter,
-        remoteLog = remoteLog,
         clock = { 1_000L }
     )
 }

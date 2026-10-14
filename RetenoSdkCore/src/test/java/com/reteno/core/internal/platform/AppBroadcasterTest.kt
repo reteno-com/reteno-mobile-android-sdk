@@ -25,6 +25,10 @@ internal class AppBroadcasterTest {
         val sut = AppBroadcaster(application)
 
         fun registerReceiver(action: String, receiverName: String?) {
+            registerReceiver(Intent(action), receiverName)
+        }
+
+        fun registerReceiver(intent: Intent, receiverName: String?) {
             val info = ResolveInfo().apply {
                 if (receiverName != null) {
                     activityInfo = ActivityInfo().apply {
@@ -33,7 +37,7 @@ internal class AppBroadcasterTest {
                     }
                 }
             }
-            shadowOf(application.packageManager).addResolveInfoForIntent(Intent(action), info)
+            shadowOf(application.packageManager).addResolveInfoForIntent(intent, info)
         }
     }
 
@@ -68,6 +72,38 @@ internal class AppBroadcasterTest {
 
         whenn()
         val sent = fixture.sut.send("com.reteno.other-action")
+
+        then()
+        assertEquals(0, sent)
+        assertEquals(0, shadowOf(fixture.application).broadcastIntents.size)
+    }
+
+    @Test
+    fun `should send data only to receivers of the app itself`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val appIntent = Intent("com.reteno.data-action").setPackage(fixture.application.packageName)
+        fixture.registerReceiver(appIntent, "com.example.AppReceiver")
+        fixture.registerReceiver("com.reteno.data-action", "com.example.AnyAppReceiver")
+
+        whenn()
+        val sent = fixture.sut.sendToApp("com.reteno.data-action", mapOf("coupon" to "SALE"))
+
+        then()
+        assertEquals(1, sent)
+        val intent = shadowOf(fixture.application).broadcastIntents.single()
+        assertEquals("com.example.AppReceiver", intent.component?.className)
+        assertEquals(fixture.application.packageName, intent.`package`)
+        assertEquals("SALE", intent.getStringExtra("coupon"))
+    }
+
+    @Test
+    fun `should send no data when the app has no receiver`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+
+        whenn()
+        val sent = fixture.sut.sendToApp("com.reteno.data-action", mapOf("coupon" to "SALE"))
 
         then()
         assertEquals(0, sent)

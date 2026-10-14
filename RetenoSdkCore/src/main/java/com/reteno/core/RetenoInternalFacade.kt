@@ -5,7 +5,6 @@ import androidx.core.app.NotificationChannelCompat
 import androidx.lifecycle.LifecycleObserver
 import com.reteno.core.domain.model.interaction.InteractionAction
 import com.reteno.core.domain.model.interaction.InteractionStatus
-import com.reteno.core.domain.model.logevent.RetenoLogEvent
 import com.reteno.core.permission.AndroidPermissionChecker
 import com.reteno.core.util.Procedure
 
@@ -38,8 +37,6 @@ interface RetenoInternalFacade : LifecycleObserver {
     fun isActivityPresented(): Boolean
 
     fun getDeviceId(): String
-
-    fun logRetenoEvent(event: RetenoLogEvent)
 
     fun initializeIamView(interactionId: String)
 

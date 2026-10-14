@@ -15,7 +15,6 @@ import com.reteno.core.fixtures.stubAnonymousAttributes
 import com.reteno.core.fixtures.stubConfig
 import com.reteno.core.fixtures.stubCustomEvent
 import com.reteno.core.fixtures.stubEcomEvent
-import com.reteno.core.fixtures.stubRetenoLogEvent
 import com.reteno.core.fixtures.stubUser
 import com.reteno.core.internal.coroutine.retenoDispatchers
 import com.reteno.core.lifecycle.ScreenTrackingConfig
@@ -67,7 +66,6 @@ internal class RetenoInternalImplTest {
             sut.logEvent(stubCustomEvent())
             sut.logEcommerceEvent(stubEcomEvent())
             sut.logScreenView("Home")
-            sut.logRetenoEvent(stubRetenoLogEvent())
             sut.setLifecycleEventConfig(LifecycleTrackingOptions.NONE)
             sut.autoScreenTracking(ScreenTrackingConfig(enable = true))
             sut.updatePushPermissionStatus()
@@ -77,6 +75,9 @@ internal class RetenoInternalImplTest {
             sut.deeplinkClicked("https://track.example/c/1", "https://example.com")
             sut.initializeIamView("interaction-3")
             sut.saveDefaultNotificationChannel("{}")
+            sut.pausePushInAppMessages(true)
+            sut.setPushInAppMessagesPauseBehaviour(InAppPauseBehaviour.SKIP_IN_APPS)
+            sut.setInAppLifecycleCallback(null)
         }
     }
 
@@ -132,7 +133,6 @@ internal class RetenoInternalImplTest {
                 "submitEvent ${stubCustomEvent().eventTypeKey}",
                 "submitEcomEvent",
                 "submitScreenView Home",
-                "submitRetenoLogEvent",
                 "submitLifecycleEventConfig",
                 "submitAutoScreenTracking",
                 "submitPushPermissionStatus",
@@ -141,7 +141,10 @@ internal class RetenoInternalImplTest {
                 "submitInteractionClick interaction-2 OPEN_URL true",
                 "submitDeeplinkClick https://track.example/c/1",
                 "submitIamFromPush interaction-3",
-                "submitDefaultNotificationChannel {}"
+                "submitDefaultNotificationChannel {}",
+                "submitPushInAppPause true",
+                "submitPushInAppPauseBehaviour SKIP_IN_APPS",
+                "submitInAppLifecycleCallback false"
             ),
             fixture.actions.calls
         )

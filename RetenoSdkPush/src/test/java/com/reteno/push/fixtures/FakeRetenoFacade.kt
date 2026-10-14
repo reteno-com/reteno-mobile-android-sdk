@@ -7,7 +7,6 @@ import com.reteno.core.RetenoInternalEntryPoint
 import com.reteno.core.RetenoInternalFacade
 import com.reteno.core.domain.model.interaction.InteractionAction
 import com.reteno.core.domain.model.interaction.InteractionStatus
-import com.reteno.core.domain.model.logevent.RetenoLogEvent
 import com.reteno.core.permission.AndroidPermissionChecker
 import com.reteno.core.util.Procedure
 
@@ -44,10 +43,6 @@ internal class FakeRetenoFacade : RetenoInternalFacade {
     override fun isActivityPresented(): Boolean = activityPresented
 
     override fun getDeviceId(): String = "device-id"
-
-    override fun logRetenoEvent(event: RetenoLogEvent) {
-        record("logRetenoEvent")
-    }
 
     override fun initializeIamView(interactionId: String) {
         record("initializeIamView $interactionId")

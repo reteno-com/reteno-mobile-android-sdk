@@ -78,7 +78,7 @@ internal class ApplyConfigActionTest {
         }
         private val iamView = mockk<IamView>().also {
             every { it.pauseIncomingPushInApps(any()) } answers {
-                calls += "pause push in-apps ${firstArg<Boolean>()}" + onMain()
+                calls += "pause push in-apps ${firstArg<Boolean>()}"
             }
         }
         private val lifecycleTracking = mockk<AppLifecycleTracking>().also {
@@ -128,7 +128,7 @@ internal class ApplyConfigActionTest {
                 "register device",
                 "gate BY_USER",
                 "pause in-apps false",
-                "pause push in-apps true on main",
+                "pause push in-apps true",
                 "start lifecycle tracking on main",
                 "process cached interactions"
             ),
@@ -166,7 +166,7 @@ internal class ApplyConfigActionTest {
                 "session duration 60000",
                 "gate FROM_CACHE",
                 "pause in-apps false",
-                "pause push in-apps true on main",
+                "pause push in-apps true",
                 "process cached interactions"
             ),
             fixture.calls

@@ -3,11 +3,9 @@ package com.reteno.core.internal.action.init
 import com.reteno.core.internal.action.inbox.InboxCountPolling
 import com.reteno.core.internal.action.sync.SyncScheduler
 import com.reteno.core.internal.action.trace.ActionRunner
-import com.reteno.core.internal.coroutine.RetenoDispatchers
 import com.reteno.core.internal.lifecycle.SdkRunState
 import com.reteno.core.lifecycle.RetenoSessionHandler
 import com.reteno.core.view.iam.IamView
-import kotlinx.coroutines.withContext
 
 internal interface StopSdk {
     suspend operator fun invoke(): Result<Unit>
@@ -19,7 +17,6 @@ internal class StopSdkAction(
     private val dataSync: SyncScheduler,
     private val iamView: IamView,
     private val inboxCount: InboxCountPolling,
-    private val dispatchers: RetenoDispatchers,
     private val runner: ActionRunner
 ) : StopSdk {
 
@@ -34,7 +31,7 @@ internal class StopSdkAction(
             dataSync.stopScheduler()
         }
         step("pause in-app message view") {
-            withContext(dispatchers.main) { iamView.pause() }
+            iamView.pause()
         }
         step("pause inbox count polling") {
             inboxCount.pause()

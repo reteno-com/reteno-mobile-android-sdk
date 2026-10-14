@@ -4,6 +4,7 @@ import com.reteno.core.data.remote.model.iam.displayrules.frequency.FrequencyRul
 import com.reteno.core.data.remote.model.iam.displayrules.targeting.InAppWithEvent
 import com.reteno.core.features.iam.InAppPauseBehaviour
 import com.reteno.core.fixtures.LocatorFixture
+import com.reteno.core.fixtures.RecordingInAppLifecycleCallback
 import com.reteno.core.fixtures.stubCustomEvent
 import com.reteno.core.fixtures.stubEventRule
 import com.reteno.core.fixtures.stubInAppMessage
@@ -71,6 +72,7 @@ internal class ActionsLocatorIamWiringTest {
     fun `should drop postponed in-app when host chose to skip them`() = runUnitTest {
         given()
         val fixture = LocatorFixture(this)
+        fixture.sut.iamView.start()
         fixture.sut.inAppMessagesState.setPaused(true)
         fixture.sut.inAppMessagesState.postponeIfPaused(stubInAppMessage())
 
@@ -80,7 +82,7 @@ internal class ActionsLocatorIamWiringTest {
         runCurrent()
 
         then()
-        verify(exactly = 0) { fixture.iamController.show(any()) }
+        assertTrue(fixture.platform.screen.calls.isEmpty())
     }
 
     @Test
@@ -101,6 +103,9 @@ internal class ActionsLocatorIamWiringTest {
         given()
         val fixture = LocatorFixture(this)
         val waiting = stubInAppMessage(messageId = 5)
+        val host = RecordingInAppLifecycleCallback(fixture.dispatchers.markedMain)
+        fixture.sut.iamView.setInAppLifecycleCallback(host)
+        fixture.sut.iamView.start()
         fixture.sut.inAppMessagesState.replaceWaitingForEvent(
             listOf(InAppWithEvent(waiting, stubEventRule(name = "purchase")))
         )
@@ -112,6 +117,53 @@ internal class ActionsLocatorIamWiringTest {
         runCurrent()
 
         then()
-        verify(exactly = 1) { fixture.iamController.show(waiting) }
+        assertEquals(listOf("beforeDisplay DISPLAY_RULES 5"), host.calls)
+    }
+
+    @Test
+    fun `should record show and opened interaction once in-app widget is displayed`() = runUnitTest {
+        given()
+        val fixture = LocatorFixture(this)
+        fixture.sut.iamView.start()
+        fixture.sut.iamView.initialize(stubInAppMessage(messageId = 7))
+        runCurrent()
+
+        whenn()
+        fixture.platform.screen.postWidgetMessage("""{"type":"WIDGET_INIT_SUCCESS"}""")
+        runCurrent()
+
+        then()
+        verify(exactly = 1) { fixture.inAppDb.insertInAppMessages(match { it.single().showCount == 1L }) }
+        verify(exactly = 1) { fixture.inAppInteractionsDb.insertInteraction(match { it.status == "OPENED" }) }
+    }
+
+    @Test
+    fun `should skip push in-apps when host pauses them with skip behaviour`() = runUnitTest {
+        given()
+        val fixture = LocatorFixture(this)
+        fixture.sut.submitPushInAppPauseBehaviour(InAppPauseBehaviour.SKIP_IN_APPS)
+        fixture.sut.submitPushInAppPause(true)
+
+        whenn()
+        fixture.sut.submitIamFromPush("interaction-1")
+        runCurrent()
+
+        then()
+        assertTrue(fixture.platform.screen.calls.isEmpty())
+    }
+
+    @Test
+    fun `should tell lifecycle callback set by host about in-app display`() = runUnitTest {
+        given()
+        val fixture = LocatorFixture(this)
+        val host = RecordingInAppLifecycleCallback(fixture.dispatchers.markedMain)
+        fixture.sut.submitInAppLifecycleCallback(host)
+
+        whenn()
+        fixture.sut.submitIamFromPush("interaction-1")
+        runCurrent()
+
+        then()
+        assertEquals(listOf("beforeDisplay PUSH_NOTIFICATION interaction-1"), host.calls)
     }
 }

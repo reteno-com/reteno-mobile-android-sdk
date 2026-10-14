@@ -3,7 +3,9 @@ package com.reteno.core.internal.action.event
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerLogEvent
 import com.reteno.core.data.local.mappers.toDb
 import com.reteno.core.domain.model.logevent.LogLevel
+import com.reteno.core.fixtures.RecordingLogEventQueue
 import com.reteno.core.fixtures.TestActionRunner
+import com.reteno.core.fixtures.recordingRemoteLog
 import com.reteno.core.fixtures.stubRetenoLogEvent
 import com.reteno.core.fixtures.testDispatchers
 import com.reteno.core.internal.log.LogPriority
@@ -92,5 +94,22 @@ internal class LogRetenoEventActionTest {
             fixture.traced.sink.lines
         )
         assertFalse(fixture.traced.sink.lines.any { it.contains("secret details") })
+    }
+
+    @Test
+    fun `should not record a new log event when saving one fails and logs the error`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        val queue = RecordingLogEventQueue()
+        val remoteLog = recordingRemoteLog(queue)
+        every { fixture.logEventsDb.insertLogEvent(any()) } answers {
+            remoteLog.recordError("insertLogEvent()", IllegalStateException("database is locked"))
+        }
+
+        whenn()
+        fixture.sut(stubRetenoLogEvent())
+
+        then()
+        assertTrue(queue.events.isEmpty())
     }
 }

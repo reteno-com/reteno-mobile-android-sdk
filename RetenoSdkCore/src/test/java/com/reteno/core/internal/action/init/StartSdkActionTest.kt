@@ -54,7 +54,7 @@ internal class StartSdkActionTest {
             every { it.startScheduler() } answers { calls += "start scheduler" }
         }
         private val iamView = mockk<IamView>().also {
-            every { it.start() } answers { calls += "start in-app view" + onMain() }
+            every { it.start() } answers { calls += "start in-app view" }
         }
         private val inboxCount = mockk<InboxCountPolling>().also {
             every { it.resume() } answers { calls += "resume inbox count polling" }
@@ -73,8 +73,6 @@ internal class StartSdkActionTest {
         )
 
         private fun onIo() = if (dispatchers.markedIo.isRunningHere) " on io" else ""
-
-        private fun onMain() = if (dispatchers.markedMain.isRunningHere) " on main" else ""
     }
 
     @Test
@@ -93,7 +91,7 @@ internal class StartSdkActionTest {
                 "fetch in-apps on io",
                 "schedule in-apps [7] on io",
                 "start scheduler",
-                "start in-app view on main",
+                "start in-app view",
                 "resume inbox count polling"
             ),
             fixture.calls
@@ -130,7 +128,7 @@ internal class StartSdkActionTest {
                 "ensure device on io",
                 "start session",
                 "start scheduler",
-                "start in-app view on main",
+                "start in-app view",
                 "resume inbox count polling"
             ),
             fixture.calls

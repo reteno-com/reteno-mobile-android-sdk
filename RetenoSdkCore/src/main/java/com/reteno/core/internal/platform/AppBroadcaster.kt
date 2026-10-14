@@ -7,9 +7,20 @@ import com.reteno.core.util.queryBroadcastReceivers
 
 internal class AppBroadcaster(private val context: Context) {
 
-    fun send(action: String): Int {
-        val intent = Intent(action).setFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES)
-        val receivers = context.queryBroadcastReceivers(intent).filterNotNull().mapNotNull { it.activityInfo }
+    fun send(action: String): Int = deliver(Intent(action))
+
+    fun sendToApp(action: String, extras: Map<String, String>): Int {
+        val intent = Intent(action).setPackage(context.packageName)
+        extras.forEach { (key, value) -> intent.putExtra(key, value) }
+        return deliver(intent)
+    }
+
+    private fun deliver(intent: Intent): Int {
+        intent.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES)
+        val receivers = context
+            .queryBroadcastReceivers(intent)
+            .filterNotNull()
+            .mapNotNull { it.activityInfo }
         receivers.forEach { receiver ->
             context.sendBroadcast(Intent(intent).setComponent(ComponentName(receiver.packageName, receiver.name)))
         }

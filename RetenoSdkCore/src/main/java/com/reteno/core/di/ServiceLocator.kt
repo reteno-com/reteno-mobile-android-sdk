@@ -17,7 +17,6 @@ import com.reteno.core.di.provider.RetenoActivityHelperProvider
 import com.reteno.core.di.provider.RetenoConfigProvider
 import com.reteno.core.di.provider.SharedPrefsManagerProvider
 import com.reteno.core.di.provider.WorkManagerProvider
-import com.reteno.core.di.provider.controller.IamControllerProvider
 import com.reteno.core.di.provider.database.DatabaseProvider
 import com.reteno.core.di.provider.database.RetenoDatabaseManagerAppInboxProvider
 import com.reteno.core.di.provider.database.RetenoDatabaseManagerDeviceProvider
@@ -30,13 +29,10 @@ import com.reteno.core.di.provider.database.RetenoDatabaseManagerProvider
 import com.reteno.core.di.provider.database.RetenoDatabaseManagerRecomEventsProvider
 import com.reteno.core.di.provider.database.RetenoDatabaseManagerUserProvider
 import com.reteno.core.di.provider.database.RetenoDatabaseManagerWrappedLinkProvider
-import com.reteno.core.di.provider.features.IamViewProvider
 import com.reteno.core.di.provider.features.RetenoSessionHandlerProvider
-import com.reteno.core.di.provider.network.ApiClientProvider
 import com.reteno.core.di.provider.network.RestClientProvider
 import com.reteno.core.di.provider.repository.ConfigRepositoryProvider
 import com.reteno.core.di.provider.repository.FileManagerProvider
-import com.reteno.core.di.provider.repository.IamRepositoryProvider
 import com.reteno.core.domain.model.event.LifecycleTrackingOptions
 import com.reteno.core.internal.action.sync.DataSync
 import com.reteno.core.internal.config.SdkConfigurationImpl
@@ -46,12 +42,9 @@ import com.reteno.core.internal.coroutine.RetenoDispatchers
 import com.reteno.core.internal.coroutine.retenoScope
 import com.reteno.core.internal.lifecycle.LifecycleEventFilter
 import com.reteno.core.internal.log.AndroidLogSink
-import com.reteno.core.internal.log.LoggerRemoteLog
 import com.reteno.core.internal.platform.AndroidAppPlatform
 import com.reteno.core.lifecycle.RetenoActivityHelper
 import com.reteno.core.lifecycle.RetenoSessionHandler
-import com.reteno.core.view.iam.IamView
-import kotlinx.coroutines.Dispatchers
 
 class ServiceLocator internal constructor(
     context: Context,
@@ -76,9 +69,8 @@ class ServiceLocator internal constructor(
                 activityHelper = retenoActivityHelperProvider.get()
             ),
             lifecycleEventFilter = lifecycleEventFilter,
-            remoteLog = LoggerRemoteLog,
             clock = System::currentTimeMillis
-        )
+        ).also { it.installLogging() }
     }
     private val dataSync: () -> DataSync = { actions.dataSync }
     internal val lifecycleEventFilter = LifecycleEventFilter(LifecycleTrackingOptions.DEFAULT)
@@ -102,7 +94,6 @@ class ServiceLocator internal constructor(
     internal val restClientProvider: RestClientProvider =
         RestClientProvider(restConfigProvider, configProvider)
 
-    private val apiClientProvider: ApiClientProvider = ApiClientProvider(restClientProvider)
     private val databaseProvider: DatabaseProvider = DatabaseProvider(context)
 
     /** DatabaseManagerProviders **/
@@ -170,33 +161,12 @@ class ServiceLocator internal constructor(
 
     internal val fileManagerProvider: FileManagerProvider = FileManagerProvider(context)
 
-    private val iamRepositoryProvider: IamRepositoryProvider =
-        IamRepositoryProvider(
-            context,
-            fileManagerProvider,
-            apiClientProvider,
-            Dispatchers.IO
-        )
-
 
     private val retenoSessionHandlerProviderInternal =
         RetenoSessionHandlerProvider(sharedPrefsManagerProvider, lifecycleEventFilter) { actions.logEvent }
     val retenoSessionHandlerProvider: Provider<RetenoSessionHandler>
         get() = retenoSessionHandlerProviderInternal
 
-    internal val iamControllerProvider: IamControllerProvider = IamControllerProvider(
-        iamRepositoryProvider,
-        retenoDatabaseManagerUserProviderInternal
-    )
-
-    private val iamViewProviderInternal: IamViewProvider = IamViewProvider(
-        retenoActivityHelperProviderInternal,
-        iamControllerProvider,
-        { actions }
-    )
-
-    val iamViewProvider: ProviderWeakReference<IamView> =
-        iamViewProviderInternal
 
     fun initWorkManager() {
         workManagerProvider.get()

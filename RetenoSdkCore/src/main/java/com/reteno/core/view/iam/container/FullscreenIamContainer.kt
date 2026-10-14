@@ -18,7 +18,7 @@ import androidx.core.widget.PopupWindowCompat
 import com.reteno.core.domain.controller.IamFetchResult
 import com.reteno.core.features.iam.RetenoAndroidHandler
 import com.reteno.core.util.Logger
-import com.reteno.core.view.iam.IamViewImpl
+import com.reteno.core.view.iam.AndroidInAppScreen
 
 internal class FullscreenIamContainer(
     context: Context,
@@ -87,8 +87,8 @@ internal class FullscreenIamContainer(
 
         // Set the initial elevation of the CardView to 0dp if using Android 6 API 23
         //  Fixes bug when animating a elevated CardView class
-        cardView.cardElevation = IamViewImpl.dpToPx(5).toFloat()
-        cardView.radius = IamViewImpl.dpToPx(8).toFloat()
+        cardView.cardElevation = AndroidInAppScreen.dpToPx(5).toFloat()
+        cardView.radius = AndroidInAppScreen.dpToPx(8).toFloat()
         cardView.clipChildren = false
         cardView.clipToPadding = false
         cardView.preventCornerOverlap = false
@@ -115,7 +115,7 @@ internal class FullscreenIamContainer(
             databaseEnabled = true
         }
         webView.setBackgroundColor(Color.TRANSPARENT)
-        webView.addJavascriptInterface(jsInterface, IamViewImpl.JS_INTERFACE_NAME)
+        webView.addJavascriptInterface(jsInterface, AndroidInAppScreen.JS_INTERFACE_NAME)
         webView.loadDataWithBaseURL("", iamFetchResult.fullHtml, "text/html", "UTF-8", "")
         return webView
     }
@@ -135,7 +135,7 @@ internal class FullscreenIamContainer(
             popupWindow.dismiss()
             cardView.removeAllViews()
             webView.removeAllViews()
-            webView.removeJavascriptInterface(IamViewImpl.JS_INTERFACE_NAME)
+            webView.removeJavascriptInterface(AndroidInAppScreen.JS_INTERFACE_NAME)
         } catch (e: Exception) {
             /*@formatter:off*/ Logger.e(TAG, "destroy(): popupWindow.dismiss() ", e)
             /*@formatter:on*/

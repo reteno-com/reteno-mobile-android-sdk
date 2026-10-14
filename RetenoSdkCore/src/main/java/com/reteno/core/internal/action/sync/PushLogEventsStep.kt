@@ -11,6 +11,7 @@ import com.reteno.core.internal.action.trace.ActionRunner
 import com.reteno.core.internal.action.trace.ActionTrace
 import com.reteno.core.internal.coroutine.RetenoDispatchers
 import com.reteno.core.internal.log.Redact
+import com.reteno.core.internal.log.RemoteLogGuard
 import com.reteno.core.internal.network.ApiResult
 import com.reteno.core.internal.network.SuspendApiClient
 import kotlinx.coroutines.withContext
@@ -29,7 +30,7 @@ internal class PushLogEventsStep(
 
     private suspend fun ActionTrace.dropBacklogAboveLimit() {
         val count = step("count log events in local database", detail = { "count=$it" }) {
-            withContext(dispatchers.io) { logEventsDb.getLogEventsCount() }
+            withLogEventsDb { logEventsDb.getLogEventsCount() }
         }
         var excess = count - MAX_BACKLOG
         while (excess > 0) {
@@ -38,7 +39,7 @@ internal class PushLogEventsStep(
                 "delete oldest log events above limit from local database",
                 detail = { "count=$chunk" }
             ) {
-                withContext(dispatchers.io) { logEventsDb.deleteLogEvents(logEventsDb.getLogEvents(chunk)) }
+                withLogEventsDb { logEventsDb.deleteLogEvents(logEventsDb.getLogEvents(chunk)) }
             }
             if (!deleted) return
             excess -= chunk
@@ -49,7 +50,7 @@ internal class PushLogEventsStep(
         var handled = 0
         while (true) {
             val batch = step("load log events from local database", detail = { "count=${it.size}" }) {
-                withContext(dispatchers.io) { logEventsDb.getLogEvents(BATCH_SIZE) }
+                withLogEventsDb { logEventsDb.getLogEvents(BATCH_SIZE) }
             }
             if (batch.isEmpty()) return finishedAfter(handled)
             val result = step("send log events to server") {
@@ -61,11 +62,15 @@ internal class PushLogEventsStep(
             }
             if (result is ApiResult.Failure && result.isRepeatable) return StepOutcome.ABORT
             val deleted = step("delete sent log events from local database") {
-                withContext(dispatchers.io) { logEventsDb.deleteLogEvents(batch) }
+                withLogEventsDb { logEventsDb.deleteLogEvents(batch) }
             }
             if (!deleted) return StepOutcome.CONTINUE
             handled++
         }
+    }
+
+    private suspend fun <T> withLogEventsDb(block: () -> T): T = withContext(dispatchers.io) {
+        RemoteLogGuard.muted(block)
     }
 
     private fun RetenoLogEventDb.toUploadableRemote() = toRemote().let { remote ->

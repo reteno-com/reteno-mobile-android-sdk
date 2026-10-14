@@ -14,12 +14,14 @@ import androidx.lifecycle.Lifecycle
 import androidx.test.core.app.ApplicationProvider
 import androidx.work.Configuration
 import androidx.work.WorkManager
+import com.reteno.core.R
 import com.reteno.core.RetenoInternalImpl
 import com.reteno.core.data.local.config.DeviceId
 import com.reteno.core.data.workmanager.PushDataWorker
 import com.reteno.core.di.base.Provider
 import com.reteno.core.fixtures.ManualLifecycleOwner
 import com.reteno.core.lifecycle.RetenoActivityHelper
+import com.reteno.core.view.iam.AndroidInAppScreen
 import com.reteno.test.given
 import com.reteno.test.runUnitTest
 import com.reteno.test.then
@@ -31,6 +33,7 @@ import io.mockk.verify
 import org.junit.Test
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
@@ -204,6 +207,53 @@ internal class AndroidAppPlatformTest {
             fixture.workManager.enqueueUniquePeriodicWork(PushDataWorker.PUSH_DATA_WORK_NAME, any(), any())
         }
         verify(exactly = 1) { fixture.workManager.cancelUniqueWork(PushDataWorker.PUSH_DATA_WORK_NAME) }
+    }
+
+    @Test
+    fun `should read widget bundled with the sdk`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val widgetFile = fixture.application.resources.openRawResource(R.raw.widget)
+        val expected = widgetFile.bufferedReader().use { it.readText() }
+
+        whenn()
+        val widget = fixture.sut.bundledWidget()
+
+        then()
+        assertEquals(expected, widget)
+    }
+
+    @Test
+    fun `should show in-apps on android screen`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+
+        whenn()
+        val screen = fixture.sut.inAppScreen()
+
+        then()
+        assertTrue(screen is AndroidInAppScreen)
+    }
+
+    @Test
+    fun `should describe app and device for log events`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val packages = shadowOf(fixture.application.packageManager)
+        packages.installPackage(PackageInfo().apply {
+            packageName = fixture.application.packageName
+            versionName = "2.5"
+            @Suppress("DEPRECATION")
+            versionCode = 25
+        })
+
+        whenn()
+        val origin = fixture.sut.logEventOrigin()
+
+        then()
+        assertEquals("2.5 (25)", origin.appVersion)
+        assertTrue(origin.osVersion.endsWith("(API 26)"))
+        assertTrue(origin.deviceModel.isNotBlank())
     }
 
     @Test

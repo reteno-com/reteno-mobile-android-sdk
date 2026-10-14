@@ -140,6 +140,7 @@ internal class ActionsLocatorContactWiringTest {
 
         whenn()
         fixture.sut.setAnonymousUserAttributes(UserAttributesAnonymous())
+        runCurrent()
 
         then()
         val expected = listOf("SetAnonymousUserAttributes: attributes rejected by validation" to LogLevel.INFO)

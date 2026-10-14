@@ -8,10 +8,8 @@ import com.reteno.core.data.local.file.FileManager
 import com.reteno.core.data.local.sharedpref.SharedPrefsManager
 import com.reteno.core.data.repository.ConfigRepository
 import com.reteno.core.di.ServiceLocator
-import com.reteno.core.domain.controller.IamController
 import com.reteno.core.lifecycle.RetenoActivityHelper
 import com.reteno.core.lifecycle.RetenoSessionHandler
-import com.reteno.core.view.iam.IamView
 import io.mockk.MockKAnnotations
 import io.mockk.clearAllMocks
 import io.mockk.every
@@ -80,8 +78,6 @@ abstract class BaseRobolectricTest {
     @RelaxedMockK
     internal lateinit var facadeConfigRepository: ConfigRepository
     @RelaxedMockK
-    internal lateinit var iamController: IamController
-    @RelaxedMockK
     protected lateinit var sessionHandler: RetenoSessionHandler
     @RelaxedMockK
     internal lateinit var databaseManager: RetenoDatabaseManager
@@ -91,8 +87,6 @@ abstract class BaseRobolectricTest {
     internal lateinit var fileManager: FileManager
     @RelaxedMockK
     internal lateinit var restConfig: RestConfig
-    @RelaxedMockK
-    protected lateinit var iamView: IamView
 
     @Before
     @Throws(Exception::class)
@@ -104,8 +98,6 @@ abstract class BaseRobolectricTest {
         every { anyConstructed<ServiceLocator>().sharedPrefsManagerProvider.get() } returns sharedPrefsManager
         every { anyConstructed<ServiceLocator>().restConfigProvider.get() } returns restConfig
         every { anyConstructed<ServiceLocator>().configRepositoryProvider.get() } returns facadeConfigRepository
-        every { anyConstructed<ServiceLocator>().iamViewProvider.get() } returns iamView
-        every { anyConstructed<ServiceLocator>().iamControllerProvider.get() } returns iamController
         every { anyConstructed<ServiceLocator>().retenoActivityHelperProvider.get() } returns activityHelper
 
     }

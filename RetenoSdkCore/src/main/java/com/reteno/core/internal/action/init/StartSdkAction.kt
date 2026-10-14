@@ -49,7 +49,7 @@ internal class StartSdkAction(
             dataSync.startScheduler()
         }
         step("start in-app message view") {
-            withContext(dispatchers.main) { iamView.start() }
+            iamView.start()
         }
         step("resume inbox count polling") {
             inboxCount.resume()

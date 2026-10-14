@@ -1,7 +1,6 @@
 package com.reteno.core.internal.action.push
 
 import com.reteno.core.fixtures.TestActionRunner
-import com.reteno.core.fixtures.testDispatchers
 import com.reteno.core.view.iam.IamView
 import com.reteno.test.given
 import com.reteno.test.runUnitTest
@@ -16,24 +15,23 @@ import org.junit.jupiter.api.Test
 internal class InitializeIamFromPushActionTest {
 
     @Test
-    fun `should show in-app message from push on main thread`() = runUnitTest {
+    fun `should show in-app message from push`() = runUnitTest {
         given()
-        val dispatchers = testDispatchers()
         val traced = TestActionRunner(this)
-        val shown = mutableListOf<Pair<String, Boolean>>()
+        val shown = mutableListOf<String>()
         val iamView = mockk<IamView>().also {
             every { it.initialize(any<String>()) } answers {
-                shown += firstArg<String>() to dispatchers.markedMain.isRunningHere
+                shown += firstArg<String>()
             }
         }
-        val sut = InitializeIamFromPushAction(iamView, dispatchers, traced.runner)
+        val sut = InitializeIamFromPushAction(iamView, traced.runner)
 
         whenn()
         val result = sut("interaction-1")
 
         then()
         assertTrue(result.isSuccess)
-        assertEquals(listOf("interaction-1" to true), shown)
+        assertEquals(listOf("interaction-1"), shown)
         assertEquals(
             traced.successfulTrace(
                 "InitializeIamFromPush",
