@@ -10,7 +10,6 @@ import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.NavHostFragment
 import com.reteno.core.Reteno
 import com.reteno.core.RetenoConfig
-import com.reteno.core.RetenoInternalImpl
 import com.reteno.core.view.iam.callback.InAppCloseData
 import com.reteno.core.view.iam.callback.InAppData
 import com.reteno.core.view.iam.callback.InAppErrorData
@@ -57,7 +56,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun createInAppLifecycleListener() {
         val context: Context = this
-        RetenoInternalImpl.instance
+        Reteno.instance
             .setInAppLifecycleCallback(object : InAppLifecycleCallback {
                 override fun beforeDisplay(inAppData: InAppData) {
                     Toast.makeText(

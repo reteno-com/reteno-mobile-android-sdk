@@ -14,6 +14,7 @@ import com.reteno.test.runUnitTest
 import com.reteno.test.then
 import com.reteno.test.whenn
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -23,7 +24,14 @@ internal class RecommendationImplTest {
     private class SutFixture(osSupported: Boolean = true) {
         val actions = FakeSdkActions()
         val remoteLog = FakeRemoteLog()
-        val sut = RecommendationImpl(actions, remoteLog) { osSupported }
+        var actionsBuilt = false
+        val sut = RecommendationImpl(
+            lazy {
+                actionsBuilt = true
+                actions
+            },
+            remoteLog
+        ) { osSupported }
 
         fun callEveryApi() {
             sut.fetchRecommendation(
@@ -148,5 +156,17 @@ internal class RecommendationImplTest {
     private companion object {
         const val STUB_REQUEST_BODY = """{"products":["sku-1"],"category":"shoes","fields":["name"],"filters":[""" +
             """{"name":"color","values":["red"]}]}"""
+    }
+
+    @Test
+    fun `should not build sdk actions on unsupported os`() = runUnitTest {
+        given()
+        val fixture = SutFixture(osSupported = false)
+
+        whenn()
+        fixture.callEveryApi()
+
+        then()
+        assertFalse(fixture.actionsBuilt)
     }
 }

@@ -9,12 +9,6 @@ internal interface RetenoDispatchers {
     val default: CoroutineDispatcher
 }
 
-internal object AndroidRetenoDispatchers : RetenoDispatchers {
-    override val main: CoroutineDispatcher = Dispatchers.Main
-    override val io: CoroutineDispatcher = Dispatchers.IO
-    override val default: CoroutineDispatcher = Dispatchers.Default
-}
-
 internal fun retenoDispatchers(main: CoroutineDispatcher, io: CoroutineDispatcher): RetenoDispatchers =
     object : RetenoDispatchers {
         override val main: CoroutineDispatcher = main

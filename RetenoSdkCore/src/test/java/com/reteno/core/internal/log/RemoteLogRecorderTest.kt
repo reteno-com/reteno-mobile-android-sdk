@@ -186,6 +186,18 @@ internal class RemoteLogRecorderTest {
     }
 
     @Test
+    fun `should fill app version of a captured event that has none`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+
+        whenn()
+        fixture.sut.recordEvent(stubRetenoLogEvent().copy(version = null))
+
+        then()
+        assertEquals(fixture.platform.origin.appVersion, fixture.queue.events.single().version)
+    }
+
+    @Test
     fun `should drop interpolated values from captured event message`() = runUnitTest {
         given()
         val fixture = SutFixture()

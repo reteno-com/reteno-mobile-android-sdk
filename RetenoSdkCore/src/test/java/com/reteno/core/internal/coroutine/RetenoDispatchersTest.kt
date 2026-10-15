@@ -11,20 +11,6 @@ import org.junit.jupiter.api.Test
 internal class RetenoDispatchersTest {
 
     @Test
-    fun `should expose standard android dispatchers`() = runUnitTest {
-        given()
-        val sut = AndroidRetenoDispatchers
-
-        whenn()
-        val dispatchers = Triple(sut.main, sut.io, sut.default)
-
-        then()
-        assertSame(Dispatchers.Main, dispatchers.first)
-        assertSame(Dispatchers.IO, dispatchers.second)
-        assertSame(Dispatchers.Default, dispatchers.third)
-    }
-
-    @Test
     fun `should combine given main and io dispatchers with default dispatcher`() = runUnitTest {
         given()
         val main = Dispatchers.Unconfined

@@ -7,10 +7,7 @@ import com.reteno.core.data.remote.model.recommendation.get.Recoms
 import org.json.JSONObject
 import java.lang.reflect.Type
 
-
 internal fun Any.toJson(): String = Gson().toJson(this)
-
-fun Any?.toJsonOrNull(): String? = this?.let(Gson()::toJson)
 
 inline fun <reified T> String.fromJson(): T =
     Gson().fromJson(this, T::class.java)
@@ -22,14 +19,6 @@ inline fun <reified T> String.listFromJson(): List<T> {
     val listType: Type = object : TypeToken<ArrayList<T>?>() {}.type
     return Gson().fromJson(this, listType)
 }
-
-internal inline fun <reified T> String.listFromJsonOrNull(): T? =
-    if (isBlank()) {
-        null
-    } else {
-        val listType: Type = object : TypeToken<ArrayList<T?>?>() {}.type
-        Gson().fromJson(this, listType)
-    }
 
 inline fun <reified T> String.fromJsonOrNull(): T? =
     if (isBlank()) {

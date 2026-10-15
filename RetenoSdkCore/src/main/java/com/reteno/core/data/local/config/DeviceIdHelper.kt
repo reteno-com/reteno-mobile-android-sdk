@@ -1,177 +1,53 @@
 package com.reteno.core.data.local.config
 
-import android.content.Context
-import android.provider.Settings
-import com.google.android.gms.appset.AppSet
 import com.reteno.core.RetenoConfig
 import com.reteno.core.data.local.sharedpref.SharedPrefsManager
-import com.reteno.core.util.Logger
-import kotlinx.coroutines.Dispatchers
+import com.reteno.core.identification.DeviceIdProvider
+import com.reteno.core.internal.platform.DeviceIdSources
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
-import kotlinx.coroutines.withContext
-import kotlin.coroutines.coroutineContext
-import kotlin.coroutines.resume
-import kotlin.coroutines.suspendCoroutine
+import kotlin.coroutines.cancellation.CancellationException
 
 internal class DeviceIdHelper(
-    private val context: Context,
+    private val sources: DeviceIdSources,
     private val sharedPrefsManager: SharedPrefsManager,
     private val retenoConfigProvider: () -> RetenoConfig
 ) {
 
-    internal suspend fun withDeviceIdMode(
-        currentDeviceId: DeviceId,
-        deviceIdMode: DeviceIdMode,
-        onDeviceIdChanged: (DeviceId) -> Unit
-    ) {
+    internal suspend fun withDeviceIdMode(currentDeviceId: DeviceId, deviceIdMode: DeviceIdMode): DeviceId {
+        val idBody = idBodyFor(deviceIdMode) ?: return withDeviceIdMode(currentDeviceId, DeviceIdMode.RANDOM_UUID)
+        return currentDeviceId.copy(idBody = idBody, mode = deviceIdMode)
+    }
 
-        when (deviceIdMode) {
-            DeviceIdMode.ANDROID_ID -> {
-                try {
-                    val deviceId = Settings.Secure.getString(
-                        context.contentResolver,
-                        Settings.Secure.ANDROID_ID
-                    )
-                    /*@formatter:off*/ Logger.i(TAG, "initDeviceId(): ", "deviceIdMode = [", deviceIdMode, "]", " deviceId = [", deviceId, "]")
-                    /*@formatter:on*/
-                    onDeviceIdChanged(currentDeviceId.copy(idBody = deviceId, mode = deviceIdMode))
-                } catch (ex: Exception) {
-                    /*@formatter:off*/ Logger.e(TAG, "initDeviceId(): DeviceIdMode.ANDROID_ID", ex)
-                    /*@formatter:on*/
-                    withDeviceIdMode(currentDeviceId, DeviceIdMode.RANDOM_UUID, onDeviceIdChanged)
-                    return
-                }
-            }
+    private suspend fun idBodyFor(deviceIdMode: DeviceIdMode): String? = when (deviceIdMode) {
+        DeviceIdMode.ANDROID_ID -> attempt { sources.androidId() }
+        DeviceIdMode.APP_SET_ID -> attempt { sources.appSetId() }
+        DeviceIdMode.RANDOM_UUID -> sharedPrefsManager.getDeviceIdUuid()
+        DeviceIdMode.CLIENT_UUID -> clientDeviceId()
+        DeviceIdMode.CACHE -> DeviceId.getIdBodyFrom(sharedPrefsManager.getLastStoredId())
+    }
 
-            DeviceIdMode.APP_SET_ID -> {
-                try {
-                    val client = AppSet.getClient(context)
-                    val result = suspendCoroutine<Result<String>> { continuation ->
-                        client.appSetIdInfo.addOnSuccessListener {
-                            /*@formatter:off*/ Logger.i(TAG, "initDeviceId(): ", "deviceIdMode = [", deviceIdMode, "]", " deviceId = [", it.id, "]")
-                        /*@formatter:on*/
-                            continuation.resume(Result.success(it.id))
-                        }.addOnFailureListener {
-                            /*@formatter:off*/ Logger.i(TAG, "initDeviceId(): ", "deviceIdMode = [", deviceIdMode, "]", " failed trying ANDROID_ID")
-                        /*@formatter:on*/
-                            continuation.resume(Result.failure(it))
-                        }
-                    }
-                    result
-                        .onSuccess {
-                            onDeviceIdChanged(
-                                currentDeviceId.copy(
-                                    idBody = it,
-                                    mode = deviceIdMode
-                                )
-                            )
-                        }
-                        .onFailure {
-                            withDeviceIdMode(
-                                currentDeviceId,
-                                DeviceIdMode.RANDOM_UUID,
-                                onDeviceIdChanged
-                            )
-                        }
-                } catch (ex: Exception) {
-                    /*@formatter:off*/ Logger.e(TAG, "initDeviceId(): DeviceIdMode.APP_SET_ID", ex)
-                    /*@formatter:on*/
-                    withDeviceIdMode(currentDeviceId, DeviceIdMode.RANDOM_UUID, onDeviceIdChanged)
-                }
-            }
+    private suspend fun clientDeviceId(): String? {
+        val provider = retenoConfigProvider().userIdProvider ?: return null
+        return attempt { awaitDeviceId(provider) }
+    }
 
-            DeviceIdMode.RANDOM_UUID -> {
-                val newId = sharedPrefsManager.getDeviceIdUuid()
-                onDeviceIdChanged(currentDeviceId.copy(idBody = newId, mode = deviceIdMode))
-                /*@formatter:off*/ Logger.i(TAG, "initDeviceId(): ", "deviceIdMode = [", deviceIdMode, "]", " deviceId = [", newId, "]")
-                /*@formatter:on*/
-            }
-
-            DeviceIdMode.CLIENT_UUID -> {
-                val userIdProvider = retenoConfigProvider().userIdProvider
-                if (userIdProvider == null) {
-                    /*@formatter:off*/ Logger.i(TAG, "initDeviceId(): ", "deviceIdMode = [", deviceIdMode, "]", " failed trying DeviceIdProvider is null")
-                    /*@formatter:on*/
-                    withDeviceIdMode(
-                        currentDeviceId,
-                        DeviceIdMode.RANDOM_UUID,
-                        onDeviceIdChanged
-                    )
-                    return
-                }
-                try {
-                    var deviceId: String? = null
-                    while (deviceId == null && coroutineContext.isActive) {
-                        deviceId = userIdProvider.getDeviceId()
-                        delay(60L)
-                    }
-                    withContext(Dispatchers.Main) {
-                        /*@formatter:off*/ Logger.i(TAG, "initDeviceId(): ", "deviceIdMode = [", deviceIdMode, "]", " deviceId = [", deviceId, "]")
-                            /*@formatter:on*/
-                        onDeviceIdChanged(
-                            currentDeviceId.copy(
-                                idBody = requireNotNull(deviceId),
-                                mode = deviceIdMode
-                            )
-                        )
-                    }
-                } catch (e: Exception) {
-                    withDeviceIdMode(
-                        currentDeviceId,
-                        DeviceIdMode.RANDOM_UUID,
-                        onDeviceIdChanged
-                    )
-                }
-            }
-
-            DeviceIdMode.CACHE -> {
-                val body = DeviceId.getIdBodyFrom(sharedPrefsManager.getLastStoredId())
-                onDeviceIdChanged(currentDeviceId.copy(idBody = body, mode = deviceIdMode))
-                /*@formatter:off*/ Logger.i(TAG, "initDeviceId(): ", "deviceIdMode = [", deviceIdMode, "]", " deviceId = [", body, "]")
-                /*@formatter:on*/
-            }
+    private suspend fun awaitDeviceId(provider: DeviceIdProvider): String {
+        while (true) {
+            val deviceId = provider.getDeviceId()
+            if (deviceId != null) return deviceId
+            delay(CLIENT_ID_POLL_MILLIS)
         }
     }
 
-    internal fun withDeviceIdSuffix(
-        currentDeviceId: DeviceId,
-        suffix: String?
-    ): DeviceId {
-        /*@formatter:off*/ Logger.i(TAG, "withDeviceIdSuffix(): ", "currentDeviceId = [" , currentDeviceId , "], suffix = [" , suffix , "]")
-        /*@formatter:on*/
-        return currentDeviceId.copy(idSuffix = suffix)
+    private suspend fun attempt(read: suspend () -> String?): String? = try {
+        read()
+    } catch (cancelled: CancellationException) {
+        throw cancelled
+    } catch (failed: Exception) {
+        null
     }
 
-    internal fun withExternalUserId(
-        currentDeviceId: DeviceId,
-        externalUserId: String?
-    ): DeviceId {
-        /*@formatter:off*/ Logger.i(TAG, "withExternalUserId(): ", "currentDeviceId = [" , currentDeviceId , "], externalUserId = [" , externalUserId , "]") 
-        /*@formatter:on*/
-        val externalId = externalUserId?.ifBlank { "" }
-        return currentDeviceId.copy(externalId = externalId)
-    }
-
-    internal fun withEmail(
-        currentDeviceId: DeviceId,
-        email: String?
-    ): DeviceId {
-        /*@formatter:off*/ Logger.i(TAG, "withEmail(): ", "currentDeviceId = [" , currentDeviceId , "], email = [" , email , "]")
-        /*@formatter:on*/
-        return currentDeviceId.copy(email = email)
-    }
-
-    internal fun withPhone(
-        currentDeviceId: DeviceId,
-        phone: String?
-    ): DeviceId {
-        /*@formatter:off*/ Logger.i(TAG, "withPhone(): ", "currentDeviceId = [" , currentDeviceId , "], phone = [" , phone , "]")
-        /*@formatter:on*/
-        return currentDeviceId.copy(phone = phone)
-    }
-
-    companion object {
-        private val TAG: String = DeviceIdHelper::class.java.simpleName
+    internal companion object {
+        const val CLIENT_ID_POLL_MILLIS = 60L
     }
 }

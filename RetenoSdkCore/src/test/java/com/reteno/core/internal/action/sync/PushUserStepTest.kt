@@ -296,8 +296,7 @@ internal class PushUserStepTest {
                 phone = "+380501234567",
                 email = "j@example.com",
                 firstName = "John",
-                lastName = "Doe",
-                fields = emptyList()
+                lastName = "Doe"
             ),
             isSynchronizedWithBackend = BooleanDb.TRUE
         )

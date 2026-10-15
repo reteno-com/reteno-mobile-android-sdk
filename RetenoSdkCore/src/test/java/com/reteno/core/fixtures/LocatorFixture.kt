@@ -20,8 +20,7 @@ import com.reteno.core.data.local.model.logevent.RetenoLogEventDb
 import com.reteno.core.data.local.sharedpref.SharedPrefsManager
 import com.reteno.core.data.repository.ConfigRepository
 import com.reteno.core.di.ActionsLocator
-import com.reteno.core.di.ServiceLocator
-import com.reteno.core.di.provider.RetenoConfigProvider
+import com.reteno.core.di.SdkInfrastructure
 import com.reteno.core.domain.model.event.LifecycleTrackingOptions
 import com.reteno.core.domain.model.logevent.LogLevel
 import com.reteno.core.internal.config.SdkConfigurationImpl
@@ -63,31 +62,29 @@ internal class LocatorFixture(scope: TestScope, initialized: Boolean = true) {
     val savedLogEvents = mutableListOf<RetenoLogEventDb>()
     val remoteLogs: List<Pair<String?, LogLevel>>
         get() = savedLogEvents.map { it.errorMessage to LogLevel.valueOf(it.logLevel.name) }
-    val serviceLocator = mockk<ServiceLocator>().also {
-        every { it.retenoDatabaseManagerDeviceProvider.get() } returns devicesDb
-        every { it.retenoDatabaseManagerUserProvider.get() } returns usersDb
-        every { it.retenoDatabaseManagerInteractionProvider.get() } returns interactionsDb
-        every { it.retenoDatabaseManagerInAppInteractionProvider.get() } returns inAppInteractionsDb
-        every { it.retenoDatabaseManagerEventsProvider.get() } returns eventsDb
-        every { it.retenoDatabaseManagerAppInboxProvider.get() } returns inboxDb
-        every { it.retenoDatabaseManagerInAppMessagesProvider.get() } returns inAppDb
-        every { it.fileManagerProvider.get() } returns files
-        every { it.retenoDatabaseManagerRecomEventsProvider.get() } returns recomEventsDb
-        every { it.retenoDatabaseManagerWrappedLinksProvider.get() } returns wrappedLinksDb
-        every { it.retenoDatabaseManagerLogEventProvider.get() } returns logEventsDb
-        every { it.configRepositoryProvider.get() } returns configRepository
-        every { it.workManagerProvider.get() } returns workManager
-        every { it.restClientProvider.get() } returns rest
-        every { it.restConfigProvider.get() } returns restConfig
-        every { it.sharedPrefsManagerProvider.get() } returns prefs
-        every { it.retenoActivityHelperProvider.get() } returns activityHelper
-        every { it.retenoDatabaseManagerProvider.get() } returns databaseManager
-        every { it.retenoSessionHandlerProvider.get() } returns sessionHandler
+    val infrastructure = mockk<SdkInfrastructure>().also {
+        every { it.devicesDb } returns devicesDb
+        every { it.usersDb } returns usersDb
+        every { it.interactionsDb } returns interactionsDb
+        every { it.inAppInteractionsDb } returns inAppInteractionsDb
+        every { it.eventsDb } returns eventsDb
+        every { it.inboxDb } returns inboxDb
+        every { it.inAppMessagesDb } returns inAppDb
+        every { it.fileManager } returns files
+        every { it.recomEventsDb } returns recomEventsDb
+        every { it.wrappedLinksDb } returns wrappedLinksDb
+        every { it.logEventsDb } returns logEventsDb
+        every { it.configRepository } returns configRepository
+        every { it.restClient } returns rest
+        every { it.restConfig } returns restConfig
+        every { it.prefs } returns prefs
+        every { it.activityHelper } returns activityHelper
+        every { it.databaseManager } returns databaseManager
+        every { it.sessionHandler } returns sessionHandler
     }
     val platform = FakeAppPlatform()
     val lifecycleEventFilter = LifecycleEventFilter(LifecycleTrackingOptions.ALL)
-    val configProvider = mockk<RetenoConfigProvider>(relaxed = true)
-    val configuration = SdkConfigurationImpl(configProvider, lifecycleEventFilter)
+    val configuration = SdkConfigurationImpl(lifecycleEventFilter)
     val insertedEvents = mutableListOf<EventsDb>()
     val insertedEventKeys: List<String>
         get() = insertedEvents.flatMap { batch -> batch.eventList.map { it.eventTypeKey } }
@@ -111,7 +108,7 @@ internal class LocatorFixture(scope: TestScope, initialized: Boolean = true) {
     val dispatchers = scope.testDispatchers()
 
     val sut = ActionsLocator(
-        serviceLocator = serviceLocator,
+        infrastructure = infrastructure,
         dispatchers = dispatchers,
         logSink = sink,
         scope = scope.workScope().let { work ->

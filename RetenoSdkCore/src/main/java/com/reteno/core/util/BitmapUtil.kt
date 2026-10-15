@@ -39,9 +39,6 @@ object BitmapUtil {
      * @return The scaled bitmap with 2:1 aspect ratio.
      */
     fun getScaledBitmap(context: Context, imageUrl: String): Bitmap? {
-        /*@formatter:off*/ Logger.i(TAG, "getScaledBitmap(): ", "context = [" , context , "], imageUrl = [" , imageUrl , "]")
-        /*@formatter:on*/
-
         // Processing an image depending on the current screen size to avoid central crop if the image
         // ratio is more than 2:1. Google aspect ~2:1 - page 78
         // http://commondatastorage.googleapis.com/io2012/presentations/live%20to%20website/105.pdf
@@ -50,20 +47,24 @@ object BitmapUtil {
         windowManager.defaultDisplay.getMetrics(displayMetrics)
         val pixelsHeight = (displayMetrics.density * BIG_PICTURE_MAX_HEIGHT_DP + 0.5f).roundToInt()
         val pixelsWidth = min(2 * pixelsHeight, displayMetrics.widthPixels)
-        var bitmap: Bitmap? = getBitmapFromUrl(imageUrl, pixelsWidth, pixelsHeight)
-        try {
-            bitmap = resize(bitmap = bitmap!!, maxWidth = pixelsWidth, maxHeight = pixelsHeight)
-            val targetBitmap = Bitmap.createBitmap(pixelsWidth, pixelsHeight, Bitmap.Config.ARGB_8888)
-            val canvas = Canvas(targetBitmap)
-            canvas.drawColor(Color.TRANSPARENT)
-            val xOffset = (targetBitmap.width - bitmap.width) / 2f
-            val yOffset = (targetBitmap.height - bitmap.height) / 2f
-            canvas.drawBitmap(bitmap, xOffset, yOffset, null)
-            bitmap = targetBitmap
-        } catch (e: Exception) {
-            Logger.e(TAG, "Failed on scale image $imageUrl to ($pixelsWidth, $pixelsHeight)", e)
+        val source = getBitmapFromUrl(imageUrl, pixelsWidth, pixelsHeight) ?: return null
+        return try {
+            centerInside(source, pixelsWidth, pixelsHeight)
+        } catch (e: IllegalArgumentException) {
+            Logger.e(TAG, "getScaledBitmap(): image does not fit ($pixelsWidth, $pixelsHeight)", e)
+            source
         }
-        return bitmap
+    }
+
+    private fun centerInside(source: Bitmap, width: Int, height: Int): Bitmap {
+        val scaled = resize(bitmap = source, maxWidth = width, maxHeight = height)
+        val targetBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(targetBitmap)
+        canvas.drawColor(Color.TRANSPARENT)
+        val xOffset = (targetBitmap.width - scaled.width) / 2f
+        val yOffset = (targetBitmap.height - scaled.height) / 2f
+        canvas.drawBitmap(scaled, xOffset, yOffset, null)
+        return targetBitmap
     }
 
     fun resize(bitmap: Bitmap, maxWidth: Int, maxHeight: Int): Bitmap {
@@ -95,7 +96,9 @@ object BitmapUtil {
     @InternalRetenoApi
     fun openImageConnection(imageUrl: String): HttpURLConnection {
         val url = URL(imageUrl)
-        if (url.protocol != "https" && url.protocol != "http") throw MalformedURLException("Images are loaded over http(s) only")
+        if (url.protocol != "https" && url.protocol != "http") {
+            throw MalformedURLException("Images are loaded over http(s) only")
+        }
         return (url.openConnection() as HttpURLConnection).apply {
             connectTimeout = IMAGE_CONNECT_TIMEOUT_MS
             readTimeout = IMAGE_READ_TIMEOUT_MS

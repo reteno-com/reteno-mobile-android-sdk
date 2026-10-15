@@ -29,6 +29,7 @@ internal class RemoteLogRecorder(
         RemoteLogGuard.unlessMuted {
             val uploadable = event.copy(
                 errorMessage = event.errorMessage?.let(Redact::uploadable),
+                version = event.version ?: origin.appVersion,
                 bundleId = origin.packageName,
                 deviceId = deviceId()
             )

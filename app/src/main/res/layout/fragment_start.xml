@@ -10,28 +10,6 @@
         android:layout_height="wrap_content">
 
         <TextView
-            android:id="@+id/tvSessionTimeTitle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="12dp"
-            android:layout_marginTop="8dp"
-            android:text="Session time:"
-            android:textSize="18sp"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
-
-        <TextView
-            android:id="@+id/tvSessionTime"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginHorizontal="12dp"
-            android:layout_marginTop="8dp"
-            android:textColor="@color/black"
-            android:textSize="18sp"
-            app:layout_constraintStart_toEndOf="@id/tvSessionTimeTitle"
-            app:layout_constraintTop_toTopOf="parent" />
-
-        <TextView
             android:id="@+id/tvToggleInApps"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
@@ -102,8 +80,9 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginEnd="12dp"
+            android:layout_marginTop="8dp"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/tvSessionTimeTitle" />
+            app:layout_constraintTop_toTopOf="parent" />
 
         <androidx.appcompat.widget.SwitchCompat
             android:id="@+id/swPushInAppsPause"
@@ -129,46 +108,18 @@
                 android:text="Delay next launch by 10 seconds"
                 android:textSize="18sp" />
 
-            <ProgressBar
-                android:id="@+id/progressBar"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:visibility="gone" />
         </FrameLayout>
-
-        <EditText
-            android:id="@+id/etBaseInAppURL"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:hint="InApp Base URL"
-            android:inputType="textMultiLine|textUri"
-            app:layout_constraintEnd_toStartOf="@id/saveInAppBase"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/flInit" />
-
-
-        <Button
-            android:id="@+id/saveInAppBase"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Save"
-            app:layout_constraintBottom_toBottomOf="@id/etBaseInAppURL"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toEndOf="@id/etBaseInAppURL"
-            app:layout_constraintTop_toTopOf="@id/etBaseInAppURL" />
 
         <EditText
             android:id="@+id/etSessionDuration"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            android:hint="Session duration seconds"
+            android:hint="Session duration seconds (next launch)"
             android:inputType="numberDecimal"
-            app:layout_constraintEnd_toStartOf="@id/saveInAppBase"
+            app:layout_constraintEnd_toStartOf="@id/saveSessionDuration"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/etBaseInAppURL" />
+            app:layout_constraintTop_toBottomOf="@id/flInit" />
 
 
         <Button

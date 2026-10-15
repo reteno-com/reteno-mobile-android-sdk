@@ -4,11 +4,12 @@ import android.app.Application
 import androidx.core.app.NotificationChannelCompat
 import androidx.lifecycle.Lifecycle
 import androidx.test.core.app.ApplicationProvider
-import com.reteno.core.di.ServiceLocator
 import com.reteno.core.domain.model.event.LifecycleTrackingOptions
 import com.reteno.core.domain.model.interaction.InteractionAction
 import com.reteno.core.domain.model.interaction.InteractionStatus
+import com.reteno.core.domain.model.recommendation.post.RecomEvents
 import com.reteno.core.features.iam.InAppPauseBehaviour
+import com.reteno.core.fixtures.FakeFacadeInfrastructure
 import com.reteno.core.fixtures.FakeSdkActions
 import com.reteno.core.fixtures.ManualLifecycleOwner
 import com.reteno.core.fixtures.stubAnonymousAttributes
@@ -16,7 +17,6 @@ import com.reteno.core.fixtures.stubConfig
 import com.reteno.core.fixtures.stubCustomEvent
 import com.reteno.core.fixtures.stubEcomEvent
 import com.reteno.core.fixtures.stubUser
-import com.reteno.core.internal.coroutine.retenoDispatchers
 import com.reteno.core.lifecycle.ScreenTrackingConfig
 import com.reteno.core.util.Procedure
 import com.reteno.test.given
@@ -45,15 +45,14 @@ internal class RetenoInternalImplTest {
     private class SutFixture(scope: TestScope, osSupported: Boolean = true) {
         private val application = ApplicationProvider.getApplicationContext<Application>()
         private val dispatcher = StandardTestDispatcher(scope.testScheduler)
-        val serviceLocator = ServiceLocator(application, retenoDispatchers(dispatcher, dispatcher))
         val actions = FakeSdkActions()
+        val infrastructure = FakeFacadeInfrastructure(actions)
         val owner = ManualLifecycleOwner()
         val sut = RetenoInternalImpl(
             application = application,
             mainDispatcher = dispatcher,
             appLifecycleOwner = owner,
-            serviceLocator = serviceLocator,
-            sdkActions = { actions },
+            infrastructure = infrastructure,
             isOsSupported = { osSupported }
         )
 
@@ -117,7 +116,7 @@ internal class RetenoInternalImplTest {
         val beforeInit = fixture.actions.calls.toList()
 
         whenn()
-        fixture.serviceLocator.initGate.markInitialized(byUser = false)
+        fixture.actions.markInitialized()
         runCurrent()
 
         then()
@@ -154,7 +153,7 @@ internal class RetenoInternalImplTest {
     fun `should submit api calls immediately once initialized`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
-        fixture.serviceLocator.initGate.markInitialized(byUser = true)
+        fixture.actions.markInitialized()
 
         whenn()
         fixture.sut.logScreenView("Home")
@@ -167,7 +166,7 @@ internal class RetenoInternalImplTest {
     fun `should forward no user when user attributes are set with external id only`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
-        fixture.serviceLocator.initGate.markInitialized(byUser = true)
+        fixture.actions.markInitialized()
 
         whenn()
         fixture.sut.setUserAttributes("user-1")
@@ -180,7 +179,7 @@ internal class RetenoInternalImplTest {
     fun `should forward the same user with user attributes`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
-        fixture.serviceLocator.initGate.markInitialized(byUser = true)
+        fixture.actions.markInitialized()
         val user = stubUser()
 
         whenn()
@@ -194,7 +193,7 @@ internal class RetenoInternalImplTest {
     fun `should forward the same user with multi account user attributes`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
-        fixture.serviceLocator.initGate.markInitialized(byUser = true)
+        fixture.actions.markInitialized()
         val user = stubUser()
 
         whenn()
@@ -208,7 +207,7 @@ internal class RetenoInternalImplTest {
     fun `should forward the same anonymous user attributes`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
-        fixture.serviceLocator.initGate.markInitialized(byUser = true)
+        fixture.actions.markInitialized()
         val attributes = stubAnonymousAttributes()
 
         whenn()
@@ -222,7 +221,7 @@ internal class RetenoInternalImplTest {
     fun `should forward the same ecommerce event`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
-        fixture.serviceLocator.initGate.markInitialized(byUser = true)
+        fixture.actions.markInitialized()
         val event = stubEcomEvent()
 
         whenn()
@@ -236,7 +235,7 @@ internal class RetenoInternalImplTest {
     fun `should forward the same auto screen tracking config`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
-        fixture.serviceLocator.initGate.markInitialized(byUser = true)
+        fixture.actions.markInitialized()
         val config = ScreenTrackingConfig(enable = true, excludeScreens = listOf("Splash"))
 
         whenn()
@@ -256,7 +255,7 @@ internal class RetenoInternalImplTest {
         val beforeInit = ran.toList()
 
         whenn()
-        fixture.serviceLocator.initGate.markInitialized(byUser = false)
+        fixture.actions.markInitialized()
         runCurrent()
         fixture.sut.executeAfterInit { ran += "after init" }
 
@@ -269,16 +268,15 @@ internal class RetenoInternalImplTest {
     fun `should expose init and start state`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
-        val beforeInit = listOf(fixture.sut.isInitialized, fixture.sut.isInitializedByUser)
+        val initializedBefore = fixture.sut.isInitialized
         fixture.actions.isStarted = true
 
         whenn()
-        fixture.serviceLocator.initGate.markInitialized(byUser = false)
+        fixture.actions.markInitialized()
 
         then()
-        assertEquals(listOf(false, false), beforeInit)
+        assertFalse(initializedBefore)
         assertTrue(fixture.sut.isInitialized)
-        assertFalse(fixture.sut.isInitializedByUser)
         assertTrue(fixture.sut.isStarted)
     }
 
@@ -290,7 +288,7 @@ internal class RetenoInternalImplTest {
 
         whenn()
         fixture.sut.setConfig(config)
-        fixture.serviceLocator.initGate.markInitialized(byUser = true)
+        fixture.actions.markInitialized()
         fixture.callEveryDeferredApi()
         fixture.sut.start()
         fixture.sut.stop()
@@ -299,7 +297,7 @@ internal class RetenoInternalImplTest {
 
         then()
         assertEquals(emptyList<String>(), fixture.actions.calls)
-        assertSame(config, fixture.serviceLocator.configuration.config)
+        assertSame(config, fixture.infrastructure.configuration.config)
     }
 
     @Test
@@ -323,7 +321,7 @@ internal class RetenoInternalImplTest {
         val beforeInit = fixture.actions.calls.toList()
 
         whenn()
-        fixture.serviceLocator.initGate.markInitialized(byUser = false)
+        fixture.actions.markInitialized()
         runCurrent()
 
         then()
@@ -335,7 +333,7 @@ internal class RetenoInternalImplTest {
     fun `should pass in-app pause behaviour to sdk once initialized`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
-        fixture.serviceLocator.initGate.markInitialized(byUser = true)
+        fixture.actions.markInitialized()
 
         whenn()
         fixture.sut.setInAppMessagesPauseBehaviour(InAppPauseBehaviour.SKIP_IN_APPS)
@@ -348,7 +346,7 @@ internal class RetenoInternalImplTest {
     fun `should ignore in-app pause behaviour on unsupported os`() = runUnitTest {
         given()
         val fixture = SutFixture(this, osSupported = false)
-        fixture.serviceLocator.initGate.markInitialized(byUser = true)
+        fixture.actions.markInitialized()
 
         whenn()
         fixture.sut.setInAppMessagesPauseBehaviour(InAppPauseBehaviour.SKIP_IN_APPS)
@@ -389,9 +387,45 @@ internal class RetenoInternalImplTest {
         val config = RetenoConfig.Builder().accessKey("key").defaultNotificationChannelConfig(channelConfig).build()
 
         whenn()
-        fixture.serviceLocator.configuration.useUserConfig(config)
+        fixture.infrastructure.configuration.useUserConfig(config)
 
         then()
         assertSame(channelConfig, fixture.sut.getDefaultNotificationChannelConfig())
+    }
+
+    @Test
+    fun `should not build sdk actions on unsupported os`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this, osSupported = false)
+
+        whenn()
+        fixture.callEveryDeferredApi()
+        val state = listOf(fixture.sut.isInitialized, fixture.sut.isStarted)
+        fixture.sut.appInbox.markAsOpened("m1")
+        fixture.sut.recommendation.logRecommendations(RecomEvents("variant", emptyList()))
+        runCurrent()
+
+        then()
+        assertEquals(listOf(false, false), state)
+        assertFalse(fixture.infrastructure.actionsUsed)
+    }
+
+    @Test
+    fun `should keep deprecated instance pointing at the sdk`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        val previous = Reteno.instanceInternal
+
+        whenn()
+        val instance = try {
+            Reteno.instanceInternal = fixture.sut
+            @Suppress("DEPRECATION")
+            RetenoInternalImpl.instance
+        } finally {
+            Reteno.instanceInternal = previous
+        }
+
+        then()
+        assertSame(fixture.sut, instance)
     }
 }

@@ -13,12 +13,12 @@ import com.reteno.core.Reteno
 import com.reteno.core.RetenoConfig
 import com.reteno.core.identification.DeviceIdProvider
 import com.reteno.core.lifecycle.ScreenTrackingConfig
-import com.reteno.core.util.toStringVerbose
 import com.reteno.push.RetenoNotifications
 import com.reteno.sample.util.AppSharedPreferencesManager
 import com.reteno.sample.util.AppSharedPreferencesManager.getDeviceId
 import com.reteno.sample.util.AppSharedPreferencesManager.getDeviceIdDelay
 import com.reteno.sample.util.AppSharedPreferencesManager.getShouldDelayLaunch
+import com.reteno.sample.util.toStringVerbose
 
 class SampleApp : Application(), Configuration.Provider {
 

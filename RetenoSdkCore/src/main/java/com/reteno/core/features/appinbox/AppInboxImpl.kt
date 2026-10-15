@@ -7,7 +7,7 @@ import com.reteno.core.internal.log.Redact
 import com.reteno.core.internal.log.RemoteLog
 
 internal class AppInboxImpl(
-    private val actions: InboxActions,
+    private val inboxActions: Lazy<InboxActions>,
     private val remoteLog: RemoteLog,
     private val isOsSupported: () -> Boolean
 ) : AppInbox {
@@ -19,43 +19,43 @@ internal class AppInboxImpl(
         callback: RetenoResultCallback<AppInboxMessages>
     ) {
         passToSdk("getAppInboxMessages") {
-            actions.submitInboxMessagesRequest(page, pageSize, status, callback)
+            inboxActions.value.submitInboxMessagesRequest(page, pageSize, status, callback)
         }
     }
 
     override fun getAppInboxMessagesCount(callback: RetenoResultCallback<Int>) {
         passToSdk("getAppInboxMessagesCount") {
-            actions.submitInboxCountRequest(callback)
+            inboxActions.value.submitInboxCountRequest(callback)
         }
     }
 
     override fun subscribeOnMessagesCountChanged(callback: RetenoResultCallback<Int>) {
         passToSdk("subscribeOnMessagesCountChanged") {
-            actions.subscribeInboxCount(callback)
+            inboxActions.value.subscribeInboxCount(callback)
         }
     }
 
     override fun unsubscribeMessagesCountChanged(callback: RetenoResultCallback<Int>) {
         passToSdk("unsubscribeMessagesCountChanged") {
-            actions.unsubscribeInboxCount(callback)
+            inboxActions.value.unsubscribeInboxCount(callback)
         }
     }
 
     override fun unsubscribeAllMessagesCountChanged() {
         passToSdk("unsubscribeAllMessagesCountChanged") {
-            actions.unsubscribeAllInboxCount()
+            inboxActions.value.unsubscribeAllInboxCount()
         }
     }
 
     override fun markAsOpened(messageId: String) {
         passToSdk("markAsOpened") {
-            actions.submitInboxMessageOpened(messageId)
+            inboxActions.value.submitInboxMessageOpened(messageId)
         }
     }
 
     override fun markAllMessagesAsOpened(callback: RetenoResultCallback<Unit>) {
         passToSdk("markAllMessagesAsOpened") {
-            actions.submitAllInboxMessagesOpened(callback)
+            inboxActions.value.submitAllInboxMessagesOpened(callback)
         }
     }
 

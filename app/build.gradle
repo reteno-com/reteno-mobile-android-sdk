@@ -94,6 +94,11 @@ android {
             }
         }
     }
+    sourceSets {
+        debug.java.srcDirs += 'src/debugHooks/java'
+        qa.java.srcDirs += 'src/debugHooks/java'
+    }
+
     compileOptions {
         coreLibraryDesugaringEnabled true
 

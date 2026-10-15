@@ -10,6 +10,7 @@ import com.reteno.test.runUnitTest
 import com.reteno.test.then
 import com.reteno.test.whenn
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -19,7 +20,14 @@ internal class AppInboxImplTest {
     private class SutFixture(osSupported: Boolean = true) {
         val actions = FakeSdkActions()
         val remoteLog = FakeRemoteLog()
-        val sut = AppInboxImpl(actions, remoteLog) { osSupported }
+        var actionsBuilt = false
+        val sut = AppInboxImpl(
+            lazy {
+                actionsBuilt = true
+                actions
+            },
+            remoteLog
+        ) { osSupported }
 
         fun callEveryApi() {
             sut.getAppInboxMessages(2, 20, AppInboxStatus.OPENED, RecordingResultCallback<AppInboxMessages>())
@@ -53,6 +61,19 @@ internal class AppInboxImplTest {
             ),
             fixture.actions.calls
         )
+    }
+
+    @Test
+    fun `should load inbox messages without paging or status filter when host gives none`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val inbox: AppInbox = fixture.sut
+
+        whenn()
+        inbox.getAppInboxMessages(callback = RecordingResultCallback())
+
+        then()
+        assertEquals(listOf("submitInboxMessagesRequest null null null"), fixture.actions.calls)
     }
 
     @Test
@@ -155,5 +176,17 @@ internal class AppInboxImplTest {
 
         then()
         assertTrue(fixture.actions.calls.isEmpty())
+    }
+
+    @Test
+    fun `should not build sdk actions on unsupported os`() = runUnitTest {
+        given()
+        val fixture = SutFixture(osSupported = false)
+
+        whenn()
+        fixture.callEveryApi()
+
+        then()
+        assertFalse(fixture.actionsBuilt)
     }
 }

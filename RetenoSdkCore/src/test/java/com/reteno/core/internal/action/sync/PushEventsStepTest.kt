@@ -5,7 +5,7 @@ import com.reteno.core.data.remote.api.ApiContract
 import com.reteno.core.data.remote.api.HttpMethod
 import com.reteno.core.data.remote.mapper.toJson
 import com.reteno.core.data.remote.mapper.toRemote
-import com.reteno.core.domain.model.ecom.RemoteConstants
+import com.reteno.core.domain.model.ecom.EVENT_TYPE_CART_UPDATED
 import com.reteno.core.fixtures.FakeRestClient
 import com.reteno.core.fixtures.SentRequest
 import com.reteno.core.fixtures.TestActionRunner
@@ -79,7 +79,7 @@ internal class PushEventsStepTest {
     fun `should send only latest cart update among events`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
-        val cart = RemoteConstants.EcomEvent.EVENT_TYPE_CART_UPDATED
+        val cart = EVENT_TYPE_CART_UPDATED
         val olderCart = stubEventDb(rowId = "1", eventTypeKey = cart, occurred = "2026-01-02T03:04:05.000Z")
         val newerCart = stubEventDb(rowId = "2", eventTypeKey = cart, occurred = "2026-01-02T03:04:06.000Z")
         val purchase = stubEventDb(rowId = "3", eventTypeKey = "purchase")

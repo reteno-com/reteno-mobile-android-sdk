@@ -1,7 +1,6 @@
 package com.reteno.core.internal.config
 
 import com.reteno.core.RetenoConfig
-import com.reteno.core.di.provider.RetenoConfigProvider
 import com.reteno.core.domain.model.event.LifecycleEventType
 import com.reteno.core.domain.model.event.LifecycleTrackingOptions
 import com.reteno.core.fixtures.STUB_ACCESS_KEY
@@ -10,8 +9,6 @@ import com.reteno.test.given
 import com.reteno.test.runUnitTest
 import com.reteno.test.then
 import com.reteno.test.whenn
-import io.mockk.mockk
-import io.mockk.verify
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
@@ -22,9 +19,8 @@ import org.junit.jupiter.api.Test
 internal class SdkConfigurationTest {
 
     private class SutFixture {
-        val configProvider = mockk<RetenoConfigProvider>(relaxed = true)
         val filter = LifecycleEventFilter(LifecycleTrackingOptions.ALL)
-        val sut = SdkConfigurationImpl(configProvider, filter)
+        val sut = SdkConfigurationImpl(filter)
 
         fun config(
             debug: Boolean = false,
@@ -47,7 +43,7 @@ internal class SdkConfigurationTest {
         fixture.sut.useUserConfig(config)
 
         then()
-        verify(exactly = 1) { fixture.configProvider.setConfig(config) }
+        assertSame(config, fixture.sut.config)
         assertFalse(fixture.filter.isEnabled(LifecycleEventType.APP_LIFECYCLE))
         assertTrue(fixture.sut.isDebug)
     }
@@ -66,8 +62,7 @@ internal class SdkConfigurationTest {
 
         then()
         assertEquals(listOf(true, false), listOf(cachedUsedFirst, cachedUsedAfterUser))
-        verify(exactly = 1) { fixture.configProvider.setConfig(cached) }
-        verify(exactly = 1) { fixture.configProvider.setConfig(user) }
+        assertSame(user, fixture.sut.config)
         assertFalse(fixture.sut.isDebug)
     }
 

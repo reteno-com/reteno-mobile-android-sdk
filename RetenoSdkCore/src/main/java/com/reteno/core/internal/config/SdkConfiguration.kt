@@ -1,7 +1,6 @@
 package com.reteno.core.internal.config
 
 import com.reteno.core.RetenoConfig
-import com.reteno.core.di.provider.RetenoConfigProvider
 import com.reteno.core.internal.lifecycle.LifecycleEventFilter
 import com.reteno.core.util.Util
 
@@ -16,7 +15,6 @@ internal interface SdkConfiguration {
 }
 
 internal class SdkConfigurationImpl(
-    private val configProvider: RetenoConfigProvider,
     private val lifecycleEventFilter: LifecycleEventFilter
 ) : SdkConfiguration {
 
@@ -46,7 +44,6 @@ internal class SdkConfigurationImpl(
 
     private fun use(config: RetenoConfig) {
         this.config = config
-        configProvider.setConfig(config)
         lifecycleEventFilter.update(config.lifecycleTrackingOptions)
         isDebug = config.isDebug
         Util.setIsDebug(config.isDebug)

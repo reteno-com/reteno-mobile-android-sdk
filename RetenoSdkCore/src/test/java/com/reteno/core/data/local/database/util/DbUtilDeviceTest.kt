@@ -3,7 +3,6 @@ package com.reteno.core.data.local.database.util
 import android.content.ContentValues
 import android.database.Cursor
 import androidx.core.database.getStringOrNull
-import com.reteno.core.RetenoInternalImpl
 import com.reteno.core.base.robolectric.BaseRobolectricTest
 import com.reteno.core.data.local.database.schema.DbSchema
 import com.reteno.core.data.local.database.schema.DeviceSchema
@@ -11,15 +10,11 @@ import com.reteno.core.data.local.model.BooleanDb
 import com.reteno.core.data.local.model.device.DeviceCategoryDb
 import com.reteno.core.data.local.model.device.DeviceDb
 import com.reteno.core.data.local.model.device.DeviceOsDb
-import com.reteno.core.di.ServiceLocator
 import com.reteno.core.util.Util
 import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
-import io.mockk.mockk
-import io.mockk.mockkConstructor
 import io.mockk.mockkStatic
-import io.mockk.unmockkConstructor
 import io.mockk.unmockkStatic
 import org.junit.AfterClass
 import org.junit.Assert.assertEquals
@@ -72,14 +67,12 @@ class DbUtilDeviceTest : BaseRobolectricTest() {
         @BeforeClass
         fun beforeClass() {
             mockkStatic("com.reteno.core.util.UtilKt")
-            mockkConstructor(ServiceLocator::class)
         }
 
         @JvmStatic
         @AfterClass
         fun afterClass() {
             unmockkStatic("com.reteno.core.util.UtilKt")
-            unmockkConstructor(ServiceLocator::class)
         }
     }
     // endregion constants -------------------------------------------------------------------------
@@ -199,8 +192,6 @@ class DbUtilDeviceTest : BaseRobolectricTest() {
     fun givenCursorWithDeviceIdOnly_whenGetDevice_thenDeviceReturned() {
         // Given
         mockDeviceDeviceIdOnly()
-        val app = application
-        RetenoInternalImpl.swapInstance(mockk { every { application } returns app })
 
         val expectedDevice = DeviceDb(
             rowId = null,
@@ -224,7 +215,6 @@ class DbUtilDeviceTest : BaseRobolectricTest() {
 
         // When
         val actualDevice = cursor.getDevice()
-        RetenoInternalImpl.swapInstance(null)
 
         // Then
         assertEquals(expectedDevice, actualDevice)

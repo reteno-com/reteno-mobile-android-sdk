@@ -7,8 +7,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.OnLifecycleEvent
 import androidx.lifecycle.ProcessLifecycleOwner
-import com.reteno.core.di.SdkActions
-import com.reteno.core.di.ServiceLocator
+import com.reteno.core.di.FacadeInfrastructure
+import com.reteno.core.di.SdkComponent
 import com.reteno.core.domain.model.ecom.EcomEvent
 import com.reteno.core.domain.model.event.Event
 import com.reteno.core.domain.model.event.LifecycleTrackingOptions
@@ -45,9 +45,7 @@ class RetenoInternalImpl internal constructor(
     override val application: Application,
     private val mainDispatcher: CoroutineDispatcher,
     private val appLifecycleOwner: LifecycleOwner,
-    //TODO make this property private
-    val serviceLocator: ServiceLocator,
-    sdkActions: (ServiceLocator) -> SdkActions,
+    private val infrastructure: FacadeInfrastructure,
     private val isOsSupported: () -> Boolean
 ) : Reteno, RetenoInternalFacade, SdkLifecycle {
 
@@ -60,35 +58,32 @@ class RetenoInternalImpl internal constructor(
         application = application,
         mainDispatcher = mainDispatcher,
         appLifecycleOwner = appLifecycleOwner,
-        serviceLocator = ServiceLocator(application, retenoDispatchers(mainDispatcher, ioDispatcher)),
-        sdkActions = { it.actions },
+        infrastructure = SdkComponent(application, retenoDispatchers(mainDispatcher, ioDispatcher)),
         isOsSupported = ::isOsVersionSupported
     )
 
     private val syncScope = CoroutineScope(mainDispatcher + SupervisorJob())
 
-    private val actions by lazy { sdkActions(serviceLocator) }
-    private val initGate get() = serviceLocator.initGate
+    private val actions get() = infrastructure.actions
     internal val backgroundSync by lazy { actions.backgroundSync }
     private val permissionDelegate = PermissionActivityDelegate(application)
-    private val activityHelper: RetenoActivityHelper by lazy { serviceLocator.retenoActivityHelperProvider.get() }
+    private val activityHelper: RetenoActivityHelper get() = infrastructure.activityHelper
 
-    private val configRepository by lazy { serviceLocator.configRepositoryProvider.get() }
-    private val databaseManager by lazy { serviceLocator.retenoDatabaseManagerProvider.get() }
+    private val configRepository get() = infrastructure.configRepository
+    private val databaseManager get() = infrastructure.databaseManager
 
-    override val appInbox: AppInbox by lazy { AppInboxImpl(actions, LoggerRemoteLog, isOsSupported) }
-    override val recommendation: Recommendation by lazy { RecommendationImpl(actions, LoggerRemoteLog, isOsSupported) }
+    override val appInbox: AppInbox by lazy { AppInboxImpl(lazy { actions }, LoggerRemoteLog, isOsSupported) }
+    override val recommendation: Recommendation by lazy {
+        RecommendationImpl(lazy { actions }, LoggerRemoteLog, isOsSupported)
+    }
 
     private val receivedConfigFromUser = AtomicBoolean(false)
 
     override val isStarted: Boolean
-        get() = actions.isStarted
+        get() = isOsSupported() && actions.isStarted
 
     val isInitialized: Boolean
-        get() = initGate.isInitialized
-
-    val isInitializedByUser: Boolean
-        get() = initGate.isInitializedByUser
+        get() = isOsSupported() && actions.isInitialized
 
     init {
         initSdk()
@@ -100,7 +95,7 @@ class RetenoInternalImpl internal constructor(
             return
         }
         if (!isOsSupported()) {
-            serviceLocator.setConfig(config)
+            infrastructure.configuration.useUserConfig(config)
             return
         }
         actions.applyUserConfig(config)
@@ -115,9 +110,10 @@ class RetenoInternalImpl internal constructor(
     }
 
     private inline fun runAfterInit(crossinline operation: () -> Unit) {
+        if (!isOsSupported()) return
         if (!isInitialized) {
             syncScope.launch(mainDispatcher) {
-                initGate.awaitInit()
+                actions.awaitInit()
                 operation()
             }
         } else {
@@ -356,7 +352,7 @@ class RetenoInternalImpl internal constructor(
     }
 
     override fun getDefaultNotificationChannelConfig(): Procedure<NotificationChannelCompat.Builder>? {
-        return serviceLocator.configuration.config?.defaultNotificationChannelConfig
+        return infrastructure.configuration.config?.defaultNotificationChannelConfig
     }
 
     override fun executeAfterInit(action: () -> Unit) = runAfterInit {
@@ -372,28 +368,11 @@ class RetenoInternalImpl internal constructor(
         return permissionDelegate.requestChecker()
     }
 
-    /**
-     * For testing purposes
-     * DON'T EVER CALL THIS METHOD!
-     */
-    @Deprecated("DON'T EVER CALL THIS METHOD! It is for testing only")
-    private fun testCrash() {
-        try {
-            throw NullPointerException("This is a test crash in SDK")
-        } catch (ex: Throwable) {
-            /*@formatter:off*/ Logger.e(TAG, "testCrash(): ", ex)
-            /*@formatter:on*/
-        }
-    }
-
     companion object {
         private val TAG: String = RetenoInternalImpl::class.java.simpleName
 
+        @Deprecated("Use Reteno.instance", ReplaceWith("Reteno.instance", "com.reteno.core.Reteno"))
         val instance: RetenoInternalImpl
             get() = Reteno.instance as RetenoInternalImpl
-
-        fun swapInstance(instance: RetenoInternalImpl?) {
-            Reteno.instanceInternal = instance
-        }
     }
 }

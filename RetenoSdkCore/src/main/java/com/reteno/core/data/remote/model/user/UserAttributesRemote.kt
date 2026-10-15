@@ -25,8 +25,6 @@ internal data class UserAttributesRemote(
     fun createDiffModel(olderModel: UserAttributesRemote?): UserAttributesRemote? {
         if (olderModel == null) return copy()
 
-        if (olderModel == this) return null
-
         var somethingChanged = false
         val result = copy()
 
@@ -104,8 +102,16 @@ internal data class UserAttributesRemote(
         result.marketId = result.marketId ?: olderModel.marketId
         result.timeZone = result.timeZone ?: olderModel.timeZone
         result.address = result.address ?: olderModel.address
-        result.fields = olderModel.fields.orEmpty().toSet().plus(result.fields.orEmpty().toSet()).toList()
+        result.fields = mergedFields(olderModel.fields, result.fields)
 
         return result
+    }
+
+    private fun mergedFields(
+        older: List<UserCustomFieldRemote>?,
+        newer: List<UserCustomFieldRemote>?
+    ): List<UserCustomFieldRemote>? {
+        if (older == null && newer == null) return null
+        return older.orEmpty().toSet().plus(newer.orEmpty().toSet()).toList()
     }
 }

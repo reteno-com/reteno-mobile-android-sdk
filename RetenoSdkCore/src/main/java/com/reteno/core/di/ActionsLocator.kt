@@ -129,7 +129,7 @@ import java.util.UUID
 import kotlin.random.Random
 
 internal class ActionsLocator(
-    private val serviceLocator: ServiceLocator,
+    private val infrastructure: SdkInfrastructure,
     private val dispatchers: RetenoDispatchers,
     private val logSink: RetenoLogSink,
     private val scope: CoroutineScope,
@@ -141,7 +141,7 @@ internal class ActionsLocator(
 ) : SdkActions {
 
     private val remoteLog: RemoteLog = RemoteLogRecorder(
-        configRepository = lazy { serviceLocator.configRepositoryProvider.get() },
+        configRepository = lazy { infrastructure.configRepository },
         platform = platform,
         queue = this
     )
@@ -159,23 +159,23 @@ internal class ActionsLocator(
     private val inAppQueue = SerialQueue(scope, "InApp", logSink)
     private val recommendationEventsQueue = SerialQueue(scope, "RecommendationEvents", logSink)
 
-    private val api by lazy { SuspendApiClient(serviceLocator.restClientProvider.get(), dispatchers) }
-    private val configRepository by lazy { serviceLocator.configRepositoryProvider.get() }
-    private val restConfig by lazy { serviceLocator.restConfigProvider.get() }
-    private val prefs by lazy { serviceLocator.sharedPrefsManagerProvider.get() }
-    private val sessionHandler by lazy { serviceLocator.retenoSessionHandlerProvider.get() }
-    private val eventsDb by lazy { serviceLocator.retenoDatabaseManagerEventsProvider.get() }
-    private val devicesDb by lazy { serviceLocator.retenoDatabaseManagerDeviceProvider.get() }
-    private val usersDb by lazy { serviceLocator.retenoDatabaseManagerUserProvider.get() }
-    private val interactionsDb by lazy { serviceLocator.retenoDatabaseManagerInteractionProvider.get() }
-    private val inAppInteractionsDb by lazy { serviceLocator.retenoDatabaseManagerInAppInteractionProvider.get() }
-    private val wrappedLinksDb by lazy { serviceLocator.retenoDatabaseManagerWrappedLinksProvider.get() }
-    private val inboxDb by lazy { serviceLocator.retenoDatabaseManagerAppInboxProvider.get() }
+    private val api by lazy { SuspendApiClient(infrastructure.restClient, dispatchers) }
+    private val configRepository by lazy { infrastructure.configRepository }
+    private val restConfig by lazy { infrastructure.restConfig }
+    private val prefs by lazy { infrastructure.prefs }
+    private val sessionHandler by lazy { infrastructure.sessionHandler }
+    private val eventsDb by lazy { infrastructure.eventsDb }
+    private val devicesDb by lazy { infrastructure.devicesDb }
+    private val usersDb by lazy { infrastructure.usersDb }
+    private val interactionsDb by lazy { infrastructure.interactionsDb }
+    private val inAppInteractionsDb by lazy { infrastructure.inAppInteractionsDb }
+    private val wrappedLinksDb by lazy { infrastructure.wrappedLinksDb }
+    private val inboxDb by lazy { infrastructure.inboxDb }
     private val inAppCache by lazy {
-        InAppMessagesCache(serviceLocator.retenoDatabaseManagerInAppMessagesProvider.get(), dispatchers)
+        InAppMessagesCache(infrastructure.inAppMessagesDb, dispatchers)
     }
-    private val files by lazy { serviceLocator.fileManagerProvider.get() }
-    private val recomEventsDb by lazy { serviceLocator.retenoDatabaseManagerRecomEventsProvider.get() }
+    private val files by lazy { infrastructure.fileManager }
+    private val recomEventsDb by lazy { infrastructure.recomEventsDb }
 
     private val lifecycleEvents by lazy { LifecycleEvents(lifecycleEventFilter, logEvent) }
     private val screenTracker by lazy { ScreenTracker(logScreenView, scope) }
@@ -201,6 +201,13 @@ internal class ActionsLocator(
 
     override val isStarted: Boolean
         get() = runState.isStarted
+
+    override val isInitialized: Boolean
+        get() = initGate.isInitialized
+
+    override suspend fun awaitInit() {
+        initGate.awaitInit()
+    }
 
     val inAppDisplayRules: InAppDisplayRules by lazy {
         DisplayRulesEvaluator(clock, logSink)
@@ -373,7 +380,7 @@ internal class ActionsLocator(
     }
 
     val logRetenoEvent: LogRetenoEventAction by lazy {
-        LogRetenoEventAction(serviceLocator.retenoDatabaseManagerLogEventProvider.get(), dispatchers, runner)
+        LogRetenoEventAction(infrastructure.logEventsDb, dispatchers, runner)
     }
 
     private val recordInteraction: RecordInteractionAction by lazy {
@@ -579,7 +586,7 @@ internal class ActionsLocator(
                 PushInboxStatusStep(inboxDb, api, inboxCountPoller, dispatchers, runner),
                 PushRecomEventsStep(recomEventsDb, api, dispatchers, runner),
                 PushWrappedLinksStep(wrappedLinksDb, api, dispatchers, runner),
-                PushLogEventsStep(serviceLocator.retenoDatabaseManagerLogEventProvider.get(), api, dispatchers, runner)
+                PushLogEventsStep(infrastructure.logEventsDb, api, dispatchers, runner)
             ),
             runner = runner
         )
@@ -587,9 +594,9 @@ internal class ActionsLocator(
 
     override val backgroundSync: BackgroundSync by lazy {
         BackgroundSyncAction(
-            activityHelper = serviceLocator.retenoActivityHelperProvider.get(),
+            activityHelper = infrastructure.activityHelper,
             initGate = initGate,
-            databaseManager = serviceLocator.retenoDatabaseManagerProvider.get(),
+            databaseManager = infrastructure.databaseManager,
             sync = dataSync,
             platform = platform,
             dispatchers = dispatchers,

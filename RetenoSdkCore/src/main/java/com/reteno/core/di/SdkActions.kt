@@ -19,6 +19,10 @@ import com.reteno.core.view.iam.callback.InAppLifecycleCallback
 internal interface SdkActions : InteractionSubmitter, InboxActions, RecommendationActions, LogEventQueue {
     val isStarted: Boolean
 
+    val isInitialized: Boolean
+
+    suspend fun awaitInit()
+
     fun boot()
 
     fun applyUserConfig(config: RetenoConfig)

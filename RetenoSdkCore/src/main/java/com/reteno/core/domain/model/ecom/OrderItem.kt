@@ -1,14 +1,6 @@
 package com.reteno.core.domain.model.ecom
 
 import com.google.gson.annotations.SerializedName
-import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.ORDER_ITEM_CATEGORY
-import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.ORDER_ITEM_COST
-import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.ORDER_ITEM_DESCRIPTION
-import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.ORDER_ITEM_EXTERNAL_ITEM_ID
-import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.ORDER_ITEM_IMAGE_URL
-import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.ORDER_ITEM_NAME
-import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.ORDER_ITEM_QUANTITY
-import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.ORDER_ITEM_URL
 
 data class OrderItem(
     /**

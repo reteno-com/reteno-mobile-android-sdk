@@ -23,11 +23,15 @@ import com.reteno.core.features.recommendation.GetRecommendationResponseJsonCall
 import com.reteno.core.internal.action.sync.BackgroundSyncAction
 import com.reteno.core.lifecycle.ScreenTrackingConfig
 import com.reteno.core.view.iam.callback.InAppLifecycleCallback
+import kotlinx.coroutines.CompletableDeferred
 
 internal class FakeSdkActions : SdkActions {
     val calls = mutableListOf<String>()
     val configs = mutableListOf<RetenoConfig>()
     override var isStarted: Boolean = false
+    private val initialized = CompletableDeferred<Unit>()
+    override val isInitialized: Boolean
+        get() = initialized.isCompleted
     var failure: Throwable? = null
     val users = mutableListOf<User?>()
     val multiAccountUsers = mutableListOf<User?>()
@@ -36,6 +40,14 @@ internal class FakeSdkActions : SdkActions {
     val screenTrackingConfigs = mutableListOf<ScreenTrackingConfig>()
     val recomEvents = mutableListOf<RecomEvents>()
     val callbacks = mutableListOf<Any>()
+
+    override suspend fun awaitInit() {
+        initialized.await()
+    }
+
+    fun markInitialized() {
+        initialized.complete(Unit)
+    }
 
     override fun boot() {
         record("boot")

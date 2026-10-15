@@ -10,7 +10,6 @@ import com.reteno.core.data.local.database.util.getEvent
 import com.reteno.core.data.local.database.util.getInteraction
 import com.reteno.core.data.local.database.util.getRecomEvent
 import com.reteno.core.data.local.database.util.getUser
-import com.reteno.core.data.remote.OperationQueue
 import com.reteno.core.util.Logger
 import com.reteno.core.util.Util
 import io.mockk.every
@@ -30,7 +29,6 @@ class RetenoTestApp : Application() {
 
     init {
         mockStaticLogger()
-        mockObjectOperationQueue()
         mockObjectUtil()
         mockStaticUtilKt()
         mockStaticZoneDateTime()
@@ -52,26 +50,6 @@ class RetenoTestApp : Application() {
         justRun { Logger.captureMessage(any()) }
         justRun { Logger.captureEvent(any()) }
     }
-
-    private fun mockObjectOperationQueue() {
-        mockkObject(OperationQueue)
-        val currentThreadExecutor = Executor(Runnable::run)
-        every { OperationQueue.addParallelOperation(any()) } answers {
-            currentThreadExecutor.execute(Runnable(firstArg()))
-        }
-        every { OperationQueue.addOperation(any()) } answers {
-            currentThreadExecutor.execute(Runnable(firstArg()))
-            true
-        }
-        every { OperationQueue.addOperationAfterDelay(any(), any()) } answers {
-            currentThreadExecutor.execute(Runnable(firstArg()))
-            true
-        }
-        every { OperationQueue.addUiOperation(any()) } answers {
-            currentThreadExecutor.execute(Runnable(firstArg()))
-        }
-    }
-
 
     private fun mockObjectUtil() {
         mockkObject(Util)

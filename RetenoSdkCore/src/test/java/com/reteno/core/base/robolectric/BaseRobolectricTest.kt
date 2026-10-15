@@ -7,17 +7,13 @@ import com.reteno.core.data.local.database.manager.RetenoDatabaseManager
 import com.reteno.core.data.local.file.FileManager
 import com.reteno.core.data.local.sharedpref.SharedPrefsManager
 import com.reteno.core.data.repository.ConfigRepository
-import com.reteno.core.di.ServiceLocator
 import com.reteno.core.lifecycle.RetenoActivityHelper
 import com.reteno.core.lifecycle.RetenoSessionHandler
 import io.mockk.MockKAnnotations
 import io.mockk.clearAllMocks
-import io.mockk.every
 import io.mockk.impl.annotations.RelaxedMockK
 import io.mockk.mockk
-import io.mockk.mockkConstructor
 import io.mockk.mockkStatic
-import io.mockk.unmockkConstructor
 import io.mockk.unmockkStatic
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import org.junit.After
@@ -46,14 +42,12 @@ abstract class BaseRobolectricTest {
         @BeforeClass
         fun beforeClass() {
             mockkStatic("com.reteno.core.util.UtilKt")
-            mockkConstructor(ServiceLocator::class)
         }
 
         @JvmStatic
         @AfterClass
         fun afterClass() {
             unmockkStatic("com.reteno.core.util.UtilKt")
-            unmockkConstructor(ServiceLocator::class)
             clearAllMocks(
                 answers = true,
                 recordedCalls = true,
@@ -92,14 +86,6 @@ abstract class BaseRobolectricTest {
     @Throws(Exception::class)
     open fun before() {
         MockKAnnotations.init(this)
-
-        every { anyConstructed<ServiceLocator>().retenoSessionHandlerProvider.get() } returns sessionHandler
-        every { anyConstructed<ServiceLocator>().retenoDatabaseManagerProvider.get() } returns databaseManager
-        every { anyConstructed<ServiceLocator>().sharedPrefsManagerProvider.get() } returns sharedPrefsManager
-        every { anyConstructed<ServiceLocator>().restConfigProvider.get() } returns restConfig
-        every { anyConstructed<ServiceLocator>().configRepositoryProvider.get() } returns facadeConfigRepository
-        every { anyConstructed<ServiceLocator>().retenoActivityHelperProvider.get() } returns activityHelper
-
     }
 
     @After

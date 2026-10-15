@@ -10,15 +10,16 @@ import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.content.pm.PackageInfo
 import android.content.pm.ResolveInfo
+import android.telephony.TelephonyManager
 import androidx.lifecycle.Lifecycle
 import androidx.test.core.app.ApplicationProvider
 import androidx.work.Configuration
 import androidx.work.WorkManager
 import com.reteno.core.R
-import com.reteno.core.RetenoInternalImpl
 import com.reteno.core.data.local.config.DeviceId
 import com.reteno.core.data.workmanager.PushDataWorker
-import com.reteno.core.di.base.Provider
+import com.reteno.core.domain.model.device.DeviceCategory
+import com.reteno.core.domain.model.device.DeviceOS
 import com.reteno.core.fixtures.ManualLifecycleOwner
 import com.reteno.core.lifecycle.RetenoActivityHelper
 import com.reteno.core.view.iam.AndroidInAppScreen
@@ -32,30 +33,27 @@ import io.mockk.mockk
 import io.mockk.verify
 import org.junit.Test
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
+import java.util.Locale
+import java.util.TimeZone
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [26])
 internal class AndroidAppPlatformTest {
 
-    private class CountingWorkManagerProvider(private val workManager: WorkManager) : Provider<WorkManager>() {
-        var gets = 0
-
-        override fun get(): WorkManager {
-            gets++
-            return workManager
-        }
-
-        override fun create(): WorkManager = workManager
-    }
-
     private class CustomWorkManagerApp(base: Context) : ContextWrapper(base), Configuration.Provider {
         override fun getWorkManagerConfiguration(): Configuration = Configuration.Builder().build()
+    }
+
+    private class NoTelephonyContext(base: Context) : ContextWrapper(base) {
+        override fun getSystemService(name: String): Any? =
+            if (name == Context.TELEPHONY_SERVICE) null else super.getSystemService(name)
     }
 
     private class SutFixture(context: Context? = null) {
@@ -63,11 +61,25 @@ internal class AndroidAppPlatformTest {
         val owner = ManualLifecycleOwner()
         val activityHelper = mockk<RetenoActivityHelper>()
         val workManager = mockk<WorkManager>(relaxed = true)
-        val workManagerProvider = CountingWorkManagerProvider(workManager)
-        val sut = AndroidAppPlatform(context ?: application, workManagerProvider, owner, activityHelper)
+        val workManagerAccess = lazy { workManager }
+        val sut = AndroidAppPlatform(context ?: application, workManagerAccess, owner, activityHelper)
 
         init {
             justRun { activityHelper.registerActivityLifecycleCallbacks(any(), any()) }
+        }
+
+        fun installedVersion(name: String, code: Int) {
+            shadowOf(application.packageManager).installPackage(PackageInfo().apply {
+                packageName = application.packageName
+                versionName = name
+                @Suppress("DEPRECATION")
+                versionCode = code
+            })
+        }
+
+        fun phoneType(type: Int) {
+            val telephony = application.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
+            shadowOf(telephony).setPhoneType(type)
         }
     }
 
@@ -178,7 +190,7 @@ internal class AndroidAppPlatformTest {
         fixture.sut.initWorkManager()
 
         then()
-        assertEquals(1, fixture.workManagerProvider.gets)
+        assertTrue(fixture.workManagerAccess.isInitialized())
     }
 
     @Test
@@ -190,7 +202,7 @@ internal class AndroidAppPlatformTest {
         fixture.sut.initWorkManager()
 
         then()
-        assertEquals(0, fixture.workManagerProvider.gets)
+        assertFalse(fixture.workManagerAccess.isInitialized())
     }
 
     @Test
@@ -260,8 +272,6 @@ internal class AndroidAppPlatformTest {
     fun `should describe current device for device id and push state`() = runUnitTest {
         given()
         val fixture = SutFixture()
-        val app = fixture.application
-        RetenoInternalImpl.swapInstance(mockk { every { application } returns app })
         val deviceId = DeviceId(
             idBody = "body",
             idSuffix = "suffix",
@@ -271,15 +281,11 @@ internal class AndroidAppPlatformTest {
         )
 
         whenn()
-        val device = try {
-            fixture.sut.createDevice(deviceId, "token", pushSubscribed = false)
-        } finally {
-            RetenoInternalImpl.swapInstance(null)
-        }
+        val device = fixture.sut.createDevice(deviceId, "token", pushSubscribed = false)
 
         then()
         assertEquals(
-            listOf(deviceId.id, "suffix", "user-1", "token", false, "a@b.c", "+100"),
+            listOf(deviceId.id, "suffix", "user-1", "token", false, "a@b.c", "+100", null),
             listOf(
                 device.deviceId,
                 device.deviceIdSuffix,
@@ -287,8 +293,65 @@ internal class AndroidAppPlatformTest {
                 device.pushToken,
                 device.pushSubscribed,
                 device.email,
-                device.phone
+                device.phone,
+                device.advertisingId
             )
         )
+    }
+
+    @Test
+    fun `should describe app os locale and time zone of current device`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.installedVersion("3.1", 31)
+
+        whenn()
+        val device = fixture.sut.createDevice(DeviceId(idBody = "body"), "token", pushSubscribed = true)
+
+        then()
+        assertEquals("3.1 (31)", device.appVersion)
+        assertEquals(DeviceOS.ANDROID, device.osType)
+        assertTrue(device.osVersion!!.endsWith("(API 26)"))
+        assertTrue(device.deviceModel!!.isNotBlank())
+        assertEquals(Locale.getDefault().toLanguageTag(), device.languageCode)
+        assertEquals(TimeZone.getDefault().toZoneId().id, device.timeZone)
+    }
+
+    @Test
+    fun `should describe device with phone as mobile`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.phoneType(TelephonyManager.PHONE_TYPE_GSM)
+
+        whenn()
+        val device = fixture.sut.createDevice(DeviceId(idBody = "body"), "token", pushSubscribed = true)
+
+        then()
+        assertEquals(DeviceCategory.MOBILE, device.category)
+    }
+
+    @Test
+    fun `should describe device without phone as tablet`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.phoneType(TelephonyManager.PHONE_TYPE_NONE)
+
+        whenn()
+        val device = fixture.sut.createDevice(DeviceId(idBody = "body"), "token", pushSubscribed = true)
+
+        then()
+        assertEquals(DeviceCategory.TABLET, device.category)
+    }
+
+    @Test
+    fun `should describe device without telephony service as mobile`() = runUnitTest {
+        given()
+        val fixture = SutFixture(NoTelephonyContext(ApplicationProvider.getApplicationContext()))
+
+        whenn()
+        val device = fixture.sut.createDevice(DeviceId(idBody = "body"), "token", pushSubscribed = true)
+
+        then()
+        assertEquals(DeviceCategory.MOBILE, device.category)
     }
 }

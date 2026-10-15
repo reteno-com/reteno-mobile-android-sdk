@@ -15,11 +15,13 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -48,7 +50,7 @@ internal class ActionsLocatorInitWiringTest {
         then()
         assertEquals(listOf("init WorkManager"), fixture.env.platform.calls)
         coVerify(exactly = 1) { fixture.env.restConfig.initDeviceId(DeviceIdMode.CACHE) }
-        verify(exactly = 1) { fixture.env.configProvider.setConfig(cached) }
+        assertSame(cached, fixture.env.configuration.config)
         verify(exactly = 1) { fixture.env.prefs.cacheConfiguration(fixture.env.deviceId.id, cached) }
         verify(exactly = 1) { fixture.env.sessionHandler.setSessionResetDuration(cached.sessionDuration) }
         assertEquals(InitState.FROM_CACHE, fixture.env.initGate.state)
@@ -78,7 +80,7 @@ internal class ActionsLocatorInitWiringTest {
         fixture.env.sut.applyUserConfig(config)
 
         then()
-        verify(exactly = 1) { fixture.env.configProvider.setConfig(config) }
+        assertSame(config, fixture.env.configuration.config)
         assertEquals(InitState.NOT_INITIALIZED, fixture.env.initGate.state)
     }
 
@@ -116,8 +118,7 @@ internal class ActionsLocatorInitWiringTest {
         runCurrent()
 
         then()
-        verify(exactly = 0) { fixture.env.configProvider.setConfig(cached) }
-        verify(atLeast = 1) { fixture.env.configProvider.setConfig(user) }
+        assertSame(user, fixture.env.configuration.config)
         verify(exactly = 1) { fixture.env.sessionHandler.setSessionResetDuration(2_000L) }
         assertEquals(InitState.BY_USER, fixture.env.initGate.state)
     }
@@ -217,5 +218,36 @@ internal class ActionsLocatorInitWiringTest {
 
         then()
         verify(exactly = 1) { fixture.env.sessionHandler.setSessionResetDuration(5_000L) }
+    }
+
+    @Test
+    fun `should report sdk initialized once the gate opens`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this, initialized = false)
+        val initializedBefore = fixture.env.sut.isInitialized
+
+        whenn()
+        fixture.env.initGate.markInitialized(byUser = true)
+
+        then()
+        assertFalse(initializedBefore)
+        assertTrue(fixture.env.sut.isInitialized)
+    }
+
+    @Test
+    fun `should release init waiters once the gate opens`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this, initialized = false)
+        val waiting = async { fixture.env.sut.awaitInit() }
+        runCurrent()
+        val releasedBefore = waiting.isCompleted
+
+        whenn()
+        fixture.env.initGate.markInitialized(byUser = true)
+        runCurrent()
+
+        then()
+        assertFalse(releasedBefore)
+        assertTrue(waiting.isCompleted)
     }
 }

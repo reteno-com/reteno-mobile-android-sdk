@@ -6,7 +6,7 @@ import com.reteno.core.data.remote.api.ApiContract
 import com.reteno.core.data.remote.api.HttpMethod
 import com.reteno.core.data.remote.mapper.toJson
 import com.reteno.core.data.remote.mapper.toRemote
-import com.reteno.core.domain.model.ecom.RemoteConstants
+import com.reteno.core.domain.model.ecom.EVENT_TYPE_CART_UPDATED
 import com.reteno.core.internal.action.trace.ActionRunner
 import com.reteno.core.internal.action.trace.ActionTrace
 import com.reteno.core.internal.coroutine.RetenoDispatchers
@@ -69,6 +69,6 @@ internal class PushEventsStep(
 
     companion object {
         const val MAX_BATCHES = 50
-        private val DISTINCT_TYPES = setOf(RemoteConstants.EcomEvent.EVENT_TYPE_CART_UPDATED)
+        private val DISTINCT_TYPES = setOf(EVENT_TYPE_CART_UPDATED)
     }
 }

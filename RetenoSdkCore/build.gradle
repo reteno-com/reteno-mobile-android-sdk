@@ -25,30 +25,48 @@ kover {
 koverReport {
     androidReports('debug') {
         filters {
-            includes {
-                classes('com.reteno.core.RetenoInternalEntryPoint*', 'com.reteno.core.features.appinbox.AppInboxImpl*', 'com.reteno.core.features.recommendation.RecommendationImpl*', 'com.reteno.core.di.ActionsLocator*', 'com.reteno.core.data.workmanager.PushDataWorker*')
-                packages(
-                        'com.reteno.core.internal.action.deeplink',
-                        'com.reteno.core.internal.action.device',
-                        'com.reteno.core.internal.action.event',
-                        'com.reteno.core.internal.action.iam',
-                        'com.reteno.core.internal.action.inbox',
-                        'com.reteno.core.internal.action.init',
-                        'com.reteno.core.internal.action.interaction',
-                        'com.reteno.core.internal.action.lifecycle',
-                        'com.reteno.core.internal.action.push',
-                        'com.reteno.core.internal.action.recommendation',
-                        'com.reteno.core.internal.action.sync',
-                        'com.reteno.core.internal.action.trace',
-                        'com.reteno.core.internal.action.user',
-                        'com.reteno.core.internal.coroutine',
-                        'com.reteno.core.internal.event',
-                        'com.reteno.core.internal.iam',
-                        'com.reteno.core.internal.lifecycle',
-                        'com.reteno.core.internal.log',
-                        'com.reteno.core.internal.network',
-                        'com.reteno.core.internal.platform'
-                )
+            if (project.hasProperty('koverWholeModule')) {
+                excludes {
+                    classes('com.reteno.core.R', 'com.reteno.core.R$*', 'com.reteno.core.BuildConfig')
+                }
+            } else {
+                includes {
+                    classes('com.reteno.core.RetenoInternalEntryPoint*', 'com.reteno.core.features.appinbox.AppInboxImpl*', 'com.reteno.core.features.recommendation.RecommendationImpl*', 'com.reteno.core.di.ActionsLocator*', 'com.reteno.core.data.workmanager.PushDataWorker*')
+                    packages(
+                            'com.reteno.core.data.local.config',
+                            'com.reteno.core.data.local.file',
+                            'com.reteno.core.data.local.mappers',
+                            'com.reteno.core.data.local.model',
+                            'com.reteno.core.data.local.sharedpref',
+                            'com.reteno.core.data.remote.api',
+                            'com.reteno.core.data.remote.mapper',
+                            'com.reteno.core.data.remote.model',
+                            'com.reteno.core.data.repository',
+                            'com.reteno.core.domain',
+                            'com.reteno.core.features',
+                            'com.reteno.core.internal.action.deeplink',
+                            'com.reteno.core.internal.action.device',
+                            'com.reteno.core.internal.action.event',
+                            'com.reteno.core.internal.action.iam',
+                            'com.reteno.core.internal.action.inbox',
+                            'com.reteno.core.internal.action.init',
+                            'com.reteno.core.internal.action.interaction',
+                            'com.reteno.core.internal.action.lifecycle',
+                            'com.reteno.core.internal.action.push',
+                            'com.reteno.core.internal.action.recommendation',
+                            'com.reteno.core.internal.action.sync',
+                            'com.reteno.core.internal.action.trace',
+                            'com.reteno.core.internal.action.user',
+                            'com.reteno.core.internal.coroutine',
+                            'com.reteno.core.internal.event',
+                            'com.reteno.core.internal.iam',
+                            'com.reteno.core.internal.lifecycle',
+                            'com.reteno.core.internal.log',
+                            'com.reteno.core.internal.network',
+                            'com.reteno.core.internal.platform',
+                            'com.reteno.core.util'
+                    )
+                }
             }
         }
         verify {
@@ -145,4 +163,31 @@ dependencies {
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4'
 
     testDependencies()
+}
+afterEvaluate {
+    def unitTest = tasks.getByName('testDebugUnitTest')
+    def robolectricTest = tasks.register('testDebugRobolectricUnitTest', Test) {
+        description = 'Runs the JUnit 4 (Robolectric) unit tests of the debug variant in their own JVM.'
+        group = 'verification'
+        testClassesDirs = unitTest.testClassesDirs
+        classpath = unitTest.classpath
+        systemProperties unitTest.systemProperties
+        useJUnitPlatform { includeEngines 'junit-vintage' }
+        mustRunAfter unitTest
+        outputs.upToDateWhen { !unitTest.state.didWork }
+        doFirst {
+            filter.includePatterns = unitTest.filter.includePatterns
+            filter.commandLineIncludePatterns = unitTest.filter.commandLineIncludePatterns
+            filter.failOnNoMatchingTests = false
+            jvmArgs unitTest.allJvmArgs.findAll {
+                it.contains('intellij-coverage-agent') || it.startsWith('-Didea.') || it.startsWith('-Dcoverage.')
+            }
+        }
+    }
+    unitTest.useJUnitPlatform { excludeEngines 'junit-vintage' }
+    unitTest.filter.failOnNoMatchingTests = false
+    unitTest.finalizedBy robolectricTest
+    ['koverXmlReportDebug', 'koverHtmlReportDebug', 'koverVerifyDebug'].each { name ->
+        tasks.findByName(name)?.dependsOn robolectricTest
+    }
 }

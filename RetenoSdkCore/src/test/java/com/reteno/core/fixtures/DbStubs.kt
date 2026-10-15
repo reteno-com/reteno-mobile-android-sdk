@@ -14,7 +14,9 @@ import com.reteno.core.data.local.model.logevent.RetenoLogEventDb
 import com.reteno.core.data.local.model.recommendation.RecomEventDb
 import com.reteno.core.data.local.model.recommendation.RecomEventTypeDb
 import com.reteno.core.data.local.model.recommendation.RecomEventsDb
+import com.reteno.core.data.local.model.user.AddressDb
 import com.reteno.core.data.local.model.user.UserAttributesDb
+import com.reteno.core.data.local.model.user.UserCustomFieldDb
 import com.reteno.core.data.local.model.user.UserDb
 
 internal const val STUB_CREATED_AT = 1_767_000_000_000L
@@ -56,6 +58,18 @@ internal fun stubUserDb(
     externalUserId = "external-user",
     userAttributes = UserAttributesDb(firstName = firstName, email = email),
     isSynchronizedWithBackend = synced
+)
+
+internal fun stubUserAttributesDb() = UserAttributesDb(
+    phone = "+380501234567",
+    email = "ann@example.com",
+    firstName = "Ann",
+    lastName = "Lee",
+    languageCode = "uk",
+    timeZone = "Europe/Kyiv",
+    address = AddressDb(region = "Kyiv", town = "Kyiv", address = "Main st 1", postcode = "01001"),
+    fields = listOf(UserCustomFieldDb(key = "plan", value = "pro")),
+    marketId = "m-1"
 )
 
 internal fun stubInteractionDb(

@@ -10,7 +10,7 @@ import com.reteno.core.internal.log.Redact
 import com.reteno.core.internal.log.RemoteLog
 
 internal class RecommendationImpl(
-    private val actions: RecommendationActions,
+    private val recommendationActions: Lazy<RecommendationActions>,
     private val remoteLog: RemoteLog,
     private val isOsSupported: () -> Boolean
 ) : Recommendation {
@@ -23,7 +23,12 @@ internal class RecommendationImpl(
     ) {
         passToSdk("fetchRecommendation") {
             val requestBody = recomRequest.toRemote().toJson()
-            actions.submitRecommendationRequest(recomVariantId, requestBody, responseClass, responseCallback)
+            recommendationActions.value.submitRecommendationRequest(
+                recomVariantId,
+                requestBody,
+                responseClass,
+                responseCallback
+            )
         }
     }
 
@@ -34,13 +39,13 @@ internal class RecommendationImpl(
     ) {
         passToSdk("fetchRecommendationJson") {
             val requestBody = recomRequest.toRemote().toJson()
-            actions.submitRecommendationJsonRequest(recomVariantId, requestBody, responseCallback)
+            recommendationActions.value.submitRecommendationJsonRequest(recomVariantId, requestBody, responseCallback)
         }
     }
 
     override fun logRecommendations(recomEvents: RecomEvents) {
         passToSdk("logRecommendations") {
-            actions.submitRecommendationEvents(recomEvents)
+            recommendationActions.value.submitRecommendationEvents(recomEvents)
         }
     }
 

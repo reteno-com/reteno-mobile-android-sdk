@@ -30,7 +30,6 @@ sealed class FrequencyRule {
             if (isActive.not()) return null
 
             return when (name) {
-                null -> throw DisplayRulesParsingException()
                 "NO_LIMIT" -> NoLimit
                 "ONCE_PER_APP" -> OncePerApp
                 "ONCE_PER_SESSION" -> OncePerSession
