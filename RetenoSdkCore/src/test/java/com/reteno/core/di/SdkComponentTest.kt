@@ -86,7 +86,7 @@ internal class SdkComponentTest {
         val actions = fixture.withSdkLogging { fixture.sut.actions }
 
         then()
-        assertTrue(actions is SdkActionsRouter)
+        assertTrue(actions is SdkActionsImpl)
     }
 
     @Test

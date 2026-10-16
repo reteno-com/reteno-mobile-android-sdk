@@ -87,6 +87,6 @@ internal class SdkComponent(
     }
 
     override val actions: SdkActions by lazy {
-        if (isOsSupported()) actionGraph.router else UnsupportedOsActions(configuration)
+        if (isOsSupported()) actionGraph.actions else UnsupportedOsActions(configuration)
     }
 }

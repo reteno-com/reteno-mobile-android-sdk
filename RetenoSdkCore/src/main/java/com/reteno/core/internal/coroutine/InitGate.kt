@@ -1,6 +1,8 @@
 package com.reteno.core.internal.coroutine
 
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 
 internal enum class InitState {
     NOT_INITIALIZED,
@@ -33,6 +35,17 @@ internal class InitGate {
 
     suspend fun awaitInit() {
         initialized.await()
+    }
+
+    fun runAfterInit(scope: CoroutineScope, operation: () -> Unit) {
+        if (isInitialized) {
+            operation()
+            return
+        }
+        scope.launch {
+            awaitInit()
+            operation()
+        }
     }
 
     suspend fun awaitUserInit() {

@@ -3,6 +3,7 @@ package com.reteno.core.di.graph
 import com.reteno.core.di.ActionCore
 import com.reteno.core.di.ActionGraph
 import com.reteno.core.di.SdkInfrastructure
+import com.reteno.core.di.route.SyncRouter
 import com.reteno.core.internal.action.sync.BackgroundSync
 import com.reteno.core.internal.action.sync.BackgroundSyncAction
 import com.reteno.core.internal.action.sync.ClearOldDataAction
@@ -101,5 +102,9 @@ internal class SyncGraph(
             dispatchers = core.dispatchers,
             runner = core.runner
         )
+    }
+
+    val router: SyncRouter by lazy {
+        SyncRouter(this)
     }
 }

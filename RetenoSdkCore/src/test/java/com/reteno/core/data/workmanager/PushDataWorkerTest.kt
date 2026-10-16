@@ -41,7 +41,7 @@ internal class PushDataWorkerTest {
         val sdk = RetenoInternalImpl(
             application = ApplicationProvider.getApplicationContext(),
             appLifecycleOwner = ManualLifecycleOwner(),
-            infrastructure = FakeFacadeInfrastructure(FakeSdkActions().also { it.backgroundSyncAnswer = sync })
+            infrastructure = FakeFacadeInfrastructure(FakeSdkActions().also { it.sync.backgroundSyncAnswer = sync })
         )
         val sut = TestListenableWorkerBuilder<PushDataWorker>(context).build()
 

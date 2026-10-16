@@ -20,7 +20,6 @@ import com.reteno.core.fixtures.stubCustomEvent
 import com.reteno.core.fixtures.stubEcomEvent
 import com.reteno.core.fixtures.stubInAppMessage
 import com.reteno.core.fixtures.stubRecomEvents
-import com.reteno.core.fixtures.stubRetenoLogEvent
 import com.reteno.core.fixtures.stubUser
 import com.reteno.core.internal.action.sync.BackgroundSyncOutcome
 import com.reteno.core.lifecycle.ScreenTrackingConfig
@@ -54,45 +53,44 @@ internal class UnsupportedOsActionsTest {
         ).sum()
 
         fun callEveryOperation() {
-            sut.boot()
-            sut.requestStart()
-            sut.requestStop()
-            sut.submitUserAttributes("user-1", stubUser())
-            sut.submitMultiAccountUserAttributes("account-1", null)
-            sut.submitAnonymousUserAttributes(stubAnonymousAttributes())
-            sut.submitFcmToken("token")
-            sut.submitNotificationsEnabled(true)
-            sut.submitEvent(stubCustomEvent())
-            sut.submitEcomEvent(stubEcomEvent())
-            sut.submitScreenView("Home")
-            sut.submitRetenoLogEvent(stubRetenoLogEvent())
-            sut.submitLifecycleEventConfig(LifecycleTrackingOptions.NONE)
-            sut.submitAutoScreenTracking(ScreenTrackingConfig(enable = true))
-            sut.submitPushPermissionStatus()
-            sut.submitSessionDuration(5_000L)
-            sut.requestSync()
-            sut.submitPushInteraction("interaction-1", InteractionStatus.CLICKED)
-            sut.submitInteractionClick("interaction-2", InteractionAction("OPEN_URL", null, null), forcePush = true)
-            sut.submitInAppInteraction(InAppInteraction("in-app-1", STUB_TIME, 42L, InAppInteractionStatus.OPENED))
-            sut.submitInAppShown(stubInAppMessage())
-            sut.submitDeeplinkClick("https://track.example/c/1")
-            sut.submitIamFromPush("interaction-3")
-            sut.submitDefaultNotificationChannel("{}")
-            sut.submitInAppPause(true)
-            sut.submitInAppPauseBehaviour(InAppPauseBehaviour.SKIP_IN_APPS)
-            sut.submitPushInAppPause(true)
-            sut.submitPushInAppPauseBehaviour(InAppPauseBehaviour.SKIP_IN_APPS)
-            sut.submitInAppLifecycleCallback(null)
-            sut.submitInboxMessagesRequest(1, 20, AppInboxStatus.OPENED, inboxMessages)
-            sut.submitInboxCountRequest(inboxCount)
-            sut.subscribeInboxCount(inboxCount)
-            sut.unsubscribeInboxCount(inboxCount)
-            sut.unsubscribeAllInboxCount()
-            sut.submitInboxMessageOpened("message-1")
-            sut.submitAllInboxMessagesOpened(allOpened)
-            sut.submitRecommendationRequest("r1v2", "{}", StubRecom::class.java, recommendation)
-            sut.submitRecommendationJsonRequest("r1v2", "{}", recommendationJson)
-            sut.submitRecommendationEvents(stubRecomEvents())
+            sut.control.boot()
+            sut.control.requestStart()
+            sut.control.requestStop()
+            sut.contact.submitUserAttributes("user-1", stubUser())
+            sut.contact.submitMultiAccountUserAttributes("account-1", null)
+            sut.contact.submitAnonymousUserAttributes(stubAnonymousAttributes())
+            sut.contact.submitFcmToken("token")
+            sut.contact.submitNotificationsEnabled(true)
+            sut.events.submitEvent(stubCustomEvent())
+            sut.events.submitEcomEvent(stubEcomEvent())
+            sut.events.submitScreenView("Home")
+            sut.lifecycle.submitLifecycleEventConfig(LifecycleTrackingOptions.NONE)
+            sut.lifecycle.submitAutoScreenTracking(ScreenTrackingConfig(enable = true))
+            sut.lifecycle.submitPushPermissionStatus()
+            sut.control.submitSessionDuration(5_000L)
+            sut.sync.requestSync()
+            sut.push.submitPushInteraction("interaction-1", InteractionStatus.CLICKED)
+            sut.interactions.submitInteractionClick("interaction-2", InteractionAction("OPEN_URL", null, null), forcePush = true)
+            sut.interactions.submitInAppInteraction(InAppInteraction("in-app-1", STUB_TIME, 42L, InAppInteractionStatus.OPENED))
+            sut.interactions.submitInAppShown(stubInAppMessage())
+            sut.push.submitDeeplinkClick("https://track.example/c/1")
+            sut.push.submitIamFromPush("interaction-3")
+            sut.push.submitDefaultNotificationChannel("{}")
+            sut.inApp.submitInAppPause(true)
+            sut.inApp.submitInAppPauseBehaviour(InAppPauseBehaviour.SKIP_IN_APPS)
+            sut.inApp.submitPushInAppPause(true)
+            sut.inApp.submitPushInAppPauseBehaviour(InAppPauseBehaviour.SKIP_IN_APPS)
+            sut.inApp.submitInAppLifecycleCallback(null)
+            sut.inbox.submitInboxMessagesRequest(1, 20, AppInboxStatus.OPENED, inboxMessages)
+            sut.inbox.submitInboxCountRequest(inboxCount)
+            sut.inbox.subscribeInboxCount(inboxCount)
+            sut.inbox.unsubscribeInboxCount(inboxCount)
+            sut.inbox.unsubscribeAllInboxCount()
+            sut.inbox.submitInboxMessageOpened("message-1")
+            sut.inbox.submitAllInboxMessagesOpened(allOpened)
+            sut.recommendation.submitRecommendationRequest("r1v2", "{}", StubRecom::class.java, recommendation)
+            sut.recommendation.submitRecommendationJsonRequest("r1v2", "{}", recommendationJson)
+            sut.recommendation.submitRecommendationEvents(stubRecomEvents())
         }
     }
 
@@ -102,7 +100,7 @@ internal class UnsupportedOsActionsTest {
         val fixture = SutFixture()
 
         whenn()
-        val state = listOf(fixture.sut.isInitialized, fixture.sut.isStarted)
+        val state = listOf(fixture.sut.control.isInitialized, fixture.sut.control.isStarted)
 
         then()
         assertEquals(listOf(false, false), state)
@@ -114,7 +112,7 @@ internal class UnsupportedOsActionsTest {
         val fixture = SutFixture()
 
         whenn()
-        val answers = with(fixture.sut) {
+        val answers = with(fixture.sut.queries) {
             listOf<Any>(
                 deviceId,
                 defaultNotificationChannel,
@@ -134,7 +132,7 @@ internal class UnsupportedOsActionsTest {
         val fixture = SutFixture()
 
         whenn()
-        val outcome = fixture.sut.backgroundSync()
+        val outcome = fixture.sut.sync.backgroundSync()
 
         then()
         assertEquals(BackgroundSyncOutcome.NO_DATA, outcome.getOrNull())
@@ -147,7 +145,7 @@ internal class UnsupportedOsActionsTest {
         val config = stubConfig()
 
         whenn()
-        fixture.sut.applyUserConfig(config)
+        fixture.sut.control.applyUserConfig(config)
 
         then()
         assertSame(config, fixture.configuration.config)
@@ -160,7 +158,7 @@ internal class UnsupportedOsActionsTest {
         val ran = mutableListOf<String>()
 
         whenn()
-        fixture.sut.runAfterInit { ran += "operation" }
+        fixture.sut.control.runAfterInit { ran += "operation" }
 
         then()
         assertTrue(ran.isEmpty())

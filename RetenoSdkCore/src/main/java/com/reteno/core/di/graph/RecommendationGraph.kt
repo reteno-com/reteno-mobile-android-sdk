@@ -2,14 +2,18 @@ package com.reteno.core.di.graph
 
 import com.reteno.core.di.ActionCore
 import com.reteno.core.di.SdkInfrastructure
+import com.reteno.core.di.route.RecommendationRouter
 import com.reteno.core.internal.action.recommendation.FetchRecommendationAction
 import com.reteno.core.internal.action.recommendation.FetchRecommendationJsonAction
 import com.reteno.core.internal.action.recommendation.LogRecommendationEventsAction
+import com.reteno.core.internal.coroutine.SerialQueue
 
 internal class RecommendationGraph(
     private val core: ActionCore,
     private val infrastructure: SdkInfrastructure
 ) {
+
+    val eventsQueue by lazy { SerialQueue(core.scope, "RecommendationEvents", core.logSink) }
 
     val fetchRecommendation: FetchRecommendationAction by lazy {
         FetchRecommendationAction(core.api, core.initGate, core.dispatchers, core.runner)
@@ -21,5 +25,9 @@ internal class RecommendationGraph(
 
     val logRecommendationEvents: LogRecommendationEventsAction by lazy {
         LogRecommendationEventsAction(infrastructure.db.recomEventsDb, core.dispatchers, core.runner)
+    }
+
+    val router: RecommendationRouter by lazy {
+        RecommendationRouter(this, core.scope)
     }
 }

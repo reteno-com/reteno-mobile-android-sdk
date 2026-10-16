@@ -12,7 +12,7 @@ internal fun interface LogEventQueue {
 internal class RemoteLogRecorder(
     private val configRepository: Lazy<ConfigRepository>,
     private val environment: AppEnvironment,
-    private val queue: LogEventQueue
+    private val queue: Lazy<LogEventQueue>
 ) : RemoteLog {
 
     private val origin by lazy { environment.logEventOrigin() }
@@ -33,7 +33,7 @@ internal class RemoteLogRecorder(
                 bundleId = origin.packageName,
                 deviceId = deviceId()
             )
-            queue.submitRetenoLogEvent(uploadable)
+            queue.value.submitRetenoLogEvent(uploadable)
         }
     }
 
@@ -48,7 +48,7 @@ internal class RemoteLogRecorder(
                 bundleId = origin.packageName,
                 deviceId = deviceId()
             )
-            queue.submitRetenoLogEvent(event)
+            queue.value.submitRetenoLogEvent(event)
         }
     }
 

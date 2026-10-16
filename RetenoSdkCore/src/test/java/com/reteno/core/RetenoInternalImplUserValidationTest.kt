@@ -46,7 +46,7 @@ internal class RetenoInternalImplUserValidationTest {
         then()
         assertTrue(result.exceptionOrNull() is IllegalArgumentException)
         assertEquals(false, fixture.sut.isInitialized)
-        assertEquals(listOf("boot"), fixture.actions.calls)
+        assertEquals(listOf("boot"), fixture.actions.log.calls)
     }
 
     @Test
@@ -102,40 +102,40 @@ internal class RetenoInternalImplUserValidationTest {
     fun `should not forward user attributes with invalid market id once sdk is initialized`() = runUnitTest {
         given()
         val fixture = SutFixture()
-        fixture.actions.markInitialized()
+        fixture.actions.control.markInitialized()
 
         whenn()
         runCatching { fixture.sut.setUserAttributes("user-1", stubUser(marketId = "bad market!")) }
 
         then()
-        assertEquals(listOf("boot"), fixture.actions.calls)
+        assertEquals(listOf("boot"), fixture.actions.log.calls)
     }
 
     @Test
     fun `should not forward multi account user attributes with blank user id once sdk is initialized`() = runUnitTest {
         given()
         val fixture = SutFixture()
-        fixture.actions.markInitialized()
+        fixture.actions.control.markInitialized()
 
         whenn()
         runCatching { fixture.sut.setMultiAccountUserAttributes(" ", stubUser()) }
 
         then()
-        assertEquals(listOf("boot"), fixture.actions.calls)
+        assertEquals(listOf("boot"), fixture.actions.log.calls)
     }
 
     @Test
     fun `should not forward anonymous user attributes with invalid market id once sdk is initialized`() = runUnitTest {
         given()
         val fixture = SutFixture()
-        fixture.actions.markInitialized()
+        fixture.actions.control.markInitialized()
         val attributes = stubAnonymousAttributes(marketId = "x".repeat(65))
 
         whenn()
         runCatching { fixture.sut.setAnonymousUserAttributes(attributes) }
 
         then()
-        assertEquals(listOf("boot"), fixture.actions.calls)
+        assertEquals(listOf("boot"), fixture.actions.log.calls)
     }
 
     @Test

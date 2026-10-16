@@ -93,7 +93,7 @@ internal class RetenoInternalImplTest {
         fixture.owner.registry.handleLifecycleEvent(Lifecycle.Event.ON_STOP)
 
         then()
-        assertEquals(listOf("boot", "requestStart", "requestStop"), fixture.actions.calls)
+        assertEquals(listOf("boot", "requestStart", "requestStop"), fixture.actions.log.calls)
     }
 
     @Test
@@ -107,7 +107,7 @@ internal class RetenoInternalImplTest {
         fixture.sut.setConfig(stubConfig(sessionDuration = 1L))
 
         then()
-        assertEquals(listOf(first), fixture.actions.configs)
+        assertEquals(listOf(first), fixture.actions.control.configs)
     }
 
     @Test
@@ -116,10 +116,10 @@ internal class RetenoInternalImplTest {
         val fixture = SutFixture(this)
         fixture.callEveryDeferredApi()
         runCurrent()
-        val beforeInit = fixture.actions.calls.toList()
+        val beforeInit = fixture.actions.log.calls.toList()
 
         whenn()
-        fixture.actions.markInitialized()
+        fixture.actions.control.markInitialized()
         runCurrent()
 
         then()
@@ -148,7 +148,7 @@ internal class RetenoInternalImplTest {
                 "submitPushInAppPauseBehaviour SKIP_IN_APPS",
                 "submitInAppLifecycleCallback false"
             ),
-            fixture.actions.calls
+            fixture.actions.log.calls
         )
     }
 
@@ -156,96 +156,96 @@ internal class RetenoInternalImplTest {
     fun `should submit api calls immediately once initialized`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
-        fixture.actions.markInitialized()
+        fixture.actions.control.markInitialized()
 
         whenn()
         fixture.sut.logScreenView("Home")
 
         then()
-        assertEquals(listOf("boot", "submitScreenView Home"), fixture.actions.calls)
+        assertEquals(listOf("boot", "submitScreenView Home"), fixture.actions.log.calls)
     }
 
     @Test
     fun `should forward no user when user attributes are set with external id only`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
-        fixture.actions.markInitialized()
+        fixture.actions.control.markInitialized()
 
         whenn()
         fixture.sut.setUserAttributes("user-1")
 
         then()
-        assertEquals(listOf<Any?>(null), fixture.actions.users)
+        assertEquals(listOf<Any?>(null), fixture.actions.contact.users)
     }
 
     @Test
     fun `should forward the same user with user attributes`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
-        fixture.actions.markInitialized()
+        fixture.actions.control.markInitialized()
         val user = stubUser()
 
         whenn()
         fixture.sut.setUserAttributes("user-1", user)
 
         then()
-        assertSame(user, fixture.actions.users.single())
+        assertSame(user, fixture.actions.contact.users.single())
     }
 
     @Test
     fun `should forward the same user with multi account user attributes`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
-        fixture.actions.markInitialized()
+        fixture.actions.control.markInitialized()
         val user = stubUser()
 
         whenn()
         fixture.sut.setMultiAccountUserAttributes("account-1", user)
 
         then()
-        assertSame(user, fixture.actions.multiAccountUsers.single())
+        assertSame(user, fixture.actions.contact.multiAccountUsers.single())
     }
 
     @Test
     fun `should forward the same anonymous user attributes`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
-        fixture.actions.markInitialized()
+        fixture.actions.control.markInitialized()
         val attributes = stubAnonymousAttributes()
 
         whenn()
         fixture.sut.setAnonymousUserAttributes(attributes)
 
         then()
-        assertSame(attributes, fixture.actions.anonymousAttributes.single())
+        assertSame(attributes, fixture.actions.contact.anonymousAttributes.single())
     }
 
     @Test
     fun `should forward the same ecommerce event`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
-        fixture.actions.markInitialized()
+        fixture.actions.control.markInitialized()
         val event = stubEcomEvent()
 
         whenn()
         fixture.sut.logEcommerceEvent(event)
 
         then()
-        assertSame(event, fixture.actions.ecomEvents.single())
+        assertSame(event, fixture.actions.events.ecomEvents.single())
     }
 
     @Test
     fun `should forward the same auto screen tracking config`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
-        fixture.actions.markInitialized()
+        fixture.actions.control.markInitialized()
         val config = ScreenTrackingConfig(enable = true, excludeScreens = listOf("Splash"))
 
         whenn()
         fixture.sut.autoScreenTracking(config)
 
         then()
-        assertSame(config, fixture.actions.screenTrackingConfigs.single())
+        assertSame(config, fixture.actions.lifecycle.screenTrackingConfigs.single())
     }
 
     @Test
@@ -258,7 +258,7 @@ internal class RetenoInternalImplTest {
         val beforeInit = ran.toList()
 
         whenn()
-        fixture.actions.markInitialized()
+        fixture.actions.control.markInitialized()
         runCurrent()
         fixture.sut.executeAfterInit { ran += "after init" }
 
@@ -272,10 +272,10 @@ internal class RetenoInternalImplTest {
         given()
         val fixture = SutFixture(this)
         val initializedBefore = fixture.sut.isInitialized
-        fixture.actions.isStarted = true
+        fixture.actions.control.isStarted = true
 
         whenn()
-        fixture.actions.markInitialized()
+        fixture.actions.control.markInitialized()
 
         then()
         assertFalse(initializedBefore)
@@ -292,7 +292,7 @@ internal class RetenoInternalImplTest {
         fixture.sut.recordInteraction("interaction-1", InteractionStatus.DELIVERED, forcePush = true)
 
         then()
-        assertEquals(listOf("boot", "submitPushInteraction interaction-1 DELIVERED"), fixture.actions.calls)
+        assertEquals(listOf("boot", "submitPushInteraction interaction-1 DELIVERED"), fixture.actions.log.calls)
     }
 
     @Test
@@ -301,28 +301,28 @@ internal class RetenoInternalImplTest {
         val fixture = SutFixture(this)
         fixture.sut.pauseInAppMessages(true)
         runCurrent()
-        val beforeInit = fixture.actions.calls.toList()
+        val beforeInit = fixture.actions.log.calls.toList()
 
         whenn()
-        fixture.actions.markInitialized()
+        fixture.actions.control.markInitialized()
         runCurrent()
 
         then()
         assertEquals(listOf("boot"), beforeInit)
-        assertEquals(listOf("boot", "submitInAppPause true"), fixture.actions.calls)
+        assertEquals(listOf("boot", "submitInAppPause true"), fixture.actions.log.calls)
     }
 
     @Test
     fun `should pass in-app pause behaviour to sdk once initialized`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
-        fixture.actions.markInitialized()
+        fixture.actions.control.markInitialized()
 
         whenn()
         fixture.sut.setInAppMessagesPauseBehaviour(InAppPauseBehaviour.SKIP_IN_APPS)
 
         then()
-        assertEquals(listOf("boot", "submitInAppPauseBehaviour SKIP_IN_APPS"), fixture.actions.calls)
+        assertEquals(listOf("boot", "submitInAppPauseBehaviour SKIP_IN_APPS"), fixture.actions.log.calls)
     }
 
     @Test
@@ -374,11 +374,11 @@ internal class RetenoInternalImplTest {
     fun `should answer presentation, device id, channel and pending data from the sdk`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
-        fixture.actions.canPresent = true
-        fixture.actions.activityPresented = true
-        fixture.actions.deviceId = "device-1"
-        fixture.actions.defaultNotificationChannel = "{}"
-        fixture.actions.dataForSync = false
+        fixture.actions.queries.canPresent = true
+        fixture.actions.queries.activityPresented = true
+        fixture.actions.queries.deviceId = "device-1"
+        fixture.actions.queries.defaultNotificationChannel = "{}"
+        fixture.actions.queries.dataForSync = false
 
         whenn()
         val answers = with(fixture.sut) {
@@ -399,7 +399,7 @@ internal class RetenoInternalImplTest {
     fun `should accept user attributes for a user without attributes`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
-        fixture.actions.markInitialized()
+        fixture.actions.control.markInitialized()
         val user = User(subscriptionKeys = listOf("news"))
 
         whenn()
@@ -407,7 +407,7 @@ internal class RetenoInternalImplTest {
         fixture.sut.setMultiAccountUserAttributes("account-1", user)
 
         then()
-        val recorded = listOf(fixture.actions.users, fixture.actions.multiAccountUsers)
+        val recorded = listOf(fixture.actions.contact.users, fixture.actions.contact.multiAccountUsers)
         assertEquals(listOf(listOf(user), listOf(user)), recorded)
     }
 
@@ -415,7 +415,7 @@ internal class RetenoInternalImplTest {
     fun `should record interactions without forcing a push by default`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
-        fixture.actions.markInitialized()
+        fixture.actions.control.markInitialized()
         val facade: RetenoInternalFacade = fixture.sut
 
         whenn()
@@ -427,7 +427,7 @@ internal class RetenoInternalImplTest {
             "submitPushInteraction interaction-1 CLICKED",
             "submitInteractionClick interaction-2 OPEN_URL false"
         )
-        assertEquals(expected, fixture.actions.calls.filter { it.startsWith("submit") })
+        assertEquals(expected, fixture.actions.log.calls.filter { it.startsWith("submit") })
     }
 
     @Test
@@ -445,7 +445,7 @@ internal class RetenoInternalImplTest {
         then()
         first.zip(second).forEach { (a, b) -> assertSame(a, b) }
         val forwarded = listOf("submitInboxMessageOpened m1", "submitRecommendationEvents variant")
-        assertEquals(forwarded, fixture.actions.calls.filter { it in forwarded })
+        assertEquals(forwarded, fixture.actions.log.calls.filter { it in forwarded })
     }
 
     @Test
@@ -454,7 +454,7 @@ internal class RetenoInternalImplTest {
         val fixture = SutFixture(this)
         val sync = mockk<BackgroundSync>()
         coEvery { sync.invoke() } returns Result.success(BackgroundSyncOutcome.SYNCED)
-        fixture.actions.backgroundSyncAnswer = sync
+        fixture.actions.sync.backgroundSyncAnswer = sync
 
         whenn()
         val outcome = fixture.sut.backgroundSync()
@@ -492,6 +492,6 @@ internal class RetenoInternalImplTest {
         }
 
         then()
-        assertEquals(listOf(config), fixture.actions.configs)
+        assertEquals(listOf(config), fixture.actions.control.configs)
     }
 }

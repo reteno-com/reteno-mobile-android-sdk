@@ -11,7 +11,6 @@ import com.reteno.core.domain.model.event.LifecycleTrackingOptions
 import com.reteno.core.domain.model.interaction.InAppInteraction
 import com.reteno.core.domain.model.interaction.InteractionAction
 import com.reteno.core.domain.model.interaction.InteractionStatus
-import com.reteno.core.domain.model.logevent.RetenoLogEvent
 import com.reteno.core.domain.model.recommendation.post.RecomEvents
 import com.reteno.core.domain.model.user.User
 import com.reteno.core.domain.model.user.UserAttributesAnonymous
@@ -19,29 +18,52 @@ import com.reteno.core.features.appinbox.AppInboxStatus
 import com.reteno.core.features.iam.InAppPauseBehaviour
 import com.reteno.core.features.recommendation.GetRecommendationResponseCallback
 import com.reteno.core.features.recommendation.GetRecommendationResponseJsonCallback
+import com.reteno.core.internal.action.event.EventActions
+import com.reteno.core.internal.action.iam.InAppActions
+import com.reteno.core.internal.action.inbox.InboxActions
+import com.reteno.core.internal.action.init.SdkControl
+import com.reteno.core.internal.action.interaction.InteractionSubmitter
+import com.reteno.core.internal.action.lifecycle.LifecycleActions
+import com.reteno.core.internal.action.push.PushActions
+import com.reteno.core.internal.action.recommendation.RecommendationActions
 import com.reteno.core.internal.action.sync.BackgroundSync
 import com.reteno.core.internal.action.sync.BackgroundSyncOutcome
+import com.reteno.core.internal.action.sync.SyncActions
+import com.reteno.core.internal.action.user.ContactActions
 import com.reteno.core.internal.config.SdkConfiguration
 import com.reteno.core.lifecycle.ScreenTrackingConfig
 import com.reteno.core.view.iam.callback.InAppLifecycleCallback
 
-internal class UnsupportedOsActions(private val configuration: SdkConfiguration) : SdkActions {
+internal class UnsupportedOsActions(configuration: SdkConfiguration) : SdkActions {
+
+    override val control: SdkControl = UnsupportedOsControl(configuration)
+
+    override val queries: SdkQueries = UnsupportedOsQueries
+
+    override val contact: ContactActions = UnsupportedOsContact
+
+    override val events: EventActions = UnsupportedOsEvents
+
+    override val lifecycle: LifecycleActions = UnsupportedOsLifecycle
+
+    override val inApp: InAppActions = UnsupportedOsInApp
+
+    override val interactions: InteractionSubmitter = UnsupportedOsInteractions
+
+    override val push: PushActions = UnsupportedOsPush
+
+    override val sync: SyncActions = UnsupportedOsSync
+
+    override val inbox: InboxActions = UnsupportedOsInbox
+
+    override val recommendation: RecommendationActions = UnsupportedOsRecommendation
+}
+
+private class UnsupportedOsControl(private val configuration: SdkConfiguration) : SdkControl {
 
     override val isStarted: Boolean = false
 
     override val isInitialized: Boolean = false
-
-    override val deviceId: String = ""
-
-    override val defaultNotificationChannel: String = ""
-
-    override val backgroundSync: BackgroundSync = NothingToSync
-
-    override fun canPresentMessages(): Boolean = false
-
-    override fun isActivityPresented(): Boolean = false
-
-    override fun hasDataForSync(): Boolean = true
 
     override fun runAfterInit(operation: () -> Unit) = Unit
 
@@ -55,6 +77,24 @@ internal class UnsupportedOsActions(private val configuration: SdkConfiguration)
 
     override fun requestStop() = Unit
 
+    override fun submitSessionDuration(durationMillis: Long) = Unit
+}
+
+private object UnsupportedOsQueries : SdkQueries {
+
+    override val deviceId: String = ""
+
+    override val defaultNotificationChannel: String = ""
+
+    override fun canPresentMessages(): Boolean = false
+
+    override fun isActivityPresented(): Boolean = false
+
+    override fun hasDataForSync(): Boolean = true
+}
+
+private object UnsupportedOsContact : ContactActions {
+
     override fun submitUserAttributes(externalUserId: String, user: User?) = Unit
 
     override fun submitMultiAccountUserAttributes(externalUserId: String, user: User?) = Unit
@@ -64,38 +104,27 @@ internal class UnsupportedOsActions(private val configuration: SdkConfiguration)
     override fun submitFcmToken(token: String) = Unit
 
     override fun submitNotificationsEnabled(enabled: Boolean) = Unit
+}
+
+private object UnsupportedOsEvents : EventActions {
 
     override fun submitEvent(event: Event) = Unit
 
     override fun submitEcomEvent(event: EcomEvent) = Unit
 
     override fun submitScreenView(screenName: String) = Unit
+}
 
-    override fun submitRetenoLogEvent(event: RetenoLogEvent) = Unit
+private object UnsupportedOsLifecycle : LifecycleActions {
 
     override fun submitLifecycleEventConfig(options: LifecycleTrackingOptions) = Unit
 
     override fun submitAutoScreenTracking(config: ScreenTrackingConfig) = Unit
 
     override fun submitPushPermissionStatus() = Unit
+}
 
-    override fun submitSessionDuration(durationMillis: Long) = Unit
-
-    override fun requestSync() = Unit
-
-    override fun submitPushInteraction(interactionId: String, status: InteractionStatus) = Unit
-
-    override fun submitInteractionClick(interactionId: String, action: InteractionAction, forcePush: Boolean) = Unit
-
-    override fun submitInAppInteraction(interaction: InAppInteraction) = Unit
-
-    override fun submitInAppShown(message: InAppMessage) = Unit
-
-    override fun submitDeeplinkClick(wrappedLink: String) = Unit
-
-    override fun submitIamFromPush(interactionId: String) = Unit
-
-    override fun submitDefaultNotificationChannel(channel: String) = Unit
+private object UnsupportedOsInApp : InAppActions {
 
     override fun submitInAppPause(paused: Boolean) = Unit
 
@@ -106,6 +135,41 @@ internal class UnsupportedOsActions(private val configuration: SdkConfiguration)
     override fun submitPushInAppPauseBehaviour(behaviour: InAppPauseBehaviour) = Unit
 
     override fun submitInAppLifecycleCallback(callback: InAppLifecycleCallback?) = Unit
+}
+
+private object UnsupportedOsInteractions : InteractionSubmitter {
+
+    override fun submitInteractionClick(interactionId: String, action: InteractionAction, forcePush: Boolean) = Unit
+
+    override fun submitInAppInteraction(interaction: InAppInteraction) = Unit
+
+    override fun submitInAppShown(message: InAppMessage) = Unit
+}
+
+private object UnsupportedOsPush : PushActions {
+
+    override fun submitPushInteraction(interactionId: String, status: InteractionStatus) = Unit
+
+    override fun submitDeeplinkClick(wrappedLink: String) = Unit
+
+    override fun submitIamFromPush(interactionId: String) = Unit
+
+    override fun submitDefaultNotificationChannel(channel: String) = Unit
+}
+
+private object UnsupportedOsSync : SyncActions {
+
+    override val backgroundSync: BackgroundSync = NothingToSync
+
+    override fun requestSync() = Unit
+}
+
+private object NothingToSync : BackgroundSync {
+
+    override suspend fun invoke(): Result<BackgroundSyncOutcome> = Result.success(BackgroundSyncOutcome.NO_DATA)
+}
+
+private object UnsupportedOsInbox : InboxActions {
 
     override fun submitInboxMessagesRequest(
         page: Int?,
@@ -125,6 +189,9 @@ internal class UnsupportedOsActions(private val configuration: SdkConfiguration)
     override fun submitInboxMessageOpened(messageId: String) = Unit
 
     override fun submitAllInboxMessagesOpened(callback: RetenoResultCallback<Unit>) = Unit
+}
+
+private object UnsupportedOsRecommendation : RecommendationActions {
 
     override fun <T : RecomBase> submitRecommendationRequest(
         recomVariantId: String,
@@ -140,8 +207,4 @@ internal class UnsupportedOsActions(private val configuration: SdkConfiguration)
     ) = Unit
 
     override fun submitRecommendationEvents(events: RecomEvents) = Unit
-
-    private object NothingToSync : BackgroundSync {
-        override suspend fun invoke(): Result<BackgroundSyncOutcome> = Result.success(BackgroundSyncOutcome.NO_DATA)
-    }
 }

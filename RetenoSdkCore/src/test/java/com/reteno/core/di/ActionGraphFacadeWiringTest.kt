@@ -45,11 +45,11 @@ internal class ActionGraphFacadeWiringTest {
         every { fixture.configRepository.isNotificationsEnabled() } returns false
 
         whenn()
-        fixture.sut.submitUserAttributes("user-1", stubUser())
-        fixture.sut.submitMultiAccountUserAttributes("account-1", null)
-        fixture.sut.submitAnonymousUserAttributes(stubAnonymousAttributes())
-        fixture.sut.submitFcmToken("new")
-        fixture.sut.submitNotificationsEnabled(true)
+        fixture.sut.contact.submitUserAttributes("user-1", stubUser())
+        fixture.sut.contact.submitMultiAccountUserAttributes("account-1", null)
+        fixture.sut.contact.submitAnonymousUserAttributes(stubAnonymousAttributes())
+        fixture.sut.contact.submitFcmToken("new")
+        fixture.sut.contact.submitNotificationsEnabled(true)
         runCurrent()
 
         then()
@@ -66,10 +66,10 @@ internal class ActionGraphFacadeWiringTest {
         val custom = stubCustomEvent()
 
         whenn()
-        fixture.sut.submitEvent(custom)
-        fixture.sut.submitEcomEvent(stubEcomEvent())
-        fixture.sut.submitScreenView("Home")
-        fixture.sut.submitRetenoLogEvent(stubRetenoLogEvent())
+        fixture.sut.events.submitEvent(custom)
+        fixture.sut.events.submitEcomEvent(stubEcomEvent())
+        fixture.sut.events.submitScreenView("Home")
+        fixture.graph.events.router.submitRetenoLogEvent(stubRetenoLogEvent())
         runCurrent()
 
         then()
@@ -84,10 +84,10 @@ internal class ActionGraphFacadeWiringTest {
         val fixture = ActionGraphFixture(this)
 
         whenn()
-        fixture.sut.submitLifecycleEventConfig(LifecycleTrackingOptions.NONE)
-        fixture.sut.submitAutoScreenTracking(ScreenTrackingConfig(enable = true))
-        fixture.sut.submitPushPermissionStatus()
-        fixture.sut.submitSessionDuration(5_000L)
+        fixture.sut.lifecycle.submitLifecycleEventConfig(LifecycleTrackingOptions.NONE)
+        fixture.sut.lifecycle.submitAutoScreenTracking(ScreenTrackingConfig(enable = true))
+        fixture.sut.lifecycle.submitPushPermissionStatus()
+        fixture.sut.control.submitSessionDuration(5_000L)
         runCurrent()
 
         then()
@@ -103,7 +103,7 @@ internal class ActionGraphFacadeWiringTest {
         val fixture = ActionGraphFixture(this)
 
         whenn()
-        fixture.sut.requestSync()
+        fixture.sut.sync.requestSync()
         runCurrent()
 
         then()
@@ -118,7 +118,7 @@ internal class ActionGraphFacadeWiringTest {
         coEvery { fixture.configRepository.getFcmToken() } returns "token"
 
         whenn()
-        fixture.sut.submitPushInteraction("interaction-1", InteractionStatus.DELIVERED)
+        fixture.sut.push.submitPushInteraction("interaction-1", InteractionStatus.DELIVERED)
         runCurrent()
 
         then()
@@ -138,7 +138,7 @@ internal class ActionGraphFacadeWiringTest {
         val action = InteractionAction("OPEN_URL", null, null)
 
         whenn()
-        fixture.sut.submitInteractionClick("interaction-1", action, forcePush = false)
+        fixture.sut.interactions.submitInteractionClick("interaction-1", action, forcePush = false)
         runCurrent()
 
         then()
@@ -155,7 +155,7 @@ internal class ActionGraphFacadeWiringTest {
         val fixture = ActionGraphFixture(this, initialized = false)
         val cached = fixture.storeInteractionRequests()
         coEvery { fixture.configRepository.getFcmToken() } returns "token"
-        fixture.sut.submitPushInteraction("interaction-1", InteractionStatus.DELIVERED)
+        fixture.sut.push.submitPushInteraction("interaction-1", InteractionStatus.DELIVERED)
         runCurrent()
         val cachedBeforeInit = cached.map { it.id }
 
@@ -175,7 +175,7 @@ internal class ActionGraphFacadeWiringTest {
         val fixture = ActionGraphFixture(this)
 
         whenn()
-        fixture.sut.submitDeeplinkClick("https://track.example/c/1")
+        fixture.sut.push.submitDeeplinkClick("https://track.example/c/1")
         runCurrent()
 
         then()
@@ -188,7 +188,7 @@ internal class ActionGraphFacadeWiringTest {
         val fixture = ActionGraphFixture(this)
 
         whenn()
-        fixture.sut.submitIamFromPush("interaction-1")
+        fixture.sut.push.submitIamFromPush("interaction-1")
         runCurrent()
 
         then()
@@ -205,7 +205,7 @@ internal class ActionGraphFacadeWiringTest {
         val fixture = ActionGraphFixture(this)
 
         whenn()
-        fixture.sut.submitDefaultNotificationChannel("{}")
+        fixture.sut.push.submitDefaultNotificationChannel("{}")
         runCurrent()
 
         then()
@@ -219,8 +219,8 @@ internal class ActionGraphFacadeWiringTest {
         val interaction = InAppInteraction("in-app-1", STUB_TIME, 42L, InAppInteractionStatus.OPENED)
 
         whenn()
-        fixture.sut.submitInAppInteraction(interaction)
-        fixture.sut.submitInteractionClick("in-app-1", InteractionAction("OPEN_URL", null, null), forcePush = true)
+        fixture.sut.interactions.submitInAppInteraction(interaction)
+        fixture.sut.interactions.submitInteractionClick("in-app-1", InteractionAction("OPEN_URL", null, null), forcePush = true)
         runCurrent()
 
         then()
@@ -238,7 +238,7 @@ internal class ActionGraphFacadeWiringTest {
         every { fixture.databaseManager.hasDataForSync() } returns true
 
         whenn()
-        val answers = with(fixture.sut) {
+        val answers = with(fixture.sut.queries) {
             listOf<Any>(
                 deviceId,
                 defaultNotificationChannel,
@@ -259,7 +259,7 @@ internal class ActionGraphFacadeWiringTest {
         every { fixture.activityHelper.currentActivity } returns null
 
         whenn()
-        val presented = fixture.sut.isActivityPresented()
+        val presented = fixture.sut.queries.isActivityPresented()
 
         then()
         assertFalse(presented)
@@ -272,7 +272,7 @@ internal class ActionGraphFacadeWiringTest {
         every { fixture.databaseManager.hasDataForSync() } throws IllegalStateException("db closed")
 
         whenn()
-        val hasData = fixture.sut.hasDataForSync()
+        val hasData = fixture.sut.queries.hasDataForSync()
         runCurrent()
 
         then()

@@ -28,7 +28,7 @@ internal class ActionGraphRecommendationWiringTest {
         val callback = RecordingRecommendationCallback<StubRecom>()
 
         whenn()
-        fixture.sut.submitRecommendationRequest("r1v2", REQUEST_BODY, StubRecom::class.java, callback)
+        fixture.sut.recommendation.submitRecommendationRequest("r1v2", REQUEST_BODY, StubRecom::class.java, callback)
         runCurrent()
 
         then()
@@ -43,7 +43,7 @@ internal class ActionGraphRecommendationWiringTest {
         val callback = RecordingRecommendationJsonCallback()
 
         whenn()
-        fixture.sut.submitRecommendationJsonRequest("r1v2", REQUEST_BODY, callback)
+        fixture.sut.recommendation.submitRecommendationJsonRequest("r1v2", REQUEST_BODY, callback)
         runCurrent()
 
         then()
@@ -56,7 +56,7 @@ internal class ActionGraphRecommendationWiringTest {
         val fixture = ActionGraphFixture(this)
 
         whenn()
-        fixture.sut.submitRecommendationEvents(stubRecomEvents())
+        fixture.sut.recommendation.submitRecommendationEvents(stubRecomEvents())
         runCurrent()
 
         then()
@@ -69,8 +69,8 @@ internal class ActionGraphRecommendationWiringTest {
         val fixture = ActionGraphFixture(this)
 
         whenn()
-        fixture.sut.submitRecommendationEvents(stubRecomEvents(recomVariantId = "r1v2"))
-        fixture.sut.submitRecommendationEvents(stubRecomEvents(recomVariantId = "r3v4"))
+        fixture.sut.recommendation.submitRecommendationEvents(stubRecomEvents(recomVariantId = "r1v2"))
+        fixture.sut.recommendation.submitRecommendationEvents(stubRecomEvents(recomVariantId = "r3v4"))
         runCurrent()
 
         then()

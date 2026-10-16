@@ -3,6 +3,7 @@ package com.reteno.core.di.graph
 import com.reteno.core.di.ActionCore
 import com.reteno.core.di.ActionGraph
 import com.reteno.core.di.SdkInfrastructure
+import com.reteno.core.di.route.LifecycleRouter
 import com.reteno.core.internal.action.lifecycle.AppBackgroundedAction
 import com.reteno.core.internal.action.lifecycle.AppForegroundedAction
 import com.reteno.core.internal.action.lifecycle.EnableAutoScreenTrackingAction
@@ -76,5 +77,9 @@ internal class LifecycleGraph(
 
     val updatePushPermissionStatus: UpdatePushPermissionStatusAction by lazy {
         UpdatePushPermissionStatusAction(core.broadcasts, core.runner)
+    }
+
+    val router: LifecycleRouter by lazy {
+        LifecycleRouter(core, this)
     }
 }

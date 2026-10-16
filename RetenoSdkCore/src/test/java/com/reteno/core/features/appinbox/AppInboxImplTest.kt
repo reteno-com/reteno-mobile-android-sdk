@@ -2,8 +2,9 @@ package com.reteno.core.features.appinbox
 
 import com.reteno.core.domain.model.appinbox.AppInboxMessages
 import com.reteno.core.domain.model.logevent.LogLevel
+import com.reteno.core.fixtures.FakeCallLog
+import com.reteno.core.fixtures.FakeInboxActions
 import com.reteno.core.fixtures.FakeRemoteLog
-import com.reteno.core.fixtures.FakeSdkActions
 import com.reteno.core.fixtures.RecordingResultCallback
 import com.reteno.test.given
 import com.reteno.test.runUnitTest
@@ -16,7 +17,8 @@ import org.junit.jupiter.api.Test
 internal class AppInboxImplTest {
 
     private class SutFixture {
-        val actions = FakeSdkActions()
+        val log = FakeCallLog()
+        val actions = FakeInboxActions(log)
         val remoteLog = FakeRemoteLog()
         val sut = AppInboxImpl(actions, remoteLog)
 
@@ -50,7 +52,7 @@ internal class AppInboxImplTest {
                 "submitInboxMessageOpened m1",
                 "submitAllInboxMessagesOpened"
             ),
-            fixture.actions.calls
+            fixture.log.calls
         )
     }
 
@@ -64,7 +66,7 @@ internal class AppInboxImplTest {
         inbox.getAppInboxMessages(callback = RecordingResultCallback())
 
         then()
-        assertEquals(listOf("submitInboxMessagesRequest null null null"), fixture.actions.calls)
+        assertEquals(listOf("submitInboxMessagesRequest null null null"), fixture.log.calls)
     }
 
     @Test
@@ -136,7 +138,7 @@ internal class AppInboxImplTest {
     fun `should keep host running and report every inbox call that fails in sdk`() = runUnitTest {
         given()
         val fixture = SutFixture()
-        fixture.actions.failure = IllegalStateException("sdk broken")
+        fixture.log.failure = IllegalStateException("sdk broken")
 
         whenn()
         fixture.callEveryApi()

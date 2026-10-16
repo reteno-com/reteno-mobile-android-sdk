@@ -87,7 +87,7 @@ internal class ActionGraphContactWiringTest {
     fun `should save user and refresh in-app segmentation after debounce`() = runUnitTest {
         given()
         val fixture = ActionGraphFixture(this)
-        fixture.sut.requestStart()
+        fixture.sut.control.requestStart()
         runCurrent()
         fixture.graph.inApp.inAppMessagesState.replaceMessages(
             listOf(stubInAppMessage(async = AsyncDisplayRules(segment = stubSegment(inSegment = false))))
@@ -154,8 +154,8 @@ internal class ActionGraphContactWiringTest {
         var nextRan = false
 
         whenn()
-        fixture.sut.contactQueue.enqueue { throw IllegalStateException("boom") }
-        fixture.sut.contactQueue.enqueue { nextRan = true }
+        fixture.graph.device.contactQueue.enqueue { throw IllegalStateException("boom") }
+        fixture.graph.device.contactQueue.enqueue { nextRan = true }
         runCurrent()
 
         then()

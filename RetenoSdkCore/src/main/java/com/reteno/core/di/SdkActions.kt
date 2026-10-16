@@ -1,20 +1,15 @@
 package com.reteno.core.di
 
-import com.reteno.core.RetenoConfig
-import com.reteno.core.domain.model.ecom.EcomEvent
-import com.reteno.core.domain.model.event.Event
-import com.reteno.core.domain.model.event.LifecycleTrackingOptions
-import com.reteno.core.domain.model.interaction.InteractionStatus
-import com.reteno.core.domain.model.user.User
-import com.reteno.core.domain.model.user.UserAttributesAnonymous
-import com.reteno.core.features.iam.InAppPauseBehaviour
+import com.reteno.core.internal.action.event.EventActions
+import com.reteno.core.internal.action.iam.InAppActions
 import com.reteno.core.internal.action.inbox.InboxActions
+import com.reteno.core.internal.action.init.SdkControl
 import com.reteno.core.internal.action.interaction.InteractionSubmitter
+import com.reteno.core.internal.action.lifecycle.LifecycleActions
+import com.reteno.core.internal.action.push.PushActions
 import com.reteno.core.internal.action.recommendation.RecommendationActions
-import com.reteno.core.internal.action.sync.BackgroundSync
-import com.reteno.core.internal.log.LogEventQueue
-import com.reteno.core.lifecycle.ScreenTrackingConfig
-import com.reteno.core.view.iam.callback.InAppLifecycleCallback
+import com.reteno.core.internal.action.sync.SyncActions
+import com.reteno.core.internal.action.user.ContactActions
 
 internal interface SdkQueries {
     val deviceId: String
@@ -28,69 +23,40 @@ internal interface SdkQueries {
     fun hasDataForSync(): Boolean
 }
 
-internal interface SdkActions :
-    SdkQueries,
-    InteractionSubmitter,
-    InboxActions,
-    RecommendationActions,
-    LogEventQueue {
-    val isStarted: Boolean
+internal interface SdkActions {
+    val control: SdkControl
 
-    val isInitialized: Boolean
+    val queries: SdkQueries
 
-    fun runAfterInit(operation: () -> Unit)
+    val contact: ContactActions
 
-    fun boot()
+    val events: EventActions
 
-    fun applyUserConfig(config: RetenoConfig)
+    val lifecycle: LifecycleActions
 
-    fun requestStart()
+    val inApp: InAppActions
 
-    fun requestStop()
+    val interactions: InteractionSubmitter
 
-    fun submitUserAttributes(externalUserId: String, user: User?)
+    val push: PushActions
 
-    fun submitMultiAccountUserAttributes(externalUserId: String, user: User?)
+    val sync: SyncActions
 
-    fun submitAnonymousUserAttributes(attributes: UserAttributesAnonymous)
+    val inbox: InboxActions
 
-    fun submitFcmToken(token: String)
-
-    fun submitNotificationsEnabled(enabled: Boolean)
-
-    fun submitEvent(event: Event)
-
-    fun submitEcomEvent(event: EcomEvent)
-
-    fun submitScreenView(screenName: String)
-
-    fun submitLifecycleEventConfig(options: LifecycleTrackingOptions)
-
-    fun submitAutoScreenTracking(config: ScreenTrackingConfig)
-
-    fun submitPushPermissionStatus()
-
-    fun submitSessionDuration(durationMillis: Long)
-
-    fun requestSync()
-
-    fun submitPushInteraction(interactionId: String, status: InteractionStatus)
-
-    fun submitDeeplinkClick(wrappedLink: String)
-
-    fun submitIamFromPush(interactionId: String)
-
-    fun submitDefaultNotificationChannel(channel: String)
-
-    fun submitInAppPause(paused: Boolean)
-
-    fun submitInAppPauseBehaviour(behaviour: InAppPauseBehaviour)
-
-    fun submitPushInAppPause(paused: Boolean)
-
-    fun submitPushInAppPauseBehaviour(behaviour: InAppPauseBehaviour)
-
-    fun submitInAppLifecycleCallback(callback: InAppLifecycleCallback?)
-
-    val backgroundSync: BackgroundSync
+    val recommendation: RecommendationActions
 }
+
+internal class SdkActionsImpl(
+    override val control: SdkControl,
+    override val queries: SdkQueries,
+    override val contact: ContactActions,
+    override val events: EventActions,
+    override val lifecycle: LifecycleActions,
+    override val inApp: InAppActions,
+    override val interactions: InteractionSubmitter,
+    override val push: PushActions,
+    override val sync: SyncActions,
+    override val inbox: InboxActions,
+    override val recommendation: RecommendationActions
+) : SdkActions

@@ -37,6 +37,36 @@ internal class ActionGraphLifecycleWiringTest {
     }
 
     @Test
+    fun `should start screen tracking on main`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        var onMain: Boolean? = null
+        fixture.env.platform.onWatchFragmentScreens = { onMain = fixture.env.dispatchers.markedMain.isRunningHere }
+
+        whenn()
+        fixture.env.sut.lifecycle.submitAutoScreenTracking(ScreenTrackingConfig(enable = true))
+        runCurrent()
+
+        then()
+        assertEquals(true, onMain)
+    }
+
+    @Test
+    fun `should notify push permission receivers off the main thread`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        var onIo: Boolean? = null
+        fixture.env.platform.onSend = { onIo = fixture.env.dispatchers.markedIo.isRunningHere }
+
+        whenn()
+        fixture.env.sut.lifecycle.submitPushPermissionStatus()
+        runCurrent()
+
+        then()
+        assertEquals(true, onIo)
+    }
+
+    @Test
     fun `should run app foreground and background through lifecycle watcher in order`() = runUnitTest {
         given()
         val fixture = SutFixture(this)

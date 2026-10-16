@@ -3,6 +3,7 @@ package com.reteno.core.di.graph
 import com.reteno.core.di.ActionCore
 import com.reteno.core.di.ActionGraph
 import com.reteno.core.di.SdkInfrastructure
+import com.reteno.core.di.route.InAppRouter
 import com.reteno.core.internal.action.iam.CheckInAppSegments
 import com.reteno.core.internal.action.iam.CheckInAppSegmentsAction
 import com.reteno.core.internal.action.iam.FetchInAppMessagesAction
@@ -18,6 +19,7 @@ import com.reteno.core.internal.action.iam.RecordInAppShownAction
 import com.reteno.core.internal.action.iam.ReportWidgetFailureAction
 import com.reteno.core.internal.action.iam.SetInAppPauseBehaviourAction
 import com.reteno.core.internal.action.iam.ShowInAppAction
+import com.reteno.core.internal.coroutine.SerialQueue
 import com.reteno.core.internal.iam.DisplayRulesEvaluator
 import com.reteno.core.internal.iam.InAppDisplayRules
 import com.reteno.core.internal.iam.InAppMessagesState
@@ -33,6 +35,8 @@ internal class InAppGraph(
 ) {
 
     private val inAppTriggerLock = Mutex()
+
+    val inAppQueue by lazy { SerialQueue(core.scope, "InApp", core.logSink) }
 
     private val inAppCache by lazy {
         InAppMessagesCache(infrastructure.db.inAppMessagesDb, core.dispatchers)
@@ -126,7 +130,7 @@ internal class InAppGraph(
             loadHtml = loadInAppHtml,
             loadPushHtml = loadPushInAppHtml,
             reportFailure = reportWidgetFailure,
-            interactions = graph.router,
+            interactions = graph.interactions.router,
             remoteLog = core.remoteLog,
             scope = core.scope,
             dispatchers = core.dispatchers,
@@ -161,5 +165,9 @@ internal class InAppGraph(
 
     private val reportWidgetFailure: ReportWidgetFailureAction by lazy {
         ReportWidgetFailureAction(core.api, core.initGate, core.runner)
+    }
+
+    val router: InAppRouter by lazy {
+        InAppRouter(this)
     }
 }

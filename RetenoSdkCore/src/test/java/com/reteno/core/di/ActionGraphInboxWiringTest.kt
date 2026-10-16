@@ -31,7 +31,7 @@ internal class ActionGraphInboxWiringTest {
         val callback = RecordingResultCallback<AppInboxMessages>()
 
         whenn()
-        fixture.sut.submitInboxMessagesRequest(1, 10, AppInboxStatus.OPENED, callback)
+        fixture.sut.inbox.submitInboxMessagesRequest(1, 10, AppInboxStatus.OPENED, callback)
         runCurrent()
 
         then()
@@ -46,7 +46,7 @@ internal class ActionGraphInboxWiringTest {
         val callback = RecordingResultCallback<Int>()
 
         whenn()
-        fixture.sut.submitInboxCountRequest(callback)
+        fixture.sut.inbox.submitInboxCountRequest(callback)
         runCurrent()
 
         then()
@@ -59,12 +59,12 @@ internal class ActionGraphInboxWiringTest {
         val fixture = ActionGraphFixture(this)
         fixture.rest.succeedWith(ApiContract.AppInbox.MessagesCount, """{"unreadCount":2}""")
         val callback = RecordingResultCallback<Int>()
-        fixture.sut.subscribeInboxCount(callback)
+        fixture.sut.inbox.subscribeInboxCount(callback)
         runCurrent()
         val requestsBeforeStart = fixture.countRequests()
 
         whenn()
-        fixture.sut.requestStart()
+        fixture.sut.control.requestStart()
         runCurrent()
 
         then()
@@ -79,15 +79,15 @@ internal class ActionGraphInboxWiringTest {
         val removed = RecordingResultCallback<Int>()
         val kept = RecordingResultCallback<Int>()
         fixture.rest.succeedWith(ApiContract.AppInbox.MessagesCount, """{"unreadCount":2}""")
-        fixture.sut.subscribeInboxCount(removed)
-        fixture.sut.subscribeInboxCount(kept)
-        fixture.sut.requestStart()
+        fixture.sut.inbox.subscribeInboxCount(removed)
+        fixture.sut.inbox.subscribeInboxCount(kept)
+        fixture.sut.control.requestStart()
         runCurrent()
         fixture.graph.sync.dataSync.stopScheduler()
         fixture.rest.succeedWith(ApiContract.AppInbox.MessagesCount, """{"unreadCount":5}""")
 
         whenn()
-        fixture.sut.unsubscribeInboxCount(removed)
+        fixture.sut.inbox.unsubscribeInboxCount(removed)
         advanceTimeBy(InboxCountPoller.POLL_INTERVAL_MILLIS)
         runCurrent()
 
@@ -100,13 +100,13 @@ internal class ActionGraphInboxWiringTest {
     fun `should stop polling unread count after unsubscribing all callbacks`() = runUnitTest {
         given()
         val fixture = ActionGraphFixture(this)
-        fixture.sut.requestStart()
-        fixture.sut.subscribeInboxCount(RecordingResultCallback())
-        fixture.sut.subscribeInboxCount(RecordingResultCallback())
+        fixture.sut.control.requestStart()
+        fixture.sut.inbox.subscribeInboxCount(RecordingResultCallback())
+        fixture.sut.inbox.subscribeInboxCount(RecordingResultCallback())
         runCurrent()
 
         whenn()
-        fixture.sut.unsubscribeAllInboxCount()
+        fixture.sut.inbox.unsubscribeAllInboxCount()
         advanceTimeBy(InboxCountPoller.POLL_INTERVAL_MILLIS * 2)
         runCurrent()
 
@@ -121,8 +121,8 @@ internal class ActionGraphInboxWiringTest {
         val callback = RecordingResultCallback<Unit>()
 
         whenn()
-        fixture.sut.submitInboxMessageOpened("m1")
-        fixture.sut.submitAllInboxMessagesOpened(callback)
+        fixture.sut.inbox.submitInboxMessageOpened("m1")
+        fixture.sut.inbox.submitAllInboxMessagesOpened(callback)
         runCurrent()
 
         then()

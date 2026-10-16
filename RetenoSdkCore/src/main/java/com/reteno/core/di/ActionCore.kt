@@ -32,7 +32,7 @@ internal class ActionCore(
     val backgroundWork: BackgroundWork,
     val lifecycleEventFilter: LifecycleEventFilter,
     val clock: () -> Long,
-    logEventQueue: LogEventQueue
+    logEventQueue: Lazy<LogEventQueue>
 ) {
 
     val initGate = InitGate()

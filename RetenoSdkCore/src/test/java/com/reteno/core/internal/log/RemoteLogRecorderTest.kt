@@ -23,7 +23,7 @@ internal class RemoteLogRecorderTest {
         val configRepository = mockk<ConfigRepository>()
         val platform = FakeAppPlatform()
         val queue = RecordingLogEventQueue()
-        val sut = RemoteLogRecorder(lazy { configRepository }, platform, queue)
+        val sut = RemoteLogRecorder(lazy { configRepository }, platform, lazyOf(queue))
 
         init {
             every { configRepository.getDeviceId() } returns stubDeviceId()
@@ -160,7 +160,7 @@ internal class RemoteLogRecorderTest {
         }
 
         whenn()
-        RemoteLogRecorder(configRepository, FakeAppPlatform(), RecordingLogEventQueue())
+        RemoteLogRecorder(configRepository, FakeAppPlatform(), lazyOf(RecordingLogEventQueue()))
 
         then()
         assertFalse(read)

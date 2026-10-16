@@ -116,7 +116,7 @@ internal class ActionGraphSyncWiringTest {
     fun `should cancel periodic work when background sync finds no data`() = runUnitTest {
         given()
         val fixture = ActionGraphFixture(this)
-        val sut = fixture.sut.backgroundSync
+        val sut = fixture.sut.sync.backgroundSync
 
         whenn()
         val outcome = sut().getOrThrow()
@@ -132,7 +132,7 @@ internal class ActionGraphSyncWiringTest {
         val fixture = ActionGraphFixture(this)
         every { fixture.databaseManager.hasDataForSync() } returns true
         every { fixture.devicesDb.getDevices(any()) } returns listOf(stubDeviceDb())
-        val sut = fixture.sut.backgroundSync
+        val sut = fixture.sut.sync.backgroundSync
 
         whenn()
         val outcome = sut().getOrThrow()

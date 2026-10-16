@@ -43,7 +43,7 @@ internal class ActionGraphInitWiringTest {
         every { fixture.env.prefs.getCachedConfiguration() } returns cached
 
         whenn()
-        fixture.env.sut.boot()
+        fixture.env.sut.control.boot()
         runCurrent()
 
         then()
@@ -61,7 +61,7 @@ internal class ActionGraphInitWiringTest {
         val fixture = SutFixture(this)
 
         whenn()
-        fixture.env.sut.boot()
+        fixture.env.sut.control.boot()
 
         then()
         assertEquals(1, fixture.env.platform.activityTrackingStarts)
@@ -74,7 +74,7 @@ internal class ActionGraphInitWiringTest {
         every { fixture.env.prefs.getCachedConfiguration() } returns null
 
         whenn()
-        fixture.env.sut.boot()
+        fixture.env.sut.control.boot()
         runCurrent()
 
         then()
@@ -88,11 +88,28 @@ internal class ActionGraphInitWiringTest {
         val config = stubConfig(customDeviceId = true)
 
         whenn()
-        fixture.env.sut.applyUserConfig(config)
+        fixture.env.sut.control.applyUserConfig(config)
 
         then()
         assertSame(config, fixture.env.configuration.config)
         assertEquals(InitState.NOT_INITIALIZED, fixture.env.initGate.state)
+    }
+
+    @Test
+    fun `should apply queued user configuration on main`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        var onMain: Boolean? = null
+        every { fixture.env.sessionHandler.setSessionResetDuration(any()) } answers {
+            onMain = fixture.env.dispatchers.markedMain.isRunningHere
+        }
+
+        whenn()
+        fixture.env.sut.control.applyUserConfig(stubConfig(customDeviceId = true))
+        runCurrent()
+
+        then()
+        assertEquals(true, onMain)
     }
 
     @Test
@@ -103,7 +120,7 @@ internal class ActionGraphInitWiringTest {
         coEvery { fixture.env.configRepository.getFcmToken() } returns "token"
 
         whenn()
-        fixture.env.sut.applyUserConfig(config)
+        fixture.env.sut.control.applyUserConfig(config)
         runCurrent()
 
         then()
@@ -124,8 +141,8 @@ internal class ActionGraphInitWiringTest {
         every { fixture.env.prefs.getCachedConfiguration() } returns cached
 
         whenn()
-        fixture.env.sut.boot()
-        fixture.env.sut.applyUserConfig(user)
+        fixture.env.sut.control.boot()
+        fixture.env.sut.control.applyUserConfig(user)
         runCurrent()
 
         then()
@@ -140,15 +157,15 @@ internal class ActionGraphInitWiringTest {
         val fixture = SutFixture(this, initialized = true)
 
         whenn()
-        fixture.env.sut.requestStart()
+        fixture.env.sut.control.requestStart()
         runCurrent()
-        val startedAfterStart = fixture.env.sut.isStarted
-        fixture.env.sut.requestStop()
+        val startedAfterStart = fixture.env.sut.control.isStarted
+        fixture.env.sut.control.requestStop()
         runCurrent()
 
         then()
         assertTrue(startedAfterStart)
-        assertFalse(fixture.env.sut.isStarted)
+        assertFalse(fixture.env.sut.control.isStarted)
         verify(exactly = 1) { fixture.env.sessionHandler.start() }
         assertEquals(1, fixture.env.rest.requests.count { it.contract == ApiContract.InAppMessages.GetInAppMessages })
         verify(exactly = 1) { fixture.env.sessionHandler.stop() }
@@ -163,7 +180,7 @@ internal class ActionGraphInitWiringTest {
         val createdBeforeStart = fixture.env.platform.screen.calls.toList()
 
         whenn()
-        fixture.env.sut.requestStart()
+        fixture.env.sut.control.requestStart()
         runCurrent()
 
         then()
@@ -175,9 +192,9 @@ internal class ActionGraphInitWiringTest {
     fun `should hold in-app offered after sdk stops`() = runUnitTest {
         given()
         val fixture = SutFixture(this, initialized = true)
-        fixture.env.sut.requestStart()
+        fixture.env.sut.control.requestStart()
         runCurrent()
-        fixture.env.sut.requestStop()
+        fixture.env.sut.control.requestStop()
         runCurrent()
 
         whenn()
@@ -192,9 +209,9 @@ internal class ActionGraphInitWiringTest {
     fun `should hold push in-app when user configuration pauses push in-apps`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
-        fixture.env.sut.applyUserConfig(stubConfig(pausedPushInApps = true))
+        fixture.env.sut.control.applyUserConfig(stubConfig(pausedPushInApps = true))
         runCurrent()
-        fixture.env.sut.submitIamFromPush("interaction-1")
+        fixture.env.sut.push.submitIamFromPush("interaction-1")
         runCurrent()
 
         whenn()
@@ -212,7 +229,7 @@ internal class ActionGraphInitWiringTest {
         fixture.env.initGate.markInitialized(byUser = false)
 
         whenn()
-        fixture.env.sut.requestStart()
+        fixture.env.sut.control.requestStart()
         runCurrent()
 
         then()
@@ -235,33 +252,32 @@ internal class ActionGraphInitWiringTest {
     fun `should report sdk initialized once the gate opens`() = runUnitTest {
         given()
         val fixture = SutFixture(this, initialized = false)
-        val initializedBefore = fixture.env.sut.isInitialized
+        val initializedBefore = fixture.env.sut.control.isInitialized
 
         whenn()
         fixture.env.initGate.markInitialized(byUser = true)
 
         then()
         assertFalse(initializedBefore)
-        assertTrue(fixture.env.sut.isInitialized)
+        assertTrue(fixture.env.sut.control.isInitialized)
     }
 
     @Test
-    fun `should run operations held before init in call order once the gate opens`() = runUnitTest {
+    fun `should run operations held before init on main once the gate opens`() = runUnitTest {
         given()
         val fixture = SutFixture(this, initialized = false)
-        val ran = mutableListOf<String>()
-        fixture.env.sut.runAfterInit { ran += "first" }
-        fixture.env.sut.runAfterInit { ran += "second" }
+        var ranOnMain: Boolean? = null
+        fixture.env.sut.control.runAfterInit { ranOnMain = fixture.env.dispatchers.markedMain.isRunningHere }
         runCurrent()
-        val ranBefore = ran.toList()
+        val ranBefore = ranOnMain
 
         whenn()
         fixture.env.initGate.markInitialized(byUser = true)
         runCurrent()
 
         then()
-        assertEquals(emptyList<String>(), ranBefore)
-        assertEquals(listOf("first", "second"), ran)
+        assertEquals(null, ranBefore)
+        assertEquals(true, ranOnMain)
     }
 
     @Test
@@ -271,7 +287,7 @@ internal class ActionGraphInitWiringTest {
         val ran = mutableListOf<String>()
 
         whenn()
-        fixture.env.sut.runAfterInit { ran += "now" }
+        fixture.env.sut.control.runAfterInit { ran += "now" }
 
         then()
         assertEquals(listOf("now"), ran)

@@ -2,8 +2,9 @@ package com.reteno.core.features.recommendation
 
 import com.reteno.core.domain.model.logevent.LogLevel
 import com.reteno.core.domain.model.recommendation.get.RecomRequest
+import com.reteno.core.fixtures.FakeCallLog
+import com.reteno.core.fixtures.FakeRecommendationActions
 import com.reteno.core.fixtures.FakeRemoteLog
-import com.reteno.core.fixtures.FakeSdkActions
 import com.reteno.core.fixtures.RecordingRecommendationCallback
 import com.reteno.core.fixtures.RecordingRecommendationJsonCallback
 import com.reteno.core.fixtures.StubRecom
@@ -20,7 +21,8 @@ import org.junit.jupiter.api.Test
 internal class RecommendationImplTest {
 
     private class SutFixture {
-        val actions = FakeSdkActions()
+        val log = FakeCallLog()
+        val actions = FakeRecommendationActions(log)
         val remoteLog = FakeRemoteLog()
         val sut = RecommendationImpl(actions, remoteLog)
 
@@ -51,7 +53,7 @@ internal class RecommendationImplTest {
                 "submitRecommendationJsonRequest r3v4 $STUB_REQUEST_BODY",
                 "submitRecommendationEvents r5v6"
             ),
-            fixture.actions.calls
+            fixture.log.calls
         )
     }
 
@@ -109,14 +111,14 @@ internal class RecommendationImplTest {
 
         then()
         val expected = """submitRecommendationJsonRequest r1v2 {"products":["sku-1"],"fields":["name"]}"""
-        assertEquals(listOf(expected), fixture.actions.calls)
+        assertEquals(listOf(expected), fixture.log.calls)
     }
 
     @Test
     fun `should keep host running and report every recommendation call that fails in sdk`() = runUnitTest {
         given()
         val fixture = SutFixture()
-        fixture.actions.failure = IllegalStateException("sdk broken")
+        fixture.log.failure = IllegalStateException("sdk broken")
 
         whenn()
         fixture.callEveryApi()

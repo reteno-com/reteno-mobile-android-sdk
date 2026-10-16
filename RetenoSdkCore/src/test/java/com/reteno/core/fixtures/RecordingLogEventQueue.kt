@@ -21,5 +21,5 @@ internal fun recordingRemoteLog(queue: RecordingLogEventQueue): RemoteLogRecorde
     val configRepository = mockk<ConfigRepository>().also {
         every { it.getDeviceId() } returns stubDeviceId()
     }
-    return RemoteLogRecorder(lazy { configRepository }, FakeAppPlatform(), queue)
+    return RemoteLogRecorder(lazy { configRepository }, FakeAppPlatform(), lazyOf(queue))
 }

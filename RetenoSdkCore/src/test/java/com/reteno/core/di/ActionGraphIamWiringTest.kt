@@ -61,7 +61,7 @@ internal class ActionGraphIamWiringTest {
         val fixture = ActionGraphFixture(this)
 
         whenn()
-        fixture.sut.submitInAppPause(true)
+        fixture.sut.inApp.submitInAppPause(true)
         runCurrent()
 
         then()
@@ -77,8 +77,8 @@ internal class ActionGraphIamWiringTest {
         fixture.graph.inApp.inAppMessagesState.postponeIfPaused(stubInAppMessage())
 
         whenn()
-        fixture.sut.submitInAppPauseBehaviour(InAppPauseBehaviour.SKIP_IN_APPS)
-        fixture.sut.submitInAppPause(false)
+        fixture.sut.inApp.submitInAppPauseBehaviour(InAppPauseBehaviour.SKIP_IN_APPS)
+        fixture.sut.inApp.submitInAppPause(false)
         runCurrent()
 
         then()
@@ -91,7 +91,7 @@ internal class ActionGraphIamWiringTest {
         val fixture = ActionGraphFixture(this)
 
         whenn()
-        fixture.sut.submitInAppShown(stubInAppMessage(messageId = 7))
+        fixture.sut.interactions.submitInAppShown(stubInAppMessage(messageId = 7))
         runCurrent()
 
         then()
@@ -141,11 +141,11 @@ internal class ActionGraphIamWiringTest {
     fun `should skip push in-apps when host pauses them with skip behaviour`() = runUnitTest {
         given()
         val fixture = ActionGraphFixture(this)
-        fixture.sut.submitPushInAppPauseBehaviour(InAppPauseBehaviour.SKIP_IN_APPS)
-        fixture.sut.submitPushInAppPause(true)
+        fixture.sut.inApp.submitPushInAppPauseBehaviour(InAppPauseBehaviour.SKIP_IN_APPS)
+        fixture.sut.inApp.submitPushInAppPause(true)
 
         whenn()
-        fixture.sut.submitIamFromPush("interaction-1")
+        fixture.sut.push.submitIamFromPush("interaction-1")
         runCurrent()
 
         then()
@@ -157,10 +157,10 @@ internal class ActionGraphIamWiringTest {
         given()
         val fixture = ActionGraphFixture(this)
         val host = RecordingInAppLifecycleCallback(fixture.dispatchers.markedMain)
-        fixture.sut.submitInAppLifecycleCallback(host)
+        fixture.sut.inApp.submitInAppLifecycleCallback(host)
 
         whenn()
-        fixture.sut.submitIamFromPush("interaction-1")
+        fixture.sut.push.submitIamFromPush("interaction-1")
         runCurrent()
 
         then()

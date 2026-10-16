@@ -3,6 +3,7 @@ package com.reteno.core.di.graph
 import com.reteno.core.di.ActionCore
 import com.reteno.core.di.ActionGraph
 import com.reteno.core.di.SdkInfrastructure
+import com.reteno.core.di.route.InboxRouter
 import com.reteno.core.internal.action.inbox.GetInboxMessagesAction
 import com.reteno.core.internal.action.inbox.GetInboxMessagesCountAction
 import com.reteno.core.internal.action.inbox.InboxCountPoller
@@ -49,5 +50,9 @@ internal class InboxGraph(
             core.dispatchers,
             core.runner
         )
+    }
+
+    val router: InboxRouter by lazy {
+        InboxRouter(this, core.scope)
     }
 }

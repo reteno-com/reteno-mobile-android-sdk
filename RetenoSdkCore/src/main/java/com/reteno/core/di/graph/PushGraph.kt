@@ -3,6 +3,7 @@ package com.reteno.core.di.graph
 import com.reteno.core.di.ActionCore
 import com.reteno.core.di.ActionGraph
 import com.reteno.core.di.SdkInfrastructure
+import com.reteno.core.di.route.PushRouter
 import com.reteno.core.internal.action.push.InitializeIamFromPushAction
 import com.reteno.core.internal.action.push.SaveDefaultNotificationChannelAction
 
@@ -18,5 +19,9 @@ internal class PushGraph(
 
     val saveDefaultNotificationChannel: SaveDefaultNotificationChannelAction by lazy {
         SaveDefaultNotificationChannelAction(infrastructure.configRepository, core.dispatchers, core.runner)
+    }
+
+    val router: PushRouter by lazy {
+        PushRouter(this, graph.interactions, graph.deeplink, core.scope)
     }
 }

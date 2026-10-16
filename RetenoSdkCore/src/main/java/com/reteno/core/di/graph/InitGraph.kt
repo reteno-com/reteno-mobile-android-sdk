@@ -3,11 +3,13 @@ package com.reteno.core.di.graph
 import com.reteno.core.di.ActionCore
 import com.reteno.core.di.ActionGraph
 import com.reteno.core.di.SdkInfrastructure
+import com.reteno.core.di.route.InitRouter
 import com.reteno.core.internal.action.init.ApplyConfigAction
 import com.reteno.core.internal.action.init.BootSdkAction
 import com.reteno.core.internal.action.init.SetSessionDurationAction
 import com.reteno.core.internal.action.init.StartSdkAction
 import com.reteno.core.internal.action.init.StopSdkAction
+import com.reteno.core.internal.coroutine.SerialQueue
 import com.reteno.core.internal.lifecycle.SdkRunState
 import com.reteno.core.internal.lifecycle.StartStopSequencer
 
@@ -18,6 +20,8 @@ internal class InitGraph(
 ) {
 
     val runState = SdkRunState()
+
+    val initQueue by lazy { SerialQueue(core.mainScope, "Init", core.logSink) }
 
     val sdk by lazy {
         StartStopSequencer(core.mainScope, core.initGate, startSdk, stopSdk, runState)
@@ -80,5 +84,9 @@ internal class InitGraph(
 
     val setSessionDuration: SetSessionDurationAction by lazy {
         SetSessionDurationAction(infrastructure.sessionHandler, core.runner)
+    }
+
+    val router: InitRouter by lazy {
+        InitRouter(core, this, graph.inApp)
     }
 }

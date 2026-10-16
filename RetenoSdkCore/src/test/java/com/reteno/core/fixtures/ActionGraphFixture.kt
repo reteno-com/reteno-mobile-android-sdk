@@ -125,5 +125,5 @@ internal class ActionGraphFixture(scope: TestScope, initialized: Boolean = true)
         clock = { 1_000L }
     )
     val initGate = graph.core.initGate.also { if (initialized) it.markInitialized(byUser = true) }
-    val sut = graph.router
+    val sut = graph.actions
 }

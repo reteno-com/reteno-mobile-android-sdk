@@ -123,7 +123,7 @@ internal class RetenoEntryPointsTest {
 
         then()
         assertSame(fixture.facade, instance)
-        assertEquals(listOf("access-2"), fixture.actions.configs.map { it.accessKey })
+        assertEquals(listOf("access-2"), fixture.actions.control.configs.map { it.accessKey })
     }
 
     @Suppress("DEPRECATION")
@@ -140,7 +140,7 @@ internal class RetenoEntryPointsTest {
         then()
         assertTrue(failure is IllegalArgumentException)
         assertEquals("Access key can't be blank.", failure?.message)
-        assertTrue(fixture.actions.configs.isEmpty())
+        assertTrue(fixture.actions.control.configs.isEmpty())
     }
 
     @Suppress("DEPRECATION")
@@ -157,7 +157,7 @@ internal class RetenoEntryPointsTest {
 
             then()
             assertTrue(failure is IllegalArgumentException)
-            assertTrue(fixture.actions.configs.isEmpty())
+            assertTrue(fixture.actions.control.configs.isEmpty())
         }
 
     @Suppress("DEPRECATION")

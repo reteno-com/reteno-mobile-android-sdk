@@ -2,6 +2,7 @@ package com.reteno.core.di.graph
 
 import com.reteno.core.di.ActionCore
 import com.reteno.core.di.SdkInfrastructure
+import com.reteno.core.di.route.EventRouter
 import com.reteno.core.internal.action.event.LogEcomEventAction
 import com.reteno.core.internal.action.event.LogEventAction
 import com.reteno.core.internal.action.event.LogRetenoEventAction
@@ -38,5 +39,9 @@ internal class EventGraph(
 
     val logRetenoEvent: LogRetenoEventAction by lazy {
         LogRetenoEventAction(infrastructure.db.logEventsDb, core.dispatchers, core.runner)
+    }
+
+    val router: EventRouter by lazy {
+        EventRouter(this, core.scope)
     }
 }

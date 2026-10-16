@@ -3,6 +3,7 @@ package com.reteno.core.di.graph
 import com.reteno.core.di.ActionCore
 import com.reteno.core.di.ActionGraph
 import com.reteno.core.di.SdkInfrastructure
+import com.reteno.core.di.route.InteractionRouter
 import com.reteno.core.internal.action.interaction.ProcessCachedInteractionsAction
 import com.reteno.core.internal.action.interaction.RecordInAppInteractionAction
 import com.reteno.core.internal.action.interaction.RecordInteractionAction
@@ -63,5 +64,9 @@ internal class InteractionGraph(
             core.dispatchers,
             core.runner
         )
+    }
+
+    val router: InteractionRouter by lazy {
+        InteractionRouter(this, graph.inApp, core.scope)
     }
 }

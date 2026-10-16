@@ -23,6 +23,8 @@ internal class FakeAppPlatform : AppEnvironment, AppBroadcasts, HostUi, Backgrou
     val calls = mutableListOf<String>()
     var activityTrackingStarts = 0
     var onScheduleBackgroundSync: () -> Unit = {}
+    var onWatchFragmentScreens: () -> Unit = {}
+    var onSend: () -> Unit = {}
     var bundledWidget: String? = "{}"
     var onBundledWidget: () -> Unit = {}
     val screen = FakeInAppScreen()
@@ -36,6 +38,7 @@ internal class FakeAppPlatform : AppEnvironment, AppBroadcasts, HostUi, Backgrou
 
     override fun send(action: String): Int {
         broadcasts += action
+        onSend()
         return 1
     }
 
@@ -46,6 +49,7 @@ internal class FakeAppPlatform : AppEnvironment, AppBroadcasts, HostUi, Backgrou
     override fun watchFragmentScreens(onScreen: (String, ScreenTrackingTrigger) -> Unit) {
         this.onScreen = onScreen
         calls += "watch fragment screens"
+        onWatchFragmentScreens()
     }
 
     override fun watchAppLifecycle(
