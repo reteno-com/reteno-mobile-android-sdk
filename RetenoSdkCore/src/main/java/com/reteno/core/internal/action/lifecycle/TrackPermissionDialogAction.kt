@@ -5,14 +5,14 @@ import com.reteno.core.domain.model.event.Event
 import com.reteno.core.internal.action.trace.ActionRunner
 import com.reteno.core.internal.action.trace.ActionTrace
 import com.reteno.core.internal.lifecycle.LifecycleEvents
-import com.reteno.core.internal.platform.AppPlatform
+import com.reteno.core.internal.platform.HostUi
 
 internal interface TrackPermissionDialog {
     suspend operator fun invoke(activity: Activity): Result<Unit>
 }
 
 internal class TrackPermissionDialogAction(
-    private val platform: AppPlatform,
+    private val hostUi: HostUi,
     private val lifecycleEvents: LifecycleEvents,
     private val runner: ActionRunner
 ) : TrackPermissionDialog {
@@ -23,7 +23,7 @@ internal class TrackPermissionDialogAction(
 
     private suspend fun ActionTrace.track(activity: Activity) {
         val top = step("read package of activity on top of the task") {
-            platform.packageOnTop(activity)
+            hostUi.packageOnTop(activity)
         }
         if (top != PERMISSION_DIALOG_PACKAGE) {
             note { "permission dialog is not shown" }

@@ -3,7 +3,7 @@ package com.reteno.core.di
 import com.reteno.core.data.remote.api.ApiContract
 import com.reteno.core.domain.model.appinbox.AppInboxMessages
 import com.reteno.core.features.appinbox.AppInboxStatus
-import com.reteno.core.fixtures.LocatorFixture
+import com.reteno.core.fixtures.ActionGraphFixture
 import com.reteno.core.fixtures.RecordingResultCallback
 import com.reteno.core.internal.action.inbox.InboxCountPoller
 import com.reteno.test.given
@@ -18,15 +18,15 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
-internal class ActionsLocatorInboxWiringTest {
+internal class ActionGraphInboxWiringTest {
 
-    private fun LocatorFixture.countRequests() =
+    private fun ActionGraphFixture.countRequests() =
         rest.requests.count { it.contract == ApiContract.AppInbox.MessagesCount }
 
     @Test
     fun `should load submitted inbox page`() = runUnitTest {
         given()
-        val fixture = LocatorFixture(this)
+        val fixture = ActionGraphFixture(this)
         fixture.rest.succeedWith("""{"list":[],"totalPages":1}""")
         val callback = RecordingResultCallback<AppInboxMessages>()
 
@@ -41,7 +41,7 @@ internal class ActionsLocatorInboxWiringTest {
     @Test
     fun `should load submitted unread count`() = runUnitTest {
         given()
-        val fixture = LocatorFixture(this)
+        val fixture = ActionGraphFixture(this)
         fixture.rest.succeedWith("""{"unreadCount":4}""")
         val callback = RecordingResultCallback<Int>()
 
@@ -56,7 +56,7 @@ internal class ActionsLocatorInboxWiringTest {
     @Test
     fun `should poll unread count for subscribers once sdk is started`() = runUnitTest {
         given()
-        val fixture = LocatorFixture(this)
+        val fixture = ActionGraphFixture(this)
         fixture.rest.succeedWith(ApiContract.AppInbox.MessagesCount, """{"unreadCount":2}""")
         val callback = RecordingResultCallback<Int>()
         fixture.sut.subscribeInboxCount(callback)
@@ -75,7 +75,7 @@ internal class ActionsLocatorInboxWiringTest {
     @Test
     fun `should stop delivering unread count to unsubscribed callback while others keep polling`() = runUnitTest {
         given()
-        val fixture = LocatorFixture(this)
+        val fixture = ActionGraphFixture(this)
         val removed = RecordingResultCallback<Int>()
         val kept = RecordingResultCallback<Int>()
         fixture.rest.succeedWith(ApiContract.AppInbox.MessagesCount, """{"unreadCount":2}""")
@@ -83,7 +83,7 @@ internal class ActionsLocatorInboxWiringTest {
         fixture.sut.subscribeInboxCount(kept)
         fixture.sut.requestStart()
         runCurrent()
-        fixture.sut.dataSync.stopScheduler()
+        fixture.graph.sync.dataSync.stopScheduler()
         fixture.rest.succeedWith(ApiContract.AppInbox.MessagesCount, """{"unreadCount":5}""")
 
         whenn()
@@ -99,7 +99,7 @@ internal class ActionsLocatorInboxWiringTest {
     @Test
     fun `should stop polling unread count after unsubscribing all callbacks`() = runUnitTest {
         given()
-        val fixture = LocatorFixture(this)
+        val fixture = ActionGraphFixture(this)
         fixture.sut.requestStart()
         fixture.sut.subscribeInboxCount(RecordingResultCallback())
         fixture.sut.subscribeInboxCount(RecordingResultCallback())
@@ -117,7 +117,7 @@ internal class ActionsLocatorInboxWiringTest {
     @Test
     fun `should save opened message and mark all messages opened`() = runUnitTest {
         given()
-        val fixture = LocatorFixture(this)
+        val fixture = ActionGraphFixture(this)
         val callback = RecordingResultCallback<Unit>()
 
         whenn()

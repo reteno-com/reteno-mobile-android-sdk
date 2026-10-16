@@ -6,13 +6,13 @@ import com.reteno.core.data.local.model.device.DeviceDb
 import com.reteno.core.data.repository.ConfigRepository
 import com.reteno.core.internal.action.trace.ActionTrace
 import com.reteno.core.internal.coroutine.RetenoDispatchers
-import com.reteno.core.internal.platform.AppPlatform
+import com.reteno.core.internal.platform.AppEnvironment
 import kotlinx.coroutines.withContext
 
 internal class CurrentDevice(
     private val configRepository: ConfigRepository,
     private val devicesDb: RetenoDatabaseManagerDevice,
-    private val platform: AppPlatform,
+    private val environment: AppEnvironment,
     private val dispatchers: RetenoDispatchers
 ) {
 
@@ -24,7 +24,7 @@ internal class CurrentDevice(
         "save current device to local database",
         detail = { saved -> if (saved) "saved" else "unchanged" }
     ) {
-        val device = platform.createDevice(configRepository.getDeviceId(), pushToken, pushSubscribed).toDb()
+        val device = environment.createDevice(configRepository.getDeviceId(), pushToken, pushSubscribed).toDb()
         withContext(dispatchers.io) {
             val known = devicesDb.getDevices().map { it.withoutLocalState() }
             val isNew = device !in known

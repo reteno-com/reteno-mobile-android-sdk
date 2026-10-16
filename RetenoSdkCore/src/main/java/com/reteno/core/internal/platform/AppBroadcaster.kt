@@ -5,9 +5,13 @@ import android.content.Context
 import android.content.Intent
 import com.reteno.core.util.queryBroadcastReceivers
 
-internal class AppBroadcaster(private val context: Context) {
+internal interface AppBroadcasts {
+    fun send(action: String): Int
+}
 
-    fun send(action: String): Int = deliver(Intent(action))
+internal class AppBroadcaster(private val context: Context) : AppBroadcasts {
+
+    override fun send(action: String): Int = deliver(Intent(action))
 
     fun sendToApp(action: String, extras: Map<String, String>): Int {
         val intent = Intent(action).setPackage(context.packageName)

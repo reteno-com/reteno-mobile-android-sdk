@@ -1,5 +1,6 @@
 package com.reteno.core.di
 
+import android.app.Activity
 import com.reteno.core.data.remote.api.ApiContract
 import com.reteno.core.domain.model.event.LifecycleEventType
 import com.reteno.core.domain.model.event.LifecycleTrackingOptions
@@ -7,7 +8,8 @@ import com.reteno.core.domain.model.interaction.InAppInteraction
 import com.reteno.core.domain.model.interaction.InAppInteractionStatus
 import com.reteno.core.domain.model.interaction.InteractionAction
 import com.reteno.core.domain.model.interaction.InteractionStatus
-import com.reteno.core.fixtures.LocatorFixture
+import com.reteno.core.domain.model.logevent.LogLevel
+import com.reteno.core.fixtures.ActionGraphFixture
 import com.reteno.core.fixtures.STUB_TIME
 import com.reteno.core.fixtures.stubAnonymousAttributes
 import com.reteno.core.fixtures.stubCustomEvent
@@ -22,6 +24,7 @@ import com.reteno.test.then
 import com.reteno.test.whenn
 import io.mockk.coEvery
 import io.mockk.every
+import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runCurrent
@@ -32,12 +35,12 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
-internal class ActionsLocatorFacadeWiringTest {
+internal class ActionGraphFacadeWiringTest {
 
     @Test
     fun `should run submitted contact updates in order`() = runUnitTest {
         given()
-        val fixture = LocatorFixture(this)
+        val fixture = ActionGraphFixture(this)
         every { fixture.configRepository.getStoredFcmToken() } returns "old"
         every { fixture.configRepository.isNotificationsEnabled() } returns false
 
@@ -59,7 +62,7 @@ internal class ActionsLocatorFacadeWiringTest {
     @Test
     fun `should log submitted events`() = runUnitTest {
         given()
-        val fixture = LocatorFixture(this)
+        val fixture = ActionGraphFixture(this)
         val custom = stubCustomEvent()
 
         whenn()
@@ -78,7 +81,7 @@ internal class ActionsLocatorFacadeWiringTest {
     @Test
     fun `should apply submitted lifecycle and screen tracking options`() = runUnitTest {
         given()
-        val fixture = LocatorFixture(this)
+        val fixture = ActionGraphFixture(this)
 
         whenn()
         fixture.sut.submitLifecycleEventConfig(LifecycleTrackingOptions.NONE)
@@ -97,7 +100,7 @@ internal class ActionsLocatorFacadeWiringTest {
     @Test
     fun `should run requested sync`() = runUnitTest {
         given()
-        val fixture = LocatorFixture(this)
+        val fixture = ActionGraphFixture(this)
 
         whenn()
         fixture.sut.requestSync()
@@ -110,7 +113,7 @@ internal class ActionsLocatorFacadeWiringTest {
     @Test
     fun `should record submitted push interaction through its stored request`() = runUnitTest {
         given()
-        val fixture = LocatorFixture(this)
+        val fixture = ActionGraphFixture(this)
         val cached = fixture.storeInteractionRequests()
         coEvery { fixture.configRepository.getFcmToken() } returns "token"
 
@@ -131,7 +134,7 @@ internal class ActionsLocatorFacadeWiringTest {
     @Test
     fun `should record submitted interaction click`() = runUnitTest {
         given()
-        val fixture = LocatorFixture(this)
+        val fixture = ActionGraphFixture(this)
         val action = InteractionAction("OPEN_URL", null, null)
 
         whenn()
@@ -149,7 +152,7 @@ internal class ActionsLocatorFacadeWiringTest {
     @Test
     fun `should keep push interaction stored until sdk is initialized`() = runUnitTest {
         given()
-        val fixture = LocatorFixture(this, initialized = false)
+        val fixture = ActionGraphFixture(this, initialized = false)
         val cached = fixture.storeInteractionRequests()
         coEvery { fixture.configRepository.getFcmToken() } returns "token"
         fixture.sut.submitPushInteraction("interaction-1", InteractionStatus.DELIVERED)
@@ -169,7 +172,7 @@ internal class ActionsLocatorFacadeWiringTest {
     @Test
     fun `should track submitted deeplink click`() = runUnitTest {
         given()
-        val fixture = LocatorFixture(this)
+        val fixture = ActionGraphFixture(this)
 
         whenn()
         fixture.sut.submitDeeplinkClick("https://track.example/c/1")
@@ -182,7 +185,7 @@ internal class ActionsLocatorFacadeWiringTest {
     @Test
     fun `should show in-app message from push`() = runUnitTest {
         given()
-        val fixture = LocatorFixture(this)
+        val fixture = ActionGraphFixture(this)
 
         whenn()
         fixture.sut.submitIamFromPush("interaction-1")
@@ -199,7 +202,7 @@ internal class ActionsLocatorFacadeWiringTest {
     @Test
     fun `should save submitted default notification channel`() = runUnitTest {
         given()
-        val fixture = LocatorFixture(this)
+        val fixture = ActionGraphFixture(this)
 
         whenn()
         fixture.sut.submitDefaultNotificationChannel("{}")
@@ -212,7 +215,7 @@ internal class ActionsLocatorFacadeWiringTest {
     @Test
     fun `should record submitted in-app interaction`() = runUnitTest {
         given()
-        val fixture = LocatorFixture(this)
+        val fixture = ActionGraphFixture(this)
         val interaction = InAppInteraction("in-app-1", STUB_TIME, 42L, InAppInteractionStatus.OPENED)
 
         whenn()
@@ -223,5 +226,58 @@ internal class ActionsLocatorFacadeWiringTest {
         then()
         verify(exactly = 1) { fixture.inAppInteractionsDb.insertInteraction(any()) }
         verify(exactly = 1) { fixture.interactionsDb.insertInteraction(match { it.interactionId == "in-app-1" }) }
+    }
+
+    @Test
+    fun `should answer device id, default channel, presentation and unsynced data from infrastructure`() = runUnitTest {
+        given()
+        val fixture = ActionGraphFixture(this)
+        every { fixture.configRepository.getDefaultNotificationChannel() } returns "{}"
+        every { fixture.activityHelper.canPresentMessages() } returns true
+        every { fixture.activityHelper.currentActivity } returns mockk<Activity>()
+        every { fixture.databaseManager.hasDataForSync() } returns true
+
+        whenn()
+        val answers = with(fixture.sut) {
+            listOf<Any>(
+                deviceId,
+                defaultNotificationChannel,
+                canPresentMessages(),
+                isActivityPresented(),
+                hasDataForSync()
+            )
+        }
+
+        then()
+        assertEquals(listOf<Any>(fixture.deviceId.id, "{}", true, true, true), answers)
+    }
+
+    @Test
+    fun `should report no presented activity without a current activity`() = runUnitTest {
+        given()
+        val fixture = ActionGraphFixture(this)
+        every { fixture.activityHelper.currentActivity } returns null
+
+        whenn()
+        val presented = fixture.sut.isActivityPresented()
+
+        then()
+        assertFalse(presented)
+    }
+
+    @Test
+    fun `should assume unsynced data and report it once when the local database cannot be read`() = runUnitTest {
+        given()
+        val fixture = ActionGraphFixture(this)
+        every { fixture.databaseManager.hasDataForSync() } throws IllegalStateException("db closed")
+
+        whenn()
+        val hasData = fixture.sut.hasDataForSync()
+        runCurrent()
+
+        then()
+        assertTrue(hasData)
+        val reported = fixture.remoteLogs.map { it.first.orEmpty().substringBefore(":") to it.second }
+        assertEquals(listOf("Failed to check local database for unsynced data" to LogLevel.ERROR), reported)
     }
 }

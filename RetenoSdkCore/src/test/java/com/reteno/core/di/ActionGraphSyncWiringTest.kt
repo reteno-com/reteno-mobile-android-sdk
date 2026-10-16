@@ -2,7 +2,7 @@ package com.reteno.core.di
 
 import com.reteno.core.data.remote.api.ApiContract
 import com.reteno.core.domain.model.logevent.LogLevel
-import com.reteno.core.fixtures.LocatorFixture
+import com.reteno.core.fixtures.ActionGraphFixture
 import com.reteno.core.fixtures.stubAppInboxMessageDb
 import com.reteno.core.fixtures.stubDeviceDb
 import com.reteno.core.fixtures.stubEventsDb
@@ -28,12 +28,12 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
-internal class ActionsLocatorSyncWiringTest {
+internal class ActionGraphSyncWiringTest {
 
     @Test
     fun `should run every sync step in order against its own table and endpoint`() = runUnitTest {
         given()
-        val fixture = LocatorFixture(this)
+        val fixture = ActionGraphFixture(this)
         every { fixture.devicesDb.getDevices(any()) } returns listOf(stubDeviceDb())
         every { fixture.usersDb.getUsers(any()) } returns listOf(stubUserDb())
         every { fixture.interactionsDb.getInteractions(1) } returnsMany listOf(
@@ -60,7 +60,7 @@ internal class ActionsLocatorSyncWiringTest {
         every { fixture.logEventsDb.deleteLogEvents(any()) } returns true
 
         whenn()
-        val result = fixture.sut.dataSync.syncNow(SyncScope.ALL)
+        val result = fixture.graph.sync.dataSync.syncNow(SyncScope.ALL)
 
         then()
         assertEquals(SyncResult.COMPLETED, result)
@@ -85,12 +85,12 @@ internal class ActionsLocatorSyncWiringTest {
     @Test
     fun `should enqueue periodic background sync when scheduler starts`() = runUnitTest {
         given()
-        val fixture = LocatorFixture(this)
+        val fixture = ActionGraphFixture(this)
 
         whenn()
-        fixture.sut.dataSync.startScheduler()
+        fixture.graph.sync.dataSync.startScheduler()
         runCurrent()
-        fixture.sut.dataSync.stopScheduler()
+        fixture.graph.sync.dataSync.stopScheduler()
 
         then()
         assertEquals(listOf("schedule background sync"), fixture.platform.calls)
@@ -99,11 +99,11 @@ internal class ActionsLocatorSyncWiringTest {
     @Test
     fun `should clear old data and report removed rows at info level`() = runUnitTest {
         given()
-        val fixture = LocatorFixture(this)
+        val fixture = ActionGraphFixture(this)
         every { fixture.wrappedLinksDb.deleteWrappedLinksByTime(any()) } returns 2
 
         whenn()
-        fixture.sut.dataSync.clearOldData()
+        fixture.graph.sync.dataSync.clearOldData()
         advanceTimeBy(4_000)
         runCurrent()
 
@@ -115,7 +115,7 @@ internal class ActionsLocatorSyncWiringTest {
     @Test
     fun `should cancel periodic work when background sync finds no data`() = runUnitTest {
         given()
-        val fixture = LocatorFixture(this)
+        val fixture = ActionGraphFixture(this)
         val sut = fixture.sut.backgroundSync
 
         whenn()
@@ -129,7 +129,7 @@ internal class ActionsLocatorSyncWiringTest {
     @Test
     fun `should run full sync when background sync finds unsent data`() = runUnitTest {
         given()
-        val fixture = LocatorFixture(this)
+        val fixture = ActionGraphFixture(this)
         every { fixture.databaseManager.hasDataForSync() } returns true
         every { fixture.devicesDb.getDevices(any()) } returns listOf(stubDeviceDb())
         val sut = fixture.sut.backgroundSync
@@ -145,11 +145,11 @@ internal class ActionsLocatorSyncWiringTest {
     @Test
     fun `should start requested sync only after sdk initialization`() = runUnitTest {
         given()
-        val fixture = LocatorFixture(this, initialized = false)
+        val fixture = ActionGraphFixture(this, initialized = false)
         every { fixture.devicesDb.getDevices(any()) } returns listOf(stubDeviceDb())
 
         whenn()
-        fixture.sut.dataSync.request()
+        fixture.graph.sync.dataSync.request()
         runCurrent()
         val requestsBeforeInit = fixture.rest.requests.size
         fixture.initGate.markInitialized(byUser = true)

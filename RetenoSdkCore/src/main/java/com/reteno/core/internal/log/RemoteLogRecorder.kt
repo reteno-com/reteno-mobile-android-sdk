@@ -3,7 +3,7 @@ package com.reteno.core.internal.log
 import com.reteno.core.data.repository.ConfigRepository
 import com.reteno.core.domain.model.logevent.LogLevel
 import com.reteno.core.domain.model.logevent.RetenoLogEvent
-import com.reteno.core.internal.platform.AppPlatform
+import com.reteno.core.internal.platform.AppEnvironment
 
 internal fun interface LogEventQueue {
     fun submitRetenoLogEvent(event: RetenoLogEvent)
@@ -11,11 +11,11 @@ internal fun interface LogEventQueue {
 
 internal class RemoteLogRecorder(
     private val configRepository: Lazy<ConfigRepository>,
-    private val platform: AppPlatform,
+    private val environment: AppEnvironment,
     private val queue: LogEventQueue
 ) : RemoteLog {
 
-    private val origin by lazy { platform.logEventOrigin() }
+    private val origin by lazy { environment.logEventOrigin() }
 
     override fun record(message: String, level: LogLevel) {
         submit(level) { Redact.uploadable(message) }

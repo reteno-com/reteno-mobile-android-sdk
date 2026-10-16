@@ -5,7 +5,8 @@ import com.reteno.core.domain.model.event.LifecycleTrackingOptions
 import com.reteno.core.domain.model.event.Parameter
 import com.reteno.core.internal.action.iam.InAppHtmlPreloading
 import com.reteno.core.internal.action.sync.SyncScheduler
-import com.reteno.core.internal.platform.AppPlatform
+import com.reteno.core.internal.platform.AppBroadcasts
+import com.reteno.core.internal.platform.AppEnvironment
 import com.reteno.core.internal.platform.AppVersion
 import com.reteno.core.util.Constants
 import com.reteno.test.given
@@ -30,8 +31,10 @@ internal class AppForegroundedActionTest {
         val env = LifecycleActionFixture(scope, options)
         val configRepository = mockk<ConfigRepository>()
         val calls = mutableListOf<String>()
-        private val platform = mockk<AppPlatform>().also {
-            every { it.sendBroadcast(any()) } answers { calls += "broadcast ${firstArg<String>()}"; 1 }
+        private val broadcasts = mockk<AppBroadcasts>().also {
+            every { it.send(any()) } answers { calls += "broadcast ${firstArg<String>()}"; 1 }
+        }
+        private val environment = mockk<AppEnvironment>().also {
             every { it.installedVersion() } returns AppVersion(INSTALLED_VERSION, INSTALLED_BUILD)
         }
         private val dataSync = mockk<SyncScheduler>().also {
@@ -41,7 +44,8 @@ internal class AppForegroundedActionTest {
             every { it.request() } answers { calls += "preload html" }
         }
         val sut = AppForegroundedAction(
-            platform = platform,
+            broadcasts = broadcasts,
+            environment = environment,
             dataSync = dataSync,
             configRepository = configRepository,
             htmlPreload = htmlPreload,

@@ -8,7 +8,8 @@ import com.reteno.core.internal.action.trace.ActionRunner
 import com.reteno.core.internal.action.trace.ActionTrace
 import com.reteno.core.internal.lifecycle.AppForegroundState
 import com.reteno.core.internal.lifecycle.LifecycleEvents
-import com.reteno.core.internal.platform.AppPlatform
+import com.reteno.core.internal.platform.AppBroadcasts
+import com.reteno.core.internal.platform.AppEnvironment
 import com.reteno.core.internal.platform.AppVersion
 import com.reteno.core.util.Constants
 
@@ -17,7 +18,8 @@ internal interface AppForegrounded {
 }
 
 internal class AppForegroundedAction(
-    private val platform: AppPlatform,
+    private val broadcasts: AppBroadcasts,
+    private val environment: AppEnvironment,
     private val dataSync: SyncScheduler,
     private val configRepository: ConfigRepository,
     private val htmlPreload: InAppHtmlPreloading,
@@ -29,7 +31,7 @@ internal class AppForegroundedAction(
 
     override suspend operator fun invoke(): Result<Unit> = runner("AppForegrounded") {
         step("notify app resume receivers", detail = { "receivers=$it" }) {
-            platform.sendBroadcast(Constants.BROADCAST_ACTION_RETENO_APP_RESUME)
+            broadcasts.send(Constants.BROADCAST_ACTION_RETENO_APP_RESUME)
         }
         step("schedule outdated data cleanup in local database") {
             dataSync.clearOldData()
@@ -43,7 +45,7 @@ internal class AppForegroundedAction(
 
     private suspend fun ActionTrace.trackAppVersion() {
         val installed = step("read installed app version", detail = { it.toString() }) {
-            platform.installedVersion()
+            environment.installedVersion()
         }
         val saved = step("read saved app version from local settings", detail = { it.toString() }) {
             AppVersion(configRepository.getAppVersion(), configRepository.getAppBuildNumber())

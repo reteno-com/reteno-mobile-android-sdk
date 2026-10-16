@@ -4,12 +4,15 @@ import android.app.Activity
 import com.reteno.core.data.local.config.DeviceId
 import com.reteno.core.domain.model.device.Device
 import com.reteno.core.internal.iam.InAppScreen
-import com.reteno.core.internal.platform.AppPlatform
+import com.reteno.core.internal.platform.AppBroadcasts
+import com.reteno.core.internal.platform.AppEnvironment
 import com.reteno.core.internal.platform.AppVersion
+import com.reteno.core.internal.platform.BackgroundWork
+import com.reteno.core.internal.platform.HostUi
 import com.reteno.core.internal.platform.LogEventOrigin
 import com.reteno.core.lifecycle.ScreenTrackingTrigger
 
-internal class FakeAppPlatform : AppPlatform {
+internal class FakeAppPlatform : AppEnvironment, AppBroadcasts, HostUi, BackgroundWork {
     val broadcasts = mutableListOf<String>()
     var version = AppVersion("1.0", 1L)
     var topPackage: String? = null
@@ -18,6 +21,7 @@ internal class FakeAppPlatform : AppPlatform {
     var onBackground: (() -> Unit)? = null
     var onActivityPaused: ((Activity) -> Unit)? = null
     val calls = mutableListOf<String>()
+    var activityTrackingStarts = 0
     var onScheduleBackgroundSync: () -> Unit = {}
     var bundledWidget: String? = "{}"
     var onBundledWidget: () -> Unit = {}
@@ -30,7 +34,7 @@ internal class FakeAppPlatform : AppPlatform {
     )
     var originReads = 0
 
-    override fun sendBroadcast(action: String): Int {
+    override fun send(action: String): Int {
         broadcasts += action
         return 1
     }
@@ -52,6 +56,10 @@ internal class FakeAppPlatform : AppPlatform {
         this.onForeground = onForeground
         this.onBackground = onBackground
         this.onActivityPaused = onActivityPaused
+    }
+
+    override fun trackActivities() {
+        activityTrackingStarts++
     }
 
     override fun initWorkManager() {

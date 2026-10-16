@@ -12,8 +12,6 @@ import com.reteno.test.runUnitTest
 import com.reteno.test.then
 import com.reteno.test.whenn
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.TestScope
 import org.junit.Test
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -26,24 +24,21 @@ import org.robolectric.annotation.Config
 @Config(sdk = [26])
 internal class RetenoInternalImplUserValidationTest {
 
-    private class SutFixture(scope: TestScope) {
+    private class SutFixture {
         private val application = ApplicationProvider.getApplicationContext<Application>()
-        private val dispatcher = StandardTestDispatcher(scope.testScheduler)
         val actions = FakeSdkActions()
         val infrastructure = FakeFacadeInfrastructure(actions)
         val sut = RetenoInternalImpl(
             application = application,
-            mainDispatcher = dispatcher,
             appLifecycleOwner = ManualLifecycleOwner(),
-            infrastructure = infrastructure,
-            isOsSupported = { true }
+            infrastructure = infrastructure
         )
     }
 
     @Test
     fun `should throw to caller for blank external user id before sdk is initialized`() = runUnitTest {
         given()
-        val fixture = SutFixture(this)
+        val fixture = SutFixture()
 
         whenn()
         val result = runCatching { fixture.sut.setUserAttributes("  ", stubUser()) }
@@ -57,7 +52,7 @@ internal class RetenoInternalImplUserValidationTest {
     @Test
     fun `should throw to caller for blank external user id without user`() = runUnitTest {
         given()
-        val fixture = SutFixture(this)
+        val fixture = SutFixture()
 
         whenn()
         val result = runCatching { fixture.sut.setUserAttributes("") }
@@ -69,7 +64,7 @@ internal class RetenoInternalImplUserValidationTest {
     @Test
     fun `should throw to caller for invalid market id`() = runUnitTest {
         given()
-        val fixture = SutFixture(this)
+        val fixture = SutFixture()
 
         whenn()
         val result = runCatching { fixture.sut.setUserAttributes("user-1", stubUser(marketId = "bad market!")) }
@@ -81,7 +76,7 @@ internal class RetenoInternalImplUserValidationTest {
     @Test
     fun `should throw to caller for blank multi account user id`() = runUnitTest {
         given()
-        val fixture = SutFixture(this)
+        val fixture = SutFixture()
 
         whenn()
         val result = runCatching { fixture.sut.setMultiAccountUserAttributes(" ", null) }
@@ -93,7 +88,7 @@ internal class RetenoInternalImplUserValidationTest {
     @Test
     fun `should throw to caller for invalid anonymous market id`() = runUnitTest {
         given()
-        val fixture = SutFixture(this)
+        val fixture = SutFixture()
         val attributes = stubAnonymousAttributes(marketId = "x".repeat(65))
 
         whenn()
@@ -106,7 +101,7 @@ internal class RetenoInternalImplUserValidationTest {
     @Test
     fun `should not forward user attributes with invalid market id once sdk is initialized`() = runUnitTest {
         given()
-        val fixture = SutFixture(this)
+        val fixture = SutFixture()
         fixture.actions.markInitialized()
 
         whenn()
@@ -119,7 +114,7 @@ internal class RetenoInternalImplUserValidationTest {
     @Test
     fun `should not forward multi account user attributes with blank user id once sdk is initialized`() = runUnitTest {
         given()
-        val fixture = SutFixture(this)
+        val fixture = SutFixture()
         fixture.actions.markInitialized()
 
         whenn()
@@ -132,7 +127,7 @@ internal class RetenoInternalImplUserValidationTest {
     @Test
     fun `should not forward anonymous user attributes with invalid market id once sdk is initialized`() = runUnitTest {
         given()
-        val fixture = SutFixture(this)
+        val fixture = SutFixture()
         fixture.actions.markInitialized()
         val attributes = stubAnonymousAttributes(marketId = "x".repeat(65))
 
@@ -146,7 +141,7 @@ internal class RetenoInternalImplUserValidationTest {
     @Test
     fun `should accept valid user attributes before sdk is initialized`() = runUnitTest {
         given()
-        val fixture = SutFixture(this)
+        val fixture = SutFixture()
 
         whenn()
         val result = runCatching {

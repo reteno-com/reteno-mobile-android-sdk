@@ -56,7 +56,7 @@ internal class BackgroundSyncActionTest {
             initGate = initGate,
             databaseManager = databaseManager,
             sync = sync,
-            platform = platform,
+            backgroundWork = platform,
             dispatchers = dispatchers,
             runner = traced.runner
         )

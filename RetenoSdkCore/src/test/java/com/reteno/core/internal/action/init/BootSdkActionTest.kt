@@ -8,7 +8,7 @@ import com.reteno.core.fixtures.STUB_ACCESS_KEY
 import com.reteno.core.fixtures.TestActionRunner
 import com.reteno.core.fixtures.stubConfig
 import com.reteno.core.fixtures.testDispatchers
-import com.reteno.core.internal.platform.AppPlatform
+import com.reteno.core.internal.platform.BackgroundWork
 import com.reteno.test.given
 import com.reteno.test.runUnitTest
 import com.reteno.test.then
@@ -30,7 +30,7 @@ internal class BootSdkActionTest {
         val dispatchers = scope.testDispatchers()
         val traced = TestActionRunner(scope)
         var warmUpFailure: Throwable? = null
-        private val platform = mockk<AppPlatform>().also {
+        private val backgroundWork = mockk<BackgroundWork>().also {
             every { it.initWorkManager() } answers {
                 warmUpFailure?.let { error -> throw error }
                 calls += "init WorkManager" + onIo()
@@ -50,7 +50,7 @@ internal class BootSdkActionTest {
                 Result.success(Unit)
             }
         }
-        val sut = BootSdkAction(platform, prefs, restConfig, applyConfig, dispatchers, traced.runner)
+        val sut = BootSdkAction(backgroundWork, prefs, restConfig, applyConfig, dispatchers, traced.runner)
 
         private fun onIo() = if (dispatchers.markedIo.isRunningHere) " on io" else ""
     }

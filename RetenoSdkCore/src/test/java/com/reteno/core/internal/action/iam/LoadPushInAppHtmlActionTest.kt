@@ -41,7 +41,7 @@ internal class LoadPushInAppHtmlActionTest {
         val sut = LoadPushInAppHtmlAction(
             api = rest.api(dispatchers),
             files = files,
-            platform = platform,
+            environment = platform,
             initGate = initGate,
             dispatchers = dispatchers,
             newId = { "html-1" },

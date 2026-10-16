@@ -1,12 +1,12 @@
 package com.reteno.core.fixtures
 
+import androidx.test.core.app.ApplicationProvider
 import com.reteno.core.RetenoConfig
-import com.reteno.core.data.local.database.manager.RetenoDatabaseManager
-import com.reteno.core.data.repository.ConfigRepository
 import com.reteno.core.di.FacadeInfrastructure
 import com.reteno.core.internal.config.SdkConfiguration
-import com.reteno.core.lifecycle.RetenoActivityHelper
-import io.mockk.mockk
+import com.reteno.core.permission.PermissionActivityDelegate
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 
 internal class FakeSdkConfiguration : SdkConfiguration {
     override var isDebug: Boolean = false
@@ -22,12 +22,13 @@ internal class FakeSdkConfiguration : SdkConfiguration {
     }
 }
 
-internal class FakeFacadeInfrastructure(private val fakeActions: FakeSdkActions) : FacadeInfrastructure {
-    var actionsUsed = false
-    override val actions: FakeSdkActions
-        get() = fakeActions.also { actionsUsed = true }
-    override val activityHelper = mockk<RetenoActivityHelper>(relaxed = true)
-    override val configRepository = mockk<ConfigRepository>(relaxed = true)
-    override val databaseManager = mockk<RetenoDatabaseManager>(relaxed = true)
+internal class FakeFacadeInfrastructure(
+    fakeActions: FakeSdkActions,
+    mainDispatcher: CoroutineDispatcher = Dispatchers.Unconfined
+) : FacadeInfrastructure {
+    override val actions: FakeSdkActions = fakeActions
     override val configuration = FakeSdkConfiguration()
+    override val permissions by lazy {
+        PermissionActivityDelegate(ApplicationProvider.getApplicationContext(), mainDispatcher)
+    }
 }

@@ -2,7 +2,7 @@ package com.reteno.core.di
 
 import com.reteno.core.data.local.config.DeviceIdMode
 import com.reteno.core.data.remote.api.ApiContract
-import com.reteno.core.fixtures.LocatorFixture
+import com.reteno.core.fixtures.ActionGraphFixture
 import com.reteno.core.fixtures.stubConfig
 import com.reteno.core.fixtures.stubInAppMessage
 import com.reteno.core.internal.coroutine.InitState
@@ -15,7 +15,6 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.async
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -26,10 +25,10 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
-internal class ActionsLocatorInitWiringTest {
+internal class ActionGraphInitWiringTest {
 
     private class SutFixture(scope: TestScope, initialized: Boolean = false) {
-        val env = LocatorFixture(scope, initialized)
+        val env = ActionGraphFixture(scope, initialized)
 
         init {
             coEvery { env.configRepository.awaitForDeviceId() } returns env.deviceId
@@ -54,6 +53,18 @@ internal class ActionsLocatorInitWiringTest {
         verify(exactly = 1) { fixture.env.prefs.cacheConfiguration(fixture.env.deviceId.id, cached) }
         verify(exactly = 1) { fixture.env.sessionHandler.setSessionResetDuration(cached.sessionDuration) }
         assertEquals(InitState.FROM_CACHE, fixture.env.initGate.state)
+    }
+
+    @Test
+    fun `should track activities when booting`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+
+        whenn()
+        fixture.env.sut.boot()
+
+        then()
+        assertEquals(1, fixture.env.platform.activityTrackingStarts)
     }
 
     @Test
@@ -98,7 +109,7 @@ internal class ActionsLocatorInitWiringTest {
         then()
         coVerify(exactly = 1) { fixture.env.restConfig.initDeviceId(DeviceIdMode.CLIENT_UUID) }
         verify(exactly = 1) { fixture.env.devicesDb.insertDevice(any()) }
-        assertTrue(fixture.env.sut.inAppMessagesState.isPaused)
+        assertTrue(fixture.env.graph.inApp.inAppMessagesState.isPaused)
         verify(exactly = 1) { fixture.env.interactionsDb.getInteractionRequests() }
         assertNotNull(fixture.env.platform.onForeground)
         assertEquals(InitState.BY_USER, fixture.env.initGate.state)
@@ -147,7 +158,7 @@ internal class ActionsLocatorInitWiringTest {
     fun `should show in-app offered before start once sdk starts`() = runUnitTest {
         given()
         val fixture = SutFixture(this, initialized = true)
-        fixture.env.sut.iamView.initialize(stubInAppMessage())
+        fixture.env.graph.inApp.iamView.initialize(stubInAppMessage())
         runCurrent()
         val createdBeforeStart = fixture.env.platform.screen.calls.toList()
 
@@ -170,7 +181,7 @@ internal class ActionsLocatorInitWiringTest {
         runCurrent()
 
         whenn()
-        fixture.env.sut.iamView.initialize(stubInAppMessage())
+        fixture.env.graph.inApp.iamView.initialize(stubInAppMessage())
         runCurrent()
 
         then()
@@ -214,7 +225,7 @@ internal class ActionsLocatorInitWiringTest {
         val fixture = SutFixture(this, initialized = true)
 
         whenn()
-        fixture.env.sut.setSessionDuration(5_000L)
+        fixture.env.graph.init.setSessionDuration(5_000L)
 
         then()
         verify(exactly = 1) { fixture.env.sessionHandler.setSessionResetDuration(5_000L) }
@@ -235,19 +246,34 @@ internal class ActionsLocatorInitWiringTest {
     }
 
     @Test
-    fun `should release init waiters once the gate opens`() = runUnitTest {
+    fun `should run operations held before init in call order once the gate opens`() = runUnitTest {
         given()
         val fixture = SutFixture(this, initialized = false)
-        val waiting = async { fixture.env.sut.awaitInit() }
+        val ran = mutableListOf<String>()
+        fixture.env.sut.runAfterInit { ran += "first" }
+        fixture.env.sut.runAfterInit { ran += "second" }
         runCurrent()
-        val releasedBefore = waiting.isCompleted
+        val ranBefore = ran.toList()
 
         whenn()
         fixture.env.initGate.markInitialized(byUser = true)
         runCurrent()
 
         then()
-        assertFalse(releasedBefore)
-        assertTrue(waiting.isCompleted)
+        assertEquals(emptyList<String>(), ranBefore)
+        assertEquals(listOf("first", "second"), ran)
+    }
+
+    @Test
+    fun `should run operations at once after init`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this, initialized = true)
+        val ran = mutableListOf<String>()
+
+        whenn()
+        fixture.env.sut.runAfterInit { ran += "now" }
+
+        then()
+        assertEquals(listOf("now"), ran)
     }
 }

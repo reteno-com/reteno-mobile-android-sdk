@@ -16,7 +16,7 @@ internal class TrackPermissionDialogActionTest {
     private class SutFixture(scope: TestScope, topPackage: String?) {
         val env = LifecycleActionFixture(scope)
         val sut = TrackPermissionDialogAction(
-            platform = env.platform.also { it.topPackage = topPackage },
+            hostUi = env.platform.also { it.topPackage = topPackage },
             lifecycleEvents = env.lifecycleEvents,
             runner = env.traced.runner
         )

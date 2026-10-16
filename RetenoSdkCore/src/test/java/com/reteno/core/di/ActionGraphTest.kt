@@ -2,7 +2,7 @@ package com.reteno.core.di
 
 import com.reteno.core.data.local.mappers.toDb
 import com.reteno.core.data.local.model.event.EventsDb
-import com.reteno.core.fixtures.LocatorFixture
+import com.reteno.core.fixtures.ActionGraphFixture
 import com.reteno.core.fixtures.stubCustomEvent
 import com.reteno.core.fixtures.stubEcomEvent
 import com.reteno.core.fixtures.stubRetenoLogEvent
@@ -24,17 +24,17 @@ import org.junit.jupiter.api.Test
 import java.io.IOException
 
 @OptIn(ExperimentalCoroutinesApi::class)
-internal class ActionsLocatorTest {
+internal class ActionGraphTest {
 
     private class SutFixture(scope: TestScope) {
-        private val locator = LocatorFixture(scope)
+        private val locator = ActionGraphFixture(scope)
         val eventsDb = locator.eventsDb
         val logEventsDb = locator.logEventsDb
         val deviceId = locator.deviceId
         val sink = locator.sink
         val remoteLogs: List<String?>
             get() = locator.remoteLogs.map { it.first }
-        val sut = locator.sut
+        val graph = locator.graph
     }
 
     @Test
@@ -45,7 +45,7 @@ internal class ActionsLocatorTest {
         justRun { fixture.eventsDb.insertEvents(any()) }
 
         whenn()
-        fixture.sut.logEvent(event)
+        fixture.graph.events.logEvent(event)
 
         then()
         verify(exactly = 1) { fixture.eventsDb.insertEvents(EventsDb(fixture.deviceId, event.toDb())) }
@@ -60,7 +60,7 @@ internal class ActionsLocatorTest {
         justRun { fixture.eventsDb.insertEvents(any()) }
 
         whenn()
-        fixture.sut.logEcomEvent(event)
+        fixture.graph.events.logEcomEvent(event)
 
         then()
         verify(exactly = 1) { fixture.eventsDb.insertEvents(EventsDb(fixture.deviceId, event.toDb())) }
@@ -73,7 +73,7 @@ internal class ActionsLocatorTest {
         justRun { fixture.eventsDb.insertEvents(any()) }
 
         whenn()
-        fixture.sut.logScreenView("Home")
+        fixture.graph.events.logScreenView("Home")
 
         then()
         verify(exactly = 1) {
@@ -89,7 +89,7 @@ internal class ActionsLocatorTest {
         justRun { fixture.logEventsDb.insertLogEvent(any()) }
 
         whenn()
-        fixture.sut.logRetenoEvent(event)
+        fixture.graph.events.logRetenoEvent(event)
 
         then()
         verify(exactly = 1) { fixture.logEventsDb.insertLogEvent(event.toDb()) }
@@ -103,7 +103,7 @@ internal class ActionsLocatorTest {
         every { fixture.eventsDb.insertEvents(any()) } throws failure
 
         whenn()
-        fixture.sut.logEvent(stubCustomEvent())
+        fixture.graph.events.logEvent(stubCustomEvent())
         runCurrent()
 
         then()
@@ -118,7 +118,7 @@ internal class ActionsLocatorTest {
         every { fixture.logEventsDb.insertLogEvent(any()) } throws IOException("locked")
 
         whenn()
-        fixture.sut.logRetenoEvent(stubRetenoLogEvent())
+        fixture.graph.events.logRetenoEvent(stubRetenoLogEvent())
 
         then()
         assertTrue(fixture.remoteLogs.isEmpty())
@@ -131,7 +131,7 @@ internal class ActionsLocatorTest {
 
         whenn()
         try {
-            fixture.sut.installLogging()
+            fixture.graph.installLogging()
             Logger.captureMessage("cache cleared = 3 entries")
             runCurrent()
         } finally {

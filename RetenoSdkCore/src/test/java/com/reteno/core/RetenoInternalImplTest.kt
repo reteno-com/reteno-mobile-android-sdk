@@ -1,6 +1,5 @@
 package com.reteno.core
 
-import android.app.Activity
 import android.app.Application
 import androidx.core.app.NotificationChannelCompat
 import androidx.lifecycle.Lifecycle
@@ -12,27 +11,22 @@ import com.reteno.core.domain.model.recommendation.post.RecomEvents
 import com.reteno.core.domain.model.user.User
 import com.reteno.core.features.iam.InAppPauseBehaviour
 import com.reteno.core.fixtures.FakeFacadeInfrastructure
-import com.reteno.core.fixtures.FakeLogSink
-import com.reteno.core.fixtures.FakeRemoteLog
 import com.reteno.core.fixtures.FakeSdkActions
 import com.reteno.core.fixtures.ManualLifecycleOwner
-import com.reteno.core.fixtures.installCapturing
 import com.reteno.core.fixtures.stubAnonymousAttributes
 import com.reteno.core.fixtures.stubConfig
 import com.reteno.core.fixtures.stubCustomEvent
-import com.reteno.core.fixtures.stubDeviceId
 import com.reteno.core.fixtures.stubEcomEvent
 import com.reteno.core.fixtures.stubUser
 import com.reteno.core.internal.action.sync.BackgroundSync
-import com.reteno.core.internal.log.AndroidLogSink
+import com.reteno.core.internal.action.sync.BackgroundSyncOutcome
 import com.reteno.core.lifecycle.ScreenTrackingConfig
-import com.reteno.core.util.Logger
 import com.reteno.core.util.Procedure
 import com.reteno.test.given
 import com.reteno.test.runUnitTest
 import com.reteno.test.then
 import com.reteno.test.whenn
-import io.mockk.every
+import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -53,18 +47,16 @@ import org.robolectric.annotation.Config
 @Config(sdk = [26])
 internal class RetenoInternalImplTest {
 
-    private class SutFixture(scope: TestScope, osSupported: Boolean = true) {
+    private class SutFixture(scope: TestScope) {
         private val application = ApplicationProvider.getApplicationContext<Application>()
         private val dispatcher = StandardTestDispatcher(scope.testScheduler)
         val actions = FakeSdkActions()
-        val infrastructure = FakeFacadeInfrastructure(actions)
+        val infrastructure = FakeFacadeInfrastructure(actions, dispatcher)
         val owner = ManualLifecycleOwner()
         val sut = RetenoInternalImpl(
             application = application,
-            mainDispatcher = dispatcher,
             appLifecycleOwner = owner,
-            infrastructure = infrastructure,
-            isOsSupported = { osSupported }
+            infrastructure = infrastructure
         )
 
         fun callEveryDeferredApi() {
@@ -292,26 +284,6 @@ internal class RetenoInternalImplTest {
     }
 
     @Test
-    fun `should only keep configuration on unsupported os`() = runUnitTest {
-        given()
-        val fixture = SutFixture(this, osSupported = false)
-        val config = stubConfig()
-
-        whenn()
-        fixture.sut.setConfig(config)
-        fixture.actions.markInitialized()
-        fixture.callEveryDeferredApi()
-        fixture.sut.start()
-        fixture.sut.stop()
-        fixture.owner.registry.handleLifecycleEvent(Lifecycle.Event.ON_START)
-        runCurrent()
-
-        then()
-        assertEquals(emptyList<String>(), fixture.actions.calls)
-        assertSame(config, fixture.infrastructure.configuration.config)
-    }
-
-    @Test
     fun `should pass push interaction to sdk without waiting for init`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
@@ -354,31 +326,6 @@ internal class RetenoInternalImplTest {
     }
 
     @Test
-    fun `should ignore in-app pause behaviour on unsupported os`() = runUnitTest {
-        given()
-        val fixture = SutFixture(this, osSupported = false)
-        fixture.actions.markInitialized()
-
-        whenn()
-        fixture.sut.setInAppMessagesPauseBehaviour(InAppPauseBehaviour.SKIP_IN_APPS)
-
-        then()
-        assertTrue(fixture.actions.calls.isEmpty())
-    }
-
-    @Test
-    fun `should ignore push interaction on unsupported os`() = runUnitTest {
-        given()
-        val fixture = SutFixture(this, osSupported = false)
-
-        whenn()
-        fixture.sut.recordInteraction("interaction-1", InteractionStatus.CLICKED, forcePush = true)
-
-        then()
-        assertTrue(fixture.actions.calls.isEmpty())
-    }
-
-    @Test
     fun `should have no default notification channel config before configuration`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
@@ -405,23 +352,6 @@ internal class RetenoInternalImplTest {
     }
 
     @Test
-    fun `should not build sdk actions on unsupported os`() = runUnitTest {
-        given()
-        val fixture = SutFixture(this, osSupported = false)
-
-        whenn()
-        fixture.callEveryDeferredApi()
-        val state = listOf(fixture.sut.isInitialized, fixture.sut.isStarted)
-        fixture.sut.appInbox.markAsOpened("m1")
-        fixture.sut.recommendation.logRecommendations(RecomEvents("variant", emptyList()))
-        runCurrent()
-
-        then()
-        assertEquals(listOf(false, false), state)
-        assertFalse(fixture.infrastructure.actionsUsed)
-    }
-
-    @Test
     fun `should keep deprecated instance pointing at the sdk`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
@@ -441,61 +371,28 @@ internal class RetenoInternalImplTest {
     }
 
     @Test
-    fun `should answer presentation, device id and pending data from the sdk`() = runUnitTest {
+    fun `should answer presentation, device id, channel and pending data from the sdk`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
-        val activity = mockk<Activity>()
-        every { fixture.infrastructure.activityHelper.canPresentMessages() } returns true
-        every { fixture.infrastructure.activityHelper.currentActivity } returns activity
-        every { fixture.infrastructure.configRepository.getDeviceId() } returns stubDeviceId()
-        every { fixture.infrastructure.configRepository.getDefaultNotificationChannel() } returns "{}"
-        every { fixture.infrastructure.databaseManager.hasDataForSync() } returns false
+        fixture.actions.canPresent = true
+        fixture.actions.activityPresented = true
+        fixture.actions.deviceId = "device-1"
+        fixture.actions.defaultNotificationChannel = "{}"
+        fixture.actions.dataForSync = false
 
         whenn()
         val answers = with(fixture.sut) {
-            listOf<Any>(canPresentMessages(), getDeviceId(), hasDataForSync(), isActivityPresented())
+            listOf<Any>(
+                canPresentMessages(),
+                isActivityPresented(),
+                getDeviceId(),
+                getDefaultNotificationChannel(),
+                hasDataForSync()
+            )
         }
 
         then()
-        assertEquals(listOf<Any>(true, stubDeviceId().id, false, true), answers)
-        assertEquals("{}", fixture.sut.getDefaultNotificationChannel())
-        every { fixture.infrastructure.activityHelper.currentActivity } returns null
-        assertFalse(fixture.sut.isActivityPresented())
-    }
-
-    @Test
-    fun `should answer safe defaults on unsupported os`() = runUnitTest {
-        given()
-        val fixture = SutFixture(this, osSupported = false)
-
-        whenn()
-        val answers = with(fixture.sut) { listOf<Any>(canPresentMessages(), getDeviceId(), hasDataForSync()) }
-        fixture.sut.start()
-        fixture.sut.stop()
-
-        then()
-        assertEquals(listOf<Any>(false, "", true), answers)
-        assertFalse(fixture.infrastructure.actionsUsed)
-    }
-
-    @Test
-    fun `should assume pending data when the local database cannot be read`() = runUnitTest {
-        given()
-        val fixture = SutFixture(this)
-        val remoteLog = FakeRemoteLog()
-        every { fixture.infrastructure.databaseManager.hasDataForSync() } throws IllegalStateException("db closed")
-
-        whenn()
-        Logger.installCapturing(FakeLogSink(), remoteLog)
-        val hasData = try {
-            fixture.sut.hasDataForSync()
-        } finally {
-            Logger.install(AndroidLogSink(), null)
-        }
-
-        then()
-        assertTrue(hasData)
-        assertEquals(listOf("hasDataForSync(): "), remoteLog.errors.map { it.first })
+        assertEquals(listOf<Any>(true, true, "device-1", "{}", false), answers)
     }
 
     @Test
@@ -534,23 +431,36 @@ internal class RetenoInternalImplTest {
     }
 
     @Test
-    fun `should give the same in-app inbox, recommendations and background sync every time`() = runUnitTest {
+    fun `should give the same in-app inbox and recommendations every time`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
-        val sync = mockk<BackgroundSync>()
-        fixture.actions.backgroundSyncAnswer = sync
 
         whenn()
-        val first = listOf(fixture.sut.appInbox, fixture.sut.recommendation, fixture.sut.backgroundSync)
-        val second = listOf(fixture.sut.appInbox, fixture.sut.recommendation, fixture.sut.backgroundSync)
+        val first = listOf(fixture.sut.appInbox, fixture.sut.recommendation)
+        val second = listOf(fixture.sut.appInbox, fixture.sut.recommendation)
 
         fixture.sut.appInbox.markAsOpened("m1")
         fixture.sut.recommendation.logRecommendations(RecomEvents("variant", emptyList()))
 
         then()
         first.zip(second).forEach { (a, b) -> assertSame(a, b) }
-        assertSame(sync, first.last())
-        assertTrue(fixture.infrastructure.actionsUsed)
+        val forwarded = listOf("submitInboxMessageOpened m1", "submitRecommendationEvents variant")
+        assertEquals(forwarded, fixture.actions.calls.filter { it in forwarded })
+    }
+
+    @Test
+    fun `should run background sync of the sdk`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        val sync = mockk<BackgroundSync>()
+        coEvery { sync.invoke() } returns Result.success(BackgroundSyncOutcome.SYNCED)
+        fixture.actions.backgroundSyncAnswer = sync
+
+        whenn()
+        val outcome = fixture.sut.backgroundSync()
+
+        then()
+        assertEquals(BackgroundSyncOutcome.SYNCED, outcome.getOrNull())
     }
 
     @Test

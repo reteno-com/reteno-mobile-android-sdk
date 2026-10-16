@@ -6,11 +6,11 @@ import com.reteno.core.data.local.sharedpref.SharedPrefsManager
 import com.reteno.core.internal.action.trace.ActionRunner
 import com.reteno.core.internal.action.trace.ActionTrace
 import com.reteno.core.internal.coroutine.RetenoDispatchers
-import com.reteno.core.internal.platform.AppPlatform
+import com.reteno.core.internal.platform.BackgroundWork
 import kotlinx.coroutines.withContext
 
 internal class BootSdkAction(
-    private val platform: AppPlatform,
+    private val backgroundWork: BackgroundWork,
     private val prefs: SharedPrefsManager,
     private val restConfig: DeviceIdentity,
     private val applyConfig: ApplyConfig,
@@ -25,7 +25,7 @@ internal class BootSdkAction(
     private suspend fun ActionTrace.boot() {
         runner("WarmUpStorage") {
             step("init WorkManager off the main thread") {
-                withContext(dispatchers.io) { platform.initWorkManager() }
+                withContext(dispatchers.io) { backgroundWork.initWorkManager() }
             }
             step("load local settings off the main thread") {
                 withContext(dispatchers.io) { prefs.getEmail() }

@@ -53,7 +53,7 @@ internal class DataSyncTest {
         val sut = DataSync(
             coordinator = SyncCoordinator(SyncDataAction(listOf(step), emptyList(), traced.runner), work, readyGate),
             clearOldDataAction = clearOldData,
-            platform = platform,
+            backgroundWork = platform,
             configuration = configuration,
             jitter = { jitter },
             scope = work,

@@ -13,8 +13,6 @@ import com.reteno.test.given
 import com.reteno.test.runUnitTest
 import com.reteno.test.then
 import com.reteno.test.whenn
-import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.TestScope
 import org.junit.Test
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -28,15 +26,13 @@ import org.robolectric.annotation.Config
 @Config(sdk = [26])
 internal class RetenoEntryPointsTest {
 
-    private class SutFixture(scope: TestScope) {
+    private class SutFixture {
         val application = ApplicationProvider.getApplicationContext<Application>()
         val actions = FakeSdkActions()
         val facade = RetenoInternalImpl(
             application = application,
-            mainDispatcher = StandardTestDispatcher(scope.testScheduler),
             appLifecycleOwner = ManualLifecycleOwner(),
-            infrastructure = FakeFacadeInfrastructure(actions),
-            isOsSupported = { true }
+            infrastructure = FakeFacadeInfrastructure(actions)
         )
 
         fun <T> withInstance(instance: RetenoInternalImpl?, block: () -> T): T {
@@ -53,7 +49,7 @@ internal class RetenoEntryPointsTest {
     @Test
     fun `should create the sdk for the application at startup`() = runUnitTest {
         given()
-        val fixture = SutFixture(this)
+        val fixture = SutFixture()
         val initializer = RetenoInitializer()
 
         whenn()
@@ -73,7 +69,7 @@ internal class RetenoEntryPointsTest {
     @Test
     fun `should keep the configuration given at the static entry point`() = runUnitTest {
         given()
-        val fixture = SutFixture(this)
+        val fixture = SutFixture()
         val config = stubConfig()
 
         whenn()
@@ -92,7 +88,7 @@ internal class RetenoEntryPointsTest {
     @Test
     fun `should explain an sdk used before the application started`() = runUnitTest {
         given()
-        val fixture = SutFixture(this)
+        val fixture = SutFixture()
 
         whenn()
         val failure = fixture.withInstance(null) { runCatching { Reteno.instance }.exceptionOrNull() }
@@ -106,7 +102,7 @@ internal class RetenoEntryPointsTest {
     @Test
     fun `should hand out the sdk instance through the deprecated factory`() = runUnitTest {
         given()
-        val fixture = SutFixture(this)
+        val fixture = SutFixture()
 
         whenn()
         val instance = fixture.withInstance(fixture.facade) { RetenoImpl(fixture.application) }
@@ -119,7 +115,7 @@ internal class RetenoEntryPointsTest {
     @Test
     fun `should initialize through the deprecated factory with the given access key`() = runUnitTest {
         given()
-        val fixture = SutFixture(this)
+        val fixture = SutFixture()
         val config = stubConfig()
 
         whenn()
@@ -134,7 +130,7 @@ internal class RetenoEntryPointsTest {
     @Test
     fun `should refuse a blank access key in the deprecated factory`() = runUnitTest {
         given()
-        val fixture = SutFixture(this)
+        val fixture = SutFixture()
 
         whenn()
         val failure = fixture.withInstance(fixture.facade) {
@@ -152,7 +148,7 @@ internal class RetenoEntryPointsTest {
     fun `should still fail the deprecated factory without a config because its default config has no access key`() =
         runUnitTest {
             given()
-            val fixture = SutFixture(this)
+            val fixture = SutFixture()
 
             whenn()
             val failure = fixture.withInstance(fixture.facade) {

@@ -1,7 +1,7 @@
 package com.reteno.core.di
 
 import com.reteno.core.data.remote.model.recommendation.get.Recoms
-import com.reteno.core.fixtures.LocatorFixture
+import com.reteno.core.fixtures.ActionGraphFixture
 import com.reteno.core.fixtures.RecordingRecommendationCallback
 import com.reteno.core.fixtures.RecordingRecommendationJsonCallback
 import com.reteno.core.fixtures.StubRecom
@@ -18,12 +18,12 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
-internal class ActionsLocatorRecommendationWiringTest {
+internal class ActionGraphRecommendationWiringTest {
 
     @Test
     fun `should load submitted typed recommendations`() = runUnitTest {
         given()
-        val fixture = LocatorFixture(this)
+        val fixture = ActionGraphFixture(this)
         fixture.rest.succeedWith(RECOMS_JSON)
         val callback = RecordingRecommendationCallback<StubRecom>()
 
@@ -38,7 +38,7 @@ internal class ActionsLocatorRecommendationWiringTest {
     @Test
     fun `should load submitted raw recommendations`() = runUnitTest {
         given()
-        val fixture = LocatorFixture(this)
+        val fixture = ActionGraphFixture(this)
         fixture.rest.succeedWith(RECOMS_JSON)
         val callback = RecordingRecommendationJsonCallback()
 
@@ -53,7 +53,7 @@ internal class ActionsLocatorRecommendationWiringTest {
     @Test
     fun `should save submitted recommendation events`() = runUnitTest {
         given()
-        val fixture = LocatorFixture(this)
+        val fixture = ActionGraphFixture(this)
 
         whenn()
         fixture.sut.submitRecommendationEvents(stubRecomEvents())
@@ -66,7 +66,7 @@ internal class ActionsLocatorRecommendationWiringTest {
     @Test
     fun `should save submitted recommendation events one after another in call order`() = runUnitTest {
         given()
-        val fixture = LocatorFixture(this)
+        val fixture = ActionGraphFixture(this)
 
         whenn()
         fixture.sut.submitRecommendationEvents(stubRecomEvents(recomVariantId = "r1v2"))

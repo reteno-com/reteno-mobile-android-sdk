@@ -3,7 +3,7 @@ package com.reteno.core.internal.action.sync
 import com.reteno.core.internal.action.trace.ActionRunner
 import com.reteno.core.internal.config.SdkConfiguration
 import com.reteno.core.internal.coroutine.RetenoDispatchers
-import com.reteno.core.internal.platform.AppPlatform
+import com.reteno.core.internal.platform.BackgroundWork
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -21,7 +21,7 @@ internal interface SyncScheduler {
 internal class DataSync(
     private val coordinator: SyncCoordinator,
     private val clearOldDataAction: ClearOldData,
-    private val platform: AppPlatform,
+    private val backgroundWork: BackgroundWork,
     private val configuration: SdkConfiguration,
     private val jitter: () -> Long,
     private val scope: CoroutineScope,
@@ -45,7 +45,7 @@ internal class DataSync(
         scope.launch {
             runner("EnqueueBackgroundSync") {
                 step("schedule periodic background sync") {
-                    withContext(dispatchers.io) { platform.scheduleBackgroundSync() }
+                    withContext(dispatchers.io) { backgroundWork.scheduleBackgroundSync() }
                 }
             }
         }

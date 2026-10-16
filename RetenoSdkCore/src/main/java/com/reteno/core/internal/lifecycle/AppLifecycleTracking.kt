@@ -5,7 +5,7 @@ import com.reteno.core.internal.action.lifecycle.AppForegrounded
 import com.reteno.core.internal.action.lifecycle.TrackPermissionDialog
 import com.reteno.core.internal.coroutine.RetenoDispatchers
 import com.reteno.core.internal.coroutine.SerialQueue
-import com.reteno.core.internal.platform.AppPlatform
+import com.reteno.core.internal.platform.HostUi
 import kotlinx.coroutines.withContext
 
 internal interface AppLifecycleTracking {
@@ -13,7 +13,7 @@ internal interface AppLifecycleTracking {
 }
 
 internal class AppLifecycleTrackingImpl(
-    private val platform: AppPlatform,
+    private val hostUi: HostUi,
     private val appForegrounded: AppForegrounded,
     private val appBackgrounded: AppBackgrounded,
     private val trackPermissionDialog: TrackPermissionDialog,
@@ -22,7 +22,7 @@ internal class AppLifecycleTrackingImpl(
 ) : AppLifecycleTracking {
 
     override fun start() {
-        platform.watchAppLifecycle(
+        hostUi.watchAppLifecycle(
             onForeground = { queue.enqueue { withContext(dispatchers.io) { appForegrounded() } } },
             onBackground = { queue.enqueue { withContext(dispatchers.io) { appBackgrounded() } } },
             onActivityPaused = { activity -> queue.enqueue { trackPermissionDialog(activity) } }

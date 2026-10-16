@@ -20,7 +20,7 @@ import com.reteno.core.internal.coroutine.InitGate
 import com.reteno.core.internal.coroutine.RetenoDispatchers
 import com.reteno.core.internal.network.ApiResult
 import com.reteno.core.internal.network.SuspendApiClient
-import com.reteno.core.internal.platform.AppPlatform
+import com.reteno.core.internal.platform.AppEnvironment
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
@@ -32,7 +32,7 @@ internal interface LoadPushInAppHtml {
 internal class LoadPushInAppHtmlAction(
     private val api: SuspendApiClient,
     private val files: FileManager,
-    private val platform: AppPlatform,
+    private val environment: AppEnvironment,
     private val initGate: InitGate,
     private val dispatchers: RetenoDispatchers,
     private val newId: () -> String,
@@ -71,7 +71,7 @@ internal class LoadPushInAppHtmlAction(
             if (fromServer != null) return fromServer
         }
         return step("read bundled widget from app resources") {
-            val model = (platform.bundledWidget() ?: EMPTY_MODEL).fromJson<JsonElement>()
+            val model = (environment.bundledWidget() ?: EMPTY_MODEL).fromJson<JsonElement>()
             WidgetModel(layoutType = InAppLayoutType.FULL, layoutParams = null, model = model, personalization = null)
         }
     }

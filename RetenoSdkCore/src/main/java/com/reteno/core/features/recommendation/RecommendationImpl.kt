@@ -10,9 +10,8 @@ import com.reteno.core.internal.log.Redact
 import com.reteno.core.internal.log.RemoteLog
 
 internal class RecommendationImpl(
-    private val recommendationActions: Lazy<RecommendationActions>,
-    private val remoteLog: RemoteLog,
-    private val isOsSupported: () -> Boolean
+    private val recommendationActions: RecommendationActions,
+    private val remoteLog: RemoteLog
 ) : Recommendation {
 
     override fun <T : RecomBase> fetchRecommendation(
@@ -23,7 +22,7 @@ internal class RecommendationImpl(
     ) {
         passToSdk("fetchRecommendation") {
             val requestBody = recomRequest.toRemote().toJson()
-            recommendationActions.value.submitRecommendationRequest(
+            recommendationActions.submitRecommendationRequest(
                 recomVariantId,
                 requestBody,
                 responseClass,
@@ -39,18 +38,17 @@ internal class RecommendationImpl(
     ) {
         passToSdk("fetchRecommendationJson") {
             val requestBody = recomRequest.toRemote().toJson()
-            recommendationActions.value.submitRecommendationJsonRequest(recomVariantId, requestBody, responseCallback)
+            recommendationActions.submitRecommendationJsonRequest(recomVariantId, requestBody, responseCallback)
         }
     }
 
     override fun logRecommendations(recomEvents: RecomEvents) {
         passToSdk("logRecommendations") {
-            recommendationActions.value.submitRecommendationEvents(recomEvents)
+            recommendationActions.submitRecommendationEvents(recomEvents)
         }
     }
 
     private fun passToSdk(call: String, submit: () -> Unit) {
-        if (!isOsSupported()) return
         try {
             submit()
         } catch (error: Throwable) {

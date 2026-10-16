@@ -23,15 +23,14 @@ import com.reteno.core.features.recommendation.GetRecommendationResponseJsonCall
 import com.reteno.core.internal.action.sync.BackgroundSync
 import com.reteno.core.lifecycle.ScreenTrackingConfig
 import com.reteno.core.view.iam.callback.InAppLifecycleCallback
-import kotlinx.coroutines.CompletableDeferred
 
 internal class FakeSdkActions : SdkActions {
     val calls = mutableListOf<String>()
     val configs = mutableListOf<RetenoConfig>()
     override var isStarted: Boolean = false
-    private val initialized = CompletableDeferred<Unit>()
-    override val isInitialized: Boolean
-        get() = initialized.isCompleted
+    override var isInitialized: Boolean = false
+        private set
+    private val waitingForInit = mutableListOf<() -> Unit>()
     var failure: Throwable? = null
     val users = mutableListOf<User?>()
     val multiAccountUsers = mutableListOf<User?>()
@@ -40,13 +39,30 @@ internal class FakeSdkActions : SdkActions {
     val screenTrackingConfigs = mutableListOf<ScreenTrackingConfig>()
     val recomEvents = mutableListOf<RecomEvents>()
     val callbacks = mutableListOf<Any>()
+    override var deviceId: String = ""
+    override var defaultNotificationChannel: String = ""
+    var canPresent = false
+    var activityPresented = false
+    var dataForSync = false
 
-    override suspend fun awaitInit() {
-        initialized.await()
+    override fun canPresentMessages(): Boolean = canPresent
+
+    override fun isActivityPresented(): Boolean = activityPresented
+
+    override fun hasDataForSync(): Boolean = dataForSync
+
+    override fun runAfterInit(operation: () -> Unit) {
+        if (isInitialized) {
+            operation()
+            return
+        }
+        waitingForInit += operation
     }
 
     fun markInitialized() {
-        initialized.complete(Unit)
+        isInitialized = true
+        waitingForInit.forEach { it() }
+        waitingForInit.clear()
     }
 
     override fun boot() {

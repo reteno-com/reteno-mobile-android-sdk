@@ -4,7 +4,7 @@ import com.reteno.core.data.remote.api.ApiContract
 import com.reteno.core.data.remote.model.iam.displayrules.async.AsyncDisplayRules
 import com.reteno.core.domain.model.logevent.LogLevel
 import com.reteno.core.domain.model.user.UserAttributesAnonymous
-import com.reteno.core.fixtures.LocatorFixture
+import com.reteno.core.fixtures.ActionGraphFixture
 import com.reteno.core.fixtures.stubAnonymousAttributes
 import com.reteno.core.fixtures.stubInAppMessage
 import com.reteno.core.fixtures.stubSegment
@@ -27,16 +27,16 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
-internal class ActionsLocatorContactWiringTest {
+internal class ActionGraphContactWiringTest {
 
     @Test
     fun `should register device in local database and sync contact`() = runUnitTest {
         given()
-        val fixture = LocatorFixture(this)
+        val fixture = ActionGraphFixture(this)
         coEvery { fixture.configRepository.getFcmToken() } returns "token"
 
         whenn()
-        val result = fixture.sut.registerDevice().getOrThrow()
+        val result = fixture.graph.device.registerDevice().getOrThrow()
 
         then()
         assertEquals(SyncResult.COMPLETED, result)
@@ -46,12 +46,12 @@ internal class ActionsLocatorContactWiringTest {
     @Test
     fun `should ensure device registration once per session`() = runUnitTest {
         given()
-        val fixture = LocatorFixture(this)
+        val fixture = ActionGraphFixture(this)
         coEvery { fixture.configRepository.getFcmToken() } returns "token"
 
         whenn()
-        fixture.sut.ensureDeviceRegisteredThisSession()
-        fixture.sut.ensureDeviceRegisteredThisSession()
+        fixture.graph.device.ensureDeviceRegisteredThisSession()
+        fixture.graph.device.ensureDeviceRegisteredThisSession()
 
         then()
         verify(exactly = 1) { fixture.devicesDb.insertDevice(any()) }
@@ -60,11 +60,11 @@ internal class ActionsLocatorContactWiringTest {
     @Test
     fun `should store new push token`() = runUnitTest {
         given()
-        val fixture = LocatorFixture(this)
+        val fixture = ActionGraphFixture(this)
         every { fixture.configRepository.getStoredFcmToken() } returns "old"
 
         whenn()
-        fixture.sut.updateFcmToken("new")
+        fixture.graph.device.updateFcmToken("new")
 
         then()
         verify(exactly = 1) { fixture.configRepository.saveFcmToken("new") }
@@ -73,11 +73,11 @@ internal class ActionsLocatorContactWiringTest {
     @Test
     fun `should store changed notification state`() = runUnitTest {
         given()
-        val fixture = LocatorFixture(this)
+        val fixture = ActionGraphFixture(this)
         every { fixture.configRepository.isNotificationsEnabled() } returns true
 
         whenn()
-        fixture.sut.updateNotificationsEnabled(false)
+        fixture.graph.device.updateNotificationsEnabled(false)
 
         then()
         verify(exactly = 1) { fixture.configRepository.saveNotificationsEnabled(false) }
@@ -86,15 +86,15 @@ internal class ActionsLocatorContactWiringTest {
     @Test
     fun `should save user and refresh in-app segmentation after debounce`() = runUnitTest {
         given()
-        val fixture = LocatorFixture(this)
+        val fixture = ActionGraphFixture(this)
         fixture.sut.requestStart()
         runCurrent()
-        fixture.sut.inAppMessagesState.replaceMessages(
+        fixture.graph.inApp.inAppMessagesState.replaceMessages(
             listOf(stubInAppMessage(async = AsyncDisplayRules(segment = stubSegment(inSegment = false))))
         )
 
         whenn()
-        fixture.sut.setUserAttributes("user-1", stubUser())
+        fixture.graph.user.setUserAttributes("user-1", stubUser())
         advanceTimeBy(5_001)
         runCurrent()
 
@@ -106,10 +106,10 @@ internal class ActionsLocatorContactWiringTest {
     @Test
     fun `should switch account through sdk lifecycle and session handler`() = runUnitTest {
         given()
-        val fixture = LocatorFixture(this)
+        val fixture = ActionGraphFixture(this)
 
         whenn()
-        fixture.sut.setMultiAccountUserAttributes("account-1", null)
+        fixture.graph.user.setMultiAccountUserAttributes("account-1", null)
         runCurrent()
 
         then()
@@ -124,10 +124,10 @@ internal class ActionsLocatorContactWiringTest {
     @Test
     fun `should save anonymous attributes`() = runUnitTest {
         given()
-        val fixture = LocatorFixture(this)
+        val fixture = ActionGraphFixture(this)
 
         whenn()
-        fixture.sut.setAnonymousUserAttributes(stubAnonymousAttributes())
+        fixture.graph.user.setAnonymousUserAttributes(stubAnonymousAttributes())
 
         then()
         verify(exactly = 1) { fixture.usersDb.insertUser(any()) }
@@ -136,10 +136,10 @@ internal class ActionsLocatorContactWiringTest {
     @Test
     fun `should report rejected anonymous attributes at info level`() = runUnitTest {
         given()
-        val fixture = LocatorFixture(this)
+        val fixture = ActionGraphFixture(this)
 
         whenn()
-        fixture.sut.setAnonymousUserAttributes(UserAttributesAnonymous())
+        fixture.graph.user.setAnonymousUserAttributes(UserAttributesAnonymous())
         runCurrent()
 
         then()
@@ -150,7 +150,7 @@ internal class ActionsLocatorContactWiringTest {
     @Test
     fun `should log failed contact task and keep queue running`() = runUnitTest {
         given()
-        val fixture = LocatorFixture(this)
+        val fixture = ActionGraphFixture(this)
         var nextRan = false
 
         whenn()

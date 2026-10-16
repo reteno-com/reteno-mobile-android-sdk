@@ -6,7 +6,7 @@ import com.reteno.core.internal.action.trace.ActionTrace
 import com.reteno.core.internal.action.trace.TracedOutcome
 import com.reteno.core.internal.coroutine.InitGate
 import com.reteno.core.internal.coroutine.RetenoDispatchers
-import com.reteno.core.internal.platform.AppPlatform
+import com.reteno.core.internal.platform.BackgroundWork
 import com.reteno.core.lifecycle.RetenoActivityHelper
 import kotlinx.coroutines.withContext
 
@@ -27,7 +27,7 @@ internal class BackgroundSyncAction(
     private val initGate: InitGate,
     private val databaseManager: RetenoDatabaseManager,
     private val sync: SyncTrigger,
-    private val platform: AppPlatform,
+    private val backgroundWork: BackgroundWork,
     private val dispatchers: RetenoDispatchers,
     private val runner: ActionRunner
 ) : BackgroundSync {
@@ -50,7 +50,7 @@ internal class BackgroundSyncAction(
         }
         if (!hasData) {
             step("cancel periodic background sync") {
-                platform.cancelBackgroundSync()
+                backgroundWork.cancelBackgroundSync()
             }
             return BackgroundSyncOutcome.NO_DATA
         }

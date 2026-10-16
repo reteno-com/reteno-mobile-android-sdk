@@ -4,7 +4,7 @@ import android.app.Activity
 import com.reteno.core.data.remote.api.ApiContract
 import com.reteno.core.data.remote.api.HttpMethod
 import com.reteno.core.domain.model.event.LifecycleTrackingOptions
-import com.reteno.core.fixtures.LocatorFixture
+import com.reteno.core.fixtures.ActionGraphFixture
 import com.reteno.core.internal.action.lifecycle.TrackPermissionDialogAction
 import com.reteno.core.internal.action.sync.DataSync
 import com.reteno.core.lifecycle.ScreenTrackingConfig
@@ -25,10 +25,10 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
-internal class ActionsLocatorLifecycleWiringTest {
+internal class ActionGraphLifecycleWiringTest {
 
     private class SutFixture(scope: TestScope) {
-        val env = LocatorFixture(scope)
+        val env = ActionGraphFixture(scope)
 
         init {
             every { env.configRepository.getAppVersion() } returns "1.0"
@@ -41,7 +41,7 @@ internal class ActionsLocatorLifecycleWiringTest {
         given()
         val fixture = SutFixture(this)
         every { fixture.env.sessionHandler.getForegroundTimeMillis() } returns 5_000L
-        fixture.env.sut.lifecycleTracking.start()
+        fixture.env.graph.lifecycle.lifecycleTracking.start()
 
         whenn()
         fixture.env.platform.onForeground!!.invoke()
@@ -59,7 +59,7 @@ internal class ActionsLocatorLifecycleWiringTest {
     fun `should schedule outdated data cleanup when app comes to foreground`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
-        fixture.env.sut.lifecycleTracking.start()
+        fixture.env.graph.lifecycle.lifecycleTracking.start()
 
         whenn()
         fixture.env.platform.onForeground!!.invoke()
@@ -75,7 +75,7 @@ internal class ActionsLocatorLifecycleWiringTest {
         given()
         val fixture = SutFixture(this)
         fixture.env.platform.topPackage = TrackPermissionDialogAction.PERMISSION_DIALOG_PACKAGE
-        fixture.env.sut.lifecycleTracking.start()
+        fixture.env.graph.lifecycle.lifecycleTracking.start()
 
         whenn()
         fixture.env.platform.onActivityPaused!!.invoke(mockk<Activity>())
@@ -89,10 +89,10 @@ internal class ActionsLocatorLifecycleWiringTest {
     fun `should apply lifecycle tracking options to shared filter`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
-        fixture.env.sut.lifecycleTracking.start()
+        fixture.env.graph.lifecycle.lifecycleTracking.start()
 
         whenn()
-        fixture.env.sut.setLifecycleEventConfig(LifecycleTrackingOptions.NONE)
+        fixture.env.graph.lifecycle.setLifecycleEventConfig(LifecycleTrackingOptions.NONE)
         fixture.env.platform.onForeground!!.invoke()
         runCurrent()
 
@@ -106,7 +106,7 @@ internal class ActionsLocatorLifecycleWiringTest {
         val fixture = SutFixture(this)
 
         whenn()
-        fixture.env.sut.enableAutoScreenTracking(ScreenTrackingConfig(enable = true))
+        fixture.env.graph.lifecycle.enableAutoScreenTracking(ScreenTrackingConfig(enable = true))
         fixture.env.platform.onScreen!!.invoke("HomeFragment", ScreenTrackingTrigger.ON_START)
         runCurrent()
 
@@ -120,7 +120,7 @@ internal class ActionsLocatorLifecycleWiringTest {
         val fixture = SutFixture(this)
 
         whenn()
-        fixture.env.sut.updatePushPermissionStatus()
+        fixture.env.graph.lifecycle.updatePushPermissionStatus()
 
         then()
         assertEquals(listOf(Constants.BROADCAST_ACTION_PUSH_PERMISSION_CHANGED), fixture.env.platform.broadcasts)
@@ -133,7 +133,7 @@ internal class ActionsLocatorLifecycleWiringTest {
         every { fixture.env.configRepository.isNotificationsEnabled() } returns false
 
         whenn()
-        fixture.env.sut.updateNotificationsEnabled(true)
+        fixture.env.graph.device.updateNotificationsEnabled(true)
 
         then()
         assertEquals(listOf("PushNotificationsSubscribed"), fixture.env.insertedEventKeys)

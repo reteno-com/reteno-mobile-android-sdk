@@ -19,12 +19,12 @@ import com.reteno.core.data.local.model.interaction.InteractionRequestDb
 import com.reteno.core.data.local.model.logevent.RetenoLogEventDb
 import com.reteno.core.data.local.sharedpref.SharedPrefsManager
 import com.reteno.core.data.repository.ConfigRepository
-import com.reteno.core.di.ActionsLocator
+import com.reteno.core.di.ActionGraph
+import com.reteno.core.di.DatabaseManagers
 import com.reteno.core.di.SdkInfrastructure
 import com.reteno.core.domain.model.event.LifecycleTrackingOptions
 import com.reteno.core.domain.model.logevent.LogLevel
 import com.reteno.core.internal.config.SdkConfigurationImpl
-import com.reteno.core.internal.coroutine.InitGate
 import com.reteno.core.internal.lifecycle.LifecycleEventFilter
 import com.reteno.core.lifecycle.RetenoActivityHelper
 import com.reteno.core.lifecycle.RetenoSessionHandler
@@ -36,8 +36,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.plus
 import kotlinx.coroutines.test.TestScope
 
-internal class LocatorFixture(scope: TestScope, initialized: Boolean = true) {
-    val initGate = InitGate().also { if (initialized) it.markInitialized(byUser = true) }
+internal class ActionGraphFixture(scope: TestScope, initialized: Boolean = true) {
     val devicesDb = mockk<RetenoDatabaseManagerDevice>(relaxed = true)
     val usersDb = mockk<RetenoDatabaseManagerUser>(relaxed = true)
     val interactionsDb = mockk<RetenoDatabaseManagerInteraction>(relaxed = true)
@@ -62,24 +61,27 @@ internal class LocatorFixture(scope: TestScope, initialized: Boolean = true) {
     val savedLogEvents = mutableListOf<RetenoLogEventDb>()
     val remoteLogs: List<Pair<String?, LogLevel>>
         get() = savedLogEvents.map { it.errorMessage to LogLevel.valueOf(it.logLevel.name) }
+    val db = DatabaseManagers(
+        devicesDb = devicesDb,
+        usersDb = usersDb,
+        interactionsDb = interactionsDb,
+        inAppInteractionsDb = inAppInteractionsDb,
+        eventsDb = eventsDb,
+        inboxDb = inboxDb,
+        inAppMessagesDb = inAppDb,
+        recomEventsDb = recomEventsDb,
+        wrappedLinksDb = wrappedLinksDb,
+        logEventsDb = logEventsDb,
+        databaseManager = databaseManager
+    )
     val infrastructure = mockk<SdkInfrastructure>().also {
-        every { it.devicesDb } returns devicesDb
-        every { it.usersDb } returns usersDb
-        every { it.interactionsDb } returns interactionsDb
-        every { it.inAppInteractionsDb } returns inAppInteractionsDb
-        every { it.eventsDb } returns eventsDb
-        every { it.inboxDb } returns inboxDb
-        every { it.inAppMessagesDb } returns inAppDb
+        every { it.db } returns db
         every { it.fileManager } returns files
-        every { it.recomEventsDb } returns recomEventsDb
-        every { it.wrappedLinksDb } returns wrappedLinksDb
-        every { it.logEventsDb } returns logEventsDb
         every { it.configRepository } returns configRepository
         every { it.restClient } returns rest
         every { it.restConfig } returns restConfig
         every { it.prefs } returns prefs
         every { it.activityHelper } returns activityHelper
-        every { it.databaseManager } returns databaseManager
         every { it.sessionHandler } returns sessionHandler
     }
     val platform = FakeAppPlatform()
@@ -107,17 +109,21 @@ internal class LocatorFixture(scope: TestScope, initialized: Boolean = true) {
 
     val dispatchers = scope.testDispatchers()
 
-    val sut = ActionsLocator(
+    val graph = ActionGraph(
         infrastructure = infrastructure,
         dispatchers = dispatchers,
         logSink = sink,
         scope = scope.workScope().let { work ->
             work + SupervisorJob(work.coroutineContext[Job]) + dispatchers.default
         },
-        initGate = initGate,
         configuration = configuration,
-        platform = platform,
+        environment = platform,
+        broadcasts = platform,
+        hostUi = platform,
+        backgroundWork = platform,
         lifecycleEventFilter = lifecycleEventFilter,
         clock = { 1_000L }
     )
+    val initGate = graph.core.initGate.also { if (initialized) it.markInitialized(byUser = true) }
+    val sut = graph.router
 }

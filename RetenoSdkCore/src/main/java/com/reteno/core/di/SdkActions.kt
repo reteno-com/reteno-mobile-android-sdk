@@ -16,12 +16,29 @@ import com.reteno.core.internal.log.LogEventQueue
 import com.reteno.core.lifecycle.ScreenTrackingConfig
 import com.reteno.core.view.iam.callback.InAppLifecycleCallback
 
-internal interface SdkActions : InteractionSubmitter, InboxActions, RecommendationActions, LogEventQueue {
+internal interface SdkQueries {
+    val deviceId: String
+
+    val defaultNotificationChannel: String
+
+    fun canPresentMessages(): Boolean
+
+    fun isActivityPresented(): Boolean
+
+    fun hasDataForSync(): Boolean
+}
+
+internal interface SdkActions :
+    SdkQueries,
+    InteractionSubmitter,
+    InboxActions,
+    RecommendationActions,
+    LogEventQueue {
     val isStarted: Boolean
 
     val isInitialized: Boolean
 
-    suspend fun awaitInit()
+    fun runAfterInit(operation: () -> Unit)
 
     fun boot()
 

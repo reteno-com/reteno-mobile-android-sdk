@@ -10,24 +10,15 @@ import com.reteno.test.runUnitTest
 import com.reteno.test.then
 import com.reteno.test.whenn
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertSame
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 internal class AppInboxImplTest {
 
-    private class SutFixture(osSupported: Boolean = true) {
+    private class SutFixture {
         val actions = FakeSdkActions()
         val remoteLog = FakeRemoteLog()
-        var actionsBuilt = false
-        val sut = AppInboxImpl(
-            lazy {
-                actionsBuilt = true
-                actions
-            },
-            remoteLog
-        ) { osSupported }
+        val sut = AppInboxImpl(actions, remoteLog)
 
         fun callEveryApi() {
             sut.getAppInboxMessages(2, 20, AppInboxStatus.OPENED, RecordingResultCallback<AppInboxMessages>())
@@ -164,29 +155,5 @@ internal class AppInboxImplTest {
             ),
             fixture.remoteLog.entries
         )
-    }
-
-    @Test
-    fun `should ignore inbox calls on unsupported os`() = runUnitTest {
-        given()
-        val fixture = SutFixture(osSupported = false)
-
-        whenn()
-        fixture.callEveryApi()
-
-        then()
-        assertTrue(fixture.actions.calls.isEmpty())
-    }
-
-    @Test
-    fun `should not build sdk actions on unsupported os`() = runUnitTest {
-        given()
-        val fixture = SutFixture(osSupported = false)
-
-        whenn()
-        fixture.callEveryApi()
-
-        then()
-        assertFalse(fixture.actionsBuilt)
     }
 }

@@ -26,6 +26,10 @@ earlier release are tested.
   activity was not ready when the app went to background is presented on the next activity start.
 - Links opened from an in-app without a current activity start from the application context instead of being dropped.
 - In-app custom data is broadcast only to receivers in the host app's own package.
+- On Android versions the SDK does not support (below 8.0, API 26), `setUserAttributes`,
+  `setMultiAccountUserAttributes` and `setAnonymousUserAttributes` now validate their input like on supported versions
+  and throw `IllegalArgumentException` for a blank `externalUserId` or an invalid `marketId`; they used to return
+  silently. Valid calls are still ignored there.
 - Swiping a slide-up in-app away: a fling toward the edge without moving the message first now dismisses it toward
   that edge.
 - Copying a config with `RetenoConfig.Builder(config)` or `RetenoConfig.Builder(config, accessKey)` now keeps every

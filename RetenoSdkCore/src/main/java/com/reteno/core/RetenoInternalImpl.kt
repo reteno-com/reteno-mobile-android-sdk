@@ -20,32 +20,24 @@ import com.reteno.core.features.appinbox.AppInboxImpl
 import com.reteno.core.features.iam.InAppPauseBehaviour
 import com.reteno.core.features.recommendation.Recommendation
 import com.reteno.core.features.recommendation.RecommendationImpl
+import com.reteno.core.internal.action.sync.BackgroundSyncOutcome
 import com.reteno.core.internal.action.user.UserAttributesValidator
 import com.reteno.core.internal.coroutine.retenoDispatchers
 import com.reteno.core.internal.lifecycle.SdkLifecycle
 import com.reteno.core.internal.log.LoggerRemoteLog
-import com.reteno.core.lifecycle.RetenoActivityHelper
 import com.reteno.core.lifecycle.ScreenTrackingConfig
 import com.reteno.core.permission.AndroidPermissionChecker
-import com.reteno.core.permission.PermissionActivityDelegate
-import com.reteno.core.util.Logger
 import com.reteno.core.util.Procedure
-import com.reteno.core.util.isOsVersionSupported
 import com.reteno.core.view.iam.callback.InAppLifecycleCallback
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.launch
 import java.util.concurrent.atomic.AtomicBoolean
 
 
 class RetenoInternalImpl internal constructor(
     override val application: Application,
-    private val mainDispatcher: CoroutineDispatcher,
     private val appLifecycleOwner: LifecycleOwner,
-    private val infrastructure: FacadeInfrastructure,
-    private val isOsSupported: () -> Boolean
+    private val infrastructure: FacadeInfrastructure
 ) : Reteno, RetenoInternalFacade, SdkLifecycle {
 
     constructor(
@@ -55,34 +47,22 @@ class RetenoInternalImpl internal constructor(
         appLifecycleOwner: LifecycleOwner = ProcessLifecycleOwner.get()
     ) : this(
         application = application,
-        mainDispatcher = mainDispatcher,
         appLifecycleOwner = appLifecycleOwner,
-        infrastructure = SdkComponent(application, retenoDispatchers(mainDispatcher, ioDispatcher)),
-        isOsSupported = ::isOsVersionSupported
+        infrastructure = SdkComponent(application, retenoDispatchers(mainDispatcher, ioDispatcher))
     )
 
-    private val syncScope = CoroutineScope(mainDispatcher + SupervisorJob())
-
     private val actions get() = infrastructure.actions
-    internal val backgroundSync by lazy { actions.backgroundSync }
-    private val permissionDelegate = PermissionActivityDelegate(application, mainDispatcher)
-    private val activityHelper: RetenoActivityHelper get() = infrastructure.activityHelper
 
-    private val configRepository get() = infrastructure.configRepository
-    private val databaseManager get() = infrastructure.databaseManager
-
-    override val appInbox: AppInbox by lazy { AppInboxImpl(lazy { actions }, LoggerRemoteLog, isOsSupported) }
-    override val recommendation: Recommendation by lazy {
-        RecommendationImpl(lazy { actions }, LoggerRemoteLog, isOsSupported)
-    }
+    override val appInbox: AppInbox by lazy { AppInboxImpl(actions, LoggerRemoteLog) }
+    override val recommendation: Recommendation by lazy { RecommendationImpl(actions, LoggerRemoteLog) }
 
     private val receivedConfigFromUser = AtomicBoolean(false)
 
     override val isStarted: Boolean
-        get() = isOsSupported() && actions.isStarted
+        get() = actions.isStarted
 
     val isInitialized: Boolean
-        get() = isOsSupported() && actions.isInitialized
+        get() = actions.isInitialized
 
     init {
         initSdk()
@@ -90,10 +70,6 @@ class RetenoInternalImpl internal constructor(
 
     override fun setConfig(config: RetenoConfig) {
         if (!receivedConfigFromUser.compareAndSet(false, true)) return
-        if (!isOsSupported()) {
-            infrastructure.configuration.useUserConfig(config)
-            return
-        }
         actions.applyUserConfig(config)
     }
 
@@ -105,35 +81,18 @@ class RetenoInternalImpl internal constructor(
         Reteno.initWithConfig(config)
     }
 
-    private inline fun runAfterInit(crossinline operation: () -> Unit) {
-        if (!isOsSupported()) return
-        if (!isInitialized) {
-            syncScope.launch(mainDispatcher) {
-                actions.awaitInit()
-                operation()
-            }
-        } else {
-            operation()
-        }
-    }
-
     private fun initSdk() {
-        if (isOsSupported()) {
-            activityHelper.enableLifecycleCallbacks(application)
-            appLifecycleOwner.lifecycle.addObserver(this@RetenoInternalImpl)
-            actions.boot()
-        }
+        appLifecycleOwner.lifecycle.addObserver(this@RetenoInternalImpl)
+        actions.boot()
     }
 
     @OnLifecycleEvent(Lifecycle.Event.ON_START)
     override fun start() {
-        if (!isOsSupported()) return
         actions.requestStart()
     }
 
     @OnLifecycleEvent(Lifecycle.Event.ON_STOP)
     override fun stop() {
-        if (!isOsSupported()) return
         actions.requestStop()
     }
 
@@ -144,132 +103,110 @@ class RetenoInternalImpl internal constructor(
 
     @Throws(java.lang.IllegalArgumentException::class)
     override fun setUserAttributes(externalUserId: String, user: User?) {
-        if (!isOsSupported()) return
         UserAttributesValidator.requireValidExternalUserId(externalUserId)
         UserAttributesValidator.requireValidMarketId(user?.userAttributes?.marketId)
-        runAfterInit { actions.submitUserAttributes(externalUserId, user) }
+        actions.runAfterInit { actions.submitUserAttributes(externalUserId, user) }
     }
 
     @Throws(java.lang.IllegalArgumentException::class)
     override fun setMultiAccountUserAttributes(externalUserId: String, user: User?) {
-        if (!isOsSupported()) return
         UserAttributesValidator.requireValidExternalUserId(externalUserId)
         UserAttributesValidator.requireValidMarketId(user?.userAttributes?.marketId)
-        runAfterInit { actions.submitMultiAccountUserAttributes(externalUserId, user) }
+        actions.runAfterInit { actions.submitMultiAccountUserAttributes(externalUserId, user) }
     }
 
     @Throws(java.lang.IllegalArgumentException::class)
     override fun setAnonymousUserAttributes(userAttributes: UserAttributesAnonymous) {
-        if (!isOsSupported()) return
         UserAttributesValidator.requireValidMarketId(userAttributes.marketId)
-        runAfterInit { actions.submitAnonymousUserAttributes(userAttributes) }
+        actions.runAfterInit { actions.submitAnonymousUserAttributes(userAttributes) }
     }
 
-    override fun logEvent(event: Event) = runAfterInit {
+    override fun logEvent(event: Event) = actions.runAfterInit {
         actions.submitEvent(event)
     }
 
-    override fun logEcommerceEvent(ecomEvent: EcomEvent) = runAfterInit {
+    override fun logEcommerceEvent(ecomEvent: EcomEvent) = actions.runAfterInit {
         actions.submitEcomEvent(ecomEvent)
     }
 
-    override fun logScreenView(screenName: String) = runAfterInit {
+    override fun logScreenView(screenName: String) = actions.runAfterInit {
         actions.submitScreenView(screenName)
     }
 
     override fun setLifecycleEventConfig(lifecycleTrackingOptions: LifecycleTrackingOptions) =
-        runAfterInit {
+        actions.runAfterInit {
             actions.submitLifecycleEventConfig(lifecycleTrackingOptions)
         }
 
-    override fun autoScreenTracking(config: ScreenTrackingConfig) = runAfterInit {
+    override fun autoScreenTracking(config: ScreenTrackingConfig) = actions.runAfterInit {
         actions.submitAutoScreenTracking(config)
     }
 
-    override fun updatePushPermissionStatus() = runAfterInit {
+    override fun updatePushPermissionStatus() = actions.runAfterInit {
         actions.submitPushPermissionStatus()
     }
 
-    override fun pauseInAppMessages(isPaused: Boolean) = runAfterInit {
+    override fun pauseInAppMessages(isPaused: Boolean) = actions.runAfterInit {
         actions.submitInAppPause(isPaused)
     }
 
-    override fun pausePushInAppMessages(isPaused: Boolean) = runAfterInit {
+    override fun pausePushInAppMessages(isPaused: Boolean) = actions.runAfterInit {
         actions.submitPushInAppPause(isPaused)
     }
 
-    override fun setPushInAppMessagesPauseBehaviour(behaviour: InAppPauseBehaviour) = runAfterInit {
+    override fun setPushInAppMessagesPauseBehaviour(behaviour: InAppPauseBehaviour) = actions.runAfterInit {
         actions.submitPushInAppPauseBehaviour(behaviour)
     }
 
     override fun setInAppLifecycleCallback(inAppLifecycleCallback: InAppLifecycleCallback?) =
-        runAfterInit {
+        actions.runAfterInit {
             actions.submitInAppLifecycleCallback(inAppLifecycleCallback)
         }
 
-    override fun forcePushData() = runAfterInit {
+    override fun forcePushData() = actions.runAfterInit {
         actions.requestSync()
     }
 
-    override fun setInAppMessagesPauseBehaviour(behaviour: InAppPauseBehaviour) = runAfterInit {
+    override fun setInAppMessagesPauseBehaviour(behaviour: InAppPauseBehaviour) = actions.runAfterInit {
         actions.submitInAppPauseBehaviour(behaviour)
     }
 
     override fun onNewFcmToken(token: String) {
-        if (!isOsSupported()) return
-        runAfterInit { actions.submitFcmToken(token) }
+        actions.runAfterInit { actions.submitFcmToken(token) }
     }
 
     override fun recordInteraction(id: String, status: InteractionStatus, forcePush: Boolean) {
-        if (!isOsSupported()) return
         actions.submitPushInteraction(id, status)
     }
 
-    override fun recordInteractionAction(id: String, action: InteractionAction, forcePush: Boolean) = runAfterInit {
-        actions.submitInteractionClick(id, action, forcePush)
-    }
-
-    override fun canPresentMessages(): Boolean {
-        if (!isOsSupported()) return false
-        return activityHelper.canPresentMessages()
-    }
-
-    override fun getDeviceId(): String {
-        if (!isOsSupported()) return ""
-        return configRepository.getDeviceId().id
-    }
-
-    override fun hasDataForSync(): Boolean {
-        if (!isOsSupported()) return true
-        return try {
-            databaseManager.hasDataForSync()
-        } catch (e: Exception) {
-            Logger.e(TAG, "hasDataForSync(): ", e)
-            true
+    override fun recordInteractionAction(id: String, action: InteractionAction, forcePush: Boolean) =
+        actions.runAfterInit {
+            actions.submitInteractionClick(id, action, forcePush)
         }
-    }
 
-    override fun isActivityPresented(): Boolean {
-        return activityHelper.currentActivity != null
-    }
+    override fun canPresentMessages(): Boolean = actions.canPresentMessages()
 
-    override fun initializeIamView(interactionId: String) = runAfterInit {
+    override fun getDeviceId(): String = actions.deviceId
+
+    override fun hasDataForSync(): Boolean = actions.hasDataForSync()
+
+    override fun isActivityPresented(): Boolean = actions.isActivityPresented()
+
+    override fun initializeIamView(interactionId: String) = actions.runAfterInit {
         actions.submitIamFromPush(interactionId)
     }
 
-    override fun getDefaultNotificationChannel(): String {
-        return configRepository.getDefaultNotificationChannel()
-    }
+    override fun getDefaultNotificationChannel(): String = actions.defaultNotificationChannel
 
-    override fun saveDefaultNotificationChannel(channel: String) = runAfterInit {
+    override fun saveDefaultNotificationChannel(channel: String) = actions.runAfterInit {
         actions.submitDefaultNotificationChannel(channel)
     }
 
-    override fun notificationsEnabled(enabled: Boolean) = runAfterInit {
+    override fun notificationsEnabled(enabled: Boolean) = actions.runAfterInit {
         actions.submitNotificationsEnabled(enabled)
     }
 
-    override fun deeplinkClicked(linkWrapped: String, linkUnwrapped: String) = runAfterInit {
+    override fun deeplinkClicked(linkWrapped: String, linkUnwrapped: String) = actions.runAfterInit {
         actions.submitDeeplinkClick(linkWrapped)
     }
 
@@ -277,21 +214,19 @@ class RetenoInternalImpl internal constructor(
         return infrastructure.configuration.config?.defaultNotificationChannelConfig
     }
 
-    override fun executeAfterInit(action: () -> Unit) = runAfterInit {
-        action()
-    }
+    override fun executeAfterInit(action: () -> Unit) = actions.runAfterInit(action)
 
-    override fun setSessionDuration(duration: Long) = runAfterInit {
+    override fun setSessionDuration(duration: Long) = actions.runAfterInit {
         actions.submitSessionDuration(duration)
     }
 
     override suspend fun requestPermissionChecker(): AndroidPermissionChecker? {
-        return permissionDelegate.requestChecker()
+        return infrastructure.permissions.requestChecker()
     }
 
-    companion object {
-        private const val TAG = "RetenoInternalImpl"
+    internal suspend fun backgroundSync(): Result<BackgroundSyncOutcome> = actions.backgroundSync()
 
+    companion object {
         @Deprecated("Use Reteno.instance", ReplaceWith("Reteno.instance", "com.reteno.core.Reteno"))
         val instance: RetenoInternalImpl
             get() = Reteno.instance as RetenoInternalImpl

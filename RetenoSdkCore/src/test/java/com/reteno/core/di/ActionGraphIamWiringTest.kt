@@ -3,7 +3,7 @@ package com.reteno.core.di
 import com.reteno.core.data.remote.model.iam.displayrules.frequency.FrequencyRule
 import com.reteno.core.data.remote.model.iam.displayrules.targeting.InAppWithEvent
 import com.reteno.core.features.iam.InAppPauseBehaviour
-import com.reteno.core.fixtures.LocatorFixture
+import com.reteno.core.fixtures.ActionGraphFixture
 import com.reteno.core.fixtures.RecordingInAppLifecycleCallback
 import com.reteno.core.fixtures.stubCustomEvent
 import com.reteno.core.fixtures.stubEventRule
@@ -21,19 +21,19 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
-internal class ActionsLocatorIamWiringTest {
+internal class ActionGraphIamWiringTest {
 
     @Test
     fun `should evaluate in-app display rules with sdk clock`() = runUnitTest {
         given()
-        val fixture = LocatorFixture(this)
+        val fixture = ActionGraphFixture(this)
         val shownJustBeforeSdkNow = stubInAppMessage(
             frequency = listOf(FrequencyRule.MinInterval(500L)),
             lastShowTime = 600L
         )
 
         whenn()
-        val decision = fixture.sut.inAppDisplayRules.decide(
+        val decision = fixture.graph.inApp.inAppDisplayRules.decide(
             message = shownJustBeforeSdkNow,
             sessionStartTimestamp = 0L,
             showingOnAppStart = false
@@ -46,35 +46,35 @@ internal class ActionsLocatorIamWiringTest {
     @Test
     fun `should keep in-app pause state between calls`() = runUnitTest {
         given()
-        val fixture = LocatorFixture(this)
+        val fixture = ActionGraphFixture(this)
 
         whenn()
-        fixture.sut.inAppMessagesState.setPaused(true)
+        fixture.graph.inApp.inAppMessagesState.setPaused(true)
 
         then()
-        assertTrue(fixture.sut.inAppMessagesState.isPaused)
+        assertTrue(fixture.graph.inApp.inAppMessagesState.isPaused)
     }
 
     @Test
     fun `should pause in-app messages submitted by host`() = runUnitTest {
         given()
-        val fixture = LocatorFixture(this)
+        val fixture = ActionGraphFixture(this)
 
         whenn()
         fixture.sut.submitInAppPause(true)
         runCurrent()
 
         then()
-        assertTrue(fixture.sut.inAppMessagesState.isPaused)
+        assertTrue(fixture.graph.inApp.inAppMessagesState.isPaused)
     }
 
     @Test
     fun `should drop postponed in-app when host chose to skip them`() = runUnitTest {
         given()
-        val fixture = LocatorFixture(this)
-        fixture.sut.iamView.start()
-        fixture.sut.inAppMessagesState.setPaused(true)
-        fixture.sut.inAppMessagesState.postponeIfPaused(stubInAppMessage())
+        val fixture = ActionGraphFixture(this)
+        fixture.graph.inApp.iamView.start()
+        fixture.graph.inApp.inAppMessagesState.setPaused(true)
+        fixture.graph.inApp.inAppMessagesState.postponeIfPaused(stubInAppMessage())
 
         whenn()
         fixture.sut.submitInAppPauseBehaviour(InAppPauseBehaviour.SKIP_IN_APPS)
@@ -88,7 +88,7 @@ internal class ActionsLocatorIamWiringTest {
     @Test
     fun `should save show of displayed in-app message`() = runUnitTest {
         given()
-        val fixture = LocatorFixture(this)
+        val fixture = ActionGraphFixture(this)
 
         whenn()
         fixture.sut.submitInAppShown(stubInAppMessage(messageId = 7))
@@ -101,19 +101,19 @@ internal class ActionsLocatorIamWiringTest {
     @Test
     fun `should show waiting in-app when its event is logged`() = runUnitTest {
         given()
-        val fixture = LocatorFixture(this)
+        val fixture = ActionGraphFixture(this)
         val waiting = stubInAppMessage(messageId = 5)
         val host = RecordingInAppLifecycleCallback(fixture.dispatchers.markedMain)
-        fixture.sut.iamView.setInAppLifecycleCallback(host)
-        fixture.sut.iamView.start()
-        fixture.sut.inAppMessagesState.replaceWaitingForEvent(
+        fixture.graph.inApp.iamView.setInAppLifecycleCallback(host)
+        fixture.graph.inApp.iamView.start()
+        fixture.graph.inApp.inAppMessagesState.replaceWaitingForEvent(
             listOf(InAppWithEvent(waiting, stubEventRule(name = "purchase")))
         )
-        fixture.sut.inAppTriggers.listen()
-        fixture.sut.inAppTriggers.openEventGate()
+        fixture.graph.inApp.inAppTriggers.listen()
+        fixture.graph.inApp.inAppTriggers.openEventGate()
 
         whenn()
-        fixture.sut.logEvent(stubCustomEvent(typeKey = "purchase"))
+        fixture.graph.events.logEvent(stubCustomEvent(typeKey = "purchase"))
         runCurrent()
 
         then()
@@ -123,9 +123,9 @@ internal class ActionsLocatorIamWiringTest {
     @Test
     fun `should record show and opened interaction once in-app widget is displayed`() = runUnitTest {
         given()
-        val fixture = LocatorFixture(this)
-        fixture.sut.iamView.start()
-        fixture.sut.iamView.initialize(stubInAppMessage(messageId = 7))
+        val fixture = ActionGraphFixture(this)
+        fixture.graph.inApp.iamView.start()
+        fixture.graph.inApp.iamView.initialize(stubInAppMessage(messageId = 7))
         runCurrent()
 
         whenn()
@@ -140,7 +140,7 @@ internal class ActionsLocatorIamWiringTest {
     @Test
     fun `should skip push in-apps when host pauses them with skip behaviour`() = runUnitTest {
         given()
-        val fixture = LocatorFixture(this)
+        val fixture = ActionGraphFixture(this)
         fixture.sut.submitPushInAppPauseBehaviour(InAppPauseBehaviour.SKIP_IN_APPS)
         fixture.sut.submitPushInAppPause(true)
 
@@ -155,7 +155,7 @@ internal class ActionsLocatorIamWiringTest {
     @Test
     fun `should tell lifecycle callback set by host about in-app display`() = runUnitTest {
         given()
-        val fixture = LocatorFixture(this)
+        val fixture = ActionGraphFixture(this)
         val host = RecordingInAppLifecycleCallback(fixture.dispatchers.markedMain)
         fixture.sut.submitInAppLifecycleCallback(host)
 

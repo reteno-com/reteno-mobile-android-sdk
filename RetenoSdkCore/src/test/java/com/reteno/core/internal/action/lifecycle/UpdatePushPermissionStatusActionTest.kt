@@ -1,7 +1,7 @@
 package com.reteno.core.internal.action.lifecycle
 
 import com.reteno.core.fixtures.TestActionRunner
-import com.reteno.core.internal.platform.AppPlatform
+import com.reteno.core.internal.platform.AppBroadcasts
 import com.reteno.core.util.Constants
 import com.reteno.test.given
 import com.reteno.test.runUnitTest
@@ -18,15 +18,15 @@ internal class UpdatePushPermissionStatusActionTest {
     @Test
     fun `should broadcast push permission change to registered receivers`() = runUnitTest {
         given()
-        val platform = mockk<AppPlatform>().also { every { it.sendBroadcast(any()) } returns 2 }
+        val broadcasts = mockk<AppBroadcasts>().also { every { it.send(any()) } returns 2 }
         val traced = TestActionRunner(this)
-        val sut = UpdatePushPermissionStatusAction(platform, traced.runner)
+        val sut = UpdatePushPermissionStatusAction(broadcasts, traced.runner)
 
         whenn()
         sut()
 
         then()
-        verify(exactly = 1) { platform.sendBroadcast(Constants.BROADCAST_ACTION_PUSH_PERMISSION_CHANGED) }
+        verify(exactly = 1) { broadcasts.send(Constants.BROADCAST_ACTION_PUSH_PERMISSION_CHANGED) }
         val lines = traced.sink.lines
         assertTrue(lines.any { it.contains("✓ notify push permission receivers") && it.contains("receivers=2") })
     }

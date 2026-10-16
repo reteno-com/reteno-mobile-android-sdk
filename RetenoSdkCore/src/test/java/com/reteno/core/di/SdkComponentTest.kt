@@ -7,6 +7,7 @@ import com.reteno.core.data.remote.api.ApiContract
 import com.reteno.core.data.remote.api.HttpMethod
 import com.reteno.core.domain.ResponseCallback
 import com.reteno.core.fixtures.stubConfig
+import com.reteno.core.fixtures.stubEventsDb
 import com.reteno.core.internal.coroutine.RetenoDispatchers
 import com.reteno.core.internal.log.AndroidLogSink
 import com.reteno.core.util.Logger
@@ -27,15 +28,16 @@ import org.robolectric.annotation.Config
 @Config(sdk = [26])
 internal class SdkComponentTest {
 
-    private class SutFixture {
+    private class SutFixture(osSupported: Boolean = true) {
         val application = ApplicationProvider.getApplicationContext<Application>()
         val sut = SdkComponent(
-            context = application,
+            application = application,
             dispatchers = object : RetenoDispatchers {
                 override val main = Dispatchers.Unconfined
                 override val io = Dispatchers.Unconfined
                 override val default = Dispatchers.Unconfined
-            }
+            },
+            isOsSupported = { osSupported }
         )
 
         fun <T> withSdkLogging(block: () -> T): T {
@@ -55,18 +57,10 @@ internal class SdkComponentTest {
             sut.configRepository,
             sut.fileManager,
             sut.activityHelper,
-            sut.databaseManager,
-            sut.devicesDb,
-            sut.usersDb,
-            sut.interactionsDb,
-            sut.inAppInteractionsDb,
-            sut.eventsDb,
-            sut.inboxDb,
-            sut.inAppMessagesDb,
-            sut.recomEventsDb,
-            sut.wrappedLinksDb,
-            sut.logEventsDb
+            sut.permissions,
+            sut.db
         )
+
     }
 
     @Test
@@ -81,6 +75,43 @@ internal class SdkComponentTest {
 
         then()
         first.zip(second).forEach { (before, after) -> assertSame(before, after) }
+    }
+
+    @Test
+    fun `should run sdk actions on a supported os`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+
+        whenn()
+        val actions = fixture.withSdkLogging { fixture.sut.actions }
+
+        then()
+        assertTrue(actions is SdkActionsRouter)
+    }
+
+    @Test
+    fun `should ignore sdk actions on an unsupported os`() = runUnitTest {
+        given()
+        val fixture = SutFixture(osSupported = false)
+
+        whenn()
+        val actions = fixture.sut.actions
+
+        then()
+        assertTrue(actions is UnsupportedOsActions)
+    }
+
+    @Test
+    fun `should report unsynced data stored through a single database manager`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val before = fixture.sut.db.databaseManager.hasDataForSync()
+
+        whenn()
+        fixture.sut.db.eventsDb.insertEvents(stubEventsDb())
+
+        then()
+        assertEquals(listOf(false, true), listOf(before, fixture.sut.db.databaseManager.hasDataForSync()))
     }
 
     @Test
