@@ -193,6 +193,30 @@ internal class SuspendApiClientTest {
     }
 
     @Test
+    fun `should trace not modified answer as successful`() = runUnitTest {
+        given()
+        val notModified = ApiResult.Failure(304, null, null)
+
+        whenn()
+        val traced = notModified.traceLabel to notModified.isSuccessful
+
+        then()
+        assertEquals("304 not modified" to true, traced)
+    }
+
+    @Test
+    fun `should report not modified answer`() = runUnitTest {
+        given()
+        val answers = listOf(ApiResult.Failure(304, null, null), ApiResult.Failure(404, null, null))
+
+        whenn()
+        val notModified = answers.map { it.isNotModified }
+
+        then()
+        assertEquals(listOf(true, false), notModified)
+    }
+
+    @Test
     fun `should trace failure without response`() = runUnitTest {
         given()
         val failure = ApiResult.Failure(null, null, IOException("offline"))

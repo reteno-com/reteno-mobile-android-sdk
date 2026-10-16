@@ -68,6 +68,22 @@ internal class RetenoDatabaseManagerUserImplTest {
     }
 
     @Test
+    fun `should read users stored in the same second in the order they were stored`() = runUnitTest {
+        withSut {
+            given()
+            store(NO_ADDRESS_USER, BARE_USER, PARTIAL_ADDRESS_USER)
+            sut.deleteUsers(listOf(readBack(NO_ADDRESS_USER, rowId = "1")))
+            store(FULL_USER)
+
+            whenn()
+            val rowIds = sut.getUsers().map { it.rowId }
+
+            then()
+            assertEquals(listOf("2", "3", "4"), rowIds)
+        }
+    }
+
+    @Test
     fun `should read a user whose attributes are all empty as a user without attributes`() = runUnitTest {
         withSut {
             given()

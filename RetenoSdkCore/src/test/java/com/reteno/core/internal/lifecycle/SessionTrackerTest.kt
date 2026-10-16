@@ -7,15 +7,18 @@ import com.reteno.core.domain.model.event.Event
 import com.reteno.core.domain.model.event.LifecycleTrackingOptions
 import com.reteno.core.fixtures.recordingLogEvent
 import com.reteno.core.fixtures.stubInAppMessage
+import com.reteno.core.internal.action.event.LogEvent
 import com.reteno.test.given
 import com.reteno.test.runUnitTest
 import com.reteno.test.then
 import com.reteno.test.whenn
 import com.reteno.test.workScope
+import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
@@ -30,7 +33,8 @@ internal class SessionTrackerTest {
         private val scope: TestScope,
         options: LifecycleTrackingOptions = LifecycleTrackingOptions.ALL,
         previousSessionId: String? = null,
-        previousSessionStart: Long = 0L
+        previousSessionStart: Long = 0L,
+        logEvent: ((MutableList<Event>) -> LogEvent)? = null
     ) {
         val prefs = mockk<SharedPrefsManager>(relaxed = true)
         val events = mutableListOf<Event>()
@@ -38,7 +42,7 @@ internal class SessionTrackerTest {
         val sut = SessionTracker(
             prefs = prefs,
             filter = filter,
-            logEvent = recordingLogEvent(events),
+            logEvent = logEvent?.invoke(events) ?: recordingLogEvent(events),
             scope = scope.workScope(),
             clock = { NOW + scope.testScheduler.currentTime },
             newSessionId = { "new-session" }
@@ -89,6 +93,25 @@ internal class SessionTrackerTest {
         assertTrue(fixture.events.first().params.orEmpty().any { it.value == "old-session" })
         verify(exactly = 1) { fixture.prefs.saveOpenCount(0) }
         verify(exactly = 1) { fixture.prefs.saveBackgroundCount(0) }
+    }
+
+    @Test
+    fun `should log session end before session start when logging the end takes longer`() = runUnitTest {
+        given()
+        val fixture = SutFixture(
+            this,
+            previousSessionId = "old-session",
+            previousSessionStart = 1L,
+            logEvent = ::slowSessionEndLogging
+        )
+
+        whenn()
+        fixture.sut.start()
+        advanceTimeBy(SLOW_LOGGING_MILLIS + 1)
+        runCurrent()
+
+        then()
+        assertEquals(listOf("SessionEnded", "SessionStarted"), fixture.eventKeys)
     }
 
     @Test
@@ -278,5 +301,20 @@ internal class SessionTrackerTest {
 
         then()
         assertTrue(fixture.events.isEmpty())
+    }
+
+    private fun slowSessionEndLogging(logged: MutableList<Event>): LogEvent = mockk<LogEvent>().also {
+        coEvery { it(any()) } coAnswers {
+            val event = firstArg<Event>()
+            if (event.eventTypeKey == "SessionEnded") {
+                delay(SLOW_LOGGING_MILLIS)
+            }
+            logged += event
+            Result.success(Unit)
+        }
+    }
+
+    private companion object {
+        const val SLOW_LOGGING_MILLIS = 500L
     }
 }

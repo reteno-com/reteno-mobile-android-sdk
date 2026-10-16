@@ -3,6 +3,7 @@ package com.reteno.core.internal.action.iam
 import com.reteno.core.data.remote.model.iam.message.InAppMessage
 import com.reteno.core.internal.action.trace.ActionRunner
 import com.reteno.core.internal.action.trace.ActionTrace
+import com.reteno.core.internal.action.trace.TracedOutcome
 import com.reteno.core.internal.iam.DisplayDecision
 import com.reteno.core.internal.iam.InAppDisplayRules
 import com.reteno.core.internal.iam.InAppMessagesState
@@ -10,8 +11,17 @@ import com.reteno.core.lifecycle.RetenoSessionHandler
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
-internal fun interface InAppDisplay {
-    fun show(message: InAppMessage)
+internal interface InAppDisplay {
+    suspend fun show(message: InAppMessage): DisplayOffer
+}
+
+internal enum class DisplayOffer(override val traceLabel: String) : TracedOutcome {
+    LOADING("loading"),
+    WAITING_FOR_APP("waiting for the app to come to foreground"),
+    SKIPPED("skipped, another in-app message is on screen");
+
+    override val isSuccessful: Boolean
+        get() = true
 }
 
 internal interface ShowInApp {

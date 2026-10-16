@@ -24,10 +24,18 @@ internal sealed interface ApiResult {
         val isRepeatable: Boolean
             get() = isRepeatableError(statusCode)
 
+        val isNotModified: Boolean
+            get() = statusCode == HTTP_NOT_MODIFIED
+
         override val traceLabel: String
-            get() = "${statusCode ?: "no response"} ${if (isRepeatable) "repeatable" else "non-repeatable"}"
+            get() = when {
+                isNotModified -> "$HTTP_NOT_MODIFIED not modified"
+                else -> "${statusCode ?: "no response"} ${if (isRepeatable) "repeatable" else "non-repeatable"}"
+            }
 
         override val isSuccessful: Boolean
-            get() = false
+            get() = isNotModified
     }
 }
+
+private const val HTTP_NOT_MODIFIED = 304

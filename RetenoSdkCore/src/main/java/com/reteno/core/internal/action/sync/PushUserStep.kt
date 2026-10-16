@@ -25,40 +25,58 @@ internal class PushUserStep(
 ) : SyncStep {
 
     override suspend fun invoke(): Result<StepOutcome> = runner("PushUser") {
-        push()
+        var outcome = pushRound()
+        var round = 1
+        while (outcome == RoundOutcome.MORE_PENDING && round < MAX_ROUNDS) {
+            outcome = pushRound()
+            round++
+        }
+        if (outcome == RoundOutcome.ABORT) StepOutcome.ABORT else StepOutcome.CONTINUE
     }
 
-    private suspend fun ActionTrace.push(): StepOutcome {
+    private suspend fun ActionTrace.pushRound(): RoundOutcome {
         val users = step("load users from local database", detail = { "count=${it.size}" }) {
             withContext(dispatchers.io) { usersDb.getUsers() }
         }
-        val unsynced = users.filter { it.isSynchronizedWithBackend != BooleanDb.TRUE }
-        if (unsynced.isEmpty()) return nothingToSend()
-        val synced = users.filter { it.isSynchronizedWithBackend == BooleanDb.TRUE }.maxByOrNull { it.createdAt }
-        val push = pushFor(unsynced, synced)
+        val pending = users.filter { it.isSynchronizedWithBackend != BooleanDb.TRUE }.sortedBy { it.createdAt }
+        if (pending.isEmpty()) {
+            nothingToSend()
+            return RoundOutcome.DONE
+        }
+        val run = pending.takeWhile { it.isSameContactAs(pending.first()) }
+        val syncedRows = users.filter { it.isSynchronizedWithBackend == BooleanDb.TRUE }
+        val push = pushFor(run, syncedRows.maxByOrNull { it.createdAt })
         if (push == null) {
             step("delete users without changes from local database") {
-                withContext(dispatchers.io) { usersDb.deleteUsers(unsynced) }
+                withContext(dispatchers.io) { usersDb.deleteUsers(run) }
             }
-            return StepOutcome.CONTINUE
+            return nextRound(pending, run)
         }
         val result = step("send user to server") {
             api.request(HttpMethod.POST, ApiContract.MobileApi.User, push.request.toJson())
         }
-        if (result is ApiResult.Failure && result.isRepeatable) return StepOutcome.ABORT
+        if (result is ApiResult.Failure) {
+            if (result.isRepeatable) return RoundOutcome.ABORT
+            step("drop user rejected by server from local database") {
+                withContext(dispatchers.io) { usersDb.deleteUsers(run) }
+            }
+            return nextRound(pending, run)
+        }
         step("mark user as synced in local database") {
             withContext(dispatchers.io) {
-                usersDb.deleteUsers(users)
+                usersDb.deleteUsers(syncedRows + run)
                 usersDb.insertUser(push.full.toDb().copy(isSynchronizedWithBackend = BooleanDb.TRUE))
             }
         }
-        return StepOutcome.CONTINUE
+        return nextRound(pending, run)
     }
 
-    private fun pushFor(unsynced: List<UserDb>, synced: UserDb?): UserPush? {
-        val ordered = unsynced.sortedBy { it.createdAt }
-        val merged = ordered.map { it.toRemote() }.reduce { accumulated, next -> next.createAccModel(accumulated) }
-        if (synced == null || Util.isTimestampOutdated(synced.createdAt, ordered.first().createdAt)) {
+    private fun nextRound(pending: List<UserDb>, sent: List<UserDb>): RoundOutcome =
+        if (pending.size > sent.size) RoundOutcome.MORE_PENDING else RoundOutcome.DONE
+
+    private fun pushFor(run: List<UserDb>, synced: UserDb?): UserPush? {
+        val merged = run.map { it.toRemote() }.reduce { accumulated, next -> next.createAccModel(accumulated) }
+        if (synced == null || !synced.isSameContactAs(run.first()) || isOutdated(synced, run.first())) {
             return UserPush(request = merged, full = merged)
         }
         val syncedRemote = synced.toRemote()
@@ -66,5 +84,17 @@ internal class PushUserStep(
         return UserPush(request = diff, full = merged.createAccModel(syncedRemote))
     }
 
+    private fun UserDb.isSameContactAs(other: UserDb): Boolean =
+        deviceId == other.deviceId && externalUserId == other.externalUserId
+
+    private fun isOutdated(synced: UserDb, oldestPending: UserDb): Boolean =
+        Util.isTimestampOutdated(synced.createdAt, oldestPending.createdAt)
+
     private class UserPush(val request: UserRemote, val full: UserRemote)
+
+    private enum class RoundOutcome { DONE, MORE_PENDING, ABORT }
+
+    companion object {
+        const val MAX_ROUNDS = 5
+    }
 }

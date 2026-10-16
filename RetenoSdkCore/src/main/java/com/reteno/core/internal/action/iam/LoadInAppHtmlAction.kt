@@ -93,7 +93,7 @@ internal class LoadInAppHtmlAction(
         const val KEY_PERSONALISATION = "\${personalisation}"
         private const val EMPTY_PERSONALISATION = "{}"
         private const val EMPTY_MODEL = "{}"
-        private val PLACEHOLDER = Regex("\\$\\{.+}")
+        private val PLACEHOLDER = Regex("\\$\\{.+\\}")
         private val GSON = Gson()
         private val USER_FIELDS: Map<String, (UserAttributesDb) -> String?> = mapOf(
             "firstName" to { it.firstName },

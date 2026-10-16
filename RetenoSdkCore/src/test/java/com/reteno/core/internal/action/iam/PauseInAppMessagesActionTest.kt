@@ -1,6 +1,7 @@
 package com.reteno.core.internal.action.iam
 
 import com.reteno.core.features.iam.InAppPauseBehaviour
+import com.reteno.core.fixtures.RecordingInAppDisplay
 import com.reteno.core.fixtures.TestActionRunner
 import com.reteno.core.fixtures.stubInAppMessage
 import com.reteno.core.internal.iam.InAppMessagesStateImpl
@@ -17,9 +18,10 @@ internal class PauseInAppMessagesActionTest {
 
     private class SutFixture(scope: TestScope) {
         val state = InAppMessagesStateImpl()
-        val shown = mutableListOf<Long>()
+        val display = RecordingInAppDisplay()
+        val shown = display.shown
         val traced = TestActionRunner(scope)
-        val sut = PauseInAppMessagesAction(state, InAppDisplay { shown += it.messageId }, traced.runner)
+        val sut = PauseInAppMessagesAction(state, display, traced.runner)
         val setBehaviour = SetInAppPauseBehaviourAction(state, traced.runner)
     }
 
@@ -90,6 +92,22 @@ internal class PauseInAppMessagesActionTest {
         then()
         val pauseLine = fixture.traced.sink.lines.first { it.contains("✓ apply pause to in-app state") }
         assertTrue(pauseLine.contains("show postponed 4"))
+    }
+
+    @Test
+    fun `should trace that display skipped the postponed message because another one is on screen`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        fixture.display.offer = DisplayOffer.SKIPPED
+        fixture.state.setPaused(true)
+        fixture.state.postponeIfPaused(stubInAppMessage(messageId = 4))
+
+        whenn()
+        fixture.sut(paused = false)
+
+        then()
+        val displayLine = fixture.traced.sink.lines.first { it.contains("✓ pass postponed in-app message to display") }
+        assertTrue(displayLine.contains("skipped, another in-app message is on screen"))
     }
 
     @Test

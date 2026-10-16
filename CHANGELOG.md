@@ -47,6 +47,16 @@ earlier release are tested.
   every later API call waited forever.
 - Validation errors for `externalUserId` and `marketId` crashed the app on the main thread instead of reaching the
   caller.
+- User attributes the server rejected (for example an unknown custom field) were stored as already sent, so later
+  updates left out every attribute of the rejected request. The rejected update is now dropped and later updates are
+  compared with what the server actually accepted.
+- After switching to another `externalUserId` (or device id), only the attributes that differed from the previous user
+  were sent, so the new contact missed the rest. The first update for a new user now sends all its attributes.
+- Users switched while the device was offline were merged into one request for the last user: earlier users never got
+  their attributes and the last one received theirs. Pending updates are now sent per user in the order they were set
+  (up to five users per sync, the rest on the next one); anonymous attributes set before identifying a user are sent
+  on their own, as they are online.
+- `SessionStarted` could be stored before the `SessionEnded` of the previous session; they are now logged in order.
 - Waiting for a custom device id or for the device id could poll forever.
 - The default notification channel config ignored defaults for missing fields and could throw for a missing id or
   name.

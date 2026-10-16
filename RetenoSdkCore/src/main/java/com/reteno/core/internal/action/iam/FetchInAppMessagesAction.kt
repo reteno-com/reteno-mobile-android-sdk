@@ -77,7 +77,7 @@ internal class FetchInAppMessagesAction(
     private suspend fun ActionTrace.readServerList(response: ApiResult): List<InAppMessage>? {
         if (response is ApiResult.Failure) {
             note {
-                if (response.statusCode == NOT_MODIFIED) {
+                if (response.isNotModified) {
                     "in-app messages unchanged on server"
                 } else {
                     "in-app messages unavailable on server, using cached ones"
@@ -151,7 +151,6 @@ internal class FetchInAppMessagesAction(
     }
 
     private companion object {
-        const val NOT_MODIFIED = 304
         const val CONTENT_RETRIES = 3
         const val HEADER_ETAG = "ETag"
         const val HEADER_IF_NONE_MATCH = "If-None-Match"

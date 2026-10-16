@@ -10,6 +10,7 @@ import com.reteno.core.features.iam.IamJsEventType
 import com.reteno.core.features.iam.IamJsPayload
 import com.reteno.core.features.iam.IamJsRawEvent
 import com.reteno.core.features.iam.InAppPauseBehaviour
+import com.reteno.core.internal.action.iam.DisplayOffer
 import com.reteno.core.internal.action.iam.InAppDisplay
 import com.reteno.core.internal.action.iam.LoadInAppHtml
 import com.reteno.core.internal.action.iam.LoadPushInAppHtml
@@ -29,6 +30,7 @@ import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 internal class InAppPresenter(
     private val screen: InAppScreen,
@@ -63,11 +65,13 @@ internal class InAppPresenter(
 
     override fun isViewShown(): Boolean = shown
 
-    override fun show(message: InAppMessage) = onMain {
+    override suspend fun show(message: InAppMessage): DisplayOffer = withContext(dispatchers.main) {
         offer(message)
     }
 
-    override fun initialize(inAppMessage: InAppMessage) = show(inAppMessage)
+    override fun initialize(inAppMessage: InAppMessage) = onMain {
+        offer(inAppMessage)
+    }
 
     override fun initialize(interactionId: String) = onMain {
         if (pushPaused && pauseBehaviour == InAppPauseBehaviour.SKIP_IN_APPS) return@onMain
@@ -136,13 +140,14 @@ internal class InAppPresenter(
         screen.hide()
     }
 
-    private fun offer(message: InAppMessage) {
-        if (current != null) return
+    private fun offer(message: InAppMessage): DisplayOffer {
+        if (current != null) return DisplayOffer.SKIPPED
         if (!active) {
             pending = message
-            return
+            return DisplayOffer.WAITING_FOR_APP
         }
         begin(RuleInApp(message))
+        return DisplayOffer.LOADING
     }
 
     private fun offerPending() {

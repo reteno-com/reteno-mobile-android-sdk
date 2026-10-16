@@ -41,7 +41,7 @@ internal class SessionTracker(
         onAppForegrounded()
         job = scope.launch {
             while (true) {
-                tick()
+                tick().forEach { logEvent(it) }
                 delay(TICK_MILLIS)
             }
         }
@@ -100,24 +100,25 @@ internal class SessionTracker(
     }
 
     @Synchronized
-    private fun tick() {
-        if (clock() - sessionStartTimestamp > sessionResetTime) startSession()
+    private fun tick(): List<Event> {
+        val sessionEvents = if (clock() - sessionStartTimestamp > sessionResetTime) startSession() else emptyList()
         countForegroundTime()
         closestScheduledMessages = nextScheduled(scheduledMessages)
+        return sessionEvents.filter { filter.isEnabled(it.type) }.map { it.event }
     }
 
-    private fun startSession() {
+    private fun startSession(): List<LifecycleEvent> {
         val now = clock()
         val previousSessionId = prefs.getSessionId().orEmpty()
-        if (previousSessionId.isNotEmpty()) {
-            track(
-                Event.sessionEnd(
-                    previousSessionId,
-                    now.asZonedDateTime(),
-                    (now - prefs.getSessionStartTimestamp()).milliseconds.inWholeSeconds.toInt(),
-                    prefs.getOpenCount(),
-                    prefs.getBackgroundCount()
-                )
+        val ended = if (previousSessionId.isEmpty()) {
+            null
+        } else {
+            Event.sessionEnd(
+                previousSessionId,
+                now.asZonedDateTime(),
+                (now - prefs.getSessionStartTimestamp()).milliseconds.inWholeSeconds.toInt(),
+                prefs.getOpenCount(),
+                prefs.getBackgroundCount()
             )
         }
         prefs.saveOpenCount(0)
@@ -127,7 +128,7 @@ internal class SessionTracker(
         sessionId = newSessionId()
         prefs.saveSessionStartTimestamp(sessionStartTimestamp)
         prefs.saveSessionId(sessionId)
-        track(Event.sessionStart(sessionId, sessionStartTimestamp.asZonedDateTime()))
+        return listOfNotNull(ended, Event.sessionStart(sessionId, sessionStartTimestamp.asZonedDateTime()))
     }
 
     private fun countForegroundTime() {
@@ -146,11 +147,6 @@ internal class SessionTracker(
     private fun nextScheduled(messages: List<InAppWithTime>): List<InAppWithTime> {
         val next = messages.firstOrNull() ?: return emptyList()
         return messages.filter { it.time == next.time }
-    }
-
-    private fun track(lifecycleEvent: LifecycleEvent) {
-        if (!filter.isEnabled(lifecycleEvent.type)) return
-        scope.launch { logEvent(lifecycleEvent.event) }
     }
 
     companion object {

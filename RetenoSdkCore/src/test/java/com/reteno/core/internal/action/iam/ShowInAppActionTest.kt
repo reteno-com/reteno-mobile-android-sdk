@@ -1,6 +1,7 @@
 package com.reteno.core.internal.action.iam
 
 import com.reteno.core.data.remote.model.iam.message.InAppMessage
+import com.reteno.core.fixtures.RecordingInAppDisplay
 import com.reteno.core.fixtures.TestActionRunner
 import com.reteno.core.fixtures.stubInAppMessage
 import com.reteno.core.internal.iam.DisplayDecision
@@ -31,7 +32,8 @@ internal class ShowInAppActionTest {
         val state = InAppMessagesStateImpl()
         val checkSegments = mockk<CheckInAppSegments>()
         val sessionHandler = mockk<RetenoSessionHandler>()
-        val shown = mutableListOf<Long>()
+        val display = RecordingInAppDisplay()
+        val shown = display.shown
         val decided = mutableListOf<Triple<Long, Long, Boolean>>()
         val lock = Mutex()
         val traced = TestActionRunner(scope)
@@ -40,7 +42,7 @@ internal class ShowInAppActionTest {
             state = state,
             checkSegments = checkSegments,
             sessionHandler = sessionHandler,
-            display = InAppDisplay { shown += it.messageId },
+            display = display,
             lock = lock,
             runner = traced.runner
         )
@@ -63,6 +65,47 @@ internal class ShowInAppActionTest {
                 }
             }
         }
+    }
+
+    @Test
+    fun `should trace that display skipped the in-app because another one is on screen`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        fixture.display.offer = DisplayOffer.SKIPPED
+
+        whenn()
+        fixture.sut(CANDIDATES, showingOnAppStart = true)
+
+        then()
+        val displayLine = fixture.traced.sink.lines.first { it.contains("✓ pass in-app message to display") }
+        assertTrue(displayLine.contains("skipped, another in-app message is on screen"))
+    }
+
+    @Test
+    fun `should trace that display waits for the app to come to foreground`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        fixture.display.offer = DisplayOffer.WAITING_FOR_APP
+
+        whenn()
+        fixture.sut(CANDIDATES, showingOnAppStart = true)
+
+        then()
+        val displayLine = fixture.traced.sink.lines.first { it.contains("✓ pass in-app message to display") }
+        assertTrue(displayLine.contains("waiting for the app to come to foreground"))
+    }
+
+    @Test
+    fun `should trace that display started loading the in-app`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+
+        whenn()
+        fixture.sut(CANDIDATES, showingOnAppStart = true)
+
+        then()
+        val displayLine = fixture.traced.sink.lines.first { it.contains("✓ pass in-app message to display") }
+        assertTrue(displayLine.contains("loading"))
     }
 
     @Test

@@ -15,6 +15,7 @@ import com.reteno.core.fixtures.FakeRemoteLog
 import com.reteno.core.fixtures.RecordingInAppLifecycleCallback
 import com.reteno.core.fixtures.stubInAppMessage
 import com.reteno.core.fixtures.testDispatchers
+import com.reteno.core.internal.action.iam.DisplayOffer
 import com.reteno.core.internal.action.iam.LoadInAppHtml
 import com.reteno.core.internal.action.iam.LoadPushInAppHtml
 import com.reteno.core.internal.action.iam.ReportWidgetFailure
@@ -28,6 +29,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
@@ -93,7 +95,7 @@ internal class InAppPresenterTest {
 
         fun showing(message: InAppMessage = MESSAGE) = apply {
             started()
-            sut.show(message)
+            scope.launch { sut.show(message) }
             scope.runCurrent()
         }
 
@@ -129,6 +131,42 @@ internal class InAppPresenterTest {
         then()
         assertTrue(createdBeforeStart.isEmpty())
         assertEquals(listOf("create html-1"), fixture.screen.calls)
+    }
+
+    @Test
+    fun `should answer that in-app offered to a free screen is loading`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this).started()
+
+        whenn()
+        val offer = fixture.sut.show(MESSAGE)
+
+        then()
+        assertEquals(DisplayOffer.LOADING, offer)
+    }
+
+    @Test
+    fun `should answer that in-app offered before start waits for the app`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+
+        whenn()
+        val offer = fixture.sut.show(MESSAGE)
+
+        then()
+        assertEquals(DisplayOffer.WAITING_FOR_APP, offer)
+    }
+
+    @Test
+    fun `should answer that in-app offered while another one is on screen is skipped`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this).showing()
+
+        whenn()
+        val offer = fixture.sut.show(stubInAppMessage(messageId = 2))
+
+        then()
+        assertEquals(DisplayOffer.SKIPPED, offer)
     }
 
     @Test

@@ -406,6 +406,21 @@ internal class FetchInAppMessagesActionTest {
     }
 
     @Test
+    fun `should trace unchanged in-app list as a successful server answer`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this, cached = CACHED)
+        fixture.rest.failWith(304)
+
+        whenn()
+        fixture.sut()
+
+        then()
+        val lines = fixture.traced.sink.lines
+        assertTrue(lines.any { it.contains("✓ load in-app messages from server") && it.contains("304 not modified") })
+        assertTrue(lines.none { it.contains("✗") })
+    }
+
+    @Test
     fun `should note when server list is unavailable`() = runUnitTest {
         given()
         val fixture = SutFixture(this, cached = CACHED)
