@@ -64,42 +64,35 @@ fun Cursor.getInAppMessage(): InAppMessageDb? {
     } else {
         SegmentDb(
             segmentId = segmentId,
-            isInSegment = isInSegment?.toBoolean() ?: false,
+            isInSegment = isInSegment.toBoolean(),
             lastCheckTime = lastCheckTime,
             checkStatusCode = checkStatusCode,
             retryAfter = retryAfter
         )
     }
 
-    val rowId = getStringOrNull(getColumnIndex(InAppMessageSchema.COLUMN_IAM_ROW_ID))
+    val rowId = getString(getColumnIndex(InAppMessageSchema.COLUMN_IAM_ROW_ID))
     val createdAt = getStringOrNull(getColumnIndex(DbSchema.COLUMN_TIMESTAMP))
-    val messageId = getLongOrNull(getColumnIndex(InAppMessageSchema.COLUMN_IAM_ID))
-    val messageInstanceId = getLongOrNull(getColumnIndex(InAppMessageSchema.COLUMN_IAM_INSTANCE_ID))
-    val displayRules = getStringOrNull(getColumnIndex(InAppMessageSchema.COLUMN_IAM_DISPLAY_RULES))
+    val messageId = getLong(getColumnIndex(InAppMessageSchema.COLUMN_IAM_ID))
+    val messageInstanceId = getLong(getColumnIndex(InAppMessageSchema.COLUMN_IAM_INSTANCE_ID))
+    val displayRules = getString(getColumnIndex(InAppMessageSchema.COLUMN_IAM_DISPLAY_RULES))
     val lastShowTime = getLongOrNull(getColumnIndex(InAppMessageSchema.COLUMN_IAM_LAST_SHOW_TIME))
-    val showCount = getLongOrNull(getColumnIndex(InAppMessageSchema.COLUMN_IAM_SHOW_COUNT)) ?: 0L
+    val showCount = getLong(getColumnIndex(InAppMessageSchema.COLUMN_IAM_SHOW_COUNT))
     val layoutType = getStringOrNull(getColumnIndex(InAppMessageSchema.COLUMN_IAM_LAYOUT_TYPE))
     val model = getStringOrNull(getColumnIndex(InAppMessageSchema.COLUMN_IAM_MODEL))
     val position = getStringOrNull(getColumnIndex(InAppMessageSchema.COLUMN_IAM_POSITION))
 
-    val result = if (createdAt == null || messageId == null || messageInstanceId == null || displayRules == null) {
-        null
-    } else {
-        InAppMessageDb(
-            rowId = rowId,
-            createdAt = Util.formatSqlDateToTimestamp(createdAt),
-            messageId = messageId,
-            messageInstanceId = messageInstanceId,
-            displayRules = displayRules,
-            lastShowTime = lastShowTime,
-            showCount = showCount,
-            layoutType = layoutType,
-            model = model,
-            position = position
-        )
-    }
-
-    result?.segment = segment
-
-    return result
+    if (createdAt == null) return null
+    return InAppMessageDb(
+        rowId = rowId,
+        createdAt = Util.formatSqlDateToTimestamp(createdAt),
+        messageId = messageId,
+        messageInstanceId = messageInstanceId,
+        displayRules = displayRules,
+        lastShowTime = lastShowTime,
+        showCount = showCount,
+        layoutType = layoutType,
+        model = model,
+        position = position
+    ).also { it.segment = segment }
 }

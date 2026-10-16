@@ -2,16 +2,23 @@ package com.reteno.core.data.local.config
 
 import com.reteno.core.data.local.sharedpref.SharedPrefsManager
 
+internal interface DeviceIdentity {
+
+    val deviceId: DeviceId
+
+    suspend fun initDeviceId(deviceIdMode: DeviceIdMode)
+}
+
 internal class RestConfig(
     private val sharedPrefsManager: SharedPrefsManager,
     private val deviceIdHelper: DeviceIdHelper
-) {
+) : DeviceIdentity {
 
     @Volatile
-    internal var deviceId: DeviceId = DeviceId("")
+    override var deviceId: DeviceId = DeviceId("")
         private set
 
-    internal suspend fun initDeviceId(deviceIdMode: DeviceIdMode) {
+    override suspend fun initDeviceId(deviceIdMode: DeviceIdMode) {
         deviceId = deviceIdHelper.withDeviceIdMode(deviceId, deviceIdMode).copy(
             externalId = sharedPrefsManager.getExternalUserId(),
             idSuffix = sharedPrefsManager.getDeviceIdSuffix(),

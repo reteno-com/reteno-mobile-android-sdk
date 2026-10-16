@@ -41,15 +41,7 @@ class RetenoConfig private constructor(
         private var notificationChannelConfig: Procedure<NotificationChannelCompat.Builder>? = null
         private var isDebug: Boolean = false
 
-        constructor(config: RetenoConfig) : this() {
-            pauseInAppMessages(config.isPausedInAppMessages)
-            pausePushInAppMessages(config.isPausedPushInAppMessages)
-            customDeviceIdProvider(config.userIdProvider)
-            accessKey(config.accessKey)
-            lifecycleTrackingOptions(config.lifecycleTrackingOptions)
-            config.defaultNotificationChannelConfig?.let { defaultNotificationChannelConfig(config.defaultNotificationChannelConfig) }
-            setDebug(config.isDebug)
-        }
+        constructor(config: RetenoConfig) : this(config, config.accessKey)
 
         constructor(config: RetenoConfig, accessKey: String) : this() {
             accessKey(accessKey)
@@ -57,7 +49,9 @@ class RetenoConfig private constructor(
             pausePushInAppMessages(config.isPausedPushInAppMessages)
             customDeviceIdProvider(config.userIdProvider)
             lifecycleTrackingOptions(config.lifecycleTrackingOptions)
-            config.defaultNotificationChannelConfig?.let { defaultNotificationChannelConfig(config.defaultNotificationChannelConfig) }
+            notificationChannelConfig = config.defaultNotificationChannelConfig
+            sessionDuration(config.sessionDuration)
+            setPlatform(config.platform)
             setDebug(config.isDebug)
         }
 

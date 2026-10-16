@@ -1,5 +1,6 @@
 package com.reteno.core
 
+import android.app.Activity
 import android.app.Application
 import androidx.core.app.NotificationChannelCompat
 import androidx.lifecycle.Lifecycle
@@ -8,21 +9,31 @@ import com.reteno.core.domain.model.event.LifecycleTrackingOptions
 import com.reteno.core.domain.model.interaction.InteractionAction
 import com.reteno.core.domain.model.interaction.InteractionStatus
 import com.reteno.core.domain.model.recommendation.post.RecomEvents
+import com.reteno.core.domain.model.user.User
 import com.reteno.core.features.iam.InAppPauseBehaviour
 import com.reteno.core.fixtures.FakeFacadeInfrastructure
+import com.reteno.core.fixtures.FakeLogSink
+import com.reteno.core.fixtures.FakeRemoteLog
 import com.reteno.core.fixtures.FakeSdkActions
 import com.reteno.core.fixtures.ManualLifecycleOwner
+import com.reteno.core.fixtures.installCapturing
 import com.reteno.core.fixtures.stubAnonymousAttributes
 import com.reteno.core.fixtures.stubConfig
 import com.reteno.core.fixtures.stubCustomEvent
+import com.reteno.core.fixtures.stubDeviceId
 import com.reteno.core.fixtures.stubEcomEvent
 import com.reteno.core.fixtures.stubUser
+import com.reteno.core.internal.action.sync.BackgroundSync
+import com.reteno.core.internal.log.AndroidLogSink
 import com.reteno.core.lifecycle.ScreenTrackingConfig
+import com.reteno.core.util.Logger
 import com.reteno.core.util.Procedure
 import com.reteno.test.given
 import com.reteno.test.runUnitTest
 import com.reteno.test.then
 import com.reteno.test.whenn
+import io.mockk.every
+import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
@@ -427,5 +438,150 @@ internal class RetenoInternalImplTest {
 
         then()
         assertSame(fixture.sut, instance)
+    }
+
+    @Test
+    fun `should answer presentation, device id and pending data from the sdk`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        val activity = mockk<Activity>()
+        every { fixture.infrastructure.activityHelper.canPresentMessages() } returns true
+        every { fixture.infrastructure.activityHelper.currentActivity } returns activity
+        every { fixture.infrastructure.configRepository.getDeviceId() } returns stubDeviceId()
+        every { fixture.infrastructure.configRepository.getDefaultNotificationChannel() } returns "{}"
+        every { fixture.infrastructure.databaseManager.hasDataForSync() } returns false
+
+        whenn()
+        val answers = with(fixture.sut) {
+            listOf<Any>(canPresentMessages(), getDeviceId(), hasDataForSync(), isActivityPresented())
+        }
+
+        then()
+        assertEquals(listOf<Any>(true, stubDeviceId().id, false, true), answers)
+        assertEquals("{}", fixture.sut.getDefaultNotificationChannel())
+        every { fixture.infrastructure.activityHelper.currentActivity } returns null
+        assertFalse(fixture.sut.isActivityPresented())
+    }
+
+    @Test
+    fun `should answer safe defaults on unsupported os`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this, osSupported = false)
+
+        whenn()
+        val answers = with(fixture.sut) { listOf<Any>(canPresentMessages(), getDeviceId(), hasDataForSync()) }
+        fixture.sut.start()
+        fixture.sut.stop()
+
+        then()
+        assertEquals(listOf<Any>(false, "", true), answers)
+        assertFalse(fixture.infrastructure.actionsUsed)
+    }
+
+    @Test
+    fun `should assume pending data when the local database cannot be read`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        val remoteLog = FakeRemoteLog()
+        every { fixture.infrastructure.databaseManager.hasDataForSync() } throws IllegalStateException("db closed")
+
+        whenn()
+        Logger.installCapturing(FakeLogSink(), remoteLog)
+        val hasData = try {
+            fixture.sut.hasDataForSync()
+        } finally {
+            Logger.install(AndroidLogSink(), null)
+        }
+
+        then()
+        assertTrue(hasData)
+        assertEquals(listOf("hasDataForSync(): "), remoteLog.errors.map { it.first })
+    }
+
+    @Test
+    fun `should accept user attributes for a user without attributes`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        fixture.actions.markInitialized()
+        val user = User(subscriptionKeys = listOf("news"))
+
+        whenn()
+        fixture.sut.setUserAttributes("user-1", user)
+        fixture.sut.setMultiAccountUserAttributes("account-1", user)
+
+        then()
+        val recorded = listOf(fixture.actions.users, fixture.actions.multiAccountUsers)
+        assertEquals(listOf(listOf(user), listOf(user)), recorded)
+    }
+
+    @Test
+    fun `should record interactions without forcing a push by default`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        fixture.actions.markInitialized()
+        val facade: RetenoInternalFacade = fixture.sut
+
+        whenn()
+        facade.recordInteraction("interaction-1", InteractionStatus.CLICKED)
+        facade.recordInteractionAction("interaction-2", InteractionAction("OPEN_URL", null, null))
+
+        then()
+        val expected = listOf(
+            "submitPushInteraction interaction-1 CLICKED",
+            "submitInteractionClick interaction-2 OPEN_URL false"
+        )
+        assertEquals(expected, fixture.actions.calls.filter { it.startsWith("submit") })
+    }
+
+    @Test
+    fun `should give the same in-app inbox, recommendations and background sync every time`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        val sync = mockk<BackgroundSync>()
+        fixture.actions.backgroundSyncAnswer = sync
+
+        whenn()
+        val first = listOf(fixture.sut.appInbox, fixture.sut.recommendation, fixture.sut.backgroundSync)
+        val second = listOf(fixture.sut.appInbox, fixture.sut.recommendation, fixture.sut.backgroundSync)
+
+        fixture.sut.appInbox.markAsOpened("m1")
+        fixture.sut.recommendation.logRecommendations(RecomEvents("variant", emptyList()))
+
+        then()
+        first.zip(second).forEach { (a, b) -> assertSame(a, b) }
+        assertSame(sync, first.last())
+        assertTrue(fixture.infrastructure.actionsUsed)
+    }
+
+    @Test
+    fun `should give no permission checker when no activity is resumed`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+
+        whenn()
+        val checker = fixture.sut.requestPermissionChecker()
+
+        then()
+        assertNull(checker)
+    }
+
+    @Test
+    fun `should initialize through the static entry point from the deprecated instance api`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        val previous = Reteno.instanceInternal
+        val config = stubConfig()
+
+        whenn()
+        try {
+            Reteno.instanceInternal = fixture.sut
+            @Suppress("DEPRECATION")
+            fixture.sut.initWith(config)
+        } finally {
+            Reteno.instanceInternal = previous
+        }
+
+        then()
+        assertEquals(listOf(config), fixture.actions.configs)
     }
 }

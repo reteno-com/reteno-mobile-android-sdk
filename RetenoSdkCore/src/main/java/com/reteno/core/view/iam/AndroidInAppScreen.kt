@@ -13,12 +13,15 @@ import com.reteno.core.lifecycle.RetenoActivityHelper
 import com.reteno.core.lifecycle.RetenoLifecycleCallBacksAdapter
 import com.reteno.core.util.Constants
 import com.reteno.core.util.Logger
+import com.reteno.core.view.iam.container.AndroidIamContainers
 import com.reteno.core.view.iam.container.IamContainer
+import com.reteno.core.view.iam.container.IamContainerFactory
 
 internal class AndroidInAppScreen(
     private val context: Context,
     private val activityHelper: RetenoActivityHelper,
-    private val broadcaster: AppBroadcaster
+    private val broadcaster: AppBroadcaster,
+    private val containers: IamContainerFactory = AndroidIamContainers
 ) : InAppScreen {
 
     private var events: InAppScreenEvents? = null
@@ -40,7 +43,7 @@ internal class AndroidInAppScreen(
     }
 
     override fun create(html: IamFetchResult): Boolean = runCatching {
-        container = IamContainer.create(context, html, WidgetBridge(html.id)) { events?.onDismissed(html.id) }
+        container = containers.create(context, html, WidgetBridge(html.id)) { events?.onDismissed(html.id) }
     }.onFailure {
         Logger.e(TAG, "create(): ", it)
     }.isSuccess
@@ -58,16 +61,20 @@ internal class AndroidInAppScreen(
     }
 
     override fun resize(heightDp: Int) {
-        container?.onHeightDefined(dpToPx(heightDp))
+        guarded("resize()") { container?.onHeightDefined(dpToPx(heightDp)) }
     }
 
     override fun hide() {
-        container?.dismiss()
+        guarded("hide()") { container?.dismiss() }
     }
 
     override fun destroy() {
-        container?.destroy()
+        guarded("destroy()") { container?.destroy() }
         container = null
+    }
+
+    private fun guarded(operation: String, block: () -> Unit) {
+        runCatching(block).onFailure { Logger.e(TAG, "$operation: ", it) }
     }
 
     override fun openLink(url: String) {

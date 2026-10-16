@@ -12,11 +12,16 @@ import com.reteno.core.data.remote.model.iam.message.InAppMessageContent.InAppLa
 import com.reteno.core.data.remote.model.iam.message.InAppMessageContent.InAppLayoutType
 import com.reteno.core.domain.controller.IamFetchResult
 import com.reteno.core.features.iam.RetenoAndroidHandler
+import com.reteno.core.fixtures.FakeLogSink
+import com.reteno.core.fixtures.FakeRemoteLog
+import com.reteno.core.fixtures.installCapturing
 import com.reteno.core.internal.iam.InAppScreenEvents
+import com.reteno.core.internal.log.AndroidLogSink
 import com.reteno.core.internal.platform.AppBroadcaster
 import com.reteno.core.lifecycle.RetenoActivityHelper
 import com.reteno.core.lifecycle.RetenoLifecycleCallbacks
 import com.reteno.core.util.Constants
+import com.reteno.core.util.Logger
 import com.reteno.core.view.iam.container.IamContainer
 import com.reteno.test.given
 import com.reteno.test.runUnitTest
@@ -24,9 +29,7 @@ import com.reteno.test.then
 import com.reteno.test.whenn
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.mockkObject
 import io.mockk.slot
-import io.mockk.unmockkObject
 import io.mockk.verify
 import org.junit.Test
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -61,35 +64,31 @@ internal class AndroidInAppScreenTest {
         }
     }
 
-    private class SutFixture {
+    private class SutFixture(attached: Boolean = true) {
         val application = ApplicationProvider.getApplicationContext<Application>()
         val activityHelper = mockk<RetenoActivityHelper>(relaxed = true)
         val events = RecordingEvents()
         val container = mockk<IamContainer>(relaxed = true)
-        val bridge = slot<RetenoAndroidHandler>()
-        val dismissListener = slot<IamContainer.IamDismissListener>()
+        lateinit var bridge: RetenoAndroidHandler
+        lateinit var dismissListener: IamContainer.IamDismissListener
+        var creationError: Throwable? = null
         val lifecycle = slot<RetenoLifecycleCallbacks>()
-        val sut = AndroidInAppScreen(application, activityHelper, AppBroadcaster(application))
+        val sut = AndroidInAppScreen(application, activityHelper, AppBroadcaster(application)) { _, _, js, listener ->
+            creationError?.let { throw it }
+            bridge = js
+            dismissListener = listener
+            container
+        }
 
         init {
             every { activityHelper.registerActivityLifecycleCallbacks(any(), capture(lifecycle)) } returns Unit
-            sut.attach(events)
-        }
-
-        fun <T> withContainer(block: () -> T): T {
-            mockkObject(IamContainer.Companion)
-            try {
-                every {
-                    IamContainer.create(any(), any(), capture(bridge), capture(dismissListener))
-                } returns container
-                return block()
-            } finally {
-                unmockkObject(IamContainer.Companion)
+            if (attached) {
+                sut.attach(events)
             }
         }
 
         fun created() = apply {
-            withContainer { sut.create(HTML) }
+            sut.create(HTML)
         }
     }
 
@@ -99,7 +98,7 @@ internal class AndroidInAppScreenTest {
         val fixture = SutFixture()
 
         whenn()
-        val created = fixture.withContainer { fixture.sut.create(HTML) }
+        val created = fixture.sut.create(HTML)
 
         then()
         assertTrue(created)
@@ -111,10 +110,8 @@ internal class AndroidInAppScreenTest {
         val fixture = SutFixture()
 
         whenn()
-        val created = fixture.withContainer {
-            every { IamContainer.create(any(), any(), any(), any()) } throws IllegalStateException("no webview")
-            fixture.sut.create(HTML)
-        }
+        fixture.creationError = IllegalStateException("no webview")
+        val created = fixture.sut.create(HTML)
 
         then()
         assertFalse(created)
@@ -126,7 +123,7 @@ internal class AndroidInAppScreenTest {
         val fixture = SutFixture().created()
 
         whenn()
-        fixture.bridge.captured.postMessage("""{"type":"CLOSE_WIDGET"}""")
+        fixture.bridge.postMessage("""{"type":"CLOSE_WIDGET"}""")
 
         then()
         assertEquals(listOf("""message html-1 {"type":"CLOSE_WIDGET"}"""), fixture.events.calls)
@@ -136,12 +133,12 @@ internal class AndroidInAppScreenTest {
     fun `should tell widget messages of each container apart`() = runUnitTest {
         given()
         val fixture = SutFixture().created()
-        val firstBridge = fixture.bridge.captured
-        fixture.withContainer { fixture.sut.create(HTML.copy(id = "html-2")) }
+        val firstBridge = fixture.bridge
+        fixture.sut.create(HTML.copy(id = "html-2"))
 
         whenn()
         firstBridge.postMessage("late")
-        fixture.bridge.captured.postMessage("current")
+        fixture.bridge.postMessage("current")
 
         then()
         assertEquals(listOf("message html-1 late", "message html-2 current"), fixture.events.calls)
@@ -153,7 +150,7 @@ internal class AndroidInAppScreenTest {
         val fixture = SutFixture().created()
 
         whenn()
-        fixture.dismissListener.captured.onIamDismissed()
+        fixture.dismissListener.onIamDismissed()
 
         then()
         assertEquals(listOf("dismissed html-1"), fixture.events.calls)
@@ -270,6 +267,59 @@ internal class AndroidInAppScreenTest {
         verify(exactly = 1) { fixture.container.onHeightDefined(AndroidInAppScreen.dpToPx(10)) }
         verify(exactly = 1) { fixture.container.dismiss() }
         verify(exactly = 1) { fixture.container.destroy() }
+    }
+
+    @Test
+    fun `should report container that fails to resize hide or destroy and forget it`() = runUnitTest {
+        given()
+        val fixture = SutFixture().created()
+        val remoteLog = FakeRemoteLog()
+        every { fixture.container.onHeightDefined(any()) } throws IllegalStateException("not laid out")
+        every { fixture.container.dismiss() } throws IllegalArgumentException("not attached")
+        every { fixture.container.destroy() } throws IllegalArgumentException("not attached")
+
+        whenn()
+        Logger.installCapturing(FakeLogSink(), remoteLog)
+        try {
+            fixture.sut.resize(10)
+            fixture.sut.hide()
+            fixture.sut.destroy()
+            fixture.sut.hide()
+        } finally {
+            Logger.install(AndroidLogSink(), null)
+        }
+
+        then()
+        assertEquals(listOf("resize(): ", "hide(): ", "destroy(): "), remoteLog.errors.map { it.first })
+        verify(exactly = 1) { fixture.container.dismiss() }
+    }
+
+    @Test
+    fun `should ignore widget messages and dismissal before it is attached`() = runUnitTest {
+        given()
+        val fixture = SutFixture(attached = false).created()
+
+        whenn()
+        fixture.bridge.postMessage("early")
+        fixture.dismissListener.onIamDismissed()
+
+        then()
+        assertEquals(emptyList<String>(), fixture.events.calls)
+    }
+
+    @Test
+    fun `should do nothing to resize hide or destroy before a container exists`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+
+        whenn()
+        fixture.sut.resize(10)
+        fixture.sut.hide()
+        fixture.sut.destroy()
+
+        then()
+        verify(exactly = 0) { fixture.container.onHeightDefined(any()) }
+        verify(exactly = 0) { fixture.container.destroy() }
     }
 
     @Test

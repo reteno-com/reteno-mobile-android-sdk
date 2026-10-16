@@ -2,6 +2,7 @@ package com.reteno.core._interop
 
 import com.reteno.core.fixtures.FakeLogSink
 import com.reteno.core.fixtures.FakeRemoteLog
+import com.reteno.core.fixtures.installCapturing
 import com.reteno.core.internal.log.AndroidLogSink
 import com.reteno.core.util.Logger
 import com.reteno.test.given
@@ -21,7 +22,7 @@ internal class TestErrorInternalTest {
 
         whenn()
         try {
-            Logger.install(FakeLogSink(), remoteLog)
+            Logger.installCapturing(FakeLogSink(), remoteLog)
             TestErrorInternal.logTestError()
         } finally {
             Logger.install(AndroidLogSink(), null)

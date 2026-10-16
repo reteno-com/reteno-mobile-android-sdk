@@ -10,12 +10,12 @@ import com.reteno.core.domain.SchedulerUtils
 import com.reteno.core.domain.model.event.LifecycleEventType
 import com.reteno.core.domain.model.event.LifecycleTrackingOptions
 import java.io.ByteArrayOutputStream
-import java.io.FileInputStream
 import java.io.IOException
 import java.io.InputStream
-import java.text.SimpleDateFormat
 import java.time.Instant
+import java.time.LocalDateTime
 import java.time.ZoneId
+import java.time.ZoneOffset
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
@@ -109,9 +109,7 @@ object Util {
         .ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
         .withZone(ZoneId.of("UTC"))
 
-    private val sqlToTimestampFormat by lazy {
-        SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
-    }
+    private val sqlDateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss", Locale.US)
 
     private val patternWithNoSeconds = "yyyy-MM-dd'T'HH:mm"
 
@@ -176,9 +174,8 @@ object Util {
         )
     }
 
-    fun formatSqlDateToTimestamp(sqlDate: String): Long {
-        return sqlToTimestampFormat.parse(sqlDate).time
-    }
+    fun formatSqlDateToTimestamp(sqlDate: String): Long =
+        LocalDateTime.parse(sqlDate, sqlDateFormatter).toInstant(ZoneOffset.UTC).toEpochMilli()
 
     fun parseWithTimeZone(dateTime: String, timeZone: String): ZonedDateTime {
         // TODO currently we are using Java 11, it does not recognize Kyiv timezone.
@@ -200,53 +197,6 @@ object Util {
 
         val diff = newTimestamp - oldTimestamp
         return diff > SchedulerUtils.getOutdatedDeviceAndUserTime()
-    }
-
-    /**
-     * Check to see if the database is encrypted
-     *
-     * Database assumed to be encrypted if it is not contains required header "SQLite format 3\000"
-     * Hex representation: 53 51 4c 69 74 65 20 66 6f 72 6d 61 74 20 33 00
-     *
-     * This header is ensured by
-     * @see <a href="https://www.sqlite.org/fileformat.html">SQLite specification</a>
-     *
-     * Android uses SQLite 3.** since API 1
-     * @see <a href="https://developer.android.com/reference/android/database/sqlite/package-summary.html">Android SQLite package summary</a>
-     */
-    fun isEncryptedDatabase(context: Context, databaseName: String): Boolean {
-        var isEncrypted = false
-
-        val requiredSQLiteFileHeaderString = byteArrayOf(
-            0x53,
-            0x51,
-            0x4c,
-            0x69,
-            0x74,
-            0x65,
-            0x20,
-            0x66,
-            0x6F,
-            0x72,
-            0x6D,
-            0x61,
-            0x74,
-            0x20,
-            0x33,
-            0x0
-        )
-        val dbFileHeader = ByteArray(requiredSQLiteFileHeaderString.size)
-        try {
-            FileInputStream(context.getDatabasePath(databaseName)).use {
-                it.read(dbFileHeader)
-                if (!dbFileHeader.contentEquals(requiredSQLiteFileHeaderString)) {
-                    isEncrypted = true
-                }
-            }
-        } catch (e: IOException) {
-            isEncrypted = true
-        }
-        return isEncrypted
     }
 
     fun LifecycleTrackingOptions.toTypeMap(): Map<LifecycleEventType, Boolean> {

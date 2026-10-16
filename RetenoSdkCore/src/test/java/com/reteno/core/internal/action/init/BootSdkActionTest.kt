@@ -2,7 +2,7 @@ package com.reteno.core.internal.action.init
 
 import com.reteno.core.RetenoConfig
 import com.reteno.core.data.local.config.DeviceIdMode
-import com.reteno.core.data.local.config.RestConfig
+import com.reteno.core.data.local.config.DeviceIdentity
 import com.reteno.core.data.local.sharedpref.SharedPrefsManager
 import com.reteno.core.fixtures.STUB_ACCESS_KEY
 import com.reteno.core.fixtures.TestActionRunner
@@ -40,7 +40,7 @@ internal class BootSdkActionTest {
             every { it.getEmail() } answers { calls += "load local settings" + onIo(); null }
             every { it.getCachedConfiguration() } answers { calls += "read cached config" + onIo(); cached }
         }
-        private val restConfig = mockk<RestConfig>().also {
+        private val restConfig = mockk<DeviceIdentity>().also {
             coEvery { it.initDeviceId(DeviceIdMode.CACHE) } answers { calls += "restore device id" + onIo() }
         }
         private val applyConfig = mockk<ApplyConfig>().also {

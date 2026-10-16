@@ -1,6 +1,6 @@
 package com.reteno.core.internal.action.event
 
-import com.reteno.core.data.local.config.RestConfig
+import com.reteno.core.data.local.config.DeviceIdentity
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerEvents
 import com.reteno.core.data.local.model.event.EventsDb
 import com.reteno.core.data.local.model.event.ParameterDb
@@ -28,7 +28,7 @@ internal class LogScreenViewEventActionTest {
         val inserted = mutableListOf<EventsDb>()
         val events = RecordingEventBus()
         val traced = TestActionRunner(scope)
-        private val restConfig = mockk<RestConfig>().also { every { it.deviceId } returns stubDeviceId() }
+        private val restConfig = mockk<DeviceIdentity>().also { every { it.deviceId } returns stubDeviceId() }
         private val logEvent = LogEventAction(eventsDb, restConfig, events.bus, scope.testDispatchers(), traced.runner)
         val sut = LogScreenViewEventAction(logEvent)
 

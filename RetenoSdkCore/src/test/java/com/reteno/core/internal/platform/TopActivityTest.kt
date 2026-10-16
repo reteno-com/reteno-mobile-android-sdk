@@ -5,6 +5,7 @@ import android.app.ActivityManager
 import android.content.ComponentName
 import android.content.Context
 import android.os.Build
+import com.reteno.core.fixtures.onAndroidSdk
 import com.reteno.test.given
 import com.reteno.test.runUnitTest
 import com.reteno.test.then
@@ -17,7 +18,6 @@ import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
-import org.robolectric.util.ReflectionHelpers
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [26])
@@ -34,16 +34,6 @@ internal class TopActivityTest {
             topActivity = topPackage?.let { ComponentName(it, "$it.Top") }
         }
         return mockk<ActivityManager.AppTask>().also { every { it.taskInfo } returns info }
-    }
-
-    private fun <T> onAndroidSdk(sdk: Int, block: () -> T): T {
-        val actual = Build.VERSION.SDK_INT
-        ReflectionHelpers.setStaticField(Build.VERSION::class.java, "SDK_INT", sdk)
-        try {
-            return block()
-        } finally {
-            ReflectionHelpers.setStaticField(Build.VERSION::class.java, "SDK_INT", actual)
-        }
     }
 
     @Test

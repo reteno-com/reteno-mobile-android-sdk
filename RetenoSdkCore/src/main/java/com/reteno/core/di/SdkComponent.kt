@@ -2,9 +2,8 @@ package com.reteno.core.di
 
 import android.content.Context
 import androidx.lifecycle.ProcessLifecycleOwner
-import androidx.work.Configuration
-import androidx.work.WorkManager
 import com.reteno.core.data.local.config.DeviceIdHelper
+import com.reteno.core.data.local.config.DeviceIdentity
 import com.reteno.core.data.local.config.RestConfig
 import com.reteno.core.data.local.database.RetenoDatabaseImpl
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManager
@@ -47,6 +46,7 @@ import com.reteno.core.internal.log.AndroidLogSink
 import com.reteno.core.internal.platform.AndroidAppPlatform
 import com.reteno.core.internal.platform.AndroidDeviceIdSources
 import com.reteno.core.internal.platform.FirebaseFcmTokenSource
+import com.reteno.core.internal.platform.lazyAppWorkManager
 import com.reteno.core.lifecycle.RetenoActivityHelper
 import com.reteno.core.lifecycle.RetenoActivityHelperImpl
 import com.reteno.core.lifecycle.RetenoSessionHandler
@@ -54,7 +54,7 @@ import java.util.UUID
 
 internal interface SdkInfrastructure {
     val prefs: SharedPrefsManager
-    val restConfig: RestConfig
+    val restConfig: DeviceIdentity
     val restClient: RestClient
     val configRepository: ConfigRepository
     val fileManager: FileManager
@@ -157,7 +157,7 @@ internal class SdkComponent(
             configuration = configuration,
             platform = AndroidAppPlatform(
                 context = context,
-                workManager = lazy { workManager(context) },
+                workManager = lazyAppWorkManager(context),
                 lifecycleOwner = ProcessLifecycleOwner.get(),
                 activityHelper = activityHelper
             ),
@@ -165,15 +165,4 @@ internal class SdkComponent(
             clock = System::currentTimeMillis
         ).also { it.installLogging() }
     }
-
-    private fun workManager(context: Context): WorkManager =
-        runCatching { WorkManager.getInstance(context) }.getOrElse {
-            runCatching {
-                WorkManager.initialize(
-                    context,
-                    Configuration.Builder().setMinimumLoggingLevel(android.util.Log.INFO).build()
-                )
-            }
-            WorkManager.getInstance(context)
-        }
 }

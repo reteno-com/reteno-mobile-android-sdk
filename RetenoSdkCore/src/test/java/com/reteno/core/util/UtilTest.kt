@@ -10,6 +10,7 @@ import android.os.Bundle
 import com.reteno.core.domain.SchedulerUtils
 import com.reteno.core.fixtures.FakeLogSink
 import com.reteno.core.fixtures.FakeRemoteLog
+import com.reteno.core.fixtures.installCapturing
 import com.reteno.core.internal.log.AndroidLogSink
 import com.reteno.core.util.Util.asZonedDateTime
 import com.reteno.test.given
@@ -27,12 +28,11 @@ import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import java.io.ByteArrayInputStream
-import java.io.File
 import java.io.IOException
 import java.io.InputStream
-import java.text.SimpleDateFormat
+import java.time.Instant
 import java.time.ZoneId
-import java.util.Date
+import java.util.TimeZone
 import java.util.concurrent.TimeUnit
 
 internal class UtilTest {
@@ -64,13 +64,6 @@ internal class UtilTest {
             val resources = mockk<Resources>()
             every { resources.openRawResource(RAW_ID) } returns stream
             every { context.resources } returns resources
-        }
-
-        fun databaseFile(header: ByteArray?): File {
-            val file = File.createTempFile("reteno", ".db").also { it.deleteOnExit() }
-            if (header == null) file.delete() else file.writeBytes(header)
-            every { context.getDatabasePath(DATABASE) } returns file
-            return file
         }
     }
 
@@ -318,7 +311,7 @@ internal class UtilTest {
         })
 
         whenn()
-        Logger.install(FakeLogSink(), remoteLog)
+        Logger.installCapturing(FakeLogSink(), remoteLog)
         val read = try {
             Util.readFromRaw(fixture.context, RAW_ID)
         } finally {
@@ -343,15 +336,24 @@ internal class UtilTest {
     }
 
     @Test
-    fun `should read time of local database row`() = runUnitTest {
+    fun `should read time of local database row as utc whatever the device time zone`() = runUnitTest {
         given()
         val sqlDate = "2024-03-01 10:15:30"
+        val deviceZone = TimeZone.getDefault()
 
         whenn()
-        val timestamp = Util.formatSqlDateToTimestamp(sqlDate)
+        val timestamps = listOf("UTC", "Europe/Kyiv", "America/Los_Angeles").map { zone ->
+            TimeZone.setDefault(TimeZone.getTimeZone(zone))
+            try {
+                Util.formatSqlDateToTimestamp(sqlDate)
+            } finally {
+                TimeZone.setDefault(deviceZone)
+            }
+        }
 
         then()
-        assertEquals(sqlDate, SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(Date(timestamp)))
+        val expected = Instant.parse("2024-03-01T10:15:30Z").toEpochMilli()
+        assertEquals(listOf(expected, expected, expected), timestamps)
     }
 
     @Test
@@ -397,49 +399,9 @@ internal class UtilTest {
         assertEquals(ZoneId.systemDefault(), dateTime.zone)
     }
 
-    @Test
-    fun `should treat database with sqlite header as not encrypted`() = runUnitTest {
-        given()
-        val fixture = SutFixture()
-        fixture.databaseFile("SQLite format 3\u0000 page data".toByteArray())
-
-        whenn()
-        val encrypted = Util.isEncryptedDatabase(fixture.context, DATABASE)
-
-        then()
-        assertFalse(encrypted)
-    }
-
-    @Test
-    fun `should treat database without sqlite header as encrypted`() = runUnitTest {
-        given()
-        val fixture = SutFixture()
-        fixture.databaseFile(ByteArray(32) { 0x7F })
-
-        whenn()
-        val encrypted = Util.isEncryptedDatabase(fixture.context, DATABASE)
-
-        then()
-        assertTrue(encrypted)
-    }
-
-    @Test
-    fun `should treat database that cannot be read as encrypted`() = runUnitTest {
-        given()
-        val fixture = SutFixture()
-        fixture.databaseFile(header = null)
-
-        whenn()
-        val encrypted = Util.isEncryptedDatabase(fixture.context, DATABASE)
-
-        then()
-        assertTrue(encrypted)
-    }
-
     companion object {
         private const val PACKAGE = "com.example.shop"
         private const val LABEL_ID = 7
         private const val RAW_ID = 11
-        private const val DATABASE = "reteno.db"
     }
 }

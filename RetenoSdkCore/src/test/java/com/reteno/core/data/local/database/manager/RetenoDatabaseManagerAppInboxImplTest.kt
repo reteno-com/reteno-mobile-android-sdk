@@ -1,351 +1,148 @@
 package com.reteno.core.data.local.database.manager
 
-import android.content.ContentValues
-import android.database.Cursor
-import androidx.core.database.getStringOrNull
-import com.reteno.core.base.robolectric.BaseRobolectricTest
-import com.reteno.core.data.local.database.RetenoDatabase
-import com.reteno.core.data.local.database.schema.AppInboxSchema
-import com.reteno.core.data.local.database.util.getAppInbox
-import com.reteno.core.data.local.database.util.putAppInbox
 import com.reteno.core.data.local.model.appinbox.AppInboxMessageDb
 import com.reteno.core.data.local.model.appinbox.AppInboxMessageStatusDb
-import com.reteno.core.util.Logger
-import com.reteno.core.util.Util.formatToRemote
-import io.mockk.clearMocks
-import io.mockk.every
-import io.mockk.impl.annotations.MockK
-import io.mockk.impl.annotations.RelaxedMockK
-import io.mockk.justRun
-import io.mockk.verify
-import junit.framework.TestCase.assertTrue
-import org.junit.Assert.assertEquals
+import com.reteno.core.fixtures.TestDatabase
+import com.reteno.test.given
+import com.reteno.test.runUnitTest
+import com.reteno.test.then
+import com.reteno.test.whenn
 import org.junit.Test
-import java.time.ZonedDateTime
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [26])
+internal class RetenoDatabaseManagerAppInboxImplTest {
 
-class RetenoDatabaseManagerAppInboxImplTest : BaseRobolectricTest() {
+    private class SutFixture(val db: TestDatabase) {
+        val sut = RetenoDatabaseManagerAppInboxImpl(db.database)
 
-    // region constants ----------------------------------------------------------------------------
-    companion object {
-        private const val ROW_ID_INSERTED = 1L
-
-        private const val INBOX_ID_1 = "214-asf-42412-dgjh-24512-mcgsd"
-        private const val INBOX_ID_2 = "214-asf-42412-dgjh-24512-mcgsd_2"
-        private const val INBOX_ID_CORRUPTED = "214-asf-42412-dgjh-24512-mcgsd_c"
-        private val INBOX_STATUS = AppInboxMessageStatusDb.OPENED
-        private const val INBOX_OCCURRED_TIME = "2022-11-22T13:38:01Z"
-        private const val INBOX_DEVICE_ID = "device_test"
-
-        private val inbox1 = AppInboxMessageDb(
-            id = INBOX_ID_1,
-            status = INBOX_STATUS,
-            occurredDate = INBOX_OCCURRED_TIME,
-            deviceId = INBOX_DEVICE_ID
-        )
-        private val inbox2 = AppInboxMessageDb(
-            id = INBOX_ID_2,
-            status = INBOX_STATUS,
-            occurredDate = "${INBOX_OCCURRED_TIME}_2}",
-            deviceId = INBOX_DEVICE_ID
-        )
-
-        private const val COLUMN_INDEX_INBOX_ID = 2
-        private const val COLUMN_INDEX_INBOX_STATUS = 3
-        private const val COLUMN_INDEX_INBOX_TIME = 4
-        private const val COLUMN_INDEX_INBOX_DEVICE_ID = 5
-    }
-    // endregion constants -------------------------------------------------------------------------
-
-    // region helper fields ------------------------------------------------------------------------
-    @RelaxedMockK
-    private lateinit var database: RetenoDatabase
-
-    @MockK
-    private lateinit var cursor: Cursor
-
-    private lateinit var SUT: RetenoDatabaseManagerAppInbox
-    // endregion helper fields ---------------------------------------------------------------------
-
-    override fun before() {
-        super.before()
-
-        mockColumnIndexes()
-        every { cursor.getStringOrNull(COLUMN_INDEX_INBOX_TIME) } returns INBOX_OCCURRED_TIME
-        justRun { cursor.close() }
-
-        SUT = RetenoDatabaseManagerAppInboxImpl(database)
+        fun store(vararg messages: AppInboxMessageDb) {
+            messages.forEach { sut.insertAppInboxMessage(it) }
+        }
     }
 
-    override fun after() {
-        super.after()
-        clearMocks(cursor)
+    private suspend fun withSut(block: suspend SutFixture.() -> Unit) = TestDatabase.open { SutFixture(this).block() }
+
+    @Test
+    fun `should read opened messages oldest first up to the limit`() = runUnitTest {
+        withSut {
+            given()
+            store(message("late", "2026-01-03T00:00:00Z"), message("early", "2026-01-01T00:00:00Z"))
+
+            whenn()
+            val all = sut.getAppInboxMessages()
+            val limited = sut.getAppInboxMessages(limit = 1)
+
+            then()
+            assertEquals(listOf(message("early", "2026-01-01T00:00:00Z"), message("late", "2026-01-03T00:00:00Z")), all)
+            assertEquals(listOf("early"), limited.map { it.id })
+            assertEquals(2L, sut.getAppInboxMessagesCount())
+        }
     }
 
     @Test
-    fun givenValidInboxProvided_whenInsertInbox_thenInboxIsSavedToDb() {
-        // Given
-        val expectedContentValues = ContentValues().apply {
-            putAppInbox(inbox1)
-        }
+    fun `should remove stored messages missing a device, time or status`() = runUnitTest {
+        withSut {
+            given()
+            db.execute("INSERT INTO AppInbox (messageId, status, time) VALUES ('no device', 'OPENED', 'now')")
+            db.execute("INSERT INTO AppInbox (messageId, deviceId, status) VALUES ('no time', 'device', 'OPENED')")
+            db.execute("INSERT INTO AppInbox (messageId, deviceId, time) VALUES ('no status', 'device', 'now')")
 
-        var actualContentValues = ContentValues()
-        every { database.insert(any(), null, any()) } answers {
-            actualContentValues = ContentValues(thirdArg<ContentValues>())
-            ROW_ID_INSERTED
-        }
+            whenn()
+            val messages = sut.getAppInboxMessages()
 
-        // When
-        SUT.insertAppInboxMessage(inbox1)
-
-        // Then
-        verify(exactly = 1) {
-            database.insert(
-                table = eq(AppInboxSchema.TABLE_NAME_APP_INBOX),
-                contentValues = any()
-            )
+            then()
+            assertEquals(emptyList<AppInboxMessageDb>(), messages)
+            assertEquals(0L, db.count("AppInbox"))
         }
-        assertEquals(expectedContentValues, actualContentValues)
     }
 
     @Test
-    fun givenInboxesAvailableInDatabase_whenGetAppInbox_thenInboxesReturned() {
-        // Given
-        mockCursorRecordsNumber(2)
-        mockDatabaseQuery()
+    fun `should report but keep a stored message without id`() = runUnitTest {
+        withSut {
+            given()
+            db.execute("INSERT INTO AppInbox (deviceId, status, time) VALUES ('device', 'OPENED', 'now')")
 
-        every { cursor.getAppInbox() } returns inbox1 andThen inbox2
+            whenn()
+            val messages = sut.getAppInboxMessages()
 
-        // When
-        val interactions = SUT.getAppInboxMessages(null)
-
-        // Then
-        verify(exactly = 1) {
-            database.query(
-                table = eq(AppInboxSchema.TABLE_NAME_APP_INBOX),
-                columns = eq(AppInboxSchema.getAllColumns()),
-                orderBy = eq("${AppInboxSchema.COLUMN_APP_INBOX_TIME} ASC"),
-                limit = null
-            )
-        }
-        verify(exactly = 1) { cursor.close() }
-
-        assertEquals(2, interactions.size)
-        assertEquals(inbox1, interactions[0])
-        assertEquals(inbox2, interactions[1])
-    }
-
-    @Test
-    fun givenInboxNotAvailableInDatabase_whenGetAppInbox_thenEmptyListReturned() {
-        // Given
-        mockCursorRecordsNumber(0)
-        mockDatabaseQuery()
-
-        // When
-        val interactions = SUT.getAppInboxMessages(null)
-
-        // Then
-        verify(exactly = 1) {
-            database.query(
-                table = eq(AppInboxSchema.TABLE_NAME_APP_INBOX),
-                columns = eq(AppInboxSchema.getAllColumns()),
-                orderBy = eq("${AppInboxSchema.COLUMN_APP_INBOX_TIME} ASC"),
-                limit = null
-            )
-        }
-        verify(exactly = 1) { cursor.close() }
-        assertTrue(interactions.isEmpty())
-    }
-
-    @Test
-    fun givenInboxCorruptedInDatabaseAndRowIdDetected_whenGetAppInbox_thenCorruptedRowRemoved() {
-        // Given
-        mockCursorRecordsNumber(1)
-        mockDatabaseQuery()
-        every { cursor.getAppInbox() } returns null
-        every { cursor.getStringOrNull(COLUMN_INDEX_INBOX_ID) } returns INBOX_ID_CORRUPTED
-
-        // When
-        val interactions = SUT.getAppInboxMessages(null)
-
-        // Then
-        verify(exactly = 1) {
-            database.query(
-                table = eq(AppInboxSchema.TABLE_NAME_APP_INBOX),
-                columns = eq(AppInboxSchema.getAllColumns()),
-                orderBy = eq("${AppInboxSchema.COLUMN_APP_INBOX_TIME} ASC"),
-                limit = null
-            )
-        }
-        verify(exactly = 1) {
-            database.delete(
-                AppInboxSchema.TABLE_NAME_APP_INBOX,
-                "${AppInboxSchema.COLUMN_APP_INBOX_ID}=?",
-                arrayOf(INBOX_ID_CORRUPTED)
-            )
-        }
-        verify(exactly = 1) { cursor.close() }
-        assertTrue(interactions.isEmpty())
-    }
-
-    @Test
-    fun givenInboxCorruptedInDatabaseAndRowIdNotDetected_whenGetAppInbox_thenExceptionIsLogged() {
-        // Given
-        mockCursorRecordsNumber(1)
-        mockDatabaseQuery()
-        every { cursor.getAppInbox() } returns null
-
-        // When
-        val interactions = SUT.getAppInboxMessages(null)
-
-        // Then
-        verify(exactly = 1) {
-            database.query(
-                table = eq(AppInboxSchema.TABLE_NAME_APP_INBOX),
-                columns = eq(AppInboxSchema.getAllColumns()),
-                orderBy = eq("${AppInboxSchema.COLUMN_APP_INBOX_TIME} ASC"),
-                limit = null
-            )
-        }
-        verify(exactly = 1) { Logger.e(any(), any(), any()) }
-        verify(exactly = 0) { database.delete(any(), any(), any()) }
-        verify(exactly = 1) { cursor.close() }
-
-        assertTrue(interactions.isEmpty())
-    }
-
-    @Test
-    fun givenInboxCountEmpty_whenGetAppInboxCount_thenZeroReturned() {
-        // Given
-        val recordsCount = 0L
-        every { database.getRowCount(AppInboxSchema.TABLE_NAME_APP_INBOX) } returns recordsCount
-
-        // When
-        val count = SUT.getAppInboxMessagesCount()
-
-        // Then
-        assertEquals(recordsCount, count)
-    }
-
-    @Test
-    fun givenInboxCountNonEmpty_whenGetAppInboxCount_thenCountReturned() {
-        // Given
-        val recordsCount = 5L
-        every { database.getRowCount(AppInboxSchema.TABLE_NAME_APP_INBOX) } returns recordsCount
-
-        // When
-        val count = SUT.getAppInboxMessagesCount()
-
-        // Then
-        assertEquals(recordsCount, count)
-    }
-
-    @Test
-    fun giveAppInboxMessagesListNotEmpty_wheDeleteAppInboxMessages_thenDeleteFromDatabaseCalled() {
-        // Given
-        val inboxMessagesList = listOf(inbox1, inbox2)
-
-        // When
-        SUT.deleteAppInboxMessages(inboxMessagesList)
-
-        // Then
-        verify(exactly = 1) {
-            database.delete(
-                table = eq(AppInboxSchema.TABLE_NAME_APP_INBOX),
-                whereClause = eq("${AppInboxSchema.COLUMN_APP_INBOX_ID}=?"),
-                whereArgs = arrayOf(INBOX_ID_1)
-            )
-        }
-        verify(exactly = 1) {
-            database.delete(
-                table = eq(AppInboxSchema.TABLE_NAME_APP_INBOX),
-                whereClause = eq("${AppInboxSchema.COLUMN_APP_INBOX_ID}=?"),
-                whereArgs = arrayOf(INBOX_ID_2)
+            then()
+            assertEquals(emptyList<AppInboxMessageDb>(), messages)
+            assertEquals(1L, db.count("AppInbox"))
+            assertEquals(
+                listOf("readRows(): unreadable row without id in AppInbox"),
+                db.remoteLog.errors.map { it.first }
             )
         }
     }
 
     @Test
-    fun giveAppInboxMessagesListEmpty_wheDeleteAppInboxMessages_thenDeleteFromDatabaseNotCalled() {
-        // Given
-        val inboxMessagesList = emptyList<AppInboxMessageDb>()
+    fun `should delete given messages`() = runUnitTest {
+        withSut {
+            given()
+            store(message("a"), message("b"), message("c"))
 
-        // When
-        SUT.deleteAppInboxMessages(inboxMessagesList)
+            whenn()
+            sut.deleteAppInboxMessages(listOf(message("a"), message("c")))
 
-        // Then
-        verify(exactly = 0) {
-            database.delete(
-                table = any(),
-                whereClause = any(),
-                whereArgs = any()
-            )
+            then()
+            assertEquals(listOf("b"), db.values("SELECT messageId FROM AppInbox"))
         }
     }
 
     @Test
-    fun whenDeleteInboxesByTime_thenInboxesDeleted() {
-        // Given
-        val outdatedTime = ZonedDateTime.now().formatToRemote()
-        val countExpected = 2
-        val whereClauseExpected =
-            "${AppInboxSchema.COLUMN_APP_INBOX_TIME} < '$outdatedTime'"
-        every { database.delete(any(), any(), any()) } returns countExpected
+    fun `should delete every message`() = runUnitTest {
+        withSut {
+            given()
+            store(message("a"), message("b"))
 
-        // When
-        SUT.deleteAppInboxMessagesByTime(outdatedTime)
+            whenn()
+            sut.deleteAllAppInboxMessages()
 
-        // Then
-        verify(exactly = 1) {
-            database.delete(
-                AppInboxSchema.TABLE_NAME_APP_INBOX,
-                whereClauseExpected
-            )
+            then()
+            assertEquals(0L, sut.getAppInboxMessagesCount())
         }
     }
 
     @Test
-    fun whenDeleteAllInboxes_thenInboxesDeleteAllInboxes_thenInboxesDeleted() {
-        // Given
-        val countExpected = 2
-        every { database.delete(any(), any(), any()) } returns countExpected
+    fun `should delete messages opened before a time`() = runUnitTest {
+        withSut {
+            given()
+            store(message("old", "2026-01-01T00:00:00Z"), message("new", "2026-02-01T00:00:00Z"))
 
-        // When
-        SUT.deleteAllAppInboxMessages()
+            whenn()
+            val deleted = sut.deleteAppInboxMessagesByTime("2026-01-15T00:00:00Z")
 
-        // Then
-        verify(exactly = 1) {
-            database.delete(AppInboxSchema.TABLE_NAME_APP_INBOX)
+            then()
+            assertEquals(1, deleted)
+            assertEquals(listOf("new"), db.values("SELECT messageId FROM AppInbox"))
         }
     }
 
-    // region helper methods -----------------------------------------------------------------------
-    private fun mockColumnIndexes() {
-        every { cursor.isNull(any()) } returns false
+    @Test
+    fun `should treat an outdated time as a value, not as sql`() = runUnitTest {
+        withSut {
+            given()
+            store(message("kept", "2026-02-01T00:00:00Z"))
 
-        every { cursor.getColumnIndex(AppInboxSchema.COLUMN_APP_INBOX_ID) } returns COLUMN_INDEX_INBOX_ID
-        every { cursor.getColumnIndex(AppInboxSchema.COLUMN_APP_INBOX_STATUS) } returns COLUMN_INDEX_INBOX_STATUS
-        every { cursor.getColumnIndex(AppInboxSchema.COLUMN_APP_INBOX_TIME) } returns COLUMN_INDEX_INBOX_TIME
-        every { cursor.getColumnIndex(AppInboxSchema.COLUMN_APP_INBOX_DEVICE_ID) } returns COLUMN_INDEX_INBOX_DEVICE_ID
+            whenn()
+            val deleted = sut.deleteAppInboxMessagesByTime("2026' OR '1'='1")
+
+            then()
+            assertEquals(0, deleted)
+            assertTrue(db.count("AppInbox") == 1L)
+        }
     }
 
-    private fun mockCursorRecordsNumber(number: Int) {
-        val responses = generateSequence(0) { it + 1 }
-            .map { it < number }
-            .take(number + 1)
-            .toList()
-        every { cursor.moveToNext() } returnsMany responses
-    }
-
-    private fun mockDatabaseQuery() {
-        every {
-            database.query(
-                table = AppInboxSchema.TABLE_NAME_APP_INBOX,
-                columns = AppInboxSchema.getAllColumns(),
-                orderBy = any(),
-                limit = null
-            )
-        } returns cursor
-    }
-    // endregion helper methods --------------------------------------------------------------------
+    private fun message(id: String, time: String = "2026-01-02T03:04:05Z") = AppInboxMessageDb(
+        id = id,
+        deviceId = "device-body",
+        occurredDate = time,
+        status = AppInboxMessageStatusDb.OPENED
+    )
 }

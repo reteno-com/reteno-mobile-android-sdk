@@ -13,14 +13,14 @@ open class AndroidActivityAware : DefaultLifecycleObserver {
     @Volatile
     private var activity: ComponentActivity? = null
 
-    protected fun requireActivity(): Activity = requireNotNull(activity)
+    suspend fun awaitActivity(): Activity = withTimeout(ACTIVITY_WAIT_MILLIS) { attachedActivity() }
 
-    suspend fun awaitActivity() = withTimeout(2000L) {
-        if (activity != null) return@withTimeout requireActivity()
-        while (activity == null) {
-            delay(20)
+    private suspend fun attachedActivity(): Activity {
+        while (true) {
+            val attached = activity
+            if (attached != null) return attached
+            delay(ACTIVITY_POLL_MILLIS)
         }
-        return@withTimeout requireActivity()
     }
 
     suspend fun awaitContext(): Context = awaitActivity()
@@ -33,8 +33,13 @@ open class AndroidActivityAware : DefaultLifecycleObserver {
 
     @CallSuper
     override fun onDestroy(owner: LifecycleOwner) {
-        activity?.lifecycle?.removeObserver(this)
+        owner.lifecycle.removeObserver(this)
         activity = null
         super.onDestroy(owner)
+    }
+
+    private companion object {
+        const val ACTIVITY_WAIT_MILLIS = 2_000L
+        const val ACTIVITY_POLL_MILLIS = 20L
     }
 }

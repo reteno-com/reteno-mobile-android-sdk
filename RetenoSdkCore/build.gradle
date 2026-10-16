@@ -8,10 +8,6 @@ plugins {
 apply from: file("$project.rootDir/config.gradle")
 apply from: "$project.rootDir/test_dependencies.gradle"
 
-def sdkPropsFile = file("$project.rootDir/RetenoSdkCore/keys.properties")
-Properties sdkProps = new Properties()
-sdkProps.load(new FileInputStream(sdkPropsFile))
-
 kotlin {
     jvmToolchain(8)
 }
@@ -25,52 +21,12 @@ kover {
 koverReport {
     androidReports('debug') {
         filters {
-            if (project.hasProperty('koverWholeModule')) {
-                excludes {
-                    classes('com.reteno.core.R', 'com.reteno.core.R$*', 'com.reteno.core.BuildConfig')
-                }
-            } else {
-                includes {
-                    classes('com.reteno.core.RetenoInternalEntryPoint*', 'com.reteno.core.features.appinbox.AppInboxImpl*', 'com.reteno.core.features.recommendation.RecommendationImpl*', 'com.reteno.core.di.ActionsLocator*', 'com.reteno.core.data.workmanager.PushDataWorker*')
-                    packages(
-                            'com.reteno.core.data.local.config',
-                            'com.reteno.core.data.local.file',
-                            'com.reteno.core.data.local.mappers',
-                            'com.reteno.core.data.local.model',
-                            'com.reteno.core.data.local.sharedpref',
-                            'com.reteno.core.data.remote.api',
-                            'com.reteno.core.data.remote.mapper',
-                            'com.reteno.core.data.remote.model',
-                            'com.reteno.core.data.repository',
-                            'com.reteno.core.domain',
-                            'com.reteno.core.features',
-                            'com.reteno.core.internal.action.deeplink',
-                            'com.reteno.core.internal.action.device',
-                            'com.reteno.core.internal.action.event',
-                            'com.reteno.core.internal.action.iam',
-                            'com.reteno.core.internal.action.inbox',
-                            'com.reteno.core.internal.action.init',
-                            'com.reteno.core.internal.action.interaction',
-                            'com.reteno.core.internal.action.lifecycle',
-                            'com.reteno.core.internal.action.push',
-                            'com.reteno.core.internal.action.recommendation',
-                            'com.reteno.core.internal.action.sync',
-                            'com.reteno.core.internal.action.trace',
-                            'com.reteno.core.internal.action.user',
-                            'com.reteno.core.internal.coroutine',
-                            'com.reteno.core.internal.event',
-                            'com.reteno.core.internal.iam',
-                            'com.reteno.core.internal.lifecycle',
-                            'com.reteno.core.internal.log',
-                            'com.reteno.core.internal.network',
-                            'com.reteno.core.internal.platform',
-                            'com.reteno.core.util'
-                    )
-                }
+            excludes {
+                classes('com.reteno.core.R', 'com.reteno.core.R$*', 'com.reteno.core.BuildConfig')
             }
         }
         verify {
-            rule('Refactored code is fully covered') {
+            rule('Core module is fully covered') {
                 bound {
                     minValue = 100
                     metric = kotlinx.kover.gradle.plugin.dsl.MetricType.LINE
@@ -98,7 +54,6 @@ android {
 
         consumerProguardFiles "consumer-rules.pro"
 
-        buildConfigField "String", "SQL_PASSWORD", sdkProps['sql.password']
         buildConfigField "String", "SDK_VERSION", "\"${project.VERSION_NAME}\""
     }
 

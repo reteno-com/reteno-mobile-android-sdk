@@ -20,7 +20,7 @@ import com.reteno.core.features.appinbox.AppInboxStatus
 import com.reteno.core.features.iam.InAppPauseBehaviour
 import com.reteno.core.features.recommendation.GetRecommendationResponseCallback
 import com.reteno.core.features.recommendation.GetRecommendationResponseJsonCallback
-import com.reteno.core.internal.action.sync.BackgroundSyncAction
+import com.reteno.core.internal.action.sync.BackgroundSync
 import com.reteno.core.lifecycle.ScreenTrackingConfig
 import com.reteno.core.view.iam.callback.InAppLifecycleCallback
 import kotlinx.coroutines.CompletableDeferred
@@ -237,8 +237,10 @@ internal class FakeSdkActions : SdkActions {
         record("submitInAppLifecycleCallback ${callback != null}")
     }
 
-    override val backgroundSync: BackgroundSyncAction
-        get() = error("background sync is not part of facade tests")
+    var backgroundSyncAnswer: BackgroundSync? = null
+
+    override val backgroundSync: BackgroundSync
+        get() = checkNotNull(backgroundSyncAnswer) { "background sync is not part of facade tests" }
 
     private fun record(call: String) {
         failure?.let { throw it }

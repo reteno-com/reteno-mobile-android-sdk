@@ -1,7 +1,6 @@
 package com.reteno.core
 
 import android.app.Application
-import android.util.Log
 import androidx.core.app.NotificationChannelCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
@@ -66,7 +65,7 @@ class RetenoInternalImpl internal constructor(
 
     private val actions get() = infrastructure.actions
     internal val backgroundSync by lazy { actions.backgroundSync }
-    private val permissionDelegate = PermissionActivityDelegate(application)
+    private val permissionDelegate = PermissionActivityDelegate(application, mainDispatcher)
     private val activityHelper: RetenoActivityHelper get() = infrastructure.activityHelper
 
     private val configRepository get() = infrastructure.configRepository
@@ -90,10 +89,7 @@ class RetenoInternalImpl internal constructor(
     }
 
     override fun setConfig(config: RetenoConfig) {
-        if (!receivedConfigFromUser.compareAndSet(false, true)) {
-            Logger.i(TAG, "RetenoSDK was already initialized, skipping")
-            return
-        }
+        if (!receivedConfigFromUser.compareAndSet(false, true)) return
         if (!isOsSupported()) {
             infrastructure.configuration.useUserConfig(config)
             return
@@ -170,43 +166,27 @@ class RetenoInternalImpl internal constructor(
     }
 
     override fun logEvent(event: Event) = runAfterInit {
-        if (!isOsSupported()) {
-            return@runAfterInit
-        }
         actions.submitEvent(event)
     }
 
     override fun logEcommerceEvent(ecomEvent: EcomEvent) = runAfterInit {
-        if (!isOsSupported()) {
-            return@runAfterInit
-        }
         actions.submitEcomEvent(ecomEvent)
     }
 
     override fun logScreenView(screenName: String) = runAfterInit {
-        if (!isOsSupported()) {
-            return@runAfterInit
-        }
         actions.submitScreenView(screenName)
     }
 
     override fun setLifecycleEventConfig(lifecycleTrackingOptions: LifecycleTrackingOptions) =
         runAfterInit {
-            if (!isOsSupported()) {
-                return@runAfterInit
-            }
             actions.submitLifecycleEventConfig(lifecycleTrackingOptions)
         }
 
     override fun autoScreenTracking(config: ScreenTrackingConfig) = runAfterInit {
-        if (!isOsSupported()) {
-            return@runAfterInit
-        }
         actions.submitAutoScreenTracking(config)
     }
 
     override fun updatePushPermissionStatus() = runAfterInit {
-        if (!isOsSupported()) return@runAfterInit
         actions.submitPushPermissionStatus()
     }
 
@@ -215,45 +195,23 @@ class RetenoInternalImpl internal constructor(
     }
 
     override fun pausePushInAppMessages(isPaused: Boolean) = runAfterInit {
-        Logger.i(TAG, "pausePushInAppMessages(): isPaused = [$isPaused]")
-        if (!isOsSupported()) return@runAfterInit
         actions.submitPushInAppPause(isPaused)
     }
 
     override fun setPushInAppMessagesPauseBehaviour(behaviour: InAppPauseBehaviour) = runAfterInit {
-        Logger.i(TAG, "setPushInAppMessagesPauseBehaviour(): behaviour = [$behaviour]")
-        if (!isOsSupported()) return@runAfterInit
         actions.submitPushInAppPauseBehaviour(behaviour)
     }
 
     override fun setInAppLifecycleCallback(inAppLifecycleCallback: InAppLifecycleCallback?) =
         runAfterInit {
-            Logger.i(
-                TAG,
-                "setInAppLifecycleCallback(): inAppLifecycleCallback = [$inAppLifecycleCallback]"
-            )
-            if (!isOsSupported()) return@runAfterInit
             actions.submitInAppLifecycleCallback(inAppLifecycleCallback)
         }
 
     override fun forcePushData() = runAfterInit {
-        if (!isOsSupported()) {
-            return@runAfterInit
-        }
-        /*@formatter:off*/ Logger.i(TAG, "forcePushData(): ", "")
-        /*@formatter:on*/
-        try {
-            actions.requestSync()
-        } catch (ex: Throwable) {
-            /*@formatter:off*/ Logger.e(TAG, "forcePushData(): ", ex)
-            /*@formatter:on*/
-        }
+        actions.requestSync()
     }
 
     override fun setInAppMessagesPauseBehaviour(behaviour: InAppPauseBehaviour) = runAfterInit {
-        if (!isOsSupported()) {
-            return@runAfterInit
-        }
         actions.submitInAppPauseBehaviour(behaviour)
     }
 
@@ -268,59 +226,27 @@ class RetenoInternalImpl internal constructor(
     }
 
     override fun recordInteractionAction(id: String, action: InteractionAction, forcePush: Boolean) = runAfterInit {
-        if (!isOsSupported()) return@runAfterInit
         actions.submitInteractionClick(id, action, forcePush)
     }
 
     override fun canPresentMessages(): Boolean {
-        if (!isOsSupported()) {
-            return false
-        }
-        /*@formatter:off*/ Logger.i(TAG, "canPresentMessages(): ")
-        /*@formatter:on*/
-        return try {
-            activityHelper.canPresentMessages()
-        } catch (ex: Throwable) {
-            /*@formatter:off*/ Logger.e(TAG, "canPresentMessages(): ", ex)
-            /*@formatter:on*/
-            false
-        }
+        if (!isOsSupported()) return false
+        return activityHelper.canPresentMessages()
     }
 
     override fun getDeviceId(): String {
-        if (!isOsSupported()) {
-            return ""
-        }
-        val result = try {
-            configRepository.getDeviceId().id
-        } catch (ex: Throwable) {
-            if (isInitialized) {
-                /*@formatter:off*/ Logger.e(TAG, "getDeviceId(): ", ex)
-                /*@formatter:on*/
-            } else {
-                Log.e(TAG, "getDeviceId(): ", ex)
-            }
-            ""
-        }
-        /*@formatter:off*/ Logger.i(TAG, "getDeviceId(): $result")
-        /*@formatter:on*/
-        return result
+        if (!isOsSupported()) return ""
+        return configRepository.getDeviceId().id
     }
 
     override fun hasDataForSync(): Boolean {
-        if (!isOsSupported()) {
-            return true
-        }
-        val result = try {
+        if (!isOsSupported()) return true
+        return try {
             databaseManager.hasDataForSync()
-        } catch (ex: Throwable) {
-            /*@formatter:off*/ Logger.e(TAG, "isDatabaseEmpty(): ", ex)
-            /*@formatter:on*/
+        } catch (e: Exception) {
+            Logger.e(TAG, "hasDataForSync(): ", e)
             true
         }
-        /*@formatter:off*/ Logger.i(TAG, "isDatabaseEmpty(): $result")
-        /*@formatter:on*/
-        return result
     }
 
     override fun isActivityPresented(): Boolean {
@@ -328,7 +254,6 @@ class RetenoInternalImpl internal constructor(
     }
 
     override fun initializeIamView(interactionId: String) = runAfterInit {
-        if (!isOsSupported()) return@runAfterInit
         actions.submitIamFromPush(interactionId)
     }
 
@@ -337,17 +262,14 @@ class RetenoInternalImpl internal constructor(
     }
 
     override fun saveDefaultNotificationChannel(channel: String) = runAfterInit {
-        if (!isOsSupported()) return@runAfterInit
         actions.submitDefaultNotificationChannel(channel)
     }
 
     override fun notificationsEnabled(enabled: Boolean) = runAfterInit {
-        if (!isOsSupported()) return@runAfterInit
         actions.submitNotificationsEnabled(enabled)
     }
 
     override fun deeplinkClicked(linkWrapped: String, linkUnwrapped: String) = runAfterInit {
-        if (!isOsSupported()) return@runAfterInit
         actions.submitDeeplinkClick(linkWrapped)
     }
 
@@ -360,7 +282,6 @@ class RetenoInternalImpl internal constructor(
     }
 
     override fun setSessionDuration(duration: Long) = runAfterInit {
-        if (!isOsSupported()) return@runAfterInit
         actions.submitSessionDuration(duration)
     }
 
@@ -369,7 +290,7 @@ class RetenoInternalImpl internal constructor(
     }
 
     companion object {
-        private val TAG: String = RetenoInternalImpl::class.java.simpleName
+        private const val TAG = "RetenoInternalImpl"
 
         @Deprecated("Use Reteno.instance", ReplaceWith("Reteno.instance", "com.reteno.core.Reteno"))
         val instance: RetenoInternalImpl

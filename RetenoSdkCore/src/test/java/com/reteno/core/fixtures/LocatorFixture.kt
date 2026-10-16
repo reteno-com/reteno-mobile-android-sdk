@@ -1,7 +1,7 @@
 package com.reteno.core.fixtures
 
 import androidx.work.WorkManager
-import com.reteno.core.data.local.config.RestConfig
+import com.reteno.core.data.local.config.DeviceIdentity
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManager
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerAppInbox
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerDevice
@@ -53,7 +53,7 @@ internal class LocatorFixture(scope: TestScope, initialized: Boolean = true) {
     val workManager = mockk<WorkManager>(relaxed = true)
     val sessionHandler = mockk<RetenoSessionHandler>(relaxed = true)
     val prefs = mockk<SharedPrefsManager>(relaxed = true)
-    val restConfig = mockk<RestConfig>(relaxed = true)
+    val restConfig = mockk<DeviceIdentity>(relaxed = true)
     val activityHelper = mockk<RetenoActivityHelper>(relaxed = true)
     val databaseManager = mockk<RetenoDatabaseManager>(relaxed = true)
     val rest = FakeRestClient()

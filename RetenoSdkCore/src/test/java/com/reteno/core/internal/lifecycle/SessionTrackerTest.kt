@@ -6,6 +6,7 @@ import com.reteno.core.data.remote.model.iam.message.InAppMessage
 import com.reteno.core.domain.model.event.Event
 import com.reteno.core.domain.model.event.LifecycleTrackingOptions
 import com.reteno.core.fixtures.recordingLogEvent
+import com.reteno.core.fixtures.stubInAppMessage
 import com.reteno.test.given
 import com.reteno.test.runUnitTest
 import com.reteno.test.then
@@ -202,7 +203,7 @@ internal class SessionTrackerTest {
     fun `should show timed in-app once foreground time is reached`() = runUnitTest {
         given()
         val fixture = SutFixture(this, previousSessionId = "current", previousSessionStart = SutFixture.NOW)
-        val inApp = mockk<InAppMessage>()
+        val inApp = stubInAppMessage()
         val shown = mutableListOf<List<InAppMessage>>()
         fixture.sut.scheduleInAppMessages(mutableListOf(InAppWithTime(inApp, 2_000L))) { shown += it }
 

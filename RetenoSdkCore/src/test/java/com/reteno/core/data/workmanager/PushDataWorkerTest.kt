@@ -10,6 +10,9 @@ import androidx.work.WorkManager
 import androidx.work.testing.TestListenableWorkerBuilder
 import com.reteno.core.Reteno
 import com.reteno.core.RetenoInternalImpl
+import com.reteno.core.fixtures.FakeFacadeInfrastructure
+import com.reteno.core.fixtures.FakeSdkActions
+import com.reteno.core.fixtures.ManualLifecycleOwner
 import com.reteno.core.internal.action.sync.BackgroundSync
 import com.reteno.core.internal.action.sync.BackgroundSyncOutcome
 import com.reteno.core.util.Util
@@ -18,10 +21,11 @@ import com.reteno.test.runUnitTest
 import com.reteno.test.then
 import com.reteno.test.whenn
 import io.mockk.coEvery
-import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
 import org.junit.Test
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.runner.RunWith
@@ -33,10 +37,16 @@ import java.util.concurrent.TimeUnit
 @Config(sdk = [26])
 internal class PushDataWorkerTest {
 
-    private class SutFixture {
+    private class SutFixture(scope: TestScope) {
         private val context: Context = ApplicationProvider.getApplicationContext()
         val sync = mockk<BackgroundSync>()
-        val sdk = mockk<RetenoInternalImpl>().also { every { it.backgroundSync } returns sync }
+        val sdk = RetenoInternalImpl(
+            application = ApplicationProvider.getApplicationContext(),
+            mainDispatcher = StandardTestDispatcher(scope.testScheduler),
+            appLifecycleOwner = ManualLifecycleOwner(),
+            infrastructure = FakeFacadeInfrastructure(FakeSdkActions().also { it.backgroundSyncAnswer = sync }),
+            isOsSupported = { true }
+        )
         val sut = TestListenableWorkerBuilder<PushDataWorker>(context).build()
 
         suspend fun doWork(instance: RetenoInternalImpl? = sdk): ListenableWorker.Result {
@@ -53,7 +63,7 @@ internal class PushDataWorkerTest {
     @Test
     fun `should succeed when background sync completed`() = runUnitTest {
         given()
-        val fixture = SutFixture()
+        val fixture = SutFixture(this)
         coEvery { fixture.sync.invoke() } returns Result.success(BackgroundSyncOutcome.SYNCED)
 
         whenn()
@@ -66,7 +76,7 @@ internal class PushDataWorkerTest {
     @Test
     fun `should retry when background sync aborted`() = runUnitTest {
         given()
-        val fixture = SutFixture()
+        val fixture = SutFixture(this)
         coEvery { fixture.sync.invoke() } returns Result.success(BackgroundSyncOutcome.ABORTED)
 
         whenn()
@@ -79,7 +89,7 @@ internal class PushDataWorkerTest {
     @Test
     fun `should retry when sdk is not initialized yet`() = runUnitTest {
         given()
-        val fixture = SutFixture()
+        val fixture = SutFixture(this)
         coEvery { fixture.sync.invoke() } returns Result.success(BackgroundSyncOutcome.NOT_INITIALIZED)
 
         whenn()
@@ -92,7 +102,7 @@ internal class PushDataWorkerTest {
     @Test
     fun `should fail when app is in foreground`() = runUnitTest {
         given()
-        val fixture = SutFixture()
+        val fixture = SutFixture(this)
         coEvery { fixture.sync.invoke() } returns Result.success(BackgroundSyncOutcome.SKIPPED_IN_FOREGROUND)
 
         whenn()
@@ -105,7 +115,7 @@ internal class PushDataWorkerTest {
     @Test
     fun `should fail when there is nothing to sync`() = runUnitTest {
         given()
-        val fixture = SutFixture()
+        val fixture = SutFixture(this)
         coEvery { fixture.sync.invoke() } returns Result.success(BackgroundSyncOutcome.NO_DATA)
 
         whenn()
@@ -118,7 +128,7 @@ internal class PushDataWorkerTest {
     @Test
     fun `should fail when background sync action failed`() = runUnitTest {
         given()
-        val fixture = SutFixture()
+        val fixture = SutFixture(this)
         coEvery { fixture.sync.invoke() } returns Result.failure(IllegalStateException("boom"))
 
         whenn()
@@ -131,7 +141,7 @@ internal class PushDataWorkerTest {
     @Test
     fun `should retry when sdk instance does not exist yet`() = runUnitTest {
         given()
-        val fixture = SutFixture()
+        val fixture = SutFixture(this)
 
         whenn()
         val result = fixture.doWork(instance = null)

@@ -1,7 +1,7 @@
 package com.reteno.core.internal.action.init
 
 import com.reteno.core.data.local.config.DeviceIdMode
-import com.reteno.core.data.local.config.RestConfig
+import com.reteno.core.data.local.config.DeviceIdentity
 import com.reteno.core.data.local.sharedpref.SharedPrefsManager
 import com.reteno.core.internal.action.trace.ActionRunner
 import com.reteno.core.internal.action.trace.ActionTrace
@@ -12,7 +12,7 @@ import kotlinx.coroutines.withContext
 internal class BootSdkAction(
     private val platform: AppPlatform,
     private val prefs: SharedPrefsManager,
-    private val restConfig: RestConfig,
+    private val restConfig: DeviceIdentity,
     private val applyConfig: ApplyConfig,
     private val dispatchers: RetenoDispatchers,
     private val runner: ActionRunner

@@ -3,7 +3,7 @@ package com.reteno.core.internal.action.init
 import com.reteno.core.RetenoConfig
 import com.reteno.core.data.local.config.DeviceId
 import com.reteno.core.data.local.config.DeviceIdMode
-import com.reteno.core.data.local.config.RestConfig
+import com.reteno.core.data.local.config.DeviceIdentity
 import com.reteno.core.data.local.sharedpref.SharedPrefsManager
 import com.reteno.core.data.repository.ConfigRepository
 import com.reteno.core.fixtures.STUB_ACCESS_KEY
@@ -48,7 +48,7 @@ internal class ApplyConfigActionTest {
                 !userConfigInUse
             }
         }
-        private val restConfig = mockk<RestConfig>().also {
+        private val restConfig = mockk<DeviceIdentity>().also {
             coEvery { it.initDeviceId(any()) } answers {
                 calls += "init device id ${firstArg<DeviceIdMode>()}" + onIo()
             }

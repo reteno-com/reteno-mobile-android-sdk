@@ -2,7 +2,7 @@ package com.reteno.core.internal.action.init
 
 import com.reteno.core.RetenoConfig
 import com.reteno.core.data.local.config.DeviceIdMode
-import com.reteno.core.data.local.config.RestConfig
+import com.reteno.core.data.local.config.DeviceIdentity
 import com.reteno.core.data.local.sharedpref.SharedPrefsManager
 import com.reteno.core.data.repository.ConfigRepository
 import com.reteno.core.internal.action.device.RegisterDevice
@@ -24,7 +24,7 @@ internal interface ApplyConfig {
 
 internal class ApplyConfigAction(
     private val configuration: SdkConfiguration,
-    private val restConfig: RestConfig,
+    private val restConfig: DeviceIdentity,
     private val configRepository: ConfigRepository,
     private val prefs: SharedPrefsManager,
     private val sessionHandler: RetenoSessionHandler,
