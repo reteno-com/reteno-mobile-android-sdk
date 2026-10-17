@@ -57,6 +57,9 @@ earlier release are tested.
   (up to five users per sync, the rest on the next one); anonymous attributes set before identifying a user are sent
   on their own, as they are online.
 - `SessionStarted` could be stored before the `SessionEnded` of the previous session; they are now logged in order.
+- Typed recommendations (`fetchRecommendation` with your own `RecomBase` class) came back with every field empty in
+  minified release builds, because R8 removed the fields Gson fills. The SDK's consumer rules now keep the fields and
+  constructors of every `RecomBase` implementation; the classes can still be renamed.
 - Waiting for a custom device id or for the device id could poll forever.
 - The default notification channel config ignored defaults for missing fields and could throw for a missing id or
   name.
