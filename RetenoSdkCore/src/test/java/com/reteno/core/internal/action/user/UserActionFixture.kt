@@ -55,6 +55,7 @@ internal class UserActionFixture(scope: TestScope, suffix: String? = null) {
         }
         every { configRepository.getDeviceId() } answers { deviceId }
         every { configRepository.isNotificationsEnabled() } returns true
+        every { configRepository.getDefaultNotificationChannel() } returns ""
         every { configRepository.setExternalUserId(any()) } answers {
             log += "external id ${firstArg<String?>()}"
             deviceId = deviceId.copy(externalId = firstArg())

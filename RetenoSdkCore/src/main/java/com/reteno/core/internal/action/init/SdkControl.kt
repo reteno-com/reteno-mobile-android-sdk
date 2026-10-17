@@ -9,6 +9,8 @@ internal interface SdkControl {
 
     fun runAfterInit(operation: () -> Unit)
 
+    fun runAfterUserInit(operation: () -> Unit)
+
     fun boot()
 
     fun applyUserConfig(config: RetenoConfig)

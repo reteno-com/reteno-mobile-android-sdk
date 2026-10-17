@@ -1,6 +1,8 @@
 package com.reteno.core.internal.platform
 
 import android.app.Application
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.content.Context
 import android.content.ContextWrapper
 import android.content.pm.PackageInfo
@@ -16,6 +18,7 @@ import com.reteno.test.then
 import com.reteno.test.whenn
 import org.junit.Test
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -46,10 +49,76 @@ internal class AndroidAppEnvironmentTest {
             })
         }
 
+        private val notificationManager =
+            application.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+        fun notificationsAllowed(allowed: Boolean) {
+            shadowOf(notificationManager).setNotificationsEnabled(allowed)
+        }
+
+        fun channel(id: String, importance: Int) {
+            notificationManager.createNotificationChannel(NotificationChannel(id, "Default", importance))
+        }
+
         fun phoneType(type: Int) {
             val telephony = application.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
             shadowOf(telephony).setPhoneType(type)
         }
+    }
+
+    @Test
+    fun `should report notifications disabled when the system blocks them for the app`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.notificationsAllowed(false)
+        fixture.channel("defaultId", NotificationManager.IMPORTANCE_DEFAULT)
+
+        whenn()
+        val enabled = fixture.sut.notificationsEnabled("defaultId")
+
+        then()
+        assertFalse(enabled)
+    }
+
+    @Test
+    fun `should report notifications enabled when the default channel is not created yet`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.notificationsAllowed(true)
+
+        whenn()
+        val enabled = fixture.sut.notificationsEnabled("defaultId")
+
+        then()
+        assertTrue(enabled)
+    }
+
+    @Test
+    fun `should report notifications disabled when the default channel is blocked`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.notificationsAllowed(true)
+        fixture.channel("defaultId", NotificationManager.IMPORTANCE_NONE)
+
+        whenn()
+        val enabled = fixture.sut.notificationsEnabled("defaultId")
+
+        then()
+        assertFalse(enabled)
+    }
+
+    @Test
+    fun `should report notifications enabled when the app and its default channel allow them`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.notificationsAllowed(true)
+        fixture.channel("defaultId", NotificationManager.IMPORTANCE_DEFAULT)
+
+        whenn()
+        val enabled = fixture.sut.notificationsEnabled("defaultId")
+
+        then()
+        assertTrue(enabled)
     }
 
     @Test

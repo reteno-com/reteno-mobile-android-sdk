@@ -23,6 +23,10 @@ internal class InitRouter(
         core.initGate.runAfterInit(core.mainScope, operation)
     }
 
+    override fun runAfterUserInit(operation: () -> Unit) {
+        core.initGate.runAfterUserInit(core.mainScope, operation)
+    }
+
     override fun boot() {
         core.hostUi.trackActivities()
         inApp.inAppTriggers.listen()

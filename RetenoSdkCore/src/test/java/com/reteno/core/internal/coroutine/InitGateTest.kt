@@ -232,4 +232,137 @@ internal class InitGateTest {
         then()
         assertFalse(ran)
     }
+
+    @Test
+    fun `should hold host operations while initialized only from cache`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val ran = mutableListOf<String>()
+        fixture.sut.runAfterUserInit(workScope()) { ran += "host call" }
+
+        whenn()
+        fixture.sut.markInitialized(byUser = false)
+        runCurrent()
+
+        then()
+        assertTrue(ran.isEmpty())
+    }
+
+    @Test
+    fun `should run host operations in call order once initialized by user`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val ran = mutableListOf<String>()
+        fixture.sut.runAfterUserInit(workScope()) { ran += "first" }
+        fixture.sut.runAfterUserInit(workScope()) { ran += "second" }
+        fixture.sut.markInitialized(byUser = false)
+        runCurrent()
+
+        whenn()
+        fixture.sut.markInitialized(byUser = true)
+        runCurrent()
+
+        then()
+        assertEquals(listOf("first", "second"), ran)
+    }
+
+    @Test
+    fun `should run host operation at once on the caller when already initialized by user`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.sut.markInitialized(byUser = true)
+        val ran = mutableListOf<String>()
+
+        whenn()
+        fixture.sut.runAfterUserInit(workScope()) { ran += "now" }
+
+        then()
+        assertEquals(listOf("now"), ran)
+    }
+
+    @Test
+    fun `should release both kinds of held operations in call order when initialized by user`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val ran = mutableListOf<String>()
+        fixture.sut.runAfterUserInit(workScope()) { ran += "host 1" }
+        fixture.sut.runAfterInit(workScope()) { ran += "push 1" }
+        fixture.sut.runAfterUserInit(workScope()) { ran += "host 2" }
+        runCurrent()
+
+        whenn()
+        fixture.sut.markInitialized(byUser = true)
+        runCurrent()
+
+        then()
+        assertEquals(listOf("host 1", "push 1", "host 2"), ran)
+    }
+
+    @Test
+    fun `should release only operations that need init when initialized from cache`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val ran = mutableListOf<String>()
+        fixture.sut.runAfterUserInit(workScope()) { ran += "host" }
+        fixture.sut.runAfterInit(workScope()) { ran += "push" }
+
+        whenn()
+        fixture.sut.markInitialized(byUser = false)
+        runCurrent()
+
+        then()
+        assertEquals(listOf("push"), ran)
+    }
+
+    @Test
+    fun `should run an operation submitted after init behind held operations that did not run yet`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val ran = mutableListOf<String>()
+        fixture.sut.runAfterUserInit(workScope()) { ran += "held" }
+        runCurrent()
+        fixture.sut.markInitialized(byUser = true)
+
+        whenn()
+        fixture.sut.runAfterUserInit(workScope()) { ran += "submitted after init" }
+        val ranBeforeDispatch = ran.toList()
+        runCurrent()
+
+        then()
+        assertTrue(ranBeforeDispatch.isEmpty())
+        assertEquals(listOf("held", "submitted after init"), ran)
+    }
+
+    @Test
+    fun `should run operations at once again after held operations ran`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val ran = mutableListOf<String>()
+        fixture.sut.runAfterUserInit(workScope()) { ran += "held" }
+        fixture.sut.markInitialized(byUser = true)
+        runCurrent()
+
+        whenn()
+        fixture.sut.runAfterUserInit(workScope()) { ran += "now" }
+
+        then()
+        assertEquals(listOf("held", "now"), ran)
+    }
+
+    @Test
+    fun `should run operations at once after a held operation of a cancelled scope was dropped`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val scope = workScope()
+        val ran = mutableListOf<String>()
+        fixture.sut.runAfterInit(scope) { ran += "dropped" }
+        scope.cancel()
+        fixture.sut.markInitialized(byUser = true)
+
+        whenn()
+        fixture.sut.runAfterInit(workScope()) { ran += "now" }
+
+        then()
+        assertEquals(listOf("now"), ran)
+    }
 }

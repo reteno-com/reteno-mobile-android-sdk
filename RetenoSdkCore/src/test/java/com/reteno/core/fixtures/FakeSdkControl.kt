@@ -8,21 +8,32 @@ internal class FakeSdkControl(private val log: FakeCallLog = FakeCallLog()) : Sd
     override var isStarted: Boolean = false
     override var isInitialized: Boolean = false
         private set
-    private val waitingForInit = mutableListOf<() -> Unit>()
+    private var isInitializedByUser: Boolean = false
+    private val waiting = mutableListOf<HeldOperation>()
 
-    override fun runAfterInit(operation: () -> Unit) {
-        if (isInitialized) {
-            operation()
-            return
-        }
-        waitingForInit += operation
-    }
+    override fun runAfterInit(operation: () -> Unit) = runWhenReady(HeldOperation(operation, needsUser = false))
 
-    fun markInitialized() {
+    override fun runAfterUserInit(operation: () -> Unit) = runWhenReady(HeldOperation(operation, needsUser = true))
+
+    fun markInitialized(byUser: Boolean = true) {
         isInitialized = true
-        waitingForInit.forEach { it() }
-        waitingForInit.clear()
+        isInitializedByUser = isInitializedByUser || byUser
+        val ready = waiting.filter { it.isReady() }
+        waiting.removeAll(ready)
+        ready.forEach { it.operation() }
     }
+
+    private fun runWhenReady(held: HeldOperation) {
+        if (held.isReady()) {
+            held.operation()
+        } else {
+            waiting += held
+        }
+    }
+
+    private fun HeldOperation.isReady() = if (needsUser) isInitializedByUser else isInitialized
+
+    private class HeldOperation(val operation: () -> Unit, val needsUser: Boolean)
 
     override fun boot() {
         log.record("boot")

@@ -142,7 +142,11 @@ internal class InAppPresenter(
         val event = readWidgetEvent(message) ?: return
         if (event.type != IamJsEventType.CLICK && event.type != IamJsEventType.OPEN_URL) return
         closed = null
-        followLink(inApp, event)
+        if (current == null) {
+            followLink(inApp, event)
+        } else {
+            recordClick(inApp, event)
+        }
     }
 
     override fun onDismissed(htmlId: String) = onLoaded(htmlId) { inApp ->
@@ -178,7 +182,6 @@ internal class InAppPresenter(
 
     private fun begin(inApp: InApp) {
         current = inApp
-        closed = null
         val loading = scope.launch(dispatchers.main, start = CoroutineStart.LAZY) {
             notifyHost("beforeDisplay") { it.beforeDisplay(inApp.data()) }
             val html = inApp.fetchHtml().getOrNull()
@@ -227,6 +230,7 @@ internal class InAppPresenter(
     }
 
     private fun reveal(inApp: InApp) {
+        closed = null
         inApp.revealed = true
         presentWhenReady(inApp)
         notifyHost("onDisplay") { it.onDisplay(inApp.data()) }
@@ -273,15 +277,18 @@ internal class InAppPresenter(
     }
 
     private fun followLink(inApp: InApp, event: IamJsEvent) {
+        recordClick(inApp, event)
         val payload = event.payload
-        val interactionId = inApp.interactionId
-        if (interactionId != null) {
-            val action = InteractionAction(event.type.name, payload?.targetComponentId, payload?.url)
-            interactions.submitInteractionClick(interactionId, action, forcePush = true)
-        }
         if (payload != null && !sendCustomData(inApp, payload)) {
             openLink(payload.url)
         }
+    }
+
+    private fun recordClick(inApp: InApp, event: IamJsEvent) {
+        val interactionId = inApp.interactionId ?: return
+        val payload = event.payload
+        val action = InteractionAction(event.type.name, payload?.targetComponentId, payload?.url)
+        interactions.submitInteractionClick(interactionId, action, forcePush = true)
     }
 
     private fun sendCustomData(inApp: InApp, payload: IamJsPayload): Boolean {

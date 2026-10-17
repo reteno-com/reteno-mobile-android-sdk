@@ -2,6 +2,7 @@ package com.reteno.core.internal.platform
 
 import android.content.Context
 import android.telephony.TelephonyManager
+import androidx.core.app.NotificationManagerCompat
 import com.reteno.core.R
 import com.reteno.core.data.local.config.DeviceId
 import com.reteno.core.domain.model.device.Device
@@ -20,6 +21,8 @@ internal interface AppEnvironment {
     fun logEventOrigin(): LogEventOrigin
 
     fun bundledWidget(): String?
+
+    fun notificationsEnabled(channelId: String): Boolean
 }
 
 internal class AndroidAppEnvironment(private val context: Context) : AppEnvironment {
@@ -58,6 +61,13 @@ internal class AndroidAppEnvironment(private val context: Context) : AppEnvironm
     )
 
     override fun bundledWidget(): String? = Util.readFromRaw(context, R.raw.widget)
+
+    override fun notificationsEnabled(channelId: String): Boolean {
+        val manager = NotificationManagerCompat.from(context)
+        if (!manager.areNotificationsEnabled()) return false
+        val channel = manager.getNotificationChannelCompat(channelId) ?: return true
+        return channel.importance != NotificationManagerCompat.IMPORTANCE_NONE
+    }
 
     private fun deviceCategory(): DeviceCategory {
         val telephony = context.getSystemService(Context.TELEPHONY_SERVICE) as? TelephonyManager

@@ -281,6 +281,25 @@ internal class ActionGraphInitWiringTest {
     }
 
     @Test
+    fun `should run host operations on main once the host initializes the sdk`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this, initialized = false)
+        var ranOnMain: Boolean? = null
+        fixture.env.sut.control.runAfterUserInit { ranOnMain = fixture.env.dispatchers.markedMain.isRunningHere }
+        fixture.env.initGate.markInitialized(byUser = false)
+        runCurrent()
+        val ranAfterCache = ranOnMain
+
+        whenn()
+        fixture.env.initGate.markInitialized(byUser = true)
+        runCurrent()
+
+        then()
+        assertEquals(null, ranAfterCache)
+        assertEquals(true, ranOnMain)
+    }
+
+    @Test
     fun `should run operations at once after init`() = runUnitTest {
         given()
         val fixture = SutFixture(this, initialized = true)

@@ -25,7 +25,7 @@ internal class FetchRecommendationJsonAction(
     ): Result<Unit> = runner("FetchRecommendationJson") {
         args("recomVariantId" to recomVariantId)
         step("wait for sdk initialization") {
-            initGate.awaitInit()
+            initGate.awaitUserInit()
         }
         val response = step("load recommendations from server") {
             api.request(HttpMethod.POST, ApiContract.Recommendation.GetRecoms(recomVariantId), requestBody)

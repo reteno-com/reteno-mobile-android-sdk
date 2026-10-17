@@ -68,20 +68,21 @@ internal class GetInboxMessagesCountActionTest {
     }
 
     @Test
-    fun `should wait for sdk initialization before requesting count`() = runUnitTest {
+    fun `should wait for the host to initialize the sdk before requesting count`() = runUnitTest {
         given()
         val fixture = SutFixture(this, initialized = false)
         fixture.rest.succeedWith("""{"unreadCount":1}""")
         launch { fixture.sut(fixture.callback) }
+        fixture.initGate.markInitialized(byUser = false)
         runCurrent()
-        val requestsBeforeInit = fixture.rest.requests.size
+        val requestsBeforeHostInit = fixture.rest.requests.size
 
         whenn()
         fixture.initGate.markInitialized(byUser = true)
         runCurrent()
 
         then()
-        assertEquals(0, requestsBeforeInit)
+        assertEquals(0, requestsBeforeHostInit)
         assertEquals(listOf(1), fixture.callback.results)
     }
 }

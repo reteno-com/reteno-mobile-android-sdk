@@ -67,6 +67,8 @@ private class UnsupportedOsControl(private val configuration: SdkConfiguration) 
 
     override fun runAfterInit(operation: () -> Unit) = Unit
 
+    override fun runAfterUserInit(operation: () -> Unit) = Unit
+
     override fun boot() = Unit
 
     override fun applyUserConfig(config: RetenoConfig) {

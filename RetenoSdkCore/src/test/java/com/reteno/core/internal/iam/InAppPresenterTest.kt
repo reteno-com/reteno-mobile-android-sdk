@@ -1298,13 +1298,34 @@ internal class InAppPresenterTest {
     }
 
     @Test
-    fun `should ignore click of a closed in-app once another one is loading`() = runUnitTest {
+    fun `should only record click of a closed in-app while the next one is loading`() = runUnitTest {
         given()
         val fixture = SutFixture(this).displayed()
         fixture.widget(CLOSE_BUTTON)
         coEvery { fixture.loadHtml(any()) } returns Result.success(HTML.copy(id = "html-next"))
         fixture.sut.show(stubInAppMessage(messageId = 2))
         runCurrent()
+        val click = """{"type":"OPEN_URL","payload":{"targetComponentId":"btn","url":"https://example.com"}}"""
+
+        whenn()
+        fixture.screen.events!!.onWidgetMessage(HTML.id, click)
+        runCurrent()
+
+        then()
+        assertEquals(listOf("generated-1"), fixture.clicks.map { it.first })
+        assertTrue("open https://example.com" !in fixture.screen.calls)
+    }
+
+    @Test
+    fun `should forget the closed in-app once the next one is displayed`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this).displayed()
+        fixture.widget(CLOSE_BUTTON)
+        coEvery { fixture.loadHtml(any()) } returns Result.success(HTML.copy(id = "html-next"))
+        fixture.sut.show(stubInAppMessage(messageId = 2))
+        runCurrent()
+        fixture.screen.htmlId = "html-next"
+        fixture.widget(INIT_SUCCESS)
 
         whenn()
         fixture.screen.events!!.onWidgetMessage(HTML.id, BUTTON_CLICK)

@@ -105,40 +105,40 @@ class RetenoInternalImpl internal constructor(
     override fun setUserAttributes(externalUserId: String, user: User?) {
         UserAttributesValidator.requireValidExternalUserId(externalUserId)
         UserAttributesValidator.requireValidMarketId(user?.userAttributes?.marketId)
-        actions.control.runAfterInit { actions.contact.submitUserAttributes(externalUserId, user) }
+        actions.control.runAfterUserInit { actions.contact.submitUserAttributes(externalUserId, user) }
     }
 
     @Throws(java.lang.IllegalArgumentException::class)
     override fun setMultiAccountUserAttributes(externalUserId: String, user: User?) {
         UserAttributesValidator.requireValidExternalUserId(externalUserId)
         UserAttributesValidator.requireValidMarketId(user?.userAttributes?.marketId)
-        actions.control.runAfterInit { actions.contact.submitMultiAccountUserAttributes(externalUserId, user) }
+        actions.control.runAfterUserInit { actions.contact.submitMultiAccountUserAttributes(externalUserId, user) }
     }
 
     @Throws(java.lang.IllegalArgumentException::class)
     override fun setAnonymousUserAttributes(userAttributes: UserAttributesAnonymous) {
         UserAttributesValidator.requireValidMarketId(userAttributes.marketId)
-        actions.control.runAfterInit { actions.contact.submitAnonymousUserAttributes(userAttributes) }
+        actions.control.runAfterUserInit { actions.contact.submitAnonymousUserAttributes(userAttributes) }
     }
 
-    override fun logEvent(event: Event) = actions.control.runAfterInit {
+    override fun logEvent(event: Event) = actions.control.runAfterUserInit {
         actions.events.submitEvent(event)
     }
 
-    override fun logEcommerceEvent(ecomEvent: EcomEvent) = actions.control.runAfterInit {
+    override fun logEcommerceEvent(ecomEvent: EcomEvent) = actions.control.runAfterUserInit {
         actions.events.submitEcomEvent(ecomEvent)
     }
 
-    override fun logScreenView(screenName: String) = actions.control.runAfterInit {
+    override fun logScreenView(screenName: String) = actions.control.runAfterUserInit {
         actions.events.submitScreenView(screenName)
     }
 
     override fun setLifecycleEventConfig(lifecycleTrackingOptions: LifecycleTrackingOptions) =
-        actions.control.runAfterInit {
+        actions.control.runAfterUserInit {
             actions.lifecycle.submitLifecycleEventConfig(lifecycleTrackingOptions)
         }
 
-    override fun autoScreenTracking(config: ScreenTrackingConfig) = actions.control.runAfterInit {
+    override fun autoScreenTracking(config: ScreenTrackingConfig) = actions.control.runAfterUserInit {
         actions.lifecycle.submitAutoScreenTracking(config)
     }
 
@@ -146,28 +146,28 @@ class RetenoInternalImpl internal constructor(
         actions.lifecycle.submitPushPermissionStatus()
     }
 
-    override fun pauseInAppMessages(isPaused: Boolean) = actions.control.runAfterInit {
+    override fun pauseInAppMessages(isPaused: Boolean) = actions.control.runAfterUserInit {
         actions.inApp.submitInAppPause(isPaused)
     }
 
-    override fun pausePushInAppMessages(isPaused: Boolean) = actions.control.runAfterInit {
+    override fun pausePushInAppMessages(isPaused: Boolean) = actions.control.runAfterUserInit {
         actions.inApp.submitPushInAppPause(isPaused)
     }
 
-    override fun setPushInAppMessagesPauseBehaviour(behaviour: InAppPauseBehaviour) = actions.control.runAfterInit {
+    override fun setPushInAppMessagesPauseBehaviour(behaviour: InAppPauseBehaviour) = actions.control.runAfterUserInit {
         actions.inApp.submitPushInAppPauseBehaviour(behaviour)
     }
 
     override fun setInAppLifecycleCallback(inAppLifecycleCallback: InAppLifecycleCallback?) =
-        actions.control.runAfterInit {
+        actions.control.runAfterUserInit {
             actions.inApp.submitInAppLifecycleCallback(inAppLifecycleCallback)
         }
 
-    override fun forcePushData() = actions.control.runAfterInit {
+    override fun forcePushData() = actions.control.runAfterUserInit {
         actions.sync.requestSync()
     }
 
-    override fun setInAppMessagesPauseBehaviour(behaviour: InAppPauseBehaviour) = actions.control.runAfterInit {
+    override fun setInAppMessagesPauseBehaviour(behaviour: InAppPauseBehaviour) = actions.control.runAfterUserInit {
         actions.inApp.submitInAppPauseBehaviour(behaviour)
     }
 

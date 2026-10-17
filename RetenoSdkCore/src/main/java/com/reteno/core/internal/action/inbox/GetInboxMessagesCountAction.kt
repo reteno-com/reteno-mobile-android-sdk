@@ -25,7 +25,7 @@ internal class GetInboxMessagesCountAction(
         callback: RetenoResultCallback<Int>
     ): Result<Unit> = runner("GetInboxMessagesCount") {
         step("wait for sdk initialization") {
-            initGate.awaitInit()
+            initGate.awaitUserInit()
         }
         val response = step("load unread messages count from server") {
             api.request(HttpMethod.GET, ApiContract.AppInbox.MessagesCount)

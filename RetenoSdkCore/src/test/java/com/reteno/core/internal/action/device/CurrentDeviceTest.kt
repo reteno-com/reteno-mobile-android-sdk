@@ -31,11 +31,13 @@ internal class CurrentDeviceTest {
         val deviceId = stubDeviceId()
         val dispatchers = scope.testDispatchers()
         val traced = TestActionRunner(scope)
-        val sut = CurrentDevice(configRepository, devicesDb, FakeAppPlatform(), dispatchers)
+        val platform = FakeAppPlatform()
+        val sut = CurrentDevice(configRepository, devicesDb, platform, dispatchers)
 
         init {
             every { configRepository.getDeviceId() } returns deviceId
             every { configRepository.isNotificationsEnabled() } returns true
+            every { configRepository.getDefaultNotificationChannel() } returns ""
             justRun { devicesDb.insertDevice(any()) }
         }
     }
@@ -57,11 +59,11 @@ internal class CurrentDeviceTest {
     }
 
     @Test
-    fun `should use stored notification state when subscription is not given`() = runUnitTest {
+    fun `should use notification state read from the system when subscription is not given`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
         every { fixture.devicesDb.getDevices(any()) } returns emptyList()
-        every { fixture.configRepository.isNotificationsEnabled() } returns false
+        fixture.platform.notificationsEnabled = false
 
         whenn()
         fixture.traced.runner("Test") {
@@ -70,6 +72,74 @@ internal class CurrentDeviceTest {
 
         then()
         verify(exactly = 1) { fixture.devicesDb.insertDevice(stubDevice(fixture.deviceId, "token", false).toDb()) }
+    }
+
+    @Test
+    fun `should fall back to stored notification state when the system state cannot be read`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        every { fixture.devicesDb.getDevices(any()) } returns emptyList()
+        every { fixture.configRepository.isNotificationsEnabled() } returns false
+        fixture.platform.notificationsReadFailure = SecurityException("blocked")
+
+        whenn()
+        val saved = fixture.traced.runner("Test") {
+            fixture.sut.save(this, pushToken = "token")
+        }
+
+        then()
+        assertTrue(saved.getOrThrow())
+        verify(exactly = 1) { fixture.devicesDb.insertDevice(stubDevice(fixture.deviceId, "token", false).toDb()) }
+    }
+
+    @Test
+    fun `should not read the system state when subscription is given`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        every { fixture.devicesDb.getDevices(any()) } returns emptyList()
+
+        whenn()
+        fixture.traced.runner("Test") {
+            fixture.sut.save(this, pushToken = "token", pushSubscribed = true)
+        }
+
+        then()
+        assertTrue(fixture.platform.notificationChannelsChecked.isEmpty())
+    }
+
+    @Test
+    fun `should check the default channel stored in local settings`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        every { fixture.devicesDb.getDevices(any()) } returns emptyList()
+        every { fixture.configRepository.getDefaultNotificationChannel() } returns """{"id":"news","name":"News"}"""
+
+        whenn()
+        fixture.traced.runner("Test") {
+            fixture.sut.save(this, pushToken = "token")
+        }
+
+        then()
+        assertEquals(listOf("news"), fixture.platform.notificationChannelsChecked)
+    }
+
+    @Test
+    fun `should check the bundled default channel when no usable channel is stored`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        every { fixture.devicesDb.getDevices(any()) } returns emptyList()
+        val storedChannels = listOf("", "not json", "[]", """{"name":"News"}""", """{"id":" "}""", """{"id":{"a":1}}""")
+
+        whenn()
+        storedChannels.forEach { stored ->
+            every { fixture.configRepository.getDefaultNotificationChannel() } returns stored
+            fixture.traced.runner("Test") {
+                fixture.sut.save(this, pushToken = "token")
+            }
+        }
+
+        then()
+        assertEquals(List(storedChannels.size) { "defaultId" }, fixture.platform.notificationChannelsChecked)
     }
 
     @Test

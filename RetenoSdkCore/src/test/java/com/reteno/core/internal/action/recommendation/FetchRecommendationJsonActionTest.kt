@@ -83,20 +83,21 @@ internal class FetchRecommendationJsonActionTest {
     }
 
     @Test
-    fun `should wait for sdk initialization before requesting recommendations`() = runUnitTest {
+    fun `should wait for the host to initialize the sdk before requesting recommendations`() = runUnitTest {
         given()
         val fixture = SutFixture(this, initialized = false)
         fixture.rest.succeedWith(RECOMS_JSON)
         launch { fixture.fetch() }
+        fixture.initGate.markInitialized(byUser = false)
         runCurrent()
-        val requestsBeforeInit = fixture.rest.requests.size
+        val requestsBeforeHostInit = fixture.rest.requests.size
 
         whenn()
-        fixture.initGate.markInitialized(byUser = false)
+        fixture.initGate.markInitialized(byUser = true)
         runCurrent()
 
         then()
-        assertEquals(0, requestsBeforeInit)
+        assertEquals(0, requestsBeforeHostInit)
         assertEquals(listOf(RECOMS_JSON), fixture.callback.results)
     }
 

@@ -10,9 +10,12 @@ earlier release are tested.
 
 ### Changed
 
-- All work runs on coroutines instead of the internal `OperationQueue` threads. API calls made before
-  `Reteno.initWithConfig(...)` are held and run in call order once the SDK is initialized; this now also applies to
-  App Inbox and Recommendations.
+- All work runs on coroutines instead of the internal `OperationQueue` threads. Calls to `Reteno`, `AppInbox` and
+  `Recommendation` made before `Reteno.initWithConfig(...)` are held until it is called and then run in call order,
+  even when a configuration saved by an earlier launch is available; they used to run as soon as that saved
+  configuration was applied. Push handling in the background (delivery statuses, background sync) still starts from
+  the saved configuration, so it works before the app calls `initWithConfig`. `RetenoInternalImpl.isInitialized`
+  still turns true once the saved configuration is applied; it does not mean `Reteno` calls run yet.
 - Data sync runs as one ordered pipeline (device → user → interactions → events → inbox status → recommendation events
   → wrapped links → in-app interactions → log events). A step that fails with a repeatable error (network, 5xx, 429)
   stops the rest of the run and is retried on the next cycle; other failures no longer block the pipeline.
@@ -24,6 +27,10 @@ earlier release are tested.
 - In-app messages: display-rule in-apps are no longer blocked while push in-apps are paused; a show is counted only
   after the in-app was actually displayed; the stored ETag is sent with the in-app list request; an in-app whose
   activity was not ready when the app went to background is presented on the next activity start.
+- In-apps targeted by time spent in the app are shown in every session; they used to be shown only in the first
+  session after install, because the counter carried over time from earlier sessions.
+- Without network, in-app messages and their content saved by an earlier launch are used, so event-triggered and timed
+  in-apps still show offline; they used to be dropped when the in-app list could not be loaded.
 - Links opened from an in-app without a current activity start from the application context instead of being dropped.
 - In-app custom data is broadcast only to receivers in the host app's own package.
 - On Android versions the SDK does not support (below 8.0, API 26), `setUserAttributes`,
@@ -57,9 +64,13 @@ earlier release are tested.
   (up to five users per sync, the rest on the next one); anonymous attributes set before identifying a user are sent
   on their own, as they are online.
 - `SessionStarted` could be stored before the `SessionEnded` of the previous session; they are now logged in order.
+- The device was registered with the last stored notification state (off on a fresh install), so it was sent again a
+  moment later once the push module reported the real state. The device is now saved with the state read from the
+  system (app notifications and the default Reteno channel) and sent once.
 - Taps on in-app buttons that also close the in-app were not recorded: the in-app reports the close before the click,
   and the click was dropped once the in-app was gone. Push in-apps never registered a click this way. A click that
-  follows the close of the same in-app is now recorded and its link or custom data handled.
+  follows the close of the same in-app is now recorded and its link or custom data handled; if another in-app
+  is already on screen, the click is only recorded.
 - Typed recommendations (`fetchRecommendation` with your own `RecomBase` class) came back with every field empty in
   minified release builds, because R8 removed the fields Gson fills. The SDK's consumer rules now keep the fields and
   constructors of every `RecomBase` implementation; the classes can still be renamed.

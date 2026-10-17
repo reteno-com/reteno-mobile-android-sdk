@@ -153,6 +153,31 @@ internal class RetenoInternalImplTest {
     }
 
     @Test
+    fun `should hold host api calls after cached configuration until the host initializes the sdk`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        fixture.callEveryDeferredApi()
+
+        whenn()
+        fixture.actions.control.markInitialized(byUser = false)
+        runCurrent()
+
+        then()
+        val expected = listOf(
+            "boot",
+            "submitFcmToken",
+            "submitNotificationsEnabled true",
+            "submitPushPermissionStatus",
+            "submitSessionDuration 5000",
+            "submitInteractionClick interaction-2 OPEN_URL true",
+            "submitDeeplinkClick https://track.example/c/1",
+            "submitIamFromPush interaction-3",
+            "submitDefaultNotificationChannel {}"
+        )
+        assertEquals(expected, fixture.actions.log.calls)
+    }
+
+    @Test
     fun `should submit api calls immediately once initialized`() = runUnitTest {
         given()
         val fixture = SutFixture(this)

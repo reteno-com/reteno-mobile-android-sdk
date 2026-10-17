@@ -159,6 +159,7 @@ internal class UnsupportedOsActionsTest {
 
         whenn()
         fixture.sut.control.runAfterInit { ran += "operation" }
+        fixture.sut.control.runAfterUserInit { ran += "host operation" }
 
         then()
         assertTrue(ran.isEmpty())

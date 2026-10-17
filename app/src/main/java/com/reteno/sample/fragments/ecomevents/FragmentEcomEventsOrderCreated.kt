@@ -19,6 +19,7 @@ import com.reteno.sample.R
 import com.reteno.sample.databinding.FragmentEcomEventsOrderUpsertBinding
 import com.reteno.sample.util.Util
 import java.time.ZonedDateTime
+import java.time.format.DateTimeParseException
 
 open class FragmentEcomEventsOrderCreated : BaseEcomEventsFragment() {
     @JvmField
@@ -61,46 +62,16 @@ open class FragmentEcomEventsOrderCreated : BaseEcomEventsFragment() {
                 ).show()
                 return@setOnClickListener
             }
-            val shippingString = Util.getTextOrNull(binding!!.etShipping)
-            var shipping: Double? = null
-            if (shippingString != null) {
-                shipping = shippingString.toDouble()
+            val order = try {
+                buildOrder(externalOrderId, totalCost, orderStatus, date)
+            } catch (error: DateTimeParseException) {
+                showError("ERROR. Date must look like ${ZonedDateTime.now()}")
+                return@setOnClickListener
+            } catch (error: NumberFormatException) {
+                showError("ERROR. Costs, shipping, discount, taxes and item quantity must be numbers")
+                return@setOnClickListener
             }
-            val discountString = Util.getTextOrNull(binding!!.etDiscount)
-            var discount: Double? = null
-            if (discountString != null) {
-                discount = discountString.toDouble()
-            }
-            val taxesString = Util.getTextOrNull(binding!!.etTaxes)
-            var taxes: Double? = null
-            if (taxesString != null) {
-                taxes = taxesString.toDouble()
-            }
-            val orderItems = getOrderItems(binding!!.llOrderItems)
-            val orderBuilder = Order.Builder(
-                externalOrderId,
-                Util.getTextOrNull(binding!!.etExternalCustomerId), totalCost.toDouble(),
-                orderStatus,
-                ZonedDateTime.parse(date)
-            )
-            orderBuilder.cartId = Util.getTextOrNull(binding!!.etCartId)
-            orderBuilder.email = Util.getTextOrNull(binding!!.etEmail)
-            orderBuilder.phone = Util.getTextOrNull(binding!!.etPhone)
-            orderBuilder.firstName = Util.getTextOrNull(binding!!.etFirstName)
-            orderBuilder.lastName = Util.getTextOrNull(binding!!.etLastName)
-            orderBuilder.shipping = shipping
-            orderBuilder.discount = discount
-            orderBuilder.taxes = taxes
-            orderBuilder.restoreUrl = Util.getTextOrNull(binding!!.etRestoreUrl)
-            orderBuilder.statusDescription = Util.getTextOrNull(binding!!.etStatusDescription)
-            orderBuilder.storeId = Util.getTextOrNull(binding!!.etStoreId)
-            orderBuilder.source = Util.getTextOrNull(binding!!.etSource)
-            orderBuilder.deliveryMethod = Util.getTextOrNull(binding!!.etDeliveryMethod)
-            orderBuilder.paymentMethod = Util.getTextOrNull(binding!!.etPaymentMethod)
-            orderBuilder.deliveryAddress = Util.getTextOrNull(binding!!.etDeliveryAddress)
-            orderBuilder.items = orderItems
-            orderBuilder.attributes = getOrderCustomAttributes(binding!!.llCustomAttributes)
-            logEvent(orderBuilder.build())
+            logEvent(order)
             Toast.makeText(requireContext(), "Done", Toast.LENGTH_SHORT).show()
         }
         binding!!.btnCustomAttributePlus.setOnClickListener {
@@ -123,6 +94,53 @@ open class FragmentEcomEventsOrderCreated : BaseEcomEventsFragment() {
                 binding!!.llOrderItems.removeViewAt(countView - 1)
             }
         }
+    }
+
+    private fun buildOrder(externalOrderId: String, totalCost: String, orderStatus: OrderStatus, date: String): Order {
+        val shippingString = Util.getTextOrNull(binding!!.etShipping)
+        var shipping: Double? = null
+        if (shippingString != null) {
+            shipping = shippingString.toDouble()
+        }
+        val discountString = Util.getTextOrNull(binding!!.etDiscount)
+        var discount: Double? = null
+        if (discountString != null) {
+            discount = discountString.toDouble()
+        }
+        val taxesString = Util.getTextOrNull(binding!!.etTaxes)
+        var taxes: Double? = null
+        if (taxesString != null) {
+            taxes = taxesString.toDouble()
+        }
+        val orderItems = getOrderItems(binding!!.llOrderItems)
+        val orderBuilder = Order.Builder(
+            externalOrderId,
+            Util.getTextOrNull(binding!!.etExternalCustomerId), totalCost.toDouble(),
+            orderStatus,
+            ZonedDateTime.parse(date)
+        )
+        orderBuilder.cartId = Util.getTextOrNull(binding!!.etCartId)
+        orderBuilder.email = Util.getTextOrNull(binding!!.etEmail)
+        orderBuilder.phone = Util.getTextOrNull(binding!!.etPhone)
+        orderBuilder.firstName = Util.getTextOrNull(binding!!.etFirstName)
+        orderBuilder.lastName = Util.getTextOrNull(binding!!.etLastName)
+        orderBuilder.shipping = shipping
+        orderBuilder.discount = discount
+        orderBuilder.taxes = taxes
+        orderBuilder.restoreUrl = Util.getTextOrNull(binding!!.etRestoreUrl)
+        orderBuilder.statusDescription = Util.getTextOrNull(binding!!.etStatusDescription)
+        orderBuilder.storeId = Util.getTextOrNull(binding!!.etStoreId)
+        orderBuilder.source = Util.getTextOrNull(binding!!.etSource)
+        orderBuilder.deliveryMethod = Util.getTextOrNull(binding!!.etDeliveryMethod)
+        orderBuilder.paymentMethod = Util.getTextOrNull(binding!!.etPaymentMethod)
+        orderBuilder.deliveryAddress = Util.getTextOrNull(binding!!.etDeliveryAddress)
+        orderBuilder.items = orderItems
+        orderBuilder.attributes = getOrderCustomAttributes(binding!!.llCustomAttributes)
+        return orderBuilder.build()
+    }
+
+    private fun showError(message: String) {
+        Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
     }
 
     protected open fun logEvent(order: Order?) {

@@ -146,20 +146,21 @@ internal class GetInboxMessagesActionTest {
     }
 
     @Test
-    fun `should wait for sdk initialization before requesting messages`() = runUnitTest {
+    fun `should wait for the host to initialize the sdk before requesting messages`() = runUnitTest {
         given()
         val fixture = SutFixture(this, initialized = false)
         fixture.rest.succeedWith(MESSAGES_JSON)
         launch { fixture.sut(page = null, pageSize = null, status = null, callback = fixture.callback) }
+        fixture.initGate.markInitialized(byUser = false)
         runCurrent()
-        val requestsBeforeInit = fixture.rest.requests.size
+        val requestsBeforeHostInit = fixture.rest.requests.size
 
         whenn()
-        fixture.initGate.markInitialized(byUser = false)
+        fixture.initGate.markInitialized(byUser = true)
         runCurrent()
 
         then()
-        assertEquals(0, requestsBeforeInit)
+        assertEquals(0, requestsBeforeHostInit)
         assertEquals(1, fixture.callback.results.size)
     }
 

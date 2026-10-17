@@ -26,6 +26,9 @@ internal class FakeAppPlatform : AppEnvironment, AppBroadcasts, HostUi, Backgrou
     var onWatchFragmentScreens: () -> Unit = {}
     var onSend: () -> Unit = {}
     var bundledWidget: String? = "{}"
+    var notificationsEnabled = true
+    var notificationsReadFailure: Throwable? = null
+    val notificationChannelsChecked = mutableListOf<String>()
     var onBundledWidget: () -> Unit = {}
     val screen = FakeInAppScreen()
     var origin = LogEventOrigin(
@@ -81,6 +84,12 @@ internal class FakeAppPlatform : AppEnvironment, AppBroadcasts, HostUi, Backgrou
 
     override fun createDevice(deviceId: DeviceId, pushToken: String, pushSubscribed: Boolean): Device =
         stubDevice(deviceId, pushToken, pushSubscribed)
+
+    override fun notificationsEnabled(channelId: String): Boolean {
+        notificationChannelsChecked += channelId
+        notificationsReadFailure?.let { throw it }
+        return notificationsEnabled
+    }
 
     override fun bundledWidget(): String? {
         onBundledWidget()

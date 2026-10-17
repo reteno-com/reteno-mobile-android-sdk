@@ -31,7 +31,7 @@ internal class GetInboxMessagesAction(
     ): Result<Unit> = runner("GetInboxMessages") {
         args("page" to page, "pageSize" to pageSize, "status" to status)
         step("wait for sdk initialization") {
-            initGate.awaitInit()
+            initGate.awaitUserInit()
         }
         val filters = mapOf(
             QUERY_PAGE to page?.toString(),

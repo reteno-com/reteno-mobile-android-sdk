@@ -26,7 +26,7 @@ internal class MarkAllInboxMessagesOpenedAction(
         callback: RetenoResultCallback<Unit>
     ): Result<Unit> = runner("MarkAllInboxMessagesOpened") {
         step("wait for sdk initialization") {
-            initGate.awaitInit()
+            initGate.awaitUserInit()
         }
         val response = step("send all messages opened to server") {
             api.request(HttpMethod.POST, ApiContract.AppInbox.MessagesStatus, AppInboxMessagesStatusRemote().toJson())

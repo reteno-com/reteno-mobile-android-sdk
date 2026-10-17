@@ -22,7 +22,7 @@ internal class MarkInboxMessageOpenedAction(
     suspend operator fun invoke(messageId: String): Result<Unit> = runner("MarkInboxMessageOpened") {
         args("messageId" to messageId)
         step("wait for sdk initialization") {
-            initGate.awaitInit()
+            initGate.awaitUserInit()
         }
         step("save opened message to local database") {
             withContext(dispatchers.io) {

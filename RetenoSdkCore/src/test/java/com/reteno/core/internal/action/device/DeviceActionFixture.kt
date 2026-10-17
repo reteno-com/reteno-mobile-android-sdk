@@ -26,6 +26,7 @@ internal class DeviceActionFixture(scope: TestScope) {
     init {
         every { configRepository.getDeviceId() } returns deviceId
         every { configRepository.isNotificationsEnabled() } returns true
+        every { configRepository.getDefaultNotificationChannel() } returns ""
         every { devicesDb.getDevices(any()) } returns emptyList()
         justRun { devicesDb.insertDevice(any()) }
         justRun { devicesDb.deleteDevices(any()) }

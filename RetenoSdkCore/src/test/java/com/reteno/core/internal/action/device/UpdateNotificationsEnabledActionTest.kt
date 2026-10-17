@@ -1,6 +1,7 @@
 package com.reteno.core.internal.action.device
 
 import com.reteno.core.data.local.mappers.toDb
+import com.reteno.core.data.local.model.device.DeviceDb
 import com.reteno.core.domain.model.event.Event
 import com.reteno.core.domain.model.event.LifecycleTrackingOptions
 import com.reteno.core.fixtures.recordingLogEvent
@@ -43,6 +44,26 @@ internal class UpdateNotificationsEnabledActionTest {
             justRun { env.configRepository.saveNotificationsEnabled(any()) }
             coEvery { env.configRepository.getFcmToken() } returns "token"
         }
+    }
+
+    @Test
+    fun `should not save the device again when push reports the state it was registered with`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        val stored = mutableListOf<DeviceDb>()
+        every { fixture.env.devicesDb.getDevices(any()) } answers { stored.toList() }
+        every { fixture.env.devicesDb.insertDevice(any()) } answers { stored += firstArg<DeviceDb>() }
+        every { fixture.env.configRepository.isNotificationsEnabled() } returns false
+        fixture.env.platform.notificationsEnabled = true
+        fixture.env.traced.runner("RegisterDevice") {
+            fixture.env.currentDevice.save(this, pushToken = "token")
+        }
+
+        whenn()
+        fixture.sut(true)
+
+        then()
+        assertEquals(1, stored.size)
     }
 
     @Test

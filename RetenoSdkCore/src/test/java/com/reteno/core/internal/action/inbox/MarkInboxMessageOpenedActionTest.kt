@@ -65,19 +65,20 @@ internal class MarkInboxMessageOpenedActionTest {
     }
 
     @Test
-    fun `should wait for sdk initialization before saving`() = runUnitTest {
+    fun `should wait for the host to initialize the sdk before saving`() = runUnitTest {
         given()
         val fixture = SutFixture(this, initialized = false)
         launch { fixture.sut("m1") }
+        fixture.initGate.markInitialized(byUser = false)
         runCurrent()
-        val savedBeforeInit = fixture.saved.size
+        val savedBeforeHostInit = fixture.saved.size
 
         whenn()
-        fixture.initGate.markInitialized(byUser = false)
+        fixture.initGate.markInitialized(byUser = true)
         runCurrent()
 
         then()
-        assertEquals(0, savedBeforeInit)
+        assertEquals(0, savedBeforeHostInit)
         assertEquals(1, fixture.saved.size)
     }
 

@@ -5,6 +5,7 @@ import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import com.reteno.sample.BaseFragment
 import com.reteno.sample.databinding.FragmentDeviceIdBinding
 import com.reteno.sample.util.AppSharedPreferencesManager
@@ -55,14 +56,19 @@ class FragmentDeviceId : BaseFragment() {
         }
         binding!!.tilExternalId.setStartIconOnClickListener {
             val externalId = binding!!.etExternalId.getText().toString()
-            AppSharedPreferencesManager.saveExternalId(view.context, externalId)
-            reteno.setUserAttributes(externalId)
+            try {
+                reteno.setUserAttributes(externalId)
+                AppSharedPreferencesManager.saveExternalId(view.context, externalId)
+            } catch (error: IllegalArgumentException) {
+                Toast.makeText(view.context, error.message, Toast.LENGTH_LONG).show()
+            }
             refreshUi()
         }
         binding!!.tilExternalId.setEndIconOnClickListener {
             AppSharedPreferencesManager.saveExternalId(view.context, "")
-            reteno.setUserAttributes("")
             binding!!.etExternalId.setText("")
+            Toast.makeText(view.context, "Saved external ID cleared; the SDK keeps the last one set", Toast.LENGTH_LONG)
+                .show()
             refreshUi()
         }
         binding!!.tilDeviceId.setStartIconOnClickListener {
