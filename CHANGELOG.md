@@ -57,6 +57,9 @@ earlier release are tested.
   (up to five users per sync, the rest on the next one); anonymous attributes set before identifying a user are sent
   on their own, as they are online.
 - `SessionStarted` could be stored before the `SessionEnded` of the previous session; they are now logged in order.
+- Taps on in-app buttons that also close the in-app were not recorded: the in-app reports the close before the click,
+  and the click was dropped once the in-app was gone. Push in-apps never registered a click this way. A click that
+  follows the close of the same in-app is now recorded and its link or custom data handled.
 - Typed recommendations (`fetchRecommendation` with your own `RecomBase` class) came back with every field empty in
   minified release builds, because R8 removed the fields Gson fills. The SDK's consumer rules now keep the fields and
   constructors of every `RecomBase` implementation; the classes can still be renamed.

@@ -53,6 +53,7 @@ internal class InAppPresenter(
     private var active = false
     private var pending: InAppMessage? = null
     private var current: InApp? = null
+    private var closed: InApp? = null
     private var held: InApp? = null
     private var waitingForStart: InApp? = null
     private var readiness: Job? = null
@@ -114,8 +115,17 @@ internal class InAppPresenter(
         }
     }
 
-    override fun onWidgetMessage(htmlId: String, message: String?) = onLoaded(htmlId) { inApp ->
-        val event = readWidgetEvent(message) ?: return@onLoaded
+    override fun onWidgetMessage(htmlId: String, message: String?) = onMain {
+        val inApp = current
+        if (inApp != null && inApp.htmlId == htmlId) {
+            onWidgetEvent(inApp, message)
+        } else {
+            onClosedWidgetEvent(htmlId, message)
+        }
+    }
+
+    private fun onWidgetEvent(inApp: InApp, message: String?) {
+        val event = readWidgetEvent(message) ?: return
         when (event.type) {
             IamJsEventType.WIDGET_INIT_SUCCESS -> onWidgetDisplayed(inApp, event.payload)
             IamJsEventType.WIDGET_INIT_FAILED,
@@ -124,6 +134,15 @@ internal class InAppPresenter(
             IamJsEventType.OPEN_URL -> onLinkClicked(inApp, event)
             IamJsEventType.CLOSE_WIDGET -> close(inApp, InAppCloseAction.CLOSE_BUTTON)
         }
+    }
+
+    private fun onClosedWidgetEvent(htmlId: String, message: String?) {
+        val inApp = closed ?: return
+        if (inApp.htmlId != htmlId) return
+        val event = readWidgetEvent(message) ?: return
+        if (event.type != IamJsEventType.CLICK && event.type != IamJsEventType.OPEN_URL) return
+        closed = null
+        followLink(inApp, event)
     }
 
     override fun onDismissed(htmlId: String) = onLoaded(htmlId) { inApp ->
@@ -159,6 +178,7 @@ internal class InAppPresenter(
 
     private fun begin(inApp: InApp) {
         current = inApp
+        closed = null
         val loading = scope.launch(dispatchers.main, start = CoroutineStart.LAZY) {
             notifyHost("beforeDisplay") { it.beforeDisplay(inApp.data()) }
             val html = inApp.fetchHtml().getOrNull()
@@ -248,6 +268,11 @@ internal class InAppPresenter(
     }
 
     private fun onLinkClicked(inApp: InApp, event: IamJsEvent) {
+        followLink(inApp, event)
+        teardown(inApp)
+    }
+
+    private fun followLink(inApp: InApp, event: IamJsEvent) {
         val payload = event.payload
         val interactionId = inApp.interactionId
         if (interactionId != null) {
@@ -257,7 +282,6 @@ internal class InAppPresenter(
         if (payload != null && !sendCustomData(inApp, payload)) {
             openLink(payload.url)
         }
-        teardown(inApp)
     }
 
     private fun sendCustomData(inApp: InApp, payload: IamJsPayload): Boolean {
@@ -282,6 +306,7 @@ internal class InAppPresenter(
     private fun close(inApp: InApp, action: InAppCloseAction) {
         val data = InAppCloseData(inApp.source, inApp.hostId, action)
         notifyHost("beforeClose") { it.beforeClose(data) }
+        closed = inApp
         teardown(inApp)
         notifyHost("afterClose") { it.afterClose(data) }
     }

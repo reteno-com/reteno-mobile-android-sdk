@@ -1186,6 +1186,162 @@ internal class InAppPresenterTest {
     }
 
     @Test
+    fun `should record click that follows the close of a push in-app`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this).pushShowing()
+        fixture.widget(INIT_SUCCESS)
+
+        whenn()
+        fixture.widget(CLOSE_BUTTON)
+        fixture.widget(BUTTON_CLICK)
+
+        then()
+        val expected = Triple(PUSH_ID, InteractionAction("CLICK", "btn", null), true)
+        assertEquals(listOf(expected), fixture.clicks)
+    }
+
+    @Test
+    fun `should record click that follows the close of a display rule in-app`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this).displayed()
+
+        whenn()
+        fixture.widget(CLOSE_BUTTON)
+        fixture.widget(BUTTON_CLICK)
+
+        then()
+        assertEquals(listOf("generated-1"), fixture.clicks.map { it.first })
+    }
+
+    @Test
+    fun `should close in-app once when a click follows the close`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this).displayed()
+
+        whenn()
+        fixture.widget(CLOSE_BUTTON)
+        fixture.widget(BUTTON_CLICK)
+
+        then()
+        assertEquals(1, fixture.screen.calls.count { it == "destroy" })
+        val closeCallbacks = fixture.callback.calls.filter { it.contains("Close") }
+        assertEquals(2, closeCallbacks.size)
+    }
+
+    @Test
+    fun `should open link of a click that follows the close`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this).displayed()
+
+        whenn()
+        fixture.widget(CLOSE_BUTTON)
+        fixture.widget("""{"type":"OPEN_URL","payload":{"targetComponentId":"btn","url":"https://example.com"}}""")
+
+        then()
+        assertEquals("open https://example.com", fixture.screen.calls.last())
+    }
+
+    @Test
+    fun `should record only one click after the in-app was closed`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this).displayed()
+
+        whenn()
+        fixture.widget(CLOSE_BUTTON)
+        fixture.widget(BUTTON_CLICK)
+        fixture.widget(BUTTON_CLICK)
+
+        then()
+        assertEquals(1, fixture.clicks.size)
+    }
+
+    @Test
+    fun `should not record a second click after the in-app was closed by its link`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this).displayed()
+
+        whenn()
+        fixture.widget("""{"type":"OPEN_URL","payload":{"targetComponentId":"btn","url":"https://example.com"}}""")
+        fixture.widget(BUTTON_CLICK)
+
+        then()
+        assertEquals(1, fixture.clicks.size)
+        assertEquals(1, fixture.screen.calls.count { it == "open https://example.com" })
+    }
+
+    @Test
+    fun `should ignore other widget events after the in-app was closed`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this).displayed()
+
+        whenn()
+        fixture.widget(CLOSE_BUTTON)
+        fixture.widget("""{"type":"WIDGET_RUNTIME_ERROR"}""")
+        fixture.widget(BUTTON_CLICK)
+
+        then()
+        coVerify(exactly = 0) { fixture.reportFailure(any(), any()) }
+        assertEquals(1, fixture.clicks.size)
+    }
+
+    @Test
+    fun `should ignore unreadable widget message after the in-app was closed`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this).displayed()
+
+        whenn()
+        fixture.widget(CLOSE_BUTTON)
+        fixture.widget("not json")
+
+        then()
+        assertTrue(fixture.clicks.isEmpty())
+    }
+
+    @Test
+    fun `should ignore click of a closed in-app once another one is loading`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this).displayed()
+        fixture.widget(CLOSE_BUTTON)
+        coEvery { fixture.loadHtml(any()) } returns Result.success(HTML.copy(id = "html-next"))
+        fixture.sut.show(stubInAppMessage(messageId = 2))
+        runCurrent()
+
+        whenn()
+        fixture.screen.events!!.onWidgetMessage(HTML.id, BUTTON_CLICK)
+        runCurrent()
+
+        then()
+        assertTrue(fixture.clicks.isEmpty())
+    }
+
+    @Test
+    fun `should ignore click from another html after the in-app was closed`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this).displayed()
+        fixture.widget(CLOSE_BUTTON)
+
+        whenn()
+        fixture.screen.events!!.onWidgetMessage("html-other", BUTTON_CLICK)
+        runCurrent()
+
+        then()
+        assertTrue(fixture.clicks.isEmpty())
+    }
+
+    @Test
+    fun `should ignore click when no in-app was shown`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this).started()
+
+        whenn()
+        fixture.screen.events!!.onWidgetMessage(HTML.id, BUTTON_CLICK)
+        runCurrent()
+
+        then()
+        assertTrue(fixture.clicks.isEmpty())
+    }
+
+    @Test
     fun `should identify push in-app by interaction id in custom data and clicks`() = runUnitTest {
         given()
         val fixture = SutFixture(this).pushShowing()
@@ -1246,6 +1402,8 @@ internal class InAppPresenterTest {
     private companion object {
         const val PUSH_ID = "push-1"
         const val INIT_SUCCESS = """{"type":"WIDGET_INIT_SUCCESS"}"""
+        const val CLOSE_BUTTON = """{"type":"CLOSE_WIDGET","payload":{"targetComponentId":"btn"}}"""
+        const val BUTTON_CLICK = """{"type":"CLICK","payload":{"targetComponentId":"btn"}}"""
         val MESSAGE = stubInAppMessage(messageId = 1).copy(messageInstanceId = 11)
         val HTML = IamFetchResult("html-1", "<html/>", InAppLayoutType.FULL, InAppLayoutParams(Position.TOP))
         val PUSH_HTML = HTML.copy(id = "html-2")
