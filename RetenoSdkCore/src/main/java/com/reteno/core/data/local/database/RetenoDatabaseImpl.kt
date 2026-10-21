@@ -252,15 +252,17 @@ internal class RetenoDatabaseImpl(
     }
 
     private fun mitigate(e: SQLiteException) {
-        val message = "${e.message}"
-        if (message.contains("no such table")) {
+        if (e.reports("no such table")) {
             createTables(writableSQLDatabase)
             Logger.e(TAG, "mitigate(): tables created", e)
-        } else if (message.contains("no such column")) {
+        } else if (e.reports("no such column")) {
             onUpgrade(writableSQLDatabase, 1, DATABASE_VERSION)
             Logger.e(TAG, "mitigate(): database upgraded", e)
         }
     }
+
+    private fun SQLiteException.reports(error: String): Boolean =
+        generateSequence<Throwable>(this) { it.cause }.any { error in "${it.message}" }
 
     private companion object {
         const val TAG = "RetenoDatabaseImpl"
