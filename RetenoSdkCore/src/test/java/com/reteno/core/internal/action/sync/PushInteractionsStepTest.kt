@@ -38,7 +38,7 @@ internal class PushInteractionsStepTest {
     }
 
     @Test
-    fun `should continue without request when there are no interactions`() = runUnitTest {
+    fun `should report nothing to send without request when there are no interactions`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
         every { fixture.interactionsDb.getInteractions(1) } returns emptyList()
@@ -47,7 +47,7 @@ internal class PushInteractionsStepTest {
         val outcome = fixture.sut().getOrThrow()
 
         then()
-        assertEquals(StepOutcome.CONTINUE, outcome)
+        assertEquals(StepOutcome.NOTHING_TO_SEND, outcome)
         assertTrue(fixture.rest.requests.isEmpty())
         assertTrue(fixture.traced.sink.lines.any { it.contains("→ nothing to send") })
     }

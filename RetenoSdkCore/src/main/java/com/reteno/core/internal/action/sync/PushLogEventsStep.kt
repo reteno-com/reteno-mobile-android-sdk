@@ -23,7 +23,9 @@ internal class PushLogEventsStep(
     private val runner: ActionRunner
 ) : SyncStep {
 
-    override suspend fun invoke(): Result<StepOutcome> = runner("PushLogEvents", reportFailure = false) {
+    override val name: String = "PushLogEvents"
+
+    override suspend fun invoke(): Result<StepOutcome> = runner(name, reportFailure = false) {
         dropBacklogAboveLimit()
         push()
     }

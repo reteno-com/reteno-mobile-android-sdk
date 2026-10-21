@@ -26,6 +26,11 @@ internal object TraceFormatter {
     fun end(depth: Int, id: String, name: String, result: String, millis: Long): String =
         line(depth, "└─ [$id] $name $result  $millis ms")
 
+    fun collapsed(depth: Int, id: String, name: String, args: String, result: String, millis: Long): String {
+        val arguments = if (args.isEmpty()) "" else "  $args"
+        return line(depth, "── [$id] $name$arguments $result  $millis ms")
+    }
+
     private fun columns(name: String, detail: String, millis: Long): String =
         name.padEnd(NAME_WIDTH) + " " + detail.padEnd(DETAIL_WIDTH) + " " + "$millis ms".padStart(DURATION_WIDTH)
 

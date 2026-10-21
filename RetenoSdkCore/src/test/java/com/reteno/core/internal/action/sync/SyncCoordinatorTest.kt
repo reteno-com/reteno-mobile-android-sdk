@@ -1,6 +1,7 @@
 package com.reteno.core.internal.action.sync
 
 import com.reteno.core.fixtures.TestActionRunner
+import com.reteno.core.fixtures.syncStep
 import com.reteno.core.internal.coroutine.InitGate
 import com.reteno.test.given
 import com.reteno.test.runUnitTest
@@ -26,13 +27,13 @@ internal class SyncCoordinatorTest {
         var outcome: Result<StepOutcome> = Result.success(StepOutcome.CONTINUE)
         var crash: Throwable? = null
         private val traced = TestActionRunner(scope)
-        private val contactStep = SyncStep {
+        private val contactStep = syncStep("PushDevice") {
             scopes += "contact"
             gate?.await()
             crash?.let { throw it }
             outcome
         }
-        private val dataStep = SyncStep {
+        private val dataStep = syncStep("PushEvents") {
             scopes += "data"
             Result.success(StepOutcome.CONTINUE)
         }

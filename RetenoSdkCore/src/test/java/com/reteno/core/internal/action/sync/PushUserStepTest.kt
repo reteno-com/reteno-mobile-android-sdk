@@ -48,7 +48,7 @@ internal class PushUserStepTest {
     }
 
     @Test
-    fun `should continue without request when there are no users`() = runUnitTest {
+    fun `should report nothing to send without request when there are no users`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
         every { fixture.usersDb.getUsers(any()) } returns emptyList()
@@ -57,13 +57,13 @@ internal class PushUserStepTest {
         val outcome = fixture.sut().getOrThrow()
 
         then()
-        assertEquals(StepOutcome.CONTINUE, outcome)
+        assertEquals(StepOutcome.NOTHING_TO_SEND, outcome)
         assertTrue(fixture.rest.requests.isEmpty())
         assertTrue(fixture.traced.sink.lines.any { it.contains("→ nothing to send") })
     }
 
     @Test
-    fun `should continue without request when every user is synced`() = runUnitTest {
+    fun `should report nothing to send without request when every user is synced`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
         every { fixture.usersDb.getUsers(any()) } returns listOf(stubUserDb(synced = BooleanDb.TRUE))
@@ -72,7 +72,7 @@ internal class PushUserStepTest {
         val outcome = fixture.sut().getOrThrow()
 
         then()
-        assertEquals(StepOutcome.CONTINUE, outcome)
+        assertEquals(StepOutcome.NOTHING_TO_SEND, outcome)
         assertTrue(fixture.rest.requests.isEmpty())
         verify(exactly = 0) { fixture.usersDb.deleteUsers(any()) }
     }
@@ -411,6 +411,23 @@ internal class PushUserStepTest {
         assertEquals(StepOutcome.CONTINUE, outcome)
         assertEquals(listOf(ann.toRemote().toJson(), bob.toRemote().toJson()), fixture.sentBodies)
         assertEquals(listOf("bob" to BooleanDb.TRUE), storedContacts(stored))
+    }
+
+    @Test
+    fun `should continue after sending user when a later round finds nothing to send`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        val ann = pendingUser(rowId = "1", externalUserId = "ann", firstName = "Ann", secondsLater = 0)
+        val bob = pendingUser(rowId = "2", externalUserId = "bob", firstName = "Bob", secondsLater = 1)
+        every { fixture.usersDb.getUsers(any()) } returnsMany listOf(listOf(ann, bob), emptyList())
+
+        whenn()
+        val outcome = fixture.sut().getOrThrow()
+
+        then()
+        assertEquals(StepOutcome.CONTINUE, outcome)
+        assertEquals(1, fixture.rest.requests.size)
+        assertFalse(fixture.traced.sink.lines.any { it.contains("→ nothing to send") })
     }
 
     @Test

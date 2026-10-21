@@ -43,7 +43,7 @@ internal class PushLogEventsStepTest {
     }
 
     @Test
-    fun `should continue without request when there are no log events`() = runUnitTest {
+    fun `should report nothing to send without request when there are no log events`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
         every { fixture.logsDb.getLogEvents(PushLogEventsStep.BATCH_SIZE) } returns emptyList()
@@ -52,7 +52,7 @@ internal class PushLogEventsStepTest {
         val outcome = fixture.sut().getOrThrow()
 
         then()
-        assertEquals(StepOutcome.CONTINUE, outcome)
+        assertEquals(StepOutcome.NOTHING_TO_SEND, outcome)
         assertTrue(fixture.rest.requests.isEmpty())
         assertTrue(fixture.traced.sink.lines.any { it.contains("→ nothing to send") })
     }

@@ -37,7 +37,7 @@ internal class PushWrappedLinksStepTest {
     }
 
     @Test
-    fun `should continue without request when there are no links`() = runUnitTest {
+    fun `should report nothing to send without request when there are no links`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
         every { fixture.linksDb.getWrappedLinks(1) } returns emptyList()
@@ -46,7 +46,7 @@ internal class PushWrappedLinksStepTest {
         val outcome = fixture.sut().getOrThrow()
 
         then()
-        assertEquals(StepOutcome.CONTINUE, outcome)
+        assertEquals(StepOutcome.NOTHING_TO_SEND, outcome)
         assertTrue(fixture.rest.requests.isEmpty())
         assertTrue(fixture.traced.sink.lines.any { it.contains("→ nothing to send") })
     }

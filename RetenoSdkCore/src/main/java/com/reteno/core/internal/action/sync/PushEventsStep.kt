@@ -22,7 +22,9 @@ internal class PushEventsStep(
     private val runner: ActionRunner
 ) : SyncStep {
 
-    override suspend fun invoke(): Result<StepOutcome> = runner("PushEvents") {
+    override val name: String = "PushEvents"
+
+    override suspend fun invoke(): Result<StepOutcome> = runner(name) {
         push()
     }
 

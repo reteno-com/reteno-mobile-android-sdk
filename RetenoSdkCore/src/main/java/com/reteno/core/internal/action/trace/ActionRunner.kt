@@ -16,14 +16,15 @@ internal class ActionRunner(
     suspend operator fun <T> invoke(
         name: String,
         reportFailure: Boolean = true,
+        collapseOnSuccess: Boolean = false,
         block: suspend ActionTrace.() -> T
     ): Result<T> {
         val parent = currentCoroutineContext()[ActionTraceElement]?.trace
         parent?.ensureStarted()
         val trace = if (parent == null) {
-            ActionTraceImpl(newRootId(), depth = 0, name, sink, clock)
+            ActionTraceImpl(newRootId(), depth = 0, name, sink, clock, collapseOnSuccess)
         } else {
-            ActionTraceImpl(parent.nextChildId(), depth = parent.depth + 1, name, sink, clock)
+            ActionTraceImpl(parent.nextChildId(), depth = parent.depth + 1, name, parent.sink, clock, collapseOnSuccess)
         }
         return try {
             val value = withContext(ActionTraceElement(trace)) { trace.block() }

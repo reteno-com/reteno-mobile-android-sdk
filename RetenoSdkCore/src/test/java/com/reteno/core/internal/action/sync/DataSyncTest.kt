@@ -2,6 +2,7 @@ package com.reteno.core.internal.action.sync
 
 import com.reteno.core.fixtures.FakeAppPlatform
 import com.reteno.core.fixtures.TestActionRunner
+import com.reteno.core.fixtures.syncStep
 import com.reteno.core.fixtures.testDispatchers
 import com.reteno.core.internal.config.SdkConfiguration
 import com.reteno.core.internal.coroutine.InitGate
@@ -46,7 +47,7 @@ internal class DataSyncTest {
         val traced = TestActionRunner(scope)
         private val work = scope.workScope()
         private val readyGate = InitGate().also { it.markInitialized(byUser = true) }
-        private val step = SyncStep {
+        private val step = syncStep("PushDevice") {
             syncs++
             Result.success(StepOutcome.CONTINUE)
         }

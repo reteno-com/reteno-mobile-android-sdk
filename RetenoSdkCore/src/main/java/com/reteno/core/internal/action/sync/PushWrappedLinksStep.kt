@@ -17,7 +17,9 @@ internal class PushWrappedLinksStep(
     private val runner: ActionRunner
 ) : SyncStep {
 
-    override suspend fun invoke(): Result<StepOutcome> = runner("PushWrappedLinks") {
+    override val name: String = "PushWrappedLinks"
+
+    override suspend fun invoke(): Result<StepOutcome> = runner(name) {
         push()
     }
 

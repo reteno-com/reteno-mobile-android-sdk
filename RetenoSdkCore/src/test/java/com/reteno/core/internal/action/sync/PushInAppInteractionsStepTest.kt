@@ -5,18 +5,17 @@ import com.reteno.core.data.remote.api.ApiContract
 import com.reteno.core.data.remote.api.HttpMethod
 import com.reteno.core.data.remote.mapper.toJson
 import com.reteno.core.data.remote.mapper.toRemote
-import com.reteno.core.fixtures.SentRequest
-import com.reteno.core.fixtures.stubInAppInteractionDb
 import com.reteno.core.fixtures.FakeRestClient
+import com.reteno.core.fixtures.SentRequest
 import com.reteno.core.fixtures.TestActionRunner
 import com.reteno.core.fixtures.api
+import com.reteno.core.fixtures.stubInAppInteractionDb
 import com.reteno.core.fixtures.testDispatchers
 import com.reteno.test.given
 import com.reteno.test.runUnitTest
 import com.reteno.test.then
 import com.reteno.test.whenn
 import io.mockk.every
-import io.mockk.justRun
 import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.test.TestScope
@@ -40,7 +39,7 @@ internal class PushInAppInteractionsStepTest {
     }
 
     @Test
-    fun `should continue without request when there are no in app interactions`() = runUnitTest {
+    fun `should report nothing to send without request when there are no in app interactions`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
         every { fixture.inAppDb.getInteractions(1) } returns emptyList()
@@ -49,7 +48,7 @@ internal class PushInAppInteractionsStepTest {
         val outcome = fixture.sut().getOrThrow()
 
         then()
-        assertEquals(StepOutcome.CONTINUE, outcome)
+        assertEquals(StepOutcome.NOTHING_TO_SEND, outcome)
         assertTrue(fixture.rest.requests.isEmpty())
         assertTrue(fixture.traced.sink.lines.any { it.contains("→ nothing to send") })
     }

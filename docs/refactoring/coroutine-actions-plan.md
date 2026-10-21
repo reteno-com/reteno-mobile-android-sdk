@@ -197,6 +197,11 @@ E RetenoAction: │  │  [9c01ab.3] ✗ send interactions to server   503 repea
 W RetenoAction: │  └─ [9c01ab.3] PushInteractions ✗ ABORT                       232 ms
 W RetenoAction: └─ [9c01ab] Sync ✗ ABORTED at PushInteractions (3/9)            420 ms
 ```
+A successful sync whose steps logged nothing above DEBUG collapses to one line naming the steps that sent data (`runner("Sync", collapseOnSuccess = true)`); a sync with a warning, failure, abort or cancellation still prints the full trace above:
+```
+D RetenoAction: ── [9c01ab] Sync  scope=ALL ✓ COMPLETED  sent=PushDevice, PushEvents  412 ms
+D RetenoAction: ── [4e77d0] Sync  scope=ALL ✓ COMPLETED  nothing to send  3 ms
+```
 Possible endings: `✓ SUCCESS`, `✗ FAILURE <ExceptionClass>: <message>` (stack trace attached at ERROR), `⊘ CANCELLED`, and step-defined outcomes such as `CONTINUE` / `ABORT`.
 
 **API** (`internal/action/trace/`, as built in Phase 0)

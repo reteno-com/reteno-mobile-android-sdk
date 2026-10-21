@@ -19,7 +19,9 @@ internal class PushRecomEventsStep(
     private val runner: ActionRunner
 ) : SyncStep {
 
-    override suspend fun invoke(): Result<StepOutcome> = runner("PushRecomEvents") {
+    override val name: String = "PushRecomEvents"
+
+    override suspend fun invoke(): Result<StepOutcome> = runner(name) {
         push()
     }
 

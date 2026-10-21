@@ -43,7 +43,7 @@ internal class PushInboxStatusStepTest {
     }
 
     @Test
-    fun `should continue without request when no message was opened`() = runUnitTest {
+    fun `should report nothing to send without request when no message was opened`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
         every { fixture.inboxDb.getAppInboxMessages(any()) } returns emptyList()
@@ -52,7 +52,7 @@ internal class PushInboxStatusStepTest {
         val outcome = fixture.sut().getOrThrow()
 
         then()
-        assertEquals(StepOutcome.CONTINUE, outcome)
+        assertEquals(StepOutcome.NOTHING_TO_SEND, outcome)
         assertTrue(fixture.rest.requests.isEmpty())
         assertEquals(0, fixture.countRefreshes)
         assertTrue(fixture.traced.sink.lines.any { it.contains("→ nothing to send") })

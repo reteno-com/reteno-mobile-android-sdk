@@ -26,13 +26,19 @@ internal class ActionTraceImpl(
     val id: String,
     val depth: Int,
     private val name: String,
-    private val sink: RetenoLogSink,
-    private val clock: MonotonicClock
+    private val output: RetenoLogSink,
+    private val clock: MonotonicClock,
+    collapseOnSuccess: Boolean
 ) : ActionTrace {
 
+    private val buffer = if (collapseOnSuccess) TraceBuffer(output) else null
+    val sink: RetenoLogSink = buffer ?: output
     private val startedAt = clock.nanos()
     private val childCounter = AtomicInteger(0)
     private val started = AtomicBoolean(false)
+
+    @Volatile
+    private var startArgs = ""
 
     @Volatile
     private var lastStepFailure: Pair<String, List<Throwable>>? = null
@@ -53,7 +59,10 @@ internal class ActionTraceImpl(
 
     override fun args(vararg values: Pair<String, Any?>) {
         if (started.compareAndSet(false, true)) {
-            emit(LogPriority.DEBUG) { TraceFormatter.start(depth, id, name, format(values)) }
+            emit(LogPriority.DEBUG) {
+                startArgs = format(values)
+                TraceFormatter.start(depth, id, name, startArgs)
+            }
         } else {
             emit(LogPriority.DEBUG) { TraceFormatter.note(depth, id, format(values)) }
         }
@@ -93,17 +102,25 @@ internal class ActionTraceImpl(
         val traced = value as? TracedOutcome
         if (traced == null || traced.isSuccessful) {
             val label = if (traced == null) SUCCESS else traced.traceLabel
+            if (buffer != null && buffer.isQuiet) {
+                output.log(LogPriority.DEBUG, TAG) {
+                    TraceFormatter.collapsed(depth, id, name, startArgs, "✓ $label", millisSince(startedAt))
+                }
+                return
+            }
             emit(LogPriority.DEBUG) { TraceFormatter.end(depth, id, name, "✓ $label", millisSince(startedAt)) }
         } else {
             emit(LogPriority.WARN) {
                 TraceFormatter.end(depth, id, name, "✗ ${traced.traceLabel}", millisSince(startedAt))
             }
         }
+        flushBuffer()
     }
 
     fun finishCancelled() {
         ensureStarted()
         emit(LogPriority.DEBUG) { TraceFormatter.end(depth, id, name, "⊘ CANCELLED", millisSince(startedAt)) }
+        flushBuffer()
     }
 
     fun finishFailure(error: Throwable) {
@@ -112,6 +129,11 @@ internal class ActionTraceImpl(
             TraceFormatter.end(depth, id, name, "✗ FAILURE ${Redact.summary(error)}", millisSince(startedAt))
         }
         emit(LogPriority.ERROR) { Redact.stackTrace(error) }
+        flushBuffer()
+    }
+
+    private fun flushBuffer() {
+        buffer?.flush()
     }
 
     private fun format(values: Array<out Pair<String, Any?>>): String =

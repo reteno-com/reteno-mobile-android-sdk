@@ -25,14 +25,25 @@ internal class PushDeviceStep(
     private val runner: ActionRunner
 ) : SyncStep {
 
-    override suspend fun invoke(): Result<StepOutcome> = runner("PushDevice") {
-        var outcome = pushRound()
+    override val name: String = "PushDevice"
+
+    override suspend fun invoke(): Result<StepOutcome> = runner(name) {
+        val first = pushRound()
+        if (first == RoundOutcome.NOTHING_PENDING) {
+            nothingToSend()
+        } else {
+            pushRemainingRounds(first)
+        }
+    }
+
+    private suspend fun ActionTrace.pushRemainingRounds(first: RoundOutcome): StepOutcome {
+        var outcome = first
         var round = 1
         while (outcome == RoundOutcome.MORE_PENDING && round < MAX_ROUNDS) {
             outcome = pushRound()
             round++
         }
-        if (outcome == RoundOutcome.ABORT) StepOutcome.ABORT else StepOutcome.CONTINUE
+        return if (outcome == RoundOutcome.ABORT) StepOutcome.ABORT else StepOutcome.CONTINUE
     }
 
     private suspend fun ActionTrace.pushRound(): RoundOutcome {
@@ -40,10 +51,7 @@ internal class PushDeviceStep(
             withContext(dispatchers.io) { devicesDb.getDevices() }
         }
         val unsynced = devices.filter { it.isSynchronizedWithBackend != BooleanDb.TRUE }.maxByOrNull { it.createdAt }
-        if (unsynced == null) {
-            nothingToSend()
-            return RoundOutcome.DONE
-        }
+        if (unsynced == null) return RoundOutcome.NOTHING_PENDING
         val synced = devices.filter { it.isSynchronizedWithBackend == BooleanDb.TRUE }.maxByOrNull { it.createdAt }
         val request = requestFor(unsynced, synced)
         if (request == null) {
@@ -85,7 +93,7 @@ internal class PushDeviceStep(
         devicesDb.insertDevice(latest.copy(isSynchronizedWithBackend = BooleanDb.TRUE))
     }
 
-    private enum class RoundOutcome { DONE, MORE_PENDING, ABORT }
+    private enum class RoundOutcome { DONE, MORE_PENDING, NOTHING_PENDING, ABORT }
 
     companion object {
         const val MAX_ROUNDS = 5

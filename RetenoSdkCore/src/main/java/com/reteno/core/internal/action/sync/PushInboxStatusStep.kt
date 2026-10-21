@@ -21,7 +21,9 @@ internal class PushInboxStatusStep(
     private val runner: ActionRunner
 ) : SyncStep {
 
-    override suspend fun invoke(): Result<StepOutcome> = runner("PushInboxStatus") {
+    override val name: String = "PushInboxStatus"
+
+    override suspend fun invoke(): Result<StepOutcome> = runner(name) {
         push()
     }
 

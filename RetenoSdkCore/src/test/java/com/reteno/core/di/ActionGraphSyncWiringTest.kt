@@ -79,7 +79,9 @@ internal class ActionGraphSyncWiringTest {
             fixture.rest.requests.map { it.contract.url }
         )
         verify(exactly = 1) { fixture.configRepository.saveDeviceRegistered(true) }
-        assertTrue(fixture.sink.lines.any { it.contains("✓ refresh unread messages count") })
+        val summary = "Sync  scope=ALL ✓ COMPLETED  sent=PushDevice, PushUser, PushInteractions, " +
+            "PushInAppInteractions, PushEvents, PushInboxStatus, PushRecomEvents, PushWrappedLinks, PushLogEvents"
+        assertTrue(fixture.sink.lines.any { it.contains(summary) })
     }
 
     @Test

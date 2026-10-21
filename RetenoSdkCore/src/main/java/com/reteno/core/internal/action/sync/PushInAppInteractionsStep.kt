@@ -19,7 +19,9 @@ internal class PushInAppInteractionsStep(
     private val runner: ActionRunner
 ) : SyncStep {
 
-    override suspend fun invoke(): Result<StepOutcome> = runner("PushInAppInteractions") {
+    override val name: String = "PushInAppInteractions"
+
+    override suspend fun invoke(): Result<StepOutcome> = runner(name) {
         push()
     }
 

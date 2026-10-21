@@ -100,6 +100,44 @@ internal class TraceFormatterTest {
     }
 
     @Test
+    fun `should format collapsed action with arguments result and total duration on one line`() = runUnitTest {
+        given()
+        val args = "scope=ALL"
+
+        whenn()
+        val line = TraceFormatter.collapsed(
+            depth = 0,
+            id = "a1",
+            name = "Sync",
+            args = args,
+            result = "✓ COMPLETED  sent=PushEvents",
+            millis = 412
+        )
+
+        then()
+        assertEquals("── [a1] Sync  scope=ALL ✓ COMPLETED  sent=PushEvents  412 ms", line)
+    }
+
+    @Test
+    fun `should format collapsed action without arguments indented by depth`() = runUnitTest {
+        given()
+        val depth = 1
+
+        whenn()
+        val line = TraceFormatter.collapsed(
+            depth = depth,
+            id = "a1.1",
+            name = "Sync",
+            args = "",
+            result = "✓ COMPLETED",
+            millis = 3
+        )
+
+        then()
+        assertEquals("│  ── [a1.1] Sync ✓ COMPLETED  3 ms", line)
+    }
+
+    @Test
     fun `should truncate lines longer than limit`() = runUnitTest {
         given()
         val args = "x".repeat(TraceFormatter.MAX_LINE)

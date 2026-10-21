@@ -24,13 +24,16 @@ internal class SyncDataAction(
     private val stepLock: Mutex = Mutex()
 ) {
 
-    suspend operator fun invoke(scope: SyncScope): Result<SyncResult> = runner("Sync") {
+    suspend operator fun invoke(scope: SyncScope): Result<SyncResult> = sync(scope).map(SyncRun::result)
+
+    private suspend fun sync(scope: SyncScope): Result<SyncRun> = runner("Sync", collapseOnSuccess = true) {
         args("scope" to scope)
         val steps = if (scope == SyncScope.CONTACT) contactSteps else contactSteps + dataSteps
         runSteps(steps)
     }
 
-    private suspend fun ActionTrace.runSteps(steps: List<SyncStep>): SyncResult {
+    private suspend fun ActionTrace.runSteps(steps: List<SyncStep>): SyncRun {
+        val sent = mutableListOf<String>()
         var result = SyncResult.COMPLETED
         steps.forEachIndexed { index, syncStep ->
             val outcome = stepLock.withLock { syncStep() }
@@ -38,7 +41,7 @@ internal class SyncDataAction(
             when {
                 outcome.isFailure && index < contactSteps.size -> {
                     note { "$position failed, contact data must be sent first" }
-                    return SyncResult.ABORTED
+                    return SyncRun(SyncResult.ABORTED, sent)
                 }
                 outcome.isFailure -> {
                     note { "$position failed" }
@@ -46,10 +49,26 @@ internal class SyncDataAction(
                 }
                 outcome.getOrThrow() == StepOutcome.ABORT -> {
                     note { "stopped after $position" }
-                    return SyncResult.ABORTED
+                    return SyncRun(SyncResult.ABORTED, sent)
+                }
+                outcome.getOrThrow() == StepOutcome.CONTINUE -> {
+                    sent += syncStep.name
                 }
             }
         }
-        return result
+        return SyncRun(result, sent)
+    }
+
+    private class SyncRun(val result: SyncResult, private val sent: List<String>) : TracedOutcome {
+
+        override val isSuccessful: Boolean
+            get() = result.isSuccessful
+
+        override val traceLabel: String
+            get() = when {
+                sent.isNotEmpty() -> "$result  sent=${sent.joinToString()}"
+                result == SyncResult.COMPLETED -> "$result  nothing to send"
+                else -> "$result"
+            }
     }
 }

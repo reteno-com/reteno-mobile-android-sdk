@@ -49,7 +49,7 @@ internal class PushDeviceStepTest {
     }
 
     @Test
-    fun `should continue without request when there are no devices`() = runUnitTest {
+    fun `should report nothing to send without request when there are no devices`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
         every { fixture.devicesDb.getDevices(any()) } returns emptyList()
@@ -58,13 +58,13 @@ internal class PushDeviceStepTest {
         val outcome = fixture.sut().getOrThrow()
 
         then()
-        assertEquals(StepOutcome.CONTINUE, outcome)
+        assertEquals(StepOutcome.NOTHING_TO_SEND, outcome)
         assertTrue(fixture.rest.requests.isEmpty())
         assertTrue(fixture.traced.sink.lines.any { it.contains("→ nothing to send") })
     }
 
     @Test
-    fun `should continue without request when every device is already synced`() = runUnitTest {
+    fun `should report nothing to send without request when every device is already synced`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
         every { fixture.devicesDb.getDevices(any()) } returns listOf(stubDeviceDb(synced = BooleanDb.TRUE))
@@ -73,7 +73,7 @@ internal class PushDeviceStepTest {
         val outcome = fixture.sut().getOrThrow()
 
         then()
-        assertEquals(StepOutcome.CONTINUE, outcome)
+        assertEquals(StepOutcome.NOTHING_TO_SEND, outcome)
         assertTrue(fixture.rest.requests.isEmpty())
         verify(exactly = 0) { fixture.devicesDb.deleteDevices(any()) }
     }
@@ -237,6 +237,22 @@ internal class PushDeviceStepTest {
 
         then()
         assertEquals(2, fixture.rest.requests.size)
+    }
+
+    @Test
+    fun `should continue after sending device when a later round finds nothing to send`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        every { fixture.devicesDb.getDevices(any()) } returnsMany listOf(listOf(stubDeviceDb()), emptyList())
+        every { fixture.devicesDb.getUnSyncedDeviceCount() } returns 1L
+
+        whenn()
+        val outcome = fixture.sut().getOrThrow()
+
+        then()
+        assertEquals(StepOutcome.CONTINUE, outcome)
+        assertEquals(1, fixture.rest.requests.size)
+        assertFalse(fixture.traced.sink.lines.any { it.contains("→ nothing to send") })
     }
 
     @Test

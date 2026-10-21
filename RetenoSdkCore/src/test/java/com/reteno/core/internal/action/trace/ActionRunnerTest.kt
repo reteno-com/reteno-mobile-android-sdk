@@ -560,6 +560,189 @@ internal class ActionRunnerTest {
     }
 
     @Test
+    fun `should print one collapsed line when collapsing action succeeds with only debug lines`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+
+        whenn()
+        fixture.sut("Sync", collapseOnSuccess = true) {
+            args("scope" to "ALL")
+            step("load devices from local database") {
+                delay(3)
+            }
+            fixture.sut("PushUser") {
+                note { "nothing to send" }
+            }
+            TestOutcome.PASSED
+        }
+
+        then()
+        val expected = TraceFormatter.collapsed(0, "r1", "Sync", "scope=ALL", "✓ CONTINUE", 3)
+        assertEquals(listOf(expected), fixture.sink.lines)
+        assertEquals(LogPriority.DEBUG, fixture.sink.entries.single().priority)
+    }
+
+    @Test
+    fun `should collapse action without arguments`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+
+        whenn()
+        fixture.sut("Sync", collapseOnSuccess = true) {
+            Unit
+        }
+
+        then()
+        assertEquals(listOf(TraceFormatter.collapsed(0, "r1", "Sync", "", "✓ SUCCESS", 0)), fixture.sink.lines)
+    }
+
+    @Test
+    fun `should collapse child action at its own depth inside a full parent trace`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+
+        whenn()
+        fixture.sut("BackgroundSync") {
+            fixture.sut("Sync", collapseOnSuccess = true) {
+                args("scope" to "ALL")
+            }
+        }
+
+        then()
+        assertEquals(
+            listOf(
+                TraceFormatter.start(0, "r1", "BackgroundSync", ""),
+                TraceFormatter.collapsed(1, "r1.1", "Sync", "scope=ALL", "✓ SUCCESS", 0),
+                TraceFormatter.end(0, "r1", "BackgroundSync", "✓ SUCCESS", 0)
+            ),
+            fixture.sink.lines
+        )
+    }
+
+    @Test
+    fun `should print full trace in order when collapsing action has a warning step`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+
+        whenn()
+        fixture.sut("Sync", collapseOnSuccess = true) {
+            args("scope" to "ALL")
+            fixture.sut("PushEvents") {
+                step("send events to server") {
+                    TestOutcome.STOPPED
+                }
+            }
+        }
+
+        then()
+        assertEquals(
+            listOf(
+                TraceFormatter.start(0, "r1", "Sync", "scope=ALL"),
+                TraceFormatter.start(1, "r1.1", "PushEvents", ""),
+                TraceFormatter.stepFailure(1, "r1.1", "send events to server", "ABORT", 0),
+                TraceFormatter.end(1, "r1.1", "PushEvents", "✗ ABORT", 0),
+                TraceFormatter.end(0, "r1", "Sync", "✓ SUCCESS", 0)
+            ),
+            fixture.sink.lines
+        )
+        assertEquals(LogPriority.WARN, fixture.sink.entries[2].priority)
+    }
+
+    @Test
+    fun `should print full trace when collapsing action ends with unsuccessful outcome`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+
+        whenn()
+        fixture.sut("Sync", collapseOnSuccess = true) {
+            step("load devices from local database") {
+                Unit
+            }
+            TestOutcome.STOPPED
+        }
+
+        then()
+        assertEquals(
+            listOf(
+                TraceFormatter.start(0, "r1", "Sync", ""),
+                TraceFormatter.stepSuccess(0, "r1", "load devices from local database", "", 0),
+                TraceFormatter.end(0, "r1", "Sync", "✗ ABORT", 0)
+            ),
+            fixture.sink.lines
+        )
+        assertEquals(LogPriority.WARN, fixture.sink.entries.last().priority)
+    }
+
+    @Test
+    fun `should print full trace and report once when collapsing action fails`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        val error = IOException("boom")
+
+        whenn()
+        val result = fixture.sut<Unit>("Sync", collapseOnSuccess = true) {
+            step("load devices from local database") {
+                Unit
+            }
+            throw error
+        }
+
+        then()
+        assertTrue(result.exceptionOrNull() is IOException)
+        assertEquals(listOf(FailureReport("Sync", null, error)), fixture.reports)
+        val lines = fixture.sink.lines
+        assertEquals(TraceFormatter.start(0, "r1", "Sync", ""), lines[0])
+        assertEquals(TraceFormatter.stepSuccess(0, "r1", "load devices from local database", "", 0), lines[1])
+        assertEquals(TraceFormatter.end(0, "r1", "Sync", "✗ FAILURE IOException: boom", 0), lines[2])
+        assertTrue(lines[3].startsWith("java.io.IOException: boom"))
+        assertEquals(4, lines.size)
+    }
+
+    @Test
+    fun `should print full trace when collapsing action is cancelled`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+
+        whenn()
+        val job = launch {
+            fixture.sut("Sync", collapseOnSuccess = true) {
+                step("wait forever") {
+                    CompletableDeferred<Unit>().await()
+                }
+            }
+        }
+        runCurrent()
+        job.cancel()
+        runCurrent()
+
+        then()
+        assertEquals(
+            listOf(
+                TraceFormatter.start(0, "r1", "Sync", ""),
+                TraceFormatter.end(0, "r1", "Sync", "⊘ CANCELLED", 0)
+            ),
+            fixture.sink.lines
+        )
+    }
+
+    @Test
+    fun `should not log nor build messages of collapsing action when logging disabled`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this, enabled = false)
+        var messagesBuilt = 0
+
+        whenn()
+        fixture.sut("Sync", collapseOnSuccess = true) {
+            args("args" to { messagesBuilt++; "args" })
+            note { messagesBuilt++; "note" }
+        }
+
+        then()
+        assertTrue(fixture.sink.entries.isEmpty())
+        assertEquals(0, messagesBuilt)
+    }
+
+    @Test
     fun `should generate six character root id and use system clock by default`() = runUnitTest {
         given()
         val sink = FakeLogSink()

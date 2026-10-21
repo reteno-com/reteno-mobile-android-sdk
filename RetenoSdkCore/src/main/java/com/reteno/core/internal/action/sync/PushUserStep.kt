@@ -24,14 +24,25 @@ internal class PushUserStep(
     private val runner: ActionRunner
 ) : SyncStep {
 
-    override suspend fun invoke(): Result<StepOutcome> = runner("PushUser") {
-        var outcome = pushRound()
+    override val name: String = "PushUser"
+
+    override suspend fun invoke(): Result<StepOutcome> = runner(name) {
+        val first = pushRound()
+        if (first == RoundOutcome.NOTHING_PENDING) {
+            nothingToSend()
+        } else {
+            pushRemainingRounds(first)
+        }
+    }
+
+    private suspend fun ActionTrace.pushRemainingRounds(first: RoundOutcome): StepOutcome {
+        var outcome = first
         var round = 1
         while (outcome == RoundOutcome.MORE_PENDING && round < MAX_ROUNDS) {
             outcome = pushRound()
             round++
         }
-        if (outcome == RoundOutcome.ABORT) StepOutcome.ABORT else StepOutcome.CONTINUE
+        return if (outcome == RoundOutcome.ABORT) StepOutcome.ABORT else StepOutcome.CONTINUE
     }
 
     private suspend fun ActionTrace.pushRound(): RoundOutcome {
@@ -39,10 +50,7 @@ internal class PushUserStep(
             withContext(dispatchers.io) { usersDb.getUsers() }
         }
         val pending = users.filter { it.isSynchronizedWithBackend != BooleanDb.TRUE }.sortedBy { it.createdAt }
-        if (pending.isEmpty()) {
-            nothingToSend()
-            return RoundOutcome.DONE
-        }
+        if (pending.isEmpty()) return RoundOutcome.NOTHING_PENDING
         val run = pending.takeWhile { it.isSameContactAs(pending.first()) }
         val syncedRows = users.filter { it.isSynchronizedWithBackend == BooleanDb.TRUE }
         val push = pushFor(run, syncedRows.maxByOrNull { it.createdAt })
@@ -92,7 +100,7 @@ internal class PushUserStep(
 
     private class UserPush(val request: UserRemote, val full: UserRemote)
 
-    private enum class RoundOutcome { DONE, MORE_PENDING, ABORT }
+    private enum class RoundOutcome { DONE, MORE_PENDING, NOTHING_PENDING, ABORT }
 
     companion object {
         const val MAX_ROUNDS = 5
