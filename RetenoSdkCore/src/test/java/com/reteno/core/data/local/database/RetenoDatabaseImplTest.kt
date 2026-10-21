@@ -2,6 +2,7 @@ package com.reteno.core.data.local.database
 
 import android.app.Application
 import android.content.ContentValues
+import android.database.Cursor
 import android.database.sqlite.SQLiteCantOpenDatabaseException
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteDatabaseLockedException
@@ -73,10 +74,16 @@ internal class RetenoDatabaseImplTest {
                 generateSequence { if (cursor.moveToNext()) cursor.getString(0) else null }.toSet()
             }
 
-        fun columnList(database: RetenoDatabaseImpl, table: String): List<String> = values(
-            database,
-            "SELECT name FROM pragma_table_info('$table') ORDER BY cid"
-        ).map { it.orEmpty() }
+        fun columnList(database: RetenoDatabaseImpl, table: String): List<String> =
+            database.rawQuery("PRAGMA table_info($table)").use(::columnNames)
+
+        fun columnNames(tableInfo: Cursor): List<String> {
+            val columns = mutableListOf<String>()
+            while (tableInfo.moveToNext()) {
+                columns += tableInfo.getString(tableInfo.getColumnIndexOrThrow("name"))
+            }
+            return columns
+        }
 
         fun values(database: RetenoDatabaseImpl, sql: String): List<String?> = database.rawQuery(sql).use { cursor ->
             val values = mutableListOf<String?>()
@@ -106,13 +113,7 @@ internal class RetenoDatabaseImplTest {
             try {
                 val tables = statements.map { Regex("EXISTS (\\w+)").find(it)!!.groupValues[1] }
                 return tables.associateWith { table ->
-                    db.rawQuery("SELECT name FROM pragma_table_info('$table') ORDER BY cid", null).use { cursor ->
-                        val columns = mutableListOf<String>()
-                        while (cursor.moveToNext()) {
-                            columns += cursor.getString(0)
-                        }
-                        columns
-                    }
+                    db.rawQuery("PRAGMA table_info($table)", null).use(::columnNames)
                 }
             } finally {
                 db.close()
