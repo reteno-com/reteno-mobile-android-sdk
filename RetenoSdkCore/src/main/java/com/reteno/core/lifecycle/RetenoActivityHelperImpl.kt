@@ -12,6 +12,10 @@ internal class RetenoActivityHelperImpl : RetenoActivityHelper {
     private val retenoLifecycleCallbacks: MutableMap<String, RetenoLifecycleCallbacks> =
         Collections.synchronizedMap(LinkedHashMap())
 
+    private val startedActivities = LinkedHashSet<Activity>()
+
+    private val resumedActivities = HashSet<Activity>()
+
     private var isActivityPaused = false
 
     private var isReadyForTransition = false
@@ -30,23 +34,23 @@ internal class RetenoActivityHelperImpl : RetenoActivityHelper {
         override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) = Unit
 
         override fun onActivityStarted(activity: Activity) {
-            notifyCallbacks("onActivityStarted") { it.start(activity) }
+            notifyCallbacks("onActivityStarted", { startedActivities += activity }) { it.start(activity) }
         }
 
         override fun onActivityResumed(activity: Activity) {
             isActivityPaused = false
             isReadyForTransition = false
             currentActivity = activity
-            notifyCallbacks("onActivityResumed") { it.resume(activity) }
+            notifyCallbacks("onActivityResumed", { resumedActivities += activity }) { it.resume(activity) }
         }
 
         override fun onActivityPaused(activity: Activity) {
             isActivityPaused = true
-            notifyCallbacks("onActivityPaused") { it.pause(activity) }
+            notifyCallbacks("onActivityPaused", { resumedActivities -= activity }) { it.pause(activity) }
         }
 
         override fun onActivityStopped(activity: Activity) {
-            notifyCallbacks("onActivityStopped") { it.stop(activity) }
+            notifyCallbacks("onActivityStopped", { startedActivities -= activity }) { it.stop(activity) }
             if (currentActivity == activity) {
                 currentActivity = null
             }
@@ -64,9 +68,12 @@ internal class RetenoActivityHelperImpl : RetenoActivityHelper {
     override fun registerActivityLifecycleCallbacks(key: String, callbacks: RetenoLifecycleCallbacks) {
         synchronized(retenoLifecycleCallbacks) {
             retenoLifecycleCallbacks[key] = callbacks
-            val activity = currentActivity ?: return
-            callbacks.start(activity)
-            callbacks.resume(activity)
+            startedActivities.forEach { activity ->
+                callbacks.start(activity)
+                if (activity in resumedActivities) {
+                    callbacks.resume(activity)
+                }
+            }
         }
     }
 
@@ -90,8 +97,15 @@ internal class RetenoActivityHelperImpl : RetenoActivityHelper {
         return decorView.applicationWindowToken != null && decorView.rootWindowInsets != null
     }
 
-    private fun notifyCallbacks(event: String, notify: (RetenoLifecycleCallbacks) -> Unit) {
-        val callbacks = synchronized(retenoLifecycleCallbacks) { retenoLifecycleCallbacks.values.toList() }
+    private fun notifyCallbacks(
+        event: String,
+        recordState: () -> Unit,
+        notify: (RetenoLifecycleCallbacks) -> Unit
+    ) {
+        val callbacks = synchronized(retenoLifecycleCallbacks) {
+            recordState()
+            retenoLifecycleCallbacks.values.toList()
+        }
         callbacks.forEach { callback ->
             try {
                 notify(callback)

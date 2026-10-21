@@ -107,6 +107,56 @@ internal class RetenoActivityHelperImplTest {
     }
 
     @Test
+    fun `should replay start of an activity that is not resumed yet to callbacks registered later`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.controller.create().start()
+
+        whenn()
+        fixture.sut.registerActivityLifecycleCallbacks(KEY, fixture.callbacks)
+        fixture.controller.resume()
+
+        then()
+        val expected = listOf("start" to fixture.activity, "resume" to fixture.activity)
+        assertEquals(expected, fixture.callbacks.events)
+    }
+
+    @Test
+    fun `should not replay resume of a paused activity to callbacks registered later`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.controller.setup().pause()
+
+        whenn()
+        fixture.sut.registerActivityLifecycleCallbacks(KEY, fixture.callbacks)
+
+        then()
+        assertEquals(listOf("start" to fixture.activity), fixture.callbacks.events)
+    }
+
+    @Test
+    fun `should replay every started activity to callbacks registered while switching activities`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.controller.setup().pause()
+        val next = Robolectric.buildActivity(Activity::class.java).create().start()
+
+        whenn()
+        fixture.sut.registerActivityLifecycleCallbacks(KEY, fixture.callbacks)
+        next.resume()
+        fixture.controller.stop()
+
+        then()
+        val expected = listOf(
+            "start" to fixture.activity,
+            "start" to next.get(),
+            "resume" to next.get(),
+            "stop" to fixture.activity
+        )
+        assertEquals(expected, fixture.callbacks.events)
+    }
+
+    @Test
     fun `should not replay a stopped activity to callbacks registered later`() = runUnitTest {
         given()
         val fixture = SutFixture()

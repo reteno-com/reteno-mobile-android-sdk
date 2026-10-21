@@ -101,6 +101,9 @@ earlier release are tested.
   migrations that fail for another reason are reported.
 - A stored row that could not be parsed (for example broken JSON) stopped every later row of that table from being
   read and sent, on every sync. Such a row is now removed and the rest are read.
+- Automatic screen tracking missed the fragments of an activity that had started but not yet resumed when tracking was
+  enabled (for example the first activity, when the SDK finishes initializing during its start). While switching
+  activities, the SDK also treated the previous, already paused activity as resumed.
 
 ### Deprecated (unchanged)
 
