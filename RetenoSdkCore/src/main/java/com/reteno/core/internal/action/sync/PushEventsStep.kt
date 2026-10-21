@@ -44,7 +44,10 @@ internal class PushEventsStep(
 
     private suspend fun ActionTrace.send(events: EventsDb): StepOutcome {
         if (events.eventList.isNotEmpty()) {
-            val result = step("send events to server", detail = { "count=${events.eventList.size}  $it" }) {
+            val result = step(
+                "send events to server",
+                detail = { "count=${events.eventList.size}  ${it.traceLabel}" }
+            ) {
                 api.request(
                     HttpMethod.POST,
                     ApiContract.MobileApi.Events,

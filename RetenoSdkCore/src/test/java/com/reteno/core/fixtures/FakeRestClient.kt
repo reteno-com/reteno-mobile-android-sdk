@@ -41,6 +41,8 @@ internal class FakeRestClient : RestClient {
 
     fun failOffline() = responses.addLast { it.onFailure(null, null, IOException("offline")) }
 
+    fun failWith(error: Throwable) = responses.addLast { it.onFailure(null, null, error) }
+
     override fun makeRequest(
         method: HttpMethod,
         apiContract: ApiContract,

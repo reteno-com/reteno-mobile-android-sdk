@@ -3,12 +3,14 @@ package com.reteno.core.internal.network
 import com.reteno.core.internal.action.trace.TracedOutcome
 import com.reteno.core.util.isRepeatableError
 
-internal sealed interface ApiResult {
+internal sealed interface ApiResult : TracedOutcome {
+
+    override val traceLabel: String
 
     data class Success(
         val body: String,
         val headers: Map<String, List<String>>
-    ) : ApiResult, TracedOutcome {
+    ) : ApiResult {
         override val traceLabel: String
             get() = "ok"
 
@@ -20,7 +22,7 @@ internal sealed interface ApiResult {
         val statusCode: Int?,
         val body: String?,
         val error: Throwable?
-    ) : ApiResult, TracedOutcome {
+    ) : ApiResult {
         val isRepeatable: Boolean
             get() = isRepeatableError(statusCode)
 

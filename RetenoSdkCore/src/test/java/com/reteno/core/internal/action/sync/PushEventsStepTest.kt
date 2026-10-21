@@ -26,6 +26,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import java.net.UnknownHostException
 
 internal class PushEventsStepTest {
 
@@ -192,6 +193,54 @@ internal class PushEventsStepTest {
     }
 
     @Test
+    fun `should trace sent events with count and outcome without response headers`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        every { fixture.eventsDb.getEvents(any()) } returnsMany listOf(listOf(stubEventsDb()), emptyList())
+        fixture.rest.succeedWith(body = "", headers = mapOf("Set-Cookie" to listOf(SESSION_COOKIE)))
+
+        whenn()
+        fixture.sut()
+
+        then()
+        val line = fixture.traced.sink.lines.single { it.contains("send events to server") }
+        assertTrue(line.contains("✓ send events to server") && line.contains("count=1  ok"))
+        assertFalse(line.contains(SESSION_COOKIE) || line.contains("Set-Cookie"))
+    }
+
+    @Test
+    fun `should trace rejected events with status without response body`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        every { fixture.eventsDb.getEvents(any()) } returnsMany listOf(listOf(stubEventsDb()), emptyList())
+        fixture.rest.failWith(400, body = REJECTION_BODY)
+
+        whenn()
+        fixture.sut()
+
+        then()
+        val line = fixture.traced.sink.lines.single { it.contains("send events to server") }
+        assertTrue(line.contains("✗ send events to server") && line.contains("count=1  400 non-repeatable"))
+        assertFalse(line.contains(REJECTION_BODY))
+    }
+
+    @Test
+    fun `should trace unreachable server without its host`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        every { fixture.eventsDb.getEvents(any()) } returns listOf(stubEventsDb())
+        fixture.rest.failWith(UnknownHostException("Unable to resolve host \"$API_HOST\""))
+
+        whenn()
+        fixture.sut()
+
+        then()
+        val line = fixture.traced.sink.lines.single { it.contains("send events to server") }
+        assertTrue(line.contains("✗ send events to server") && line.contains("count=1  no response repeatable"))
+        assertFalse(line.contains(API_HOST))
+    }
+
+    @Test
     fun `should load events table once per round and send every group from it`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
@@ -223,5 +272,11 @@ internal class PushEventsStepTest {
         then()
         assertEquals(StepOutcome.ABORT, outcome)
         assertEquals(1, fixture.rest.requests.size)
+    }
+
+    companion object {
+        private const val SESSION_COOKIE = "session=cookie-value"
+        private const val REJECTION_BODY = "{\"errors\":[\"ann@example.com\"]}"
+        private const val API_HOST = "mobile-api.example.com"
     }
 }
