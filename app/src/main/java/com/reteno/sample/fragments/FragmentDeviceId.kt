@@ -6,9 +6,14 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.lifecycle.lifecycleScope
 import com.reteno.sample.BaseFragment
 import com.reteno.sample.databinding.FragmentDeviceIdBinding
 import com.reteno.sample.util.AppSharedPreferencesManager
+import com.reteno.sample.util.SdkDeviceInfo
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class FragmentDeviceId : BaseFragment() {
 
@@ -47,6 +52,26 @@ class FragmentDeviceId : BaseFragment() {
         binding!!.etDeviceId.setText(AppSharedPreferencesManager.getDeviceId(context))
         binding!!.etDeviceIdMillis.setText(AppSharedPreferencesManager.getDeviceIdDelay(context).toString())
         binding!!.tvExternalId.text = AppSharedPreferencesManager.getExternalId(context)
+        refreshSdkState()
+    }
+
+    private fun refreshSdkState() {
+        binding!!.llSdkState.visibility = if (SdkDeviceInfo.isAvailable) View.VISIBLE else View.GONE
+        if (!SdkDeviceInfo.isAvailable) return
+        val context = requireContext().applicationContext
+        viewLifecycleOwner.lifecycleScope.launch {
+            val state = withContext(Dispatchers.IO) {
+                listOf(
+                    SdkDeviceInfo.deviceId(context),
+                    SdkDeviceInfo.externalUserId(context).orEmpty(),
+                    SdkDeviceInfo.fcmToken(context)
+                )
+            }
+            val (deviceId, externalId, fcmToken) = state
+            binding!!.tvCurrentDeviceId.text = deviceId
+            binding!!.tvSdkExternalId.text = externalId
+            binding!!.tvFcmToken.text = fcmToken
+        }
     }
 
     private fun initListeners(view: View) {

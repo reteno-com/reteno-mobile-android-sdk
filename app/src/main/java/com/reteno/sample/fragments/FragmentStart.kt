@@ -1,5 +1,6 @@
 package com.reteno.sample.fragments
 
+import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -8,16 +9,24 @@ import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.CompoundButton
 import android.widget.Toast
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavDirections
 import androidx.navigation.fragment.NavHostFragment
 import com.reteno.core.features.iam.InAppPauseBehaviour
 import com.reteno.sample.BaseFragment
 import com.reteno.sample.R
+import com.reteno.sample.SampleApp
 import com.reteno.sample.databinding.FragmentStartBinding
 import com.reteno.sample.testscreens.ScreenAdapter
 import com.reteno.sample.testscreens.ScreenAdapter.ScreenItemClick
 import com.reteno.sample.testscreens.ScreenItem
 import com.reteno.sample.util.AppSharedPreferencesManager
+import com.reteno.sample.util.SdkInAppBaseUrl
+import com.reteno.sample.util.SdkSessionInfo
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 class FragmentStart : BaseFragment() {
 
@@ -51,7 +60,10 @@ class FragmentStart : BaseFragment() {
         initInAppPausingSwitcher()
         initPauseBehaviourSwitcher()
         initDelayedInitCheckbox()
+        initInitProgress()
+        initIamBaseUrl()
         initSessionDurationChange()
+        initSessionTime()
     }
 
     override fun onDestroyView() {
@@ -100,13 +112,73 @@ class FragmentStart : BaseFragment() {
         )
     }
 
+    private fun initSessionTime() {
+        binding!!.tvSessionTimeTitle.visibility = if (SdkSessionInfo.isAvailable) View.VISIBLE else View.GONE
+        binding!!.tvSessionTime.visibility = binding!!.tvSessionTimeTitle.visibility
+        if (!SdkSessionInfo.isAvailable) return
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+                while (true) {
+                    val sessionStart = SdkSessionInfo.sessionStartTimestamp(requireContext())
+                    binding!!.tvSessionTime.text = formatSessionTime(sessionStart)
+                    delay(1000L)
+                }
+            }
+        }
+    }
+
+    private fun formatSessionTime(sessionStart: Long): String {
+        if (sessionStart == 0L) return "not started"
+        val timeSeconds = (System.currentTimeMillis() - sessionStart) / 1000L
+        val timeMinutes = timeSeconds / 60L
+        val timeHours = timeMinutes / 60L
+        return when {
+            timeHours > 0 -> "${timeHours}h ${timeMinutes % 60L}m ${timeSeconds % 60L}s"
+            timeMinutes > 0 -> "${timeMinutes}m ${timeSeconds % 60L}s"
+            else -> "${timeSeconds}s"
+        }
+    }
+
+    private fun initIamBaseUrl() {
+        binding!!.etBaseInAppURL.visibility = if (SdkInAppBaseUrl.isAvailable) View.VISIBLE else View.GONE
+        binding!!.saveInAppBase.visibility = binding!!.etBaseInAppURL.visibility
+        if (!SdkInAppBaseUrl.isAvailable) return
+        binding!!.etBaseInAppURL.setText(SdkInAppBaseUrl.baseUrl(requireContext()))
+        binding!!.saveInAppBase.setOnClickListener {
+            val url = binding!!.etBaseInAppURL.text?.toString()?.trim().orEmpty()
+            val message = when {
+                url.isEmpty() -> {
+                    SdkInAppBaseUrl.setBaseUrl(requireContext(), null)
+                    "Base URL reset to the SDK default"
+                }
+                isHttpsUrl(url) -> {
+                    SdkInAppBaseUrl.setBaseUrl(requireContext(), url)
+                    "Base URL saved, used the next time the SDK loads the base html"
+                }
+                else -> "Base URL must be an https:// address"
+            }
+            Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+        }
+    }
+
+    private fun isHttpsUrl(url: String): Boolean {
+        val uri = Uri.parse(url)
+        return uri.scheme == "https" && !uri.host.isNullOrBlank()
+    }
+
     private fun initSessionDurationChange() {
         binding!!.saveSessionDuration.setOnClickListener {
             try {
                 val durationStr = binding!!.etSessionDuration.text?.toString().orEmpty()
                 if (durationStr.isNotBlank()) {
                     val duration = durationStr.filter { it.isDigit() }.toInt() * 1000L
-                    Toast.makeText(requireContext(), "Applied on next launch", Toast.LENGTH_SHORT).show()
+                    SdkSessionInfo.setSessionDuration(duration)
+                    val applied = if (SdkSessionInfo.isAvailable) {
+                        "Session duration changed"
+                    } else {
+                        "Applied on next launch"
+                    }
+                    Toast.makeText(requireContext(), applied, Toast.LENGTH_SHORT).show()
                     binding!!.etSessionDuration.text?.clear()
                     AppSharedPreferencesManager.saveSessionDuration(requireContext(), duration)
                 }
@@ -169,6 +241,18 @@ class FragmentStart : BaseFragment() {
             reteno.pausePushInAppMessages(
                 isChecked
             )
+        }
+    }
+
+    private fun initInitProgress() {
+        val app = requireActivity().application as SampleApp
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                app.isRetenoInitialized.collect { initialized ->
+                    binding!!.progressBar.visibility = if (initialized) View.GONE else View.VISIBLE
+                    binding!!.cbDelayNextLaunch.visibility = if (initialized) View.VISIBLE else View.GONE
+                }
+            }
         }
     }
 

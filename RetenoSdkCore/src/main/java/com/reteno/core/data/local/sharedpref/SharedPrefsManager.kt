@@ -26,6 +26,8 @@ internal class SharedPrefsManager(
 
     fun getIamBaseUrl(): String? = string(PREF_KEY_IAM_BASE_URL)
 
+    fun saveIamBaseUrl(url: String?) = save { putString(PREF_KEY_IAM_BASE_URL, url) }
+
     fun saveFcmToken(token: String) = save { putString(PREF_KEY_FCM_TOKEN, token) }
 
     fun getFcmToken(): String = string(PREF_KEY_FCM_TOKEN).orEmpty()

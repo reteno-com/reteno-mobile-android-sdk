@@ -139,6 +139,31 @@ internal class SharedPrefsManagerTest {
     }
 
     @Test
+    fun `should store in-app base url under the key the sdk reads`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+
+        whenn()
+        fixture.sut.saveIamBaseUrl("https://cdn.example/base.html")
+
+        then()
+        assertEquals("https://cdn.example/base.html", fixture.raw.getString("iam_base_url", null))
+    }
+
+    @Test
+    fun `should forget in-app base url stored as nothing`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.sut.saveIamBaseUrl("https://cdn.example/base.html")
+
+        whenn()
+        fixture.sut.saveIamBaseUrl(null)
+
+        then()
+        assertNull(fixture.sut.getIamBaseUrl())
+    }
+
+    @Test
     fun `should read flags and counters as defaults until stored`() = runUnitTest {
         given()
         val fixture = SutFixture()
