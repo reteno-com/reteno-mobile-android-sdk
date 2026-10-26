@@ -78,4 +78,4 @@ internal inline fun <T> onAndroidSdk(sdk: Int, block: () -> T): T {
 }
 
 internal fun Context.applicationMetaData(): Bundle =
-    shadowOf(packageManager).getInternalMutablePackageInfo(packageName).applicationInfo.metaData
+    shadowOf(packageManager).getInternalMutablePackageInfo(packageName).applicationInfo!!.metaData
