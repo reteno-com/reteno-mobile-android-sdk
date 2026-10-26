@@ -1,8 +1,7 @@
 ext {
     androidMinSdkVersion = 21
-    androidTargetSdkVersion = 34
-    androidCompileSdkVersion = 34
-    androidBuildToolsVersion = "30.0.3"
+    androidTargetSdkVersion = 36
+    androidCompileSdkVersion = 36
 
     versionCode = 60
     versionName = project.findProperty('VERSION_NAME')

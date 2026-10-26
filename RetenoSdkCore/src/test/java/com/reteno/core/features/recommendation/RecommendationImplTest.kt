@@ -1,104 +1,141 @@
 package com.reteno.core.features.recommendation
 
-import com.reteno.core.base.BaseUnitTest
-import com.reteno.core.data.remote.model.recommendation.get.RecomBase
-import com.reteno.core.data.remote.model.recommendation.get.Recoms
-import com.reteno.core.domain.controller.RecommendationController
+import com.reteno.core.domain.model.logevent.LogLevel
 import com.reteno.core.domain.model.recommendation.get.RecomRequest
-import io.mockk.coEvery
-import io.mockk.impl.annotations.RelaxedMockK
-import io.mockk.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.runTest
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
-import org.junit.Test
-import kotlin.IllegalArgumentException
+import com.reteno.core.fixtures.FakeCallLog
+import com.reteno.core.fixtures.FakeRecommendationActions
+import com.reteno.core.fixtures.FakeRemoteLog
+import com.reteno.core.fixtures.RecordingRecommendationCallback
+import com.reteno.core.fixtures.RecordingRecommendationJsonCallback
+import com.reteno.core.fixtures.StubRecom
+import com.reteno.core.fixtures.stubRecomEvents
+import com.reteno.core.fixtures.stubRecomRequest
+import com.reteno.test.given
+import com.reteno.test.runUnitTest
+import com.reteno.test.then
+import com.reteno.test.whenn
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertSame
+import org.junit.jupiter.api.Test
 
-@OptIn(ExperimentalCoroutinesApi::class)
-class RecommendationImplTest : BaseUnitTest() {
+internal class RecommendationImplTest {
 
+    private class SutFixture {
+        val log = FakeCallLog()
+        val actions = FakeRecommendationActions(log)
+        val remoteLog = FakeRemoteLog()
+        val sut = RecommendationImpl(actions, remoteLog)
 
-    @RelaxedMockK
-    private lateinit var controller: RecommendationController
-
-
-    @Test
-    fun whenFetchRecommendationCalled_thenCallMirroredToController() = runTest {
-        val sut = createSUT()
-        sut.fetchRecommendation(
-            "",
-            RecomRequest(null, null),
-            RecomBase::class.java,
-            object : GetRecommendationResponseCallback<RecomBase> {
-                override fun onSuccess(response: Recoms<RecomBase>) {
-
-                }
-
-                override fun onSuccessFallbackToJson(response: String) {
-
-                }
-
-                override fun onFailure(statusCode: Int?, response: String?, throwable: Throwable?) {
-
-                }
-
-            })
-
-        verify { controller.getRecommendation<RecomBase>(any(), any(), any(), any()) }
+        fun callEveryApi() {
+            sut.fetchRecommendation(
+                "r1v2",
+                stubRecomRequest(),
+                StubRecom::class.java,
+                RecordingRecommendationCallback()
+            )
+            sut.fetchRecommendationJson("r3v4", stubRecomRequest(), RecordingRecommendationJsonCallback())
+            sut.logRecommendations(stubRecomEvents(recomVariantId = "r5v6"))
+        }
     }
 
     @Test
-    fun whenFetchRecommendationCalledWIthSuccessResponse_thenCallbackCalled() = runTest {
-        val sut = createSUT()
-        var result: Recoms<RecomBase>? = null
-        val callback = object : GetRecommendationResponseCallback<RecomBase> {
-            override fun onSuccess(response: Recoms<RecomBase>) {
-                result = response
-            }
+    fun `should pass every recommendation call to sdk`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
 
-            override fun onSuccessFallbackToJson(response: String) {
-                result = null
-            }
+        whenn()
+        fixture.callEveryApi()
 
-            override fun onFailure(statusCode: Int?, response: String?, throwable: Throwable?) {
-                result = null
-            }
-
-        }
-        coEvery { controller.getRecommendation<RecomBase>(any(), any(), any(), any()) } answers {
-            arg<GetRecommendationResponseCallback<RecomBase>>(3).onSuccess(Recoms(emptyList()))
-        }
-        sut.fetchRecommendation("", RecomRequest(null, null), RecomBase::class.java, callback)
-
-        assertEquals(Recoms(emptyList()), result)
+        then()
+        assertEquals(
+            listOf(
+                "submitRecommendationRequest r1v2 StubRecom $STUB_REQUEST_BODY",
+                "submitRecommendationJsonRequest r3v4 $STUB_REQUEST_BODY",
+                "submitRecommendationEvents r5v6"
+            ),
+            fixture.log.calls
+        )
     }
 
     @Test
-    fun whenFetchRecommendationCalledWIthErrorResponse_thenCallbackCalled() = runTest {
-        val sut = createSUT()
-        var result: Throwable? = null
-        val callback = object : GetRecommendationResponseCallback<RecomBase> {
-            override fun onSuccess(response: Recoms<RecomBase>) {
-                result = null
-            }
+    fun `should forward the same callback when fetching recommendations`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val callback = RecordingRecommendationCallback<StubRecom>()
 
-            override fun onSuccessFallbackToJson(response: String) {
-                result = null
-            }
+        whenn()
+        fixture.sut.fetchRecommendation("r1v2", stubRecomRequest(), StubRecom::class.java, callback)
 
-            override fun onFailure(statusCode: Int?, response: String?, throwable: Throwable?) {
-                result = throwable
-            }
-
-        }
-        coEvery { controller.getRecommendation<RecomBase>(any(), any(), any(), any()) } answers {
-            arg<GetRecommendationResponseCallback<RecomBase>>(3).onFailure(400, null, IllegalArgumentException())
-        }
-        sut.fetchRecommendation("", RecomRequest(null, null), RecomBase::class.java, callback)
-
-        assertTrue(result is IllegalArgumentException)
+        then()
+        assertSame(callback, fixture.actions.callbacks.single())
     }
 
-    private fun createSUT() = RecommendationImpl(controller)
+    @Test
+    fun `should forward the same callback when fetching recommendations as json`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val callback = RecordingRecommendationJsonCallback()
+
+        whenn()
+        fixture.sut.fetchRecommendationJson("r1v2", stubRecomRequest(), callback)
+
+        then()
+        assertSame(callback, fixture.actions.callbacks.single())
+    }
+
+    @Test
+    fun `should forward the same recommendation events`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val events = stubRecomEvents()
+
+        whenn()
+        fixture.sut.logRecommendations(events)
+
+        then()
+        assertSame(events, fixture.actions.recomEvents.single())
+    }
+
+    @Test
+    fun `should send request as it was when called even if host changes its lists afterwards`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val products = mutableListOf("sku-1")
+        val fields = mutableListOf("name")
+        val request = RecomRequest(products, null, fields)
+
+        whenn()
+        fixture.sut.fetchRecommendationJson("r1v2", request, RecordingRecommendationJsonCallback())
+        products.clear()
+        fields.clear()
+
+        then()
+        val expected = """submitRecommendationJsonRequest r1v2 {"products":["sku-1"],"fields":["name"]}"""
+        assertEquals(listOf(expected), fixture.log.calls)
+    }
+
+    @Test
+    fun `should keep host running and report every recommendation call that fails in sdk`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.log.failure = IllegalStateException("sdk broken")
+
+        whenn()
+        fixture.callEveryApi()
+
+        then()
+        assertEquals(
+            listOf(
+                "Recommendation.fetchRecommendation failed: IllegalStateException: sdk broken" to LogLevel.ERROR,
+                "Recommendation.fetchRecommendationJson failed: IllegalStateException: sdk broken" to LogLevel.ERROR,
+                "Recommendation.logRecommendations failed: IllegalStateException: sdk broken" to LogLevel.ERROR
+            ),
+            fixture.remoteLog.entries
+        )
+    }
+
+    private companion object {
+        const val STUB_REQUEST_BODY = """{"products":["sku-1"],"category":"shoes","fields":["name"],"filters":[""" +
+            """{"name":"color","values":["red"]}]}"""
+    }
 }

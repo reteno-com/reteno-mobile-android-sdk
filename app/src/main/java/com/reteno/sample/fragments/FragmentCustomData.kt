@@ -9,10 +9,10 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.navigation.Navigation.findNavController
 import androidx.recyclerview.widget.RecyclerView
-import com.reteno.core.util.Logger
-import com.reteno.core.util.toStringVerbose
 import com.reteno.sample.databinding.FragmentCustomDataBinding
 import com.reteno.sample.databinding.ItemCustomDataKeyBinding
+import com.reteno.sample.util.SampleLog
+import com.reteno.sample.util.toStringVerbose
 
 class FragmentCustomData : Fragment() {
     private var binding: FragmentCustomDataBinding? = null
@@ -45,7 +45,7 @@ class FragmentCustomData : Fragment() {
     }
 
     private fun fillKeySet() {
-        Logger.i(TAG, "Custom data = " + bundle.toStringVerbose())
+        SampleLog.i(TAG, "Custom data = " + bundle.toStringVerbose())
         val keySet = bundle!!.keySet()
         adapter = KeyAdapter(keySet) { key: String? ->
             if (!TextUtils.isEmpty(key)) {

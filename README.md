@@ -50,7 +50,7 @@ dependencies {
 
 ###### License​ :
 
-`Reteno Android SDK` is released under the MIT license. See [LICENSE](https://docs.reteno.com/reference/android-sdk-setup) for details.
+`Reteno Android SDK` is released under the MIT license. See [LICENSE](LICENSE) for details.
 
 ## 
 
@@ -81,33 +81,44 @@ android {
 }
 ```
 
-### Step3: Edit your custom Application class and provider API Access-Key at SDK initialization.
+### Step3: Initialize the SDK with your access key in your Application class.
 
 > Note:
 >
-> To set up SDK you need an SDK_ACCESS_KEY, visit [Managing Mobile SDK Access Keys](https://docs.reteno.com/reference/managing-mobile-sdk-access-keys) to get it.
+> To set up SDK you need an SDK_ACCESS_KEY, visit [Managing Mobile SDK Access Keys](https://docs.reteno.com/reference/managing-mobile-sdk-access-keys) to get it.
 
-Below is sample code you can add to your application class which gets you started with `RetenoSDK`. You may need to create a new class that extends the `Application` on this step. Don't forget to edit your manifest file to use the custom Application class. Also make sure to provide the **access-key** in the constructor. You may store Reteno access key the way you wish based on your preferences:
+The SDK creates its instance automatically when your app starts. Finish the initialization in `Application.onCreate()` by passing a `RetenoConfig` with your access key. You may need to create a new class that extends `Application` on this step; don't forget to point your manifest to it.
+
+Keep the access key out of source control: for example, read it from `local.properties` or your CI secrets into a `BuildConfig` field instead of writing it into the code.
 
 ```kotlin
-package [com.YOUR_PACKAGE];
+package [com.YOUR_PACKAGE]
 
 import android.app.Application
 import com.reteno.core.Reteno
-import com.reteno.core.RetenoApplication
-import com.reteno.core.RetenoImpl
+import com.reteno.core.RetenoConfig
 
-class CustomApplication: Application(), RetenoApplication {
-
-    private lateinit var retenoInstance: Reteno
+class CustomApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        retenoInstance = RetenoImpl(this, "your_access_key_here")
+        Reteno.initWithConfig(
+            RetenoConfig.Builder()
+                .accessKey(BuildConfig.RETENO_ACCESS_KEY)
+                .build()
+        )
     }
+}
+```
 
-    override fun getRetenoInstance(): Reteno {
-        return retenoInstance
+For example, in your app level `build.gradle`, with `reteno.access-key=...` in your git-ignored `local.properties`:
+
+```groovy
+android {
+    defaultConfig {
+        def localProperties = new Properties()
+        localProperties.load(rootProject.file('local.properties').newDataInputStream())
+        buildConfigField "String", "RETENO_ACCESS_KEY", "\"${localProperties['reteno.access-key']}\""
     }
 }
 ```
@@ -123,24 +134,38 @@ class CustomApplication: Application(), RetenoApplication {
 </application>
 ```
 
-### Step4: Use SDK via `Reteno` interface.
+> Note:
+>
+> `RetenoImpl(application, accessKey)` and the `RetenoApplication` interface are deprecated. Use `Reteno.initWithConfig(...)` and `Reteno.instance` instead.
 
-Do not use `RetenoImpl` directly, access Reteno SDK across your application via your app instance. E.g. in Activity:
+### Step4: Use SDK via `Reteno.instance`.
+
+Access the SDK anywhere in your application through `Reteno.instance`. E.g. in Activity:
 
 ```kotlin
-val reteno = (application as CustomApplication).getRetenoInstance()
+Reteno.instance.logScreenView("Home")
 ```
 
 ### Step5: Handle Runtime Permissions.
 
-Since Android 13 was released you have to make sure you are handling [Notification runtime permissions](https://developer.android.com/develop/ui/views/notifications/notification-permission)
+Since Android 13 was released you have to make sure you are handling [Notification runtime permissions](https://developer.android.com/develop/ui/views/notifications/notification-permission).
 
-When user accepts permission, you have to call `updatePushPermissionStatus()` function from Reteno interface to notify the Reteno SDK that user has granted the permission.
+The simplest way is to let the SDK ask for the permission. `RetenoNotifications.requestNotificationPermission()` shows the system dialog when needed and tells the SDK about the user's answer:
+
+```kotlin
+lifecycleScope.launch {
+    val granted = RetenoNotifications.requestNotificationPermission()
+}
+```
+
+From Java, use `RetenoNotifications.requestNotificationPermissionFuture()`, which returns a `CompletableFuture<Boolean>`.
+
+If you request the permission yourself, call `Reteno.instance.updatePushPermissionStatus()` once the user grants it:
 
 ```kotlin
 val requestPermissionLauncher = registerForActivityResult(RequestPermission()) { isGranted: Boolean ->
         if (isGranted) {
-            (getApplicationContext() as RetenoApplication).getRetenoInstance().updatePushPermissionStatus()
+            Reteno.instance.updatePushPermissionStatus()
             Toast.makeText(this, "Permission granted", Toast.LENGTH_SHORT).show()
         } else {                    
             Toast.makeText(this, "Permission not granted", Toast.LENGTH_SHORT).show()
@@ -168,7 +193,7 @@ private fun checkPermissions() {
 }
 ```
 
-### Step5: Set up your Firebase application for Firebase Cloud Messaging:
+### Step6: Set up your Firebase application for Firebase Cloud Messaging:
 
 - Download your `google-services.json` config file (see how [here](https://support.google.com/firebase/answer/7015592?hl=en)).
 

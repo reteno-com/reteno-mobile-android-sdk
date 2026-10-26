@@ -1,15 +1,14 @@
 package com.reteno.core.util
 
 import com.google.gson.JsonObject
-import com.reteno.core.data.remote.model.iam.displayrules.DisplayRuleType
 import com.reteno.core.data.remote.model.iam.displayrules.DisplayRules
 import com.reteno.core.data.remote.model.iam.displayrules.DisplayRulesParsingException
 import com.reteno.core.data.remote.model.iam.displayrules.RuleRelation
-import com.reteno.core.data.remote.model.iam.displayrules.schedule.ScheduleDisplayRules
 import com.reteno.core.data.remote.model.iam.displayrules.async.AsyncDisplayRules
 import com.reteno.core.data.remote.model.iam.displayrules.async.SegmentRule
 import com.reteno.core.data.remote.model.iam.displayrules.frequency.FrequencyDisplayRules
 import com.reteno.core.data.remote.model.iam.displayrules.frequency.FrequencyRule
+import com.reteno.core.data.remote.model.iam.displayrules.schedule.ScheduleDisplayRules
 import com.reteno.core.data.remote.model.iam.displayrules.schedule.ScheduleRule
 import com.reteno.core.data.remote.model.iam.displayrules.targeting.TargetingDisplayRules
 import com.reteno.core.data.remote.model.iam.displayrules.targeting.TargetingRule
@@ -28,7 +27,7 @@ object InAppMessageUtil {
 
     private fun parseFrequencyRules(displayRulesJson: JsonObject): FrequencyDisplayRules {
         val frequencyRules = FrequencyDisplayRules()
-        val frequency: JsonObject? = displayRulesJson.getAsJsonObject(DisplayRuleType.FREQUENCY.name)
+        val frequency: JsonObject? = displayRulesJson.getAsJsonObject(RULES_FREQUENCY)
 
         if (frequency != null && frequency.get("enabled")?.asBoolean == true) {
             val predicates = frequency.getAsJsonArray("predicates")
@@ -44,7 +43,7 @@ object InAppMessageUtil {
     }
 
     private fun parseTargetingRules(displayRulesJson: JsonObject): TargetingDisplayRules? {
-        val targeting: JsonObject? = displayRulesJson.getAsJsonObject(DisplayRuleType.TARGETING.name)
+        val targeting: JsonObject? = displayRulesJson.getAsJsonObject(RULES_TARGETING)
 
         return if (targeting != null && targeting.get("enabled")?.asBoolean == true) {
             val schema = targeting.getAsJsonObject("schema")
@@ -98,7 +97,7 @@ object InAppMessageUtil {
     }
 
     private fun parseAsyncRules(displayRulesJson: JsonObject): AsyncDisplayRules? {
-        val async: JsonObject? = displayRulesJson.getAsJsonObject(DisplayRuleType.ASYNC.name)
+        val async: JsonObject? = displayRulesJson.getAsJsonObject(RULES_ASYNC)
         val asyncKeys = async?.keySet()
         val asyncRules = when {
             asyncKeys == null -> null
@@ -120,11 +119,9 @@ object InAppMessageUtil {
         return asyncRules
     }
 
-
-
     private fun parseScheduleRules(displayRulesJson: JsonObject): ScheduleDisplayRules? {
         val scheduleRules = ScheduleDisplayRules()
-        val schedule: JsonObject? = displayRulesJson.getAsJsonObject(DisplayRuleType.SCHEDULE.name)
+        val schedule: JsonObject? = displayRulesJson.getAsJsonObject(RULES_SCHEDULE)
 
         if (schedule != null && schedule.get("enabled")?.asBoolean == true) {
             val predicates = schedule.getAsJsonArray("predicates")
@@ -142,4 +139,9 @@ object InAppMessageUtil {
             scheduleRules
         }
     }
+
+    private const val RULES_FREQUENCY = "FREQUENCY"
+    private const val RULES_TARGETING = "TARGETING"
+    private const val RULES_ASYNC = "ASYNC"
+    private const val RULES_SCHEDULE = "SCHEDULE"
 }

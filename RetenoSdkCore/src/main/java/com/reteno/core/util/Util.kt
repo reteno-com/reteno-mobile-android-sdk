@@ -6,24 +6,16 @@ import android.content.pm.PackageManager
 import android.content.pm.ResolveInfo
 import android.os.Build
 import android.os.Bundle
-import com.google.android.gms.common.ConnectionResult
-import com.google.android.gms.common.GoogleApiAvailability
-import com.reteno.core.RetenoInternalImpl
 import com.reteno.core.domain.SchedulerUtils
 import com.reteno.core.domain.model.event.LifecycleEventType
 import com.reteno.core.domain.model.event.LifecycleTrackingOptions
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.merge
-import kotlinx.coroutines.flow.transformWhile
 import java.io.ByteArrayOutputStream
-import java.io.FileInputStream
 import java.io.IOException
 import java.io.InputStream
-import java.text.SimpleDateFormat
 import java.time.Instant
+import java.time.LocalDateTime
 import java.time.ZoneId
+import java.time.ZoneOffset
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
@@ -34,27 +26,19 @@ fun <T : Any> allElementsNull(vararg elements: T?) = elements.all { it == null }
 
 fun <T : Any> allElementsNotNull(vararg elements: T?) = elements.all { it != null }
 
-internal fun isGooglePlayServicesAvailable(): Boolean {
-    val context = RetenoInternalImpl.instance.application
-    val googleApiAvailability = GoogleApiAvailability.getInstance()
-    val resultCode = googleApiAvailability.isGooglePlayServicesAvailable(context)
-    return resultCode == ConnectionResult.SUCCESS
-}
-
 fun Context.getAppName(): String {
     val stringId = applicationInfo.labelRes
-    val appName = if (stringId == 0) {
+    return if (stringId == 0) {
         applicationInfo.loadLabel(packageManager).toString()
     } else {
         getString(stringId)
     }
-    /*@formatter:off*/ Logger.i(TAG, "getAppName(): ", "[", appName, "]")
-    /*@formatter:on*/
-    return appName
 }
 
-fun Context.getApplicationMetaData(): Bundle =
-    if (Build.VERSION.SDK_INT >= 33) {
+fun Context.getApplicationMetaData(): Bundle = getApplicationMetaData(Build.VERSION.SDK_INT)
+
+internal fun Context.getApplicationMetaData(sdkInt: Int): Bundle =
+    if (sdkInt >= 33) {
         packageManager.getApplicationInfo(
             packageName,
             PackageManager.ApplicationInfoFlags.of(PackageManager.GET_META_DATA.toLong())
@@ -63,8 +47,10 @@ fun Context.getApplicationMetaData(): Bundle =
         packageManager.getApplicationInfo(packageName, PackageManager.GET_META_DATA).metaData
     }
 
-fun Context.getResolveInfoList(intent: Intent): List<ResolveInfo?> =
-    if (Build.VERSION.SDK_INT >= 33) {
+fun Context.getResolveInfoList(intent: Intent): List<ResolveInfo?> = getResolveInfoList(intent, Build.VERSION.SDK_INT)
+
+internal fun Context.getResolveInfoList(intent: Intent, sdkInt: Int): List<ResolveInfo?> =
+    if (sdkInt >= 33) {
         packageManager.queryIntentActivities(
             intent,
             PackageManager.ResolveInfoFlags.of(0)
@@ -74,7 +60,10 @@ fun Context.getResolveInfoList(intent: Intent): List<ResolveInfo?> =
     }
 
 fun Context.queryBroadcastReceivers(intent: Intent): List<ResolveInfo?> =
-    if (Build.VERSION.SDK_INT >= 33) {
+    queryBroadcastReceivers(intent, Build.VERSION.SDK_INT)
+
+internal fun Context.queryBroadcastReceivers(intent: Intent, sdkInt: Int): List<ResolveInfo?> =
+    if (sdkInt >= 33) {
         packageManager.queryBroadcastReceivers(
             intent,
             PackageManager.ResolveInfoFlags.of(0)
@@ -85,18 +74,8 @@ fun Context.queryBroadcastReceivers(intent: Intent): List<ResolveInfo?> =
 
 
 fun Bundle?.toStringVerbose(): String {
-    if (this == null) {
-        return "Bundle = [null]"
-    }
-
-    val stringBuilder = java.lang.StringBuilder()
-    stringBuilder.append("Bundle: [")
-    for (key in keySet()) {
-        stringBuilder.append(key).append(" = ").append(get(key)).append("; ")
-    }
-    stringBuilder.delete(stringBuilder.length - 2, stringBuilder.length)
-    stringBuilder.append("]")
-    return stringBuilder.toString()
+    if (this == null) return "Bundle = [null]"
+    return keySet().joinToString(separator = "; ", prefix = "Bundle: [", postfix = "]") { key -> "$key = ${get(key)}" }
 }
 
 fun String?.toTimeUnit(): TimeUnit? {
@@ -114,14 +93,9 @@ fun isRepeatableError(statusCode: Int?): Boolean {
     return statusCode == 429 || statusCode !in 400..499
 }
 
-fun isNonRepeatableError(statusCode: Int?) = !isRepeatableError(statusCode)
+fun isOsVersionSupported(): Boolean = isSupportedSdk(Build.VERSION.SDK_INT)
 
-fun isOsVersionSupported(): Boolean {
-    val result = Build.VERSION.SDK_INT >= 26
-    /*@formatter:off*/ Logger.i(TAG, "isOsVersionSupported(): Build.VERSION.SDK_INT = [", Build.VERSION.SDK_INT, "], result = [", result ,"]")
-    /*@formatter:on*/
-    return result
-}
+internal fun isSupportedSdk(sdkInt: Int): Boolean = sdkInt >= 26
 
 object Util {
 
@@ -135,17 +109,12 @@ object Util {
         .ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
         .withZone(ZoneId.of("UTC"))
 
-    private val sqlToTimestampFormat by lazy {
-        SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
-    }
+    private val sqlDateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss", Locale.US)
 
     private val patternWithNoSeconds = "yyyy-MM-dd'T'HH:mm"
 
     @JvmStatic
     fun readFromRaw(context: Context, rawResourceId: Int): String? {
-        /*@formatter:off*/ Logger.i(TAG, "readFromRaw(): ", "context = [" , context , "], rawResourceId = [" , rawResourceId , "]")
-        /*@formatter:on*/
-
         val inputStream: InputStream = context.resources.openRawResource(rawResourceId)
         val outputStream = ByteArrayOutputStream()
 
@@ -194,10 +163,6 @@ object Util {
         return millisFormatter.format(this)
     }
 
-    fun String.fromRemote(): ZonedDateTime {
-        return ZonedDateTime.parse(this, formatter)
-    }
-
     fun String.fromRemoteExplicitMillis(): ZonedDateTime {
         return ZonedDateTime.parse(this, millisFormatter)
     }
@@ -209,18 +174,13 @@ object Util {
         )
     }
 
-    fun formatSqlDateToTimestamp(sqlDate: String): Long {
-        return sqlToTimestampFormat.parse(sqlDate)?.time ?: 0L
-    }
+    fun formatSqlDateToTimestamp(sqlDate: String): Long =
+        LocalDateTime.parse(sqlDate, sqlDateFormatter).toInstant(ZoneOffset.UTC).toEpochMilli()
 
     fun parseWithTimeZone(dateTime: String, timeZone: String): ZonedDateTime {
         // TODO currently we are using Java 11, it does not recognize Kyiv timezone.
         // After updating java to 17.0.6 or higher this fix should not be required.
-        val timeZoneFixed = if (timeZone.contains("Kyiv")) {
-            timeZone.replace("Kyiv", "Kiev")
-        } else {
-            timeZone
-        }
+        val timeZoneFixed = timeZone.replace("Kyiv", "Kiev")
 
         val formatter = DateTimeFormatter
             .ofPattern(patternWithNoSeconds)
@@ -239,53 +199,6 @@ object Util {
         return diff > SchedulerUtils.getOutdatedDeviceAndUserTime()
     }
 
-    /**
-     * Check to see if the database is encrypted
-     *
-     * Database assumed to be encrypted if it is not contains required header "SQLite format 3\000"
-     * Hex representation: 53 51 4c 69 74 65 20 66 6f 72 6d 61 74 20 33 00
-     *
-     * This header is ensured by
-     * @see <a href="https://www.sqlite.org/fileformat.html">SQLite specification</a>
-     *
-     * Android uses SQLite 3.** since API 1
-     * @see <a href="https://developer.android.com/reference/android/database/sqlite/package-summary.html">Android SQLite package summary</a>
-     */
-    fun isEncryptedDatabase(context: Context, databaseName: String): Boolean {
-        var isEncrypted = false
-
-        val requiredSQLiteFileHeaderString = byteArrayOf(
-            0x53,
-            0x51,
-            0x4c,
-            0x69,
-            0x74,
-            0x65,
-            0x20,
-            0x66,
-            0x6F,
-            0x72,
-            0x6D,
-            0x61,
-            0x74,
-            0x20,
-            0x33,
-            0x0
-        )
-        val dbFileHeader = ByteArray(requiredSQLiteFileHeaderString.size)
-        try {
-            FileInputStream(context.getDatabasePath(databaseName)).use {
-                it.read(dbFileHeader)
-                if (!dbFileHeader.contentEquals(requiredSQLiteFileHeaderString)) {
-                    isEncrypted = true
-                }
-            }
-        } catch (e: IOException) {
-            isEncrypted = true
-        }
-        return isEncrypted
-    }
-
     fun LifecycleTrackingOptions.toTypeMap(): Map<LifecycleEventType, Boolean> {
         return mapOf(
             LifecycleEventType.APP_LIFECYCLE to appLifecycleEnabled,
@@ -297,29 +210,4 @@ object Util {
     }
 }
 
-private sealed interface Gated<out T> {
-    data class Value<T>(val value: T) : Gated<T>
-    data class Open(val isOpen: Boolean) : Gated<Nothing>
-}
-
-fun <T> Flow<T>.bufferUntil(gate: Flow<Boolean>): Flow<T> = flow {
-    val queue = ArrayDeque<T>()
-    var open = false
-
-    merge<Gated<T>>(
-        map { Gated.Value(it) },
-        gate.transformWhile { isOpen -> emit(Gated.Open(isOpen)); !isOpen },
-    ).collect { event ->
-        when (event) {
-            is Gated.Value -> if (open) emit(event.value) else queue += event.value
-            is Gated.Open -> open = event.isOpen
-        }
-        if (open) while (queue.isNotEmpty()) emit(queue.removeFirst())
-    }
-}
-
-
-const val TAG = "Util"
-const val PROP_KEY_DEBUG_VIEW = "debug.com.reteno.debug.view"
-const val PROP_VALUE_DEBUG_VIEW_ENABLE = "enable"
-const val THREAD_PREFIX_NAME = "Reteno_thread_"
+private const val TAG = "Util"

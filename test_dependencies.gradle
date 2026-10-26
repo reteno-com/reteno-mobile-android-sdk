@@ -6,6 +6,8 @@ def dependencyGroup(Closure closure) {
 /******* Modules Dependencies *******/
 ext.testDependencies = dependencyGroup {
     junit()
+    junit5()
+    retenoTestFixtures()
     mockk()
     powermock()
     robolectric()
@@ -24,6 +26,16 @@ ext.testDependencies = dependencyGroup {
 // Dependencies used for unit tests.
 ext.junit = dependencyGroup {
     testImplementation 'junit:junit:4.13.2'
+}
+
+ext.junit5 = dependencyGroup {
+    testImplementation platform('org.junit:junit-bom:5.10.2')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.vintage:junit-vintage-engine'
+}
+
+ext.retenoTestFixtures = dependencyGroup {
+    testImplementation project(':RetenoSdkTestFixtures')
 }
 
 ext.mockk = dependencyGroup {

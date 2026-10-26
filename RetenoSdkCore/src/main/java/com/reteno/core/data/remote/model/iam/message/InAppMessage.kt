@@ -11,9 +11,4 @@ data class InAppMessage(
     var content: InAppMessageContent? = null,
     var lastShowTime: Long? = null,
     var showCount: Long = 0
-) {
-    fun notifyShown() {
-        lastShowTime = System.currentTimeMillis()
-        showCount++
-    }
-}
+)

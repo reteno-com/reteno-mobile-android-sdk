@@ -1,195 +1,196 @@
 package com.reteno.core.data.workmanager
 
 import android.content.Context
-import android.util.Log
-import androidx.work.Configuration
-import androidx.work.Constraints
-import androidx.work.ListenableWorker.Result
+import androidx.test.core.app.ApplicationProvider
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.ListenableWorker
 import androidx.work.NetworkType
-import androidx.work.PeriodicWorkRequestBuilder
-import androidx.work.WorkInfo
+import androidx.work.PeriodicWorkRequest
 import androidx.work.WorkManager
-import androidx.work.testing.TestWorkerBuilder
-import androidx.work.testing.WorkManagerTestInitHelper
+import androidx.work.testing.TestListenableWorkerBuilder
+import com.reteno.core.Reteno
 import com.reteno.core.RetenoInternalImpl
-import com.reteno.core.base.robolectric.BaseRobolectricTest
-import com.reteno.core.di.ServiceLocator
-import io.mockk.every
+import com.reteno.core.fixtures.FakeFacadeInfrastructure
+import com.reteno.core.fixtures.FakeSdkActions
+import com.reteno.core.fixtures.ManualLifecycleOwner
+import com.reteno.core.internal.action.sync.BackgroundSync
+import com.reteno.core.internal.action.sync.BackgroundSyncOutcome
+import com.reteno.core.util.Util
+import com.reteno.test.given
+import com.reteno.test.runUnitTest
+import com.reteno.test.then
+import com.reteno.test.whenn
+import io.mockk.coEvery
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.verify
-import junit.framework.TestCase.assertEquals
-import junit.framework.TestCase.assertNotNull
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.TestScope
-import kotlinx.coroutines.test.runTest
-import org.hamcrest.CoreMatchers.`is`
-import org.hamcrest.MatcherAssert.assertThat
 import org.junit.Test
-import java.util.UUID
-import java.util.concurrent.Executor
-import java.util.concurrent.Executors
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 import java.util.concurrent.TimeUnit
 
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [26])
+internal class PushDataWorkerTest {
 
-@OptIn(ExperimentalCoroutinesApi::class)
-class PushDataWorkerTest : BaseRobolectricTest() {
+    private class SutFixture {
+        private val context: Context = ApplicationProvider.getApplicationContext()
+        val sync = mockk<BackgroundSync>()
+        val sdk = RetenoInternalImpl(
+            application = ApplicationProvider.getApplicationContext(),
+            appLifecycleOwner = ManualLifecycleOwner(),
+            infrastructure = FakeFacadeInfrastructure(FakeSdkActions().also { it.sync.backgroundSyncAnswer = sync })
+        )
+        val sut = TestListenableWorkerBuilder<PushDataWorker>(context).build()
 
-    // region helper fields ------------------------------------------------------------------------
-
-    private var executor: Executor? = null
-    private lateinit var workUuid: UUID
-
-    private var SUT: PushDataWorker? = null
-    // endregion helper fields ---------------------------------------------------------------------
-
-    @Test
-    fun givenAppInForeground_whenDoWork_thenNothingPushedAndPeriodicWorkContinues() = runTest {
-        // Given
-        mockInitials()
-        mockAppInForeground()
-
-        // When
-        val result = SUT!!.doWork()
-
-        // Then
-        verify(exactly = 0) { scheduleController.forcePush() }
-        assertThat(result, `is`(Result.failure()))
-
-        val workState = WorkManager.getInstance(application).getWorkInfoById(workUuid).get()
-        assertEquals(WorkInfo.State.ENQUEUED, workState.state)
-        RetenoInternalImpl.swapInstance(null)
+        suspend fun doWork(instance: RetenoInternalImpl? = sdk): ListenableWorker.Result {
+            val previous = Reteno.instanceInternal
+            Reteno.instanceInternal = instance
+            try {
+                return sut.doWork()
+            } finally {
+                Reteno.instanceInternal = previous
+            }
+        }
     }
 
     @Test
-    fun givenDatabaseEmptyAndAppInBackground_whenDoWork_thenNothingPushedAndPeriodicWorkIsCancelled() =
-        runTest {
-            // Given
-            mockInitials()
-            mockDatabaseEmpty(true)
-            mockAppInBackground()
+    fun `should succeed when background sync completed`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        coEvery { fixture.sync.invoke() } returns Result.success(BackgroundSyncOutcome.SYNCED)
 
-            // When
-            val result = SUT!!.doWork()
+        whenn()
+        val result = fixture.doWork()
 
-            // Then
-            verify(exactly = 0) { scheduleController.forcePush() }
-            assertThat(result, `is`(Result.failure()))
+        then()
+        assertEquals(ListenableWorker.Result.success(), result)
+    }
 
-            val workState = WorkManager.getInstance(application).getWorkInfoById(workUuid).get()
-            assertEquals(WorkInfo.State.CANCELLED, workState.state)
-            RetenoInternalImpl.swapInstance(null)
+    @Test
+    fun `should retry when background sync aborted`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        coEvery { fixture.sync.invoke() } returns Result.success(BackgroundSyncOutcome.ABORTED)
+
+        whenn()
+        val result = fixture.doWork()
+
+        then()
+        assertEquals(ListenableWorker.Result.retry(), result)
+    }
+
+    @Test
+    fun `should retry when sdk is not initialized yet`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        coEvery { fixture.sync.invoke() } returns Result.success(BackgroundSyncOutcome.NOT_INITIALIZED)
+
+        whenn()
+        val result = fixture.doWork()
+
+        then()
+        assertEquals(ListenableWorker.Result.retry(), result)
+    }
+
+    @Test
+    fun `should fail when app is in foreground`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        coEvery { fixture.sync.invoke() } returns Result.success(BackgroundSyncOutcome.SKIPPED_IN_FOREGROUND)
+
+        whenn()
+        val result = fixture.doWork()
+
+        then()
+        assertEquals(ListenableWorker.Result.failure(), result)
+    }
+
+    @Test
+    fun `should fail when there is nothing to sync`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        coEvery { fixture.sync.invoke() } returns Result.success(BackgroundSyncOutcome.NO_DATA)
+
+        whenn()
+        val result = fixture.doWork()
+
+        then()
+        assertEquals(ListenableWorker.Result.failure(), result)
+    }
+
+    @Test
+    fun `should fail when background sync action failed`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        coEvery { fixture.sync.invoke() } returns Result.failure(IllegalStateException("boom"))
+
+        whenn()
+        val result = fixture.doWork()
+
+        then()
+        assertEquals(ListenableWorker.Result.failure(), result)
+    }
+
+    @Test
+    fun `should retry when sdk instance does not exist yet`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+
+        whenn()
+        val result = fixture.doWork(instance = null)
+
+        then()
+        assertEquals(ListenableWorker.Result.retry(), result)
+    }
+
+    @Test
+    fun `should enqueue unique periodic work with network constraint and default delay`() = runUnitTest {
+        given()
+        val workManager = mockk<WorkManager>(relaxed = true)
+        val request = slot<PeriodicWorkRequest>()
+        val previousDebugView = Util.isDebugView()
+        Util.setIsDebug(false)
+
+        whenn()
+        val id = try {
+            PushDataWorker.enqueuePeriodicWork(workManager)
+        } finally {
+            Util.setIsDebug(previousDebugView)
         }
 
-    @Test
-    fun givenDatabaseNotEmptyAndAppInBackground_whenDoWork_thenForcePushTriggeredAndPeriodicWorkContinues() =
-        runTest {
-            // Given
-            mockInitials()
-            mockDatabaseEmpty(false)
-            mockAppInBackground()
-
-            // When
-            val result = SUT!!.doWork()
-
-            // Then
-            verify(exactly = 1) { scheduleController.forcePush() }
-            assertThat(result, `is`(Result.success()))
-
-            val workState = WorkManager.getInstance(application).getWorkInfoById(workUuid).get()
-            assertEquals(WorkInfo.State.ENQUEUED, workState.state)
-            RetenoInternalImpl.swapInstance(null)
+        then()
+        verify(exactly = 1) {
+            workManager.enqueueUniquePeriodicWork(
+                PushDataWorker.PUSH_DATA_WORK_NAME,
+                ExistingPeriodicWorkPolicy.KEEP,
+                capture(request)
+            )
         }
-
-    @Test
-    fun givenConstraintsSatisfied_whenWorkEnqueued_thenWorkIsRunning() = runTest {
-        // Given
-        mockInitials()
-        val workManager = WorkManager.getInstance(application)
-        val testDriver = WorkManagerTestInitHelper.getTestDriver(application)!!
-        val constraints = Constraints.Builder()
-            .setRequiredNetworkType(NetworkType.CONNECTED)
-            .build()
-        val request = PeriodicWorkRequestBuilder<PushDataWorker>(15, TimeUnit.MINUTES)
-            .setConstraints(constraints)
-            .build()
-
-        // When
-        val operation = WorkManager.getInstance(application).enqueue(request)
-        operation.result.addListener({
-            // Then
-            val workInfo = workManager.getWorkInfoById(request.id).get()
-            assertEquals(workInfo.state, WorkInfo.State.RUNNING)
-        }, executor!!)
-        with(testDriver) {
-            setPeriodDelayMet(request.id)
-            setAllConstraintsMet(request.id)
-        }
-        RetenoInternalImpl.swapInstance(null)
+        assertEquals(id, request.captured.id)
+        assertEquals(TimeUnit.MINUTES.toMillis(15), request.captured.workSpec.initialDelay)
+        assertEquals(NetworkType.CONNECTED, request.captured.workSpec.constraints.requiredNetworkType)
     }
 
     @Test
-    fun givenConstraintsNotSatisfied_whenWorkEnqueued_thenWorkIsEnqueued() = runTest {
-        // Given
-        mockInitials()
-        val workManager = WorkManager.getInstance(application)
-        val testDriver = WorkManagerTestInitHelper.getTestDriver(application)!!
-        val constraints = Constraints.Builder()
-            .setRequiredNetworkType(NetworkType.CONNECTED)
-            .build()
-        val request = PeriodicWorkRequestBuilder<PushDataWorker>(15, TimeUnit.MINUTES)
-            .setConstraints(constraints)
-            .build()
+    fun `should use short initial delay in debug view`() = runUnitTest {
+        given()
+        val workManager = mockk<WorkManager>(relaxed = true)
+        val request = slot<PeriodicWorkRequest>()
+        val previousDebugView = Util.isDebugView()
+        Util.setIsDebug(true)
 
-        // When
-        WorkManager.getInstance(application).enqueue(request).result.get()
-        with(testDriver) {
-            setPeriodDelayMet(request.id)
+        whenn()
+        try {
+            PushDataWorker.enqueuePeriodicWork(workManager)
+        } finally {
+            Util.setIsDebug(previousDebugView)
         }
 
-        // Then
-        val workInfo = workManager.getWorkInfoById(request.id).get()
-        assertEquals(WorkInfo.State.ENQUEUED, workInfo.state)
-        RetenoInternalImpl.swapInstance(null)
+        then()
+        verify(exactly = 1) { workManager.enqueueUniquePeriodicWork(any(), any(), capture(request)) }
+        assertEquals(TimeUnit.SECONDS.toMillis(20), request.captured.workSpec.initialDelay)
     }
-
-    // region helper methods -----------------------------------------------------------------------
-    private fun TestScope.mockInitials() {
-        every { anyConstructed<ServiceLocator>().scheduleControllerProvider.get() } returns scheduleController
-        every { anyConstructed<ServiceLocator>().retenoActivityHelperProvider.get() } returns activityHelper
-        every { anyConstructed<ServiceLocator>().retenoDatabaseManagerProvider.get() } returns databaseManager
-        createRetenoAndAdvanceInit()
-
-        executor = Executors.newSingleThreadExecutor()
-        assertNotNull(executor)
-        initializeWorkManager(application, executor!!)
-        workUuid = PushDataWorker.enqueuePeriodicWork(WorkManager.getInstance(application))
-
-        SUT = TestWorkerBuilder<PushDataWorker>(application, executor!!).build()
-        assertNotNull(SUT)
-    }
-
-    private fun initializeWorkManager(context: Context, executor: Executor) {
-        val config: Configuration = Configuration.Builder()
-            .setMinimumLoggingLevel(Log.DEBUG)
-            .setExecutor(executor)
-            .build()
-        WorkManagerTestInitHelper.initializeTestWorkManager(context, config)
-    }
-
-    private fun mockAppInForeground() {
-        every { activityHelper.canPresentMessages() } returns true
-    }
-
-    private fun mockAppInBackground() {
-        every { activityHelper.canPresentMessages() } returns false
-    }
-
-    private fun mockDatabaseEmpty(isEmpty: Boolean) {
-        every { databaseManager.hasDataForSync() } returns isEmpty.not()
-    }
-
-    private fun createReteno(): RetenoInternalImpl {
-        return mockk()
-    }
-    // endregion helper methods --------------------------------------------------------------------
 }

@@ -1,305 +1,161 @@
 package com.reteno.core.features.appinbox
 
-import com.reteno.core.base.BaseUnitTest
-import com.reteno.core.domain.callback.appinbox.RetenoResultCallback
-import com.reteno.core.domain.controller.AppInboxController
 import com.reteno.core.domain.model.appinbox.AppInboxMessages
-import io.mockk.every
-import io.mockk.impl.annotations.RelaxedMockK
-import io.mockk.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
-import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.withTimeout
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
-import org.junit.Test
+import com.reteno.core.domain.model.logevent.LogLevel
+import com.reteno.core.fixtures.FakeCallLog
+import com.reteno.core.fixtures.FakeInboxActions
+import com.reteno.core.fixtures.FakeRemoteLog
+import com.reteno.core.fixtures.RecordingResultCallback
+import com.reteno.test.given
+import com.reteno.test.runUnitTest
+import com.reteno.test.then
+import com.reteno.test.whenn
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertSame
+import org.junit.jupiter.api.Test
 
-@OptIn(ExperimentalCoroutinesApi::class)
-class AppInboxImplTest : BaseUnitTest() {
+internal class AppInboxImplTest {
 
-    @RelaxedMockK
-    private lateinit var controller: AppInboxController
+    private class SutFixture {
+        val log = FakeCallLog()
+        val actions = FakeInboxActions(log)
+        val remoteLog = FakeRemoteLog()
+        val sut = AppInboxImpl(actions, remoteLog)
 
-
-    @Test
-    fun whenGetAppInboxMessagesCalled_thenCallMirroredToController() = runTest {
-        val sut = createSUT()
-        every { controller.getAppInboxMessages(any(), any(), any(), any()) } answers {
-            arg<RetenoResultCallback<AppInboxMessages>>(3).onSuccess(
-                AppInboxMessages(
-                    emptyList(),
-                    totalPages = 0
-                )
-            )
-        }
-
-        sut.getAppInboxMessages(0, 20, null, object : RetenoResultCallback<AppInboxMessages> {
-            override fun onSuccess(result: AppInboxMessages) {
-
-            }
-
-            override fun onFailure(statusCode: Int?, response: String?, throwable: Throwable?) {
-            }
-        })
-
-        verify { controller.getAppInboxMessages(any(), any(), any(), any()) }
-    }
-
-    @Test
-    fun whenGetAppInboxMessagesResponseSuccess_thenCallbackSuccessInvoked() = runTest {
-        val sut = createSUT()
-        every { controller.getAppInboxMessages(any(), any(), any(), any()) } answers {
-            arg<RetenoResultCallback<AppInboxMessages>>(3).onSuccess(
-                AppInboxMessages(
-                    emptyList(),
-                    totalPages = 0
-                )
-            )
-        }
-
-        var response: AppInboxMessages? = null
-        sut.getAppInboxMessages(0, 20, null, object : RetenoResultCallback<AppInboxMessages> {
-            override fun onSuccess(result: AppInboxMessages) {
-                response = result
-            }
-
-            override fun onFailure(statusCode: Int?, resp: String?, throwable: Throwable?) {
-                response = null
-            }
-        })
-
-        withTimeout(1000L) {
-            while (isActive && response == null) {
-                delay(10L)
-            }
-        }
-        assertEquals(AppInboxMessages(emptyList(), totalPages = 0), response)
-    }
-
-    @Test
-    fun whenGetAppInboxMessagesResponseError_thenCallbackErrorInvoked() = runTest {
-        val sut = createSUT()
-        every { controller.getAppInboxMessages(any(), any(), any(), any()) } answers {
-            arg<RetenoResultCallback<AppInboxMessages>>(3).onFailure(
-                400,
-                null,
-                IllegalArgumentException()
-            )
-        }
-
-        var response: Throwable? = null
-        sut.getAppInboxMessages(0, 20, null, object : RetenoResultCallback<AppInboxMessages> {
-            override fun onSuccess(result: AppInboxMessages) {
-                response = null
-            }
-
-            override fun onFailure(statusCode: Int?, resp: String?, throwable: Throwable?) {
-                response = throwable
-            }
-        })
-
-        withTimeout(1000L) {
-            while (isActive && response == null) {
-                delay(10L)
-            }
-        }
-        assertTrue(response != null)
-    }
-
-    @Test
-    fun whenGetAppInboxMessagesCountCalled_thenCallMirroredToController() = runTest {
-        val sut = createSUT()
-        every { controller.getMessagesCount(any()) } answers {
-            firstArg<RetenoResultCallback<AppInboxMessages>>().onSuccess(
-                AppInboxMessages(
-                    emptyList(),
-                    totalPages = 0
-                )
-            )
-        }
-
-        sut.getAppInboxMessagesCount(object : RetenoResultCallback<Int> {
-            override fun onSuccess(result: Int) {
-
-            }
-
-            override fun onFailure(statusCode: Int?, response: String?, throwable: Throwable?) {
-            }
-        })
-
-        verify { controller.getMessagesCount(any()) }
-    }
-
-    @Test
-    fun whenGetAppInboxMessagesCountResponseSuccess_thenCallbackSuccessInvoked() = runTest {
-        val sut = createSUT()
-
-        var response: Int? = null
-        every { controller.getMessagesCount(any()) } answers {
-            firstArg<RetenoResultCallback<Int>>().onSuccess(
-                2
-            )
-        }
-
-        sut.getAppInboxMessagesCount(object : RetenoResultCallback<Int> {
-            override fun onSuccess(result: Int) {
-                response = result
-            }
-
-            override fun onFailure(statusCode: Int?, resp: String?, throwable: Throwable?) {
-                response = null
-            }
-        })
-
-        withTimeout(1000L) {
-            while (isActive && response == null) {
-                delay(10L)
-            }
-        }
-        assertEquals(2, response)
-    }
-
-    @Test
-    fun whenGetAppInboxMessagesCountResponseError_thenCallbackErrorInvoked() = runTest {
-        val sut = createSUT()
-        var response: Throwable? = null
-        every { controller.getMessagesCount(any()) } answers {
-            firstArg<RetenoResultCallback<Int>>().onFailure(
-                404, null, IllegalArgumentException()
-            )
-        }
-
-        sut.getAppInboxMessagesCount(object : RetenoResultCallback<Int> {
-            override fun onSuccess(result: Int) {
-                response = null
-            }
-
-            override fun onFailure(statusCode: Int?, resp: String?, throwable: Throwable?) {
-                response = throwable
-            }
-        })
-
-        withTimeout(1000L) {
-            while (isActive && response == null) {
-                delay(10L)
-            }
-        }
-        assertTrue(response is IllegalArgumentException)
-    }
-
-    @Test
-    fun whenSubscribeOnMessagesCountChangedCalled_thenCallMirroredToController() = runTest {
-        val sut = createSUT()
-
-        sut.subscribeOnMessagesCountChanged(object : RetenoResultCallback<Int> {
-            override fun onSuccess(result: Int) {
-
-            }
-
-            override fun onFailure(statusCode: Int?, response: String?, throwable: Throwable?) {
-            }
-        })
-
-        verify { controller.subscribeCountChanges(any()) }
-    }
-
-    @Test
-    fun whenUnsubscribeOnMessagesCountChangedCalledNewResult_thenCallMirroredToController() =
-        runTest {
-            val sut = createSUT()
-
-            val callback = object : RetenoResultCallback<Int> {
-                override fun onSuccess(result: Int) {
-
-                }
-
-                override fun onFailure(statusCode: Int?, response: String?, throwable: Throwable?) {
-                }
-            }
-
-            sut.unsubscribeMessagesCountChanged(callback)
-
-            verify { controller.unsubscribeCountChanges(any()) }
-        }
-
-    @Test
-    fun whenUnsubscribeOnAllMessagesCountChangedCalledNewResult_thenCallMirroredToController() =
-        runTest {
-            val sut = createSUT()
+        fun callEveryApi() {
+            sut.getAppInboxMessages(2, 20, AppInboxStatus.OPENED, RecordingResultCallback<AppInboxMessages>())
+            sut.getAppInboxMessagesCount(RecordingResultCallback())
+            sut.subscribeOnMessagesCountChanged(RecordingResultCallback())
+            sut.unsubscribeMessagesCountChanged(RecordingResultCallback())
             sut.unsubscribeAllMessagesCountChanged()
-
-            verify { controller.unsubscribeAllCountChanges() }
+            sut.markAsOpened("m1")
+            sut.markAllMessagesAsOpened(RecordingResultCallback())
         }
-
-    @Test
-    fun whenMarkAsOpened_thenCallMirroredToController() = runTest {
-        val sut = createSUT()
-        sut.markAsOpened("10")
-
-        verify { controller.markAsOpened(eq("10")) }
     }
 
     @Test
-    fun whenMarkAllMessagesAsOpened_thenCallMirroredToController() = runTest {
-        val sut = createSUT()
-        val callback = object : RetenoResultCallback<Unit> {
-            override fun onSuccess(result: Unit) {
+    fun `should pass every inbox call to sdk`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
 
-            }
+        whenn()
+        fixture.callEveryApi()
 
-            override fun onFailure(statusCode: Int?, response: String?, throwable: Throwable?) {
-            }
-        }
-        sut.markAllMessagesAsOpened(callback)
-
-        verify { controller.markAllMessagesAsOpened(eq(callback)) }
+        then()
+        assertEquals(
+            listOf(
+                "submitInboxMessagesRequest 2 20 OPENED",
+                "submitInboxCountRequest",
+                "subscribeInboxCount",
+                "unsubscribeInboxCount",
+                "unsubscribeAllInboxCount",
+                "submitInboxMessageOpened m1",
+                "submitAllInboxMessagesOpened"
+            ),
+            fixture.log.calls
+        )
     }
 
     @Test
-    fun whenMarkAllMessagesAsOpenedRespondsWithSuccess_thenCallMirroredToController() = runTest {
-        val sut = createSUT()
-        every { controller.markAllMessagesAsOpened(any()) } answers {
-            firstArg<RetenoResultCallback<Unit>>().onSuccess(Unit)
-        }
-        var res: Unit? = null
-        val callback = object : RetenoResultCallback<Unit> {
-            override fun onSuccess(result: Unit) {
-                res = result
-            }
+    fun `should load inbox messages without paging or status filter when host gives none`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val inbox: AppInbox = fixture.sut
 
-            override fun onFailure(statusCode: Int?, response: String?, throwable: Throwable?) {
-                res = null
-            }
-        }
-        sut.markAllMessagesAsOpened(callback)
+        whenn()
+        inbox.getAppInboxMessages(callback = RecordingResultCallback())
 
-        assertTrue(res != null)
+        then()
+        assertEquals(listOf("submitInboxMessagesRequest null null null"), fixture.log.calls)
     }
 
     @Test
-    fun whenMarkAllMessagesAsOpenedRespondsWithError_thenCallMirroredToController() = runTest {
-        val sut = createSUT()
-        every { controller.markAllMessagesAsOpened(any()) } answers {
-            firstArg<RetenoResultCallback<Unit>>().onFailure(400, null, IllegalArgumentException())
-        }
-        var res: Throwable? = null
-        val callback = object : RetenoResultCallback<Unit> {
-            override fun onSuccess(result: Unit) {
-                res = null
-            }
+    fun `should forward the same callback when loading inbox messages`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val callback = RecordingResultCallback<AppInboxMessages>()
 
-            override fun onFailure(statusCode: Int?, response: String?, throwable: Throwable?) {
-                res = throwable
-            }
-        }
-        sut.markAllMessagesAsOpened(callback)
+        whenn()
+        fixture.sut.getAppInboxMessages(1, 10, null, callback)
 
-        assertTrue(res is IllegalArgumentException)
+        then()
+        assertSame(callback, fixture.actions.callbacks.single())
     }
 
+    @Test
+    fun `should forward the same callback when loading inbox messages count`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val callback = RecordingResultCallback<Int>()
 
-    private fun createSUT() = AppInboxImpl(controller)
+        whenn()
+        fixture.sut.getAppInboxMessagesCount(callback)
 
+        then()
+        assertSame(callback, fixture.actions.callbacks.single())
+    }
+
+    @Test
+    fun `should forward the same callback when subscribing to inbox messages count`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val callback = RecordingResultCallback<Int>()
+
+        whenn()
+        fixture.sut.subscribeOnMessagesCountChanged(callback)
+
+        then()
+        assertSame(callback, fixture.actions.callbacks.single())
+    }
+
+    @Test
+    fun `should forward the same callback when unsubscribing from inbox messages count`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val callback = RecordingResultCallback<Int>()
+
+        whenn()
+        fixture.sut.unsubscribeMessagesCountChanged(callback)
+
+        then()
+        assertSame(callback, fixture.actions.callbacks.single())
+    }
+
+    @Test
+    fun `should forward the same callback when marking all inbox messages as opened`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val callback = RecordingResultCallback<Unit>()
+
+        whenn()
+        fixture.sut.markAllMessagesAsOpened(callback)
+
+        then()
+        assertSame(callback, fixture.actions.callbacks.single())
+    }
+
+    @Test
+    fun `should keep host running and report every inbox call that fails in sdk`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.log.failure = IllegalStateException("sdk broken")
+
+        whenn()
+        fixture.callEveryApi()
+
+        then()
+        val error = "IllegalStateException: sdk broken"
+        assertEquals(
+            listOf(
+                "AppInbox.getAppInboxMessages failed: $error" to LogLevel.ERROR,
+                "AppInbox.getAppInboxMessagesCount failed: $error" to LogLevel.ERROR,
+                "AppInbox.subscribeOnMessagesCountChanged failed: $error" to LogLevel.ERROR,
+                "AppInbox.unsubscribeMessagesCountChanged failed: $error" to LogLevel.ERROR,
+                "AppInbox.unsubscribeAllMessagesCountChanged failed: $error" to LogLevel.ERROR,
+                "AppInbox.markAsOpened failed: $error" to LogLevel.ERROR,
+                "AppInbox.markAllMessagesAsOpened failed: $error" to LogLevel.ERROR
+            ),
+            fixture.remoteLog.entries
+        )
+    }
 }

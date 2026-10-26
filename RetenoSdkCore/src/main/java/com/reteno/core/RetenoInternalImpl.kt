@@ -1,146 +1,76 @@
 package com.reteno.core
 
 import android.app.Application
-import android.content.ComponentName
-import android.content.Intent
-import android.util.Log
 import androidx.core.app.NotificationChannelCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.OnLifecycleEvent
 import androidx.lifecycle.ProcessLifecycleOwner
-import androidx.work.Configuration
-import com.reteno.core.data.local.config.DeviceIdMode
-import com.reteno.core.di.ServiceLocator
-import com.reteno.core.domain.action.user.UpdateMultiAccountUserAttributesAction
-import com.reteno.core.domain.action.user.UpdateUserAttributesAction
-import com.reteno.core.domain.controller.ScreenTrackingController
+import com.reteno.core.di.FacadeInfrastructure
+import com.reteno.core.di.SdkComponent
 import com.reteno.core.domain.model.ecom.EcomEvent
 import com.reteno.core.domain.model.event.Event
 import com.reteno.core.domain.model.event.LifecycleTrackingOptions
 import com.reteno.core.domain.model.interaction.InteractionAction
 import com.reteno.core.domain.model.interaction.InteractionStatus
-import com.reteno.core.domain.model.logevent.RetenoLogEvent
 import com.reteno.core.domain.model.user.User
 import com.reteno.core.domain.model.user.UserAttributesAnonymous
+import com.reteno.core.features.appinbox.AppInbox
+import com.reteno.core.features.appinbox.AppInboxImpl
 import com.reteno.core.features.iam.InAppPauseBehaviour
-import com.reteno.core.lifecycle.RetenoActivityHelper
+import com.reteno.core.features.recommendation.Recommendation
+import com.reteno.core.features.recommendation.RecommendationImpl
+import com.reteno.core.internal.action.sync.BackgroundSyncOutcome
+import com.reteno.core.internal.action.user.UserAttributesValidator
+import com.reteno.core.internal.coroutine.retenoDispatchers
+import com.reteno.core.internal.lifecycle.SdkLifecycle
+import com.reteno.core.internal.log.LoggerRemoteLog
 import com.reteno.core.lifecycle.ScreenTrackingConfig
 import com.reteno.core.permission.AndroidPermissionChecker
-import com.reteno.core.permission.PermissionActivityDelegate
-import com.reteno.core.util.Constants.BROADCAST_ACTION_PUSH_PERMISSION_CHANGED
-import com.reteno.core.util.Logger
 import com.reteno.core.util.Procedure
-import com.reteno.core.util.Util
-import com.reteno.core.util.isOsVersionSupported
-import com.reteno.core.util.queryBroadcastReceivers
-import com.reteno.core.view.iam.IamView
 import com.reteno.core.view.iam.callback.InAppLifecycleCallback
-import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.util.concurrent.atomic.AtomicBoolean
 
 
-class RetenoInternalImpl(
-    val application: Application,
-    private val mainDispatcher: CoroutineDispatcher = Dispatchers.Main,
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
-    private val appLifecycleOwner: LifecycleOwner = ProcessLifecycleOwner.get()
-) : Reteno, RetenoInternalFacade {
+class RetenoInternalImpl internal constructor(
+    override val application: Application,
+    private val appLifecycleOwner: LifecycleOwner,
+    private val infrastructure: FacadeInfrastructure
+) : Reteno, RetenoInternalFacade, SdkLifecycle {
 
-    private val initWaitCondition = CompletableDeferred<Unit>()
-    private val userInitWaitCondition = CompletableDeferred<Unit>()
-    private val anrWaitCondition = CompletableDeferred<Unit>()
-    private val syncScope = CoroutineScope(mainDispatcher + SupervisorJob())
+    constructor(
+        application: Application,
+        mainDispatcher: CoroutineDispatcher = Dispatchers.Main,
+        ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+        appLifecycleOwner: LifecycleOwner = ProcessLifecycleOwner.get()
+    ) : this(
+        application = application,
+        appLifecycleOwner = appLifecycleOwner,
+        infrastructure = SdkComponent(application, retenoDispatchers(mainDispatcher, ioDispatcher))
+    )
 
-    //TODO make this property private
-    val serviceLocator: ServiceLocator = ServiceLocator(application)
-    private val updateAttributesAction by lazy { UpdateUserAttributesAction(serviceLocator, ioDispatcher) }
-    private val updateMultiAccAttributesAction by lazy { UpdateMultiAccountUserAttributesAction(serviceLocator, ioDispatcher) }
-    private val permissionDelegate = PermissionActivityDelegate(application)
-    private val activityHelper: RetenoActivityHelper by lazy { serviceLocator.retenoActivityHelperProvider.get() }
+    private val actions get() = infrastructure.actions
 
-    private val screenTrackingController: ScreenTrackingController by lazy { serviceLocator.screenTrackingControllerProvider.get() }
-    private val contactController by lazy { serviceLocator.contactControllerProvider.get() }
-    private val scheduleController by lazy { serviceLocator.scheduleControllerProvider.get() }
-    private val eventController by lazy { serviceLocator.eventsControllerProvider.get() }
-    private val iamController by lazy { serviceLocator.iamControllerProvider.get() }
-    private val sessionHandler by lazy { serviceLocator.retenoSessionHandlerProvider.get() }
-    private val appLifecycleController by lazy { serviceLocator.appLifecycleControllerProvider.get() }
-    private val interactionController by lazy { serviceLocator.interactionControllerProvider.get() }
-    private val databaseManager by lazy { serviceLocator.retenoDatabaseManagerProvider.get() }
-    private val deeplinkController by lazy { serviceLocator.deeplinkControllerProvider.get() }
-    private val sharedPrefsManager by lazy { serviceLocator.sharedPrefsManagerProvider.get() }
-    private val restConfig by lazy { serviceLocator.restConfigProvider.get() }
+    override val appInbox: AppInbox by lazy { AppInboxImpl(actions.inbox, LoggerRemoteLog) }
+    override val recommendation: Recommendation by lazy { RecommendationImpl(actions.recommendation, LoggerRemoteLog) }
 
-    override val appInbox by lazy { serviceLocator.appInboxProvider.get() }
-    override val recommendation by lazy { serviceLocator.recommendationProvider.get() }
-    private val iamView: IamView by lazy { serviceLocator.iamViewProvider.get() }
+    private val receivedConfigFromUser = AtomicBoolean(false)
 
-    //Safe to call before config init
-    private val interactionCache by lazy { serviceLocator.interactionCacheProvider.get() }
-
-    private var isStartedAtomic: AtomicBoolean = AtomicBoolean(false)
-    private var receivedConfigFromUser = false
-
-    val isStarted: Boolean
-        get() = isStartedAtomic.get()
+    override val isStarted: Boolean
+        get() = actions.control.isStarted
 
     val isInitialized: Boolean
-        get() = initWaitCondition.isCompleted
-
-    val isInitializedByUser: Boolean
-        get() = userInitWaitCondition.isCompleted
+        get() = actions.control.isInitialized
 
     init {
         initSdk()
     }
 
     override fun setConfig(config: RetenoConfig) {
-        if (receivedConfigFromUser) {
-            Logger.i(TAG, "RetenoSDK was already initialized, skipping")
-            return
-        }
-        receivedConfigFromUser = true
-        if (sharedPrefsManager.getCachedConfiguration() != null) {
-            runAfterInit {
-                setConfigInternal(config, isUserConfiguration = true)
-                appLifecycleOwner.lifecycle.addObserver(appLifecycleController)
-            }
-        } else {
-            setConfigInternal(config, isUserConfiguration = true)
-            appLifecycleOwner.lifecycle.addObserver(appLifecycleController)
-        }
-    }
-
-    private fun setConfigInternal(config: RetenoConfig, isUserConfiguration: Boolean = false) {
-        Logger.i(TAG, "setConfig()")
-        serviceLocator.setConfig(config)
-        Util.setIsDebug(config.isDebug)
-        syncScope.launch {
-            anrWaitCondition.await()
-            if (isUserConfiguration) {
-                replaceCachedDeviceIdWithIdFromUserConfig(config)
-            }
-            applyConfig(config)
-            if (isUserConfiguration) {
-                withContext(ioDispatcher) {
-                    contactController.registerDevice()
-                }
-            }
-            initWaitCondition.complete(Unit)
-            if (isUserConfiguration) {
-                userInitWaitCondition.complete(Unit)
-            }
-            withContext(ioDispatcher) {
-                interactionCache.processCachedInteractions()
-            }
-        }
+        if (!receivedConfigFromUser.compareAndSet(false, true)) return
+        actions.control.applyUserConfig(config)
     }
 
     @Deprecated(
@@ -151,532 +81,154 @@ class RetenoInternalImpl(
         Reteno.initWithConfig(config)
     }
 
-    private suspend fun applyConfig(config: RetenoConfig) = withContext(mainDispatcher) {
-        try {
-            withContext(ioDispatcher) {
-                val id = contactController.awaitDeviceId()
-                sharedPrefsManager.cacheConfiguration(id, config)
-            }
-            pauseInAppMessages(config.isPausedInAppMessages)
-            pausePushInAppMessages(config.isPausedPushInAppMessages)
-            sessionHandler.setSessionResetDuration(config.sessionDuration)
-        } catch (t: Throwable) {
-            /*@formatter:off*/ Logger.e(TAG, "applyConfig(): ", t)
-            /*@formatter:on*/
-        }
-    }
-
-    private inline fun runAfterInit(crossinline operation: () -> Unit) {
-        if (!isInitialized) {
-            syncScope.launch(mainDispatcher) {
-                initWaitCondition.await()
-                operation()
-            }
-        } else {
-            operation()
-        }
-    }
-
-    private inline fun runAfterUserInit(crossinline operation: () -> Unit) {
-        if (!isInitializedByUser) {
-            syncScope.launch(mainDispatcher) {
-                userInitWaitCondition.await()
-                operation()
-            }
-        } else {
-            operation()
-        }
-    }
-
     private fun initSdk() {
-        if (isOsVersionSupported()) {
-            activityHelper.enableLifecycleCallbacks(application)
-            appLifecycleOwner.lifecycle.addObserver(this@RetenoInternalImpl)
-            updateAttributesAction.start(syncScope)
-            updateMultiAccAttributesAction.start(syncScope)
-            syncScope.launch(ioDispatcher) {
-                preventANR()
-                sharedPrefsManager.getCachedConfiguration()?.let {
-                    restConfig.initDeviceId(DeviceIdMode.CACHE)
-                    setConfigInternal(it)
-                }
-                anrWaitCondition.complete(Unit)
-            }
-        }
-    }
-
-    private fun preventANR() {
-        runCatching {
-            if (application !is Configuration.Provider) {
-                //Init workmanager singleton instance
-                serviceLocator.initWorkManager()
-            }
-            //Trick to wait for sharedPrefs initialization on background thread to prevent ANR
-            serviceLocator.sharedPrefsManagerProvider.get().getEmail()
-        }.getOrElse {
-            Logger.e(TAG, "preventANR(): ", it)
-        }
-    }
-
-    private suspend fun replaceCachedDeviceIdWithIdFromUserConfig(config: RetenoConfig) {
-        val deviceIdMode = when {
-            config.userIdProvider != null -> DeviceIdMode.CLIENT_UUID
-            else -> DeviceIdMode.ANDROID_ID
-        }
-        restConfig.initDeviceId(deviceIdMode)
+        appLifecycleOwner.lifecycle.addObserver(this@RetenoInternalImpl)
+        actions.control.boot()
     }
 
     @OnLifecycleEvent(Lifecycle.Event.ON_START)
-    fun start() = runAfterUserInit {
-        if (!isOsVersionSupported()) {
-            return@runAfterUserInit
-        }
-        /*@formatter:off*/ Logger.i(TAG, "start(): ")
-        /*@formatter:on*/
-        syncScope.launch {
-            try {
-                withContext(ioDispatcher) {
-                    contactController.checkIfDeviceRequestSentThisSession()
-                }
-                sessionHandler.start()
-                if (!isStartedAtomic.getAndSet(true)) {
-                    withContext(ioDispatcher) {
-                        iamController.getInAppMessages()
-                    }
-                }
-                scheduleController.startScheduler()
-                iamView.start()
-            } catch (ex: Throwable) {
-                /*@formatter:off*/ Logger.e(TAG, "start(): ", ex)
-            /*@formatter:on*/
-            }
-        }
+    override fun start() {
+        actions.control.requestStart()
     }
 
     @OnLifecycleEvent(Lifecycle.Event.ON_STOP)
-    fun stop() = runAfterUserInit {
-        if (!isOsVersionSupported()) {
-            return@runAfterUserInit
-        }
-        /*@formatter:off*/ Logger.i(TAG, "stop(): ")
-        /*@formatter:on*/
-        isStartedAtomic.set(false)
-        try {
-            sessionHandler.stop()
-            stopPushScheduler()
-            iamView.pause()
-        } catch (ex: Throwable) {
-            /*@formatter:off*/ Logger.e(TAG, "stop(): ", ex)
-            /*@formatter:on*/
-        }
+    override fun stop() {
+        actions.control.requestStop()
     }
 
     @Throws(java.lang.IllegalArgumentException::class)
-    override fun setUserAttributes(externalUserId: String) = runAfterInit {
-        if (!isOsVersionSupported()) {
-            return@runAfterInit
-        }
-        /*@formatter:off*/ Logger.i(TAG, "setUserAttributes(): ", "externalUserId = [" , externalUserId , "]")
-        /*@formatter:on*/
-        if (externalUserId.isBlank()) {
-            val exception = IllegalArgumentException("externalUserId should not be null or blank")
-            /*@formatter:off*/ Logger.e(TAG, "setUserAttributes(): ", exception)
-            /*@formatter:on*/
-            throw exception
-        }
-
+    override fun setUserAttributes(externalUserId: String) {
         setUserAttributes(externalUserId, null)
     }
 
     @Throws(java.lang.IllegalArgumentException::class)
-    override fun setUserAttributes(externalUserId: String, user: User?) = runAfterInit {
-        if (!isOsVersionSupported()) {
-            return@runAfterInit
-        }
-        /*@formatter:off*/ Logger.i(TAG, "setUserAttributes(): ", "externalUserId = [" , externalUserId , "], used = [" , user , "]")
-        /*@formatter:on*/
-        if (externalUserId.isBlank()) {
-            val exception = IllegalArgumentException("externalUserId should not be null or blank")
-            /*@formatter:off*/ Logger.e(TAG, "setUserAttributes(): ", exception)
-            /*@formatter:on*/
-            throw exception
-        }
-        updateAttributesAction.postUpdateRequest(externalUserId, user)
+    override fun setUserAttributes(externalUserId: String, user: User?) {
+        UserAttributesValidator.requireValidExternalUserId(externalUserId)
+        UserAttributesValidator.requireValidMarketId(user?.userAttributes?.marketId)
+        actions.control.runAfterUserInit { actions.contact.submitUserAttributes(externalUserId, user) }
     }
 
-    override fun setMultiAccountUserAttributes(externalUserId: String, user: User?) = runAfterInit {
-        if (!isOsVersionSupported()) {
-            return@runAfterInit
-        }
-        /*@formatter:off*/ Logger.i(TAG, "setMultiAccountUserAttributes(): ", "externalUserId = [" , externalUserId , "], used = [" , user , "]")
-        /*@formatter:on*/
-        if (externalUserId.isBlank()) {
-            val exception = IllegalArgumentException("externalUserId should not be null or blank")
-            /*@formatter:off*/ Logger.e(TAG, "setMultiAccountUserAttributes(): ", exception)
-            /*@formatter:on*/
-            throw exception
-        }
-        updateMultiAccAttributesAction.postUpdateRequest(externalUserId, user)
+    @Throws(java.lang.IllegalArgumentException::class)
+    override fun setMultiAccountUserAttributes(externalUserId: String, user: User?) {
+        UserAttributesValidator.requireValidExternalUserId(externalUserId)
+        UserAttributesValidator.requireValidMarketId(user?.userAttributes?.marketId)
+        actions.control.runAfterUserInit { actions.contact.submitMultiAccountUserAttributes(externalUserId, user) }
     }
 
-    override fun setAnonymousUserAttributes(userAttributes: UserAttributesAnonymous) =
-        runAfterInit {
-            if (!isOsVersionSupported()) {
-                return@runAfterInit
-            }
-            /*@formatter:off*/ Logger.i(TAG, "setAnonymousUserAttributes(): ", "userAttributes = [", userAttributes, "]")
-        /*@formatter:on*/
-            userAttributes.marketId?.let { marketId ->
-                val marketIdAllowedChars = listOf('-', '_')
-                if (!marketId.all { it.isDigit() || it.isLetter() || it in marketIdAllowedChars } || marketId.length > 64) {
-                    throw IllegalArgumentException("Invalid marketId, max length must be less than 64, allowed symbols: latin characters, digits, '-', '_' ")
-                }
-            }
-            try {
-                contactController.setAnonymousUserAttributes(userAttributes)
-            } catch (ex: Throwable) {
-                /*@formatter:off*/ Logger.e(TAG, "setAnonymousUserAttributes(): userAttributes = [$userAttributes]", ex)
-            /*@formatter:on*/
-            }
-        }
-
-    override fun logEvent(event: Event) = runAfterInit {
-        if (!isOsVersionSupported()) {
-            return@runAfterInit
-        }
-        /*@formatter:off*/ Logger.i(TAG, "logEvent(): ", "eventType = [" , event.eventTypeKey , "], date = [" , event.occurred , "], parameters = [" , event.params , "]")
-        /*@formatter:on*/
-        try {
-            eventController.trackEvent(event)
-        } catch (ex: Throwable) {
-            /*@formatter:off*/ Logger.e(TAG, "logEvent(): event = [$event]", ex)
-            /*@formatter:on*/
-        }
+    @Throws(java.lang.IllegalArgumentException::class)
+    override fun setAnonymousUserAttributes(userAttributes: UserAttributesAnonymous) {
+        UserAttributesValidator.requireValidMarketId(userAttributes.marketId)
+        actions.control.runAfterUserInit { actions.contact.submitAnonymousUserAttributes(userAttributes) }
     }
 
-    override fun logEcommerceEvent(ecomEvent: EcomEvent) = runAfterInit {
-        if (!isOsVersionSupported()) {
-            return@runAfterInit
-        }
-        /*@formatter:off*/ Logger.i(TAG, "logEcommerceEvent(): ", "ecomEvent = [" , ecomEvent , "]")
-        /*@formatter:on*/
-        try {
-            eventController.trackEcomEvent(ecomEvent)
-        } catch (ex: Throwable) {
-            /*@formatter:off*/ Logger.e(TAG, "logEcommerceEvent(): ecomEvent = [$ecomEvent]", ex)
-            /*@formatter:on*/
-        }
+    override fun logEvent(event: Event) = actions.control.runAfterUserInit {
+        actions.events.submitEvent(event)
     }
 
-    override fun logScreenView(screenName: String) = runAfterInit {
-        if (!isOsVersionSupported()) {
-            return@runAfterInit
-        }
-        /*@formatter:off*/ Logger.i(TAG, "logScreenView(): ", "screenName = [" , screenName , "]")
-        /*@formatter:on*/
-        try {
-            eventController.trackScreenViewEvent(screenName)
-        } catch (ex: Throwable) {
-            /*@formatter:off*/ Logger.e(TAG, "logScreenView(): screenName = [$screenName]", ex)
-            /*@formatter:on*/
-        }
+    override fun logEcommerceEvent(ecomEvent: EcomEvent) = actions.control.runAfterUserInit {
+        actions.events.submitEcomEvent(ecomEvent)
     }
 
-    override fun logRetenoEvent(event: RetenoLogEvent) = runAfterInit {
-        if (!isOsVersionSupported()) {
-            return@runAfterInit
-        }
-        /*@formatter:off*/ Logger.i(TAG, "logRetenoEvent(): ", "event = [" , event , "]")
-        /*@formatter:on*/
-        try {
-            eventController.trackRetenoEvent(event)
-        } catch (ex: Throwable) {
-            /*@formatter:off*/ Logger.e(TAG, "logRetenoEvent(): event = [$event]", ex)
-            /*@formatter:on*/
-        }
+    override fun logScreenView(screenName: String) = actions.control.runAfterUserInit {
+        actions.events.submitScreenView(screenName)
     }
 
     override fun setLifecycleEventConfig(lifecycleTrackingOptions: LifecycleTrackingOptions) =
-        runAfterInit {
-            if (!isOsVersionSupported()) {
-                return@runAfterInit
-            }
-            /*@formatter:off*/ Logger.i(TAG, "setLifecycleEventConfig(): ", "lifecycleEventConfig = [" , lifecycleTrackingOptions , "]")
-        /*@formatter:on*/
-            try {
-                appLifecycleController.setLifecycleEventConfig(lifecycleTrackingOptions)
-                sessionHandler.setLifecycleEventConfig(lifecycleTrackingOptions)
-            } catch (ex: Throwable) {
-                /*@formatter:off*/ Logger.e(TAG, "setLifecycleEventConfig(): lifecycleEventConfig = [$lifecycleTrackingOptions]", ex)
-            /*@formatter:on*/
-            }
+        actions.control.runAfterUserInit {
+            actions.lifecycle.submitLifecycleEventConfig(lifecycleTrackingOptions)
         }
 
-    override fun autoScreenTracking(config: ScreenTrackingConfig) = runAfterInit {
-        if (!isOsVersionSupported()) {
-            return@runAfterInit
-        }
-        /*@formatter:off*/ Logger.i(TAG, "autoScreenTracking(): ", "config = [" , config , "]")
-        /*@formatter:on*/
-        try {
-            screenTrackingController.autoScreenTracking(config)
-        } catch (ex: Throwable) {
-            /*@formatter:off*/ Logger.e(TAG, "autoScreenTracking(): config = [$config]", ex)
-            /*@formatter:on*/
-        }
+    override fun autoScreenTracking(config: ScreenTrackingConfig) = actions.control.runAfterUserInit {
+        actions.lifecycle.submitAutoScreenTracking(config)
     }
 
-    override fun updatePushPermissionStatus() = runAfterInit {
-        Logger.i(TAG, "updatePushPermissionStatus():")
-        val intent =
-            Intent(BROADCAST_ACTION_PUSH_PERMISSION_CHANGED).setFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES)
-        val infoList = application.queryBroadcastReceivers(intent)
-        for (info in infoList) {
-            info?.activityInfo?.let {
-                intent.component = ComponentName(it.packageName, it.name)
-                application.sendBroadcast(intent)
-            }
-        }
+    override fun updatePushPermissionStatus() = actions.control.runAfterInit {
+        actions.lifecycle.submitPushPermissionStatus()
     }
 
-    override fun pauseInAppMessages(isPaused: Boolean) = runAfterInit {
-        Logger.i(TAG, "pauseInAppMessages(): isPaused = [$isPaused]")
-        iamController.pauseInAppMessages(isPaused)
+    override fun pauseInAppMessages(isPaused: Boolean) = actions.control.runAfterUserInit {
+        actions.inApp.submitInAppPause(isPaused)
     }
 
-    override fun pausePushInAppMessages(isPaused: Boolean) = runAfterInit {
-        Logger.i(TAG, "pausePushInAppMessages(): isPaused = [$isPaused]")
-        iamView.pauseIncomingPushInApps(isPaused)
+    override fun pausePushInAppMessages(isPaused: Boolean) = actions.control.runAfterUserInit {
+        actions.inApp.submitPushInAppPause(isPaused)
     }
 
-    override fun setPushInAppMessagesPauseBehaviour(behaviour: InAppPauseBehaviour) = runAfterInit {
-        Logger.i(TAG, "setPushInAppMessagesPauseBehaviour(): behaviour = [$behaviour]")
-        iamView.setPauseBehaviour(behaviour)
+    override fun setPushInAppMessagesPauseBehaviour(behaviour: InAppPauseBehaviour) = actions.control.runAfterUserInit {
+        actions.inApp.submitPushInAppPauseBehaviour(behaviour)
     }
 
     override fun setInAppLifecycleCallback(inAppLifecycleCallback: InAppLifecycleCallback?) =
-        runAfterInit {
-            Logger.i(
-                TAG,
-                "setInAppLifecycleCallback(): inAppLifecycleCallback = [$inAppLifecycleCallback]"
-            )
-            iamView.setInAppLifecycleCallback(inAppLifecycleCallback)
+        actions.control.runAfterUserInit {
+            actions.inApp.submitInAppLifecycleCallback(inAppLifecycleCallback)
         }
 
-    override fun forcePushData() {
-        if (!isOsVersionSupported()) {
-            return
-        }
-        /*@formatter:off*/ Logger.i(TAG, "forcePushData(): ", "")
-        /*@formatter:on*/
-        try {
-            scheduleController.forcePush()
-        } catch (ex: Throwable) {
-            /*@formatter:off*/ Logger.e(TAG, "forcePushData(): ", ex)
-            /*@formatter:on*/
-        }
+    override fun forcePushData() = actions.control.runAfterUserInit {
+        actions.sync.requestSync()
     }
 
-    override fun setInAppMessagesPauseBehaviour(behaviour: InAppPauseBehaviour) = runAfterInit {
-        if (!isOsVersionSupported()) {
-            return@runAfterInit
-        }
-        /*@formatter:off*/ Logger.i(TAG, "setInAppMessagesPauseBehaviour(): ", "behaviour = [" , behaviour , "]")
-        /*@formatter:on*/
-        try {
-            iamController.setPauseBehaviour(behaviour)
-        } catch (ex: Throwable) {
-            /*@formatter:off*/ Logger.e(TAG, "setInAppMessagesPauseBehaviour(): behaviour = [$behaviour]", ex)
-            /*@formatter:on*/
-        }
+    override fun setInAppMessagesPauseBehaviour(behaviour: InAppPauseBehaviour) = actions.control.runAfterUserInit {
+        actions.inApp.submitInAppPauseBehaviour(behaviour)
     }
 
-    override fun onNewFcmToken(token: String) = runAfterInit {
-        if (!isOsVersionSupported()) {
-            return@runAfterInit
-        }
-        /*@formatter:off*/ Logger.i(TAG, "onNewFcmToken(): ", "token = [" , token , "]")
-        /*@formatter:on*/
-        syncScope.launch(ioDispatcher) {
-            try {
-                contactController.onNewFcmToken(token)
-            } catch (ex: Throwable) {
-                /*@formatter:off*/ Logger.e(TAG, "onNewFcmToken(): token = [$token]", ex)
-            /*@formatter:on*/
-            }
-        }
+    override fun onNewFcmToken(token: String) {
+        actions.control.runAfterInit { actions.contact.submitFcmToken(token) }
     }
 
-    override fun recordInteraction(id: String, status: InteractionStatus, forcePush: Boolean) =
-        runAfterInit {
-            if (!isOsVersionSupported()) {
-                return@runAfterInit
-            }
-            /*@formatter:off*/ Logger.i(TAG, "recordInteraction(): ", "status = [" , status , "]", "forcePush = [", forcePush , "]")
-        /*@formatter:on*/
-            syncScope.launch(ioDispatcher) {
-                try {
-                    interactionController.onInteraction(id, status)
-                    if (forcePush) {
-                        forcePushData()
-                    }
-                } catch (ex: Throwable) {
-                    /*@formatter:off*/ Logger.e(TAG, "recordInteraction(): status = [$status]", ex)
-            /*@formatter:on*/
-                }
-            }
-        }
-
-    override fun recordInteractionAction(id: String, action: InteractionAction, forcePush: Boolean) {
-        runAfterInit {
-            if (!isOsVersionSupported()) {
-                return@runAfterInit
-            }
-            /*@formatter:off*/ Logger.i(TAG, "recordInteractionAction(): ", "action = [" , action , "]", "forcePush = [", forcePush , "]")
-            /*@formatter:on*/
-            syncScope.launch(ioDispatcher) {
-                try {
-                    interactionController.onInteractionClickAction(id, action)
-                    if (forcePush) {
-                        forcePushData()
-                    }
-                } catch (ex: Throwable) {
-                    /*@formatter:off*/ Logger.e(TAG, "recordInteractionAction(): action = [$action]", ex)
-                    /*@formatter:on*/
-                }
-            }
-        }
+    override fun recordInteraction(id: String, status: InteractionStatus, forcePush: Boolean) {
+        actions.push.submitPushInteraction(id, status)
     }
 
-    override fun canPresentMessages(): Boolean {
-        if (!isOsVersionSupported()) {
-            return false
+    override fun recordInteractionAction(id: String, action: InteractionAction, forcePush: Boolean) =
+        actions.control.runAfterInit {
+            actions.interactions.submitInteractionClick(id, action, forcePush)
         }
-        /*@formatter:off*/ Logger.i(TAG, "canPresentMessages(): ")
-        /*@formatter:on*/
-        return try {
-            activityHelper.canPresentMessages()
-        } catch (ex: Throwable) {
-            /*@formatter:off*/ Logger.e(TAG, "canPresentMessages(): ", ex)
-            /*@formatter:on*/
-            false
-        }
+
+    override fun canPresentMessages(): Boolean = actions.queries.canPresentMessages()
+
+    override fun getDeviceId(): String = actions.queries.deviceId
+
+    override fun hasDataForSync(): Boolean = actions.queries.hasDataForSync()
+
+    override fun isActivityPresented(): Boolean = actions.queries.isActivityPresented()
+
+    override fun initializeIamView(interactionId: String) = actions.control.runAfterInit {
+        actions.push.submitIamFromPush(interactionId)
     }
 
-    override fun getDeviceId(): String {
-        if (!isOsVersionSupported()) {
-            return ""
-        }
-        val result = try {
-            contactController.getDeviceId()
-        } catch (ex: Throwable) {
-            if (isInitialized) {
-                /*@formatter:off*/ Logger.e(TAG, "getDeviceId(): ", ex)
-                /*@formatter:on*/
-            } else {
-                Log.e(TAG, "getDeviceId(): ", ex)
-            }
-            ""
-        }
-        /*@formatter:off*/ Logger.i(TAG, "getDeviceId(): $result")
-        /*@formatter:on*/
-        return result
+    override fun getDefaultNotificationChannel(): String = actions.queries.defaultNotificationChannel
+
+    override fun saveDefaultNotificationChannel(channel: String) = actions.control.runAfterInit {
+        actions.push.submitDefaultNotificationChannel(channel)
     }
 
-    override fun hasDataForSync(): Boolean {
-        if (!isOsVersionSupported()) {
-            return true
-        }
-        val result = try {
-            databaseManager.hasDataForSync()
-        } catch (ex: Throwable) {
-            /*@formatter:off*/ Logger.e(TAG, "isDatabaseEmpty(): ", ex)
-            /*@formatter:on*/
-            true
-        }
-        /*@formatter:off*/ Logger.i(TAG, "isDatabaseEmpty(): $result")
-        /*@formatter:on*/
-        return result
+    override fun notificationsEnabled(enabled: Boolean) = actions.control.runAfterInit {
+        actions.contact.submitNotificationsEnabled(enabled)
     }
 
-    override fun isActivityPresented(): Boolean {
-        return activityHelper.currentActivity != null
-    }
-
-    override fun initializeIamView(interactionId: String) = runAfterInit {
-        if (!isOsVersionSupported()) {
-            return@runAfterInit
-        }
-        /*@formatter:off*/ Logger.i(TAG, "initializeIamView(): ", "interactionId = [" , interactionId , "]")
-        /*@formatter:on*/
-        try {
-            iamView.initialize(interactionId)
-        } catch (ex: Throwable) {
-            /*@formatter:off*/ Logger.e(TAG, "initializeIamView(): interactionId = [$interactionId]", ex)
-            /*@formatter:on*/
-        }
-    }
-
-    override fun getDefaultNotificationChannel(): String {
-        return contactController.getDefaultNotificationChannel()
-    }
-
-    override fun saveDefaultNotificationChannel(channel: String) = runAfterInit {
-        contactController.saveDefaultNotificationChannel(channel)
-    }
-
-    override fun notificationsEnabled(enabled: Boolean) = runAfterInit {
-        syncScope.launch(ioDispatcher) {
-            contactController.notificationsEnabled(enabled)
-        }
-    }
-
-    override fun deeplinkClicked(linkWrapped: String, linkUnwrapped: String) = runAfterInit {
-        deeplinkController.deeplinkClicked(linkWrapped, linkUnwrapped)
+    override fun deeplinkClicked(linkWrapped: String, linkUnwrapped: String) = actions.control.runAfterInit {
+        actions.push.submitDeeplinkClick(linkWrapped)
     }
 
     override fun getDefaultNotificationChannelConfig(): Procedure<NotificationChannelCompat.Builder>? {
-        return serviceLocator.currentConfig.defaultNotificationChannelConfig
+        return infrastructure.configuration.config?.defaultNotificationChannelConfig
     }
 
-    override fun executeAfterInit(action: () -> Unit) = runAfterInit {
-        action()
-    }
+    override fun executeAfterInit(action: () -> Unit) = actions.control.runAfterInit(action)
 
-    override fun setSessionDuration(duration: Long) = runAfterInit {
-        sessionHandler.setSessionResetDuration(duration)
+    override fun setSessionDuration(duration: Long) = actions.control.runAfterInit {
+        actions.control.submitSessionDuration(duration)
     }
 
     override suspend fun requestPermissionChecker(): AndroidPermissionChecker? {
-        return permissionDelegate.requestChecker()
+        return infrastructure.permissions.requestChecker()
     }
 
-    private fun stopPushScheduler() {
-        scheduleController.stopScheduler()
-    }
-
-    /**
-     * For testing purposes
-     * DON'T EVER CALL THIS METHOD!
-     */
-    @Deprecated("DON'T EVER CALL THIS METHOD! It is for testing only")
-    private fun testCrash() {
-        try {
-            throw NullPointerException("This is a test crash in SDK")
-        } catch (ex: Throwable) {
-            /*@formatter:off*/ Logger.e(TAG, "testCrash(): ", ex)
-            /*@formatter:on*/
-        }
-    }
+    internal suspend fun backgroundSync(): Result<BackgroundSyncOutcome> = actions.sync.backgroundSync()
 
     companion object {
-        private val TAG: String = RetenoInternalImpl::class.java.simpleName
-
+        @Deprecated("Use Reteno.instance", ReplaceWith("Reteno.instance", "com.reteno.core.Reteno"))
         val instance: RetenoInternalImpl
             get() = Reteno.instance as RetenoInternalImpl
-
-        fun swapInstance(instance: RetenoInternalImpl?) {
-            Reteno.instanceInternal = instance
-        }
     }
 }

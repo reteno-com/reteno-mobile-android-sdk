@@ -2,62 +2,39 @@ package com.reteno.core.data.workmanager
 
 import android.content.Context
 import androidx.work.Constraints
+import androidx.work.CoroutineWorker
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.PeriodicWorkRequest
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
-import androidx.work.Worker
 import androidx.work.WorkerParameters
-import com.reteno.core.RetenoInternalImpl
+import com.reteno.core.Reteno
+import com.reteno.core.internal.action.sync.BackgroundSyncOutcome
 import com.reteno.core.util.Logger
 import com.reteno.core.util.Util
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 
 internal class PushDataWorker(context: Context, params: WorkerParameters) :
-    Worker(context, params) {
+    CoroutineWorker(context, params) {
 
-    override fun doWork(): Result {
-        /*@formatter:off*/ Logger.i(TAG, "doWork(): ", "")
-        /*@formatter:on*/
-        return try {
-            return doWorkActual()
-        } catch (ex: Throwable) {
-            /*@formatter:off*/ Logger.e(TAG, "doWork(): ", ex)
-            /*@formatter:on*/
-            Result.failure()
-        }
-    }
-
-    private fun doWorkActual(): Result {
-        val isForeground = RetenoInternalImpl.instance.canPresentMessages()
-        return if (isForeground) {
-            /*@formatter:off*/ Logger.i(TAG, "doWork(): ", "App is in foreground, nothing to do")
-            /*@formatter:on*/
-
-            Result.failure()
-        } else {
-            /*@formatter:off*/ Logger.i(TAG, "doWork(): ", "App is in background")
-            /*@formatter:on*/
-            if (!RetenoInternalImpl.instance.hasDataForSync()) {
-                /*@formatter:off*/ Logger.i(TAG, "doWork(): ", "Database is empty, nothing to do, cancelling periodic work")
-                /*@formatter:on*/
-                WorkManager.getInstance(applicationContext).cancelUniqueWork(PUSH_DATA_WORK_NAME)
-                Result.failure()
-            } else {
-                /*@formatter:off*/ Logger.i(TAG, "doWork(): ", "Database has data, sending to server")
-                /*@formatter:on*/
-                RetenoInternalImpl.instance.forcePushData()
-                Result.success()
-            }
+    override suspend fun doWork(): Result {
+        val sdk = Reteno.instanceInternal ?: return Result.retry()
+        val outcome = sdk.backgroundSync().getOrNull() ?: return Result.failure()
+        return when (outcome) {
+            BackgroundSyncOutcome.SYNCED -> Result.success()
+            BackgroundSyncOutcome.NOT_INITIALIZED,
+            BackgroundSyncOutcome.ABORTED -> Result.retry()
+            BackgroundSyncOutcome.SKIPPED_IN_FOREGROUND,
+            BackgroundSyncOutcome.NO_DATA -> Result.failure()
         }
     }
 
     companion object {
         private val TAG: String = PushDataWorker::class.java.simpleName
 
-        private const val PUSH_DATA_WORK_NAME = "PUSH_DATA_TASK_TAG"
+        internal const val PUSH_DATA_WORK_NAME = "PUSH_DATA_TASK_TAG"
         private val EXISTING_PERIODIC_WORK_POLICY = ExistingPeriodicWorkPolicy.KEEP
 
         private val INITIAL_DELAY_DEBUG = TimeInterval(20L, TimeUnit.SECONDS)

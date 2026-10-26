@@ -8,8 +8,6 @@ import com.reteno.core.data.local.model.event.EventDb
 import com.reteno.core.data.local.model.event.EventsDb
 import com.reteno.core.data.local.model.event.ParameterDb
 import com.reteno.core.data.remote.mapper.listFromJson
-import com.reteno.core.data.remote.mapper.toJson
-import com.reteno.core.util.allElementsNotNull
 
 fun ContentValues.putEvents(events: EventsDb) {
     put(EventsSchema.COLUMN_EVENTS_DEVICE_ID, events.deviceId)
@@ -24,9 +22,7 @@ fun List<EventDb>.toContentValuesList(parentRowId: Long): List<ContentValues> {
             put(EventsSchema.COLUMN_EVENTS_ID, parentRowId)
             put(EventsSchema.EventSchema.COLUMN_EVENT_TYPE_KEY, event.eventTypeKey)
             put(EventsSchema.EventSchema.COLUMN_EVENT_OCCURRED, event.occurred)
-            event.params?.toJson()?.let { params ->
-                put(EventsSchema.EventSchema.COLUMN_EVENT_PARAMS, params)
-            }
+            putJsonIfPresent(EventsSchema.EventSchema.COLUMN_EVENT_PARAMS, event.params)
         }
         contentValues.add(singleContentValues)
     }
@@ -35,23 +31,13 @@ fun List<EventDb>.toContentValuesList(parentRowId: Long): List<ContentValues> {
 }
 
 fun Cursor.getEvent(): EventDb? {
-    val rowId = getStringOrNull(getColumnIndex(EventsSchema.EventSchema.COLUMN_EVENT_ROW_ID))
+    val rowId = getString(getColumnIndex(EventsSchema.EventSchema.COLUMN_EVENT_ROW_ID))
     val eventTypeKey = getStringOrNull(getColumnIndex(EventsSchema.EventSchema.COLUMN_EVENT_TYPE_KEY))
     val occurred = getStringOrNull(getColumnIndex(EventsSchema.EventSchema.COLUMN_EVENT_OCCURRED))
 
     val paramsString = getStringOrNull(getColumnIndex(EventsSchema.EventSchema.COLUMN_EVENT_PARAMS))
     val params: List<ParameterDb>? = paramsString?.listFromJson()
 
-    val result: EventDb? = if (allElementsNotNull(eventTypeKey, occurred)) {
-        EventDb(
-            rowId = rowId,
-            eventTypeKey = eventTypeKey!!,
-            occurred = occurred!!,
-            params = params
-        )
-    } else {
-        null
-    }
-
-    return result
+    if (eventTypeKey == null || occurred == null) return null
+    return EventDb(rowId = rowId, eventTypeKey = eventTypeKey, occurred = occurred, params = params)
 }

@@ -4,21 +4,14 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.os.Build
 import android.os.Bundle
-import android.text.TextUtils
 import android.widget.RemoteViews
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import com.reteno.core.data.remote.mapper.listFromJson
-import com.reteno.core.util.BitmapUtil
-import com.reteno.core.util.BitmapUtil.resize
 import com.reteno.core.util.BuildUtil
-import com.reteno.core.util.Logger
 import com.reteno.core.util.getAppName
 import com.reteno.core.util.getApplicationMetaData
-import com.reteno.core.util.toStringVerbose
 import com.reteno.push.Constants.KEY_ACTION_BUTTON
 import com.reteno.push.Constants.KEY_BTN_ACTION_CUSTOM_DATA
 import com.reteno.push.Constants.KEY_BTN_ACTION_ID
@@ -38,269 +31,143 @@ import com.reteno.push.Constants.KEY_ES_NOTIFICATION_CAROUSEL_IMAGES
 import com.reteno.push.Constants.KEY_ES_NOTIFICATION_IMAGE
 import com.reteno.push.Constants.KEY_ES_TITLE
 import com.reteno.push.Constants.MAX_ACTION_BUTTONS
-import com.reteno.push.Constants.NOTIFICATION_CAROUSEL_IMAGE_MAX_HEIGHT_PX
-import com.reteno.push.Constants.NOTIFICATION_CAROUSEL_IMAGE_MAX_WIDTH_PX
-import com.reteno.push.JsonUtils.getJSONObjectOrNull
 import com.reteno.push.JsonUtils.getStringOrNull
 import com.reteno.push.channel.RetenoNotificationChannel.DEFAULT_CHANNEL_ID
 import com.reteno.push.interceptor.click.RetenoNotificationClickedActivity
 import com.reteno.push.interceptor.click.RetenoNotificationClickedReceiver
 import org.json.JSONArray
-import java.io.IOException
-import java.io.InputStream
-import java.net.URL
+import org.json.JSONObject
 import java.util.Random
 
 
-internal class RetenoNotificationHelper(private val context: Context) {
-
-    private val TAG: String = RetenoNotificationHelper::class.java.simpleName
+internal class RetenoNotificationHelper(
+    private val context: Context,
+    private val images: NotificationImages = RemoteNotificationImages(context)
+) {
 
     companion object {
         private const val RETENO_DEFAULT_PUSH_ICON = "reteno_default_push_icon"
+        private const val LONG_TEXT_LENGTH = 100
 
-        private const val NOTIFICATION_ID_DEFAULT = 1
+        internal const val NOTIFICATION_ID_DEFAULT = 1
     }
 
     internal fun getNotificationBuilderCompat(bundle: Bundle): NotificationCompat.Builder {
-        /*@formatter:off*/ Logger.i(TAG, "getNotificationBuilderCompat(): ", "context = [" , context , "], bundle = [" , bundle.toStringVerbose() , "]")
-        /*@formatter:on*/
-        val icon = getNotificationIcon()
-        val color = getNotificationIconColor()
-        val title = getNotificationTitle(bundle)
-        val text = getNotificationText(bundle)
+        val title = bundle.getString(KEY_ES_TITLE) ?: context.getAppName()
+        val text = bundle.getString(KEY_ES_CONTENT)
         val bigPicture = getNotificationBigPictureBitmap(bundle)
-        val buttons = getNotificationButtons(bundle)
-        val badgeCount = getNotificationBadgeCount(bundle)
-        val imageCarouselRemoteViews: RemoteViews? = getImageCarouselRemoteViews(bundle)
+        val carousel = getImageCarouselRemoteViews(bundle)
 
         val builder = NotificationCompat.Builder(context, DEFAULT_CHANNEL_ID)
-            .setSmallIcon(icon)
+            .setSmallIcon(getNotificationIcon())
             .setContentTitle(title)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setAutoCancel(true)
-        color.takeUnless { it == 0 }?.let {
-            builder
-                .setColor(ContextCompat.getColor(context, it))
-                .setStyle(NotificationCompat.DecoratedCustomViewStyle())
-        }
-        text?.let {
-            val hasNoDecorations = bigPicture == null && imageCarouselRemoteViews == null
-            if (it.length > 100 && hasNoDecorations) {
-                builder.setStyle(NotificationCompat.BigTextStyle()
-                    .bigText(it))
-            } else {
-                builder.setContentText(it)
-            }
-        }
-        badgeCount?.let(builder::setNumber)
-
-        bigPicture?.let { bitmap ->
-            builder.setLargeIcon(bitmap)
-                .setStyle(
-                    NotificationCompat.BigPictureStyle()
-                        .bigPicture(bitmap)
-                        .setBigContentTitle(title)
-                        .setSummaryText(text)
-                        .clearLargeIcon()
-                )
-        }
-        imageCarouselRemoteViews?.let {
+        applyIconColor(builder)
+        if (text != null) applyText(builder, text, hasDecorations = bigPicture != null || carousel != null)
+        bundle.getString(KEY_ES_BADGE_COUNT)?.toIntOrNull()?.let(builder::setNumber)
+        if (bigPicture != null) applyBigPicture(builder, bigPicture, title, text)
+        if (carousel != null) {
             builder.setStyle(NotificationCompat.DecoratedCustomViewStyle())
-            builder.setCustomBigContentView(it)
+            builder.setCustomBigContentView(carousel)
         }
-
-        buttons?.forEach { action ->
-            builder.addAction(action)
-        }
-
-        createDeleteIntent(bundle)?.let {
-            builder.setDeleteIntent(it)
-        }
-        RetenoNotifications.groupingRule?.let { grouping ->
-            val group = grouping(bundle.toStringMap())
-            if (group != null) {
-                builder.setGroup(group)
-            }
-        }
-
-        val pendingIntent = createPendingIntent(bundle)
-        builder.setContentIntent(pendingIntent)
-
+        getNotificationButtons(bundle).forEach(builder::addAction)
+        createDeleteIntent(bundle)?.let(builder::setDeleteIntent)
+        groupOf(bundle)?.let(builder::setGroup)
+        builder.setContentIntent(createPendingIntent(bundle))
         return builder
     }
 
-    internal fun getNotificationId(bundle: Bundle): Int {
-        val notificationIdString: String? = bundle.getString(KEY_ES_INTERACTION_ID)
-        // FIXME notification id is calculated by hashCode() function on "es_interaction_id" string. Collisions may appear
-        val notificationId: Int = notificationIdString?.hashCode() ?: NOTIFICATION_ID_DEFAULT
-        /*@formatter:off*/ Logger.i(TAG, "getNotificationId(): ", "bundle = [" , bundle , "]", " notificationId = [", notificationId, "]")
-        /*@formatter:on*/
-        return notificationId
+    internal fun getNotificationId(bundle: Bundle): Int =
+        bundle.getString(KEY_ES_INTERACTION_ID)?.hashCode() ?: NOTIFICATION_ID_DEFAULT
+
+    private fun applyIconColor(builder: NotificationCompat.Builder) {
+        val color = context.getApplicationMetaData().getInt(context.resources.getString(R.string.notification_icon_color))
+        if (color == 0) return
+        builder
+            .setColor(ContextCompat.getColor(context, color))
+            .setStyle(NotificationCompat.DecoratedCustomViewStyle())
     }
 
-    private fun getNotificationIconColor(): Int {
+    private fun applyText(builder: NotificationCompat.Builder, text: String, hasDecorations: Boolean) {
+        if (text.length > LONG_TEXT_LENGTH && !hasDecorations) {
+            builder.setStyle(NotificationCompat.BigTextStyle().bigText(text))
+        } else {
+            builder.setContentText(text)
+        }
+    }
 
-        val metadata = context.getApplicationMetaData()
-        val customIconColorResName = context.resources.getString(R.string.notification_icon_color)
-        return metadata.getInt(customIconColorResName)
+    private fun applyBigPicture(builder: NotificationCompat.Builder, bitmap: Bitmap, title: String, text: String?) {
+        builder.setLargeIcon(bitmap)
+            .setStyle(
+                NotificationCompat.BigPictureStyle()
+                    .bigPicture(bitmap)
+                    .setBigContentTitle(title)
+                    .setSummaryText(text)
+                    .clearLargeIcon()
+            )
     }
 
     private fun getNotificationIcon(): Int {
-
-        val metadata = context.getApplicationMetaData()
-        val customIconResName = context.resources.getString(R.string.notification_icon)
-        var icon = metadata.getInt(customIconResName)
-
-        if (icon == 0) {
-            /*@formatter:off*/ Logger.i(TAG, "getNotificationIcon(): ", "context = [" , context , "], No icon in metaData.")
-            /*@formatter:on*/
-            icon = getDefaultNotificationIcon()
-        }
-
-        return icon
+        val icon = context.getApplicationMetaData().getInt(context.resources.getString(R.string.notification_icon))
+        if (icon != 0) return icon
+        return context.resources.getIdentifier(RETENO_DEFAULT_PUSH_ICON, "drawable", context.packageName)
     }
 
-    /**
-     * Gets default push notification resource id for RETENO_DEFAULT_PUSH_ICON in drawable.
-     *
-     * @return int Resource id.
-     */
-    private fun getDefaultNotificationIcon(): Int {
-        return try {
-
-            val resources = context.resources
-            resources.getIdentifier(RETENO_DEFAULT_PUSH_ICON, "drawable", context.packageName)
-        } catch (ignored: Throwable) {
-            0
-        }
-    }
-
-    private fun getNotificationTitle(bundle: Bundle): String {
-        val title = bundle.getString(KEY_ES_TITLE) ?: context.getAppName()
-        /*@formatter:off*/ Logger.i(TAG, "getNotificationName(): ", "context = [" , context , "], bundle = [" , bundle , "] title = [", title, "]")
-        /*@formatter:on*/
-        return title
-    }
-
-    private fun getNotificationText(bundle: Bundle): String? {
-        val notificationText = bundle.getString(KEY_ES_CONTENT)
-        /*@formatter:off*/ Logger.i(TAG, "getNotificationText(): ", "bundle = [" , bundle , "] notificationText = [", notificationText, "]")
-        /*@formatter:on*/
-        return notificationText
-    }
-
-    /**
-     * Gets bitmap for BigPicture style push notification.
-     *
-     * @param bundle Bundle with notification data.
-     * @return Scaled bitmap for push notification with big image or null.
-     */
     private fun getNotificationBigPictureBitmap(bundle: Bundle): Bitmap? {
-        val imageUrl = bundle.getString(KEY_ES_NOTIFICATION_IMAGE) ?: return null
-
-        var bigPicture: Bitmap? = null
-        // BigPictureStyle support requires API 16 and higher.
-        if (!TextUtils.isEmpty(imageUrl)) {
-            bigPicture = BitmapUtil.getScaledBitmap(context, imageUrl)
-            if (bigPicture == null) {
-                /*@formatter:off*/ Logger.i(TAG, "getNotificationBigPictureBitmap(): ", "Failed to download image for push notification;", " imageUrl = [" , imageUrl , "]")
-                /*@formatter:on*/
-            }
-        }
-        return bigPicture
+        val imageUrl = bundle.getString(KEY_ES_NOTIFICATION_IMAGE)?.takeIf { it.isNotBlank() } ?: return null
+        return images.bigPicture(imageUrl)
     }
 
-    private fun getNotificationButtons(bundle: Bundle): List<NotificationCompat.Action>? {
-        val esButtons = bundle.getString(KEY_ES_BUTTONS) ?: return null
-
-        val actions = mutableListOf<NotificationCompat.Action>()
+    private fun getNotificationButtons(bundle: Bundle): List<NotificationCompat.Action> {
+        val esButtons = bundle.getString(KEY_ES_BUTTONS) ?: return emptyList()
         val array = JSONArray(esButtons)
-
-        for (i in 0 until array.length()) {
-            val jsonObject = array.getJSONObject(i)
-
-            val actionId = jsonObject.getStringOrNull(KEY_ES_BUTTON_ACTION_ID)
-            val wrappedLink = jsonObject.getStringOrNull(KEY_ES_BUTTON_LINK_WRAPPED)
-            val unwrappedLink = jsonObject.getStringOrNull(KEY_ES_BUTTON_LINK_UNWRAPPED)
-            val label = jsonObject.getStringOrNull(KEY_ES_BUTTON_LABEL)
-            val customData = jsonObject.getJSONObjectOrNull(KEY_ES_BUTTON_CUSTOM_DATA)
-                ?.let(JsonUtils::jsonObjectToMap)
-
-            val intent = createPendingIntentForButton(
-                bundle = bundle,
-                actionId = actionId,
-                wrappedLink = wrappedLink,
-                unwrappedLink = unwrappedLink,
-                label = label,
-                customData = customData
-            )
-            actions.add(NotificationCompat.Action(null, label, intent))
+        return (0 until minOf(array.length(), MAX_ACTION_BUTTONS)).map { index ->
+            val button = array.getJSONObject(index)
+            val label = button.getStringOrNull(KEY_ES_BUTTON_LABEL)
+            NotificationCompat.Action(null, label, createPendingIntentForButton(bundle, button, label))
         }
-
-        return actions.take(MAX_ACTION_BUTTONS)
     }
-
-    private fun getNotificationBadgeCount(bundle: Bundle): Int? =
-        bundle.getString(KEY_ES_BADGE_COUNT)?.toIntOrNull()
 
     private fun getImageCarouselRemoteViews(bundle: Bundle): RemoteViews? {
-        val imageUrlList = getCarouselImageUrlList(bundle) ?: return null
+        val imageUrls = getCarouselImageUrls(bundle)
+        if (imageUrls.isEmpty()) return null
 
         val expandedView = RemoteViews(context.packageName, R.layout.image_carousel)
-
-        for (imageUrl in imageUrlList) {
-            val viewFlipperImage =
-                RemoteViews(context.packageName, R.layout.image_carousel_item)
-
-            try {
-                val remotePicture = BitmapFactory.decodeStream(
-                    URL(imageUrl).content as InputStream
-                )
-                val bitmap = resize(
-                    remotePicture,
-                    NOTIFICATION_CAROUSEL_IMAGE_MAX_WIDTH_PX,
-                    NOTIFICATION_CAROUSEL_IMAGE_MAX_HEIGHT_PX
-                )
-                viewFlipperImage.setImageViewBitmap(R.id.imageView, bitmap)
-                expandedView.addView(R.id.viewFlipper, viewFlipperImage)
-            } catch (e: IOException) {
-                /*@formatter:off*/ Logger.e(TAG, "getImageCarouselRemoteViews(): ", e)
-                /*@formatter:on*/
-            }
+        for (imageUrl in imageUrls) {
+            val bitmap = images.carouselImage(imageUrl) ?: continue
+            val viewFlipperImage = RemoteViews(context.packageName, R.layout.image_carousel_item)
+            viewFlipperImage.setImageViewBitmap(R.id.imageView, bitmap)
+            expandedView.addView(R.id.viewFlipper, viewFlipperImage)
         }
-
         return expandedView
     }
 
-    private fun getCarouselImageUrlList(bundle: Bundle): List<String>? {
-        val imagesJson = bundle.getString(KEY_ES_NOTIFICATION_CAROUSEL_IMAGES)
-        val imageUrlListAll = imagesJson?.listFromJson<String>()
+    private fun getCarouselImageUrls(bundle: Bundle): List<String> {
+        val imagesJson = bundle.getString(KEY_ES_NOTIFICATION_CAROUSEL_IMAGES) ?: return emptyList()
+        val imageUrls = runCatching { imagesJson.listFromJson<String>() }.getOrNull() ?: return emptyList()
+        return imageUrls.filter { it.isNotBlank() }
+    }
 
-        return if (imageUrlListAll.isNullOrEmpty() ||
-            imageUrlListAll.all { it.isBlank() }
-        ) {
-            null
-        } else {
-            imageUrlListAll.filter { it.isNotBlank() }
-        }
+    private fun groupOf(bundle: Bundle): String? {
+        val groupingRule = RetenoNotifications.groupingRule ?: return null
+        return groupingRule(bundle.toStringMap())
     }
 
     private fun createPendingIntent(message: Bundle): PendingIntent {
-
-        if (BuildUtil.shouldDisableTrampolines(context)) {
-            val intent: Intent =
-                createActivityIntent(message)
-            return PendingIntent.getActivity(
+        return if (BuildUtil.shouldDisableTrampolines(context)) {
+            val intent = Intent(context, RetenoNotificationClickedActivity::class.java)
+                .putExtras(message)
+                .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK)
+            PendingIntent.getActivity(
                 context,
                 Random().nextInt(),
                 intent,
                 BuildUtil.createIntentFlags(PendingIntent.FLAG_UPDATE_CURRENT)
             )
         } else {
-            val intent: Intent =
-                createBroadcastIntent(message)
-            return PendingIntent.getBroadcast(
+            val intent = Intent(context, RetenoNotificationClickedReceiver::class.java).putExtras(message)
+            PendingIntent.getBroadcast(
                 context,
                 Random().nextInt(),
                 intent,
@@ -309,65 +176,26 @@ internal class RetenoNotificationHelper(private val context: Context) {
         }
     }
 
-    private fun createActivityIntent(bundle: Bundle): Intent {
-        val intent = Intent(context, RetenoNotificationClickedActivity::class.java)
-        intent.putExtras(bundle)
-        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK)
-        return intent
-    }
-
-    private fun createBroadcastIntent(bundle: Bundle): Intent {
-        val intent = Intent(context, RetenoNotificationClickedReceiver::class.java)
-        intent.putExtras(bundle)
-        return intent
-    }
-
     private fun createDeleteIntent(data: Bundle): PendingIntent? {
-        try {
-            val receiver = context.getApplicationMetaData()
-                .getString(Constants.META_DATA_KEY_CUSTOM_RECEIVER_NOTIFICATION_DELETED)
-            receiver?.let { receiverClassName ->
-                val intent = Intent()
-                intent.setClassName(context, receiverClassName)
-                intent.putExtras(data)
-                return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                    PendingIntent.getBroadcast(
-                        context,
-                        0,
-                        intent,
-                        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_CANCEL_CURRENT
-                    )
-                } else {
-                    PendingIntent.getBroadcast(
-                        context,
-                        0,
-                        intent,
-                        PendingIntent.FLAG_CANCEL_CURRENT or PendingIntent.FLAG_IMMUTABLE
-                    )
-                }
-            }
-        } catch (e: Throwable) {
-            Logger.e(TAG, "createDeleteIntent()", e)
-        }
-        return null
+        val receiver = context.getApplicationMetaData()
+            .getString(Constants.META_DATA_KEY_CUSTOM_RECEIVER_NOTIFICATION_DELETED) ?: return null
+        val intent = Intent().setClassName(context, receiver).putExtras(data)
+        return PendingIntent.getBroadcast(
+            context,
+            getNotificationId(data),
+            intent,
+            PendingIntent.FLAG_CANCEL_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
     }
 
-    private fun createPendingIntentForButton(
-        bundle: Bundle,
-        actionId: String?,
-        wrappedLink: String?,
-        unwrappedLink: String?,
-        label: String?,
-        customData: HashMap<String, Any?>?
-    ): PendingIntent {
+    private fun createPendingIntentForButton(bundle: Bundle, button: JSONObject, label: String?): PendingIntent {
         val bundleButton = bundle.deepCopy()
         bundleButton.putBoolean(KEY_ACTION_BUTTON, true)
-        actionId?.let { bundleButton.putString(KEY_BTN_ACTION_ID, it) }
+        button.getStringOrNull(KEY_ES_BUTTON_ACTION_ID)?.let { bundleButton.putString(KEY_BTN_ACTION_ID, it) }
         label?.let { bundleButton.putString(KEY_BTN_ACTION_LABEL, it) }
-        wrappedLink?.let { bundleButton.putString(KEY_BTN_ACTION_LINK_WRAPPED, it) }
-        unwrappedLink?.let { bundleButton.putString(KEY_BTN_ACTION_LINK_UNWRAPPED, it) }
-        customData?.let { bundleButton.putSerializable(KEY_BTN_ACTION_CUSTOM_DATA, it) }
-
+        button.getStringOrNull(KEY_ES_BUTTON_LINK_WRAPPED)?.let { bundleButton.putString(KEY_BTN_ACTION_LINK_WRAPPED, it) }
+        button.getStringOrNull(KEY_ES_BUTTON_LINK_UNWRAPPED)?.let { bundleButton.putString(KEY_BTN_ACTION_LINK_UNWRAPPED, it) }
+        button.optJSONObject(KEY_ES_BUTTON_CUSTOM_DATA)?.let { bundleButton.putSerializable(KEY_BTN_ACTION_CUSTOM_DATA, JsonUtils.jsonObjectToMap(it)) }
         return createPendingIntent(bundleButton)
     }
 }

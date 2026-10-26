@@ -1,59 +1,49 @@
 package com.reteno.core.data.local.config
 
 import com.reteno.core.data.local.sharedpref.SharedPrefsManager
-import com.reteno.core.util.Logger
+
+internal interface DeviceIdentity {
+
+    val deviceId: DeviceId
+
+    suspend fun initDeviceId(deviceIdMode: DeviceIdMode)
+}
 
 internal class RestConfig(
     private val sharedPrefsManager: SharedPrefsManager,
     private val deviceIdHelper: DeviceIdHelper
-) {
+) : DeviceIdentity {
 
     @Volatile
-    internal var deviceId: DeviceId = DeviceId("")
+    override var deviceId: DeviceId = DeviceId("")
         private set
 
-    internal suspend fun initDeviceId(deviceIdMode: DeviceIdMode) {
-        /*@formatter:off*/ Logger.i(TAG, "changeDeviceIdMode(): ", "deviceIdMode = [" , deviceIdMode , "]")
-        /*@formatter:on*/
-        deviceIdHelper.withDeviceIdMode(deviceId, deviceIdMode) {
-            deviceId = it.copy(
-                externalId = sharedPrefsManager.getExternalUserId(),
-                idSuffix = sharedPrefsManager.getDeviceIdSuffix(),
-                email = sharedPrefsManager.getEmail(),
-                phone = sharedPrefsManager.getPhone()
-            )
-        }
+    override suspend fun initDeviceId(deviceIdMode: DeviceIdMode) {
+        deviceId = deviceIdHelper.withDeviceIdMode(deviceId, deviceIdMode).copy(
+            externalId = sharedPrefsManager.getExternalUserId(),
+            idSuffix = sharedPrefsManager.getDeviceIdSuffix(),
+            email = sharedPrefsManager.getEmail(),
+            phone = sharedPrefsManager.getPhone()
+        )
     }
 
     internal fun setDeviceIdSuffix(suffix: String?) {
-        /*@formatter:off*/ Logger.i(TAG, "setDeviceIdSuffix(): ", "suffix = [" , suffix , "]")
-        /*@formatter:on*/
         sharedPrefsManager.saveDeviceIdSuffix(suffix)
-        deviceId = deviceIdHelper.withDeviceIdSuffix(deviceId, suffix)
+        deviceId = deviceId.copy(idSuffix = suffix)
     }
 
     internal fun setExternalUserId(externalUserId: String?) {
-        /*@formatter:off*/ Logger.i(TAG, "setExternalUserId(): ", "externalUserId = [" , externalUserId , "]")
-        /*@formatter:on*/
         sharedPrefsManager.saveExternalUserId(externalUserId)
-        deviceId = deviceIdHelper.withExternalUserId(deviceId, externalUserId)
+        deviceId = deviceId.copy(externalId = externalUserId?.ifBlank { "" })
     }
 
     internal fun setDeviceEmail(email: String?) {
-        /*@formatter:off*/ Logger.i(TAG, "setDeviceEmail(): ", "email = [" , email , "]")
-        /*@formatter:on*/
         sharedPrefsManager.saveDeviceEmail(email)
-        deviceId = deviceIdHelper.withEmail(deviceId, email)
+        deviceId = deviceId.copy(email = email)
     }
 
     internal fun setDevicePhone(phone: String?) {
-        /*@formatter:off*/ Logger.i(TAG, "setDevicePhone(): ", "phone = [" , phone , "]")
-        /*@formatter:on*/
         sharedPrefsManager.saveDevicePhone(phone)
-        deviceId = deviceIdHelper.withPhone(deviceId, phone)
-    }
-
-    companion object {
-        private val TAG: String = RestConfig::class.java.simpleName
+        deviceId = deviceId.copy(phone = phone)
     }
 }
