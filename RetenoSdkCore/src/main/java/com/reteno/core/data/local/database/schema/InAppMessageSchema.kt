@@ -51,17 +51,4 @@ object InAppMessageSchema {
                     "FOREIGN KEY (${InAppMessageSchema.COLUMN_IAM_ROW_ID}) REFERENCES ${InAppMessageSchema.TABLE_NAME} (${InAppMessageSchema.COLUMN_IAM_ROW_ID}) ON DELETE CASCADE" +
                     ")"
     }
-
-    fun getAllColumns(): Array<String> = arrayOf(
-        COLUMN_IAM_ROW_ID,
-        DbSchema.COLUMN_TIMESTAMP,
-        COLUMN_IAM_ID,
-        COLUMN_IAM_INSTANCE_ID,
-        COLUMN_IAM_DISPLAY_RULES,
-        COLUMN_IAM_LAST_SHOW_TIME,
-        COLUMN_IAM_SHOW_COUNT,
-        COLUMN_IAM_LAYOUT_TYPE,
-        COLUMN_IAM_MODEL,
-        COLUMN_IAM_POSITION
-    )
 }

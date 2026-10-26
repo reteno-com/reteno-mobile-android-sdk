@@ -13,14 +13,20 @@ import com.reteno.core.Reteno
 import com.reteno.core.RetenoConfig
 import com.reteno.core.identification.DeviceIdProvider
 import com.reteno.core.lifecycle.ScreenTrackingConfig
-import com.reteno.core.util.toStringVerbose
 import com.reteno.push.RetenoNotifications
 import com.reteno.sample.util.AppSharedPreferencesManager
 import com.reteno.sample.util.AppSharedPreferencesManager.getDeviceId
 import com.reteno.sample.util.AppSharedPreferencesManager.getDeviceIdDelay
 import com.reteno.sample.util.AppSharedPreferencesManager.getShouldDelayLaunch
+import com.reteno.sample.util.toStringVerbose
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 class SampleApp : Application(), Configuration.Provider {
+
+    private val retenoInitialized = MutableStateFlow(false)
+    val isRetenoInitialized: StateFlow<Boolean> = retenoInitialized.asStateFlow()
 
     override fun getWorkManagerConfiguration(): Configuration {
         return Configuration.Builder()
@@ -31,16 +37,7 @@ class SampleApp : Application(), Configuration.Provider {
     override fun onCreate() {
         super.onCreate()
         if (!getShouldDelayLaunch(this)) {
-            Reteno.initWithConfig(
-                RetenoConfig.Builder()
-                    .pauseInAppMessages(false)
-                    .customDeviceIdProvider(createProvider())
-                    .accessKey(BuildConfig.API_ACCESS_KEY)
-                    .setDebug(BuildConfig.DEBUG)
-                    .lifecycleTrackingOptions(AppSharedPreferencesManager.getOptions(this))
-                    .sessionDuration(AppSharedPreferencesManager.getSessionDuration(this))
-                    .build()
-            )
+            initReteno()
         }
         val excludeScreensFromTracking = ArrayList<String>()
         excludeScreensFromTracking.add("NavHostFragment")
@@ -75,6 +72,20 @@ class SampleApp : Application(), Configuration.Provider {
             Log.i("SampleApp", it.toString())
             "test_group"
         }
+    }
+
+    fun initReteno() {
+        Reteno.initWithConfig(
+            RetenoConfig.Builder()
+                .pauseInAppMessages(false)
+                .customDeviceIdProvider(createProvider())
+                .accessKey(BuildConfig.API_ACCESS_KEY)
+                .setDebug(BuildConfig.DEBUG)
+                .lifecycleTrackingOptions(AppSharedPreferencesManager.getOptions(this))
+                .sessionDuration(AppSharedPreferencesManager.getSessionDuration(this))
+                .build()
+        )
+        retenoInitialized.value = true
     }
 
     private fun showSummaryNotification() {

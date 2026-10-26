@@ -20,32 +20,15 @@ fun ContentValues.putLogEvent(logEvent: RetenoLogEventDb) {
     put(LogEventSchema.COLUMN_ERROR_MESSAGE, logEvent.errorMessage)
 }
 
-fun Cursor.getLogEvent(): RetenoLogEventDb? {
-    val rowId = getStringOrNull(getColumnIndex(LogEventSchema.COLUMN_LOG_EVENT_ROW_ID))
-    val osType = DeviceOsDb.fromString(getStringOrNull(getColumnIndex(LogEventSchema.COLUMN_OS_TYPE)))
-    val osVersion = getStringOrNull(getColumnIndex(LogEventSchema.COLUMN_OS_VERSION))
-    val version = getStringOrNull(getColumnIndex(LogEventSchema.COLUMN_VERSION))
-    val device = getStringOrNull(getColumnIndex(LogEventSchema.COLUMN_DEVICE))
-    val sdkVersion = getStringOrNull(getColumnIndex(LogEventSchema.COLUMN_SDK_VERSION))
-    val deviceId = getStringOrNull(getColumnIndex(LogEventSchema.COLUMN_DEVICE_ID))
-    val bundleId = getStringOrNull(getColumnIndex(LogEventSchema.COLUMN_BUNDLE_ID))
-    val logLevel = LogLevelDb.fromString(getStringOrNull(getColumnIndex(LogEventSchema.COLUMN_LOG_LEVEL)))
-    val errorMessage = getStringOrNull(getColumnIndex(LogEventSchema.COLUMN_ERROR_MESSAGE))
-
-    return if (device != null && sdkVersion != null && osVersion != null) {
-        RetenoLogEventDb(
-            rowId = rowId,
-            platformName = osType,
-            osVersion = osVersion,
-            version = version,
-            device = device,
-            sdkVersion = sdkVersion,
-            deviceId = deviceId,
-            bundleId = bundleId,
-            logLevel = logLevel,
-            errorMessage = errorMessage
-        )
-    } else {
-        null
-    }
-}
+fun Cursor.getLogEvent(): RetenoLogEventDb = RetenoLogEventDb(
+    rowId = getString(getColumnIndex(LogEventSchema.COLUMN_LOG_EVENT_ROW_ID)),
+    platformName = DeviceOsDb.fromString(getString(getColumnIndex(LogEventSchema.COLUMN_OS_TYPE))),
+    osVersion = getString(getColumnIndex(LogEventSchema.COLUMN_OS_VERSION)),
+    version = getStringOrNull(getColumnIndex(LogEventSchema.COLUMN_VERSION)),
+    device = getString(getColumnIndex(LogEventSchema.COLUMN_DEVICE)),
+    sdkVersion = getString(getColumnIndex(LogEventSchema.COLUMN_SDK_VERSION)),
+    deviceId = getStringOrNull(getColumnIndex(LogEventSchema.COLUMN_DEVICE_ID)),
+    bundleId = getStringOrNull(getColumnIndex(LogEventSchema.COLUMN_BUNDLE_ID)),
+    logLevel = LogLevelDb.fromString(getString(getColumnIndex(LogEventSchema.COLUMN_LOG_LEVEL))),
+    errorMessage = getStringOrNull(getColumnIndex(LogEventSchema.COLUMN_ERROR_MESSAGE))
+)

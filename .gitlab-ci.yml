@@ -70,7 +70,7 @@ tests_SDK:Core:
   stage: build_&_test
   interruptible: true
   script:
-    - ./gradlew --no-daemon -s RetenoSdkCore:testDebugUnitTest
+    - ./gradlew --no-daemon -s RetenoSdkTestFixtures:test RetenoSdkCore:testDebugUnitTest
   artifacts:
     paths:
       - ./RetenoSdkCore/build/reports/tests/testDebugUnitTest

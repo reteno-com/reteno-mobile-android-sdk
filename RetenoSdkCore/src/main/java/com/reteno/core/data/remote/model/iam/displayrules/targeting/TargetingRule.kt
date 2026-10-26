@@ -56,7 +56,6 @@ sealed class TargetingRule {
                             val paramOperator =
                                 StringOperator.fromString(paramObject.get("operator").asString)
                             val paramValues = paramObject.getAsJsonArray("value")
-                            paramValues.asList().map { it.asString }
                             if (paramOperator != null) {
                                 val paramModel = RuleEventParameter(paramName, paramOperator, paramValues.asList().map { it.asString })
                                 eventParams.add(paramModel)
@@ -68,11 +67,7 @@ sealed class TargetingRule {
                         throw DisplayRulesParsingException()
                     }
 
-                    if (eventName != null) {
-                        Event(eventName, paramsRelation ?: RuleRelation.AND, eventParams)
-                    } else {
-                        throw DisplayRulesParsingException()
-                    }
+                    Event(eventName, paramsRelation ?: RuleRelation.AND, eventParams)
                 }
                 else -> {
                     throw DisplayRulesParsingException()

@@ -5,16 +5,12 @@ import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.lifecycle.lifecycleScope
-import com.reteno.core.RetenoInternalImpl
-import com.reteno.core._interop.DeviceIdInternal.getExternalIdInternal
-import com.reteno.core._interop.DeviceIdInternal.getIdInternal
-import com.reteno.core._interop.DeviceIdInternal.getModeInternal
-import com.reteno.core.data.repository.ConfigRepository
-import com.reteno.core.di.ServiceLocator
 import com.reteno.sample.BaseFragment
 import com.reteno.sample.databinding.FragmentDeviceIdBinding
 import com.reteno.sample.util.AppSharedPreferencesManager
+import com.reteno.sample.util.SdkDeviceInfo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -22,23 +18,6 @@ import kotlinx.coroutines.withContext
 class FragmentDeviceId : BaseFragment() {
 
     private var binding: FragmentDeviceIdBinding? = null
-    private var serviceLocator: ServiceLocator? = null
-    private var configRepository: ConfigRepository? = null
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        try {
-            val field = RetenoInternalImpl::class.java.getDeclaredField("serviceLocator")
-            field.isAccessible = true
-            serviceLocator = field[reteno] as ServiceLocator
-            field.isAccessible = false
-        } catch (e: NoSuchFieldException) {
-            e.printStackTrace()
-        } catch (e: IllegalAccessException) {
-            e.printStackTrace()
-        }
-        configRepository = serviceLocator!!.configRepositoryProvider.get()
-    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -56,6 +35,11 @@ class FragmentDeviceId : BaseFragment() {
         initListeners(view)
     }
 
+    override fun onDestroyView() {
+        binding = null
+        super.onDestroyView()
+    }
+
     private fun initExternalDeviceId(view: View) {
         val externalSavedId = AppSharedPreferencesManager.getExternalId(view.context)
         if (!TextUtils.isEmpty(externalSavedId)) {
@@ -64,23 +48,29 @@ class FragmentDeviceId : BaseFragment() {
     }
 
     private fun refreshUi() {
-        val id = configRepository!!.getDeviceId().getIdInternal()
-        val externalId = configRepository!!.getDeviceId().getExternalIdInternal()
-        val mode = configRepository!!.getDeviceId().getModeInternal()
-        binding!!.tvCurrentDeviceIdMode.text = mode.toString()
-        binding!!.tvCurrentDeviceId.text = id
-        binding!!.etDeviceId.setText(AppSharedPreferencesManager.getDeviceId(requireContext()))
-        binding!!.etDeviceIdMillis.setText(
-            AppSharedPreferencesManager.getDeviceIdDelay(
-                requireContext()
-            ).toString()
-        )
-        binding!!.tvExternalId.text = externalId
-        lifecycleScope.launch {
-            val token = withContext(Dispatchers.IO) {
-                configRepository!!.getFcmToken()
+        val context = requireContext()
+        binding!!.etDeviceId.setText(AppSharedPreferencesManager.getDeviceId(context))
+        binding!!.etDeviceIdMillis.setText(AppSharedPreferencesManager.getDeviceIdDelay(context).toString())
+        binding!!.tvExternalId.text = AppSharedPreferencesManager.getExternalId(context)
+        refreshSdkState()
+    }
+
+    private fun refreshSdkState() {
+        binding!!.llSdkState.visibility = if (SdkDeviceInfo.isAvailable) View.VISIBLE else View.GONE
+        if (!SdkDeviceInfo.isAvailable) return
+        val context = requireContext().applicationContext
+        viewLifecycleOwner.lifecycleScope.launch {
+            val state = withContext(Dispatchers.IO) {
+                listOf(
+                    SdkDeviceInfo.deviceId(context),
+                    SdkDeviceInfo.externalUserId(context).orEmpty(),
+                    SdkDeviceInfo.fcmToken(context)
+                )
             }
-            binding!!.etFcmToken.setText(token)
+            val (deviceId, externalId, fcmToken) = state
+            binding!!.tvCurrentDeviceId.text = deviceId
+            binding!!.tvSdkExternalId.text = externalId
+            binding!!.tvFcmToken.text = fcmToken
         }
     }
 
@@ -91,14 +81,19 @@ class FragmentDeviceId : BaseFragment() {
         }
         binding!!.tilExternalId.setStartIconOnClickListener {
             val externalId = binding!!.etExternalId.getText().toString()
-            AppSharedPreferencesManager.saveExternalId(view.context, externalId)
-            reteno.setUserAttributes(externalId)
+            try {
+                reteno.setUserAttributes(externalId)
+                AppSharedPreferencesManager.saveExternalId(view.context, externalId)
+            } catch (error: IllegalArgumentException) {
+                Toast.makeText(view.context, error.message, Toast.LENGTH_LONG).show()
+            }
             refreshUi()
         }
         binding!!.tilExternalId.setEndIconOnClickListener {
             AppSharedPreferencesManager.saveExternalId(view.context, "")
-            reteno.setUserAttributes("")
             binding!!.etExternalId.setText("")
+            Toast.makeText(view.context, "Saved external ID cleared; the SDK keeps the last one set", Toast.LENGTH_LONG)
+                .show()
             refreshUi()
         }
         binding!!.tilDeviceId.setStartIconOnClickListener {
@@ -113,12 +108,11 @@ class FragmentDeviceId : BaseFragment() {
         }
         binding!!.tilDeviceIdFetchDelay.setStartIconOnClickListener {
             val deviceIdMillis = binding!!.etDeviceIdMillis.getText().toString()
-            AppSharedPreferencesManager.saveDeviceIdDelay(view.context, deviceIdMillis.toInt())
+            AppSharedPreferencesManager.saveDeviceIdDelay(view.context, deviceIdMillis.toIntOrNull() ?: 0)
             refreshUi()
         }
         binding!!.tilDeviceIdFetchDelay.setEndIconOnClickListener {
             AppSharedPreferencesManager.saveDeviceIdDelay(view.context, 0)
-            binding!!.etDeviceId.setText("")
             refreshUi()
         }
     }

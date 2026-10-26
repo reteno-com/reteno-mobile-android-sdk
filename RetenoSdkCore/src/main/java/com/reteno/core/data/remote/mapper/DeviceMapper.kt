@@ -6,7 +6,6 @@ import com.reteno.core.data.local.model.device.DeviceOsDb
 import com.reteno.core.data.remote.model.device.DeviceCategoryRemote
 import com.reteno.core.data.remote.model.device.DeviceOsRemote
 import com.reteno.core.data.remote.model.device.DeviceRemote
-import com.reteno.core.domain.model.device.Device
 
 internal fun DeviceDb.toRemote() = DeviceRemote(
     deviceId = deviceId,
@@ -20,16 +19,6 @@ internal fun DeviceDb.toRemote() = DeviceRemote(
     appVersion = appVersion,
     languageCode = languageCode,
     timeZone = timeZone,
-    advertisingId = advertisingId,
-    email = email,
-    phone = phone
-)
-
-internal fun DeviceDb.toDevice() = Device.createDevice(
-    deviceId = deviceId,
-    externalUserId = externalUserId,
-    pushToken = pushToken,
-    pushSubscribed = pushSubscribed?.toRemote(),
     advertisingId = advertisingId,
     email = email,
     phone = phone

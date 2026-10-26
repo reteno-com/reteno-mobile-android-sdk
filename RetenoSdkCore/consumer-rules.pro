@@ -63,3 +63,8 @@
 -keep class com.reteno.core.features.iam** {
     *;
 }
+-keep,allowobfuscation class * implements com.reteno.core.data.remote.model.recommendation.get.RecomBase
+-keepclassmembers class * implements com.reteno.core.data.remote.model.recommendation.get.RecomBase {
+    <fields>;
+    <init>(...);
+}

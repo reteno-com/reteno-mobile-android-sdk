@@ -11,10 +11,10 @@ import androidx.navigation.fragment.NavHostFragment
 import com.reteno.core.domain.model.user.Address
 import com.reteno.core.domain.model.user.UserAttributesAnonymous
 import com.reteno.core.domain.model.user.UserCustomField
-import com.reteno.core.util.Logger.e
 import com.reteno.sample.BaseFragment
 import com.reteno.sample.R
 import com.reteno.sample.databinding.FragmentUserAnonymousDataBinding
+import com.reteno.sample.util.SampleLog.e
 import com.reteno.sample.util.Util
 
 class FragmentUserAnonymousData : BaseFragment() {

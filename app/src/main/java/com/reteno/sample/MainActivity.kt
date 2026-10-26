@@ -9,15 +9,12 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.NavHostFragment
 import com.reteno.core.Reteno
-import com.reteno.core.RetenoConfig
-import com.reteno.core.RetenoInternalImpl
 import com.reteno.core.view.iam.callback.InAppCloseData
 import com.reteno.core.view.iam.callback.InAppData
 import com.reteno.core.view.iam.callback.InAppErrorData
 import com.reteno.core.view.iam.callback.InAppLifecycleCallback
 import com.reteno.push.RetenoNotifications
 import com.reteno.sample.databinding.ActivityMainBinding
-import com.reteno.sample.util.AppSharedPreferencesManager
 import com.reteno.sample.util.AppSharedPreferencesManager.getShouldDelayLaunch
 import com.reteno.sample.util.AppSharedPreferencesManager.setDelayLaunch
 import kotlinx.coroutines.launch
@@ -35,16 +32,7 @@ class MainActivity : AppCompatActivity() {
         if (getShouldDelayLaunch(this)) {
             setDelayLaunch(this, false)
             Handler().postDelayed({
-                Reteno.initWithConfig(
-                    RetenoConfig.Builder()
-                        .pauseInAppMessages(false)
-                        .customDeviceIdProvider((application as SampleApp).createProvider())
-                        .lifecycleTrackingOptions(AppSharedPreferencesManager.getOptions(this))
-                        .accessKey(BuildConfig.API_ACCESS_KEY)
-                        .setDebug(BuildConfig.DEBUG)
-                        .sessionDuration(AppSharedPreferencesManager.getSessionDuration(this))
-                        .build()
-                )
+                (application as SampleApp).initReteno()
             }, 10000L)
         }
     }
@@ -57,7 +45,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun createInAppLifecycleListener() {
         val context: Context = this
-        RetenoInternalImpl.instance
+        Reteno.instance
             .setInAppLifecycleCallback(object : InAppLifecycleCallback {
                 override fun beforeDisplay(inAppData: InAppData) {
                     Toast.makeText(

@@ -1,17 +1,15 @@
 package com.reteno.core._interop
 
-import com.reteno.core.data.local.config.DeviceId
-import com.reteno.core.data.local.config.DeviceIdMode
+import android.content.Context
+import com.reteno.core.data.local.sharedpref.SharedPrefsManager
 
 object DeviceIdInternal {
 
-    fun DeviceId.getIdInternal(): String = id
+    fun deviceId(context: Context): String = prefs(context).getLastStoredId()
 
-    fun DeviceId.getIdBodyInternal(): String = idBody
+    fun externalUserId(context: Context): String? = prefs(context).getExternalUserId()
 
-    fun DeviceId.getIdSuffixInternal(): String? = idSuffix
+    fun fcmToken(context: Context): String = prefs(context).getFcmToken()
 
-    fun DeviceId.getExternalIdInternal(): String? = externalId
-
-    fun DeviceId.getModeInternal(): DeviceIdMode = mode
+    private fun prefs(context: Context) = SharedPrefsManager(context.applicationContext)
 }

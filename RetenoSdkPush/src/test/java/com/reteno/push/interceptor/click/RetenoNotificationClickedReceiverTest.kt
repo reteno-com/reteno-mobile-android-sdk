@@ -1,295 +1,308 @@
 package com.reteno.push.interceptor.click
 
-import android.app.Application
-import android.content.Context
 import android.content.Intent
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
-import com.reteno.core.RetenoInternalImpl
-import com.reteno.core.di.ServiceLocator
-import com.reteno.core.domain.controller.ContactController
-import com.reteno.core.domain.controller.DeeplinkController
-import com.reteno.core.domain.controller.InteractionController
-import com.reteno.core.domain.controller.ScheduleController
-import com.reteno.core.domain.model.interaction.InteractionAction
-import com.reteno.core.domain.model.interaction.InteractionStatus
-import com.reteno.core.view.iam.IamView
 import com.reteno.push.Constants
-import com.reteno.push.Constants.KEY_ES_INTERACTION_ID
-import com.reteno.push.Constants.KEY_ES_LINK_UNWRAPPED
-import com.reteno.push.Constants.KEY_ES_LINK_WRAPPED
-import com.reteno.push.Util
-import com.reteno.push.base.robolectric.BaseRobolectricTest
-import io.mockk.coEvery
-import io.mockk.coJustRun
-import io.mockk.coVerify
-import io.mockk.every
-import io.mockk.impl.annotations.RelaxedMockK
-import io.mockk.justRun
-import io.mockk.mockk
-import io.mockk.mockkConstructor
-import io.mockk.mockkObject
-import io.mockk.mockkStatic
-import io.mockk.slot
-import io.mockk.unmockkConstructor
-import io.mockk.unmockkObject
-import io.mockk.unmockkStatic
-import io.mockk.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.advanceUntilIdle
-import kotlinx.coroutines.test.runTest
-import org.junit.AfterClass
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
-import org.junit.BeforeClass
+import com.reteno.push.fixtures.LAUNCH_ACTIVITY
+import com.reteno.push.fixtures.STUB_BUTTON_ID
+import com.reteno.push.fixtures.STUB_BUTTON_URL
+import com.reteno.push.fixtures.STUB_INTERACTION_ID
+import com.reteno.push.fixtures.notificationManager
+import com.reteno.push.fixtures.onAndroidSdk
+import com.reteno.push.fixtures.postStubNotification
+import com.reteno.push.fixtures.registerLaunchActivity
+import com.reteno.push.fixtures.stubActionButtonBundle
+import com.reteno.push.fixtures.stubPushBundle
+import com.reteno.push.fixtures.testApplication
+import com.reteno.push.fixtures.withFakeFacade
+import com.reteno.push.receiver.ReceiverNotificationClicked
+import com.reteno.test.given
+import com.reteno.test.runUnitTest
+import com.reteno.test.then
+import com.reteno.test.whenn
 import org.junit.Test
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 
-@OptIn(ExperimentalCoroutinesApi::class)
+@RunWith(RobolectricTestRunner::class)
 @Config(sdk = [26])
-class RetenoNotificationClickedReceiverTest : BaseRobolectricTest() {
+class RetenoNotificationClickedReceiverTest {
 
-    // region constants ----------------------------------------------------------------------------
-    companion object {
-        private const val DEEPLINK_WRAPPED = "https://wrapped.com"
-        private const val DEEPLINK_UNWRAPPED = "https://unwrapped.com"
+    private class SutFixture(launchable: Boolean = true) {
+        val application = testApplication()
+        val sut = RetenoNotificationClickedReceiver()
 
-        @JvmStatic
-        @BeforeClass
-        fun beforeClass() {
-            mockkStatic("com.reteno.core.util.UtilKt")
-            mockkConstructor(ServiceLocator::class)
+        init {
+            if (launchable) application.registerLaunchActivity()
         }
 
-        @JvmStatic
-        @AfterClass
-        fun afterClass() {
-            unmockkStatic("com.reteno.core.util.UtilKt")
-            unmockkConstructor(ServiceLocator::class)
-        }
-    }
-    // endregion constants -------------------------------------------------------------------------
+        fun click(extras: Bundle?) = sut.onReceive(application, Intent().apply { extras?.let(::putExtras) })
 
-    // region helper fields ------------------------------------------------------------------------
-    private var receiver: RetenoNotificationClickedReceiver? = null
+        fun startedActivities(): List<Intent> = generateSequence { shadowOf(application).nextStartedActivity }.toList()
 
-    @RelaxedMockK
-    private lateinit var context: Context
-
-    @RelaxedMockK
-    private lateinit var interactionController: InteractionController
-
-    @RelaxedMockK
-    private lateinit var deeplinkController: DeeplinkController
-
-    @RelaxedMockK
-    private lateinit var scheduleController: ScheduleController
-
-    @RelaxedMockK
-    private lateinit var contactController: ContactController
-
-    // endregion helper fields ---------------------------------------------------------------------
-
-    override fun before() {
-        super.before()
-        every { anyConstructed<ServiceLocator>().interactionControllerProvider.get() } returns interactionController
-        every { anyConstructed<ServiceLocator>().deeplinkControllerProvider.get() } returns deeplinkController
-        every { anyConstructed<ServiceLocator>().scheduleControllerProvider.get() } returns scheduleController
-        every { anyConstructed<ServiceLocator>().contactControllerProvider.get() } returns contactController
-        receiver = RetenoNotificationClickedReceiver()
-    }
-
-    override fun after() {
-        super.after()
-        receiver = null
+        fun hostBroadcasts(): List<Intent> = shadowOf(application).broadcastIntents
+            .filter { it.component?.className == ReceiverNotificationClicked::class.java.name }
     }
 
     @Test
-    fun sendToCustomReceiver_extrasIsNotNull() = runRetenoTest {
-        val extra = Bundle().apply { putString("key", "value") }
-        val intent = Intent()
-        intent.putExtras(extra)
+    fun `should record notification click`() = runUnitTest {
+        withFakeFacade { facade ->
+            given()
+            val fixture = SutFixture()
 
-        receiver!!.onReceive(context, intent)
+            whenn()
+            fixture.click(stubPushBundle())
 
-        verify { Util.tryToSendToCustomReceiverNotificationClicked(any()) }
-    }
-
-    @Test
-    fun doNotSendToCustomReceiver_extrasIsNull() {
-        val intent = Intent()
-
-        receiver!!.onReceive(context, intent)
-
-        verify(exactly = 0) { Util.tryToSendToCustomReceiverNotificationClicked(any()) }
-    }
-
-    @Test
-    fun launchIntent_doNotHaveDeepLink() = runRetenoTest {
-
-        receiver!!.onReceive(context, Intent())
-        every { context.packageManager.getLaunchIntentForPackage(any()) } returns application.packageManager.getLaunchIntentForPackage(application.packageName)
-        every { context.packageName } returns "com.reteno.example"
-        verify { context.startActivity(any()) }
-
-    }
-
-    @Test
-    fun doNotLaunchIntent_doNotFindLaunchIntentAndDoNotHaveDeepLink() {
-        mockkObject(RetenoInternalImpl)
-
-        val application = mockk<Application>()
-
-        every { context.packageManager.getLaunchIntentForPackage(any()) } returns null
-        every { context.packageName } returns "com.reteno.example"
-        every { application.applicationContext } returns context
-        every { RetenoInternalImpl.instance.application } returns application
-
-        receiver!!.onReceive(context, Intent())
-
-        verify(exactly = 0) { context.startActivity(any()) }
-
-        unmockkObject(RetenoInternalImpl)
-    }
-
-    @Test
-    fun launchDeepLink_whenExist() = runRetenoTest {
-        val intentSlot = slot<Intent>()
-        val deepLink = "com.reteno.example"
-
-        val extra = Bundle().apply { putString("key", "value") }
-        val intent = Intent()
-        intent.putExtras(extra)
-        intent.putExtra(Constants.KEY_ES_LINK_UNWRAPPED, deepLink)
-        justRun { context.startActivity(capture(intentSlot)) }
-
-        receiver!!.onReceive(context, intent)
-
-        intentSlot.captured.apply {
-            assertEquals(Intent.ACTION_VIEW, action)
-            assertEquals(Intent.FLAG_ACTIVITY_NEW_TASK, flags)
-            assertTrue(extras?.containsKey(extra.keySet().first()) == true)
-            assertEquals(deepLink, data.toString())
+            then()
+            assertEquals(listOf("recordInteraction $STUB_INTERACTION_ID CLICKED forcePush=true"), facade.calls)
         }
     }
 
     @Test
-    fun saveInteraction() = runRetenoTest {
+    fun `should record action button click and close its notification`() = runUnitTest {
+        withFakeFacade { facade ->
+            given()
+            val fixture = SutFixture()
+            fixture.application.postStubNotification()
 
-        val interactionId = "interaction_id"
-        val extra = Bundle().apply { putString(Constants.KEY_ES_INTERACTION_ID, interactionId) }
-        val intent = Intent()
-        intent.putExtras(extra)
+            whenn()
+            fixture.click(stubActionButtonBundle())
 
-        coJustRun { interactionController.onInteraction(any(), any()) }
-
-        receiver!!.onReceive(context, intent)
-        advanceUntilIdle()
-        coVerify { interactionController.onInteraction(eq(interactionId), InteractionStatus.CLICKED) }
-        verify(exactly = 1) { scheduleController.forcePush() }
-
-    }
-
-    @Test
-    fun saveActionInteraction() = runRetenoTest {
-
-        val interactionId = "interaction_id"
-        val extra = Bundle().apply {
-            putString(Constants.KEY_ES_INTERACTION_ID, interactionId)
-            putBoolean(Constants.KEY_ACTION_BUTTON, true)
-            putString(Constants.KEY_BTN_ACTION_ID, "action_id")
-            putString(Constants.KEY_BTN_ACTION_LINK_UNWRAPPED, "https://google.com")
-        }
-        val intent = Intent()
-        intent.putExtras(extra)
-
-        receiver!!.onReceive(context, intent)
-        advanceUntilIdle()
-        coVerify { interactionController.onInteractionClickAction(eq(interactionId), eq(
-            InteractionAction("OPEN_URL", "action_id", "https://google.com"))) }
-        verify(exactly = 1) { scheduleController.forcePush() }
-
-    }
-
-    @Test
-    fun givenPushWithCustomDataNoDeeplinkReceived_whenNotificationClicked_thenCustomDataDeliveredToLaunchActivity() = runRetenoTest {
-        // Given
-        mockkObject(IntentHandler.AppLaunchIntent)
-
-        every { IntentHandler.AppLaunchIntent.getAppLaunchIntent(any()) } returns Intent()
-
-        val intentSlot = slot<Intent>()
-        val customDataKey = "customDataKey"
-        val customDataValue = "customDataValue"
-
-        val extra = Bundle().apply { putString(customDataKey, customDataValue) }
-        val intent = Intent()
-        intent.putExtras(extra)
-        justRun { context.startActivity(capture(intentSlot)) }
-
-        // When
-        receiver!!.onReceive(context, intent)
-
-        // Then
-        intentSlot.captured.run {
-            assertTrue(extras?.containsKey(customDataKey) ?: false)
-            assertEquals(customDataValue, extras?.getString(customDataKey))
-        }
-
-        unmockkObject(IntentHandler.AppLaunchIntent)
-    }
-
-    @Test
-    fun givenPushWithCustomDataDeeplinkReceived_whenNotificationClicked_thenCustomDataDeliveredToLaunchActivity() = runRetenoTest {
-        // Given
-        val intentSlot = slot<Intent>()
-        val customDataKey = "customDataKey"
-        val customDataValue = "customDataValue"
-
-        val extra = Bundle().apply { putString(customDataKey, customDataValue) }
-        val intent = Intent().apply {
-            putExtras(extra)
-            putExtra(KEY_ES_LINK_WRAPPED, DEEPLINK_WRAPPED)
-            putExtra(KEY_ES_LINK_UNWRAPPED, DEEPLINK_UNWRAPPED)
-        }
-        justRun { context.startActivity(capture(intentSlot)) }
-
-        // When
-        receiver!!.onReceive(context, intent)
-
-        // Then
-        intentSlot.captured.run {
-            assertTrue(extras?.containsKey(customDataKey) ?: false)
-            assertEquals(customDataValue, extras?.getString(customDataKey))
+            then()
+            val expectedCall = "recordInteractionAction $STUB_INTERACTION_ID OPEN_URL $STUB_BUTTON_ID " +
+                "$STUB_BUTTON_URL forcePush=true"
+            assertEquals(expectedCall, facade.calls.first())
+            assertTrue(shadowOf(fixture.application.notificationManager()).allNotifications.isEmpty())
         }
     }
 
     @Test
-    fun givenPushWithIam_whenNotificationClicked_thenIamViewInitializeCalled() = runTest {
-        // Given
-        val iamView = mockk<IamView>(relaxed = true)
-        val controller = mockk<ContactController>(relaxed = true)
-        val iamWidgetId = "123"
+    fun `should not record click without interaction id`() = runUnitTest {
+        withFakeFacade { facade ->
+            given()
+            val fixture = SutFixture()
 
-        val extra = Bundle().apply {
-            putString(Constants.KEY_ES_IAM, "1")
-            putString(KEY_ES_INTERACTION_ID, iamWidgetId)
+            whenn()
+            fixture.click(stubPushBundle(interactionId = null))
+
+            then()
+            assertTrue(facade.calls.isEmpty())
+            assertEquals(LAUNCH_ACTIVITY, fixture.startedActivities().single().component?.className)
         }
-        val intent = Intent().apply { putExtras(extra) }
-        justRun { context.startActivity(any()) }
-        every { IntentHandler.AppLaunchIntent.getAppLaunchIntent(any()) } returns intent
-        every { anyConstructed<ServiceLocator>().iamViewProvider.get() } returns iamView
-        every { anyConstructed<ServiceLocator>().contactControllerProvider.get() } returns controller
-        coEvery { controller.awaitDeviceId() } returns "temp"
+    }
 
-         createReteno()
+    @Test
+    fun `should forward click to host receiver without notification id`() = runUnitTest {
+        withFakeFacade {
+            given()
+            val fixture = SutFixture()
+            val extras = stubPushBundle().apply { putInt(Constants.KEY_NOTIFICATION_ID, 7) }
 
-        justRun { context.startActivity(any()) }
+            whenn()
+            fixture.click(extras)
 
-        // When
-        receiver!!.onReceive(context, intent)
+            then()
+            val forwarded = fixture.hostBroadcasts().single()
+            assertEquals(STUB_INTERACTION_ID, forwarded.getStringExtra(Constants.KEY_ES_INTERACTION_ID))
+            assertFalse(forwarded.hasExtra(Constants.KEY_NOTIFICATION_ID))
+        }
+    }
 
-        // Then
-        verify { iamView.initialize(iamWidgetId) }
-        RetenoInternalImpl.swapInstance(null)
+    @Test
+    fun `should open app with notification extras when push has no link`() = runUnitTest {
+        withFakeFacade {
+            given()
+            val fixture = SutFixture()
+
+            whenn()
+            fixture.click(stubPushBundle(STUB_INTERACTION_ID, "custom" to "value"))
+
+            then()
+            val started = fixture.startedActivities().single()
+            assertEquals(LAUNCH_ACTIVITY, started.component?.className)
+            assertEquals("value", started.getStringExtra("custom"))
+        }
+    }
+
+    @Test
+    fun `should track deeplink click and open the link`() = runUnitTest {
+        withFakeFacade { facade ->
+            given()
+            val fixture = SutFixture()
+            val extras = stubPushBundle(
+                STUB_INTERACTION_ID,
+                Constants.KEY_ES_LINK_WRAPPED to "https://track.example/c/1",
+                Constants.KEY_ES_LINK_UNWRAPPED to "https://example.com/offer"
+            )
+
+            whenn()
+            fixture.click(extras)
+
+            then()
+            assertTrue(facade.calls.contains("deeplinkClicked https://track.example/c/1 https://example.com/offer"))
+            val started = fixture.startedActivities().single()
+            assertEquals(Intent.ACTION_VIEW, started.action)
+            assertEquals(Uri.parse("https://example.com/offer"), started.data)
+        }
+    }
+
+    @Test
+    fun `should open app when no activity can handle the link`() = runUnitTest {
+        withFakeFacade {
+            given()
+            val fixture = SutFixture()
+            shadowOf(fixture.application).checkActivities(true)
+            val extras = stubPushBundle(STUB_INTERACTION_ID, Constants.KEY_ES_LINK_UNWRAPPED to "unknown://offer")
+
+            whenn()
+            fixture.click(extras)
+
+            then()
+            val started = fixture.startedActivities().single()
+            assertEquals(LAUNCH_ACTIVITY, started.component?.className)
+            assertEquals("unknown://offer", started.getStringExtra(Constants.KEY_ES_LINK_UNWRAPPED))
+        }
+    }
+
+    @Test
+    fun `should show in-app message from push instead of recording click`() = runUnitTest {
+        withFakeFacade { facade ->
+            given()
+            val fixture = SutFixture()
+
+            whenn()
+            fixture.click(stubPushBundle(STUB_INTERACTION_ID, Constants.KEY_ES_IAM to "1"))
+
+            then()
+            assertEquals(listOf("initializeIamView $STUB_INTERACTION_ID"), facade.calls)
+            assertEquals(LAUNCH_ACTIVITY, fixture.startedActivities().single().component?.className)
+        }
+    }
+
+    @Test
+    fun `should not open app for in-app message when an activity is already shown`() = runUnitTest {
+        withFakeFacade { facade ->
+            given()
+            val fixture = SutFixture()
+            facade.activityPresented = true
+
+            whenn()
+            fixture.click(stubPushBundle(STUB_INTERACTION_ID, Constants.KEY_ES_IAM to "1"))
+
+            then()
+            assertTrue(fixture.startedActivities().isEmpty())
+        }
+    }
+
+    @Test
+    fun `should open app for in-app flag without interaction id`() = runUnitTest {
+        withFakeFacade { facade ->
+            given()
+            val fixture = SutFixture()
+
+            whenn()
+            fixture.click(stubPushBundle(interactionId = null, Constants.KEY_ES_IAM to "1"))
+
+            then()
+            assertTrue(facade.calls.isEmpty())
+            assertEquals(1, fixture.startedActivities().size)
+        }
+    }
+
+    @Test
+    fun `should open app when click carries no extras`() = runUnitTest {
+        withFakeFacade { facade ->
+            given()
+            val fixture = SutFixture()
+
+            whenn()
+            fixture.click(null)
+
+            then()
+            assertTrue(facade.calls.isEmpty())
+            assertEquals(LAUNCH_ACTIVITY, fixture.startedActivities().single().component?.className)
+        }
+    }
+
+    @Test
+    fun `should not forward click without extras to host receiver`() = runUnitTest {
+        withFakeFacade {
+            given()
+            val fixture = SutFixture()
+
+            whenn()
+            fixture.click(null)
+
+            then()
+            assertTrue(fixture.hostBroadcasts().isEmpty())
+        }
+    }
+
+    @Test
+    fun `should ignore click without intent`() = runUnitTest {
+        withFakeFacade { facade ->
+            given()
+            val fixture = SutFixture()
+
+            whenn()
+            fixture.sut.onReceive(fixture.application, null)
+
+            then()
+            assertTrue(facade.calls.isEmpty())
+            assertTrue(fixture.startedActivities().isEmpty())
+        }
+    }
+
+    @Test
+    fun `should not open anything when app has no launch activity`() = runUnitTest {
+        withFakeFacade {
+            given()
+            val fixture = SutFixture(launchable = false)
+
+            whenn()
+            fixture.click(stubPushBundle())
+
+            then()
+            assertTrue(fixture.startedActivities().isEmpty())
+        }
+    }
+
+    @Test
+    fun `should not crash when sdk fails to record click`() = runUnitTest {
+        withFakeFacade { facade ->
+            given()
+            val fixture = SutFixture()
+            facade.failure = IllegalStateException("sdk not ready")
+
+            whenn()
+            val result = runCatching { fixture.click(stubPushBundle()) }
+
+            then()
+            assertTrue(result.isSuccess)
+            assertTrue(fixture.startedActivities().isEmpty())
+        }
+    }
+
+    @Test
+    fun `should ignore click on unsupported android version`() = runUnitTest {
+        withFakeFacade { facade ->
+            given()
+            val fixture = SutFixture()
+
+            whenn()
+            onAndroidSdk(Build.VERSION_CODES.N_MR1) { fixture.click(stubPushBundle()) }
+
+            then()
+            assertTrue(facade.calls.isEmpty())
+            assertNull(shadowOf(fixture.application).nextStartedActivity)
+        }
     }
 }
