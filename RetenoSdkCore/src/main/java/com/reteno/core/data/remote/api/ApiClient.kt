@@ -3,6 +3,8 @@ package com.reteno.core.data.remote.api
 import com.reteno.core.domain.ResponseCallback
 
 internal interface ApiClient {
+    fun workflowContext(): String
+    fun postInWorkflowContext(context: String, url: ApiContract, jsonBody: String, responseHandler: ResponseCallback)
 
     fun put(url: ApiContract, jsonBody: String, responseHandler: ResponseCallback)
     fun putSync(url: ApiContract, jsonBody: String, responseHandler: ResponseCallback)

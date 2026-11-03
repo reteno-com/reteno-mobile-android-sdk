@@ -10,6 +10,7 @@ import com.reteno.core.view.iam.container.slideup.SlideUpIamContainer
 internal interface IamContainer {
 
     fun show(activity: Activity)
+    fun show(activity: Activity, onVisible: () -> Unit)
     fun onHeightDefined(newHeight: Int)
     fun dismiss()
     fun destroy()

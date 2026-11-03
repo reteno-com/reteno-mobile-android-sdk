@@ -1,14 +1,16 @@
 package com.reteno.core.domain.model.interaction
 
 import java.time.ZonedDateTime
-import java.util.UUID
 
 data class InAppInteraction(
     val interactionId: String,
     val time: ZonedDateTime,
     val messageInstanceId: Long,
     val status: InAppInteractionStatus,
-    val statusDescription: String? = null
+    val statusDescription: String? = null,
+    val workflowContext: String? = null,
+    val workflowExpiresAt: String? = null,
+    val action: InteractionAction? = null
 ) {
     companion object {
         fun createOpened(interactionId: String, messageInstanceId: Long): InAppInteraction {

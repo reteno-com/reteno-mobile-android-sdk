@@ -154,6 +154,10 @@ internal class ScheduleControllerImpl(
         }
 
         PushOperationQueue.addOperation {
+            interactionController.pushInAppInteractions()
+        }
+
+        PushOperationQueue.addOperation {
             /*@formatter:off*/ Logger.i(TAG, "sendData(): ", "step: pushEvents")
             /*@formatter:on*/
             eventController.pushEvents()

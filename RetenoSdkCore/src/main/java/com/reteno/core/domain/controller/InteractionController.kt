@@ -38,7 +38,7 @@ class InteractionController(
     }
 
     fun onInAppInteraction(inAppInteraction: InAppInteraction) {
-        /*@formatter:off*/ Logger.i(TAG, "onInAppInteraction(): ", "inAppInteraction = [", inAppInteraction, "]")
+        Logger.d(TAG, "onInAppInteraction(): ")
         /*@formatter:on*/
         interactionRepository.saveAndPushInAppInteraction(inAppInteraction)
     }
@@ -51,6 +51,10 @@ class InteractionController(
 
     private suspend fun saveInteraction(interactionId: String, interaction: Interaction) {
         interactionRepository.saveInteraction(interactionId, interaction)
+    }
+
+    fun pushInAppInteractions() {
+        interactionRepository.pushInAppInteractions()
     }
 
     fun clearOldInteractions() {

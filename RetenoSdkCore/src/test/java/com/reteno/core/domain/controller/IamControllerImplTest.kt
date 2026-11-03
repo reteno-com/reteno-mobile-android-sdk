@@ -40,7 +40,9 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.impl.annotations.RelaxedMockK
 import io.mockk.mockkConstructor
+import io.mockk.unmockkConstructor
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.delay
@@ -58,6 +60,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.util.concurrent.TimeUnit
+import java.time.Instant
 
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -702,11 +705,195 @@ class IamControllerImplTest : BaseRobolectricTest() {
         )
     )
 
+    @Test
+    fun workflow_waits_for_schedule_before_fetching_content() = runTest {
+        val message = InAppMessage(7, 8001, JsonObject(), DisplayRules(null, null, null, null),
+            inWorkflow = true, iid = "11111111-1111-4111-8111-111111111111",
+            expiresAt = Instant.now().plusSeconds(3600).toString(), workflowContext = "owner")
+        coEvery { iamRepository.getInAppMessages() } returns InAppMessagesList(listOf(message))
+        every { anyConstructed<ScheduleRuleValidator>().checkInAppMatchesScheduleRules(any()) } returns false
+        val controller = createController()
+        controller.getInAppMessages()
+        advanceUntilIdle()
+        coVerify(exactly = 0) { iamRepository.getWorkflowContent(any()) }
+        coroutineContext.cancelChildren()
+    }
+
+    @Test
+    fun workflow_ignores_frequency_but_unavailable_online_content_prevents_rendering() = runTest {
+        val message = InAppMessage(7, 8001, JsonObject(), DisplayRules(null, null, null, null),
+            inWorkflow = true, iid = "11111111-1111-4111-8111-111111111111",
+            expiresAt = Instant.now().plusSeconds(3600).toString(), workflowContext = "owner",
+            content = InAppMessageContent(8001, InAppLayoutType.FULL, null, JsonObject()))
+        coEvery { iamRepository.getInAppMessages() } returns InAppMessagesList(listOf(message))
+        every { iamRepository.isWorkflowEligible(message) } returns true
+        every { anyConstructed<ScheduleRuleValidator>().checkInAppMatchesScheduleRules(any()) } returns true
+        every { anyConstructed<FrequencyRuleValidator>().checkInAppMatchesFrequencyRules(any(), any(), any()) } returns false
+        coEvery { iamRepository.getWorkflowContent(listOf(message)) } returns emptyList()
+        val controller = createController()
+        val presented = mutableListOf<InAppMessage>()
+        launch { controller.inAppMessagesFlow.toList(presented) }
+        controller.getInAppMessages()
+        advanceUntilIdle()
+        coVerify(exactly = 1) { iamRepository.getWorkflowContent(listOf(message)) }
+        assertTrue(presented.isEmpty())
+        coroutineContext.cancelChildren()
+    }
+
+    @Test
+    fun changed_workflow_rules_discard_pending_content_and_new_event_fetches_again() = runTest {
+        assertChangedRulesDiscardPendingContent(refreshSegments = false)
+    }
+
+    @Test
+    fun segmentation_discovery_changes_discard_pending_content_before_presentation() = runTest {
+        assertChangedRulesDiscardPendingContent(refreshSegments = true)
+    }
+
+    private suspend fun TestScope.assertChangedRulesDiscardPendingContent(refreshSegments: Boolean) {
+        unmockkConstructor(RuleEventValidator::class)
+        val now = Instant.now()
+        fun message(screen: String): InAppMessage {
+            val targeting = createEventDisplayRule(screen)
+            val rulesJson = JsonObject().apply { add("TARGETING", Gson().toJsonTree(targeting)) }
+            return InAppMessage(7, 8001, rulesJson, DisplayRules(null, targeting, null, null),
+                inWorkflow = true, iid = "11111111-1111-4111-8111-111111111111",
+                expiresAt = now.plusSeconds(3600).toString(), workflowContext = "owner")
+        }
+        val initial = message("event-A")
+        val updated = message("event-B")
+        val content = InAppMessageContent(8001, InAppLayoutType.FULL, null, JsonObject(), iid = initial.iid)
+        val pendingContent = CompletableDeferred<List<InAppMessageContent>>()
+        var discovery = listOf(initial)
+        coEvery { iamRepository.getInAppMessages() } answers { InAppMessagesList(discovery) }
+        every { iamRepository.isWorkflowEligible(any()) } returns true
+        every { anyConstructed<ScheduleRuleValidator>().checkInAppMatchesScheduleRules(any()) } returns true
+        coEvery { iamRepository.getWorkflowContent(listOf(initial)) } coAnswers { pendingContent.await() }
+        coEvery { iamRepository.getWorkflowContent(listOf(updated)) } returns listOf(content)
+        val controller = createController()
+        val presented = mutableListOf<InAppMessage>()
+        launch { controller.inAppMessagesFlow.toList(presented) }
+        controller.getInAppMessages()
+        runCurrent()
+        eventFlow.emit(Event.ScreenView("event-A"))
+        runCurrent()
+        coVerify(exactly = 1) { iamRepository.getWorkflowContent(listOf(initial)) }
+        discovery = listOf(updated)
+        if (refreshSegments) {
+            controller.refreshSegmentation()
+            runCurrent()
+        } else controller.getInAppMessages()
+        assertEquals(false, controller.canPresentWorkflow(initial))
+        assertTrue(controller.canPresentWorkflow(updated))
+        pendingContent.complete(listOf(content))
+        runCurrent()
+        assertTrue(presented.isEmpty())
+        if (refreshSegments) controller.getInAppMessages()
+        eventFlow.emit(Event.ScreenView("event-A"))
+        runCurrent()
+        coVerify(exactly = 0) { iamRepository.getWorkflowContent(listOf(updated)) }
+        eventFlow.emit(Event.ScreenView("event-B"))
+        runCurrent()
+        assertEquals(listOf(updated), presented)
+        coVerify(exactly = 1) { iamRepository.getWorkflowContent(listOf(updated)) }
+        coroutineContext.cancelChildren()
+    }
+
+    @Test
+    fun failed_discovery_preserves_new_rules_when_paused_old_execution_resumes() = runTest {
+        unmockkConstructor(RuleEventValidator::class)
+        val now = Instant.now()
+        val targetingA = createEventDisplayRule("event-A")
+        val targetingB = createEventDisplayRule("event-B")
+        val initial = InAppMessage(7, 8001,
+            JsonObject().apply { add("TARGETING", Gson().toJsonTree(targetingA)) },
+            DisplayRules(null, targetingA, null, null),
+            inWorkflow = true, iid = "11111111-1111-4111-8111-111111111111",
+            expiresAt = now.plusSeconds(3600).toString(), workflowContext = "owner")
+        val updated = initial.copy(
+            displayRulesJson = JsonObject().apply { add("TARGETING", Gson().toJsonTree(targetingB)) },
+            displayRules = DisplayRules(null, targetingB, null, null)
+        )
+        var discovery = InAppMessagesList(listOf(initial), isFromRemote = true)
+        coEvery { iamRepository.getInAppMessages() } answers { discovery }
+        every { iamRepository.isWorkflowEligible(any()) } returns true
+        every { anyConstructed<ScheduleRuleValidator>().checkInAppMatchesScheduleRules(any()) } returns true
+        val controller = createController()
+        val presented = mutableListOf<InAppMessage>()
+        launch { controller.inAppMessagesFlow.toList(presented) }
+        controller.pauseInAppMessages(true)
+        controller.getInAppMessages()
+        runCurrent()
+        eventFlow.emit(Event.ScreenView("event-A"))
+        runCurrent()
+        discovery = InAppMessagesList(listOf(updated), isFromRemote = true)
+        controller.refreshSegmentation()
+        runCurrent()
+        assertEquals(false, controller.canPresentWorkflow(initial))
+        discovery = InAppMessagesList(isSuccessful = false)
+        controller.getInAppMessages()
+        controller.refreshSegmentation()
+        runCurrent()
+        controller.pauseInAppMessages(false)
+        runCurrent()
+        assertTrue(presented.isEmpty())
+        assertEquals(false, controller.canPresentWorkflow(initial))
+        assertTrue(controller.canPresentWorkflow(updated))
+        coVerify(exactly = 0) { iamRepository.getWorkflowContent(any()) }
+        discovery = InAppMessagesList(isFromRemote = true)
+        controller.refreshSegmentation()
+        runCurrent()
+        assertTrue(controller.canPresentWorkflow(initial))
+        coroutineContext.cancelChildren()
+    }
+
+    @Test
+    fun paused_workflow_is_postponed_without_fetching_content_and_resumes() = runTest {
+        assertWorkflowResumesAfterPause(pauseDuringContent = false)
+    }
+
+    @Test
+    fun pause_during_workflow_content_releases_presentation_guard_and_resumes() = runTest {
+        assertWorkflowResumesAfterPause(pauseDuringContent = true)
+    }
+
+    private suspend fun TestScope.assertWorkflowResumesAfterPause(pauseDuringContent: Boolean) {
+        val message = InAppMessage(7, 8001, JsonObject(), DisplayRules(null, null, null, null),
+            inWorkflow = true, iid = "11111111-1111-4111-8111-111111111111",
+            expiresAt = Instant.now().plusSeconds(3600).toString(), workflowContext = "owner")
+        val content = InAppMessageContent(8001, InAppLayoutType.FULL, null, JsonObject(),
+            iid = message.iid)
+        val controller = createController()
+        val presented = mutableListOf<InAppMessage>()
+        launch { controller.inAppMessagesFlow.toList(presented) }
+        coEvery { iamRepository.getInAppMessages() } returns InAppMessagesList(listOf(message))
+        every { iamRepository.isWorkflowEligible(message) } returns true
+        every { anyConstructed<ScheduleRuleValidator>().checkInAppMatchesScheduleRules(any()) } returns true
+        var controllerPausedOnce = false
+        coEvery { iamRepository.getWorkflowContent(listOf(message)) } coAnswers {
+            if (pauseDuringContent && !controllerPausedOnce) {
+                controllerPausedOnce = true
+                controller.pauseInAppMessages(true)
+            }
+            listOf(content)
+        }
+        if (!pauseDuringContent) controller.pauseInAppMessages(true)
+        controller.getInAppMessages()
+        runCurrent()
+        assertTrue(presented.isEmpty())
+        coVerify(exactly = if (pauseDuringContent) 1 else 0) { iamRepository.getWorkflowContent(any()) }
+        controller.pauseInAppMessages(false)
+        runCurrent()
+        assertEquals(listOf(message), presented)
+        coVerify(exactly = if (pauseDuringContent) 2 else 1) { iamRepository.getWorkflowContent(any()) }
+        coroutineContext.cancelChildren()
+    }
+
     private fun TestScope.createController(): IamControllerImpl {
         return IamControllerImpl(iamRepository, eventController, sessionHandler, userDatabase, this)
     }
 
-    private fun createEventDisplayRule() = TargetingDisplayRules(
+    private fun createEventDisplayRule(screenName: String = "SomeEvent") = TargetingDisplayRules(
         include = TargetingRuleGroup(
             relation = RuleRelation.OR,
             groups = listOf(
@@ -721,7 +908,7 @@ class IamControllerImplTest : BaseRobolectricTest() {
                                     "name",
                                     StringOperator.CONTAINS,
                                     values = listOf(
-                                        "SomeEvent"
+                                        screenName
                                     )
                                 )
                             )

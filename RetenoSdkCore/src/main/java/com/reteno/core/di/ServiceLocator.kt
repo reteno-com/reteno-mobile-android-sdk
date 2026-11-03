@@ -204,7 +204,8 @@ class ServiceLocator(
             apiClientProvider,
             sharedPrefsManagerProvider,
             retenoDatabaseManagerInAppMessagesProvider,
-            Dispatchers.IO
+            Dispatchers.IO,
+            retenoDatabaseManagerInAppInteractionProvider
         )
 
     private val logEventRepositoryProviderInternal: LogEventRepositoryProvider =

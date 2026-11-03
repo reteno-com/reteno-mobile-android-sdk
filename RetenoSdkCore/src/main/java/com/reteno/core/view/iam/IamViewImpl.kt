@@ -16,6 +16,7 @@ import com.reteno.core.domain.controller.IamController
 import com.reteno.core.domain.controller.IamFetchResult
 import com.reteno.core.domain.controller.InteractionController
 import com.reteno.core.domain.controller.ScheduleController
+import com.reteno.core.domain.model.interaction.InAppInteractionStatus
 import com.reteno.core.domain.model.interaction.InAppInteraction
 import com.reteno.core.domain.model.interaction.InteractionAction
 import com.reteno.core.features.iam.IamJsEvent
@@ -42,6 +43,7 @@ import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import java.time.ZonedDateTime
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -62,6 +64,9 @@ internal class IamViewImpl(
     private var messageId: Long? = null
     private var messageInstanceId: Long? = null
     private var iamContainer: IamContainer? = null
+    private var workflowMessage: InAppMessage? = null
+    private val openedRecorded = AtomicBoolean(false)
+    private val initializing = AtomicBoolean(false)
 
     private var pauseIncomingPushInApps = AtomicBoolean(false)
     private var lastPushInteractionId: String? = null
@@ -100,7 +105,7 @@ internal class IamViewImpl(
 
     private val retenoAndroidHandler: RetenoAndroidHandler = object : RetenoAndroidHandler() {
         override fun onMessagePosted(event: String?) {
-            /*@formatter:off*/ Logger.i(TAG, "onMessagePosted(): ", "event = [", event, "]")
+            Logger.d(TAG, "onMessagePosted(): ")
             /*@formatter:on*/
             try {
                 val jsEvent: IamJsEvent = event?.fromJson<IamJsEvent>() ?: return
@@ -156,6 +161,7 @@ internal class IamViewImpl(
         /*@formatter:on*/
         if (checkPauseState()) return
         showIamOnceReady(DELAY_UI_ATTEMPTS)
+        if (workflowMessage != null) return
         inAppLifecycleCallback?.onDisplay(createInAppData())
         messageInstanceId?.let { instanceId ->
             val newInteractionId = UUID.randomUUID().toString()
@@ -170,39 +176,54 @@ internal class IamViewImpl(
     }
 
     private fun onWidgetInitFailed(jsEvent: IamJsEvent) {
-        /*@formatter:off*/ Logger.i(TAG, "onWidgetInitFailed(): ", "jsEvent = [", jsEvent, "]")
+        Logger.d(TAG, "onWidgetInitFailed(): ")
         /*@formatter:on*/
         inAppLifecycleCallback?.onError(createInAppErrorData())
         val tenantId = (interactionId ?: messageInstanceId?.toString()).orEmpty()
         iamController.widgetInitFailed(tenantId, jsEvent)
         messageInstanceId?.let { instanceId ->
-            val newInteractionId = UUID.randomUUID().toString()
+            val workflow = workflowMessage
+            val newInteractionId = workflow?.iid ?: UUID.randomUUID().toString()
             interactionId = newInteractionId
             interactionController.onInAppInteraction(
                 InAppInteraction.createFailed(
                     newInteractionId,
                     instanceId,
                     jsEvent.payload?.reason
-                )
+                ).copy(workflowContext = workflow?.workflowContext, workflowExpiresAt = workflow?.expiresAt)
             )
         }
         teardown()
     }
 
     private fun openUrl(jsEvent: IamJsEvent) {
-        /*@formatter:off*/ Logger.i(TAG, "openUrl(): ", "interactionId = [", interactionId, "], jsEvent = [", jsEvent, "]")
+        Logger.d(TAG, "openUrl(): ")
         /*@formatter:on*/
         interactionId?.let { interaction ->
-            iamShowScope.launch(Dispatchers.IO) {
-                interactionController.onInteractionClickAction(
-                    interaction,
-                    InteractionAction(
-                        jsEvent.type.name,
-                        jsEvent.payload?.targetComponentId,
-                        jsEvent.payload?.url
+            val action = InteractionAction(
+                jsEvent.type.name,
+                jsEvent.payload?.targetComponentId,
+                jsEvent.payload?.url
+            )
+            val workflow = workflowMessage
+            if (workflow != null) {
+                interactionController.onInAppInteraction(
+                    InAppInteraction(
+                        interactionId = interaction,
+                        time = ZonedDateTime.now(),
+                        messageInstanceId = workflow.messageInstanceId,
+                        status = InAppInteractionStatus.CLICKED,
+                        workflowContext = workflow.workflowContext,
+                        workflowExpiresAt = workflow.expiresAt,
+                        action = action
                     )
                 )
                 scheduleController.forcePush()
+            } else {
+                iamShowScope.launch(Dispatchers.IO) {
+                    interactionController.onInteractionClickAction(interaction, action)
+                    scheduleController.forcePush()
+                }
             }
         }
 
@@ -215,7 +236,7 @@ internal class IamViewImpl(
     }
 
     private fun closeWidget(payload: IamJsPayload?) {
-        /*@formatter:off*/ Logger.i(TAG, "closeWidget(): ", "payload = [", payload, "]")
+        Logger.d(TAG, "closeWidget(): ")
         /*@formatter:on*/
         inAppLifecycleCallback?.beforeClose(createInAppCloseData(InAppCloseAction.CLOSE_BUTTON))
         teardown()
@@ -237,6 +258,8 @@ internal class IamViewImpl(
             if (isViewShown.get()) {
                 teardown()
             }
+            workflowMessage = null
+            openedRecorded.set(false)
             this.interactionId = interactionId
             inAppSource = InAppSource.PUSH_NOTIFICATION
             messageId = null
@@ -253,17 +276,26 @@ internal class IamViewImpl(
     }
 
     override fun initialize(inAppMessage: InAppMessage) {
-        if (isViewShown.get()) return
+        if (isViewShown.get() || !initializing.compareAndSet(false, true)) return
+        if (inAppMessage.inWorkflow && !iamController.canPresentWorkflow(inAppMessage)) {
+            initializing.set(false)
+            iamController.reset()
+            return
+        }
         /*@formatter:off*/ Logger.i(TAG, "initialize(): ", "inAppMessageId = [", inAppMessage.messageId, "], messageInstanceId = [", inAppMessage.messageInstanceId, "]")
         /*@formatter:on*/
         try {
-            inAppMessage.notifyShown()
-            iamController.updateInAppMessage(inAppMessage)
+            workflowMessage = inAppMessage.takeIf { it.inWorkflow }
+            openedRecorded.set(false)
+            if (!inAppMessage.inWorkflow) {
+                inAppMessage.notifyShown()
+                iamController.updateInAppMessage(inAppMessage)
+            }
             iamShowScope.launch {
                 messageId = inAppMessage.messageId
                 messageInstanceId = inAppMessage.messageInstanceId
                 inAppSource = InAppSource.DISPLAY_RULES
-                interactionId = null
+                interactionId = workflowMessage?.iid
                 inAppLifecycleCallback?.beforeDisplay(createInAppData())
                 iamController.fetchIamFullHtml(inAppMessage.content)
             }
@@ -281,6 +313,12 @@ internal class IamViewImpl(
             .launchIn(iamShowScope)
 
         iamController.fullHtmlStateFlow
+            .onEach { result ->
+                if (result is ResultDomain.Error && workflowMessage != null) {
+                    recordWorkflowFailure("HTML initialization failed")
+                    teardown()
+                }
+            }
             .filterIsInstance<ResultDomain.Success<IamFetchResult>>()
             .onEach { createIamContainer(it) }
             .launchIn(iamShowScope)
@@ -300,6 +338,7 @@ internal class IamViewImpl(
                 }
             )
         }.onFailure {
+            recordWorkflowFailure("Native container initialization failed")
             teardown()
             Logger.e(TAG, "createIamContainer(): ", it)
         }
@@ -348,18 +387,59 @@ internal class IamViewImpl(
         /*@formatter:on*/
         if (activityHelper.canPresentMessages() && activityHelper.isActivityFullyReady()) {
             runCatching {
-                iamContainer?.show(activity)
-                isViewShown.set(true)
+                val container = iamContainer ?: return
+                val workflow = workflowMessage
+                if (workflow == null) {
+                    container.show(activity)
+                    isViewShown.set(true)
+                } else {
+                    if (openedRecorded.get()) {
+                        if (iamController.canResumeWorkflow(workflow)) container.show(activity)
+                        else teardown()
+                        return
+                    }
+                    if (!iamController.canPresentWorkflow(workflow)) {
+                        teardown()
+                        return
+                    }
+                    container.show(activity) {
+                        if (workflowMessage !== workflow || openedRecorded.get()) return@show
+                        if (!iamController.canPresentWorkflow(workflow)) {
+                            teardown()
+                            return@show
+                        }
+                        if (!openedRecorded.compareAndSet(false, true)) return@show
+                        isViewShown.set(true)
+                        interactionController.onInAppInteraction(
+                            InAppInteraction.createOpened(requireNotNull(workflow.iid), workflow.messageInstanceId)
+                                .copy(workflowContext = workflow.workflowContext, workflowExpiresAt = workflow.expiresAt)
+                        )
+                        inAppLifecycleCallback?.onDisplay(createInAppData())
+                    }
+                }
             }.onFailure {
+                recordWorkflowFailure("Native presentation failed")
+                teardown()
                 Logger.e(TAG, "showIamPopupWindow(): ", it)
             }
         }
+    }
+
+    private fun recordWorkflowFailure(reason: String) {
+        val workflow = workflowMessage ?: return
+        interactionController.onInAppInteraction(
+            InAppInteraction.createFailed(requireNotNull(workflow.iid), workflow.messageInstanceId, reason)
+                .copy(workflowContext = workflow.workflowContext, workflowExpiresAt = workflow.expiresAt)
+        )
     }
 
     private fun teardown() {
         /*@formatter:off*/ Logger.i(TAG, "teardown(): ", "")
         /*@formatter:on*/
         iamController.reset()
+        workflowMessage = null
+        openedRecorded.set(false)
+        initializing.set(false)
         interactionId = null
         messageId = null
         messageInstanceId = null

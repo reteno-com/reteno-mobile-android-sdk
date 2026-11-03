@@ -1,6 +1,7 @@
 package com.reteno.core.domain.controller
 
 import androidx.annotation.VisibleForTesting
+import com.google.gson.JsonObject
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerUser
 import com.reteno.core.data.local.mappers.toDomain
 import com.reteno.core.data.local.model.BooleanDb
@@ -12,6 +13,7 @@ import com.reteno.core.data.remote.model.iam.displayrules.targeting.RuleEventVal
 import com.reteno.core.data.remote.model.iam.displayrules.targeting.TargetingRule
 import com.reteno.core.data.remote.model.iam.message.InAppMessage
 import com.reteno.core.data.remote.model.iam.message.InAppMessageContent
+import com.reteno.core.data.remote.model.iam.message.InAppMessagesList
 import com.reteno.core.data.remote.model.iam.message.InAppMessageContent.InAppLayoutParams
 import com.reteno.core.data.remote.model.iam.message.InAppMessageContent.InAppLayoutParams.Position
 import com.reteno.core.data.remote.model.iam.message.InAppMessageContent.InAppLayoutType
@@ -53,6 +55,9 @@ internal class IamControllerImpl(
     private val scope: CoroutineScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 ) : IamController {
 
+    @Volatile
+    private var latestWorkflowMessages: List<InAppMessage> = emptyList()
+    private val workflowPresentation = AtomicBoolean(false)
     private val isPausedInAppMessages = AtomicBoolean(false)
     private var pauseBehaviour = InAppPauseBehaviour.POSTPONE_IN_APPS
 
@@ -129,12 +134,13 @@ internal class IamControllerImpl(
         /*@formatter:on*/
         _fullHtmlStateFlow.value = ResultDomain.Loading
 
-        scope.launch {
+        htmlJob?.cancel()
+        htmlJob = scope.launch {
             try {
                 withTimeout(TIMEOUT) {
                     val baseHtml = iamRepository.getLocalBaseHtml()
                     var widgetModel = messageContent?.model.toString()
-                    if (widgetModel.contains(Regex("\\$\\{.+\\}"))) {
+                    if (messageContent?.iid == null && widgetModel.contains(Regex("\\$\\{.+\\}"))) {
                         val users = userDatabase.getUsers()
                         val latestPushed = users.firstOrNull { it.isSynchronizedWithBackend == BooleanDb.TRUE }
                         val newestUpdate = users
@@ -152,7 +158,7 @@ internal class IamControllerImpl(
                     }
                     var text = baseHtml
                     text = text.replace(KEY_DOCUMENT_MODEL, widgetModel)
-                    text = text.replace(KEY_PERSONALISATION, "{}")
+                    text = text.replace(KEY_PERSONALISATION, messageContent?.personalisation?.toString() ?: "{}")
 
                     _fullHtmlStateFlow.value = ResultDomain.Success(
                         IamFetchResult(
@@ -173,12 +179,34 @@ internal class IamControllerImpl(
     }
 
     override fun widgetInitFailed(tenantId: String, jsEvent: IamJsEvent) {
-        /*@formatter:off*/ Logger.i(TAG, "widgetInitFailed(): ", "widgetId = [", tenantId, "], jsEvent = [", jsEvent, "]")
+        Logger.d(TAG, "widgetInitFailed(): ")
         /*@formatter:on*/
         iamRepository.widgetInitFailed(tenantId, jsEvent)
     }
 
+    override fun canPresentWorkflow(message: InAppMessage): Boolean =
+        !message.inWorkflow || (iamRepository.isWorkflowEligible(message) && hasCurrentWorkflowRules(message))
+
+    private fun rememberWorkflowRules(result: InAppMessagesList) {
+        if (result.isSuccessful) latestWorkflowMessages = result.messages.filter { it.inWorkflow }
+    }
+
+    private fun hasCurrentWorkflowRules(
+        message: InAppMessage,
+        evaluatedRules: JsonObject = message.displayRulesJson
+    ): Boolean {
+        val latest = latestWorkflowMessages.firstOrNull {
+            it.workflowContext == message.workflowContext && it.iid == message.iid
+        } ?: return true
+        return latest.displayRulesJson.deepCopy().apply { remove("FREQUENCY") } ==
+            evaluatedRules.deepCopy().apply { remove("FREQUENCY") }
+    }
+
+    override fun canResumeWorkflow(message: InAppMessage): Boolean =
+        iamRepository.isWorkflowContextCurrent(message)
+
     override fun reset() {
+        workflowPresentation.set(false)
         _fullHtmlStateFlow.value = ResultDomain.Idle
         htmlJob?.cancel()
         htmlJob = null
@@ -188,8 +216,9 @@ internal class IamControllerImpl(
         try {
             val messageListModel = iamRepository.getInAppMessages()
             val inAppMessages = messageListModel.messages
+            rememberWorkflowRules(messageListModel)
 
-            val messagesWithNoContent = inAppMessages.filter { it.content == null }
+            val messagesWithNoContent = inAppMessages.filter { !it.inWorkflow && it.content == null }
             val contentIds = messagesWithNoContent.map { it.messageInstanceId }
             val contentsDeferred = async { iamRepository.getInAppMessagesContent(contentIds) }
 
@@ -217,6 +246,7 @@ internal class IamControllerImpl(
             try {
                 val messageListModel = iamRepository.getInAppMessages()
                 val inAppMessages = messageListModel.messages
+                rememberWorkflowRules(messageListModel)
 
                 updateSegmentStatuses(
                     inAppMessages,
@@ -274,7 +304,10 @@ internal class IamControllerImpl(
         when (pauseBehaviour) {
             InAppPauseBehaviour.SKIP_IN_APPS -> postponedNotifications.clear()
             InAppPauseBehaviour.POSTPONE_IN_APPS -> {
-                postponedNotifications.firstOrNull()?.let(::showInApp)
+                postponedNotifications.firstOrNull()?.let { message ->
+                    if (message.inWorkflow) scope.launch { tryShowInAppFromList(mutableListOf(message)) }
+                    else showInApp(message)
+                }
                 postponedNotifications.clear()
             }
         }
@@ -386,21 +419,21 @@ internal class IamControllerImpl(
         }
     }
 
-    private fun tryShowInApp(
+    private suspend fun tryShowInApp(
         inAppMessage: InAppMessage,
         frequencyValidator: FrequencyRuleValidator = FrequencyRuleValidator(),
         scheduleValidator: ScheduleRuleValidator = ScheduleRuleValidator(),
         showingOnAppStart: Boolean = false
     ): Boolean {
         val content = inAppMessage.content
-        if (content == null || content.model.isJsonNull) {
+        if (!inAppMessage.inWorkflow && (content == null || content.model.isJsonNull)) {
             return false
         }
         if (checkSegmentRuleMatches(inAppMessage).not()) {
             return false
         }
 
-        if (!frequencyValidator.checkInAppMatchesFrequencyRules(
+        if (!inAppMessage.inWorkflow && !frequencyValidator.checkInAppMatchesFrequencyRules(
                 inAppMessage = inAppMessage,
                 sessionStartTimestamp = sessionHandler.getSessionStartTimestamp(),
                 showingOnAppStart = showingOnAppStart
@@ -413,18 +446,43 @@ internal class IamControllerImpl(
             return false
         }
 
-        showInApp(inAppMessage)
+        if (inAppMessage.inWorkflow) {
+            if (!canPresentWorkflow(inAppMessage)) return false
+            if (isPausedInAppMessages.get()) {
+                postponedNotifications.add(inAppMessage)
+                return false
+            }
+            if (!canShowInApp() || !workflowPresentation.compareAndSet(false, true)) return false
+            val evaluatedRules = inAppMessage.displayRulesJson.deepCopy().apply { remove("FREQUENCY") }
+            try {
+                inAppMessage.content = iamRepository.getWorkflowContent(listOf(inAppMessage)).firstOrNull {
+                    it.iid == inAppMessage.iid && it.messageInstanceId == inAppMessage.messageInstanceId
+                }
+                if (inAppMessage.content == null || inAppMessage.content?.model?.isJsonNull != false ||
+                    !iamRepository.isWorkflowEligible(inAppMessage) || !hasCurrentWorkflowRules(inAppMessage, evaluatedRules)) {
+                    workflowPresentation.set(false)
+                    return false
+                }
+            } catch (error: Exception) {
+                workflowPresentation.set(false)
+                throw error
+            }
+        }
+        val shown = showInApp(inAppMessage)
+        if (inAppMessage.inWorkflow && !shown) workflowPresentation.set(false)
+        return if (inAppMessage.inWorkflow) shown else true
+    }
+
+    private fun showInApp(inAppMessage: InAppMessage): Boolean {
+        if (isPausedInAppMessages.get()) postponedNotifications.add(inAppMessage)
+        if (!canShowInApp()) return false
+        scope.launch { _inAppMessage.send(inAppMessage) }
         return true
     }
 
-    private fun showInApp(inAppMessage: InAppMessage) {
-        if (isPausedInAppMessages.get()) postponedNotifications.add(inAppMessage)
-        if (!canShowInApp()) return
-        scope.launch { _inAppMessage.send(inAppMessage) }
-    }
-
     private fun checkSegmentRuleMatches(inAppMessage: InAppMessage): Boolean {
-        return inAppMessage.displayRules.async?.segment?.isInSegment ?: true
+        val segment = inAppMessage.displayRules.async?.segment
+        return if (inAppMessage.inWorkflow && segment != null) segment.isInSegment == true else segment?.isInSegment ?: true
     }
 
     private fun canShowInApp(): Boolean {

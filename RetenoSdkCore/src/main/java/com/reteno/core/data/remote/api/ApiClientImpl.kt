@@ -4,6 +4,13 @@ import com.reteno.core.data.remote.OperationQueue
 import com.reteno.core.domain.ResponseCallback
 
 internal class ApiClientImpl(private val restClient: RestClient) : ApiClient {
+    override fun workflowContext(): String = restClient.workflowContext()
+
+    override fun postInWorkflowContext(context: String, url: ApiContract, jsonBody: String, responseHandler: ResponseCallback) {
+        OperationQueue.addOperation {
+            restClient.makeWorkflowRequest(context, HttpMethod.POST, url, jsonBody, responseHandler)
+        }
+    }
 
     override fun put(url: ApiContract, jsonBody: String, responseHandler: ResponseCallback) {
         OperationQueue.addOperation {

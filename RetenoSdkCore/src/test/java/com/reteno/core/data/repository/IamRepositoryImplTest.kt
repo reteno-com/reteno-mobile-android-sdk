@@ -268,7 +268,7 @@ class IamRepositoryImplTest : BaseRobolectricTest() {
                 apiClient.get(
                     url = ApiContract.InAppMessages.GetInAppMessages,
                     headers = null,
-                    queryParams = null,
+                    queryParams = mapOf("includeWorkflow" to "true"),
                     responseHandler = any()
                 )
             } coAnswers {
@@ -300,7 +300,7 @@ class IamRepositoryImplTest : BaseRobolectricTest() {
                 apiClient.get(
                     url = ApiContract.InAppMessages.GetInAppMessages,
                     headers = null,
-                    queryParams = null,
+                    queryParams = mapOf("includeWorkflow" to "true"),
                     responseHandler = any()
                 )
             } coAnswers {
@@ -312,7 +312,7 @@ class IamRepositoryImplTest : BaseRobolectricTest() {
             // Then
             assertEquals(
                 result,
-                InAppMessagesList()
+                InAppMessagesList(isSuccessful = false)
             )
         }
     }
@@ -351,7 +351,7 @@ class IamRepositoryImplTest : BaseRobolectricTest() {
                 apiClient.get(
                     url = ApiContract.InAppMessages.GetInAppMessages,
                     headers = null,
-                    queryParams = null,
+                    queryParams = mapOf("includeWorkflow" to "true"),
                     responseHandler = any()
                 )
             } coAnswers {

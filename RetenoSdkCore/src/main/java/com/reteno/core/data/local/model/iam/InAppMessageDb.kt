@@ -10,7 +10,10 @@ data class InAppMessageDb(
     val showCount: Long = 0,
     val layoutType: String?,
     val model: String?,
-    val position: String?
+    val position: String?,
+    val iid: String? = null,
+    val workflowContext: String? = null,
+    val expiresAt: String? = null
 ) {
     var segment: SegmentDb? = null
 }

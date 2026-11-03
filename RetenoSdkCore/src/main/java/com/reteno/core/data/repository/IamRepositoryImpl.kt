@@ -1,6 +1,9 @@
 package com.reteno.core.data.repository
 
 import android.content.Context
+import java.time.Instant
+import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerInAppInteraction
+import com.reteno.core.data.remote.model.iam.message.WorkflowMessageContentRequest
 import com.reteno.core.R
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerInAppMessages
 import com.reteno.core.data.local.file.FileManager
@@ -42,8 +45,49 @@ internal class IamRepositoryImpl(
     private val fileManager: FileManager,
     private val sharedPrefsManager: SharedPrefsManager,
     private val databaseManager: RetenoDatabaseManagerInAppMessages,
-    private val coroutineDispatcher: CoroutineDispatcher
+    private val coroutineDispatcher: CoroutineDispatcher,
+    private val inAppInteractionDatabase: RetenoDatabaseManagerInAppInteraction? = null
 ) : IamRepository {
+    private var listContext: String? = null
+
+    override fun isWorkflowContextCurrent(message: InAppMessage): Boolean =
+        message.workflowContext == apiClient.workflowContext()
+
+    override fun isWorkflowEligible(message: InAppMessage): Boolean =
+        message.inWorkflow && !message.iid.isNullOrBlank() &&
+            isWorkflowContextCurrent(message) &&
+            runCatching { Instant.now().isBefore(Instant.parse(message.expiresAt)) }.getOrDefault(false) &&
+            inAppInteractionDatabase?.isWorkflowShown(requireNotNull(message.workflowContext), requireNotNull(message.iid)) == false
+
+    override suspend fun getWorkflowContent(messages: List<InAppMessage>): List<InAppMessageContent> {
+        val eligible = messages.filter(::isWorkflowEligible)
+        return eligible.chunked(100).flatMap { batch ->
+            val owner = requireNotNull(batch.first().workflowContext)
+            withContext(coroutineDispatcher) {
+                suspendCancellableCoroutine { continuation ->
+                    apiClient.postInWorkflowContext(
+                        owner, ApiContract.InAppMessages.GetInAppMessagesContent,
+                        InAppMessagesContentRequest(messages = batch.map {
+                            WorkflowMessageContentRequest(requireNotNull(it.iid), it.messageInstanceId)
+                        }).toJson(),
+                        object : ResponseCallback {
+                            override fun onSuccess(response: String) {
+                                val contents = runCatching { response.fromJson<InAppMessagesContentResponse>().contents }
+                                    .getOrDefault(emptyList())
+                                continuation.resume(contents.filter { content ->
+                                    batch.any { it.iid == content.iid && it.messageInstanceId == content.messageInstanceId && isWorkflowEligible(it) }
+                                })
+                            }
+                            override fun onFailure(statusCode: Int?, response: String?, throwable: Throwable?) {
+                                Logger.w(TAG, "Workflow content unavailable; presentation deferred. statusCode=", statusCode)
+                                continuation.resume(emptyList())
+                            }
+                        }
+                    )
+                }
+            }
+        }
+    }
 
     override suspend fun getLocalBaseHtml(): String {
         return fileManager.getBaseHtmlContent()
@@ -105,7 +149,7 @@ internal class IamRepositoryImpl(
                             response: String?,
                             throwable: Throwable?
                         ) {
-                            /*@formatter:off*/ Logger.i(TAG, "getBaseHtmlVersionRemote(): onFailure(): ", "statusCode = [", statusCode, "], response = [", response, "], throwable = [", throwable, "]")
+                            Logger.d(TAG, "getBaseHtmlVersionRemote(): onFailure(): ")
                             /*@formatter:on*/
                             continuation.resume(null)
                         }
@@ -130,7 +174,7 @@ internal class IamRepositoryImpl(
                     queryParams = null,
                     responseHandler = object : ResponseCallback {
                         override fun onSuccess(response: String) {
-                            /*@formatter:off*/ Logger.i(TAG, "getBaseHtmlContentRemote(): onSuccess(): ", "response = [", response, "]")
+                            Logger.d(TAG, "getBaseHtmlContentRemote(): onSuccess(): ")
                             /*@formatter:on*/
                             continuation.resume(response)
                         }
@@ -140,7 +184,7 @@ internal class IamRepositoryImpl(
                             response: String?,
                             throwable: Throwable?
                         ) {
-                            /*@formatter:off*/ Logger.i(TAG, "getBaseHtmlContentRemote(): onFailure(): ", "statusCode = [", statusCode, "], response = [", response, "], throwable = [", throwable, "]")
+                            Logger.d(TAG, "getBaseHtmlContentRemote(): onFailure(): ")
                             /*@formatter:on*/
                             continuation.resume(null)
                         }
@@ -160,7 +204,7 @@ internal class IamRepositoryImpl(
                     queryParams = null,
                     responseHandler = object : ResponseCallback {
                         override fun onSuccess(response: String) {
-                            /*@formatter:off*/ Logger.i(TAG, "getWidgetRemote(): onSuccess(): ", "response = [", response, "]")
+                            Logger.d(TAG, "getWidgetRemote(): onSuccess(): ")
                             /*@formatter:on*/
                             continuation.resume(
                                 response.fromJson<WidgetModel>()
@@ -172,7 +216,7 @@ internal class IamRepositoryImpl(
                             response: String?,
                             throwable: Throwable?
                         ) {
-                            /*@formatter:off*/ Logger.i(TAG, "getWidgetRemote(): onFailure(): ", "statusCode = [", statusCode, "], response = [", response, "], throwable = [", throwable, "]")
+                            Logger.d(TAG, "getWidgetRemote(): onFailure(): ")
                             /*@formatter:on*/
                             continuation.resume(
                                 WidgetModel(
@@ -190,7 +234,7 @@ internal class IamRepositoryImpl(
     }
 
     override fun widgetInitFailed(widgetId: String, jsEvent: IamJsEvent) {
-        /*@formatter:off*/ Logger.i(TAG, "widgetInitFailed(): ", "widgetId = [", widgetId, "], jsEvent = [", jsEvent, "]")
+        Logger.d(TAG, "widgetInitFailed(): ")
         /*@formatter:on*/
 
         val payload = Payload(reason = jsEvent.payload?.reason)
@@ -201,12 +245,12 @@ internal class IamRepositoryImpl(
             initFailed.toJson(),
             object : ResponseCallback {
                 override fun onSuccess(response: String) {
-                    /*@formatter:off*/ Logger.i(TAG, "widgetInitFailed(): onSuccess(): ", "widgetId = [", widgetId, "], jsEvent = [", jsEvent, "], response = [", response, "]")
+                    Logger.d(TAG, "widgetInitFailed(): onSuccess(): ")
                     /*@formatter:on*/
                 }
 
                 override fun onFailure(statusCode: Int?, response: String?, throwable: Throwable?) {
-                    /*@formatter:off*/ Logger.i(TAG, "widgetInitFailed(): onFailure(): ", "statusCode = [", statusCode, "], response = [", response, "], throwable = [", throwable, "]")
+                    Logger.d(TAG, "widgetInitFailed(): onFailure(): ")
                     /*@formatter:on*/
                 }
             })
@@ -216,9 +260,10 @@ internal class IamRepositoryImpl(
         /*@formatter:off*/ Logger.i(TAG, "getInAppMessages(): ", "")
         /*@formatter:on*/
         return withContext(coroutineDispatcher) {
+            val owner = apiClient.workflowContext()
             val etag = sharedPrefsManager.getIamEtag()
-            val headersWithEtag: Map<String, String>? = if (etag != null) {
-                null
+            val headersWithEtag: Map<String, String>? = if (etag != null && listContext == owner) {
+                mapOf(HEADER_ETAG_REQUEST to etag)
             } else {
                 null
             }
@@ -227,27 +272,43 @@ internal class IamRepositoryImpl(
                 apiClient.get(
                     url = ApiContract.InAppMessages.GetInAppMessages,
                     headers = headersWithEtag,
-                    queryParams = null,
+                    queryParams = mapOf("includeWorkflow" to "true"),
                     responseHandler = object : ResponseCallback {
                         override fun onSuccess(
                             headers: Map<String, List<String>>,
                             response: String
                         ) {
-                            /*@formatter:off*/ Logger.i(TAG, "getInAppMessages(): onSuccess(): ", "response = [", response, "], headers = [", headers.toString(), "]")
+                            Logger.d(TAG, "getInAppMessages(): onSuccess(): ")
                             /*@formatter:on*/
+                            if (owner != apiClient.workflowContext()) {
+                                continuation.resume(InAppMessagesList(isSuccessful = false))
+                                return
+                            }
                             val localMessages = databaseManager.getInAppMessages()
                             val remoteMessagesResponse =
                                 response.fromJson<InAppMessageListResponse>().messages
                             var remoteMessages: List<InAppMessage> = emptyList()
                             try {
                                 remoteMessages =
-                                    remoteMessagesResponse.mapResponseToInAppMessages()
+                                    remoteMessagesResponse.mapResponseToInAppMessages().mapNotNull { message ->
+                                        if (!message.inWorkflow) message else {
+                                            val previous = localMessages.firstOrNull { it.iid == message.iid && it.workflowContext == owner }
+                                            when {
+                                                previous == null -> message
+                                                previous.messageInstanceId != message.messageInstanceId -> null
+                                                else -> message.copy(expiresAt = listOfNotNull(previous.expiresAt, message.expiresAt)
+                                                    .minByOrNull { Instant.parse(it) })
+                                            }
+                                        }
+                                    }
                             } catch (e: Exception) {
                                 e.printStackTrace()
                             }
-                            remoteMessages.forEach { remoteMessage ->
+                            remoteMessages.filter { it.inWorkflow }.forEach { it.workflowContext = owner }
+                            listContext = owner
+                            remoteMessages.filterNot { it.inWorkflow }.forEach { remoteMessage ->
                                 val localMessage = localMessages.firstOrNull {
-                                    it.messageId == remoteMessage.messageId
+                                    it.iid == null && it.messageId == remoteMessage.messageId
                                 }
                                 localMessage?.let {
                                     remoteMessage.updateFromDb(it)
@@ -271,18 +332,20 @@ internal class IamRepositoryImpl(
                             response: String?,
                             throwable: Throwable?
                         ) {
-                            /*@formatter:off*/ Logger.i(TAG, "getInAppMessages(): onFailure(): ", "statusCode = [", statusCode, "], response = [", response, "], throwable = [", throwable, "]")
+                            Logger.d(TAG, "getInAppMessages(): onFailure(): ")
                             /*@formatter:on*/
                             if (statusCode == IN_APP_NO_CHANGES_CODE) {
                                 val localMessages = databaseManager.getInAppMessages()
                                 continuation.resume(
                                     InAppMessagesList(
-                                        messages = localMessages.mapDbToInAppMessages(),
-                                        isFromRemote = false
+                                        messages = if (owner == apiClient.workflowContext()) localMessages
+                                            .filter { it.iid == null || it.workflowContext == owner }.mapDbToInAppMessages() else emptyList(),
+                                        isFromRemote = false,
+                                        isSuccessful = owner == apiClient.workflowContext()
                                     )
                                 )
                             } else {
-                                continuation.resume(InAppMessagesList())
+                                continuation.resume(InAppMessagesList(isSuccessful = false))
                             }
                         }
                     }
@@ -304,7 +367,7 @@ internal class IamRepositoryImpl(
                     retryCount = 3,
                     responseHandler = object : ResponseCallback {
                         override fun onSuccess(response: String) {
-                            /*@formatter:off*/ Logger.i(TAG, "getInAppMessagesContent(): onSuccess(): ", "response = [", response, "]")
+                            Logger.d(TAG, "getInAppMessagesContent(): onSuccess(): ")
                             /*@formatter:on*/
                             continuation.resume(
                                 response.fromJson<InAppMessagesContentResponse>().contents
@@ -316,7 +379,7 @@ internal class IamRepositoryImpl(
                             response: String?,
                             throwable: Throwable?
                         ) {
-                            /*@formatter:off*/ Logger.i(TAG, "getInAppMessagesContent(): onFailure(): ", "statusCode = [", statusCode, "], response = [", response, "], throwable = [", throwable, "]")
+                            Logger.d(TAG, "getInAppMessagesContent(): onFailure(): ")
                             /*@formatter:on*/
                             continuation.resume(emptyList())
                         }
@@ -328,18 +391,21 @@ internal class IamRepositoryImpl(
 
     override suspend fun saveInAppMessages(inAppMessageList: InAppMessagesList) {
         if (inAppMessageList.isFromRemote) {
-            /*@formatter:off*/ Logger.i(TAG, "saveInAppMessages(): ", "inAppMessageList = [", inAppMessageList, "]")
+            Logger.d(TAG, "saveInAppMessages(): ")
             /*@formatter:on*/
-            databaseManager.deleteAllInAppMessages()
-            databaseManager.insertInAppMessages(inAppMessageList.messages.map { it.toDB() })
+            val owner = apiClient.workflowContext()
+            val cached = databaseManager.getInAppMessages()
+            if (cached.none { it.iid != null }) databaseManager.deleteAllInAppMessages()
+            else databaseManager.deleteInAppMessages(cached.filter { it.iid == null || it.workflowContext == owner })
+            databaseManager.insertInAppMessages(inAppMessageList.messages.filter { !it.inWorkflow || it.workflowContext == owner }.map { it.toDB() })
             sharedPrefsManager.saveIamEtag(inAppMessageList.etag)
         }
     }
 
     override suspend fun updateInAppMessages(inAppMessages: List<InAppMessage>) {
-        /*@formatter:off*/ Logger.i(TAG, "updateInAppMessages(): ", "inAppMessages = [", inAppMessages, "]")
+        Logger.d(TAG, "updateInAppMessages(): ")
         /*@formatter:on*/
-        val messages = inAppMessages.map { it.toDB() }
+        val messages = inAppMessages.filter { !it.inWorkflow || it.workflowContext == apiClient.workflowContext() }.map { it.toDB() }
         databaseManager.deleteInAppMessages(messages)
         databaseManager.insertInAppMessages(messages)
     }
@@ -356,7 +422,7 @@ internal class IamRepositoryImpl(
                     jsonBody = AsyncRulesCheckRequest.createSegmentRequest(segmentIds).toJson(),
                     responseHandler = object : ResponseCallback {
                         override fun onSuccess(response: String) {
-                            /*@formatter:off*/ Logger.i(TAG, "checkUserInSegments(): onSuccess(): ", "response = [", response, "]")
+                            Logger.d(TAG, "checkUserInSegments(): onSuccess(): ")
                             /*@formatter:on*/
                             continuation.resume(
                                 response.fromJson<AsyncRulesCheckResponse>().checks
@@ -368,7 +434,7 @@ internal class IamRepositoryImpl(
                             response: String?,
                             throwable: Throwable?
                         ) {
-                            /*@formatter:off*/ Logger.i(TAG, "checkUserInSegments(): onFailure(): ", "statusCode = [", statusCode, "], response = [", response, "], throwable = [", throwable, "]")
+                            Logger.d(TAG, "checkUserInSegments(): onFailure(): ")
                             /*@formatter:on*/
                             continuation.resume(emptyList())
                         }

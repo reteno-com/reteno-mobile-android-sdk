@@ -10,7 +10,11 @@ data class InAppMessage(
     val displayRules: DisplayRules,
     var content: InAppMessageContent? = null,
     var lastShowTime: Long? = null,
-    var showCount: Long = 0
+    var showCount: Long = 0,
+    val inWorkflow: Boolean = false,
+    val iid: String? = null,
+    val expiresAt: String? = null,
+    var workflowContext: String? = null
 ) {
     fun notifyShown() {
         lastShowTime = System.currentTimeMillis()

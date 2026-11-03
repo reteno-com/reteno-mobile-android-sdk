@@ -4,5 +4,8 @@ import com.google.gson.annotations.SerializedName
 
 data class InAppMessagesContentRequest(
     @SerializedName("messageInstanceIds")
-    val messageInstanceIds: List<Long>
+    val messageInstanceIds: List<Long>? = null,
+    val messages: List<WorkflowMessageContentRequest>? = null
 )
+
+data class WorkflowMessageContentRequest(val iid: String, val messageInstanceId: Long)

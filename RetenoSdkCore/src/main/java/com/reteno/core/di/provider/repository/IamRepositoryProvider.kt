@@ -6,6 +6,7 @@ import com.reteno.core.data.repository.IamRepositoryImpl
 import com.reteno.core.di.base.ProviderWeakReference
 import com.reteno.core.di.provider.SharedPrefsManagerProvider
 import com.reteno.core.di.provider.database.RetenoDatabaseManagerInAppMessagesProvider
+import com.reteno.core.di.provider.database.RetenoDatabaseManagerInAppInteractionProvider
 import com.reteno.core.di.provider.network.ApiClientProvider
 import kotlinx.coroutines.CoroutineDispatcher
 
@@ -16,6 +17,7 @@ internal class IamRepositoryProvider(
     private val sharedPrefsManagerProvider: SharedPrefsManagerProvider,
     private val retenoDatabaseManagerInAppMessagesProvider: RetenoDatabaseManagerInAppMessagesProvider,
     private val coroutineDispatcher: CoroutineDispatcher,
+    private val inAppInteractionProvider: RetenoDatabaseManagerInAppInteractionProvider,
 ) : ProviderWeakReference<IamRepository>() {
 
     override fun create(): IamRepository {
@@ -25,7 +27,8 @@ internal class IamRepositoryProvider(
             fileManagerProvider.get(),
             sharedPrefsManagerProvider.get(),
             retenoDatabaseManagerInAppMessagesProvider.get(),
-            coroutineDispatcher
+            coroutineDispatcher,
+            inAppInteractionProvider.get()
         )
     }
 }

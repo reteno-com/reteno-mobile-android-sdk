@@ -3,10 +3,13 @@ package com.reteno.core.data.remote.api
 import android.net.Uri
 import com.reteno.core.BuildConfig
 import com.reteno.core.RetenoConfig
+import com.reteno.core.data.local.config.DeviceId
 import com.reteno.core.data.local.config.RestConfig
 import com.reteno.core.domain.ResponseCallback
 import com.reteno.core.util.Logger
 import com.reteno.core.util.Util
+import java.security.MessageDigest
+import com.reteno.core.data.remote.mapper.toJson
 import java.io.BufferedWriter
 import java.io.OutputStreamWriter
 import java.net.HttpURLConnection
@@ -17,6 +20,22 @@ internal class RestClientImpl(
     private val restConfig: RestConfig,
     private val retenoConfigProvider: () -> RetenoConfig
 ) : RestClient {
+
+    override fun workflowContext(): String = workflowContext(retenoConfigProvider().accessKey, restConfig.deviceId)
+
+    private fun workflowContext(key: String, device: DeviceId): String =
+        MessageDigest.getInstance("SHA-256").digest(listOf(key, device.id, device.externalId, device.email, device.phone).toJson().toByteArray(Charsets.UTF_8))
+            .joinToString("") { "%02x".format(it) }
+
+    override fun makeWorkflowRequest(context: String, method: HttpMethod, url: ApiContract, body: String, responseCallback: ResponseCallback) {
+        val key = retenoConfigProvider().accessKey
+        val device = restConfig.deviceId
+        if (workflowContext(key, device) != context) {
+            responseCallback.onFailure(null, null, IllegalStateException("Workflow identity changed"))
+            return
+        }
+        makeRequest(method, url, body, mapOf(HEADER_KEY to key, HEADER_DEVICE_ID to device.id), null, 0, responseCallback)
+    }
 
     companion object {
         private val TAG = RestClientImpl::class.java.simpleName
@@ -71,18 +90,18 @@ internal class RestClientImpl(
 
         try {
             val urlWithParams = generateUrl(apiContract.url, queryParams)
-            /*@formatter:off*/ Logger.i(TAG, "makeRequest(): ", "method = [" , method.httpMethodName , "], apiContract = [" , apiContract.url , "], body = [" , body , "], queryParams = [" , queryParams , "], responseCallback = [" , responseCallback , "]")
+            /*@formatter:off*/ Logger.i(TAG, "makeRequest(): ", "method = [" , method.httpMethodName , "], apiContract = [" , apiContract.url , "]")
             /*@formatter:on*/
             urlConnection =
                 defaultHttpConnection(method, urlWithParams, headers, apiContract)
-            Logger.i(TAG, "makeRequest(): ", "request, headers: ${urlConnection.requestProperties}")
+
 
             if (body != null) {
                 attachBody(urlConnection, body)
             }
             urlConnection.connect()
             val headerFiles: Map<String, List<String>> = urlConnection.headerFields
-            Logger.i(TAG, "makeRequest(): ", "connect, headers: $headers")
+
 
             val responseCode = urlConnection.responseCode
             Logger.i(TAG, "makeRequest(): ", "responseCode: ", responseCode)
@@ -90,13 +109,13 @@ internal class RestClientImpl(
             when {
                 responseCode == 200 -> {
                     val response = urlConnection.inputStream.bufferedReader().use { it.readText() }
-                    Logger.i(TAG, "makeRequest(): ", "response: ", response)
+                    Logger.d(TAG, "makeRequest(): response received")
                     responseCallback.onSuccess(headerFiles, response)
                 }
 
                 responseCode == 301 || responseCode == 302 -> {
                     val response = urlConnection.inputStream.bufferedReader().use { it.readText() }
-                    Logger.i(TAG, "makeRequest(): ", "response: ", response)
+                    Logger.d(TAG, "makeRequest(): response received")
                     responseCallback.onSuccess(headerFiles, response)
                 }
 
@@ -115,8 +134,8 @@ internal class RestClientImpl(
                 else -> {
                     val response =
                         urlConnection.errorStream?.bufferedReader()?.use { it.readText() }
-                    Logger.i(TAG, "makeRequest(): ", "response: ", response)
-                    responseCallback.onFailure(responseCode, response, null)
+                    Logger.d(TAG, "makeRequest(): response received")
+                    responseCallback.onFailure(responseCode, response, null, headerFiles)
                 }
             }
 

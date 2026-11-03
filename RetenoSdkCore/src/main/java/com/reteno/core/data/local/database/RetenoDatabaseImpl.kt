@@ -103,6 +103,17 @@ internal class RetenoDatabaseImpl(private val context: Context) : RetenoDatabase
                 db.execSQL(InAppMessageSchema.SQL_UPGRADE_TABLE_VERSION_9)
             }
         }
+        if (oldVersion < 12) {
+            addMissingColumns(db, InAppMessageSchema.TABLE_NAME, InAppMessageSchema.SQL_UPGRADE_WORKFLOW)
+            addMissingColumns(db, InAppInteractionSchema.TABLE_NAME_IN_APP_INTERACTION, listOf(
+                InAppInteractionSchema.SQL_UPGRADE_CONTEXT,
+                InAppInteractionSchema.SQL_UPGRADE_DELIVERED,
+                InAppInteractionSchema.SQL_UPGRADE_ATTEMPTS,
+                InAppInteractionSchema.SQL_UPGRADE_EXPIRY,
+                InAppInteractionSchema.SQL_UPGRADE_NEXT_ATTEMPT,
+                InAppInteractionSchema.SQL_UPGRADE_ACTION
+            ))
+        }
         if (oldVersion < 11) {
             runMigrationOperation(table = UserSchema.UserAttributesSchema.TABLE_NAME_USER_ATTRIBUTES, oldVersion, newVersion) {
                 db.execSQL(UserSchema.UserAttributesSchema.SQL_UPGRADE_TABLE_VERSION_10)
@@ -484,6 +495,18 @@ internal class RetenoDatabaseImpl(private val context: Context) : RetenoDatabase
             onUpgrade(getSQLiteDatabase(), 1, Integer.MAX_VALUE)
             /*@formatter:off*/ Logger.e(TAG, "attemptToMitigateSqlException(): Upgrade database SUCCESS", ex)
             /*@formatter:on*/
+        }
+    }
+
+    private fun addMissingColumns(db: SQLiteDatabase, table: String, statements: List<String>) {
+        val columns = db.rawQuery("PRAGMA table_info($table)", null).use { cursor ->
+            val names = mutableSetOf<String>()
+            while (cursor.moveToNext()) names.add(cursor.getString(cursor.getColumnIndexOrThrow("name")))
+            names
+        }
+        statements.forEach { statement ->
+            val column = statement.substringAfter(" ADD COLUMN ").substringBefore(' ')
+            if (columns.add(column)) db.execSQL(statement)
         }
     }
 

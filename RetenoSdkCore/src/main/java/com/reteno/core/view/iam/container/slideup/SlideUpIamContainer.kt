@@ -81,7 +81,7 @@ internal class SlideUpIamContainer(
             override fun onConsoleMessage(consoleMessage: ConsoleMessage): Boolean {
                 Log.d(
                     "WEB VIEW TAG",
-                    consoleMessage.message() + " -- From line " + consoleMessage.lineNumber() + " of " + consoleMessage.sourceId()
+                    "In-app renderer console level=${consoleMessage.messageLevel()}"
                 )
                 return true
             }
@@ -121,7 +121,9 @@ internal class SlideUpIamContainer(
         }
     }
 
-    override fun show(activity: Activity) {
+    override fun show(activity: Activity) = show(activity) {}
+
+    override fun show(activity: Activity, onVisible: () -> Unit) {
         try {
             val container = activity.findViewById<ViewGroup>(android.R.id.content) ?: return
             if (!container.contains(parentLayout)) {
@@ -141,6 +143,7 @@ internal class SlideUpIamContainer(
                                 .translationY(0f)
                                 .setInterpolator(LinearInterpolator())
                                 .setDuration(200L)
+                                .withEndAction { if (parentLayout.isShown && webView.isShown) onVisible() }
                                 .start()
                         }
 
@@ -150,6 +153,7 @@ internal class SlideUpIamContainer(
                                 .translationY(0f)
                                 .setInterpolator(LinearInterpolator())
                                 .setDuration(200L)
+                                .withEndAction { if (parentLayout.isShown && webView.isShown) onVisible() }
                                 .start()
                         }
                     }

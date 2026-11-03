@@ -5,6 +5,7 @@ import com.reteno.core.data.remote.model.iam.displayrules.DisplayRuleType
 import com.reteno.core.data.remote.model.iam.displayrules.DisplayRules
 import com.reteno.core.data.remote.model.iam.displayrules.DisplayRulesParsingException
 import com.reteno.core.data.remote.model.iam.displayrules.RuleRelation
+import com.reteno.core.data.remote.model.iam.displayrules.StringOperator
 import com.reteno.core.data.remote.model.iam.displayrules.schedule.ScheduleDisplayRules
 import com.reteno.core.data.remote.model.iam.displayrules.async.AsyncDisplayRules
 import com.reteno.core.data.remote.model.iam.displayrules.async.SegmentRule
@@ -17,6 +18,39 @@ import com.reteno.core.data.remote.model.iam.displayrules.targeting.TargetingRul
 import com.reteno.core.data.remote.model.iam.displayrules.targeting.TargetingRuleGroup
 
 object InAppMessageUtil {
+    fun supportsWorkflowRules(json: JsonObject): Boolean = runCatching {
+        json.entrySet().all { (key, value) ->
+            key in setOf("FREQUENCY", "TARGETING", "SCHEDULE", "ASYNC", "version") ||
+                !value.isJsonObject || value.asJsonObject.get("enabled")?.asBoolean != true
+        } && listOf("SCHEDULE").all { key ->
+            val rules = json.getAsJsonObject(key)
+            rules?.get("enabled")?.asBoolean != true ||
+                rules.getAsJsonArray("predicates").all { ScheduleRule.fromJson(it.asJsonObject) != null }
+        } && run {
+            val targeting = json.getAsJsonObject("TARGETING")
+            if (targeting?.get("enabled")?.asBoolean != true) true else {
+                val schema = targeting.getAsJsonObject("schema")
+                val exclude = schema.getAsJsonObject("exclude")
+                val include = schema.getAsJsonObject("include")
+                // Existing scheduling supports one positive event/timer condition per opportunity.
+                (exclude == null || exclude.getAsJsonArray("groups").isEmpty) &&
+                    include != null && include.getAsJsonArray("groups").size() == 1 &&
+                    include.getAsJsonArray("groups")[0].asJsonObject.getAsJsonArray("conditions").size() == 1 &&
+                    RuleRelation.fromString(include.get("relation")?.asString) != null &&
+                    RuleRelation.fromString(include.getAsJsonArray("groups")[0].asJsonObject.get("relation")?.asString) != null &&
+                    supportsWorkflowTargeting(include.getAsJsonArray("groups")[0].asJsonObject.getAsJsonArray("conditions")[0].asJsonObject)
+            }
+        }
+    }.getOrDefault(false)
+
+    private fun supportsWorkflowTargeting(condition: JsonObject): Boolean {
+        val parsed = TargetingRule.fromJson(condition) ?: return false
+        if (parsed !is TargetingRule.Event) return true
+        val parameters = condition.getAsJsonArray("values")[0].asJsonObject.getAsJsonObject("parameters")
+        return RuleRelation.fromString(parameters.get("relation")?.asString) != null &&
+            parameters.getAsJsonArray("values").all { StringOperator.fromString(it.asJsonObject.get("operator")?.asString) != null }
+    }
+
     fun parseRules(displayRulesJson: JsonObject): DisplayRules {
         return DisplayRules(
             parseFrequencyRules(displayRulesJson),

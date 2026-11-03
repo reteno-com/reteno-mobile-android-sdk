@@ -15,6 +15,10 @@ internal interface IamController {
 
     fun widgetInitFailed(tenantId:String, jsEvent: IamJsEvent)
 
+    fun canPresentWorkflow(message: InAppMessage): Boolean
+
+    fun canResumeWorkflow(message: InAppMessage): Boolean
+
     fun reset()
 
     suspend fun getInAppMessages()

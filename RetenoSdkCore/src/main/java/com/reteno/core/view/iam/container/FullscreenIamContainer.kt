@@ -15,6 +15,7 @@ import android.widget.FrameLayout
 import android.widget.PopupWindow
 import androidx.cardview.widget.CardView
 import androidx.core.widget.PopupWindowCompat
+import androidx.core.view.doOnPreDraw
 import com.reteno.core.domain.controller.IamFetchResult
 import com.reteno.core.features.iam.RetenoAndroidHandler
 import com.reteno.core.util.Logger
@@ -104,7 +105,7 @@ internal class FullscreenIamContainer(
             override fun onConsoleMessage(consoleMessage: ConsoleMessage): Boolean {
                 Log.d(
                     "WEB VIEW TAG",
-                    consoleMessage.message() + " -- From line " + consoleMessage.lineNumber() + " of " + consoleMessage.sourceId()
+                    "In-app renderer console level=${consoleMessage.messageLevel()}"
                 )
                 return true
             }
@@ -157,6 +158,18 @@ internal class FullscreenIamContainer(
         } catch (e: Exception) {
             /*@formatter:off*/ Logger.e(TAG, "show(): popupWindow.show() ", e)
             /*@formatter:on*/
+        }
+    }
+
+    override fun show(activity: Activity, onVisible: () -> Unit) {
+        show(activity)
+        check(popupWindow.isShowing) { "Native In-app window was not presented" }
+        if (popupWindow.isShowing) {
+            parentLayout.doOnPreDraw {
+                parentLayout.post {
+                    if (popupWindow.isShowing && parentLayout.isShown) onVisible()
+                }
+            }
         }
     }
 

@@ -3,6 +3,8 @@ package com.reteno.core.data.remote.api
 import com.reteno.core.domain.ResponseCallback
 
 internal interface RestClient {
+    fun workflowContext(): String
+    fun makeWorkflowRequest(context: String, method: HttpMethod, url: ApiContract, body: String, responseCallback: ResponseCallback)
 
     /**
      *  Perform Http request with

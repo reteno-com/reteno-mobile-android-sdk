@@ -15,6 +15,12 @@ fun ContentValues.putInAppInteraction(inAppInteractionDb: InAppInteractionDb) {
     put(InAppInteractionSchema.COLUMN_IN_APP_INSTANCE_ID, inAppInteractionDb.messageInstanceId)
     put(InAppInteractionSchema.COLUMN_IN_APP_INTERACTION_STATUS, inAppInteractionDb.status)
     put(InAppInteractionSchema.COLUMN_IN_APP_STATUS_DESCRIPTION, inAppInteractionDb.statusDescription)
+    put(InAppInteractionSchema.COLUMN_WORKFLOW_CONTEXT, inAppInteractionDb.workflowContext)
+    put(InAppInteractionSchema.COLUMN_DELIVERED, if (inAppInteractionDb.delivered) 1 else 0)
+    put(InAppInteractionSchema.COLUMN_ATTEMPTS, inAppInteractionDb.attempts)
+    put(InAppInteractionSchema.COLUMN_NEXT_ATTEMPT, inAppInteractionDb.nextAttemptAt)
+    put(InAppInteractionSchema.COLUMN_WORKFLOW_EXPIRY, inAppInteractionDb.workflowExpiresAt)
+    put(InAppInteractionSchema.COLUMN_ACTION, inAppInteractionDb.action)
 }
 
 fun Cursor.getInAppInteraction(): InAppInteractionDb? {
@@ -33,6 +39,12 @@ fun Cursor.getInAppInteraction(): InAppInteractionDb? {
             messageInstanceId = messageInstanceId,
             status = status,
             statusDescription = statusDescription,
+            workflowContext = getStringOrNull(getColumnIndex(InAppInteractionSchema.COLUMN_WORKFLOW_CONTEXT)),
+            delivered = getLongOrNull(getColumnIndex(InAppInteractionSchema.COLUMN_DELIVERED)) == 1L,
+            nextAttemptAt = getLongOrNull(getColumnIndex(InAppInteractionSchema.COLUMN_NEXT_ATTEMPT)) ?: 0,
+            attempts = getLongOrNull(getColumnIndex(InAppInteractionSchema.COLUMN_ATTEMPTS))?.toInt() ?: 0,
+            workflowExpiresAt = getStringOrNull(getColumnIndex(InAppInteractionSchema.COLUMN_WORKFLOW_EXPIRY)),
+            action = getStringOrNull(getColumnIndex(InAppInteractionSchema.COLUMN_ACTION)),
         )
     } else {
         null

@@ -17,7 +17,7 @@ internal class RetenoDatabaseManagerInAppMessagesImpl(private val database: Rete
     RetenoDatabaseManagerInAppMessages {
 
     override fun insertInAppMessages(inApps: List<InAppMessageDb>) {
-        /*@formatter:off*/ Logger.i(TAG, "insertInAppMessages(): ", "inApps = [", inApps, "]")
+        Logger.d(TAG, "insertInAppMessages(): ")
         /*@formatter:on*/
 
         val contentValues = inApps.toContentValuesList()
@@ -52,6 +52,10 @@ internal class RetenoDatabaseManagerInAppMessagesImpl(private val database: Rete
                     "  ${InAppMessageSchema.TABLE_NAME}.${InAppMessageSchema.COLUMN_IAM_ROW_ID} AS ${InAppMessageSchema.COLUMN_IAM_ROW_ID}," +
                     "  ${InAppMessageSchema.TABLE_NAME}.${InAppMessageSchema.COLUMN_IAM_ID} AS ${InAppMessageSchema.COLUMN_IAM_ID}," +
                     "  ${InAppMessageSchema.TABLE_NAME}.${InAppMessageSchema.COLUMN_IAM_INSTANCE_ID} AS ${InAppMessageSchema.COLUMN_IAM_INSTANCE_ID}," +
+                    "  ${InAppMessageSchema.TABLE_NAME}.${InAppMessageSchema.COLUMN_WORKFLOW_IID} AS ${InAppMessageSchema.COLUMN_WORKFLOW_IID}," +
+                    "  ${InAppMessageSchema.TABLE_NAME}.${InAppMessageSchema.COLUMN_WORKFLOW_CONTEXT} AS ${InAppMessageSchema.COLUMN_WORKFLOW_CONTEXT}," +
+                    "  ${InAppMessageSchema.TABLE_NAME}.${InAppMessageSchema.COLUMN_WORKFLOW_EXPIRY} AS ${InAppMessageSchema.COLUMN_WORKFLOW_EXPIRY}," +
+                    "  ${InAppMessageSchema.TABLE_NAME}.${InAppMessageSchema.COLUMN_IAM_POSITION} AS ${InAppMessageSchema.COLUMN_IAM_POSITION}," +
                     "  ${InAppMessageSchema.TABLE_NAME}.${DbSchema.COLUMN_TIMESTAMP} AS ${DbSchema.COLUMN_TIMESTAMP}," +
                     "  ${InAppMessageSchema.TABLE_NAME}.${InAppMessageSchema.COLUMN_IAM_DISPLAY_RULES} AS ${InAppMessageSchema.COLUMN_IAM_DISPLAY_RULES}," +
                     "  ${InAppMessageSchema.TABLE_NAME}.${InAppMessageSchema.COLUMN_IAM_LAST_SHOW_TIME} AS ${InAppMessageSchema.COLUMN_IAM_LAST_SHOW_TIME}," +
@@ -105,15 +109,15 @@ internal class RetenoDatabaseManagerInAppMessagesImpl(private val database: Rete
     }
 
     override fun deleteInAppMessages(inApps: List<InAppMessageDb>) {
-        /*@formatter:off*/ Logger.i(TAG, "deleteInAppMessages(): ", "inApps = [", inApps, "]")
+        Logger.d(TAG, "deleteInAppMessages(): ")
         /*@formatter:on*/
-        val ids = inApps.map { it.messageId }
-
-        for (id: Long in ids) {
+        for (message in inApps) {
             database.delete(
                 table = InAppMessageSchema.TABLE_NAME,
-                whereClause = "${InAppMessageSchema.COLUMN_IAM_ID}=?",
-                whereArgs = arrayOf(id.toString())
+                whereClause = if (message.iid == null) "${InAppMessageSchema.COLUMN_IAM_ID}=? AND ${InAppMessageSchema.COLUMN_WORKFLOW_IID} IS NULL"
+                    else "${InAppMessageSchema.COLUMN_WORKFLOW_IID}=? AND ${InAppMessageSchema.COLUMN_WORKFLOW_CONTEXT}=?",
+                whereArgs = if (message.iid == null) arrayOf(message.messageId.toString())
+                    else arrayOf(message.iid, message.workflowContext)
             )
         }
     }

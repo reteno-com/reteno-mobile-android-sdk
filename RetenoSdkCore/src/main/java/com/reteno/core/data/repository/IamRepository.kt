@@ -14,6 +14,9 @@ internal interface IamRepository {
     fun widgetInitFailed(widgetId: String, jsEvent: IamJsEvent)
     suspend fun getInAppMessages(): InAppMessagesList
     suspend fun getInAppMessagesContent(messageInstanceIds: List<Long>): List<InAppMessageContent>
+    suspend fun getWorkflowContent(messages: List<InAppMessage>): List<InAppMessageContent>
+    fun isWorkflowEligible(message: InAppMessage): Boolean
+    fun isWorkflowContextCurrent(message: InAppMessage): Boolean
     suspend fun saveInAppMessages(inAppMessageList: InAppMessagesList)
     suspend fun updateInAppMessages(inAppMessages: List<InAppMessage>)
     suspend fun checkUserInSegments(segmentIds: List<Long>): List<AsyncRulesCheckResult>
