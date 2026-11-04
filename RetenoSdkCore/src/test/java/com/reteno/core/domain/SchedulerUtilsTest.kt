@@ -1,50 +1,54 @@
 package com.reteno.core.domain
 
-import com.reteno.core.base.robolectric.BaseRobolectricTest
-import com.reteno.core.util.Util
-import io.mockk.every
-import io.mockk.mockk
-import io.mockk.verify
-import junit.framework.Assert.assertEquals
-import org.junit.Test
-import java.time.ZonedDateTime
+import com.reteno.test.given
+import com.reteno.test.runUnitTest
+import com.reteno.test.then
+import com.reteno.test.whenn
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Test
 
-class SchedulerUtilsTest: BaseRobolectricTest() {
+internal class SchedulerUtilsTest {
 
     @Test
-    fun whenGetOutdatedData_thenReturnDataMinusDay() {
-        // Given
-        val mockDate = mockk<ZonedDateTime>()
-        val mockOutDatedData = mockk<ZonedDateTime>()
-        every { Util.isDebugView() } returns false
-        every { ZonedDateTime.now() } returns mockDate
-        every { mockDate.minusHours(any()) } returns mockOutDatedData
+    fun `should keep user and device data for forty hours in release`() = runUnitTest {
+        given()
+        val debugView = false
 
-        // When
-        val result = SchedulerUtils.getOutdatedTime()
+        whenn()
+        val keepFor = SchedulerUtils.outdatedDeviceAndUserTime(debugView = debugView, debugBuild = false)
 
-        // Then
-        assertEquals(mockOutDatedData, result)
-        verify(exactly = 1) { ZonedDateTime.now() }
-        verify(exactly = 1) { mockDate.minusHours(24) }
+        then()
+        assertEquals(FORTY_HOURS, keepFor)
     }
 
     @Test
-    fun givenDebugMode_whenGetOutdatedData_thenReturnDataMinusOneHour() {
-        // Given
-        val mockData = mockk<ZonedDateTime>()
-        val mockOutDatedDate = mockk<ZonedDateTime>()
-        every { Util.isDebugView() } returns true
-        every { ZonedDateTime.now() } returns mockData
-        every { mockData.minusHours(any()) } returns mockOutDatedDate
+    fun `should keep user and device data for five minutes while debugging`() = runUnitTest {
+        given()
+        val modes = listOf(true to false, false to true)
 
-        // When
-        val result = SchedulerUtils.getOutdatedTime()
+        whenn()
+        val keepFor = modes.map { (view, build) ->
+            SchedulerUtils.outdatedDeviceAndUserTime(debugView = view, debugBuild = build)
+        }
 
-        // Then
-        assertEquals(mockOutDatedDate, result)
-        verify(exactly = 1) { ZonedDateTime.now() }
-        verify(exactly = 1) { mockData.minusHours(1) }
+        then()
+        assertEquals(listOf(FIVE_MINUTES, FIVE_MINUTES), keepFor)
     }
 
+    @Test
+    fun `should keep user and device data for five minutes in debug build`() = runUnitTest {
+        given()
+        val expected = FIVE_MINUTES
+
+        whenn()
+        val keepFor = SchedulerUtils.getOutdatedDeviceAndUserTime()
+
+        then()
+        assertEquals(expected, keepFor)
+    }
+
+    companion object {
+        private const val FIVE_MINUTES = 5L * 60L * 1000L
+        private const val FORTY_HOURS = 40L * 60L * 60L * 1000L
+    }
 }

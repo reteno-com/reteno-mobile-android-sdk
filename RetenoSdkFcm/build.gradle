@@ -2,8 +2,42 @@ plugins {
     id 'com.android.library'
     id 'org.jetbrains.kotlin.android'
     id 'com.vanniktech.maven.publish'
+    id 'de.mannodermaus.android-junit5'
+    id 'org.jetbrains.kotlinx.kover'
 }
 apply from: file("$project.rootDir/config.gradle")
+apply from: "$project.rootDir/test_dependencies.gradle"
+
+kover {
+    excludeInstrumentation {
+        packages('junit.framework', 'org.junit', 'org.robolectric', 'io.mockk')
+    }
+}
+
+koverReport {
+    androidReports('debug') {
+        filters {
+            includes {
+                packages('com.reteno.fcm')
+            }
+            excludes {
+                classes('com.reteno.fcm.R', 'com.reteno.fcm.R$*', 'com.reteno.fcm.BuildConfig')
+            }
+        }
+        verify {
+            rule('FCM module is fully covered') {
+                bound {
+                    minValue = 100
+                    metric = kotlinx.kover.gradle.plugin.dsl.MetricType.LINE
+                }
+                bound {
+                    minValue = 100
+                    metric = kotlinx.kover.gradle.plugin.dsl.MetricType.BRANCH
+                }
+            }
+        }
+    }
+}
 
 android {
     def globalConfig = rootProject.ext
@@ -39,6 +73,13 @@ android {
     }
     kotlinOptions {
         jvmTarget = '1.8'
+        freeCompilerArgs += ['-opt-in=com.reteno.core.InternalRetenoApi']
+    }
+
+    testOptions {
+        unitTests {
+            includeAndroidResources = true
+        }
     }
 }
 
@@ -56,4 +97,6 @@ dependencies {
     compileOnly("com.google.firebase:firebase-messaging-ktx:23.1.1") {
         exclude module: 'support-v4'
     }
+
+    testDependencies()
 }

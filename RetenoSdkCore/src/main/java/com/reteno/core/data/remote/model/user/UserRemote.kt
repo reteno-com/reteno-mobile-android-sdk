@@ -19,8 +19,6 @@ internal data class UserRemote(
     fun createDiffModel(olderModel: UserRemote?): UserRemote? {
         if (olderModel == null) return copy()
 
-        if (olderModel == this) return null
-
         var somethingChanged = false
         val result = copy()
 

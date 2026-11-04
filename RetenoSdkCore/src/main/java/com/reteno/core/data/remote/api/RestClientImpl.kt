@@ -1,33 +1,46 @@
 package com.reteno.core.data.remote.api
 
-import android.net.Uri
 import com.reteno.core.BuildConfig
 import com.reteno.core.RetenoConfig
 import com.reteno.core.data.local.config.DeviceId
 import com.reteno.core.data.local.config.RestConfig
-import com.reteno.core.domain.ResponseCallback
-import com.reteno.core.util.Logger
-import com.reteno.core.util.Util
-import java.security.MessageDigest
 import com.reteno.core.data.remote.mapper.toJson
-import java.io.BufferedWriter
+import com.reteno.core.domain.ResponseCallback
+import com.reteno.core.internal.log.LogPriority
+import com.reteno.core.internal.log.Redact
+import com.reteno.core.internal.log.RetenoLogSink
+import com.reteno.core.internal.log.log
+import com.reteno.core.util.Util
+import java.io.InputStream
+import java.io.InputStreamReader
+import java.io.OutputStream
 import java.io.OutputStreamWriter
 import java.net.HttpURLConnection
-import java.util.zip.GZIPOutputStream
-import javax.net.ssl.SSLSocketFactory
+import java.net.URLEncoder
+import java.security.MessageDigest
 
 internal class RestClientImpl(
     private val restConfig: RestConfig,
-    private val retenoConfigProvider: () -> RetenoConfig
+    private val retenoConfigProvider: () -> RetenoConfig,
+    private val logSink: RetenoLogSink,
+    private val connections: HttpConnections = HttpsConnections
 ) : RestClient {
 
     override fun workflowContext(): String = workflowContext(retenoConfigProvider().accessKey, restConfig.deviceId)
 
-    private fun workflowContext(key: String, device: DeviceId): String =
-        MessageDigest.getInstance("SHA-256").digest(listOf(key, device.id, device.externalId, device.email, device.phone).toJson().toByteArray(Charsets.UTF_8))
-            .joinToString("") { "%02x".format(it) }
+    private fun workflowContext(key: String, device: DeviceId): String {
+        val identity = listOf(key, device.id, device.externalId, device.email, device.phone)
+            .toJson().toByteArray(Charsets.UTF_8)
+        return MessageDigest.getInstance("SHA-256").digest(identity).joinToString("") { "%02x".format(it) }
+    }
 
-    override fun makeWorkflowRequest(context: String, method: HttpMethod, url: ApiContract, body: String, responseCallback: ResponseCallback) {
+    override fun makeWorkflowRequest(
+        context: String,
+        method: HttpMethod,
+        url: ApiContract,
+        body: String,
+        responseCallback: ResponseCallback
+    ) {
         val key = retenoConfigProvider().accessKey
         val device = restConfig.deviceId
         if (workflowContext(key, device) != context) {
@@ -37,46 +50,6 @@ internal class RestClientImpl(
         makeRequest(method, url, body, mapOf(HEADER_KEY to key, HEADER_DEVICE_ID to device.id), null, 0, responseCallback)
     }
 
-    companion object {
-        private val TAG = RestClientImpl::class.java.simpleName
-
-        /** TIMEOUT should be not more than @see [com.reteno.core.domain.controller.ScheduleController.REGULAR_DELAY]
-         * to prevent adding new operations while REST queries are ongoing
-         **/
-        private const val TIMEOUT = 10_000
-
-        private const val READ_TIMEOUT = 15_000
-
-        private const val HEADER_DEBUG = "X-Reteno-Debug"
-
-        private const val HEADER_KEY = "X-Reteno-Access-Key"
-        private const val HEADER_VERSION = "X-Reteno-SDK-Version"
-        private const val HEADER_DEVICE_ID = "X-Reteno-Device-ID"
-
-        private const val HEADER_CONTENT = "Content-Type"
-        private const val HEADER_CONTENT_VALUE = "application/json; charset=UTF-8"
-        private const val HEADER_ENCODING = "Accept-Encoding"
-        private const val HEADER_CONTENT_ENCODING = "Content-Encoding"
-        private const val HEADER_ENCODING_VALUE = "gzip"
-        private const val HEADER_ACCEPT = "Accept"
-        private const val HEADER_ACCEPT_VALUE = "*/*"
-        internal const val HEADER_X_AMZ_META_VERSION = "x-amz-meta-version"
-    }
-
-
-    /**
-     *  Perform Http request with
-     *
-     *  @param method HttpMethod type
-     *  @param url base url + endpoint wrapped in ApiContract
-     *  @param body JSON body for POST and PUT methods
-     *  @param queryParams params for GET method
-     *  @param responseCallback
-     *
-     *  @see com.reteno.data.remote.api.HttpMethod
-     *  @see com.reteno.data.remote.api.ApiContract
-     *  @see com.reteno.domain.ResponseCallback
-     */
     override fun makeRequest(
         method: HttpMethod,
         apiContract: ApiContract,
@@ -86,163 +59,149 @@ internal class RestClientImpl(
         retryCount: Int,
         responseCallback: ResponseCallback
     ) {
-        var urlConnection: HttpURLConnection? = null
-
-        try {
-            val urlWithParams = generateUrl(apiContract.url, queryParams)
-            /*@formatter:off*/ Logger.i(TAG, "makeRequest(): ", "method = [" , method.httpMethodName , "], apiContract = [" , apiContract.url , "]")
-            /*@formatter:on*/
-            urlConnection =
-                defaultHttpConnection(method, urlWithParams, headers, apiContract)
-
-
-            if (body != null) {
-                attachBody(urlConnection, body)
-            }
-            urlConnection.connect()
-            val headerFiles: Map<String, List<String>> = urlConnection.headerFields
-
-
-            val responseCode = urlConnection.responseCode
-            Logger.i(TAG, "makeRequest(): ", "responseCode: ", responseCode)
-
-            when {
-                responseCode == 200 -> {
-                    val response = urlConnection.inputStream.bufferedReader().use { it.readText() }
-                    Logger.d(TAG, "makeRequest(): response received")
-                    responseCallback.onSuccess(headerFiles, response)
-                }
-
-                responseCode == 301 || responseCode == 302 -> {
-                    val response = urlConnection.inputStream.bufferedReader().use { it.readText() }
-                    Logger.d(TAG, "makeRequest(): response received")
-                    responseCallback.onSuccess(headerFiles, response)
-                }
-
-                (responseCode >= 500 || responseCode == 408) && retryCount != 0 -> {
-                    makeRequest(
-                        method,
-                        apiContract,
-                        body,
-                        headers,
-                        queryParams,
-                        retryCount - 1,
-                        responseCallback
-                    )
-                }
-
-                else -> {
-                    val response =
-                        urlConnection.errorStream?.bufferedReader()?.use { it.readText() }
-                    Logger.d(TAG, "makeRequest(): response received")
-                    responseCallback.onFailure(responseCode, response, null, headerFiles)
-                }
-            }
-
-        } catch (e: Exception) {
-            val errorMessages = """
-                    m: $method,
-                    u: ${apiContract.url},
-                    e: ${e.message}
-                """.trimIndent()
-            Logger.d(TAG, "makeRequest(): ", errorMessages)
-            responseCallback.onFailure(null, null, e)
-        } finally {
-            /*@formatter:off*/ Logger.i(TAG, "makeRequest(): ", "method = ", method.httpMethodName, "; apiContract = ", apiContract.url, "; status = disconnected") /*@formatter:on*/
-            urlConnection?.disconnect()
+        val response = try {
+            exchange(method, apiContract, body, headers, queryParams)
+        } catch (error: Exception) {
+            logSink.log(LogPriority.DEBUG, TAG) { "${method.httpMethodName} failed: ${Redact.summary(error)}" }
+            responseCallback.onFailure(null, null, error)
+            return
         }
+        logSink.log(LogPriority.INFO, TAG) { "${method.httpMethodName} → ${response.code}" }
+        if (response.isRetryable && retryCount != 0) {
+            makeRequest(method, apiContract, body, headers, queryParams, retryCount - 1, responseCallback)
+            return
+        }
+        response.deliverTo(responseCallback)
     }
 
-    private fun defaultHttpConnection(
+    private fun exchange(
         method: HttpMethod,
-        url: String,
+        apiContract: ApiContract,
+        body: String?,
         headers: Map<String, String>?,
-        apiContract: ApiContract
-    ): HttpURLConnection {
-        val useSsl = url.startsWith("https") // TODO (bs) need to test
-        val urlConnection = ConnectionManager.openConnection(url)
-
-        urlConnection.apply {
-
-            if ( Util.isDebugView()) {
-                setRequestProperty(HEADER_DEBUG, "true")
+        queryParams: Map<String, String?>?
+    ): HttpResponse {
+        val connection = connections.open(withQuery(apiContract.url, queryParams))
+        try {
+            connection.prepare(method, apiContract, headers)
+            if (body != null) {
+                connection.doOutput = true
+                write(connection.outputStream, body)
             }
-
-            when (apiContract) {
-                is ApiContract.MobileApi -> {
-                    setRequestProperty(HEADER_KEY, retenoConfigProvider().accessKey)
-                    setRequestProperty(HEADER_VERSION, "$${retenoConfigProvider().platform} ${BuildConfig.SDK_VERSION}")
-                }
-                is ApiContract.InAppMessages,
-                is ApiContract.AppInbox,
-                is ApiContract.Recommendation -> {
-                    setRequestProperty(HEADER_KEY, retenoConfigProvider().accessKey)
-                    setRequestProperty(HEADER_VERSION, "$${retenoConfigProvider().platform} ${BuildConfig.SDK_VERSION}")
-                    setRequestProperty(HEADER_DEVICE_ID, restConfig.deviceId.id)
-                }
-                else -> { /* NO-OP */ }
+            val code = connection.responseCode
+            if (code == HTTP_OK || code == HTTP_MOVED_PERMANENTLY || code == HTTP_FOUND) {
+                return Success(code, connection.headerFields, readText(connection.inputStream))
             }
-            setRequestProperty(HEADER_ACCEPT, HEADER_ACCEPT_VALUE)
-            setRequestProperty(HEADER_CONTENT, HEADER_CONTENT_VALUE)
-
-            if (useSsl) {
-                val socketFactory = SSLSocketFactory.getDefault() as SSLSocketFactory
-                urlConnection.sslSocketFactory =
-                    socketFactory
-            }
-            if (method != HttpMethod.GET) {
-                doInput = true
-                setRequestProperty(HEADER_ENCODING, HEADER_ENCODING_VALUE)
-                setChunkedStreamingMode(0)
-            }
-            if (!headers.isNullOrEmpty()) {
-                headers.forEach { (key, value) ->
-                    setRequestProperty(key, value)
-                }
-            }
-
-            readTimeout = READ_TIMEOUT
-            connectTimeout = TIMEOUT
-            requestMethod = method.httpMethodName
-
-            useCaches = false
-            instanceFollowRedirects = true
-        }
-
-        return urlConnection
-    }
-
-    private fun generateUrl(url: String, params: Map<String, String?>?): String {
-        return if (!params.isNullOrEmpty()) {
-            attachGetParams(url, params)
-        } else {
-            url
+            return Failure(code, connection.errorStream?.let { readText(it) }, connection.headerFields)
+        } finally {
+            connection.disconnect()
         }
     }
 
-    private fun attachBody(urlConnection: HttpURLConnection, body: String) {
-        val contentEncoding =
-            urlConnection.getRequestProperty(HEADER_CONTENT_ENCODING).orEmpty()
-        val os = if (contentEncoding.contains(HEADER_ENCODING_VALUE)) {
-            GZIPOutputStream(urlConnection.outputStream)
-        } else {
-            urlConnection.outputStream
+    private fun HttpURLConnection.prepare(method: HttpMethod, apiContract: ApiContract, headers: Map<String, String>?) {
+        if (Util.isDebugView()) {
+            setRequestProperty(HEADER_DEBUG, "true")
         }
-        val writer = BufferedWriter(OutputStreamWriter(os))
-
-        writer.write(body)
-        writer.close()
-        os.close()
+        if (apiContract is ApiContract.MobileApi || apiContract.identifiesDevice()) {
+            val config = retenoConfigProvider()
+            setRequestProperty(HEADER_KEY, config.accessKey)
+            setRequestProperty(HEADER_VERSION, "${config.platform} ${BuildConfig.SDK_VERSION}")
+        }
+        if (apiContract.identifiesDevice()) {
+            setRequestProperty(HEADER_DEVICE_ID, restConfig.deviceId.id)
+        }
+        setRequestProperty(HEADER_ACCEPT, HEADER_ACCEPT_VALUE)
+        setRequestProperty(HEADER_CONTENT, HEADER_CONTENT_VALUE)
+        if (method != HttpMethod.GET) {
+            setRequestProperty(HEADER_ENCODING, HEADER_ENCODING_VALUE)
+            setChunkedStreamingMode(0)
+        }
+        headers?.forEach { (key, value) -> setRequestProperty(key, value) }
+        readTimeout = READ_TIMEOUT
+        connectTimeout = TIMEOUT
+        requestMethod = method.httpMethodName
+        useCaches = false
+        instanceFollowRedirects = true
     }
 
-    private fun attachGetParams(url: String, params: Map<String, String?>): String {
-        val builder = Uri.parse(url).buildUpon()
-        params
-            .filter { it.value != null }
-            .forEach { (key, value) ->
-            builder.appendQueryParameter(key, value)
-        }
-        return builder.build().toString()
+    private fun ApiContract.identifiesDevice(): Boolean =
+        this is ApiContract.InAppMessages || this is ApiContract.AppInbox || this is ApiContract.Recommendation
+
+    private fun withQuery(url: String, params: Map<String, String?>?): String {
+        val query = params.orEmpty()
+            .mapNotNull { (key, value) -> if (value == null) null else "${encode(key)}=${encode(value)}" }
+        if (query.isEmpty()) return url
+        val separator = if (url.contains('?')) "&" else "?"
+        return query.joinToString(separator = "&", prefix = "$url$separator")
     }
 
+    private fun encode(value: String): String = URLEncoder.encode(value, "UTF-8").replace("+", "%20")
+
+    private fun write(stream: OutputStream, body: String) {
+        val writer = OutputStreamWriter(stream, Charsets.UTF_8)
+        try {
+            writer.write(body)
+        } finally {
+            writer.close()
+        }
+    }
+
+    private fun readText(stream: InputStream): String {
+        val reader = InputStreamReader(stream, Charsets.UTF_8)
+        try {
+            return reader.readText()
+        } finally {
+            reader.close()
+        }
+    }
+
+    private abstract class HttpResponse(val code: Int) {
+
+        val isRetryable: Boolean
+            get() = code >= HTTP_SERVER_ERROR || code == HTTP_CLIENT_TIMEOUT
+
+        abstract fun deliverTo(callback: ResponseCallback)
+    }
+
+    private class Success(code: Int, val headers: Map<String, List<String>>, val body: String) : HttpResponse(code) {
+
+        override fun deliverTo(callback: ResponseCallback) {
+            callback.onSuccess(headers, body)
+        }
+    }
+
+    private class Failure(code: Int, val body: String?, val headers: Map<String, List<String>>) : HttpResponse(code) {
+
+        override fun deliverTo(callback: ResponseCallback) {
+            callback.onFailure(code, body, null, headers)
+        }
+    }
+
+    companion object {
+        private const val TAG = "RestClientImpl"
+
+        /** TIMEOUT should be not more than @see [com.reteno.core.internal.action.sync.DataSync.REGULAR_DELAY]
+         * to prevent adding new operations while REST queries are ongoing
+         **/
+        private const val TIMEOUT = 10_000
+        private const val READ_TIMEOUT = 15_000
+
+        private const val HTTP_OK = 200
+        private const val HTTP_MOVED_PERMANENTLY = 301
+        private const val HTTP_FOUND = 302
+        private const val HTTP_CLIENT_TIMEOUT = 408
+        private const val HTTP_SERVER_ERROR = 500
+
+        private const val HEADER_DEBUG = "X-Reteno-Debug"
+        private const val HEADER_KEY = "X-Reteno-Access-Key"
+        private const val HEADER_VERSION = "X-Reteno-SDK-Version"
+        private const val HEADER_DEVICE_ID = "X-Reteno-Device-ID"
+        private const val HEADER_CONTENT = "Content-Type"
+        private const val HEADER_CONTENT_VALUE = "application/json; charset=UTF-8"
+        private const val HEADER_ENCODING = "Accept-Encoding"
+        private const val HEADER_ENCODING_VALUE = "gzip"
+        private const val HEADER_ACCEPT = "Accept"
+        private const val HEADER_ACCEPT_VALUE = "*/*"
+        internal const val HEADER_X_AMZ_META_VERSION = "x-amz-meta-version"
+    }
 }

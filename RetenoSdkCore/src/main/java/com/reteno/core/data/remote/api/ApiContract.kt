@@ -1,5 +1,7 @@
 package com.reteno.core.data.remote.api
 
+import java.net.URLEncoder
+
 internal sealed interface ApiContract {
 
     val url: String
@@ -63,7 +65,7 @@ internal sealed interface ApiContract {
         }
 
         class GetRecoms(recomVariantId: String) : Recommendation() {
-            override val url = "${BASE_URL}$recomVariantId/request"
+            override val url = "${BASE_URL}${URLEncoder.encode(recomVariantId, "UTF-8").replace("+", "%20")}/request"
         }
 
         object PostRecoms : Recommendation() {

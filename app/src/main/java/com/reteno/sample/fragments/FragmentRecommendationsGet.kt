@@ -18,13 +18,12 @@ import com.reteno.core.domain.model.recommendation.get.RecomFilter
 import com.reteno.core.domain.model.recommendation.get.RecomRequest
 import com.reteno.core.features.recommendation.GetRecommendationResponseCallback
 import com.reteno.core.features.recommendation.GetRecommendationResponseJsonCallback
-import com.reteno.core.util.Logger.i
 import com.reteno.sample.BaseFragment
 import com.reteno.sample.R
 import com.reteno.sample.databinding.FragmentRecommendationsGetBinding
 import com.reteno.sample.databinding.ItemRecommendationsGetBinding
-import com.reteno.sample.fragments.database.ViewHolderListener
 import com.reteno.sample.model.RecommendationResponseFull
+import com.reteno.sample.util.SampleLog.i
 
 class FragmentRecommendationsGet : BaseFragment() {
     private var binding: FragmentRecommendationsGetBinding? = null

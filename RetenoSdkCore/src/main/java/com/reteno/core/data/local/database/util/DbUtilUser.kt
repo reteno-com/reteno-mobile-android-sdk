@@ -19,15 +19,9 @@ import com.reteno.core.util.allElementsNull
 fun ContentValues.putUser(user: UserDb) {
     put(UserSchema.COLUMN_DEVICE_ID, user.deviceId)
     put(UserSchema.COLUMN_EXTERNAL_USER_ID, user.externalUserId)
-    user.subscriptionKeys?.toJson()?.let { subscriptionKeys ->
-        put(UserSchema.COLUMN_SUBSCRIPTION_KEYS, subscriptionKeys)
-    }
-    user.groupNamesInclude?.toJson()?.let { groupNamesInclude ->
-        put(UserSchema.COLUMN_GROUP_NAMES_INCLUDE, groupNamesInclude)
-    }
-    user.groupNamesExclude?.toJson()?.let { groupNamesExclude ->
-        put(UserSchema.COLUMN_GROUP_NAMES_EXCLUDE, groupNamesExclude)
-    }
+    putJsonIfPresent(UserSchema.COLUMN_SUBSCRIPTION_KEYS, user.subscriptionKeys)
+    putJsonIfPresent(UserSchema.COLUMN_GROUP_NAMES_INCLUDE, user.groupNamesInclude)
+    putJsonIfPresent(UserSchema.COLUMN_GROUP_NAMES_EXCLUDE, user.groupNamesExclude)
     put(UserSchema.COLUMN_SYNCHRONIZED_WITH_BACKEND, user.isSynchronizedWithBackend?.toString())
 }
 
@@ -42,8 +36,12 @@ fun ContentValues.putUserAttributes(parentRowId: Long, userAttributes: UserAttri
     put(UserSchema.UserAttributesSchema.COLUMN_TIME_ZONE, userAttributes.timeZone)
     put(UserSchema.UserAttributesSchema.COLUMN_MARKET_ID, userAttributes.marketId)
 
-    userAttributes.fields?.toJson()?.let { userAttrs ->
-        put(UserSchema.UserAttributesSchema.COLUMN_CUSTOM_FIELDS, userAttrs)
+    putJsonIfPresent(UserSchema.UserAttributesSchema.COLUMN_CUSTOM_FIELDS, userAttributes.fields)
+}
+
+internal fun ContentValues.putJsonIfPresent(column: String, value: Any?) {
+    if (value != null) {
+        put(column, value.toJson())
     }
 }
 
@@ -74,7 +72,8 @@ fun Cursor.getUser(): UserDb? {
     val lastName = getStringOrNull(getColumnIndex(UserSchema.UserAttributesSchema.COLUMN_LAST_NAME))
     val languageCode = getStringOrNull(getColumnIndex(UserSchema.UserAttributesSchema.COLUMN_LANGUAGE_CODE))
     val timeZone = getStringOrNull(getColumnIndex(UserSchema.UserAttributesSchema.COLUMN_TIME_ZONE))
-    val customFields = getStringOrNull(getColumnIndex(UserSchema.UserAttributesSchema.COLUMN_CUSTOM_FIELDS))?.listFromJson<UserCustomFieldDb>()
+    val customFields = getStringOrNull(getColumnIndex(UserSchema.UserAttributesSchema.COLUMN_CUSTOM_FIELDS))
+        ?.listFromJson<UserCustomFieldDb>()
     val marketId = getStringOrNull(getColumnIndex(UserSchema.UserAttributesSchema.COLUMN_MARKET_ID))
 
     val userAttributes = if (allElementsNull(
@@ -104,29 +103,31 @@ fun Cursor.getUser(): UserDb? {
         )
     }
 
-    val rowId = getStringOrNull(getColumnIndex(UserSchema.COLUMN_USER_ROW_ID))
+    val rowId = getString(getColumnIndex(UserSchema.COLUMN_USER_ROW_ID))
     val createdAt = getStringOrNull(getColumnIndex(DbSchema.COLUMN_TIMESTAMP))
     val deviceId = getStringOrNull(getColumnIndex(UserSchema.COLUMN_DEVICE_ID))
     val externalUserId = getStringOrNull(getColumnIndex(UserSchema.COLUMN_EXTERNAL_USER_ID))
-    val subscriptionKeys = getStringOrNull(getColumnIndex(UserSchema.COLUMN_SUBSCRIPTION_KEYS))?.fromJson<List<String>>()
-    val groupNamesInclude = getStringOrNull(getColumnIndex(UserSchema.COLUMN_GROUP_NAMES_INCLUDE))?.fromJson<List<String>>()
-    val groupNamesExclude = getStringOrNull(getColumnIndex(UserSchema.COLUMN_GROUP_NAMES_EXCLUDE))?.fromJson<List<String>>()
+    val subscriptionKeys = stringList(UserSchema.COLUMN_SUBSCRIPTION_KEYS)
+    val groupNamesInclude = stringList(UserSchema.COLUMN_GROUP_NAMES_INCLUDE)
+    val groupNamesExclude = stringList(UserSchema.COLUMN_GROUP_NAMES_EXCLUDE)
     val synchronizedWithBackendString = getStringOrNull(getColumnIndex(UserSchema.COLUMN_SYNCHRONIZED_WITH_BACKEND))
     val synchronizedWithBackend: BooleanDb? = BooleanDb.fromString(synchronizedWithBackendString)
 
-    return if (deviceId != null && createdAt != null) {
-        UserDb(
-            rowId = rowId,
-            createdAt = Util.formatSqlDateToTimestamp(createdAt),
-            deviceId = deviceId,
-            externalUserId = externalUserId,
-            userAttributes = userAttributes,
-            subscriptionKeys = subscriptionKeys,
-            groupNamesInclude = groupNamesInclude,
-            groupNamesExclude = groupNamesExclude,
-            isSynchronizedWithBackend = synchronizedWithBackend
-        )
-    } else {
-        null
-    }
+    if (deviceId == null || createdAt == null) return null
+    return UserDb(
+        rowId = rowId,
+        createdAt = Util.formatSqlDateToTimestamp(createdAt),
+        deviceId = deviceId,
+        externalUserId = externalUserId,
+        userAttributes = userAttributes,
+        subscriptionKeys = subscriptionKeys,
+        groupNamesInclude = groupNamesInclude,
+        groupNamesExclude = groupNamesExclude,
+        isSynchronizedWithBackend = synchronizedWithBackend
+    )
+}
+
+private fun Cursor.stringList(column: String): List<String>? {
+    val json = getStringOrNull(getColumnIndex(column)) ?: return null
+    return json.fromJson<List<String>>()
 }

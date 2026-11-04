@@ -1,331 +1,154 @@
 package com.reteno.core.domain
 
-import com.reteno.core.base.BaseUnitTest
-import com.reteno.core.data.remote.mapper.toJson
 import com.reteno.core.domain.model.user.Address
 import com.reteno.core.domain.model.user.User
 import com.reteno.core.domain.model.user.UserAttributes
 import com.reteno.core.domain.model.user.UserAttributesAnonymous
 import com.reteno.core.domain.model.user.UserCustomField
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
-import org.junit.Test
+import com.reteno.test.given
+import com.reteno.test.runUnitTest
+import com.reteno.test.then
+import com.reteno.test.whenn
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Test
 
+internal class ValidatorTest {
 
-class ValidatorTest : BaseUnitTest() {
+    @Test
+    fun `should drop user without anything to send`() = runUnitTest {
+        given()
+        val user = User(userAttributes = UserAttributes(address = Address(null, null, null, null)))
 
-    // region constants ----------------------------------------------------------------------------
-    companion object {
-        private val SUBSCRIPTION_KEYS =
-            listOf("subscriptionKey1", "subscriptionKey2", "subscriptionKey3")
-        private val GROUP_NAMES_INCLUDE =
-            listOf("groupNamesInclude1", "groupNamesInclude2", "groupNamesInclude3")
-        private val GROUP_NAMES_EXCLUDE =
-            listOf("groupNamesExclude1", "groupNamesExclude2", "groupNamesExclude3")
+        whenn()
+        val validated = Validator.validateUser(user)
 
-        private const val PHONE = "phone1"
-        private const val EMAIL = "email1"
-        private const val FIRST_NAME = "firstName1"
-        private const val LAST_NAME = "lastName1"
-        private const val LANGUAGE_CODE = "languageCode1"
-        private const val TIME_ZONE = "timeZone1"
-        private const val FIELD_KEY1 = "key1"
-        private const val FIELD_KEY2 = "key2"
-        private const val FIELD_KEY3 = "key3"
-        private const val FIELD_VALUE1 = "value1"
-        private const val FIELD_VALUE2 = "value2"
+        then()
+        assertNull(validated)
+    }
 
-        private const val REGION = "region1"
-        private const val TOWN = "town1"
-        private const val ADDRESS = "address1"
-        private const val POSTCODE = "postcode1"
-
-        private val addressFull = Address(
-            region = REGION,
-            town = TOWN,
-            address = ADDRESS,
-            postcode = POSTCODE
+    @Test
+    fun `should keep user with only subscriptions or groups`() = runUnitTest {
+        given()
+        val users = listOf(
+            User(subscriptionKeys = listOf("news")),
+            User(groupNamesInclude = listOf("vip")),
+            User(groupNamesExclude = listOf("churned"))
         )
 
-        private val customFieldsFull = listOf(
-            UserCustomField(FIELD_KEY1, FIELD_VALUE1),
-            UserCustomField(FIELD_KEY2, FIELD_VALUE2),
-            UserCustomField(FIELD_KEY3, null)
-        )
-        private val userAttributesFull = UserAttributes(
-            phone = PHONE,
-            email = EMAIL,
-            firstName = FIRST_NAME,
-            lastName = LAST_NAME,
-            languageCode = LANGUAGE_CODE,
-            timeZone = TIME_ZONE,
-            address = addressFull,
-            fields = customFieldsFull
-        )
-        private val userFull = User(
-            userAttributes = userAttributesFull,
-            subscriptionKeys = SUBSCRIPTION_KEYS,
-            groupNamesInclude = GROUP_NAMES_INCLUDE,
-            groupNamesExclude = GROUP_NAMES_EXCLUDE,
-        )
-    }
-    // endregion constants -------------------------------------------------------------------------
+        whenn()
+        val validated = users.map { Validator.validateUser(it) }
 
-    // region helper fields ------------------------------------------------------------------------
-    private var SUT = Validator
-    // endregion helper fields ---------------------------------------------------------------------
-
-    @Test
-    fun givenAllAddressFieldsNull_whenValidateUser_thenAddressIsNull() {
-        // Given
-        val userAddress = Address(null, null, null, null)
-        val userAttributes = userAttributesFull.copy(address = userAddress)
-        val user = userFull.copy(userAttributes = userAttributes)
-
-        val expectedAttributes = userAttributes.copy(address = null)
-        val expectedUser = userFull.copy(userAttributes = expectedAttributes)
-
-        // When
-        val userValidated = SUT.validateUser(user)
-
-        // Then
-        assertEquals(expectedUser, userValidated)
+        then()
+        assertEquals(users, validated)
     }
 
     @Test
-    fun givenOneAddressFieldNull_whenValidateUser_thenUserUnchanged() {
-        // Given
-        val userAddress = addressFull.copy(region = null)
-        val userAttributes = userAttributesFull.copy(address = userAddress)
-        val user = userFull.copy(userAttributes = userAttributes)
+    fun `should drop empty attributes of a user`() = runUnitTest {
+        given()
+        val user = User(userAttributes = UserAttributes(), subscriptionKeys = listOf("news"))
 
-        // When
-        val userValidated = SUT.validateUser(user)
+        whenn()
+        val validated = Validator.validateUser(user)
 
-        // Then
-        assertEquals(user, userValidated)
+        then()
+        assertEquals(User(subscriptionKeys = listOf("news")), validated)
     }
 
     @Test
-    fun givenOneAddressFieldNonNull_whenValidateUser_thenUserUnchanged() {
-        // Given
-        val userAddress = Address(region = null, town = null, address = null, postcode = POSTCODE)
-        val userAttributes = userAttributesFull.copy(address = userAddress)
-        val user = userFull.copy(userAttributes = userAttributes)
-
-        // When
-        val userValidated = SUT.validateUser(user)
-
-        // Then
-        assertEquals(user, userValidated)
-    }
-
-    @Test
-    fun givenCustomFieldsNull_whenValidateUser_thenUserUnchanged() {
-        // Given
-        val userAttributes = userAttributesFull.copy(fields = null)
-        val user = userFull.copy(userAttributes = userAttributes)
-
-        // When
-        val userValidated = SUT.validateUser(user)
-
-        // Then
-        assertEquals(user, userValidated)
-    }
-
-    @Test
-    fun givenAddressNull_whenValidateUser_thenUserUnchanged() {
-        // Given
-        val userAttributes = userAttributesFull.copy(address = null)
-        val user = userFull.copy(userAttributes = userAttributes)
-
-        // When
-        val userValidated = SUT.validateUser(user)
-
-        // Then
-        assertEquals(user, userValidated)
-    }
-
-    @Test
-    fun givenOneUserAttributeNonNull_whenValidateUser_thenUserUnchanged() {
-        // Given
-        val userAttributes = UserAttributes(
-            phone = PHONE,
-            email = null,
-            firstName = null,
-            lastName = null,
-            languageCode = null,
-            timeZone = null,
-            address = null,
-            fields = null
-        )
-        val user = userFull.copy(userAttributes = userAttributes)
-
-        // When
-        val userValidated = SUT.validateUser(user)
-
-        // Then
-        assertEquals(user, userValidated)
-    }
-
-    @Test
-    fun givenAllAddressFieldsNullAllAttributesNull_whenValidateUser_thenAttributesIsNull() {
-        // Given
-        val userAddress = Address(null, null, null, null)
-        val userAttributes = UserAttributes(
-            phone = null,
-            email = null,
-            firstName = null,
-            lastName = null,
-            languageCode = null,
-            timeZone = null,
-            address = userAddress,
-            fields = null
-        )
-        val user = userFull.copy(userAttributes = userAttributes)
-
-        val expectedUser = userFull.copy(userAttributes = null)
-
-        // When
-        val userValidated = SUT.validateUser(user)
-
-        // Then
-        assertEquals(expectedUser, userValidated)
-    }
-
-    @Test
-    fun givenAllAttributesNull_whenValidateUser_thenAttributesIsNull() {
-        // Given
-        val userAttributes = UserAttributes(
-            phone = null,
-            email = null,
-            firstName = null,
-            lastName = null,
-            languageCode = null,
-            timeZone = null,
-            address = null,
-            fields = null
-        )
-        val user = userFull.copy(userAttributes = userAttributes)
-
-        val expectedUser = userFull.copy(userAttributes = null)
-
-        // When
-        val userValidated = SUT.validateUser(user)
-
-        // Then
-        assertEquals(expectedUser, userValidated)
-    }
-
-    @Test
-    fun givenAllUserFieldsNull_whenValidateUser_thenValidatedUserIsNull() {
-        // Given
-        val user = User(
-            userAttributes = null,
-            subscriptionKeys = null,
-            groupNamesInclude = null,
-            groupNamesExclude = null,
+    fun `should keep user attributes when any of them is set`() = runUnitTest {
+        given()
+        val attributes = listOf(
+            UserAttributes(phone = "+100"),
+            UserAttributes(email = "a@b.c"),
+            UserAttributes(firstName = "John"),
+            UserAttributes(lastName = "Doe"),
+            UserAttributes(languageCode = "uk"),
+            UserAttributes(timeZone = "Europe/Kyiv"),
+            UserAttributes(address = Address(region = "Kyiv", town = null, address = null, postcode = null)),
+            UserAttributes(fields = listOf(UserCustomField("plan", "pro"))),
+            UserAttributes(marketId = "market-1")
         )
 
-        // When
-        val userValidated = SUT.validateUser(user)
+        whenn()
+        val validated = attributes.map { Validator.validateUser(User(userAttributes = it))?.userAttributes }
 
-        // Then
-        assertNull(userValidated)
+        then()
+        assertEquals(attributes, validated)
     }
 
     @Test
-    fun givenAllUserAnonymousAttributesNull_whenValidateAnonymousUserAttributes_thenNullReturned() {
-        // Given
-        val userAnonymousAttributes = UserAttributesAnonymous(
-            firstName = null,
-            lastName = null,
-            languageCode = null,
-            timeZone = null,
-            address = null,
-            fields = null
-        )
+    fun `should drop empty address but keep other user attributes`() = runUnitTest {
+        given()
+        val user = User(userAttributes = UserAttributes(email = "a@b.c", address = Address(null, null, null, null)))
 
-        // When
-        val userAttributesValidated = SUT.validateAnonymousUserAttributes(userAnonymousAttributes)
+        whenn()
+        val validated = Validator.validateUser(user)
 
-        // Then
-        assertNull(userAttributesValidated)
+        then()
+        assertEquals(User(userAttributes = UserAttributes(email = "a@b.c")), validated)
     }
 
     @Test
-    fun givenAllUserAnonymousAttributesNullAddressFieldsNull_whenValidateAnonymousUserAttributes_thenNullReturned() {
-        // Given
-        val userAnonymousAttributes = UserAttributesAnonymous(
-            firstName = null,
-            lastName = null,
-            languageCode = null,
-            timeZone = null,
-            address = Address(null, null, null, null),
-            fields = null
+    fun `should keep address when any of its parts is set`() = runUnitTest {
+        given()
+        val addresses = listOf(
+            Address(region = "Kyiv", town = null, address = null, postcode = null),
+            Address(region = null, town = "Kyiv", address = null, postcode = null),
+            Address(region = null, town = null, address = "Khreshchatyk 1", postcode = null),
+            Address(region = null, town = null, address = null, postcode = "01001")
         )
 
-        // When
-        val userAttributesValidated = SUT.validateAnonymousUserAttributes(userAnonymousAttributes)
+        whenn()
+        val validated = addresses.map {
+            Validator.validateUser(User(userAttributes = UserAttributes(address = it)))?.userAttributes?.address
+        }
 
-        // Then
-        assertNull(userAttributesValidated)
+        then()
+        assertEquals(addresses, validated)
     }
 
     @Test
-    fun givenAllUserAnonymousAttributesNotNull_whenValidateAnonymousUserAttributes_thenAttributesNotChanged() {
-        // Given
-        val userAnonymousAttributes = UserAttributesAnonymous(
-            firstName = FIRST_NAME,
-            lastName = LAST_NAME,
-            languageCode = LANGUAGE_CODE,
-            timeZone = TIME_ZONE,
-            address = addressFull,
-            fields = customFieldsFull
-        )
+    fun `should drop anonymous attributes without anything to send`() = runUnitTest {
+        given()
+        val attributes = UserAttributesAnonymous(address = Address(null, null, null, null))
 
-        // When
-        val userAttributesValidated = SUT.validateAnonymousUserAttributes(userAnonymousAttributes)
+        whenn()
+        val validated = Validator.validateAnonymousUserAttributes(attributes)
 
-        // Then
-        assertEquals(userAnonymousAttributes, userAttributesValidated)
+        then()
+        assertNull(validated)
     }
 
     @Test
-    fun givenAllUserAnonymousAttributesOneFieldNotNull_whenValidateAnonymousUserAttributes_thenAttributesNotChanged() {
-        // Given
-        val userAnonymousAttributes = UserAttributesAnonymous(
-            firstName = null,
-            lastName = LAST_NAME,
-            languageCode = null,
-            timeZone = null,
-            address = null,
-            fields = null
+    fun `should keep anonymous attributes when any of them is set`() = runUnitTest {
+        given()
+        val attributes = listOf(
+            UserAttributesAnonymous(firstName = "John"),
+            UserAttributesAnonymous(lastName = "Doe"),
+            UserAttributesAnonymous(languageCode = "uk"),
+            UserAttributesAnonymous(timeZone = "Europe/Kyiv"),
+            UserAttributesAnonymous(address = Address(region = null, town = "Kyiv", address = null, postcode = null)),
+            UserAttributesAnonymous(fields = listOf(UserCustomField("plan", null))),
+            UserAttributesAnonymous(marketId = "market-1")
         )
 
-        // When
-        val userAttributesValidated = SUT.validateAnonymousUserAttributes(userAnonymousAttributes)
+        whenn()
+        val validated = attributes.map { Validator.validateAnonymousUserAttributes(it) }
 
-        // Then
-        assertEquals(userAnonymousAttributes, userAttributesValidated)
+        then()
+        assertEquals(attributes, validated)
     }
 
     @Test
-    fun givenAllUserAnonymousAttributesAddressOneFieldNotNull_whenValidateAnonymousUserAttributes_thenAttributesNotChanged() {
-        // Given
-        val userAnonymousAttributes = UserAttributesAnonymous(
-            firstName = null,
-            lastName = null,
-            languageCode = null,
-            timeZone = null,
-            address = Address(null, TOWN, null, null),
-            fields = null
-        )
+    fun `should drop empty address but keep other anonymous attributes`() = runUnitTest {
+        given()
+        val attributes = UserAttributesAnonymous(firstName = "John", address = Address(null, null, null, null))
 
-        // When
-        val userAttributesValidated = SUT.validateAnonymousUserAttributes(userAnonymousAttributes)
+        whenn()
+        val validated = Validator.validateAnonymousUserAttributes(attributes)
 
-        // Then
-        assertEquals(userAnonymousAttributes, userAttributesValidated)
+        then()
+        assertEquals(UserAttributesAnonymous(firstName = "John"), validated)
     }
 }

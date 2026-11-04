@@ -6,16 +6,13 @@ import android.content.Context
 import android.os.Build
 import androidx.core.app.NotificationChannelCompat
 import androidx.core.app.NotificationManagerCompat
-import com.reteno.core.RetenoInternalImpl
-import com.reteno.core.data.remote.mapper.fromJson
+import com.reteno.core.RetenoInternalEntryPoint
 import com.reteno.core.data.remote.mapper.fromJsonOrNull
-import com.reteno.core.util.Logger
+import com.reteno.core.util.Procedure
 import com.reteno.core.util.Util
 import com.reteno.push.R
 
 internal object RetenoNotificationChannel {
-
-    private val TAG: String = RetenoNotificationChannel::class.java.simpleName
 
     internal var DEFAULT_CHANNEL_ID: String = "defaultId"
         private set
@@ -25,138 +22,80 @@ internal object RetenoNotificationChannel {
 
     internal fun isNotificationsEnabled(context: Context): Boolean {
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        val enabled = manager.areNotificationsEnabled()
-
-        /*@formatter:off*/ Logger.i(TAG, "isNotificationsEnabled(): ", "enabled = [" , enabled , "],")
-        /*@formatter:on*/
-        return enabled
+        return manager.areNotificationsEnabled()
     }
 
     internal fun isNotificationChannelEnabled(context: Context, channelId: String?): Boolean {
-        val isEnabled = if (channelId.isNullOrBlank()) {
-            false
-        } else {
-            val manager =
-                context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            val channel = manager.getNotificationChannel(channelId)
-            if (channel == null) {
-                createDefaultChannel(context)
-                true
-            } else {
-                if (RetenoInternalImpl.instance.isInitialized) {
-                    applyChannelPropertiesFromDefaultConfig(context, channelId)
-                }
-                channel.importance != NotificationManager.IMPORTANCE_NONE
-            }
+        if (channelId.isNullOrBlank()) return false
+        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val channel = manager.getNotificationChannel(channelId)
+        if (channel == null) {
+            createDefaultChannel(context)
+            return true
         }
-
-        /*@formatter:off*/ Logger.i(TAG, "isNotificationChannelEnabled(): ", "channelId = [" , channelId , "], isEnabled = [", isEnabled, "]")
-        /*@formatter:on*/
-        return isEnabled
+        val config = RetenoInternalEntryPoint.facade.getDefaultNotificationChannelConfig()
+        if (config != null) createConfiguredChannel(context, channelId, config)
+        return channel.importance != NotificationManager.IMPORTANCE_NONE
     }
 
     internal fun createDefaultChannel(context: Context) {
-        /*@formatter:off*/ Logger.i(TAG, "createDefaultChannel(): ", "context = [" , context , "]")
-        /*@formatter:on*/
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
-        if (!RetenoInternalImpl.instance.isInitialized) {
-            /*@formatter:off*/ Logger.i(TAG, "createDefaultChannel(): ", "Using default notification channel without creation process due to delayed initialization.")
-            /*@formatter:on*/
-            return
-        }
-        RetenoInternalImpl.instance.getDefaultNotificationChannelConfig()?.let { config ->
-            val channel = NotificationChannelCompat.Builder(
-                DEFAULT_CHANNEL_ID,
-                NotificationManagerCompat.IMPORTANCE_DEFAULT
-            )
-                .apply(config::execute)
-                .build()
-
-            NotificationManagerCompat.from(context)
-                .createNotificationChannel(channel)
-        } ?: run {
-            val channelData = retrieveDefaultNotificationChannelData(context)
-            DEFAULT_CHANNEL_ID = channelData.id
-            val channel = NotificationChannel(
-                DEFAULT_CHANNEL_ID,
-                channelData.name,
-                channelData.importance
-            ).apply {
-                description = channelData.description
-                enableLights(channelData.enableLights)
-                lightColor = channelData.lightColor
-                enableVibration(channelData.enableVibration)
-                channelData.vibrationPattern?.toLongArray()?.let(::setVibrationPattern)
-                lockscreenVisibility = channelData.lockscreenVisibility
-                setBypassDnd(channelData.bypassDnd)
-                setShowBadge(channelData.showBadge)
-            }
-            NotificationManagerCompat.from(context)
-                .createNotificationChannel(channel)
+        val config = RetenoInternalEntryPoint.facade.getDefaultNotificationChannelConfig()
+        if (config != null) {
+            createConfiguredChannel(context, DEFAULT_CHANNEL_ID, config)
+        } else {
+            createChannelFromData(context, retrieveDefaultNotificationChannelData(context))
         }
     }
 
-    private fun applyChannelPropertiesFromDefaultConfig(context: Context, channelId: String) {
-        RetenoInternalImpl.instance.getDefaultNotificationChannelConfig()?.let { config ->
-            val channel = NotificationChannelCompat.Builder(
-                channelId,
-                NotificationManagerCompat.IMPORTANCE_DEFAULT
-            )
-                .apply(config::execute)
-                .build()
-
-            NotificationManagerCompat.from(context)
-                .createNotificationChannel(channel)
-        }
+    private fun createConfiguredChannel(context: Context, channelId: String, config: Procedure<NotificationChannelCompat.Builder>) {
+        val channel = NotificationChannelCompat.Builder(channelId, NotificationManagerCompat.IMPORTANCE_DEFAULT)
+            .apply(config::execute)
+            .build()
+        NotificationManagerCompat.from(context).createNotificationChannel(channel)
     }
 
-    /**
-     * Configures default notification channel, which will be used when channel isn't specified on
-     * Android O.
-     *
-     * @param channel Default channel details.
-     */
-    private fun configureDefaultNotificationChannel(channel: String) {
-        channel.takeUnless { it.isEmpty() }?.let {
-            try {
-                RetenoInternalImpl.instance.saveDefaultNotificationChannel(channel)
-            } catch (t: Throwable) {
-                /*@formatter:off*/ Logger.e(TAG, "configureDefaultNotificationChannel(): ", t)
-                /*@formatter:on*/
-            }
+    private fun createChannelFromData(context: Context, channelData: NotificationChannelData) {
+        DEFAULT_CHANNEL_ID = channelData.id
+        val channel = NotificationChannel(DEFAULT_CHANNEL_ID, channelData.name, channelData.importance).apply {
+            description = channelData.description
+            enableLights(channelData.enableLights)
+            lightColor = channelData.lightColor
+            enableVibration(channelData.enableVibration)
+            channelData.vibrationPattern?.let { vibrationPattern = it.toLongArray() }
+            lockscreenVisibility = channelData.lockscreenVisibility
+            setBypassDnd(channelData.bypassDnd)
+            setShowBadge(channelData.showBadge)
         }
+        NotificationManagerCompat.from(context).createNotificationChannel(channel)
     }
 
-    /**
-     * Retrieves stored default notification channel.
-     *
-     * @return The stored default channel or null.
-     */
-    private fun retrieveDefaultNotificationChannelData(context: Context): NotificationChannelData {
-        val defaultChannelOrNull: NotificationChannelData? =
-            try {
-                val jsonChannel = RetenoInternalImpl.instance.getDefaultNotificationChannel()
-                jsonChannel.fromJsonOrNull()
-            } catch (e: Exception) {
-                /*@formatter:off*/ Logger.d(TAG, "retrieveDefaultNotificationChannelData(): Failed to read saved DefaultChannelId ", e)
-                /*@formatter:on*/
-                null
-            }
+    private fun retrieveDefaultNotificationChannelData(context: Context): NotificationChannelData =
+        orNull { readStoredChannelData() } ?: orNull { readBundledChannelData(context) } ?: fallbackChannelData()
 
+    private fun readStoredChannelData(): NotificationChannelData? =
+        parseChannelData(RetenoInternalEntryPoint.facade.getDefaultNotificationChannel())
 
-        return defaultChannelOrNull ?: try {
-            val defaultJson = Util.readFromRaw(context, R.raw.default_channel) ?: ""
-
-            configureDefaultNotificationChannel(defaultJson)
-            defaultJson.fromJson<NotificationChannelData>()
-        } catch (e: Exception) {
-            /*@formatter:off*/ Logger.e(TAG, "retrieveDefaultNotificationChannelData(): FALLBACK_MODE", e)
-            /*@formatter:on*/
-            NotificationChannelData(
-                DEFAULT_CHANNEL_ID,
-                FALLBACK_DEFAULT_CHANNEL_NAME,
-                FALLBACK_DEFAULT_CHANNEL_DESCRIPTION
-            )
-        }
+    private fun readBundledChannelData(context: Context): NotificationChannelData? {
+        val json = Util.readFromRaw(context, R.raw.default_channel) ?: return null
+        val channelData = parseChannelData(json) ?: return null
+        orNull { RetenoInternalEntryPoint.facade.saveDefaultNotificationChannel(json) }
+        return channelData
     }
+
+    private fun parseChannelData(json: String): NotificationChannelData? =
+        orNull { json.fromJsonOrNull<NotificationChannelJson>()?.toChannelData() }
+
+    private fun <T> orNull(block: () -> T): T? =
+        try {
+            block()
+        } catch (error: Exception) {
+            null
+        }
+
+    private fun fallbackChannelData() = NotificationChannelData(
+        DEFAULT_CHANNEL_ID,
+        FALLBACK_DEFAULT_CHANNEL_NAME,
+        FALLBACK_DEFAULT_CHANNEL_DESCRIPTION
+    )
 }

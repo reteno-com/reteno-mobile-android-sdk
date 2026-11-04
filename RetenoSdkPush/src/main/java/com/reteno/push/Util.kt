@@ -4,21 +4,16 @@ import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import com.reteno.core.RetenoInternalImpl
 import com.reteno.core.util.getApplicationMetaData
 
 internal object Util {
 
-    internal fun tryToSendToCustomReceiverPushReceived(data: Bundle) {
-        val receiver = RetenoInternalImpl.instance.application.getApplicationMetaData()
-            .getString(Constants.META_DATA_KEY_CUSTOM_RECEIVER_PUSH_RECEIVED)
-        tryToSendToReceiver(receiver, data)
+    internal fun tryToSendToCustomReceiverPushReceived(context: Context, data: Bundle) {
+        tryToSendToReceiver(context, Constants.META_DATA_KEY_CUSTOM_RECEIVER_PUSH_RECEIVED, data)
     }
 
-    internal fun tryToSendToCustomReceiverNotificationClicked(data: Bundle) {
-        val receiver = RetenoInternalImpl.instance.application.getApplicationMetaData()
-            .getString(Constants.META_DATA_KEY_CUSTOM_RECEIVER_NOTIFICATION_CLICKED)
-        tryToSendToReceiver(receiver, data)
+    internal fun tryToSendToCustomReceiverNotificationClicked(context: Context, data: Bundle) {
+        tryToSendToReceiver(context, Constants.META_DATA_KEY_CUSTOM_RECEIVER_NOTIFICATION_CLICKED, data)
     }
 
     internal fun getLinkFromBundle(bundle: Bundle): Pair<String, String> {
@@ -41,15 +36,13 @@ internal object Util {
         manager.cancel(notificationId)
     }
 
-    private fun tryToSendToReceiver(receiver: String?, data: Bundle) =
-        receiver?.let {
-            val context = RetenoInternalImpl.instance.application
-            // Forward Intent to a client broadcast receiver.
-            val forwardIntent = Intent()
-            forwardIntent.setClassName(context, it)
-            forwardIntent.putExtras(data)
-            context.sendBroadcast(forwardIntent)
-        }
+    private fun tryToSendToReceiver(context: Context, metaDataKey: String, data: Bundle) {
+        val receiver = context.getApplicationMetaData().getString(metaDataKey) ?: return
+        val forwardIntent = Intent()
+        forwardIntent.setClassName(context, receiver)
+        forwardIntent.putExtras(data)
+        context.sendBroadcast(forwardIntent)
+    }
 }
 
 internal fun Bundle.toStringMap(): Map<String, String?> {

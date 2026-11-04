@@ -1,195 +1,83 @@
 package com.reteno.core.data.local.database.manager
 
-import com.reteno.core.base.robolectric.BaseRobolectricTest
+import com.reteno.test.given
+import com.reteno.test.runUnitTest
+import com.reteno.test.then
+import com.reteno.test.whenn
 import io.mockk.every
-import io.mockk.impl.annotations.RelaxedMockK
-import junit.framework.TestCase.assertTrue
-import org.junit.Assert.assertFalse
-import org.junit.Test
+import io.mockk.mockk
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Test
 
+internal class RetenoDatabaseManagerImplTest {
 
-class RetenoDatabaseManagerImplTest : BaseRobolectricTest() {
+    private class SutFixture(private val pending: Map<String, Long> = emptyMap()) {
+        private fun count(name: String) = pending[name] ?: 0L
 
-
-    // region helper fields ------------------------------------------------------------------------
-    @RelaxedMockK
-    private lateinit var deviceManager: RetenoDatabaseManagerDevice
-    @RelaxedMockK
-    private lateinit var userManager: RetenoDatabaseManagerUser
-    @RelaxedMockK
-    private lateinit var interactionManager: RetenoDatabaseManagerInteraction
-    @RelaxedMockK
-    private lateinit var eventsManager: RetenoDatabaseManagerEvents
-    @RelaxedMockK
-    private lateinit var appInboxManager: RetenoDatabaseManagerAppInbox
-    @RelaxedMockK
-    private lateinit var recomEventsManager: RetenoDatabaseManagerRecomEvents
-    @RelaxedMockK
-    private lateinit var wrappedLinksManager: RetenoDatabaseManagerWrappedLink
-    @RelaxedMockK
-    private lateinit var logEventManager: RetenoDatabaseManagerLogEvent
-    @RelaxedMockK
-    private lateinit var inAppInteractionManager: RetenoDatabaseManagerInAppInteraction
-
-    private lateinit var SUT: RetenoDatabaseManager
-    // endregion helper fields ---------------------------------------------------------------------
-
-    override fun before() {
-        super.before()
-        SUT = RetenoDatabaseManagerImpl(
-            deviceManager,
-            userManager,
-            interactionManager,
-            eventsManager,
-            appInboxManager,
-            recomEventsManager,
-            wrappedLinksManager,
-            logEventManager,
-            inAppInteractionManager
+        val devices = mockk<RetenoDatabaseManagerDevice> { every { getUnSyncedDeviceCount() } returns count(DEVICES) }
+        val users = mockk<RetenoDatabaseManagerUser> { every { getUnSyncedUserCount() } returns count(USERS) }
+        val interactions = mockk<RetenoDatabaseManagerInteraction> {
+            every { getInteractionCount() } returns count(INTERACTIONS)
+        }
+        val events = mockk<RetenoDatabaseManagerEvents> { every { getEventsCount() } returns count(EVENTS) }
+        val inbox = mockk<RetenoDatabaseManagerAppInbox> { every { getAppInboxMessagesCount() } returns count(INBOX) }
+        val recomEvents = mockk<RetenoDatabaseManagerRecomEvents> {
+            every { getRecomEventsCount() } returns count(RECOM_EVENTS)
+        }
+        val links = mockk<RetenoDatabaseManagerWrappedLink> { every { getWrappedLinksCount() } returns count(LINKS) }
+        val logEvents = mockk<RetenoDatabaseManagerLogEvent> { every { getLogEventsCount() } returns count(LOG_EVENTS) }
+        val inAppInteractions = mockk<RetenoDatabaseManagerInAppInteraction> {
+            every { getInAppInteractionsCount() } returns count(IN_APP_INTERACTIONS)
+        }
+        val sut = RetenoDatabaseManagerImpl(
+            deviceManager = devices,
+            userManager = users,
+            interactionManager = interactions,
+            eventsManager = events,
+            appInboxManager = inbox,
+            recomEventsManager = recomEvents,
+            wrappedLinkManager = links,
+            logEventManager = logEvents,
+            inAppInteractionManager = inAppInteractions
         )
     }
 
     @Test
-    fun givenAllTablesEmpty_whenNoDataForSync_thenFalseReturned() {
-        // Given
-        every { deviceManager.getUnSyncedDeviceCount() } returns 0
-        every { userManager.getUnSyncedUserCount() } returns 0
-        every { interactionManager.getInteractionCount() } returns 0
-        every { eventsManager.getEventsCount() } returns 0
-        every { appInboxManager.getAppInboxMessagesCount() } returns 0
-        every { recomEventsManager.getRecomEventsCount() } returns 0
-        every { wrappedLinksManager.getWrappedLinksCount() } returns 0
+    fun `should have nothing to sync when every table is empty`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
 
-        // When
-        val hasDataForSync = SUT.hasDataForSync()
+        whenn()
+        val hasData = fixture.sut.hasDataForSync()
 
-        // Then
-        assertFalse(hasDataForSync)
+        then()
+        assertEquals(false, hasData)
     }
 
     @Test
-    fun givenDevicesPresent_whenNoDataForSync_thenTrueReturned() {
-        // Given
-        every { deviceManager.getUnSyncedDeviceCount() } returns 3
-        every { userManager.getUnSyncedUserCount() } returns 0
-        every { interactionManager.getInteractionCount() } returns 0
-        every { eventsManager.getEventsCount() } returns 0
-        every { appInboxManager.getAppInboxMessagesCount() } returns 0
-        every { recomEventsManager.getRecomEventsCount() } returns 0
-        every { wrappedLinksManager.getWrappedLinksCount() } returns 0
+    fun `should have data to sync when any table has rows to send`() = runUnitTest {
+        given()
+        val fixtures = ALL_TABLES.map { SutFixture(mapOf(it to 1L)) }
 
-        // When
-        val hasDataForSync = SUT.hasDataForSync()
+        whenn()
+        val hasData = fixtures.map { it.sut.hasDataForSync() }
 
-        // Then
-        assertTrue(hasDataForSync)
+        then()
+        assertEquals(List(ALL_TABLES.size) { true }, hasData)
     }
 
-    @Test
-    fun givenUsersPresent_whenNoDataForSync_thenTrueReturned() {
-        // Given
-        every { deviceManager.getUnSyncedDeviceCount() } returns 0
-        every { userManager.getUnSyncedUserCount() } returns 4
-        every { interactionManager.getInteractionCount() } returns 0
-        every { eventsManager.getEventsCount() } returns 0
-        every { appInboxManager.getAppInboxMessagesCount() } returns 0
-        every { recomEventsManager.getRecomEventsCount() } returns 0
-        every { wrappedLinksManager.getWrappedLinksCount() } returns 0
-
-        // When
-        val hasDataForSync = SUT.hasDataForSync()
-
-        // Then
-        assertTrue(hasDataForSync)
-    }
-
-    @Test
-    fun givenInteractionsPresent_whenNoDataForSync_thenTrueReturned() {
-        // Given
-        every { deviceManager.getUnSyncedDeviceCount() } returns 0
-        every { userManager.getUnSyncedUserCount() } returns 0
-        every { interactionManager.getInteractionCount() } returns 4
-        every { eventsManager.getEventsCount() } returns 0
-        every { appInboxManager.getAppInboxMessagesCount() } returns 0
-        every { recomEventsManager.getRecomEventsCount() } returns 0
-        every { wrappedLinksManager.getWrappedLinksCount() } returns 0
-
-        // When
-        val hasDataForSync = SUT.hasDataForSync()
-
-        // Then
-        assertTrue(hasDataForSync)
-    }
-
-    @Test
-    fun givenEventPresent_whenNoDataForSync_thenTrueReturned() {
-        // Given
-        every { deviceManager.getUnSyncedDeviceCount() } returns 0
-        every { userManager.getUnSyncedUserCount() } returns 0
-        every { interactionManager.getInteractionCount() } returns 0
-        every { eventsManager.getEventsCount() } returns 5
-        every { appInboxManager.getAppInboxMessagesCount() } returns 0
-        every { recomEventsManager.getRecomEventsCount() } returns 0
-        every { wrappedLinksManager.getWrappedLinksCount() } returns 0
-
-        // When
-        val hasDataForSync = SUT.hasDataForSync()
-
-        // Then
-        assertTrue(hasDataForSync)
-    }
-
-    @Test
-    fun givenAppInboxPresent_whenNoDataForSync_thenTrueReturned() {
-        // Given
-        every { deviceManager.getUnSyncedDeviceCount() } returns 0
-        every { userManager.getUnSyncedUserCount() } returns 0
-        every { interactionManager.getInteractionCount() } returns 0
-        every { eventsManager.getEventsCount() } returns 0
-        every { appInboxManager.getAppInboxMessagesCount() } returns 6
-        every { recomEventsManager.getRecomEventsCount() } returns 0
-        every { wrappedLinksManager.getWrappedLinksCount() } returns 0
-
-        // When
-        val hasDataForSync = SUT.hasDataForSync()
-
-        // Then
-        assertTrue(hasDataForSync)
-    }
-
-    @Test
-    fun givenRecomEventPresent_whenNoDataForSync_thenTrueReturned() {
-        // Given
-        every { deviceManager.getUnSyncedDeviceCount() } returns 0
-        every { userManager.getUnSyncedUserCount() } returns 0
-        every { interactionManager.getInteractionCount() } returns 0
-        every { eventsManager.getEventsCount() } returns 0
-        every { appInboxManager.getAppInboxMessagesCount() } returns 0
-        every { recomEventsManager.getRecomEventsCount() } returns 9
-        every { wrappedLinksManager.getWrappedLinksCount() } returns 0
-
-        // When
-        val hasDataForSync = SUT.hasDataForSync()
-
-        // Then
-        assertTrue(hasDataForSync)
-    }
-
-    @Test
-    fun givenWrappedLinksPresent_whenNoDataForSync_thenTrueReturned() {
-        // Given
-        every { deviceManager.getUnSyncedDeviceCount() } returns 0
-        every { userManager.getUnSyncedUserCount() } returns 0
-        every { interactionManager.getInteractionCount() } returns 0
-        every { eventsManager.getEventsCount() } returns 0
-        every { appInboxManager.getAppInboxMessagesCount() } returns 0
-        every { recomEventsManager.getRecomEventsCount() } returns 0
-        every { wrappedLinksManager.getWrappedLinksCount() } returns 11
-
-        // When
-        val hasDataForSync = SUT.hasDataForSync()
-
-        // Then
-        assertTrue(hasDataForSync)
+    companion object {
+        private const val DEVICES = "devices"
+        private const val USERS = "users"
+        private const val INTERACTIONS = "interactions"
+        private const val EVENTS = "events"
+        private const val INBOX = "inbox"
+        private const val RECOM_EVENTS = "recomEvents"
+        private const val LINKS = "links"
+        private const val LOG_EVENTS = "logEvents"
+        private const val IN_APP_INTERACTIONS = "inAppInteractions"
+        private val ALL_TABLES = listOf(
+            DEVICES, USERS, INTERACTIONS, EVENTS, INBOX, RECOM_EVENTS, LINKS, LOG_EVENTS, IN_APP_INTERACTIONS
+        )
     }
 }

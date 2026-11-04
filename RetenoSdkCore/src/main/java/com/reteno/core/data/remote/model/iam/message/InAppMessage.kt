@@ -15,9 +15,4 @@ data class InAppMessage(
     val iid: String? = null,
     val expiresAt: String? = null,
     var workflowContext: String? = null
-) {
-    fun notifyShown() {
-        lastShowTime = System.currentTimeMillis()
-        showCount++
-    }
-}
+)

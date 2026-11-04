@@ -1,6 +1,5 @@
 package com.reteno.core.data.local.database.manager
 
-import com.reteno.core.util.Logger
 
 internal class RetenoDatabaseManagerImpl(
     private val deviceManager: RetenoDatabaseManagerDevice,
@@ -12,7 +11,7 @@ internal class RetenoDatabaseManagerImpl(
     private val wrappedLinkManager: RetenoDatabaseManagerWrappedLink,
     private val logEventManager: RetenoDatabaseManagerLogEvent,
     private val inAppInteractionManager: RetenoDatabaseManagerInAppInteraction
-): RetenoDatabaseManager {
+) : RetenoDatabaseManager {
 
     override fun hasDataForSync(): Boolean {
         val deviceCount = deviceManager.getUnSyncedDeviceCount()
@@ -25,21 +24,15 @@ internal class RetenoDatabaseManagerImpl(
         val logEventsCount = logEventManager.getLogEventsCount()
         val inAppInteractionsCount = inAppInteractionManager.getInAppInteractionsCount()
 
-        val isDataMissing = deviceCount == 0L
-                && userCount == 0L
-                && interactionCount == 0L
-                && eventCount == 0L
-                && appInboxCount == 0L
-                && recomEventsCount == 0L
-                && wrappedLinksCount == 0L
-                && logEventsCount == 0L
-                && inAppInteractionsCount == 0L
-        /*@formatter:off*/ Logger.i(TAG, "isDatabaseEmpty(): ", "result = $isDataMissing")
-        /*@formatter:on*/
+        val isDataMissing = deviceCount == 0L &&
+            userCount == 0L &&
+            interactionCount == 0L &&
+            eventCount == 0L &&
+            appInboxCount == 0L &&
+            recomEventsCount == 0L &&
+            wrappedLinksCount == 0L &&
+            logEventsCount == 0L &&
+            inAppInteractionsCount == 0L
         return isDataMissing.not()
-    }
-
-    companion object {
-        private val TAG: String = RetenoDatabaseManagerImpl::class.java.simpleName
     }
 }

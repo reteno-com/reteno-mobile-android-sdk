@@ -58,10 +58,7 @@ class FragmentUserData : BaseFragment() {
     }
 
     private fun createUserData() {
-        var externalId: String? = binding!!.etExternalId.getText().toString()
-        if (externalId!!.contains("null")) {
-            externalId = null
-        }
+        val externalId = binding!!.etExternalId.getText().toString()
         val isMultiAccount = binding!!.cbMultiAccount.isChecked
         val userCustomData = getUserCustomData()
         val address = Address(
@@ -112,11 +109,11 @@ class FragmentUserData : BaseFragment() {
         return list
     }
 
-    protected fun sendUserData(externalId: String?, isMultiAccount: Boolean, user: User?) {
+    protected fun sendUserData(externalId: String, isMultiAccount: Boolean, user: User?) {
         if (isMultiAccount) {
-            reteno.setMultiAccountUserAttributes(externalId!!, user)
+            reteno.setMultiAccountUserAttributes(externalId, user)
         } else {
-            reteno.setUserAttributes(externalId!!, user)
+            reteno.setUserAttributes(externalId, user)
         }
     }
 

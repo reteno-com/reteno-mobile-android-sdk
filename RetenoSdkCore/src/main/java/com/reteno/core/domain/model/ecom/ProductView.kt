@@ -1,10 +1,6 @@
 package com.reteno.core.domain.model.ecom
 
 import com.google.gson.annotations.SerializedName
-import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.ATTRIBUTES
-import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.IS_IN_STOCK
-import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.PRICE
-import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.PRODUCT_ID
 
 data class ProductView(
 

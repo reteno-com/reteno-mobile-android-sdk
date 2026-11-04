@@ -1,7 +1,7 @@
 package com.reteno.sample.util
 
 import android.widget.EditText
-import com.reteno.core.util.Logger.d
+import com.reteno.sample.util.SampleLog.d
 
 object Util {
     fun getTextOrNull(editText: EditText): String? {

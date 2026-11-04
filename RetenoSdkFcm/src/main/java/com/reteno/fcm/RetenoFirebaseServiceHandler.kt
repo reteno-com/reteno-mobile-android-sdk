@@ -2,7 +2,6 @@ package com.reteno.fcm
 
 import android.os.Bundle
 import com.google.firebase.messaging.RemoteMessage
-import com.reteno.core.RetenoInternalImpl
 import com.reteno.core.util.Logger
 import com.reteno.push.RetenoNotificationService
 
@@ -12,8 +11,7 @@ class RetenoFirebaseServiceHandler(private val pushService: RetenoNotificationSe
      * Call from your implementation of [com.google.firebase.messaging.FirebaseMessagingService.onCreate]
      */
     fun onCreate() {
-        /*@formatter:off*/ Logger.i(TAG, "onCreate(): ", "context = ", RetenoInternalImpl.instance.application)
-        /*@formatter:on*/
+        Logger.i(TAG, "onCreate(): ")
         // TODO: Nothing to do yet. Maybe remove later
     }
 
@@ -21,8 +19,6 @@ class RetenoFirebaseServiceHandler(private val pushService: RetenoNotificationSe
      * Call from your implementation of [com.google.firebase.messaging.FirebaseMessagingService.onNewToken]
      */
     fun onNewToken(token: String) {
-        /*@formatter:off*/ Logger.i(TAG, "onNewToken(): ", "token = [" , token , "]")
-        /*@formatter:on*/
         pushService.onNewToken(token)
     }
 
@@ -40,12 +36,10 @@ class RetenoFirebaseServiceHandler(private val pushService: RetenoNotificationSe
     /**
      * @param messageMap [RemoteMessage]'s data map.
      */
-    private fun getBundle(messageMap: Map<String, String>?): Bundle {
+    private fun getBundle(messageMap: Map<String, String>): Bundle {
         val bundle = Bundle()
-        if (messageMap != null) {
-            for ((key, value) in messageMap) {
-                bundle.putString(key, value)
-            }
+        for ((key, value) in messageMap) {
+            bundle.putString(key, value)
         }
         return bundle
     }

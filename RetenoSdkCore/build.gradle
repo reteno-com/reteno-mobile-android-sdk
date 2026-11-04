@@ -2,16 +2,42 @@ plugins {
     id 'com.android.library'
     id 'org.jetbrains.kotlin.android'
     id 'com.vanniktech.maven.publish'
+    id 'de.mannodermaus.android-junit5'
+    id 'org.jetbrains.kotlinx.kover'
 }
 apply from: file("$project.rootDir/config.gradle")
 apply from: "$project.rootDir/test_dependencies.gradle"
 
-def sdkPropsFile = file("$project.rootDir/RetenoSdkCore/keys.properties")
-Properties sdkProps = new Properties()
-sdkProps.load(new FileInputStream(sdkPropsFile))
-
 kotlin {
     jvmToolchain(8)
+}
+
+kover {
+    excludeInstrumentation {
+        packages('junit.framework', 'org.junit', 'org.robolectric', 'io.mockk')
+    }
+}
+
+koverReport {
+    androidReports('debug') {
+        filters {
+            excludes {
+                classes('com.reteno.core.R', 'com.reteno.core.R$*', 'com.reteno.core.BuildConfig')
+            }
+        }
+        verify {
+            rule('Core module is fully covered') {
+                bound {
+                    minValue = 100
+                    metric = kotlinx.kover.gradle.plugin.dsl.MetricType.LINE
+                }
+                bound {
+                    minValue = 100
+                    metric = kotlinx.kover.gradle.plugin.dsl.MetricType.BRANCH
+                }
+            }
+        }
+    }
 }
 
 android {
@@ -28,7 +54,6 @@ android {
 
         consumerProguardFiles "consumer-rules.pro"
 
-        buildConfigField "String", "SQL_PASSWORD", sdkProps['sql.password']
         buildConfigField "String", "SDK_VERSION", "\"${project.VERSION_NAME}\""
     }
 
@@ -63,6 +88,7 @@ android {
     }
     kotlinOptions {
         jvmTarget = JavaVersion.VERSION_1_8.toString()
+        freeCompilerArgs += ['-opt-in=com.reteno.core.InternalRetenoApi']
     }
 
     testOptions {
@@ -92,4 +118,31 @@ dependencies {
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4'
 
     testDependencies()
+}
+afterEvaluate {
+    def unitTest = tasks.getByName('testDebugUnitTest')
+    def robolectricTest = tasks.register('testDebugRobolectricUnitTest', Test) {
+        description = 'Runs the JUnit 4 (Robolectric) unit tests of the debug variant in their own JVM.'
+        group = 'verification'
+        testClassesDirs = unitTest.testClassesDirs
+        classpath = unitTest.classpath
+        systemProperties unitTest.systemProperties
+        useJUnitPlatform { includeEngines 'junit-vintage' }
+        mustRunAfter unitTest
+        outputs.upToDateWhen { !unitTest.state.didWork }
+        doFirst {
+            filter.includePatterns = unitTest.filter.includePatterns
+            filter.commandLineIncludePatterns = unitTest.filter.commandLineIncludePatterns
+            filter.failOnNoMatchingTests = false
+            jvmArgs unitTest.allJvmArgs.findAll {
+                it.contains('intellij-coverage-agent') || it.startsWith('-Didea.') || it.startsWith('-Dcoverage.')
+            }
+        }
+    }
+    unitTest.useJUnitPlatform { excludeEngines 'junit-vintage' }
+    unitTest.filter.failOnNoMatchingTests = false
+    unitTest.finalizedBy robolectricTest
+    ['koverXmlReportDebug', 'koverHtmlReportDebug', 'koverVerifyDebug'].each { name ->
+        tasks.findByName(name)?.dependsOn robolectricTest
+    }
 }

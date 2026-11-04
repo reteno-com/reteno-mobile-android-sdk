@@ -1,15 +1,11 @@
 package com.reteno.core.data.remote.model.iam.displayrules.schedule
 
-import android.util.Log
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
 import com.reteno.core.data.remote.model.iam.displayrules.DisplayRulesParsingException
 import com.reteno.core.util.Util
-import java.text.SimpleDateFormat
-import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.ZonedDateTime
-import java.util.TimeZone
 
 sealed class ScheduleRule {
     class ShowAfter(
@@ -37,7 +33,6 @@ sealed class ScheduleRule {
             if (isActive.not()) return null
 
             return when (name) {
-                null -> throw DisplayRulesParsingException()
                 "SHOW_AFTER" -> {
                     val params = json.getAsJsonObject("params")
                     val date = params.get("date").asString

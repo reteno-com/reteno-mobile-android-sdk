@@ -5,7 +5,6 @@ import android.content.Context
 import android.os.Build
 
 object BuildUtil {
-    private var targetSdk = -1
 
     /**
      * Checks whether notification trampolines are not supported.
@@ -14,21 +13,17 @@ object BuildUtil {
      *
      * @return True if notification trampolines are not supported.
      */
-    fun shouldDisableTrampolines(context: Context): Boolean {
-        return Build.VERSION.SDK_INT >= 31 && getTargetSdkVersion(context) >= 31
-    }
+    fun shouldDisableTrampolines(context: Context): Boolean =
+        trampolinesDisabled(Build.VERSION.SDK_INT, getTargetSdkVersion(context))
+
+    internal fun trampolinesDisabled(sdkInt: Int, targetSdk: Int): Boolean = sdkInt >= 31 && targetSdk >= 31
 
     /**
      * Returns target SDK version parsed from manifest.
      *
      * @return Target SDK version.
      */
-    fun getTargetSdkVersion(context: Context): Int {
-        if (targetSdk == -1) {
-            targetSdk = context.applicationInfo.targetSdkVersion
-        }
-        return targetSdk
-    }
+    fun getTargetSdkVersion(context: Context): Int = context.applicationInfo.targetSdkVersion
 
     /**
      * Adds immutable property to the intent flags. Mandatory when targeting API 31.

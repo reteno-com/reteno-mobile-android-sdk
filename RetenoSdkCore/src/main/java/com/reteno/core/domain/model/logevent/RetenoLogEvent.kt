@@ -7,7 +7,7 @@ import com.reteno.core.util.DeviceInfo
 data class RetenoLogEvent(
     var platformName: DeviceOS = DeviceOS.ANDROID,
     var osVersion: String = DeviceInfo.fetchOsVersion(),
-    var version: String? = DeviceInfo.fetchAppVersion(),
+    var version: String? = null,
     var device: String = DeviceInfo.fetchDeviceModel(),
     var sdkVersion: String = BuildConfig.SDK_VERSION,
     var deviceId: String? = null,

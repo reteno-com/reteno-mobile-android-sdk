@@ -32,8 +32,6 @@ open class RetenoFirebaseMessagingService : FirebaseMessagingService() {
         if (!isOsVersionSupported()) {
             return
         }
-        /*@formatter:off*/ Logger.i(TAG, "onNewToken(): ", "token = [" , token , "]")
-        /*@formatter:on*/
         try {
             handler.onNewToken(token)
         } catch (t: Throwable) {

@@ -2,7 +2,6 @@ package com.reteno.core.data.local.database
 
 import android.content.ContentValues
 import android.database.Cursor
-import android.database.SQLException
 
 internal interface RetenoDatabase {
 
@@ -22,17 +21,9 @@ internal interface RetenoDatabase {
         contentValues: List<ContentValues>
     ): List<Long>
 
-    @Throws(SQLException::class)
-    fun insertOrThrow(table: String, nullColumnHack: String? = null, contentValues: ContentValues): Long
-
-    fun update(
-        table: String,
-        contentValues: ContentValues,
-        whereClause: String?,
-        whereArgs: Array<String?>?
-    ): Int
-
     fun delete(table: String, whereClause: String? = null, whereArgs: Array<String?>? = null): Int
+
+    fun update(table: String, values: ContentValues, whereClause: String, whereArgs: Array<String?>): Int
 
     fun getRowCount(tableName: String, whereClause: String? = null, whereArgs: Array<String?>? = null): Long
 

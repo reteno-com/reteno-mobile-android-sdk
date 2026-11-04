@@ -6,7 +6,7 @@ import android.os.Bundle
 import androidx.annotation.MainThread
 import androidx.core.app.NotificationChannelCompat
 import androidx.core.app.NotificationManagerCompat
-import com.reteno.core.RetenoInternalImpl
+import com.reteno.core.RetenoInternalEntryPoint
 import com.reteno.push.channel.RetenoNotificationChannel
 import com.reteno.push.events.EventListener
 import com.reteno.push.events.InAppCustomData
@@ -50,23 +50,27 @@ object RetenoNotifications {
     @JvmStatic
     fun updateDefaultNotificationChannel(name: String? = null, description: String? = null) {
         if (name == null && description == null) return
-        RetenoInternalImpl.instance.executeAfterInit {
-            val channel = NotificationChannelCompat.Builder(
-                RetenoNotificationChannel.DEFAULT_CHANNEL_ID,
-                NotificationManagerCompat.IMPORTANCE_DEFAULT
-            ).apply {
-                name?.let { setName(it) }
-                description?.let { setDescription(it) }
+        val facade = RetenoInternalEntryPoint.facade
+        facade.executeAfterInit {
+            val manager = NotificationManagerCompat.from(facade.application)
+            val channelId = RetenoNotificationChannel.DEFAULT_CHANNEL_ID
+            val existing = manager.getNotificationChannelCompat(channelId)
+            val builder = if (existing != null) {
+                existing.toBuilder()
+            } else {
+                NotificationChannelCompat.Builder(channelId, NotificationManagerCompat.IMPORTANCE_DEFAULT)
+            }
+            val channel = builder.apply {
+                name?.let(::setName)
+                description?.let(::setDescription)
             }.build()
-
-            NotificationManagerCompat.from(RetenoInternalImpl.instance.application)
-                .createNotificationChannel(channel)
+            manager.createNotificationChannel(channel)
         }
     }
 
     @JvmStatic
     suspend fun requestNotificationPermission(): Boolean {
-        val checker = RetenoInternalImpl.instance.requestPermissionChecker() ?: return false
+        val checker = RetenoInternalEntryPoint.facade.requestPermissionChecker() ?: return false
         val notificationChecker = NotificationPermissionChecker(checker)
         return withContext(Dispatchers.Main) {
             notificationChecker.requestPermission()
@@ -81,7 +85,7 @@ object RetenoNotifications {
     }
 
     suspend fun getNotificationPermissionStatus(): NotificationStatus {
-        val checker = RetenoInternalImpl.instance.requestPermissionChecker()
+        val checker = RetenoInternalEntryPoint.facade.requestPermissionChecker()
             ?: return NotificationStatus.DENIED
         val context = checker.awaitActivity()
         val manager = NotificationManagerCompat.from(context)

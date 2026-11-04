@@ -2,459 +2,175 @@ package com.reteno.core.data.local.sharedpref
 
 import android.content.Context
 import android.content.SharedPreferences
-import androidx.core.content.edit
 import com.reteno.core.RetenoConfig
 import com.reteno.core.data.local.config.DeviceId
 import com.reteno.core.domain.model.event.LifecycleTrackingOptions
-import com.reteno.core.lifecycle.RetenoSessionHandlerImpl
-import com.reteno.core.util.Logger
+import com.reteno.core.internal.lifecycle.SessionTracker
 import java.util.UUID
-
 
 internal class SharedPrefsManager(
     private val context: Context
 ) {
 
     private val sharedPreferences: SharedPreferences by lazy {
-        context.getSharedPreferences(
-            SHARED_PREF_NAME,
-            Context.MODE_PRIVATE
-        )
+        context.getSharedPreferences(SHARED_PREF_NAME, Context.MODE_PRIVATE)
     }
 
     fun getDeviceIdUuid(): String {
-        val currentDeviceId = sharedPreferences.getString(PREF_KEY_DEVICE_ID, "")
-        val deviceId = if (currentDeviceId.isNullOrBlank()) {
-            val randomId = UUID.randomUUID().toString()
-            sharedPreferences.edit().putString(PREF_KEY_DEVICE_ID, randomId).apply()
-            randomId
-        } else {
-            currentDeviceId
-        }
-        /*@formatter:off*/ Logger.i(TAG, "getDeviceId(): ", "deviceId = [", deviceId, "]")
-        /*@formatter:on*/
-        return deviceId
+        val stored = string(PREF_KEY_DEVICE_ID)
+        if (!stored.isNullOrBlank()) return stored
+        val randomId = UUID.randomUUID().toString()
+        save { putString(PREF_KEY_DEVICE_ID, randomId) }
+        return randomId
     }
 
-    fun getIamBaseUrl(): String? {
-        val url = sharedPreferences.getString(PREF_KEY_IAM_BASE_URL, null)
-        /*@formatter:off*/ Logger.i(TAG, "getIamBaseUrl(): ", "url = ", url)
-        /*@formatter:on*/
-        return url
+    fun getIamBaseUrl(): String? = string(PREF_KEY_IAM_BASE_URL)
+
+    fun saveIamBaseUrl(url: String?) = save { putString(PREF_KEY_IAM_BASE_URL, url) }
+
+    fun saveFcmToken(token: String) = save { putString(PREF_KEY_FCM_TOKEN, token) }
+
+    fun getFcmToken(): String = string(PREF_KEY_FCM_TOKEN).orEmpty()
+
+    fun saveDefaultNotificationChannel(defaultChannel: String) =
+        save { putString(PREF_KEY_NOTIFICATION_CHANNEL_DEFAULT, defaultChannel) }
+
+    fun getDefaultNotificationChannel(): String = string(PREF_KEY_NOTIFICATION_CHANNEL_DEFAULT).orEmpty()
+
+    fun saveNotificationsEnabled(enabled: Boolean) = save { putBoolean(PREF_KEY_NOTIFICATIONS_ENABLED, enabled) }
+
+    fun isNotificationsEnabled(): Boolean = sharedPreferences.getBoolean(PREF_KEY_NOTIFICATIONS_ENABLED, false)
+
+    fun saveDeviceRegistered(registered: Boolean) = save { putBoolean(PREF_KEY_DEVICE_REGISTERED, registered) }
+
+    fun isDeviceRegistered(): Boolean = sharedPreferences.getBoolean(PREF_KEY_DEVICE_REGISTERED, false)
+
+    fun saveIamBaseHtmlVersion(version: String) = save { putString(PREF_KEY_IAM_BASE_HTML_VERSION, version) }
+
+    fun getIamBaseHtmlVersion(): String? = string(PREF_KEY_IAM_BASE_HTML_VERSION)
+
+    fun clearBaseHtmlContent() = save { remove(PREF_KEY_IAM_BASE_HTML_CONTENT) }
+
+    fun getIamBaseHtmlContent(): String = string(PREF_KEY_IAM_BASE_HTML_CONTENT).orEmpty()
+
+    fun saveIamEtag(etag: String?) = save { putString(PREF_KEY_IAM_ETAG, etag) }
+
+    fun getIamEtag(): String? = string(PREF_KEY_IAM_ETAG)
+
+    fun saveAppStoppedTimestamp(appStoppedTimestamp: Long) =
+        save { putLong(PREF_KEY_APP_STOPPED_TIMESTAMP, appStoppedTimestamp) }
+
+    fun getLastInteractionTime(): Long = sharedPreferences.getLong(PREF_KEY_APP_INTERACTION_TIMESTAMP, 0L)
+
+    fun saveSessionStartTimestamp(sessionStartTimestamp: Long) =
+        save { putLong(PREF_KEY_SESSION_START_TIMESTAMP, sessionStartTimestamp) }
+
+    fun getSessionStartTimestamp(): Long = sharedPreferences.getLong(PREF_KEY_SESSION_START_TIMESTAMP, 0L)
+
+    fun saveSessionId(sessionId: String) = save { putString(PREF_KEY_SESSION_ID, sessionId) }
+
+    fun getSessionId(): String? = string(PREF_KEY_SESSION_ID)
+
+    fun batchSaveSession(sessionTime: Long, lastInteractionTime: Long) = save {
+        putLong(PREF_KEY_APP_SESSION_TIME, sessionTime)
+        putLong(PREF_KEY_APP_INTERACTION_TIMESTAMP, lastInteractionTime)
     }
 
-    fun saveFcmToken(token: String) {
-        /*@formatter:off*/ Logger.i(TAG, "saveFcmToken(): ", "token = [" , token , "]")
-        /*@formatter:on*/
-        sharedPreferences.edit().putString(PREF_KEY_FCM_TOKEN, token).apply()
+    fun saveAppSessionTime(appSessionTime: Long) = save { putLong(PREF_KEY_APP_SESSION_TIME, appSessionTime) }
+
+    fun getAppSessionTime(): Long = sharedPreferences.getLong(PREF_KEY_APP_SESSION_TIME, 0L)
+
+    fun getAppVersion(): String = string(PREF_KEY_APP_VERSION).orEmpty()
+
+    fun saveAppVersion(version: String) = save { putString(PREF_KEY_APP_VERSION, version) }
+
+    fun getAppBuildNumber(): Long = sharedPreferences.getLong(PREF_KEY_APP_BUILD_NUMBER, 0L)
+
+    fun saveAppBuildNumber(number: Long) = save { putLong(PREF_KEY_APP_BUILD_NUMBER, number) }
+
+    fun getOpenCount(): Int = sharedPreferences.getInt(PREF_KEY_APP_OPEN_COUNT, 0)
+
+    fun batchSave(openCount: Int, backgroundCount: Int, lastInteractionTime: Long) = save {
+        putInt(PREF_KEY_APP_OPEN_COUNT, openCount)
+        putInt(PREF_KEY_APP_BG_COUNT, backgroundCount)
+        putLong(PREF_KEY_APP_INTERACTION_TIMESTAMP, lastInteractionTime)
     }
 
-    fun getFcmToken(): String {
-        val token = sharedPreferences.getString(PREF_KEY_FCM_TOKEN, "") ?: ""
-        /*@formatter:off*/ Logger.i(TAG, "getFcmToken(): ", "token = ", token)
-        /*@formatter:on*/
-        return token
-    }
+    fun saveOpenCount(count: Int) = save { putInt(PREF_KEY_APP_OPEN_COUNT, count) }
 
-    fun saveDefaultNotificationChannel(defaultChannel: String) {
-        /*@formatter:off*/ Logger.i(TAG, "saveDefaultNotificationChannel(): ", "defaultChannel = [" , defaultChannel , "]")
-        /*@formatter:on*/
-        sharedPreferences.edit().putString(PREF_KEY_NOTIFICATION_CHANNEL_DEFAULT, defaultChannel)
-            .apply()
-    }
+    fun getBackgroundCount(): Int = sharedPreferences.getInt(PREF_KEY_APP_BG_COUNT, 0)
 
-    fun getDefaultNotificationChannel(): String {
-        val defaultChannel =
-            sharedPreferences.getString(PREF_KEY_NOTIFICATION_CHANNEL_DEFAULT, "") ?: ""
-        /*@formatter:off*/ Logger.i(TAG, "getDefaultNotificationChannel(): ", "defaultChannel = ", defaultChannel)
-        /*@formatter:on*/
-        return defaultChannel
-    }
+    fun saveBackgroundCount(count: Int) = save { putInt(PREF_KEY_APP_BG_COUNT, count) }
 
-    fun saveNotificationsEnabled(enabled: Boolean) {
-        /*@formatter:off*/ Logger.i(TAG, "saveNotificationsEnabled(): ", "boolean = [" , enabled , "]")
-        /*@formatter:on*/
-        sharedPreferences.edit().putBoolean(PREF_KEY_NOTIFICATIONS_ENABLED, enabled).apply()
-    }
+    fun saveExternalUserId(id: String?) = save { putString(PREF_KEY_EXTERNAL_DEVICE_ID, id) }
 
-    fun isNotificationsEnabled(): Boolean {
-        val result = sharedPreferences.getBoolean(PREF_KEY_NOTIFICATIONS_ENABLED, false)
-        /*@formatter:off*/ Logger.i(TAG, "isNotificationsEnabled(): ", result)
-        /*@formatter:on*/
-        return result
-    }
+    fun getExternalUserId(): String? = string(PREF_KEY_EXTERNAL_DEVICE_ID)
 
-    fun saveDeviceRegistered(registered: Boolean) {
-        /*@formatter:off*/ Logger.i(TAG, "saveDeviceRegistered(): ", "registered = [", registered, "]")
-        /*@formatter:on*/
-        sharedPreferences.edit().putBoolean(PREF_KEY_DEVICE_REGISTERED, registered).apply()
-    }
+    fun saveDeviceIdSuffix(suffix: String?) = save { putString(PREF_KEY_DEVICE_SUFFIX, suffix) }
 
-    fun isDeviceRegistered(): Boolean {
-        val result = sharedPreferences.getBoolean(PREF_KEY_DEVICE_REGISTERED, false)
-        /*@formatter:off*/ Logger.i(TAG, "isDeviceRegistered(): ", result)
-        /*@formatter:on*/
-        return result
-    }
+    fun getDeviceIdSuffix(): String? = string(PREF_KEY_DEVICE_SUFFIX)
 
-    fun saveIamBaseHtmlVersion(version: String) {
-        /*@formatter:off*/ Logger.i(TAG, "saveIamBaseHtmlVersion(): ", "version = [", version, "]")
-        /*@formatter:on*/
-        sharedPreferences.edit()
-            ?.putString(PREF_KEY_IAM_BASE_HTML_VERSION, version)
-            ?.apply()
-    }
+    fun saveDevicePhone(phone: String?) = save { putString(PREF_KEY_DEVICE_PHONE, phone) }
 
-    fun getIamBaseHtmlVersion(): String? {
-        val version = sharedPreferences.getString(PREF_KEY_IAM_BASE_HTML_VERSION, null)
-        /*@formatter:off*/ Logger.i(TAG, "getIamBaseHtmlVersion(): ", "version = [", version, "]")
-        /*@formatter:on*/
-        return version
-    }
+    fun getPhone(): String? = string(PREF_KEY_DEVICE_PHONE)
 
-    fun clearBaseHtmlContent() {
-        /*@formatter:off*/ Logger.i(TAG, "clearBaseHtmlContent(): ")
-        /*@formatter:on*/
-        sharedPreferences.edit()
-            ?.remove(PREF_KEY_IAM_BASE_HTML_CONTENT)
-            ?.apply()
-    }
+    fun saveDeviceEmail(email: String?) = save { putString(PREF_KEY_DEVICE_EMAIL, email) }
 
-    fun getIamBaseHtmlContent(): String {
-        val result = sharedPreferences.getString(PREF_KEY_IAM_BASE_HTML_CONTENT, null) ?: ""
-        /*@formatter:off*/ Logger.i(TAG, "getIamBaseHtmlContent(): ", "result = ", result)
-        /*@formatter:on*/
-        return result
-    }
+    fun getEmail(): String? = string(PREF_KEY_DEVICE_EMAIL)
 
-    fun saveIamEtag(etag: String?) {
-        /*@formatter:off*/ Logger.i(TAG, "saveIamEtag(): ", "etag = [", etag, "]")
-        /*@formatter:on*/
-        sharedPreferences.edit()
-            ?.putString(PREF_KEY_IAM_ETAG, etag)
-            ?.apply()
-    }
-
-    fun getIamEtag(): String? {
-        val result = sharedPreferences.getString(PREF_KEY_IAM_ETAG, null)
-        /*@formatter:off*/ Logger.i(TAG, "getIamEtag(): ", "result = ", result)
-        /*@formatter:on*/
-        return result
-    }
-
-    fun saveAppStoppedTimestamp(appStoppedTimestamp: Long) {
-        /*@formatter:off*/ Logger.i(TAG, "saveAppStoppedTimestamp(): ", "appStoppedTimestamp = [", appStoppedTimestamp, "]")
-        /*@formatter:on*/
-        sharedPreferences.edit()
-            ?.putLong(PREF_KEY_APP_STOPPED_TIMESTAMP, appStoppedTimestamp)
-            ?.apply()
-    }
-
-    fun getAppStoppedTimestamp(): Long {
-        val result = sharedPreferences.getLong(PREF_KEY_APP_STOPPED_TIMESTAMP, 0L)
-        /*@formatter:off*/ Logger.i(TAG, "getAppStoppedTimestamp(): ", "result = ", result)
-        /*@formatter:on*/
-        return result
-    }
-
-    fun saveLastInteractionTime(appTimestamp: Long) {
-        /*@formatter:off*/ Logger.i(TAG, "saveLastInteractionTime(): ", "appTimestamp = [", appTimestamp, "]")
-        /*@formatter:on*/
-        sharedPreferences.edit()
-            ?.putLong(PREF_KEY_APP_INTERACTION_TIMESTAMP, appTimestamp)
-            ?.apply()
-    }
-
-    fun getLastInteractionTime(): Long {
-        val result = sharedPreferences.getLong(PREF_KEY_APP_INTERACTION_TIMESTAMP, 0L)
-        /*@formatter:off*/ Logger.i(TAG, "getLastInteractionTime(): ", "result = ", result)
-        /*@formatter:on*/
-        return result
-    }
-
-    fun saveSessionStartTimestamp(sessionStartTimestamp: Long) {
-        /*@formatter:off*/ Logger.i(TAG, "saveSessionStartTimestamp(): ", "sessionStartTimestamp = [", sessionStartTimestamp, "]")
-        /*@formatter:on*/
-        sharedPreferences.edit()
-            ?.putLong(PREF_KEY_SESSION_START_TIMESTAMP, sessionStartTimestamp)
-            ?.apply()
-    }
-
-    fun getSessionStartTimestamp(): Long {
-        val result = sharedPreferences.getLong(PREF_KEY_SESSION_START_TIMESTAMP, 0L)
-        /*@formatter:off*/ Logger.i(TAG, "getAppStoppedTimestamp(): ", "result = ", result)
-        /*@formatter:on*/
-        return result
-    }
-
-    fun saveSessionId(sessionId: String) {
-        /*@formatter:off*/ Logger.i(TAG, "saveSessionId(): ", "sessionId = [", sessionId, "]")
-        /*@formatter:on*/
-        sharedPreferences.edit()
-            ?.putString(PREF_KEY_SESSION_ID, sessionId)
-            ?.apply()
-    }
-
-    fun getSessionId(): String? {
-        val result = sharedPreferences.getString(PREF_KEY_SESSION_ID, null)
-        /*@formatter:off*/ Logger.i(TAG, "getSessionId(): ", "result = ", result)
-        /*@formatter:on*/
-        return result
-    }
-
-    fun batchSaveSession(
-        sessionTime: Long,
-        lastInteractionTime: Long
-    ) {
-        sharedPreferences.edit {
-            putLong(PREF_KEY_APP_SESSION_TIME, sessionTime)
-            putLong(PREF_KEY_APP_INTERACTION_TIMESTAMP, lastInteractionTime)
-        }
-    }
-
-    fun saveAppSessionTime(appSessionTime: Long) {
-        /*@formatter:off*/ Logger.i(TAG, "saveAppSessionTime(): ", "appSessionTime = [", appSessionTime, "]")
-        /*@formatter:on*/
-        sharedPreferences.edit()
-            ?.putLong(PREF_KEY_APP_SESSION_TIME, appSessionTime)
-            ?.apply()
-    }
-
-    fun getAppSessionTime(): Long {
-        val result = sharedPreferences.getLong(PREF_KEY_APP_SESSION_TIME, 0L)
-        /*@formatter:off*/ Logger.i(TAG, "getAppSessionTime(): ", "result = ", result)
-        /*@formatter:on*/
-        return result
-    }
-
-    fun isFirstLaunch(): Boolean {
-        val result = sharedPreferences.getBoolean(PREF_KEY_FIRST_LAUNCH, true)
-        /*@formatter:off*/ Logger.i(TAG, "isFirstLaunch(): ", "result = ", result)
-        /*@formatter:on*/
-        return result
-    }
-
-    fun setFirstLaunch(isFirstLaunch: Boolean) {
-        /*@formatter:off*/ Logger.i(TAG, "setFirstLaunch(): ", "isFirstLaunch = [", isFirstLaunch, "]")
-        /*@formatter:on*/
-        sharedPreferences.edit()
-            ?.putBoolean(PREF_KEY_FIRST_LAUNCH, isFirstLaunch)
-            ?.apply()
-    }
-
-    fun getAppVersion(): String {
-        val result = sharedPreferences.getString(PREF_KEY_APP_VERSION, "")
-        /*@formatter:off*/ Logger.i(TAG, "getAppVersion(): ", "result = ", result)
-        /*@formatter:on*/
-        return result.orEmpty()
-    }
-
-    fun saveAppVersion(version: String) {
-        /*@formatter:off*/ Logger.i(TAG, "saveAppVersion(): ", "version = [", version, "]")
-        /*@formatter:on*/
-        sharedPreferences.edit()
-            ?.putString(PREF_KEY_APP_VERSION, version)
-            ?.apply()
-    }
-
-    fun getAppBuildNumber(): Long {
-        val result = sharedPreferences.getLong(PREF_KEY_APP_BUILD_NUMBER, 0L)
-        /*@formatter:off*/ Logger.i(TAG, "getAppBuildNumber(): ", "result = ", result)
-        /*@formatter:on*/
-        return result
-    }
-
-    fun saveAppBuildNumber(number: Long) {
-        /*@formatter:off*/ Logger.i(TAG, "saveAppBuildNumber(): ", "version = [", number, "]")
-        /*@formatter:on*/
-        sharedPreferences.edit()
-            ?.putLong(PREF_KEY_APP_BUILD_NUMBER, number)
-            ?.apply()
-    }
-
-    fun getOpenCount(): Int {
-        val result = sharedPreferences.getInt(PREF_KEY_APP_OPEN_COUNT, 0)
-        /*@formatter:off*/ Logger.i(TAG, "getOpenCount(): ", "result = ", result)
-        /*@formatter:on*/
-        return result
-    }
-
-    fun batchSave(
-        openCount: Int,
-        backgroundCount: Int,
-        lastInteractionTime: Long
-    ) {
-        /*@formatter:off*/ Logger.i(TAG, "batchSave(): ", "openCount = [", openCount, "]", "backgroundCount = [", backgroundCount, "]", "lastInteractionTime = [", lastInteractionTime, "]")
-        /*@formatter:on*/
-        sharedPreferences.edit {
-            putInt(PREF_KEY_APP_OPEN_COUNT, openCount)
-            putInt(PREF_KEY_APP_BG_COUNT, backgroundCount)
-            putLong(PREF_KEY_APP_INTERACTION_TIMESTAMP, lastInteractionTime)
-        }
-    }
-
-    fun saveOpenCount(count: Int) {
-        /*@formatter:off*/ Logger.i(TAG, "saveOpenCount(): ", "count = [", count, "]")
-        /*@formatter:on*/
-        sharedPreferences.edit()
-            ?.putInt(PREF_KEY_APP_OPEN_COUNT, count)
-            ?.apply()
-    }
-
-    fun getBackgroundCount(): Int {
-        val result = sharedPreferences.getInt(PREF_KEY_APP_BG_COUNT, 0)
-        /*@formatter:off*/ Logger.i(TAG, "getBackgroundCount(): ", "result = ", result)
-        /*@formatter:on*/
-        return result
-    }
-
-    fun saveBackgroundCount(count: Int) {
-        /*@formatter:off*/ Logger.i(TAG, "saveBackgroundCount(): ", "count = [", count, "]")
-        /*@formatter:on*/
-        sharedPreferences.edit()
-            ?.putInt(PREF_KEY_APP_BG_COUNT, count)
-            ?.apply()
-    }
-
-    fun saveExternalUserId(id: String?) {
-        /*@formatter:off*/ Logger.i(TAG, "saveExternalDeviceId(): ", "id = [", id, "]")
-        /*@formatter:on*/
-        sharedPreferences.edit()
-            ?.putString(PREF_KEY_EXTERNAL_DEVICE_ID, id)
-            ?.apply()
-    }
-
-    fun saveDeviceIdSuffix(suffix: String?) {
-        /*@formatter:off*/ Logger.i(TAG, "saveDeviceIdSuffix(): ", "suffix = [", suffix, "]")
-        /*@formatter:on*/
-        sharedPreferences.edit()
-            ?.putString(PREF_KEY_DEVICE_SUFFIX, suffix)
-            ?.apply()
-    }
-
-    fun getDeviceIdSuffix(): String? {
-        val result = sharedPreferences.getString(PREF_KEY_DEVICE_SUFFIX, null)
-        /*@formatter:off*/ Logger.i(TAG, "getDeviceIdSuffix(): ", "result = ", result)
-        /*@formatter:on*/
-        return result
-    }
-
-    fun getExternalUserId(): String? {
-        val result = sharedPreferences.getString(PREF_KEY_EXTERNAL_DEVICE_ID, null)
-        /*@formatter:off*/ Logger.i(TAG, "getExternalDeviceId(): ", "result = ", result)
-        /*@formatter:on*/
-        return result
-    }
-
-    fun saveDevicePhone(phone: String?) {
-        /*@formatter:off*/ Logger.i(TAG, "saveDevicePhone(): ", "saveDevicePhone = [", phone, "]")
-        /*@formatter:on*/
-        sharedPreferences.edit()
-            ?.putString(PREF_KEY_DEVICE_PHONE, phone)
-            ?.apply()
-    }
-
-    fun getPhone(): String? {
-        val result = sharedPreferences.getString(PREF_KEY_DEVICE_PHONE, null)
-        /*@formatter:off*/ Logger.i(TAG, "getPhone(): ", "result = ", result)
-        /*@formatter:on*/
-        return result
-    }
-
-    fun saveDeviceEmail(email: String?) {
-        /*@formatter:off*/ Logger.i(TAG, "saveDeviceEmail(): ", "saveDevicePhone = [", email, "]")
-        /*@formatter:on*/
-        sharedPreferences.edit()
-            ?.putString(PREF_KEY_DEVICE_EMAIL, email)
-            ?.apply()
-    }
-
-    fun getEmail(): String? {
-        val result = sharedPreferences.getString(PREF_KEY_DEVICE_EMAIL, null)
-        /*@formatter:off*/ Logger.i(TAG, "getEmail(): ", "result = ", result)
-        /*@formatter:on*/
-        return result
-    }
-
-    fun cacheConfiguration(deviceId: String, config: RetenoConfig) {
-        sharedPreferences.edit {
-            putString(PREF_KEY_CONFIG_LAST_STORED_ID, deviceId)
-            putBoolean(PREF_KEY_CONFIG_IN_APP, config.isPausedInAppMessages)
-            putBoolean(
-                PREF_KEY_CONFIG_LC_TRACK,
-                config.lifecycleTrackingOptions.appLifecycleEnabled
-            )
-            putBoolean(
-                PREF_KEY_CONFIG_FG_LC_TRACK,
-                config.lifecycleTrackingOptions.foregroundLifecycleEnabled
-            )
-            putBoolean(
-                PREF_KEY_CONFIG_SESS_TRACK,
-                config.lifecycleTrackingOptions.sessionStartEventsEnabled
-            )
-            putBoolean(
-                PREF_KEY_CONFIG_SESS_END_TRACK,
-                config.lifecycleTrackingOptions.sessionEndEventsEnabled
-            )
-            putBoolean(
-                PREF_KEY_CONFIG_PUSH_TRACK,
-                config.lifecycleTrackingOptions.pushSubscriptionEnabled
-            )
-            putLong(PREF_KEY_CONFIG_SESS_DURATION, config.sessionDuration)
-            putString(PREF_KEY_CONFIG_ACCESS, config.accessKey)
-            putBoolean(PREF_KEY_CONFIG_PUSH_IN_APP, config.isPausedPushInAppMessages)
-            putString(PREF_KEY_CONFIG_PLATFORM, config.platform)
-            putBoolean(PREF_KEY_CONFIG_DEBUG, config.isDebug)
-            putBoolean(PREF_KEY_CONFIG_HAS_CUSTOM_ID, config.userIdProvider != null)
-        }
+    fun cacheConfiguration(deviceId: String, config: RetenoConfig) = save {
+        val tracking = config.lifecycleTrackingOptions
+        putString(PREF_KEY_CONFIG_LAST_STORED_ID, deviceId)
+        putBoolean(PREF_KEY_CONFIG_IN_APP, config.isPausedInAppMessages)
+        putBoolean(PREF_KEY_CONFIG_LC_TRACK, tracking.appLifecycleEnabled)
+        putBoolean(PREF_KEY_CONFIG_FG_LC_TRACK, tracking.foregroundLifecycleEnabled)
+        putBoolean(PREF_KEY_CONFIG_SESS_TRACK, tracking.sessionStartEventsEnabled)
+        putBoolean(PREF_KEY_CONFIG_SESS_END_TRACK, tracking.sessionEndEventsEnabled)
+        putBoolean(PREF_KEY_CONFIG_PUSH_TRACK, tracking.pushSubscriptionEnabled)
+        putLong(PREF_KEY_CONFIG_SESS_DURATION, config.sessionDuration)
+        putString(PREF_KEY_CONFIG_ACCESS, config.accessKey)
+        putBoolean(PREF_KEY_CONFIG_PUSH_IN_APP, config.isPausedPushInAppMessages)
+        putString(PREF_KEY_CONFIG_PLATFORM, config.platform)
+        putBoolean(PREF_KEY_CONFIG_DEBUG, config.isDebug)
+        putBoolean(PREF_KEY_CONFIG_HAS_CUSTOM_ID, config.userIdProvider != null)
     }
 
     fun getCachedConfiguration(): RetenoConfig? {
-        if (sharedPreferences.getString(PREF_KEY_CONFIG_LAST_STORED_ID, null) == null) return null
-        return RetenoConfig.Builder()
-            .accessKey(sharedPreferences.getString(PREF_KEY_CONFIG_ACCESS, null).orEmpty())
-            .lifecycleTrackingOptions(
-                LifecycleTrackingOptions(
-                    appLifecycleEnabled = sharedPreferences.getBoolean(PREF_KEY_CONFIG_LC_TRACK, true),
-                    foregroundLifecycleEnabled = sharedPreferences.getBoolean(PREF_KEY_CONFIG_FG_LC_TRACK, false),
-                    sessionStartEventsEnabled = sharedPreferences.getBoolean(PREF_KEY_CONFIG_SESS_TRACK, true),
-                    sessionEndEventsEnabled = sharedPreferences.getBoolean(PREF_KEY_CONFIG_SESS_END_TRACK, false),
-                    pushSubscriptionEnabled = sharedPreferences.getBoolean(PREF_KEY_CONFIG_PUSH_TRACK, true)
-                )
-            )
+        if (string(PREF_KEY_CONFIG_LAST_STORED_ID) == null) return null
+        val tracking = LifecycleTrackingOptions(
+            appLifecycleEnabled = sharedPreferences.getBoolean(PREF_KEY_CONFIG_LC_TRACK, true),
+            foregroundLifecycleEnabled = sharedPreferences.getBoolean(PREF_KEY_CONFIG_FG_LC_TRACK, false),
+            sessionStartEventsEnabled = sharedPreferences.getBoolean(PREF_KEY_CONFIG_SESS_TRACK, true),
+            sessionEndEventsEnabled = sharedPreferences.getBoolean(PREF_KEY_CONFIG_SESS_END_TRACK, false),
+            pushSubscriptionEnabled = sharedPreferences.getBoolean(PREF_KEY_CONFIG_PUSH_TRACK, true)
+        )
+        val builder = RetenoConfig.Builder()
+            .accessKey(string(PREF_KEY_CONFIG_ACCESS).orEmpty())
+            .lifecycleTrackingOptions(tracking)
             .pauseInAppMessages(sharedPreferences.getBoolean(PREF_KEY_CONFIG_IN_APP, false))
-            .pausePushInAppMessages(
-                sharedPreferences.getBoolean(
-                    PREF_KEY_CONFIG_PUSH_IN_APP,
-                    false
-                )
-            )
-            .setPlatform(sharedPreferences.getString(PREF_KEY_CONFIG_PLATFORM, null).orEmpty())
+            .pausePushInAppMessages(sharedPreferences.getBoolean(PREF_KEY_CONFIG_PUSH_IN_APP, false))
+            .setPlatform(string(PREF_KEY_CONFIG_PLATFORM).orEmpty())
             .setDebug(sharedPreferences.getBoolean(PREF_KEY_CONFIG_DEBUG, false))
-            .sessionDuration(sharedPreferences.getLong(PREF_KEY_CONFIG_SESS_DURATION, RetenoSessionHandlerImpl.DEFAULT_SESSION_RESET_TIME))
-            .apply {
-                if (sharedPreferences.getBoolean(PREF_KEY_CONFIG_HAS_CUSTOM_ID, false)) {
-                    customDeviceIdProvider {
-                        DeviceId.getIdBodyFrom(
-                            sharedPreferences.getString(
-                                PREF_KEY_CONFIG_LAST_STORED_ID,
-                                null
-                            ).orEmpty()
-                        )
-                    }
-                }
-            }
-            .build()
+            .sessionDuration(
+                sharedPreferences.getLong(PREF_KEY_CONFIG_SESS_DURATION, SessionTracker.DEFAULT_SESSION_RESET_TIME)
+            )
+        if (sharedPreferences.getBoolean(PREF_KEY_CONFIG_HAS_CUSTOM_ID, false)) {
+            builder.customDeviceIdProvider { DeviceId.getIdBodyFrom(getLastStoredId()) }
+        }
+        return builder.build()
     }
 
+    fun getLastStoredId(): String = string(PREF_KEY_CONFIG_LAST_STORED_ID).orEmpty()
 
-    fun getLastStoredId(): String {
-        return sharedPreferences.getString(PREF_KEY_CONFIG_LAST_STORED_ID, "").orEmpty()
+    private fun string(key: String): String? = sharedPreferences.getString(key, null)
+
+    private fun save(change: SharedPreferences.Editor.() -> Unit) {
+        val editor = sharedPreferences.edit()
+        editor.change()
+        editor.apply()
     }
 
     companion object {
-        private val TAG: String = SharedPrefsManager::class.java.simpleName
-
         private const val SHARED_PREF_NAME = "reteno_shared_prefs"
         private const val PREF_KEY_DEVICE_ID = "device_id"
         private const val PREF_KEY_FCM_TOKEN = "fcm_token"
@@ -470,7 +186,6 @@ internal class SharedPrefsManager(
         private const val PREF_KEY_SESSION_START_TIMESTAMP = "session_start_timestamp"
         private const val PREF_KEY_SESSION_ID = "session_id"
         private const val PREF_KEY_APP_SESSION_TIME = "session_time"
-        private const val PREF_KEY_FIRST_LAUNCH = "first_launch"
         private const val PREF_KEY_APP_VERSION = "app_version"
         private const val PREF_KEY_APP_BUILD_NUMBER = "app_build_number"
         private const val PREF_KEY_APP_OPEN_COUNT = "open_count"

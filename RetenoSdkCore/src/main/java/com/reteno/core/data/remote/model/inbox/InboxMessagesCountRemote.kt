@@ -4,5 +4,5 @@ import com.google.gson.annotations.SerializedName
 
 internal data class InboxMessagesCountRemote(
     @SerializedName("unreadCount")
-    val unreadCount: Int
+    val unreadCount: Int = 0
 )

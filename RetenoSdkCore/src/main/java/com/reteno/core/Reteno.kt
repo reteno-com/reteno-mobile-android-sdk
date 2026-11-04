@@ -149,7 +149,7 @@ interface Reteno {
 
     /**
      *  Sends stored data without waiting for a send queue.
-     *  But not more often than [com.reteno.core.domain.controller.ScheduleController.Companion.FORCE_PUSH_MIN_DELAY] millis.
+     *  Requests made while a sync is running are combined into one follow-up sync.
      */
     fun forcePushData()
 

@@ -6,7 +6,6 @@ import androidx.core.database.getStringOrNull
 import com.reteno.core.data.local.database.schema.RecomEventsSchema
 import com.reteno.core.data.local.model.recommendation.RecomEventDb
 import com.reteno.core.data.local.model.recommendation.RecomEventTypeDb
-import com.reteno.core.util.allElementsNotNull
 
 fun ContentValues.putRecomVariantId(recomVariantId: String) {
     put(RecomEventsSchema.COLUMN_RECOM_VARIANT_ID, recomVariantId)
@@ -29,20 +28,13 @@ fun List<RecomEventDb>.toContentValuesList(recomVariantId: String): List<Content
 }
 
 fun Cursor.getRecomEvent(): RecomEventDb? {
-    val rowId = getStringOrNull(getColumnIndex(RecomEventsSchema.RecomEventSchema.COLUMN_RECOM_EVENT_ROW_ID))
+    val rowId = getString(getColumnIndex(RecomEventsSchema.RecomEventSchema.COLUMN_RECOM_EVENT_ROW_ID))
     val productId = getStringOrNull(getColumnIndex(RecomEventsSchema.RecomEventSchema.COLUMN_RECOM_EVENT_PRODUCT_ID))
     val occurred = getStringOrNull(getColumnIndex(RecomEventsSchema.RecomEventSchema.COLUMN_RECOM_EVENT_OCCURRED))
-    val recomEventTypeString = getStringOrNull(getColumnIndex(RecomEventsSchema.RecomEventSchema.COLUMN_RECOM_EVENT_TYPE))
-    val recomEventType = RecomEventTypeDb.fromString(recomEventTypeString)
+    val recomEventType = RecomEventTypeDb.fromString(
+        getStringOrNull(getColumnIndex(RecomEventsSchema.RecomEventSchema.COLUMN_RECOM_EVENT_TYPE))
+    )
 
-    return if (allElementsNotNull(recomEventType, occurred, productId)) {
-        return RecomEventDb(
-            rowId = rowId,
-            recomEventType = recomEventType!!,
-            occurred = occurred!!,
-            productId = productId!!
-        )
-    } else {
-        null
-    }
+    if (recomEventType == null || occurred == null || productId == null) return null
+    return RecomEventDb(rowId = rowId, recomEventType = recomEventType, occurred = occurred, productId = productId)
 }

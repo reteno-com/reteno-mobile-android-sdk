@@ -1,6 +1,5 @@
 package com.reteno.core.data.repository
 
-import android.content.pm.PackageInfo
 import com.reteno.core.data.local.config.DeviceId
 import kotlinx.coroutines.flow.Flow
 
@@ -16,6 +15,8 @@ interface ConfigRepository {
     suspend fun awaitForDeviceId(): DeviceId
     fun saveFcmToken(token: String)
     suspend fun getFcmToken(): String
+
+    fun getStoredFcmToken(): String
     fun saveDefaultNotificationChannel(channel: String)
     fun getDefaultNotificationChannel(): String
 
@@ -28,6 +29,4 @@ interface ConfigRepository {
     fun saveAppVersion(version: String)
     fun getAppBuildNumber(): Long
     fun saveAppBuildNumber(number: Long)
-    fun getAppPackageName(): String
-    fun getAppPackageInfo(): PackageInfo
 }

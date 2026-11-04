@@ -1,127 +1,177 @@
 package com.reteno.core.data.local.config
 
 import com.reteno.core.RetenoConfig
-import com.reteno.core.base.robolectric.BaseRobolectricTest
-import com.reteno.core.base.robolectric.Constants.DEVICE_ID_ANDROID
+import com.reteno.core.data.local.sharedpref.SharedPrefsManager
+import com.reteno.core.fixtures.FakeDeviceIdSources
+import com.reteno.core.fixtures.STUB_ACCESS_KEY
 import com.reteno.core.identification.DeviceIdProvider
-import io.mockk.MockKAnnotations
+import com.reteno.test.given
+import com.reteno.test.runUnitTest
+import com.reteno.test.then
+import com.reteno.test.whenn
 import io.mockk.every
-import kotlinx.coroutines.test.runTest
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotEquals
-import org.junit.Test
-import org.robolectric.annotation.Config
+import io.mockk.mockk
+import io.mockk.verify
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
+import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.runCurrent
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Test
 
+@OptIn(ExperimentalCoroutinesApi::class)
+internal class DeviceIdHelperTest {
 
-@Config(sdk = [26])
-class DeviceIdHelperTest : BaseRobolectricTest() {
-
-    // region constants ----------------------------------------------------------------------------
-    companion object {
-        private const val DEVICE_ID_UUID = "device_ID_UUID"
-        private const val EXTERNAL_DEVICE_ID = "External_device_ID"
-    }
-    // endregion constants -------------------------------------------------------------------------
-
-
-    // region helper fields ------------------------------------------------------------------------
-    private var userIdProvider: DeviceIdProvider? = null
-    // endregion helper fields ---------------------------------------------------------------------
-
-    private lateinit var SUT: DeviceIdHelper
-
-
-    override fun before() {
-        super.before()
-        MockKAnnotations.init(this)
-
-        SUT = DeviceIdHelper(application, sharedPrefsManager, {
-            RetenoConfig.Builder()
-                .accessKey("any")
-                .setPlatform("Android")
-                .customDeviceIdProvider(userIdProvider)
-                .build()
-        })
+    private class SutFixture(provider: DeviceIdProvider? = null) {
+        val sources = FakeDeviceIdSources()
+        val prefs = mockk<SharedPrefsManager>().also {
+            every { it.getDeviceIdUuid() } returns "random-uuid"
+            every { it.getLastStoredId() } returns "cached-body:suffix"
+        }
+        val config: RetenoConfig = RetenoConfig.Builder()
+            .accessKey(STUB_ACCESS_KEY)
+            .customDeviceIdProvider(provider)
+            .build()
+        val sut = DeviceIdHelper(sources, prefs) { config }
     }
 
     @Test
-    fun givenEmptyDeviceId_withDeviceIdMode_thenDeviceIdModeChanged() = runTest {
-        // Given
-        val oldDeviceIdMode = DeviceIdMode.RANDOM_UUID
-        val newDeviceIdMode = DeviceIdMode.ANDROID_ID
-        val oldDeviceId = DeviceId(DEVICE_ID_UUID, null, null, oldDeviceIdMode)
-        val expectedDeviceId = DeviceId(DEVICE_ID_ANDROID, null, null, newDeviceIdMode)
+    fun `should identify device by android id`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
 
-        every { sharedPrefsManager.getDeviceIdUuid() } returns DEVICE_ID_UUID
+        whenn()
+        val deviceId = fixture.sut.withDeviceIdMode(CURRENT, DeviceIdMode.ANDROID_ID)
 
-        // When
-        lateinit var newDeviceId: DeviceId
-        SUT.withDeviceIdMode(oldDeviceId, newDeviceIdMode) {
-            newDeviceId = it
+        then()
+        assertEquals(CURRENT.copy(idBody = "android-id", mode = DeviceIdMode.ANDROID_ID), deviceId)
+    }
+
+    @Test
+    fun `should fall back to random uuid when android id is missing or unreadable`() = runUnitTest {
+        given()
+        val missing = SutFixture().apply { sources.androidId = { null } }
+        val unreadable = SutFixture().apply { sources.androidId = { throw SecurityException("denied") } }
+
+        whenn()
+        val ids = listOf(missing, unreadable).map { it.sut.withDeviceIdMode(CURRENT, DeviceIdMode.ANDROID_ID) }
+
+        then()
+        val expected = CURRENT.copy(idBody = "random-uuid", mode = DeviceIdMode.RANDOM_UUID)
+        assertEquals(listOf(expected, expected), ids)
+    }
+
+    @Test
+    fun `should identify device by app set id`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+
+        whenn()
+        val deviceId = fixture.sut.withDeviceIdMode(CURRENT, DeviceIdMode.APP_SET_ID)
+
+        then()
+        assertEquals(CURRENT.copy(idBody = "app-set-id", mode = DeviceIdMode.APP_SET_ID), deviceId)
+    }
+
+    @Test
+    fun `should fall back to random uuid when app set id is not available`() = runUnitTest {
+        given()
+        val fixture = SutFixture().apply { sources.appSetId = { throw IllegalStateException("no play services") } }
+
+        whenn()
+        val deviceId = fixture.sut.withDeviceIdMode(CURRENT, DeviceIdMode.APP_SET_ID)
+
+        then()
+        assertEquals(DeviceIdMode.RANDOM_UUID, deviceId.mode)
+    }
+
+    @Test
+    fun `should identify device by stored random uuid`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+
+        whenn()
+        val deviceId = fixture.sut.withDeviceIdMode(CURRENT, DeviceIdMode.RANDOM_UUID)
+
+        then()
+        assertEquals(CURRENT.copy(idBody = "random-uuid", mode = DeviceIdMode.RANDOM_UUID), deviceId)
+    }
+
+    @Test
+    fun `should identify device by id body of the last launch`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+
+        whenn()
+        val deviceId = fixture.sut.withDeviceIdMode(CURRENT, DeviceIdMode.CACHE)
+
+        then()
+        assertEquals(CURRENT.copy(idBody = "cached-body", mode = DeviceIdMode.CACHE), deviceId)
+    }
+
+    @Test
+    fun `should identify device by id from host provider`() = runUnitTest {
+        given()
+        val fixture = SutFixture { "host-id" }
+
+        whenn()
+        val deviceId = fixture.sut.withDeviceIdMode(CURRENT, DeviceIdMode.CLIENT_UUID)
+
+        then()
+        assertEquals(CURRENT.copy(idBody = "host-id", mode = DeviceIdMode.CLIENT_UUID), deviceId)
+    }
+
+    @Test
+    fun `should wait for host provider to have an id`() = runUnitTest {
+        given()
+        var calls = 0
+        val fixture = SutFixture { if (++calls < 3) null else "late-id" }
+        val resolving = async { fixture.sut.withDeviceIdMode(CURRENT, DeviceIdMode.CLIENT_UUID) }
+        runCurrent()
+        val doneBeforeWaiting = resolving.isCompleted
+
+        whenn()
+        advanceTimeBy(DeviceIdHelper.CLIENT_ID_POLL_MILLIS * 2 + 1)
+
+        then()
+        assertFalse(doneBeforeWaiting)
+        assertEquals("late-id", resolving.await().idBody)
+    }
+
+    @Test
+    fun `should fall back to random uuid without host provider or when it fails`() = runUnitTest {
+        given()
+        val withoutProvider = SutFixture()
+        val failing = SutFixture { throw IllegalStateException("host crashed") }
+
+        whenn()
+        val modes = listOf(withoutProvider, failing).map {
+            it.sut.withDeviceIdMode(CURRENT, DeviceIdMode.CLIENT_UUID).mode
         }
 
-        // Then
-        assertEquals(expectedDeviceId, newDeviceId)
+        then()
+        assertEquals(listOf(DeviceIdMode.RANDOM_UUID, DeviceIdMode.RANDOM_UUID), modes)
     }
 
     @Test
-    fun givenEmptyDeviceId_withDeviceIdMode_thenDeviceIdChanged() = runTest {
-        // Given
-        val oldDeviceIdMode = DeviceIdMode.RANDOM_UUID
-        val expectedDeviceIdMode = DeviceIdMode.ANDROID_ID
-        val externalId = null
-        val oldDeviceId = DeviceId(DEVICE_ID_UUID, null, externalId, oldDeviceIdMode)
-        every { sharedPrefsManager.getDeviceIdUuid() } returns DEVICE_ID_UUID
+    fun `should stop waiting for host provider when cancelled instead of falling back`() = runUnitTest {
+        given()
+        val fixture = SutFixture { null }
+        val resolving = async { fixture.sut.withDeviceIdMode(CURRENT, DeviceIdMode.CLIENT_UUID) }
+        runCurrent()
 
-        // When
-        lateinit var newDeviceId: DeviceId
-        SUT.withDeviceIdMode(oldDeviceId, expectedDeviceIdMode) {
-            newDeviceId = it
-        }
+        whenn()
+        resolving.cancel()
+        runCurrent()
 
-        // Then
-        assertNotEquals(oldDeviceIdMode, expectedDeviceIdMode)
-        assertNotEquals(DEVICE_ID_UUID, newDeviceId.id)
-        assertEquals(expectedDeviceIdMode, newDeviceId.mode)
-        assertEquals(externalId, newDeviceId.externalId)
+        then()
+        assertTrue(resolving.isCancelled)
+        verify(exactly = 0) { fixture.prefs.getDeviceIdUuid() }
     }
 
-    @Test
-    fun givenExternalDeviceIdSaved_whenWithNullExternalDeviceId_thenExternalDeviceIdIsNull() {
-        // Given
-        val oldDeviceId = DeviceId(DEVICE_ID_UUID, null, EXTERNAL_DEVICE_ID)
-
-        // When
-        val newDeviceId = SUT.withExternalUserId(oldDeviceId, null)
-
-        // Then
-        val expectedDeviceId = DeviceId(DEVICE_ID_UUID,null, null)
-        assertEquals(expectedDeviceId, newDeviceId)
-    }
-
-    @Test
-    fun givenExternalDeviceIdSaved_whenWithEmptyExternalDeviceId_thenExternalDeviceIdIsEmpty() {
-        // Given
-        val oldDeviceId = DeviceId(DEVICE_ID_UUID,null, EXTERNAL_DEVICE_ID)
-
-        // When
-        val newDeviceId = SUT.withExternalUserId(oldDeviceId, "")
-
-        // Then
-        val expectedDeviceId = DeviceId(DEVICE_ID_UUID, null, "")
-        assertEquals(expectedDeviceId, newDeviceId)
-    }
-
-    @Test
-    fun givenNoExternalDeviceId_whenWithExternalDeviceId_thenExternalDeviceIdSaved() {
-        // Given
-        val oldDeviceId = DeviceId(DEVICE_ID_UUID, null, null)
-
-        // When
-        val newDeviceId = SUT.withExternalUserId(oldDeviceId, EXTERNAL_DEVICE_ID)
-
-        // Then
-        val expectedDeviceId = DeviceId(DEVICE_ID_UUID, null, EXTERNAL_DEVICE_ID)
-        assertEquals(expectedDeviceId, newDeviceId)
+    private companion object {
+        val CURRENT = DeviceId(idBody = "old", idSuffix = "suffix", externalId = "user-1", email = "a@b.c")
     }
 }

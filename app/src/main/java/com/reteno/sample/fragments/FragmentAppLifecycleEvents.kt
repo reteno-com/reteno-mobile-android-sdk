@@ -5,12 +5,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
-import com.reteno.core.RetenoInternalImpl
-import com.reteno.core.di.ServiceLocator
-import com.reteno.core.domain.controller.AppLifecycleController
-import com.reteno.core.domain.model.event.LifecycleEventType
 import com.reteno.core.domain.model.event.LifecycleTrackingOptions
-import com.reteno.core.lifecycle.RetenoSessionHandler
 import com.reteno.sample.BaseFragment
 import com.reteno.sample.databinding.FragmentAppLifecycleEventsBinding
 import com.reteno.sample.util.AppSharedPreferencesManager
@@ -18,34 +13,11 @@ import com.reteno.sample.util.AppSharedPreferencesManager
 class FragmentAppLifecycleEvents : BaseFragment() {
 
     private var binding: FragmentAppLifecycleEventsBinding? = null
-    private var sessionHandler: RetenoSessionHandler? = null
-    private var appLifecycleController: AppLifecycleController? = null
     private var config = LifecycleTrackingOptions.DEFAULT
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        try {
-            val field = RetenoInternalImpl::class.java.getDeclaredField("serviceLocator")
-            field.isAccessible = true
-            val serviceLocator = field[reteno] as ServiceLocator
-            appLifecycleController = serviceLocator.appLifecycleControllerProvider.get()
-            sessionHandler = serviceLocator.retenoSessionHandlerProvider.get()
-            field.isAccessible = false
-            val configField = AppLifecycleController::class.java.getDeclaredField("lifecycleEventConfig")
-            configField.isAccessible = true
-            val configMap = configField[appLifecycleController] as Map<LifecycleEventType, Boolean>
-            config = LifecycleTrackingOptions(
-                appLifecycleEnabled = configMap.getOrDefault(LifecycleEventType.APP_LIFECYCLE, false),
-                foregroundLifecycleEnabled = configMap.getOrDefault(LifecycleEventType.FOREGROUND_LIFECYCLE, false),
-                pushSubscriptionEnabled = configMap.getOrDefault(LifecycleEventType.PUSH, false),
-                sessionStartEventsEnabled = configMap.getOrDefault(LifecycleEventType.SESSION_START, false),
-                sessionEndEventsEnabled = configMap.getOrDefault(LifecycleEventType.SESSION_END, false)
-            )
-        } catch (e: NoSuchFieldException) {
-            e.printStackTrace()
-        } catch (e: IllegalAccessException) {
-            e.printStackTrace()
-        }
+        config = AppSharedPreferencesManager.getOptions(requireContext())
     }
 
     override fun onCreateView(
@@ -88,8 +60,7 @@ class FragmentAppLifecycleEvents : BaseFragment() {
                 config = config.copy(sessionEndEventsEnabled = b)
             }
             btnSave.setOnClickListener {
-                appLifecycleController?.setLifecycleEventConfig(config)
-                sessionHandler?.setLifecycleEventConfig(config)
+                reteno.setLifecycleEventConfig(config)
                 AppSharedPreferencesManager.saveOptions(requireContext(), config)
                 Toast.makeText(requireContext(), "SAVED", Toast.LENGTH_SHORT).show()
             }
@@ -99,10 +70,5 @@ class FragmentAppLifecycleEvents : BaseFragment() {
     override fun onDestroyView() {
         binding = null
         super.onDestroyView()
-    }
-
-    override fun onDestroy() {
-        appLifecycleController = null
-        super.onDestroy()
     }
 }

@@ -1,30 +1,8 @@
 package com.reteno.core.domain.model.ecom
 
-import com.google.gson.annotations.SerializedName
-import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.ATTRIBUTES
-import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.CART_ID
-import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.DATE
-import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.DELIVERY_ADDRESS
-import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.DELIVERY_METHOD
-import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.DISCOUNT
-import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.EMAIL
-import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.EXTERNAL_CUSTOMER_ID
-import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.EXTERNAL_ORDER_ID
-import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.FIRST_NAME
-import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.ITEMS
-import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.LAST_NAME
-import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.PAYMENT_METHOD
-import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.PHONE
-import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.RESTORE_URL
-import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.SHIPPING
-import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.SOURCE
-import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.STATUS
-import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.STATUS_DESCRIPTION
-import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.STORE_ID
-import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.TAXES
-import com.reteno.core.domain.model.ecom.RemoteConstants.EcomEvent.TOTAL_COST
-import java.time.ZonedDateTime
 import android.util.Pair
+import com.google.gson.annotations.SerializedName
+import java.time.ZonedDateTime
 
 data class Order(
     /**

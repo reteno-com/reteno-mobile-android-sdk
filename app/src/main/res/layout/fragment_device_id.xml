@@ -18,40 +18,7 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="This is a screen to test DeviceId functionality. \nSetting APP_SET_ID is performed asynchronously.\nIf APP_SET_ID is selected pull-to-refresh and update UI. You can customize device ID and emulate its asynchronous loading by changing delay time(Note that changing deviceId and delay will will work on the next launch of the app" />
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="32dp">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="currentDeviceIdMode: " />
-
-            <TextView
-                android:id="@+id/tvCurrentDeviceIdMode"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textStyle="bold" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="currentDeviceId: " />
-
-            <TextView
-                android:id="@+id/tvCurrentDeviceId"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textStyle="bold" />
-        </LinearLayout>
+            android:text="Custom device ID returned by the sample's DeviceIdProvider and its loading delay. Changes apply on the next launch of the app." />
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/tilDeviceId"
@@ -121,17 +88,67 @@
                 android:layout_height="wrap_content" />
         </com.google.android.material.textfield.TextInputLayout>
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="32dp"
-            android:text="Firebase FCM push token:" />
-
-
-        <EditText
-            android:id="@+id/etFcmToken"
+        <LinearLayout
+            android:id="@+id/llSdkState"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textStyle="bold" />
+            android:layout_marginTop="24dp"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Stored by the SDK (pull to refresh). The device ID is the one applied with the last configuration."
+                android:textStyle="italic" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="currentDeviceId: " />
+
+                <TextView
+                    android:id="@+id/tvCurrentDeviceId"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textIsSelectable="true"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="sdkExternalId: " />
+
+                <TextView
+                    android:id="@+id/tvSdkExternalId"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textIsSelectable="true"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="Firebase FCM push token:" />
+
+            <TextView
+                android:id="@+id/tvFcmToken"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textIsSelectable="true"
+                android:textStyle="bold" />
+        </LinearLayout>
+
     </LinearLayout>
 </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>

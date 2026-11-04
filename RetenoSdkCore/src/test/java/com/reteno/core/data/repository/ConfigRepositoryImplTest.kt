@@ -1,219 +1,210 @@
 package com.reteno.core.data.repository
 
-import android.text.TextUtils
-import com.google.firebase.messaging.FirebaseMessaging
-import com.reteno.core.base.BaseUnitTest
 import com.reteno.core.data.local.config.DeviceId
+import com.reteno.core.data.local.config.DeviceIdHelper
 import com.reteno.core.data.local.config.DeviceIdMode
 import com.reteno.core.data.local.config.RestConfig
 import com.reteno.core.data.local.sharedpref.SharedPrefsManager
-import io.mockk.coEvery
+import com.reteno.core.fixtures.FakeDeviceIdSources
+import com.reteno.core.fixtures.stubConfig
+import com.reteno.core.internal.platform.FcmTokenSource
+import com.reteno.test.given
+import com.reteno.test.runUnitTest
+import com.reteno.test.then
+import com.reteno.test.whenn
 import io.mockk.every
-import io.mockk.impl.annotations.MockK
-import io.mockk.impl.annotations.RelaxedMockK
-import io.mockk.just
-import io.mockk.justRun
 import io.mockk.mockk
-import io.mockk.mockkStatic
-import io.mockk.runs
-import io.mockk.spyk
-import io.mockk.unmockkStatic
 import io.mockk.verify
-import kotlinx.coroutines.test.runTest
-import org.junit.AfterClass
-import org.junit.Assert.assertEquals
-import org.junit.BeforeClass
-import org.junit.Test
-import org.mockito.ArgumentMatchers.anyString
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
+import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.runCurrent
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Test
 
-class ConfigRepositoryImplTest : BaseUnitTest() {
+@OptIn(ExperimentalCoroutinesApi::class)
+internal class ConfigRepositoryImplTest {
 
-    // region constants ----------------------------------------------------------------------------
-    companion object {
-        private const val DEVICE_ID = "device_ID"
-        private const val EXTERNAL_DEVICE_ID = "External_device_ID"
-        private const val FCM_TOKEN = "FCM_Token"
-        private const val DEFAULT_NOTIFICATION_CHANNEL = "default_notification_channel_ID"
+    private class FakeFcmTokenSource : FcmTokenSource {
+        override var isAutoInitEnabled = true
+        var token: String? = "fresh-token"
+        var fetches = 0
 
-        @JvmStatic
-        @BeforeClass
-        fun beforeClass() {
-            mockkStatic(TextUtils::class)
-            mockkStatic(FirebaseMessaging::class)
-        }
-
-        @JvmStatic
-        @AfterClass
-        fun afterClass() {
-            unmockkStatic(TextUtils::class)
-            unmockkStatic(FirebaseMessaging::class)
-        }
-    }
-    // endregion constants -------------------------------------------------------------------------
-
-    // region helper fields ------------------------------------------------------------------------
-    @MockK
-    private lateinit var sharedPrefsManager: SharedPrefsManager
-
-    @RelaxedMockK
-    private lateinit var restConfig: RestConfig
-
-    private lateinit var SUT: ConfigRepository
-    // endregion helper fields ---------------------------------------------------------------------
-
-    override fun before() {
-        super.before()
-        coEvery { sharedPrefsManager.isNotificationsEnabled() } returns false
-        coEvery { sharedPrefsManager.isDeviceRegistered() } returns false
-        coEvery { sharedPrefsManager.setFirstLaunch(any()) } returns Unit
-        SUT = ConfigRepositoryImpl(mockk(), sharedPrefsManager, restConfig)
-    }
-
-    @Test
-    fun given_whenSetExternalDeviceId_thenDelegatedToRestConfig() {
-        // Given
-        every { restConfig["setExternalUserId"](anyString()) } returns Unit
-
-        // When
-        SUT.setExternalUserId(EXTERNAL_DEVICE_ID)
-
-        // Then
-        verify(exactly = 1) { restConfig["setExternalUserId"](EXTERNAL_DEVICE_ID) }
-    }
-
-    @Test
-    fun given_whenGetDeviceId_thenDelegatedToRestConfig() {
-        // Given
-        val deviceId = DeviceId(DEVICE_ID, null, EXTERNAL_DEVICE_ID, DeviceIdMode.RANDOM_UUID)
-        every { restConfig.deviceId } returns deviceId
-
-        // When
-        val result = SUT.getDeviceId()
-
-        // Then
-        verify(exactly = 1) { restConfig.deviceId }
-        assertEquals(deviceId, result)
-    }
-
-    @Test
-    fun given_whenSaveFcmToken_thenDelegatedToSharedPrefsManager() {
-        // Given
-        every { sharedPrefsManager.saveFcmToken(any()) } just runs
-
-        // When
-        SUT.saveFcmToken(FCM_TOKEN)
-
-        // Then
-        verify(exactly = 1) { sharedPrefsManager.saveFcmToken(FCM_TOKEN) }
-    }
-
-    @Test
-    fun given_whenGetFcmToken_thenDelegatedToSharedPrefsManager() = runTest {
-        // Given
-        every { TextUtils.isEmpty(any()) } returns false
-        every { sharedPrefsManager.getFcmToken() } returns FCM_TOKEN
-
-        // When
-        val token = SUT.getFcmToken()
-        assertEquals(FCM_TOKEN, token)
-
-        // Then
-        verify(exactly = 1) { sharedPrefsManager.getFcmToken() }
-    }
-
-    @Test
-    fun given_whenSaveDeviceRegistered_thenDelegatedToSharedPrefsManager() {
-        // Given
-        justRun { sharedPrefsManager.saveDeviceRegistered(any()) }
-        val isDeviceRegistered = false
-
-        // When
-        SUT.saveDeviceRegistered(isDeviceRegistered)
-
-        // Then
-        verify(exactly = 1) { sharedPrefsManager.saveDeviceRegistered(isDeviceRegistered) }
-    }
-
-    @Test
-    fun given_whenIsDeviceRegistered_thenDelegatedToSharedPrefsManager() {
-        // Given
-        val isDeviceRegistered = false
-        every { sharedPrefsManager.isDeviceRegistered() } returns isDeviceRegistered
-
-        // When
-        val actualResult = SUT.isDeviceRegistered()
-
-        // Then
-        verify(exactly = 1) { sharedPrefsManager.isDeviceRegistered() }
-        assertEquals(isDeviceRegistered, actualResult)
-    }
-
-    @Test
-    fun givenFcmTokenAbsent_whenGetFcmToken_thenGetAndSaveFreshFcmTokenCalled() = runTest {
-        // Given
-        every { TextUtils.isEmpty(any()) } returns true
-        val firebaseMockk = mockk<FirebaseMessaging>(relaxed = true)
-        every { firebaseMockk.isAutoInitEnabled } returns false
-        every { FirebaseMessaging.getInstance() } returns firebaseMockk
-
-        every { sharedPrefsManager.getFcmToken() } returns ""
-        every { sharedPrefsManager.saveFcmToken(anyString()) } just runs
-
-        // When
-        val configRepositorySpy = spyk(SUT, recordPrivateCalls = true)
-        configRepositorySpy.getFcmToken()
-
-        // Then
-        verify(exactly = 1) { sharedPrefsManager.getFcmToken() }
-        verify(exactly = 1) { configRepositorySpy["getAndSaveFreshFcmToken"]() }
-    }
-
-    @Test
-    fun givenFcmTokenPresent_whenGetFcmToken_thenGetAndSaveFreshFcmTokenCalled() = runTest {
-        // Given
-        every { TextUtils.isEmpty(any()) } returns true
-        val firebaseMockk = mockk<FirebaseMessaging>(relaxed = true)
-        every { firebaseMockk.isAutoInitEnabled } returns false
-        every { FirebaseMessaging.getInstance() } returns firebaseMockk
-
-        every { sharedPrefsManager.getFcmToken() } returns FCM_TOKEN
-        every { sharedPrefsManager.saveFcmToken(anyString()) } just runs
-
-        // When
-        val configRepositorySpy = spyk(SUT, recordPrivateCalls = true)
-        configRepositorySpy.getFcmToken()
-
-        // Then
-        verify(exactly = 1) { sharedPrefsManager.getFcmToken() }
-        verify(exactly = 0) { configRepositorySpy["getAndSaveFreshFcmToken"]() }
-    }
-
-    @Test
-    fun given_whenSaveDefaultNotificationChannel_thenDelegatedToSharedPrefsManager() {
-        // Given
-        every { sharedPrefsManager.saveDefaultNotificationChannel(any()) } just runs
-
-        // When
-        SUT.saveDefaultNotificationChannel(DEFAULT_NOTIFICATION_CHANNEL)
-
-        // Then
-        verify(exactly = 1) {
-            sharedPrefsManager.saveDefaultNotificationChannel(
-                DEFAULT_NOTIFICATION_CHANNEL
-            )
+        override suspend fun fetchToken(): String? {
+            fetches++
+            return token
         }
     }
 
+    private class SutFixture {
+        var storedToken = ""
+        val prefs = mockk<SharedPrefsManager>(relaxed = true).also {
+            every { it.isNotificationsEnabled() } returns true
+            every { it.getFcmToken() } answers { storedToken }
+            every { it.saveFcmToken(any()) } answers { storedToken = firstArg() }
+            every { it.getDeviceIdUuid() } returns "random-uuid"
+        }
+        val restConfig = RestConfig(prefs, DeviceIdHelper(FakeDeviceIdSources(), prefs) { stubConfig() })
+        val tokens = FakeFcmTokenSource()
+        val sut = ConfigRepositoryImpl(prefs, restConfig, tokens)
+    }
+
     @Test
-    fun given_whenGetDefaultNotificationChannel_thenDelegatedToSharedPrefsManager() {
-        // Given
-        every { sharedPrefsManager.getDefaultNotificationChannel() } returns DEFAULT_NOTIFICATION_CHANNEL
+    fun `should keep user details of the device id in rest config`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
 
-        // When
-        val result = SUT.getDefaultNotificationChannel()
+        whenn()
+        fixture.sut.setExternalUserId("user-1")
+        fixture.sut.setDeviceIdSuffix("tablet")
+        fixture.sut.setUserEmail("a@b.c")
+        fixture.sut.setUserPhone("+100")
 
-        // Then
-        verify(exactly = 1) { sharedPrefsManager.getDefaultNotificationChannel() }
-        assertEquals(DEFAULT_NOTIFICATION_CHANNEL, result)
+        then()
+        assertEquals(
+            DeviceId(idBody = "", idSuffix = "tablet", externalId = "user-1", email = "a@b.c", phone = "+100"),
+            fixture.sut.getDeviceId()
+        )
+    }
+
+    @Test
+    fun `should return device id at once when it is known`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.restConfig.initDeviceId(DeviceIdMode.RANDOM_UUID)
+
+        whenn()
+        val deviceId = fixture.sut.awaitForDeviceId()
+
+        then()
+        assertEquals("random-uuid", deviceId.idBody)
+    }
+
+    @Test
+    fun `should wait for device id to become known`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val waiting = async { fixture.sut.awaitForDeviceId() }
+        runCurrent()
+        val doneBeforeKnown = waiting.isCompleted
+
+        whenn()
+        fixture.restConfig.initDeviceId(DeviceIdMode.RANDOM_UUID)
+        advanceTimeBy(ConfigRepositoryImpl.DEVICE_ID_POLL_MILLIS + 1)
+
+        then()
+        assertFalse(doneBeforeKnown)
+        assertEquals("random-uuid", waiting.await().idBody)
+    }
+
+    @Test
+    fun `should use stored fcm token without asking firebase`() = runUnitTest {
+        given()
+        val fixture = SutFixture().apply { storedToken = "stored-token" }
+
+        whenn()
+        val token = fixture.sut.getFcmToken()
+
+        then()
+        assertEquals("stored-token", token)
+        assertEquals(0, fixture.tokens.fetches)
+    }
+
+    @Test
+    fun `should fetch and store fcm token when none is stored`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+
+        whenn()
+        val token = fixture.sut.getFcmToken()
+
+        then()
+        assertEquals("fresh-token", token)
+        assertEquals("fresh-token", fixture.sut.getStoredFcmToken())
+    }
+
+    @Test
+    fun `should not store an empty fcm token firebase returns`() = runUnitTest {
+        given()
+        val fixture = SutFixture().apply { tokens.token = "" }
+
+        whenn()
+        val token = fixture.sut.getFcmToken()
+
+        then()
+        assertEquals("", token)
+        verify(exactly = 0) { fixture.prefs.saveFcmToken(any()) }
+    }
+
+    @Test
+    fun `should have no fcm token when firebase cannot provide one`() = runUnitTest {
+        given()
+        val fixture = SutFixture().apply { tokens.token = null }
+
+        whenn()
+        val token = fixture.sut.getFcmToken()
+
+        then()
+        assertEquals("", token)
+        verify(exactly = 0) { fixture.prefs.saveFcmToken(any()) }
+    }
+
+    @Test
+    fun `should clear fcm token when firebase auto init is off`() = runUnitTest {
+        given()
+        val fixture = SutFixture().apply { tokens.isAutoInitEnabled = false }
+
+        whenn()
+        val token = fixture.sut.getFcmToken()
+
+        then()
+        assertEquals("", token)
+        assertEquals(0, fixture.tokens.fetches)
+        verify(exactly = 1) { fixture.prefs.saveFcmToken("") }
+    }
+
+    @Test
+    fun `should publish and store notifications state`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val initial = fixture.sut.notificationState.value
+
+        whenn()
+        fixture.sut.saveNotificationsEnabled(false)
+
+        then()
+        assertEquals(listOf(true, false), listOf(initial, fixture.sut.notificationState.value))
+        verify(exactly = 1) { fixture.prefs.saveNotificationsEnabled(false) }
+    }
+
+    @Test
+    fun `should read and store app settings in shared preferences`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        every { fixture.prefs.getDefaultNotificationChannel() } returns "{}"
+        every { fixture.prefs.isDeviceRegistered() } returns true
+        every { fixture.prefs.getAppVersion() } returns "1.0"
+        every { fixture.prefs.getAppBuildNumber() } returns 7L
+
+        whenn()
+        fixture.sut.saveDefaultNotificationChannel("{\"id\":\"c\"}")
+        fixture.sut.saveDeviceRegistered(true)
+        fixture.sut.saveAppVersion("2.0")
+        fixture.sut.saveAppBuildNumber(8L)
+        val read = listOf(
+            fixture.sut.getDefaultNotificationChannel(),
+            fixture.sut.isDeviceRegistered(),
+            fixture.sut.isNotificationsEnabled(),
+            fixture.sut.getAppVersion(),
+            fixture.sut.getAppBuildNumber()
+        )
+
+        then()
+        assertEquals(listOf("{}", true, true, "1.0", 7L), read)
+        verify(exactly = 1) { fixture.prefs.saveDefaultNotificationChannel("{\"id\":\"c\"}") }
+        verify(exactly = 1) { fixture.prefs.saveDeviceRegistered(true) }
+        verify(exactly = 1) { fixture.prefs.saveAppVersion("2.0") }
+        verify(exactly = 1) { fixture.prefs.saveAppBuildNumber(8L) }
     }
 }

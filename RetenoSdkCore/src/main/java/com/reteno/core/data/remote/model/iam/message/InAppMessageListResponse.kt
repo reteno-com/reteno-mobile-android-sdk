@@ -4,5 +4,5 @@ import com.google.gson.annotations.SerializedName
 
 data class InAppMessageListResponse(
     @SerializedName("messages")
-    val messages: List<InAppMessageResponse>
+    val messages: List<InAppMessageResponse> = emptyList()
 )

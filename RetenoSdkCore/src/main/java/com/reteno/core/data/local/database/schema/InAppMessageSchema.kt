@@ -49,11 +49,7 @@ object InAppMessageSchema {
         internal const val COLUMN_CHECK_STATUS_CODE = "checkStatusCode"
         internal const val COLUMN_RETRY_AFTER = "retryAfter"
 
-        internal const val COLUMN_WORKFLOW_IID = "workflowIid"
-    internal const val COLUMN_WORKFLOW_CONTEXT = "workflowContext"
-    internal const val COLUMN_WORKFLOW_EXPIRY = "workflowExpiry"
-
-    internal const val SQL_CREATE_TABLE =
+        internal const val SQL_CREATE_TABLE =
             "CREATE TABLE IF NOT EXISTS $TABLE_NAME_SEGMENT" +
                     "(" +
                     "${InAppMessageSchema.COLUMN_IAM_ROW_ID} INTEGER NOT NULL, " +
@@ -65,20 +61,4 @@ object InAppMessageSchema {
                     "FOREIGN KEY (${InAppMessageSchema.COLUMN_IAM_ROW_ID}) REFERENCES ${InAppMessageSchema.TABLE_NAME} (${InAppMessageSchema.COLUMN_IAM_ROW_ID}) ON DELETE CASCADE" +
                     ")"
     }
-
-    fun getAllColumns(): Array<String> = arrayOf(
-        COLUMN_IAM_ROW_ID,
-        DbSchema.COLUMN_TIMESTAMP,
-        COLUMN_IAM_ID,
-        COLUMN_IAM_INSTANCE_ID,
-        COLUMN_IAM_DISPLAY_RULES,
-        COLUMN_IAM_LAST_SHOW_TIME,
-        COLUMN_IAM_SHOW_COUNT,
-        COLUMN_IAM_LAYOUT_TYPE,
-        COLUMN_IAM_MODEL,
-        COLUMN_IAM_POSITION,
-        COLUMN_WORKFLOW_IID,
-        COLUMN_WORKFLOW_CONTEXT,
-        COLUMN_WORKFLOW_EXPIRY
-    )
 }

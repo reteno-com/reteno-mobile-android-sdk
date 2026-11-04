@@ -1,7 +1,8 @@
 # Android SDK workflow In-app implementation plan
 
-Status (November 3, 2026): source implementation and six review passes are
-complete. Native verification, device certification, and release are pending.
+Status (November 4, 2026): workflow support is adapted to the coroutine Actions
+and presenter from current `master` (`9665e3af`). Native Gradle verification,
+device certification, and release are pending.
 Branch: `feat/in-app-workflow`.
 Implementation baseline: `9a3efa9fdc1012669a3846dcb7d5a35ccccca24d`.
 
@@ -13,15 +14,15 @@ records platform-specific differences. This document covers Android only.
 
 ## Implementation plan
 
-The source changes below are implemented locally. Acceptance tests are added
-but have not executed on this host.
+The source changes below use the existing Actions, presenter, and SQLite
+managers. They preserve the shared workflow contract.
 
 | Area | Implementation | Acceptance |
 | --- | --- | --- |
 | Discovery and content | [InAppMessage](../../RetenoSdkCore/src/main/java/com/reteno/core/data/remote/model/iam/message/InAppMessage.kt) decodes optional workflow metadata. Discovery sends `includeWorkflow=true`. Workflow content uses IID/snapshot pairs in `messages`; ordinary content uses a separate `messageInstanceIds` request. | Mixed lists preserve ordinary entries and distinct IIDs sharing a snapshot. Missing/false `inWorkflow` retains ordinary behavior. |
 | Execution state | Existing [SQLite message state](../../RetenoSdkCore/src/main/java/com/reteno/core/data/local/model/iam/InAppMessageDb.kt) and interaction rows retain context, IID, snapshot, expiry, and queued observations. | Restart retains independent executions and local suppression. Account changes cannot display old content or replay events under new credentials. |
-| Eligibility and rendering | [IamControllerImpl](../../RetenoSdkCore/src/main/java/com/reteno/core/domain/controller/IamControllerImpl.kt) reuses existing rules, skips only workflow FREQUENCY, and authorizes content online before first display. The renderer applies the execution's prepared JSON map. | Failed or unsupported enabled conditions defer display. Content is matched by IID/snapshot; expiry and current non-frequency rules are checked before presentation. |
-| Visibility and retry | [IamViewImpl](../../RetenoSdkCore/src/main/java/com/reteno/core/view/iam/IamViewImpl.kt) records actual visibility with the server IID. [InteractionRepositoryImpl](../../RetenoSdkCore/src/main/java/com/reteno/core/data/repository/InteractionRepositoryImpl.kt) uses the existing persistent queue. | OPENED/CLICKED establish local shown state. Retry preserves the original IID, snapshot, UTC-seconds time, and full body. FAILED before visibility does not mark shown; dismissal stays local. |
+| Eligibility and rendering | [ShowInAppAction](../../RetenoSdkCore/src/main/java/com/reteno/core/internal/action/iam/ShowInAppAction.kt) reuses existing rules, skips only workflow FREQUENCY, and authorizes content online before first display. The renderer applies the execution's prepared JSON map. | Failed or unsupported enabled conditions defer display. Content is matched by IID/snapshot; expiry and current non-frequency rules are checked before presentation. |
+| Visibility and retry | [InAppPresenter](../../RetenoSdkCore/src/main/java/com/reteno/core/internal/iam/InAppPresenter.kt) records actual visibility with the server IID. [PushInAppInteractionsStep](../../RetenoSdkCore/src/main/java/com/reteno/core/internal/action/sync/PushInAppInteractionsStep.kt) uses the existing persistent queue. | OPENED/CLICKED establish local shown state. Retry preserves the original IID, snapshot, UTC-seconds time, and full body. FAILED before visibility does not mark shown; dismissal stays local. |
 | Clicks and compatibility | Workflow OPENED, CLICKED, and FAILED use POST interaction. CLICKED retains the full existing CTA action. Ordinary clicks keep PUT. | Persistence and retry preserve `type`, `targetComponentId`, and `url`; ordinary IID generation, frequency records, and click transport remain compatible. |
 
 No delivery-method enum, event identifier, workflow feature flag, SDK TTL
@@ -56,8 +57,8 @@ application/account/device context, without a second OPENED. A changed context
 tears it down and releases the view for another IID. Absolute expiry limits
 first display; continuing an already-open message does not create a new send.
 
-Both message refresh and segmentation refresh maintain the latest successful
-bounded rule snapshot. HTTP/network failures and stale-context responses retain
+Message refresh maintains the latest successful bounded rule snapshot.
+Segmentation refresh updates the existing segment state on those messages. HTTP/network failures and stale-context responses retain
 that snapshot; valid empty responses and HTTP 304 remain distinct outcomes.
 Changed non-frequency rules discard an in-flight content attempt and release
 its guard before first native presentation. A missing IID alone does not imply
@@ -92,49 +93,40 @@ exactly-once analytics are not guaranteed.
 
 ## Verification
 
+The six earlier review passes apply to the implementation before the upstream
+coroutine refactor. The merge adapts that implementation to the new boundaries.
+
 | Check | Recorded result |
 | --- | --- |
-| Source review | Six reviewer passes completed; final review has no remaining confirmed findings. |
-| Upstream base | The reviewed branch starts at `9a3efa9f`; current `origin/master` is 31 commits ahead of that baseline. Reconciliation with those changes has not been reviewed. |
-| Kotlin syntax | Compiler PSI check parsed 46 changed Kotlin files with zero syntax errors. |
-| Documentation and diff | Relative links and `git diff --check` pass. |
-| Gradle/native tests | Not executed: the latest attempt stopped during configuration because `RetenoSdkCore/keys.properties` is missing. Android SDK configuration is also unavailable on this host. |
+| Upstream base | Reconciled with `origin/master` at `9665e3af`; deleted repositories, controllers, and service locators stay deleted. |
+| Kotlin compilation | Standalone Kotlin 1.8 compilation succeeds for 677 main, debug, test, and fixture source files with resolved Gradle dependencies and temporary generated resource stubs. This is not an Android Gradle Plugin build. |
+| Focused tests | 321 Actions, presenter, rules, sync, and HTTP tests pass through a standalone JUnit launcher. |
+| SQLite tests | 37 Robolectric tests pass, including workflow persistence and upgrades from historical schemas through version 11. The standalone runner uses Android OS resources without the app manifest. |
+| Gradle/native tests and Kover | Blocked before compilation: Android SDK location is missing. |
 | Devices, renderer, wrappers, backend integration | Pending. |
 
-Syntax checks do not establish Kotlin type checking, SQLite runtime behavior,
-or native presentation correctness.
-
 The focused regressions are in
-[WorkflowDeliveryTest](../../RetenoSdkCore/src/test/java/com/reteno/core/data/repository/WorkflowDeliveryTest.kt),
-[IamRepositoryImplTest](../../RetenoSdkCore/src/test/java/com/reteno/core/data/repository/IamRepositoryImplTest.kt),
-[IamControllerImplTest](../../RetenoSdkCore/src/test/java/com/reteno/core/domain/controller/IamControllerImplTest.kt),
-and [IamViewImplTest](../../RetenoSdkCore/src/test/java/com/reteno/core/view/iam/IamViewImplTest.kt).
-They cover mixed discovery, same-snapshot personalization, upgrades, restart,
-full CTA retries, visibility, both pause moments, context changes, and rule
-changes during either discovery path or content authorization.
+[WorkflowDeliveryTest](../../RetenoSdkCore/src/test/java/com/reteno/core/internal/action/iam/WorkflowDeliveryTest.kt),
+[WorkflowStorageTest](../../RetenoSdkCore/src/test/java/com/reteno/core/data/local/database/manager/WorkflowStorageTest.kt),
+[FetchInAppMessagesActionTest](../../RetenoSdkCore/src/test/java/com/reteno/core/internal/action/iam/FetchInAppMessagesActionTest.kt),
+and [InAppPresenterTest](../../RetenoSdkCore/src/test/java/com/reteno/core/internal/iam/InAppPresenterTest.kt).
+They cover mixed discovery, same-snapshot personalization, persisted shown state,
+full CTA retries, native presentation acknowledgment, context changes, and rule
+changes before visibility.
 
-Configure the Android SDK, module properties, and required JDK/toolchains. Run
-from the repository root:
-
-```bash
-./gradlew :RetenoSdkCore:testDebugUnitTest --configure-on-demand --tests com.reteno.core.data.repository.WorkflowDeliveryTest --tests com.reteno.core.data.repository.IamRepositoryImplTest --tests com.reteno.core.domain.controller.IamControllerImplTest --tests com.reteno.core.view.iam.IamViewImplTest
-```
-
-Then run the full core suite:
+Configure the Android SDK and JDK 17, then run from the repository root:
 
 ```bash
-./gradlew :RetenoSdkCore:testDebugUnitTest --configure-on-demand
+./gradlew :RetenoSdkCore:testDebugUnitTest --configure-on-demand --tests com.reteno.core.internal.action.iam.WorkflowDeliveryTest --tests com.reteno.core.data.local.database.manager.WorkflowStorageTest --tests com.reteno.core.internal.action.iam.FetchInAppMessagesActionTest --tests com.reteno.core.internal.iam.InAppPresenterTest
+./gradlew :RetenoSdkCore:testDebugUnitTest :RetenoSdkCore:koverVerifyDebug --configure-on-demand
 ```
 
 ## Remaining work
 
-- Reconcile the implementation with current `master` and repeat affected review
-  and native verification before merging.
-- Run native tests, type checking, store-upgrade, and recovery scenarios.
-- Verify actual visibility, background/foreground, process death, reconnect,
-  expiry, clicks, dismissal, and account changes on devices.
+- Run the native Gradle tests and coverage gate with a configured Android SDK.
+- Verify store upgrades, actual visibility, background/foreground, process
+  death, reconnect, expiry, clicks, dismissal, and account changes on devices.
 - Certify supported renderer/wrapper versions and backend integration. Showing
   E1 must leave a different IID E2 independently available.
 - Record the evidence and publish through the SDK release process only after
-  certification. Source review and backend completion do not establish SDK
-  release readiness.
+  certification. Source checks do not establish SDK release readiness.

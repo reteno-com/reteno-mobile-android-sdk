@@ -1,6 +1,6 @@
 package com.reteno.sample.fragments
 
-import android.content.Context
+import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -10,28 +10,27 @@ import android.widget.ArrayAdapter
 import android.widget.CompoundButton
 import android.widget.Toast
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavDirections
 import androidx.navigation.fragment.NavHostFragment
-import com.reteno.core.RetenoInternalImpl
-import com.reteno.core.di.ServiceLocator
 import com.reteno.core.features.iam.InAppPauseBehaviour
-import com.reteno.core.lifecycle.RetenoSessionHandler
 import com.reteno.sample.BaseFragment
 import com.reteno.sample.R
+import com.reteno.sample.SampleApp
 import com.reteno.sample.databinding.FragmentStartBinding
 import com.reteno.sample.testscreens.ScreenAdapter
 import com.reteno.sample.testscreens.ScreenAdapter.ScreenItemClick
 import com.reteno.sample.testscreens.ScreenItem
 import com.reteno.sample.util.AppSharedPreferencesManager
-import com.reteno.sample.util.FragmentStartSessionListener
-import com.reteno.sample.util.RetenoInitListener
+import com.reteno.sample.util.SdkInAppBaseUrl
+import com.reteno.sample.util.SdkSessionInfo
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 class FragmentStart : BaseFragment() {
 
     private var binding: FragmentStartBinding? = null
-    private var sessionHandler: RetenoSessionHandler? = null
-    private val sessionListener = FragmentStartSessionListener()
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -44,7 +43,6 @@ class FragmentStart : BaseFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        awaitInit()
         val adapter = ScreenAdapter(getScreenList(), object : ScreenItemClick {
             override fun navigateById(fragmentId: Int) {
                 NavHostFragment.findNavController(this@FragmentStart).navigate(fragmentId)
@@ -62,8 +60,10 @@ class FragmentStart : BaseFragment() {
         initInAppPausingSwitcher()
         initPauseBehaviourSwitcher()
         initDelayedInitCheckbox()
+        initInitProgress()
         initIamBaseUrl()
         initSessionDurationChange()
+        initSessionTime()
     }
 
     override fun onDestroyView() {
@@ -74,22 +74,10 @@ class FragmentStart : BaseFragment() {
         super.onDestroyView()
     }
 
-    override fun onPause() {
-        super.onPause()
-        sessionListener.stop()
-    }
-
-    override fun onResume() {
-        super.onResume()
-        if (sessionHandler != null) {
-            sessionListener.start(sessionHandler!!, binding!!.tvSessionTime)
-        }
-    }
-
     private fun getScreenList(): List<ScreenItem> {
         return listOf(
             ScreenItem("Device Id", direction =  FragmentStartDirections.startToDeviceId()),
-            ScreenItem("Sentry", direction = FragmentStartDirections.startToSentry()),
+            ScreenItem("Error reporting", direction = FragmentStartDirections.startToErrorReporting()),
             ScreenItem(
                 "Second Activity",
                 direction = FragmentStartDirections.startToActivitySecond()
@@ -101,7 +89,6 @@ class FragmentStart : BaseFragment() {
                 direction = FragmentStartDirections.startToUserAnonymousData()
             ),
             ScreenItem("Custom Data", navigationId = R.id.start_to_custom_data, bundle = arguments),
-            ScreenItem("Database", direction = FragmentStartDirections.startToDatabase()),
             ScreenItem("Custom event", direction = FragmentStartDirections.startToCustomEvent()),
             ScreenItem(
                 "App lifecycle events",
@@ -125,23 +112,58 @@ class FragmentStart : BaseFragment() {
         )
     }
 
-    private fun initIamBaseUrl() {
-        val prefs = requireActivity()
-            .getSharedPreferences("reteno_shared_prefs", Context.MODE_PRIVATE)
-        val coreUrl = "https://statics.esputnik.com/in-app/base.latest.html"
-        val custom = prefs.getString("iam_base_url", null)
-        binding!!.etBaseInAppURL.setText(custom ?: coreUrl)
-        binding!!.saveInAppBase.setOnClickListener {
-            try {
-                prefs
-                    .edit()
-                    .putString("iam_base_url", binding!!.etBaseInAppURL.text?.toString()?.takeIf { it.isNotBlank() })
-                    .apply()
-            } catch (e: Exception) {
-                e.printStackTrace()
+    private fun initSessionTime() {
+        binding!!.tvSessionTimeTitle.visibility = if (SdkSessionInfo.isAvailable) View.VISIBLE else View.GONE
+        binding!!.tvSessionTime.visibility = binding!!.tvSessionTimeTitle.visibility
+        if (!SdkSessionInfo.isAvailable) return
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+                while (true) {
+                    val sessionStart = SdkSessionInfo.sessionStartTimestamp(requireContext())
+                    binding!!.tvSessionTime.text = formatSessionTime(sessionStart)
+                    delay(1000L)
+                }
             }
-            Toast.makeText(requireContext(), "SAVED", Toast.LENGTH_LONG).show()
         }
+    }
+
+    private fun formatSessionTime(sessionStart: Long): String {
+        if (sessionStart == 0L) return "not started"
+        val timeSeconds = (System.currentTimeMillis() - sessionStart) / 1000L
+        val timeMinutes = timeSeconds / 60L
+        val timeHours = timeMinutes / 60L
+        return when {
+            timeHours > 0 -> "${timeHours}h ${timeMinutes % 60L}m ${timeSeconds % 60L}s"
+            timeMinutes > 0 -> "${timeMinutes}m ${timeSeconds % 60L}s"
+            else -> "${timeSeconds}s"
+        }
+    }
+
+    private fun initIamBaseUrl() {
+        binding!!.etBaseInAppURL.visibility = if (SdkInAppBaseUrl.isAvailable) View.VISIBLE else View.GONE
+        binding!!.saveInAppBase.visibility = binding!!.etBaseInAppURL.visibility
+        if (!SdkInAppBaseUrl.isAvailable) return
+        binding!!.etBaseInAppURL.setText(SdkInAppBaseUrl.baseUrl(requireContext()))
+        binding!!.saveInAppBase.setOnClickListener {
+            val url = binding!!.etBaseInAppURL.text?.toString()?.trim().orEmpty()
+            val message = when {
+                url.isEmpty() -> {
+                    SdkInAppBaseUrl.setBaseUrl(requireContext(), null)
+                    "Base URL reset to the SDK default"
+                }
+                isHttpsUrl(url) -> {
+                    SdkInAppBaseUrl.setBaseUrl(requireContext(), url)
+                    "Base URL saved, used the next time the SDK loads the base html"
+                }
+                else -> "Base URL must be an https:// address"
+            }
+            Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+        }
+    }
+
+    private fun isHttpsUrl(url: String): Boolean {
+        val uri = Uri.parse(url)
+        return uri.scheme == "https" && !uri.host.isNullOrBlank()
     }
 
     private fun initSessionDurationChange() {
@@ -150,9 +172,13 @@ class FragmentStart : BaseFragment() {
                 val durationStr = binding!!.etSessionDuration.text?.toString().orEmpty()
                 if (durationStr.isNotBlank()) {
                     val duration = durationStr.filter { it.isDigit() }.toInt() * 1000L
-                    sessionHandler?.setSessionResetDuration(duration)
-                    Toast.makeText(requireContext(), "Session duration changed", Toast.LENGTH_SHORT)
-                        .show()
+                    SdkSessionInfo.setSessionDuration(duration)
+                    val applied = if (SdkSessionInfo.isAvailable) {
+                        "Session duration changed"
+                    } else {
+                        "Applied on next launch"
+                    }
+                    Toast.makeText(requireContext(), applied, Toast.LENGTH_SHORT).show()
                     binding!!.etSessionDuration.text?.clear()
                     AppSharedPreferencesManager.saveSessionDuration(requireContext(), duration)
                 }
@@ -218,38 +244,15 @@ class FragmentStart : BaseFragment() {
         }
     }
 
-    private fun awaitInit() {
-        val impl = reteno as RetenoInternalImpl
-        if (impl.isInitializedByUser) {
-            initSessionHandler()
-            binding!!.progressBar.visibility = View.GONE
-            binding!!.cbDelayNextLaunch.visibility = View.VISIBLE
-        } else {
-            binding!!.progressBar.visibility = View.VISIBLE
-            binding!!.cbDelayNextLaunch.visibility = View.GONE
-            RetenoInitListener(impl) {
-                while (!viewLifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
-                    delay(100)
+    private fun initInitProgress() {
+        val app = requireActivity().application as SampleApp
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                app.isRetenoInitialized.collect { initialized ->
+                    binding!!.progressBar.visibility = if (initialized) View.GONE else View.VISIBLE
+                    binding!!.cbDelayNextLaunch.visibility = if (initialized) View.VISIBLE else View.GONE
                 }
-                initSessionHandler()
-                binding!!.progressBar.visibility = View.GONE
-                binding!!.cbDelayNextLaunch.visibility = View.VISIBLE
             }
-        }
-    }
-
-    private fun initSessionHandler() {
-        try {
-            val field = RetenoInternalImpl::class.java.getDeclaredField("serviceLocator")
-            field.isAccessible = true
-            val serviceLocator = field[reteno] as ServiceLocator
-            field.isAccessible = false
-            sessionHandler = serviceLocator.retenoSessionHandlerProvider.get()
-            sessionListener.start(sessionHandler!!, binding!!.tvSessionTime)
-        } catch (e: NoSuchFieldException) {
-            e.printStackTrace()
-        } catch (e: IllegalAccessException) {
-            e.printStackTrace()
         }
     }
 

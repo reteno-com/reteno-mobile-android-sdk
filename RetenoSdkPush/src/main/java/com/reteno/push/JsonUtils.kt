@@ -5,13 +5,6 @@ import org.json.JSONObject
 
 internal object JsonUtils {
 
-    internal fun JSONObject.getJSONObjectOrNull(key: String) =
-        if (has(key)) {
-            getJSONObject(key)
-        } else {
-            null
-        }
-
     internal fun JSONObject.getStringOrNull(key: String) =
         if (has(key)) {
             getString(key)
@@ -19,11 +12,7 @@ internal object JsonUtils {
             null
         }
 
-    internal fun jsonObjectToMap(json: JSONObject): HashMap<String, Any?>? {
-        return if (json === JSONObject.NULL) null else jsonObjectToMapNonNull(json)
-    }
-
-    private fun jsonObjectToMapNonNull(json: JSONObject): HashMap<String, Any?> {
+    internal fun jsonObjectToMap(json: JSONObject): HashMap<String, Any?> {
         val map = HashMap<String, Any?>()
         val keysItr = json.keys()
         while (keysItr.hasNext()) {
@@ -36,17 +25,16 @@ internal object JsonUtils {
 
     private fun convertNestedJSONType(value: Any): Any {
         return when (value) {
-            is JSONObject -> jsonObjectToMapNonNull(value)
-            is JSONArray -> jsonArrayToListNonNull(value)
+            is JSONObject -> jsonObjectToMap(value)
+            is JSONArray -> jsonArrayToList(value)
             else -> value
         }
     }
 
-    private fun jsonArrayToListNonNull(array: JSONArray): List<Any> {
+    private fun jsonArrayToList(array: JSONArray): List<Any> {
         val list: MutableList<Any> = ArrayList()
         for (i in 0 until array.length()) {
-            val value = array[i]
-            list.add(convertNestedJSONType(value))
+            list.add(convertNestedJSONType(array[i]))
         }
         return list
     }

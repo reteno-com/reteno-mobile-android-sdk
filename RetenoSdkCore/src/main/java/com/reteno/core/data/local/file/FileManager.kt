@@ -2,34 +2,31 @@ package com.reteno.core.data.local.file
 
 import android.content.Context
 import com.reteno.core.R
+import com.reteno.core.internal.coroutine.RetenoDispatchers
 import com.reteno.core.util.Logger
-import com.reteno.core.util.Util
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
 
-internal class FileManager(private val context: Context) {
+internal class FileManager(
+    private val context: Context,
+    private val dispatchers: RetenoDispatchers
+) {
 
-    suspend fun saveBaseHtmlContent(content: String) = withContext(Dispatchers.IO) {
+    suspend fun saveBaseHtmlContent(content: String): Result<Unit> = withContext(dispatchers.io) {
         runCatching {
             val inAppDir = File(context.filesDir, "$ROOT_DIR/$INAPP_DIR")
-            if (!inAppDir.exists()) inAppDir.mkdirs()
-            val baseHtmlFile = File(inAppDir, "inapp_base.html")
-            if (!baseHtmlFile.exists()) baseHtmlFile.createNewFile()
-            baseHtmlFile.outputStream().use {
-                it.write(content.toByteArray())
-            }
+            inAppDir.mkdirs()
+            File(inAppDir, BASE_HTML_FILE).writeText(content)
         }.onFailure {
             Logger.e(TAG, "saveBaseHtmlContent()", it)
         }
     }
 
-    suspend fun getBaseHtmlContent(): String = withContext(Dispatchers.IO) {
+    suspend fun getBaseHtmlContent(): String = withContext(dispatchers.io) {
         runCatching {
-            val htmlFileDir = File(context.filesDir, "$ROOT_DIR/$INAPP_DIR/inapp_base.html")
-            htmlFileDir.inputStream().use { it.readBytes().toString(Charsets.UTF_8) }
+            File(context.filesDir, "$ROOT_DIR/$INAPP_DIR/$BASE_HTML_FILE").readText()
         }.getOrElse {
-            Util.readFromRaw(context, R.raw.base_html).orEmpty()
+            context.resources.openRawResource(R.raw.base_html).use { it.readBytes().toString(Charsets.UTF_8) }
         }
     }
 
@@ -37,5 +34,6 @@ internal class FileManager(private val context: Context) {
         private const val TAG = "FileManager"
         private const val ROOT_DIR = "reteno"
         private const val INAPP_DIR = "inapp"
+        private const val BASE_HTML_FILE = "inapp_base.html"
     }
 }
