@@ -1,8 +1,8 @@
 # Android SDK InApp delivery plan and implementation
 
-Status: November 4, 2026 working-tree refinement. Source changes implement the
-approved contract below; native certification and release are pending. Earlier
-six-pass review records cover the previous contract.
+Status: the November 4, 2026 contract refinement is committed and pushed. Native
+certification and release are pending. Earlier six-pass review records cover
+the previous contract.
 
 The [shared handoff](../../../esputnik-product-docs/changes/CHG-2026-0002-in-app-workflow-delivery/mobile-sdk-implementation-plan.md) and
 [mobile contract](../../../esputnik-product-docs/changes/CHG-2026-0002-in-app-workflow-delivery/interfaces/mobile-in-app-executions/README.md) own
@@ -57,9 +57,9 @@ presentation completion establishes visibility; push keeps its existing path.
 ## Review findings and resolutions
 
 The November 4 contract-alignment and follow-up reviews identified the following
-Android defects. All are fixed in the current working tree. A subsequent review
-also found that profile updates could change delivery ownership; the fix keeps
-ownership stable for the same identified account.
+Android defects. All are fixed in the committed implementation. A subsequent
+review also found that profile updates could change delivery ownership; the
+fix keeps ownership stable for the same identified account.
 
 | Finding | Failure scenario | Resolution |
 | --- | --- | --- |
