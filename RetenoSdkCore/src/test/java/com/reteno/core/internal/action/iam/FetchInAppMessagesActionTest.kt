@@ -15,7 +15,7 @@ import com.reteno.core.fixtures.api
 import com.reteno.core.fixtures.stubInAppMessage
 import com.reteno.core.fixtures.testDispatchers
 import com.reteno.core.internal.iam.InAppMessagesStateImpl
-import com.reteno.core.fixtures.workflowState
+import com.reteno.core.fixtures.deliveryState
 import com.reteno.test.given
 import com.reteno.test.runUnitTest
 import com.reteno.test.then
@@ -47,13 +47,13 @@ internal class FetchInAppMessagesActionTest {
         var savedOnIo = false
         val sut = FetchInAppMessagesAction(
             api = rest.api(dispatchers),
-            cache = InAppMessagesCache(inAppDb, dispatchers, workflowState(dispatchers, rest)),
+            cache = InAppMessagesCache(inAppDb, dispatchers, deliveryState(dispatchers, rest)),
             prefs = prefs,
             checkSegments = checkSegments,
             state = state,
             dispatchers = dispatchers,
             runner = traced.runner,
-            workflow = workflowState(dispatchers, rest)
+            delivery = deliveryState(dispatchers, rest)
         )
 
         init {
@@ -98,7 +98,7 @@ internal class FetchInAppMessagesActionTest {
                 HttpMethod.GET,
                 ApiContract.InAppMessages.GetInAppMessages,
                 null,
-                queryParams = mapOf("includeWorkflow" to "true")
+                queryParams = null
             ),
             fixture.rest.requests.first()
         )

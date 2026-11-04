@@ -1,132 +1,110 @@
-# Android SDK workflow In-app implementation plan
+# Android SDK InApp delivery plan and implementation
 
-Status (November 4, 2026): workflow support is adapted to the coroutine Actions
-and presenter from current `master` (`9665e3af`). Native Gradle verification,
-device certification, and release are pending.
-Branch: `feat/in-app-workflow`.
-Implementation baseline: `9a3efa9fdc1012669a3846dcb7d5a35ccccca24d`.
+Status: November 4, 2026 working-tree refinement. Source changes implement the
+approved contract below; native certification and release are pending. Earlier
+six-pass review records cover the previous contract.
 
-Use the [shared SDK contract and regression matrix](../../../esputnik-product-docs/changes/CHG-2026-0002-in-app-workflow-delivery/mobile-sdk-implementation-plan.md)
-for cross-platform behavior and the
-[transport and acknowledgment contract](../../../esputnik-product-docs/changes/CHG-2026-0002-in-app-workflow-delivery/mobile-sdk-implementation-plan.md#workflow-interaction-transport-and-acknowledgment)
-for wire details. The [iOS plan](../../../reteno-mobile-ios-sdk/docs/in-app-workflow/README.md)
-records platform-specific differences. This document covers Android only.
+The [shared handoff](../../../esputnik-product-docs/changes/CHG-2026-0002-in-app-workflow-delivery/mobile-sdk-implementation-plan.md) and
+[mobile contract](../../../esputnik-product-docs/changes/CHG-2026-0002-in-app-workflow-delivery/interfaces/mobile-in-app-executions/README.md) own
+cross-platform behavior. This document covers Android implementation only.
 
-## Implementation plan
+## Implementation and acceptance
 
-The source changes below use the existing Actions, presenter, and SQLite
-managers. They preserve the shared workflow contract.
-
-| Area | Implementation | Acceptance |
+| Area | Current implementation | Acceptance |
 | --- | --- | --- |
-| Discovery and content | [InAppMessage](../../RetenoSdkCore/src/main/java/com/reteno/core/data/remote/model/iam/message/InAppMessage.kt) decodes optional workflow metadata. Discovery sends `includeWorkflow=true`. Workflow content uses IID/snapshot pairs in `messages`; ordinary content uses a separate `messageInstanceIds` request. | Mixed lists preserve ordinary entries and distinct IIDs sharing a snapshot. Missing/false `inWorkflow` retains ordinary behavior. |
-| Execution state | Existing [SQLite message state](../../RetenoSdkCore/src/main/java/com/reteno/core/data/local/model/iam/InAppMessageDb.kt) and interaction rows retain context, IID, snapshot, expiry, and queued observations. | Restart retains independent executions and local suppression. Account changes cannot display old content or replay events under new credentials. |
-| Eligibility and rendering | [ShowInAppAction](../../RetenoSdkCore/src/main/java/com/reteno/core/internal/action/iam/ShowInAppAction.kt) reuses existing rules, skips only workflow FREQUENCY, and authorizes content online before first display. The renderer applies the execution's prepared JSON map. | Failed or unsupported enabled conditions defer display. Content is matched by IID/snapshot; expiry and current non-frequency rules are checked before presentation. |
-| Visibility and retry | [InAppPresenter](../../RetenoSdkCore/src/main/java/com/reteno/core/internal/iam/InAppPresenter.kt) records actual visibility with the server IID. [PushInAppInteractionsStep](../../RetenoSdkCore/src/main/java/com/reteno/core/internal/action/sync/PushInAppInteractionsStep.kt) uses the existing persistent queue. | OPENED/CLICKED establish local shown state. Retry preserves the original IID, snapshot, UTC-seconds time, and full body. FAILED before visibility does not mark shown; dismissal stays local. |
-| Clicks and compatibility | Workflow OPENED, CLICKED, and FAILED use POST interaction. CLICKED retains the full existing CTA action. Ordinary clicks keep PUT. | Persistence and retry preserve `type`, `targetComponentId`, and `url`; ordinary IID generation, frequency records, and click transport remain compatible. |
+| Discovery | Optional IID, absolute expiry, and backend priority. No workflow flag or query opt-in. | Mixed ordinary/server entries, distinct IIDs sharing a snapshot, legacy response defaults. Backend isolates unsupported SDK versions. |
+| Content | Received IID selects online IID/snapshot content authorization. Ordinary snapshots retain their existing content request. | Original IID, raw snapshot, prepared per-delivery personalization; no cross-account or offline first display. |
+| Rules and priority | Evaluate the prepared rules normally. Higher backend priority wins among eligible candidates; default priority is 10. | Priority 20 beats 10, failed eligibility permits fallback, and asynchronous eligibility cannot invert priority. Visible UI is not preempted. |
+| Local state | Existing account-scoped storage retains IID, expiry, suppression, and separate queued observations. | Restart, identity switch, repeated discovery, and lost acknowledgment do not redisplay a completed IID. |
+| Observations | Standalone InApp OPENED/CLICKED/FAILED use POST. `serverAssignedIid` reflects received versus generated identity and is retained with retries. | Preserve original IID/time/body and complete CTA; missing/false provenance follows ordinary processing. Push transport stays unchanged. |
+| Failure | OPENED, CLICKED, and FAILED establish local suppression for a received IID. | Server synchronously ends contact availability; local state survives ACK loss, queue exhaustion, and reopen. |
 
-No delivery-method enum, event identifier, workflow feature flag, SDK TTL
-default, or Velocity engine is introduced. Workflow content is not persisted
-for offline first display. Repeated discovery or HTTP 304 does not clear shown
-state or extend `expiresAt`.
+The SDK has no workflow business mode, TTL default, or Velocity engine. It
+applies the sender's prepared JSON values and reports OPENED only after actual
+visibility. A content fetch or initialization alone is not OPENED. Dismissal
+stays local. Backend state update precedes analytics publication; see the
+shared acknowledgment contract for partial failure and retries.
 
-## Android behavior
+## Remaining acceptance
 
-### Persistence and retry
+Run native tests, render on devices, certify supported wrappers and renderer
+versions, and exercise sender → SDK → analytics with real services. Verify
+upgrade from released local storage, account isolation, pause/resume,
+backgrounding, native loading failures, and late CTA events. Configure backend
+minimum SDK versions only after those versions are certified. This plan does
+not authorize publication or deployment.
 
-SQLite upgrades from version 11 to 12 without replacing ordinary message or
-frequency data. Workflow columns are added only when absent, including when
-upgrading databases that predate the In-app tables. Nullable action JSON is
-stored in the existing interaction table.
+## Android implementation and verification
 
-OPENED and CLICKED rows retain local suppression after acknowledgment or a
-terminal response. Separate rows preserve distinct observations for one IID.
-The existing scheduler allows three persisted delivery attempts with bounded
-backoff and `Retry-After` handling. Retention cleanup bounds pending retries
-and removes expired delivered markers. Workflow diagnostics omit interaction
-bodies and CTA URLs.
+[FetchInAppMessagesAction](../../RetenoSdkCore/src/main/java/com/reteno/core/internal/action/iam/FetchInAppMessagesAction.kt),
+[ShowInAppAction](../../RetenoSdkCore/src/main/java/com/reteno/core/internal/action/iam/ShowInAppAction.kt),
+and [InAppPresenter](../../RetenoSdkCore/src/main/java/com/reteno/core/internal/iam/InAppPresenter.kt)
+use the existing coroutine Actions, DI graph, queue, and presenter.
 
-### Presentation and current rules
+Version 12 storage keeps the existing physical column names and upgrade order.
+No further schema migration is introduced by this refinement. Queued account
+context retains IID provenance. Ordinary frequency history remains intact.
+Server-delivery content is not persisted for offline display. Priority is
+retained in memory for conditional responses; a fresh process fetches a full
+list before using cached server deliveries, without changing stored formats.
 
-One presentation guard coordinates workflow display. POSTPONE preserves an
-eligible execution paused before content lookup. A pause during lookup releases
-the guard; resume requests fresh authorized content.
+The observation sync uses the existing queue, three delivery attempts, bounded
+backoff, Retry-After, and context-bound authentication. Completing or exhausting
+an observation preserves the local consumed marker until expiry/cleanup.
+POSTPONE preserves an undisplayed candidate; SKIP emits no OPENED. Actual native
+presentation completion establishes visibility; push keeps its existing path.
 
-Background/foreground reattaches an already-visible container only in the same
-application/account/device context, without a second OPENED. A changed context
-tears it down and releases the view for another IID. Absolute expiry limits
-first display; continuing an already-open message does not create a new send.
+## Review findings and resolutions
 
-Message refresh maintains the latest successful bounded rule snapshot.
-Segmentation refresh updates the existing segment state on those messages. HTTP/network failures and stale-context responses retain
-that snapshot; valid empty responses and HTTP 304 remain distinct outcomes.
-Changed non-frequency rules discard an in-flight content attempt and release
-its guard before first native presentation. A missing IID alone does not imply
-permanent cancellation.
+The November 4 contract-alignment and follow-up reviews identified the following
+Android defects. All are fixed in the current working tree. A subsequent review
+also found that profile updates could change delivery ownership; the fix keeps
+ownership stable for the same identified account.
 
-Unsupported targeting compositions, exclusions, or unknown enabled conditions
-remain deferred through the existing evaluator. Do not bypass them to display
-a workflow message.
+| Finding | Failure scenario | Resolution |
+| --- | --- | --- |
+| Eligibility fallback stops too early | The preferred delivery becomes unavailable during content authorization or presentation preparation, and the next eligible message is never offered. | Selection retains the candidate list and continues after a rejected delivery. Cancellation, a busy presenter, postponement, or visible UI do not trigger a competing display. |
+| Cached deliveries bypass fresh discovery | After restart, cached server deliveries can use stale rules or default priority before discovery succeeds. | Server deliveries wait for fresh discovery; ordinary offline messages remain available. Conditional responses retain the current process's priorities, and refreshed expiry cannot extend the received deadline. |
+| Queued ordinary clicks lose account ownership | A queued click can be retried under a different account, or account metadata can incorrectly mark a generated IID as server-assigned. | Persist the original account context independently of IID provenance and replay with that context. Ordinary clicks retain generated-IID provenance. |
+| Pause/resume loses fallback candidates | Only the preferred message is postponed. If it expires or is rejected after resume, the ordinary candidate from the same trigger is lost; a changed account can receive the postponed offer. | Retain candidates, the original account, and the rejection continuation through pause/resume, including renderer preparation. Resume re-evaluates eligibility and abandons offers from another account. Push postponement keeps its existing behavior. |
+| Profile updates change delivery ownership | Updating or clearing email or phone for the same external user ID strands queued observations and loses local suppression after rediscovery. | Identified accounts use the access key, complete device ID, and external user ID for ownership. Anonymous contexts retain contact discrimination. Profile updates preserve retries and suppression across restart. |
 
-### Delivery flow
+The fixes use the existing
+[discovery action](../../RetenoSdkCore/src/main/java/com/reteno/core/internal/action/iam/FetchInAppMessagesAction.kt),
+[selection action](../../RetenoSdkCore/src/main/java/com/reteno/core/internal/action/iam/ShowInAppAction.kt),
+[pause action](../../RetenoSdkCore/src/main/java/com/reteno/core/internal/action/iam/PauseInAppMessagesAction.kt),
+and [presenter](../../RetenoSdkCore/src/main/java/com/reteno/core/internal/iam/InAppPresenter.kt).
+They add no public SDK API or further storage migration.
 
-```mermaid
-flowchart LR
-    D[Discovery] --> R[Evaluate existing rules]
-    R --> C[Authorize content online]
-    C --> V[Native visibility]
-    V -->|OPENED| S[Persist shown and observation]
-    K[CTA click] -->|CLICKED| S
-    S --> Q[Existing SQLite observation queue]
-    F[Pre-visibility failure] -->|FAILED| Q
-    Q --> P[POST interaction]
-    P --> A[HTTP acknowledgment]
-    A --> L[Retain local shown state]
-```
+Regression coverage includes
+[delivery behavior](../../RetenoSdkCore/src/test/java/com/reteno/core/internal/action/iam/InAppDeliveryTest.kt),
+[observation replay](../../RetenoSdkCore/src/test/java/com/reteno/core/internal/action/sync/PushInAppInteractionsStepTest.kt),
+[selection](../../RetenoSdkCore/src/test/java/com/reteno/core/internal/action/iam/ShowInAppActionTest.kt),
+[postponed state](../../RetenoSdkCore/src/test/java/com/reteno/core/internal/iam/InAppMessagesStateTest.kt),
+and [presentation](../../RetenoSdkCore/src/test/java/com/reteno/core/internal/iam/InAppPresenterTest.kt).
+The final pause/resume run verifies expiry fallback, rejection after resume,
+account changes, and pauses during renderer preparation. The
+[HTTP client tests](../../RetenoSdkCore/src/test/java/com/reteno/core/data/remote/api/RestClientImplTest.kt)
+exercise real owner calculation and request authorization through profile and
+identity changes. The
+[storage tests](../../RetenoSdkCore/src/test/java/com/reteno/core/data/local/database/manager/WorkflowStorageTest.kt)
+verify pending observations and suppression after clearing profile contacts and
+reopening SQLite and identity settings.
 
-The [shared acknowledgment contract](../../../esputnik-product-docs/changes/CHG-2026-0002-in-app-workflow-delivery/mobile-sdk-implementation-plan.md#workflow-interaction-transport-and-acknowledgment)
-requires synchronous backend shown-state storage for OPENED/CLICKED, followed by
-Kafka broker acknowledgment before HTTP success. FAILED does not update shown
-state. Backend storage and publication are not atomic; retry the saved body
-without redisplaying the IID. Cross-device exactly-once display and event-level
-exactly-once analytics are not guaranteed.
+## Verification results
 
-## Verification
-
-The six earlier review passes apply to the implementation before the upstream
-coroutine refactor. The merge adapts that implementation to the new boundaries.
-
-| Check | Recorded result |
+| Check | Result |
 | --- | --- |
-| Upstream base | Reconciled with `origin/master` at `9665e3af`; deleted repositories, controllers, and service locators stay deleted. |
-| Kotlin compilation | Standalone Kotlin 1.8 compilation succeeds for 677 main, debug, test, and fixture source files with resolved Gradle dependencies and temporary generated resource stubs. This is not an Android Gradle Plugin build. |
-| Focused tests | 321 Actions, presenter, rules, sync, and HTTP tests pass through a standalone JUnit launcher. |
-| SQLite tests | 37 Robolectric tests pass, including workflow persistence and upgrades from historical schemas through version 11. The standalone runner uses Android OS resources without the app manifest. |
-| Gradle/native tests and Kover | Blocked before compilation: Android SDK location is missing. |
-| Devices, renderer, wrappers, backend integration | Pending. |
+| Kotlin 1.8 / JDK 17 compilation | 678 source and test files compile with resolved dependencies and temporary resource stubs. This is not an AGP build. |
+| Contract-alignment JVM tests | 363 Actions, rules, presenter, HTTP, and sync tests passed through a standalone JUnit launcher before the final pause/resume fix. |
+| Latest pause/resume regression run | 148 focused tests passed after the fix. Three new tests reproduced the defect before implementation; an additional test covers renderer preparation. This suite overlaps the earlier run; counts are not cumulative. |
+| Latest owner-context regression run | 36 HTTP tests and 7 SQLite tests passed after the fix, including eight new tests. The profile authorization and persistent-state regressions failed before implementation. All 678 source and test files compile with Kotlin 1.8 and JDK 17 through the standalone harness. Counts overlap earlier runs. |
+| SQLite | 39 Robolectric tests passed, including terminal failure and historical schema upgrades. The runner uses OS resources, without the app manifest. No storage code changed in the final pause/resume fix. |
+| Native Gradle/Kover | Blocked before compilation: Android SDK location is missing. |
+| Devices and cross-service flow | Pending. |
 
-The focused regressions are in
-[WorkflowDeliveryTest](../../RetenoSdkCore/src/test/java/com/reteno/core/internal/action/iam/WorkflowDeliveryTest.kt),
-[WorkflowStorageTest](../../RetenoSdkCore/src/test/java/com/reteno/core/data/local/database/manager/WorkflowStorageTest.kt),
-[FetchInAppMessagesActionTest](../../RetenoSdkCore/src/test/java/com/reteno/core/internal/action/iam/FetchInAppMessagesActionTest.kt),
-and [InAppPresenterTest](../../RetenoSdkCore/src/test/java/com/reteno/core/internal/iam/InAppPresenterTest.kt).
-They cover mixed discovery, same-snapshot personalization, persisted shown state,
-full CTA retries, native presentation acknowledgment, context changes, and rule
-changes before visibility.
-
-Configure the Android SDK and JDK 17, then run from the repository root:
+Run with JDK 17 and a configured Android SDK:
 
 ```bash
-./gradlew :RetenoSdkCore:testDebugUnitTest --configure-on-demand --tests com.reteno.core.internal.action.iam.WorkflowDeliveryTest --tests com.reteno.core.data.local.database.manager.WorkflowStorageTest --tests com.reteno.core.internal.action.iam.FetchInAppMessagesActionTest --tests com.reteno.core.internal.iam.InAppPresenterTest
-./gradlew :RetenoSdkCore:testDebugUnitTest :RetenoSdkCore:koverVerifyDebug --configure-on-demand
+./gradlew :RetenoSdkCore:testDebugUnitTest :RetenoSdkCore:koverVerifyDebug --configure-on-demand --no-watch-fs
 ```
-
-## Remaining work
-
-- Run the native Gradle tests and coverage gate with a configured Android SDK.
-- Verify store upgrades, actual visibility, background/foreground, process
-  death, reconnect, expiry, clicks, dismissal, and account changes on devices.
-- Certify supported renderer/wrapper versions and backend integration. Showing
-  E1 must leave a different IID E2 independently available.
-- Record the evidence and publish through the SDK release process only after
-  certification. Source checks do not establish SDK release readiness.

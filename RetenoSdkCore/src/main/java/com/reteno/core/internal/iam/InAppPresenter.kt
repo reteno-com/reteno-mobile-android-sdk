@@ -16,7 +16,7 @@ import com.reteno.core.internal.action.iam.InAppDisplay
 import com.reteno.core.internal.action.iam.LoadInAppHtml
 import com.reteno.core.internal.action.iam.LoadPushInAppHtml
 import com.reteno.core.internal.action.iam.ReportWidgetFailure
-import com.reteno.core.internal.action.iam.WorkflowContentUnavailable
+import com.reteno.core.internal.action.iam.DeliveryContentUnavailable
 import com.reteno.core.internal.action.interaction.InteractionSubmitter
 import com.reteno.core.internal.coroutine.RetenoDispatchers
 import com.reteno.core.internal.log.RemoteLog
@@ -45,7 +45,7 @@ internal class InAppPresenter(
     private val scope: CoroutineScope,
     private val dispatchers: RetenoDispatchers,
     private val newId: () -> String,
-    private val workflow: WorkflowInAppState,
+    private val delivery: DeliveryInAppState,
     private val state: InAppMessagesState
 ) : IamView, InAppDisplay, InAppScreenEvents {
 
@@ -56,7 +56,7 @@ internal class InAppPresenter(
     private var callback: InAppLifecycleCallback? = null
 
     private var active = false
-    private var pending: InAppMessage? = null
+    private var pending: RuleInApp? = null
     private var current: InApp? = null
     private var closed: InApp? = null
     private var held: InApp? = null
@@ -71,8 +71,12 @@ internal class InAppPresenter(
 
     override fun isViewShown(): Boolean = shown
 
-    override suspend fun show(message: InAppMessage): DisplayOffer = withContext(dispatchers.main) {
-        offer(message)
+    override suspend fun show(
+        message: InAppMessage,
+        owner: String?,
+        onRejected: (suspend () -> Unit)?
+    ): DisplayOffer = withContext(dispatchers.main) {
+        offer(message, owner, onRejected)
     }
 
     override fun initialize(inAppMessage: InAppMessage) = onMain {
@@ -88,8 +92,8 @@ internal class InAppPresenter(
     override fun start() = onMain {
         active = true
         val displayed = current
-        val message = displayed?.workflowMessage
-        if (displayed != null && message != null && !workflow.isCurrent(message)) {
+        val message = displayed?.deliveryMessage
+        if (displayed != null && message != null && !delivery.isCurrent(message)) {
             closed = null
             release(displayed)
         }
@@ -105,9 +109,9 @@ internal class InAppPresenter(
         active = false
         stopWaitingForActivity()
         val loading = current
-        val message = loading?.workflowMessage
+        val message = loading?.deliveryMessage
         if (loading != null && message != null && !loading.presented) {
-            pending = message
+            pending = loading as RuleInApp
             release(loading)
         }
     }
@@ -171,8 +175,8 @@ internal class InAppPresenter(
     }
 
     override fun onActivityStarted() = onCurrent { inApp ->
-        val message = inApp.workflowMessage
-        if (message != null && !workflow.isCurrent(message)) {
+        val message = inApp.deliveryMessage
+        if (message != null && !delivery.isCurrent(message)) {
             closed = null
             teardown(inApp)
         } else if (inApp.revealed && (message == null || active)) {
@@ -184,22 +188,30 @@ internal class InAppPresenter(
         screen.hide()
     }
 
-    private fun offer(message: InAppMessage): DisplayOffer {
-        if (current != null) return DisplayOffer.SKIPPED
-        if (message.inWorkflow && !workflow.canPresent(message)) return DisplayOffer.SKIPPED
+    private fun offer(
+        message: InAppMessage,
+        owner: String? = null,
+        onRejected: (suspend () -> Unit)? = null
+    ): DisplayOffer {
+        if (current != null || owner != null && owner != delivery.context()) return DisplayOffer.SKIPPED
+        val inApp = RuleInApp(message).apply { retryCandidates = onRejected }
+        if (message.serverAssignedIid && !delivery.canPresent(message)) {
+            retryCandidates(inApp)
+            return DisplayOffer.SKIPPED
+        }
         if (!active) {
-            pending = message
+            pending = inApp
             return DisplayOffer.WAITING_FOR_APP
         }
-        begin(RuleInApp(message))
+        begin(inApp)
         return DisplayOffer.LOADING
     }
 
     private fun offerPending() {
-        val message = pending ?: return
+        val inApp = pending ?: return
         if (!active || current != null) return
         pending = null
-        offer(message)
+        offer(inApp.ruleMessage, inApp.observationContext, inApp.retryCandidates)
     }
 
     private fun begin(inApp: InApp) {
@@ -209,16 +221,18 @@ internal class InAppPresenter(
             val result = inApp.fetchHtml()
             val html = result.getOrNull()
             if (current !== inApp) return@launch
-            val message = inApp.workflowMessage
-            if (message != null && state.postponeIfPaused(message)) {
+            val message = inApp.deliveryMessage
+            if (message != null && state.postponeIfPaused(message) {
+                    show(message, inApp.observationContext, inApp.retryCandidates)
+                }) {
                 teardown(inApp)
                 return@launch
             }
             if (html == null || !createScreen(inApp, html)) {
-                if (message != null && result.exceptionOrNull() !is WorkflowContentUnavailable) {
+                if (message != null && result.exceptionOrNull() !is DeliveryContentUnavailable) {
                     inApp.onFailed("Native content initialization failed")
                 }
-                teardown(inApp)
+                teardown(inApp, rejectedBeforeDisplay = true)
             }
         }
         inApp.loading = loading
@@ -265,7 +279,7 @@ internal class InAppPresenter(
         closed = null
         inApp.revealed = true
         presentWhenReady(inApp)
-        if (inApp.workflowMessage == null) {
+        if (inApp.deliveryMessage == null) {
             notifyHost("onDisplay") { it.onDisplay(inApp.data()) }
             inApp.onRevealed()
         }
@@ -282,20 +296,23 @@ internal class InAppPresenter(
                 delay(READY_CHECK_DELAY_MILLIS)
             }
             if (!inApp.presented && current === inApp) {
-                if (inApp.workflowMessage != null) inApp.onFailed("Native presentation unavailable")
+                if (inApp.deliveryMessage != null) inApp.onFailed("Native presentation unavailable")
                 close(inApp, InAppCloseAction.DISMISSED)
+                retryCandidates(inApp)
             }
         }
     }
 
     private fun present(inApp: InApp): Boolean {
-        val message = inApp.workflowMessage
+        val message = inApp.deliveryMessage
         if (message != null && !inApp.presented) {
-            if (!active || !workflow.canPresent(message)) {
-                teardown(inApp)
+            if (!active || !delivery.canPresent(message)) {
+                teardown(inApp, rejectedBeforeDisplay = true)
                 return false
             }
-            if (state.postponeIfPaused(message)) {
+            if (state.postponeIfPaused(message) {
+                    show(message, inApp.observationContext, inApp.retryCandidates)
+                }) {
                 teardown(inApp)
                 return false
             }
@@ -304,8 +321,9 @@ internal class InAppPresenter(
         shown = presented
         if (presented && !inApp.presented) {
             inApp.presented = true
+            inApp.retryCandidates = null
             if (message != null) {
-                workflow.markShown(message)
+                delivery.markShown(message)
                 inApp.onRevealed()
                 notifyHost("onDisplay") { it.onDisplay(inApp.data()) }
             }
@@ -320,7 +338,7 @@ internal class InAppPresenter(
             reportFailure(tenantId, event)
         }
         inApp.onFailed(event.payload?.reason)
-        teardown(inApp)
+        teardown(inApp, rejectedBeforeDisplay = true)
     }
 
     private fun onLinkClicked(inApp: InApp, event: IamJsEvent) {
@@ -340,7 +358,7 @@ internal class InAppPresenter(
         val interactionId = inApp.interactionId ?: return
         val payload = event.payload
         val action = InteractionAction(event.type.name, payload?.targetComponentId, payload?.url)
-        val message = inApp.workflowMessage
+        val message = inApp.ruleMessage
         if (message == null) {
             interactions.submitInteractionClick(interactionId, action, forcePush = true)
         } else {
@@ -349,8 +367,8 @@ internal class InAppPresenter(
                 time = ZonedDateTime.now(),
                 messageInstanceId = message.messageInstanceId,
                 status = InAppInteractionStatus.CLICKED,
-                workflowContext = message.workflowContext,
-                workflowExpiresAt = message.expiresAt,
+                deliveryContext = inApp.observationContext,
+                deliveryExpiresAt = inApp.deliveryMessage?.expiresAt,
                 action = action
             ))
         }
@@ -383,9 +401,19 @@ internal class InAppPresenter(
         notifyHost("afterClose") { it.afterClose(data) }
     }
 
-    private fun teardown(inApp: InApp) {
+    private fun teardown(inApp: InApp, rejectedBeforeDisplay: Boolean = false) {
         release(inApp)
         offerPending()
+        if (rejectedBeforeDisplay) {
+            retryCandidates(inApp)
+        }
+    }
+
+    private fun retryCandidates(inApp: InApp) {
+        val retry = inApp.retryCandidates ?: return
+        inApp.retryCandidates = null
+        if (inApp.presented) return
+        scope.launch { retry() }
     }
 
     private fun release(inApp: InApp) {
@@ -440,11 +468,14 @@ internal class InAppPresenter(
         var revealed = false
         var presented = false
         var interactionId: String? = null
+        var retryCandidates: (suspend () -> Unit)? = null
+        open val observationContext: String? = null
         abstract val source: InAppSource
         abstract val hostId: String
         abstract val customDataId: String
         abstract val isPush: Boolean
-        open val workflowMessage: InAppMessage? = null
+        open val ruleMessage: InAppMessage? = null
+        val deliveryMessage: InAppMessage? get() = ruleMessage?.takeIf { it.serverAssignedIid }
 
         abstract suspend fun fetchHtml(): Result<IamFetchResult>
 
@@ -462,27 +493,29 @@ internal class InAppPresenter(
         override val hostId = message.messageInstanceId.toString()
         override val customDataId = message.messageId.toString()
         override val isPush = false
-        override val workflowMessage = message.takeIf { it.inWorkflow }
+        override val ruleMessage = message
+        override val observationContext = if (message.serverAssignedIid) message.deliveryContext else delivery.context()
 
         override suspend fun fetchHtml() = loadHtml(message)
 
         override fun onRevealed() {
-            if (!message.inWorkflow) interactions.submitInAppShown(message)
-            val opened = if (message.inWorkflow) requireNotNull(message.iid) else newId()
+            if (!message.serverAssignedIid) interactions.submitInAppShown(message)
+            val opened = if (message.serverAssignedIid) requireNotNull(message.iid) else newId()
             interactionId = opened
             interactions.submitInAppInteraction(InAppInteraction.createOpened(opened, message.messageInstanceId).copy(
-                workflowContext = message.workflowContext,
-                workflowExpiresAt = message.expiresAt
+                deliveryContext = observationContext,
+                deliveryExpiresAt = deliveryMessage?.expiresAt
             ))
         }
 
         override fun onFailed(reason: String?) {
+            if (message.serverAssignedIid) delivery.markShown(message)
             interactions.submitInAppInteraction(
                 InAppInteraction.createFailed(
-                    if (message.inWorkflow) requireNotNull(message.iid) else newId(),
+                    if (message.serverAssignedIid) requireNotNull(message.iid) else newId(),
                     message.messageInstanceId,
                     reason
-                ).copy(workflowContext = message.workflowContext, workflowExpiresAt = message.expiresAt)
+                ).copy(deliveryContext = observationContext, deliveryExpiresAt = deliveryMessage?.expiresAt)
             )
         }
     }

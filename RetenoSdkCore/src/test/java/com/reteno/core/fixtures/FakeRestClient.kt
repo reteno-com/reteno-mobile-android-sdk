@@ -21,9 +21,9 @@ internal class FakeRestClient : RestClient {
     var context = "test-context"
     val requests = mutableListOf<SentRequest>()
 
-    override fun workflowContext(): String = context
+    override fun deliveryContext(): String = context
 
-    override fun makeWorkflowRequest(
+    override fun makeDeliveryRequest(
         context: String,
         method: HttpMethod,
         url: ApiContract,
@@ -31,7 +31,7 @@ internal class FakeRestClient : RestClient {
         responseCallback: ResponseCallback
     ) {
         if (context != this.context) {
-            responseCallback.onFailure(null, null, IllegalStateException("Workflow identity changed"))
+            responseCallback.onFailure(null, null, IllegalStateException("Delivery identity changed"))
             return
         }
         makeRequest(method, url, body, null, null, 0, responseCallback)

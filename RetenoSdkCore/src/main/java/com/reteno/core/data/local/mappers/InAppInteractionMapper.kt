@@ -11,7 +11,7 @@ fun InAppInteraction.toDb() = InAppInteractionDb(
     messageInstanceId = messageInstanceId,
     status = status.name,
     statusDescription = statusDescription,
-    workflowContext = workflowContext,
-    workflowExpiresAt = workflowExpiresAt,
+    deliveryContext = deliveryContext,
+    deliveryExpiresAt = deliveryExpiresAt,
     action = action?.toJson()
 )

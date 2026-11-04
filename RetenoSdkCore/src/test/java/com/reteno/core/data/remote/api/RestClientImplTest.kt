@@ -1,6 +1,7 @@
 package com.reteno.core.data.remote.api
 
 import com.reteno.core.BuildConfig
+import com.reteno.core.RetenoConfig
 import com.reteno.core.data.local.config.DeviceIdHelper
 import com.reteno.core.data.local.config.DeviceIdMode
 import com.reteno.core.data.local.config.RestConfig
@@ -33,8 +34,10 @@ internal class RestClientImplTest {
         val logs = FakeLogSink()
         val callback = RecordingResponseCallback()
         val prefs = mockk<SharedPrefsManager>(relaxed = true)
-        val restConfig = RestConfig(prefs, DeviceIdHelper(FakeDeviceIdSources(), prefs) { stubConfig() })
-        val sut = RestClientImpl(restConfig, { stubConfig() }, logs, server.connections)
+        val sources = FakeDeviceIdSources()
+        var config = stubConfig()
+        val restConfig = RestConfig(prefs, DeviceIdHelper(sources, prefs) { config })
+        val sut = RestClientImpl(restConfig, { config }, logs, server.connections)
 
         fun request(
             contract: ApiContract = ApiContract.MobileApi.Device,
@@ -45,6 +48,12 @@ internal class RestClientImplTest {
             retryCount: Int = 0
         ) {
             sut.makeRequest(method, contract, body, headers, queryParams, retryCount, callback)
+        }
+
+        fun deliveryRequest(owner: String) {
+            sut.makeDeliveryRequest(
+                owner, HttpMethod.POST, ApiContract.InAppMessages.RegisterInteraction, "{}", callback
+            )
         }
 
         fun <T> withDebugView(block: () -> T): T {
@@ -77,6 +86,152 @@ internal class RestClientImplTest {
 
     private suspend fun withSut(block: suspend SutFixture.() -> Unit) {
         LocalHttpServer.serve { server -> SutFixture(server).block() }
+    }
+
+    @Test
+    fun `should keep authorization when an identified user replaces or clears contact details`() = runUnitTest {
+        withSut {
+            given()
+            restConfig.initDeviceId(DeviceIdMode.ANDROID_ID)
+            restConfig.setExternalUserId("account-a")
+            restConfig.setDeviceEmail("original@example.com")
+            restConfig.setDevicePhone("+380501234567")
+            val owner = sut.deliveryContext()
+            server.answer(ScriptedResponse(200, "ok"), ScriptedResponse(200, "ok"))
+
+            whenn()
+            restConfig.setDeviceEmail("updated@example.com")
+            restConfig.setDevicePhone("+380509876543")
+            deliveryRequest(owner)
+            restConfig.setDeviceEmail(null)
+            restConfig.setDevicePhone(null)
+            deliveryRequest(owner)
+
+            then()
+            assertEquals(owner, sut.deliveryContext())
+            assertEquals(2, server.requests.size)
+            assertEquals(listOf("ok", "ok"), callback.successes.map { it.second })
+            assertTrue(callback.failures.isEmpty())
+            assertTrue(server.requests.all { it.header("X-Reteno-Device-ID") == restConfig.deviceId.id })
+        }
+    }
+
+    @Test
+    fun `should reject the captured delivery owner when access key changes`() = runUnitTest {
+        withSut {
+            given()
+            restConfig.initDeviceId(DeviceIdMode.ANDROID_ID)
+            restConfig.setExternalUserId("account-a")
+            val owner = sut.deliveryContext()
+
+            whenn()
+            config = RetenoConfig.Builder(config, "another-access-key").build()
+            deliveryRequest(owner)
+
+            then()
+            assertTrue(server.requests.isEmpty())
+            assertTrue(callback.failures.single().third is IllegalStateException)
+            assertTrue(callback.successes.isEmpty())
+        }
+    }
+
+    @Test
+    fun `should reject the captured delivery owner when device id changes`() = runUnitTest {
+        withSut {
+            given()
+            restConfig.initDeviceId(DeviceIdMode.ANDROID_ID)
+            restConfig.setExternalUserId("account-a")
+            val owner = sut.deliveryContext()
+
+            whenn()
+            sources.androidId = { "another-device" }
+            restConfig.initDeviceId(DeviceIdMode.ANDROID_ID)
+            restConfig.setExternalUserId("account-a")
+            deliveryRequest(owner)
+
+            then()
+            assertTrue(server.requests.isEmpty())
+            assertTrue(callback.failures.single().third is IllegalStateException)
+            assertTrue(callback.successes.isEmpty())
+        }
+    }
+
+    @Test
+    fun `should reject the captured delivery owner when device suffix changes`() = runUnitTest {
+        withSut {
+            given()
+            restConfig.initDeviceId(DeviceIdMode.ANDROID_ID)
+            restConfig.setExternalUserId("account-a")
+            val owner = sut.deliveryContext()
+
+            whenn()
+            restConfig.setDeviceIdSuffix("account-b")
+            deliveryRequest(owner)
+
+            then()
+            assertTrue(server.requests.isEmpty())
+            assertTrue(callback.failures.single().third is IllegalStateException)
+            assertTrue(callback.successes.isEmpty())
+        }
+    }
+
+    @Test
+    fun `should reject the captured delivery owner when external user id changes`() = runUnitTest {
+        withSut {
+            given()
+            restConfig.initDeviceId(DeviceIdMode.ANDROID_ID)
+            restConfig.setExternalUserId("account-a")
+            val owner = sut.deliveryContext()
+
+            whenn()
+            restConfig.setExternalUserId("account-b")
+            deliveryRequest(owner)
+
+            then()
+            assertTrue(server.requests.isEmpty())
+            assertTrue(callback.failures.single().third is IllegalStateException)
+            assertTrue(callback.successes.isEmpty())
+        }
+    }
+
+    @Test
+    fun `should reject the captured delivery owner when email changes without an external user id`() = runUnitTest {
+        withSut {
+            given()
+            restConfig.initDeviceId(DeviceIdMode.ANDROID_ID)
+            restConfig.setExternalUserId(null)
+            restConfig.setDeviceEmail("original@example.com")
+            restConfig.setDevicePhone("+380501234567")
+            val owner = sut.deliveryContext()
+
+            whenn()
+            restConfig.setDeviceEmail("another@example.com")
+            deliveryRequest(owner)
+
+            then()
+            assertTrue(server.requests.isEmpty())
+            assertTrue(callback.failures.single().third is IllegalStateException)
+        }
+    }
+
+    @Test
+    fun `should reject the captured delivery owner when phone changes with a blank external user id`() = runUnitTest {
+        withSut {
+            given()
+            restConfig.initDeviceId(DeviceIdMode.ANDROID_ID)
+            restConfig.setExternalUserId("")
+            restConfig.setDeviceEmail("original@example.com")
+            restConfig.setDevicePhone("+380501234567")
+            val owner = sut.deliveryContext()
+
+            whenn()
+            restConfig.setDevicePhone("+380509876543")
+            deliveryRequest(owner)
+
+            then()
+            assertTrue(server.requests.isEmpty())
+            assertTrue(callback.failures.single().third is IllegalStateException)
+        }
     }
 
     @Test

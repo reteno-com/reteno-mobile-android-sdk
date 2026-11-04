@@ -14,6 +14,6 @@ internal data class InAppInteractionRemote(
     val status: String,
     @SerializedName("statusDescription")
     val statusDescription: String? = null,
-    val inWorkflow: Boolean? = null,
+    val serverAssignedIid: Boolean? = null,
     val action: InteractionAction? = null
 )

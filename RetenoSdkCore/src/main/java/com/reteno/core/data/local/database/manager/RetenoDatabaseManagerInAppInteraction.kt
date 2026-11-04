@@ -7,7 +7,7 @@ interface RetenoDatabaseManagerInAppInteraction {
     fun recordAttempt(interaction: InAppInteractionDb)
     fun deferUntil(interaction: InAppInteractionDb, nextAttemptAt: Long)
     fun getInteractions(limit: Int? = null): List<InAppInteractionDb>
-    fun isWorkflowShown(context: String, iid: String): Boolean
+    fun isDeliveryShown(context: String, iid: String): Boolean
     fun getPendingInteractions(context: String): List<InAppInteractionDb>
     fun getInAppInteractionsCount(): Long
     fun deleteInteraction(interaction: InAppInteractionDb): Boolean

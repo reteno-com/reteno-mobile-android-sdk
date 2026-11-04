@@ -9,6 +9,7 @@ import com.reteno.core.data.local.database.util.getInAppInteraction
 import com.reteno.core.data.local.database.util.putInAppInteraction
 import com.reteno.core.data.local.model.interaction.InAppInteractionDb
 import com.reteno.core.domain.model.logevent.LogLevel
+import com.reteno.core.internal.iam.serverAssignedIid
 import com.reteno.core.util.Logger
 import java.time.Instant
 
@@ -18,8 +19,10 @@ internal class RetenoDatabaseManagerInAppInteractionImpl(
 
     @Synchronized
     override fun insertInteraction(interaction: InAppInteractionDb) {
-        val context = interaction.workflowContext
-        if (context != null && interaction.status == "OPENED" && isWorkflowShown(context, interaction.interactionId)) {
+        val context = interaction.deliveryContext
+        val alreadyShown = interaction.serverAssignedIid && context != null && interaction.status == "OPENED" &&
+            isDeliveryShown(context, interaction.interactionId)
+        if (alreadyShown) {
             return
         }
         val inserted = database.insert(
@@ -47,7 +50,7 @@ internal class RetenoDatabaseManagerInAppInteractionImpl(
         )
 
     override fun deleteInteraction(interaction: InAppInteractionDb): Boolean {
-        if (interaction.workflowContext != null && interaction.status in listOf("OPENED", "CLICKED")) {
+        if (interaction.serverAssignedIid && interaction.status in listOf("OPENED", "CLICKED", "FAILED")) {
             return database.update(
                 InAppInteractionSchema.TABLE_NAME_IN_APP_INTERACTION,
                 ContentValues().apply { put(InAppInteractionSchema.COLUMN_DELIVERED, 1) },
@@ -67,8 +70,16 @@ internal class RetenoDatabaseManagerInAppInteractionImpl(
 
     override fun deleteInteractionsByTime(outdatedTime: String): List<InAppInteractionDb> {
         val now = Instant.now()
-        getInteractions().filter { it.workflowContext != null }.forEach { observation ->
-            val expired = runCatching { !now.isBefore(Instant.parse(observation.workflowExpiresAt)) }.getOrDefault(false)
+        val ownedOrdinary = mutableListOf<InAppInteractionDb>()
+        getInteractions().filter { it.deliveryContext != null }.forEach { observation ->
+            if (!observation.serverAssignedIid) {
+                val outdated = runCatching {
+                    Instant.parse(observation.time).isBefore(Instant.parse(outdatedTime))
+                }.getOrDefault(false)
+                if (outdated && deleteInteraction(observation)) ownedOrdinary += observation
+                return@forEach
+            }
+            val expired = runCatching { !now.isBefore(Instant.parse(observation.deliveryExpiresAt)) }.getOrDefault(false)
             val outdated = runCatching {
                 Instant.parse(observation.time).isBefore(Instant.parse(outdatedTime))
             }.getOrDefault(false)
@@ -80,11 +91,11 @@ internal class RetenoDatabaseManagerInAppInteractionImpl(
                 )
             } else if (outdated && !observation.delivered) {
                 deleteInteraction(observation)
-                Logger.captureMessage("Workflow observation retention exhausted", LogLevel.ERROR)
+                Logger.captureMessage("Delivery observation retention exhausted", LogLevel.ERROR)
             }
         }
         val outdated = "${InAppInteractionSchema.COLUMN_IN_APP_INTERACTION_TIME} < ? AND " +
-            "${InAppInteractionSchema.COLUMN_WORKFLOW_CONTEXT} IS NULL"
+            "${InAppInteractionSchema.COLUMN_DELIVERY_CONTEXT} IS NULL"
         val interactions = readInteractions {
             query(
                 table = InAppInteractionSchema.TABLE_NAME_IN_APP_INTERACTION,
@@ -98,7 +109,7 @@ internal class RetenoDatabaseManagerInAppInteractionImpl(
             whereClause = outdated,
             whereArgs = arrayOf(outdatedTime)
         )
-        return interactions
+        return ownedOrdinary + interactions
     }
 
     override fun recordAttempt(interaction: InAppInteractionDb) {
@@ -114,7 +125,7 @@ internal class RetenoDatabaseManagerInAppInteractionImpl(
             "${InAppInteractionSchema.COLUMN_IN_APP_INTERACTION_ROW_ID}=?",
             arrayOf(interaction.rowId)
         )
-        check(updated > 0) { "Failed to persist workflow retry attempt" }
+        check(updated > 0) { "Failed to persist delivery retry attempt" }
     }
 
     override fun deferUntil(interaction: InAppInteractionDb, nextAttemptAt: Long) {
@@ -126,19 +137,22 @@ internal class RetenoDatabaseManagerInAppInteractionImpl(
         )
     }
 
-    override fun isWorkflowShown(context: String, iid: String): Boolean =
+    override fun isDeliveryShown(context: String, iid: String): Boolean =
         database.getRowCount(
             InAppInteractionSchema.TABLE_NAME_IN_APP_INTERACTION,
-            "${InAppInteractionSchema.COLUMN_WORKFLOW_CONTEXT}=? AND " +
+            "${InAppInteractionSchema.COLUMN_DELIVERY_CONTEXT}=? AND " +
                 "${InAppInteractionSchema.COLUMN_IN_APP_INTERACTION_ID}=? AND " +
-                "${InAppInteractionSchema.COLUMN_IN_APP_INTERACTION_STATUS} IN (?, ?)",
-            arrayOf(context, iid, "OPENED", "CLICKED")
-        ) > 0
+                "${InAppInteractionSchema.COLUMN_IN_APP_INTERACTION_STATUS} IN (?, ?, ?)",
+            arrayOf(context, iid, "OPENED", "CLICKED", "FAILED")
+        ) > 0 && getInteractions().any {
+            it.serverAssignedIid && it.deliveryContext == context && it.interactionId == iid &&
+                it.status in listOf("OPENED", "CLICKED", "FAILED")
+        }
 
     override fun getPendingInteractions(context: String): List<InAppInteractionDb> =
         getInteractions().filter {
             !it.delivered && it.nextAttemptAt <= System.currentTimeMillis() &&
-                (it.workflowContext == null || it.workflowContext == context)
+                (it.deliveryContext == null || it.deliveryContext == context)
         }
 
     private fun readInteractions(query: RetenoDatabase.() -> Cursor) = database.readRows(

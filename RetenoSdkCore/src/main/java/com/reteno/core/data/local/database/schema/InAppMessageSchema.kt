@@ -13,9 +13,9 @@ object InAppMessageSchema {
     internal const val COLUMN_IAM_MODEL = "iamModel"
     internal const val COLUMN_IAM_POSITION = "iamPosition"
 
-    internal const val COLUMN_WORKFLOW_IID = "workflowIid"
-    internal const val COLUMN_WORKFLOW_CONTEXT = "workflowContext"
-    internal const val COLUMN_WORKFLOW_EXPIRY = "workflowExpiry"
+    internal const val COLUMN_DELIVERY_IID = "workflowIid"
+    internal const val COLUMN_DELIVERY_CONTEXT = "workflowContext"
+    internal const val COLUMN_DELIVERY_EXPIRY = "workflowExpiry"
 
     internal const val SQL_CREATE_TABLE =
         "CREATE TABLE IF NOT EXISTS $TABLE_NAME" +
@@ -30,12 +30,12 @@ object InAppMessageSchema {
                 "$COLUMN_IAM_LAYOUT_TYPE TEXT, " +
                 "$COLUMN_IAM_MODEL TEXT, " +
                 "$COLUMN_IAM_POSITION TEXT, " +
-                "$COLUMN_WORKFLOW_IID TEXT, " +
-                "$COLUMN_WORKFLOW_CONTEXT TEXT, " +
-                "$COLUMN_WORKFLOW_EXPIRY TEXT" +
+                "$COLUMN_DELIVERY_IID TEXT, " +
+                "$COLUMN_DELIVERY_CONTEXT TEXT, " +
+                "$COLUMN_DELIVERY_EXPIRY TEXT" +
                 ")"
 
-    internal val SQL_UPGRADE_WORKFLOW = listOf(COLUMN_WORKFLOW_IID, COLUMN_WORKFLOW_CONTEXT, COLUMN_WORKFLOW_EXPIRY)
+    internal val SQL_UPGRADE_DELIVERY = listOf(COLUMN_DELIVERY_IID, COLUMN_DELIVERY_CONTEXT, COLUMN_DELIVERY_EXPIRY)
         .map { "ALTER TABLE $TABLE_NAME ADD COLUMN $it TEXT" }
 
     internal const val SQL_UPGRADE_TABLE_VERSION_9 = "ALTER TABLE $TABLE_NAME ADD COLUMN $COLUMN_IAM_POSITION TEXT"

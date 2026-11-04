@@ -122,6 +122,42 @@ internal class PushInAppInteractionsStepTest {
     }
 
     @Test
+    fun `should keep ordinary click queued in its original account and retry its unchanged client iid payload`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        val owner = fixture.rest.context
+        val click = stubInAppInteractionDb().copy(
+            status = "CLICKED",
+            deliveryContext = owner,
+            attempts = 3,
+            action = """{"type":"OPEN_URL","targetComponentId":"cta","url":"https://example.com"}"""
+        )
+        var pending = true
+        every { fixture.inAppDb.getPendingInteractions(any()) } answers {
+            if (firstArg<String>() == owner && pending) listOf(click) else emptyList()
+        }
+        every { fixture.inAppDb.deleteInteraction(click) } answers { pending = false; true }
+        fixture.rest.failOffline()
+        fixture.sut().getOrThrow()
+        val firstBody = fixture.rest.requests.single().body
+        fixture.rest.context = "account-b"
+        fixture.sut().getOrThrow()
+        val requestsInB = fixture.rest.requests.size
+        fixture.rest.context = owner
+
+        whenn()
+        fixture.sut().getOrThrow()
+
+        then()
+        assertEquals(1, requestsInB)
+        assertEquals(2, fixture.rest.requests.size)
+        assertEquals(firstBody, fixture.rest.requests.last().body)
+        assertFalse(requireNotNull(firstBody).contains("\"serverAssignedIid\":true"))
+        verify(exactly = 0) { fixture.inAppDb.recordAttempt(any()) }
+        assertFalse(pending)
+    }
+
+    @Test
     fun `should access local database on io dispatcher and trace steps`() = runUnitTest {
         given()
         val fixture = SutFixture(this)

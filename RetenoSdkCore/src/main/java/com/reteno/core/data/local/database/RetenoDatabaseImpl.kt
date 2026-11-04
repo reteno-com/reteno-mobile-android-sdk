@@ -88,7 +88,7 @@ internal class RetenoDatabaseImpl(
             )
         ),
         12 to (
-            InAppMessageSchema.SQL_UPGRADE_WORKFLOW.map { statement ->
+            InAppMessageSchema.SQL_UPGRADE_DELIVERY.map { statement ->
                 ColumnMigration(
                     InAppMessageSchema.TABLE_NAME,
                     statement.substringAfter(" ADD COLUMN ").substringBefore(' '),

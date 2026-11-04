@@ -1,6 +1,8 @@
 package com.reteno.core.internal.action.iam
 
 import com.reteno.core.data.remote.model.iam.message.InAppMessage
+import com.reteno.core.fixtures.FakeRestClient
+import com.reteno.core.fixtures.stubDeliveryMessage
 import com.reteno.core.fixtures.RecordingInAppDisplay
 import com.reteno.core.fixtures.TestActionRunner
 import com.reteno.core.fixtures.stubInAppMessage
@@ -8,7 +10,7 @@ import com.reteno.core.internal.iam.DisplayDecision
 import com.reteno.core.internal.iam.InAppDisplayRules
 import com.reteno.core.internal.iam.InAppMessagesStateImpl
 import com.reteno.core.lifecycle.RetenoSessionHandler
-import com.reteno.core.fixtures.workflowState
+import com.reteno.core.fixtures.deliveryState
 import com.reteno.core.fixtures.testDispatchers
 import com.reteno.test.given
 import com.reteno.test.runUnitTest
@@ -22,6 +24,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
+import kotlinx.coroutines.test.advanceTimeBy
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -39,6 +42,9 @@ internal class ShowInAppActionTest {
         val decided = mutableListOf<Triple<Long, Long, Boolean>>()
         val lock = Mutex()
         val traced = TestActionRunner(scope)
+        val rest = FakeRestClient()
+        val delivery = deliveryState(scope.testDispatchers(), rest, clock = { scope.testScheduler.currentTime })
+        val pause = PauseInAppMessagesAction(state, display, traced.runner)
         val sut = ShowInAppAction(
             rules = rules,
             state = state,
@@ -47,7 +53,7 @@ internal class ShowInAppActionTest {
             display = display,
             lock = lock,
             runner = traced.runner,
-            workflow = workflowState(scope.testDispatchers())
+            delivery = delivery
         )
 
         init {
@@ -122,6 +128,35 @@ internal class ShowInAppActionTest {
         then()
         assertTrue(shown)
         assertEquals(listOf(3L), fixture.shown)
+    }
+
+    @Test
+    fun `should choose higher backend priority before message id`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        val preferred = stubInAppMessage(messageId = 1).copy(priority = 20)
+        val ordinary = stubInAppMessage(messageId = 99).copy(priority = 10)
+
+        whenn()
+        fixture.sut(listOf(ordinary, preferred), showingOnAppStart = true)
+
+        then()
+        assertEquals(listOf(1L), fixture.shown)
+    }
+
+    @Test
+    fun `should fall back when higher priority candidate fails display rules`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        fixture.allowOnly(messageId = 99)
+        val preferred = stubInAppMessage(messageId = 1).copy(priority = 20)
+        val ordinary = stubInAppMessage(messageId = 99).copy(priority = 10)
+
+        whenn()
+        fixture.sut(listOf(preferred, ordinary), showingOnAppStart = true)
+
+        then()
+        assertEquals(listOf(99L), fixture.shown)
     }
 
     @Test
@@ -212,7 +247,7 @@ internal class ShowInAppActionTest {
         then()
         assertTrue(shown)
         assertTrue(fixture.shown.isEmpty())
-        assertEquals(3L, fixture.state.setPaused(false)?.messageId)
+        assertEquals(3L, fixture.state.setPaused(false)?.message?.messageId)
     }
 
     @Test
@@ -263,6 +298,57 @@ internal class ShowInAppActionTest {
         val lines = fixture.traced.sink.lines
         assertTrue(lines.any { it.contains("→ message 3: FREQUENCY_LIMIT_REACHED") })
         assertTrue(lines.any { it.contains("→ message 1: SHOW") })
+    }
+
+    @Test
+    fun `should choose next eligible candidate when postponed server delivery expires`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        val preferred = stubDeliveryMessage(now = testScheduler.currentTime)
+        val ordinary = stubInAppMessage(messageId = 99)
+        fixture.delivery.remember(listOf(preferred))
+        fixture.pause(paused = true)
+        fixture.sut(listOf(preferred, ordinary), showingOnAppStart = true)
+
+        whenn()
+        advanceTimeBy(3_600_001)
+        fixture.pause(paused = false)
+
+        then()
+        assertEquals(listOf(99L), fixture.shown)
+    }
+
+    @Test
+    fun `should retain candidate fallback when postponed display is rejected after resume`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        val preferred = stubDeliveryMessage(now = testScheduler.currentTime)
+        val ordinary = stubInAppMessage(messageId = 99)
+        fixture.delivery.remember(listOf(preferred))
+        fixture.pause(paused = true)
+        fixture.sut(listOf(preferred, ordinary), showingOnAppStart = true)
+
+        whenn()
+        fixture.pause(paused = false)
+        fixture.display.onRejected?.invoke()
+
+        then()
+        assertEquals(listOf(preferred.messageId, 99L), fixture.shown)
+    }
+
+    @Test
+    fun `should discard postponed candidates after account changes`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        fixture.pause(paused = true)
+        fixture.sut(CANDIDATES, showingOnAppStart = true)
+
+        whenn()
+        fixture.rest.context = "another-account"
+        fixture.pause(paused = false)
+
+        then()
+        assertTrue(fixture.shown.isEmpty())
     }
 
     private companion object {

@@ -25,12 +25,12 @@ internal class SuspendApiClient(
         callback.result ?: ApiResult.Failure(null, null, IllegalStateException(NO_CALLBACK))
     }
 
-    fun workflowContext(): String = restClient.workflowContext()
+    fun deliveryContext(): String = restClient.deliveryContext()
 
-    suspend fun workflowRequest(context: String, contract: ApiContract, body: String): ApiResult =
+    suspend fun deliveryRequest(context: String, contract: ApiContract, body: String): ApiResult =
         withContext(dispatchers.io) {
             val callback = CapturingCallback()
-            restClient.makeWorkflowRequest(context, HttpMethod.POST, contract, body, callback)
+            restClient.makeDeliveryRequest(context, HttpMethod.POST, contract, body, callback)
             callback.result ?: ApiResult.Failure(null, null, IllegalStateException(NO_CALLBACK))
         }
 

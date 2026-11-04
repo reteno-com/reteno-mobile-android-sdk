@@ -20,16 +20,25 @@ import com.reteno.core.internal.action.iam.DisplayOffer
 import com.reteno.core.internal.action.iam.LoadInAppHtml
 import com.reteno.core.internal.action.iam.LoadPushInAppHtml
 import com.reteno.core.internal.action.iam.ReportWidgetFailure
-import com.reteno.core.internal.action.iam.WorkflowContentUnavailable
+import com.reteno.core.internal.action.iam.DeliveryContentUnavailable
 import com.reteno.core.internal.action.interaction.InteractionSubmitter
-import com.reteno.core.fixtures.workflowState
+import com.reteno.core.fixtures.deliveryState
 import com.reteno.core.fixtures.FakeRestClient
-import com.reteno.core.fixtures.stubWorkflowMessage
+import com.reteno.core.fixtures.stubDeliveryMessage
 import com.reteno.test.given
 import com.reteno.test.runUnitTest
 import com.reteno.test.then
 import com.reteno.test.whenn
 import com.reteno.test.workScope
+import com.reteno.core.fixtures.TestActionRunner
+import com.reteno.core.internal.action.iam.PauseInAppMessagesAction
+import com.reteno.core.internal.action.iam.ShowInAppAction
+import com.reteno.core.internal.action.iam.CheckInAppSegments
+import com.reteno.core.lifecycle.RetenoSessionHandler
+import io.mockk.every
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.sync.Mutex
+import java.time.Instant
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -50,7 +59,8 @@ internal class InAppPresenterTest {
         val screen = FakeInAppScreen()
         val dispatchers = scope.testDispatchers()
         val rest = FakeRestClient()
-        val workflow = workflowState(dispatchers, rest)
+        var now = System.currentTimeMillis()
+        val delivery = deliveryState(dispatchers, rest, clock = { now })
         val state = InAppMessagesStateImpl()
         val callback = RecordingInAppLifecycleCallback(dispatchers.markedMain)
         val loadHtml = mockk<LoadInAppHtml>()
@@ -87,11 +97,25 @@ internal class InAppPresenterTest {
             scope = scope.workScope(),
             dispatchers = dispatchers,
             newId = { "generated-${++nextId}" },
-            workflow = workflow,
+            delivery = delivery,
             state = state
         )
 
+        val displayRules = mockk<InAppDisplayRules>()
+        val checkSegments = mockk<CheckInAppSegments>(relaxed = true)
+        val showCandidates = ShowInAppAction(
+            rules = displayRules,
+            state = state,
+            checkSegments = checkSegments,
+            sessionHandler = mockk<RetenoSessionHandler>(relaxed = true),
+            display = sut,
+            lock = Mutex(),
+            runner = TestActionRunner(scope).runner,
+            delivery = delivery
+        )
+
         init {
+            every { displayRules.decide(any(), any(), any()) } returns DisplayDecision.SHOW
             coEvery { loadHtml(any()) } returns Result.success(HTML)
             coEvery { loadPushHtml(any()) } returns Result.success(HTML)
             coEvery { reportFailure(any(), any()) } returns Result.success(Unit)
@@ -105,6 +129,7 @@ internal class InAppPresenterTest {
 
         fun showing(message: InAppMessage = MESSAGE) = apply {
             started()
+            if (message.serverAssignedIid) delivery.remember(listOf(message))
             scope.launch { sut.show(message) }
             scope.runCurrent()
         }
@@ -117,6 +142,13 @@ internal class InAppPresenterTest {
         fun pushShowing(interactionId: String = PUSH_ID) = apply {
             started()
             sut.initialize(interactionId)
+            scope.runCurrent()
+        }
+
+        fun offerCandidates(message: InAppMessage) {
+            started()
+            delivery.remember(listOf(message))
+            scope.launch { showCandidates(listOf(MESSAGE, message), showingOnAppStart = true) }
             scope.runCurrent()
         }
 
@@ -517,10 +549,10 @@ internal class InAppPresenterTest {
         fixture.widget("""{"type":"OPEN_URL","payload":{"targetComponentId":"btn","url":"https://example.com"}}""")
 
         then()
-        val (interactionId, action, forcePush) = fixture.clicks.single()
-        assertEquals("generated-1", interactionId)
-        assertEquals(InteractionAction("OPEN_URL", "btn", "https://example.com"), action)
-        assertTrue(forcePush)
+        val click = fixture.inAppInteractions.single { it.status == InAppInteractionStatus.CLICKED }
+        assertEquals("generated-1", click.interactionId)
+        assertEquals(InteractionAction("OPEN_URL", "btn", "https://example.com"), click.action)
+        assertTrue(fixture.clicks.isEmpty())
     }
 
     @Test
@@ -1220,7 +1252,7 @@ internal class InAppPresenterTest {
         fixture.widget(BUTTON_CLICK)
 
         then()
-        assertEquals(listOf("generated-1"), fixture.clicks.map { it.first })
+        assertEquals(listOf("generated-1"), fixture.inAppInteractions.filter { it.status == InAppInteractionStatus.CLICKED }.map { it.interactionId })
     }
 
     @Test
@@ -1262,7 +1294,7 @@ internal class InAppPresenterTest {
         fixture.widget(BUTTON_CLICK)
 
         then()
-        assertEquals(1, fixture.clicks.size)
+        assertEquals(1, fixture.inAppInteractions.count { it.status == InAppInteractionStatus.CLICKED })
     }
 
     @Test
@@ -1275,7 +1307,7 @@ internal class InAppPresenterTest {
         fixture.widget(BUTTON_CLICK)
 
         then()
-        assertEquals(1, fixture.clicks.size)
+        assertEquals(1, fixture.inAppInteractions.count { it.status == InAppInteractionStatus.CLICKED })
         assertEquals(1, fixture.screen.calls.count { it == "open https://example.com" })
     }
 
@@ -1291,7 +1323,7 @@ internal class InAppPresenterTest {
 
         then()
         coVerify(exactly = 0) { fixture.reportFailure(any(), any()) }
-        assertEquals(1, fixture.clicks.size)
+        assertEquals(1, fixture.inAppInteractions.count { it.status == InAppInteractionStatus.CLICKED })
     }
 
     @Test
@@ -1322,7 +1354,7 @@ internal class InAppPresenterTest {
         runCurrent()
 
         then()
-        assertEquals(listOf("generated-1"), fixture.clicks.map { it.first })
+        assertEquals(listOf("generated-1"), fixture.inAppInteractions.filter { it.status == InAppInteractionStatus.CLICKED }.map { it.interactionId })
         assertTrue("open https://example.com" !in fixture.screen.calls)
     }
 
@@ -1431,9 +1463,9 @@ internal class InAppPresenterTest {
     }
 
     @Test
-    fun `should record workflow opened only after successful native presentation`() = runUnitTest {
+    fun `should record delivery opened only after successful native presentation`() = runUnitTest {
         given()
-        val message = stubWorkflowMessage()
+        val message = stubDeliveryMessage()
         val fixture = SutFixture(this).showing(message)
         fixture.screen.presents = false
 
@@ -1447,14 +1479,14 @@ internal class InAppPresenterTest {
         then()
         assertTrue(beforeVisible.isEmpty())
         assertEquals(message.iid, fixture.inAppInteractions.single().interactionId)
-        assertEquals(message.workflowContext, fixture.inAppInteractions.single().workflowContext)
+        assertEquals(message.deliveryContext, fixture.inAppInteractions.single().deliveryContext)
         assertTrue(fixture.shown.isEmpty())
     }
 
     @Test
-    fun `should not repeat workflow opened after another widget ready event`() = runUnitTest {
+    fun `should not repeat delivery opened after another widget ready event`() = runUnitTest {
         given()
-        val fixture = SutFixture(this).displayed(stubWorkflowMessage())
+        val fixture = SutFixture(this).displayed(stubDeliveryMessage())
 
         whenn()
         fixture.widget(INIT_SUCCESS)
@@ -1464,9 +1496,9 @@ internal class InAppPresenterTest {
     }
 
     @Test
-    fun `should use original workflow iid and full action for clicks`() = runUnitTest {
+    fun `should use original delivery iid and full action for clicks`() = runUnitTest {
         given()
-        val message = stubWorkflowMessage()
+        val message = stubDeliveryMessage()
         val fixture = SutFixture(this).displayed(message)
 
         whenn()
@@ -1483,9 +1515,9 @@ internal class InAppPresenterTest {
     }
 
     @Test
-    fun `should retain workflow iid on failure without suppressing future display`() = runUnitTest {
+    fun `should retain delivery iid and suppress further display after failure`() = runUnitTest {
         given()
-        val message = stubWorkflowMessage()
+        val message = stubDeliveryMessage()
         val fixture = SutFixture(this).showing(message)
 
         whenn()
@@ -1494,13 +1526,13 @@ internal class InAppPresenterTest {
         then()
         assertEquals(message.iid, fixture.inAppInteractions.single().interactionId)
         assertEquals("FAILED", fixture.inAppInteractions.single().status.name)
-        assertTrue(fixture.workflow.canPresent(message))
+        assertFalse(fixture.delivery.canPresent(message))
     }
 
     @Test
-    fun `should discard visible workflow content after an account change`() = runUnitTest {
+    fun `should discard visible delivery content after an account change`() = runUnitTest {
         given()
-        val fixture = SutFixture(this).displayed(stubWorkflowMessage())
+        val fixture = SutFixture(this).displayed(stubDeliveryMessage())
         fixture.rest.context = "new-account"
 
         whenn()
@@ -1514,9 +1546,9 @@ internal class InAppPresenterTest {
     }
 
     @Test
-    fun `should retain local shown state while reattaching workflow in the same account`() = runUnitTest {
+    fun `should retain local shown state while reattaching delivery in the same account`() = runUnitTest {
         given()
-        val fixture = SutFixture(this).displayed(stubWorkflowMessage())
+        val fixture = SutFixture(this).displayed(stubDeliveryMessage())
 
         whenn()
         fixture.sut.pause()
@@ -1532,15 +1564,15 @@ internal class InAppPresenterTest {
     }
 
     @Test
-    fun `should defer workflow authorization failures without recording failed delivery`() = runUnitTest {
+    fun `should defer delivery authorization failures without recording failed delivery`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
         coEvery { fixture.loadHtml(any()) } returns Result.failure(
-            WorkflowContentUnavailable()
+            DeliveryContentUnavailable()
         )
 
         whenn()
-        fixture.showing(stubWorkflowMessage())
+        fixture.showing(stubDeliveryMessage())
 
         then()
         assertTrue(fixture.inAppInteractions.isEmpty())
@@ -1548,11 +1580,11 @@ internal class InAppPresenterTest {
     }
 
     @Test
-    fun `should discard workflow content when rules change before presentation`() = runUnitTest {
+    fun `should discard delivery content when rules change before presentation`() = runUnitTest {
         given()
-        val message = stubWorkflowMessage()
+        val message = stubDeliveryMessage()
         val fixture = SutFixture(this).showing(message)
-        fixture.workflow.remember(listOf(message.copy(displayRulesJson = JsonObject().apply {
+        fixture.delivery.remember(listOf(message.copy(displayRulesJson = JsonObject().apply {
             addProperty("version", "new")
         })))
 
@@ -1562,6 +1594,179 @@ internal class InAppPresenterTest {
         then()
         assertTrue(fixture.inAppInteractions.isEmpty())
         assertFalse(fixture.sut.isViewShown())
+    }
+
+    @Test
+    fun `should continue the same trigger after delivery authorization rejects its preferred candidate`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        val preferred = stubDeliveryMessage().copy(messageId = 2)
+        coEvery { fixture.loadHtml(preferred) } returns Result.failure(DeliveryContentUnavailable())
+
+        whenn()
+        fixture.offerCandidates(preferred)
+
+        then()
+        coVerify(exactly = 1) { fixture.loadHtml(MESSAGE) }
+        assertEquals(listOf("create html-1"), fixture.screen.calls.filter { it.startsWith("create") })
+        assertTrue(fixture.inAppInteractions.isEmpty())
+    }
+
+    @Test
+    fun `should continue the same trigger when delivery expires before native presentation`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        val preferred = stubDeliveryMessage(now = fixture.now).copy(messageId = 2)
+        fixture.offerCandidates(preferred)
+        fixture.now = Instant.parse(preferred.expiresAt).toEpochMilli()
+
+        whenn()
+        fixture.widget(INIT_SUCCESS)
+
+        then()
+        coVerify(exactly = 1) { fixture.loadHtml(MESSAGE) }
+        assertTrue(fixture.inAppInteractions.isEmpty())
+    }
+
+    @Test
+    fun `should keep fallback when delivery preparation is postponed until after expiry`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        val preferred = stubDeliveryMessage(now = fixture.now).copy(messageId = 2)
+        val pause = PauseInAppMessagesAction(fixture.state, fixture.sut, TestActionRunner(this).runner)
+        fixture.offerCandidates(preferred)
+        pause(paused = true)
+        fixture.widget(INIT_SUCCESS)
+        fixture.now = Instant.parse(preferred.expiresAt).toEpochMilli()
+
+        whenn()
+        pause(paused = false)
+        runCurrent()
+
+        then()
+        coVerify(exactly = 1) { fixture.loadHtml(MESSAGE) }
+        assertTrue(fixture.inAppInteractions.isEmpty())
+    }
+
+    @Test
+    fun `should abandon fallback candidates after the trigger account changes`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        fixture.offerCandidates(stubDeliveryMessage().copy(messageId = 2))
+        fixture.rest.context = "another-account"
+
+        whenn()
+        fixture.widget(INIT_SUCCESS)
+
+        then()
+        coVerify(exactly = 0) { fixture.loadHtml(MESSAGE) }
+        assertTrue(fixture.inAppInteractions.isEmpty())
+    }
+
+    @Test
+    fun `should not resume fallback candidates after the preferred delivery was visible`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        fixture.offerCandidates(stubDeliveryMessage().copy(messageId = 2))
+        fixture.widget(INIT_SUCCESS)
+
+        whenn()
+        fixture.widget("""{"type":"WIDGET_RUNTIME_ERROR","payload":{"reason":"render failed"}}""")
+
+        then()
+        coVerify(exactly = 0) { fixture.loadHtml(MESSAGE) }
+        assertEquals(
+            listOf(InAppInteractionStatus.OPENED, InAppInteractionStatus.FAILED),
+            fixture.inAppInteractions.map { it.status }
+        )
+    }
+
+    @Test
+    fun `should not treat cancelled preparation as permission to show another candidate`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        val preferred = stubDeliveryMessage().copy(messageId = 2)
+        coEvery { fixture.loadHtml(preferred) } coAnswers { awaitCancellation() }
+        fixture.offerCandidates(preferred)
+
+        whenn()
+        fixture.sut.pause()
+        runCurrent()
+
+        then()
+        coVerify(exactly = 0) { fixture.loadHtml(MESSAGE) }
+        assertTrue(fixture.inAppInteractions.isEmpty())
+    }
+
+    @Test
+    fun `should retain ordinary observation owner when the account changes before its click`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this).displayed()
+        val originalOwner = fixture.rest.context
+        fixture.rest.context = "another-account"
+
+        whenn()
+        fixture.widget(BUTTON_CLICK)
+
+        then()
+        assertEquals(listOf(originalOwner, originalOwner), fixture.inAppInteractions.map { it.deliveryContext })
+        assertTrue(fixture.inAppInteractions.all { it.deliveryExpiresAt == null })
+        assertEquals(fixture.inAppInteractions.first().interactionId, fixture.inAppInteractions.last().interactionId)
+        assertEquals(InteractionAction("CLICK", "btn", null), fixture.inAppInteractions.last().action)
+    }
+
+    @Test
+    fun `should stop fallback when every candidate rejects preparation`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        coEvery { fixture.loadHtml(any()) } returns Result.failure(DeliveryContentUnavailable())
+
+        whenn()
+        fixture.offerCandidates(stubDeliveryMessage().copy(messageId = 2))
+
+        then()
+        coVerify(exactly = 2) { fixture.loadHtml(any()) }
+        assertFalse(fixture.sut.isViewShown())
+        assertTrue(fixture.inAppInteractions.isEmpty())
+    }
+
+    @Test
+    fun `should abandon an ordinary display offer if its account changes during selection`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this).started()
+        every { fixture.displayRules.decide(any(), any(), any()) } answers {
+            fixture.rest.context = "another-account"
+            DisplayDecision.SHOW
+        }
+
+        whenn()
+        val offered = fixture.showCandidates(listOf(MESSAGE), showingOnAppStart = true).getOrThrow()
+        runCurrent()
+
+        then()
+        assertFalse(offered)
+        coVerify(exactly = 0) { fixture.loadHtml(any()) }
+    }
+
+    @Test
+    fun `should continue candidates when the preferred delivery expires during its display offer`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        val preferred = stubDeliveryMessage(now = fixture.now).copy(messageId = 2)
+        every { fixture.displayRules.decide(any(), any(), any()) } answers {
+            if (firstArg<InAppMessage>().serverAssignedIid) {
+                fixture.now = Instant.parse(preferred.expiresAt).toEpochMilli()
+            }
+            DisplayDecision.SHOW
+        }
+
+        whenn()
+        fixture.offerCandidates(preferred)
+
+        then()
+        coVerify(exactly = 1) { fixture.loadHtml(MESSAGE) }
+        coVerify(exactly = 0) { fixture.loadHtml(preferred) }
+        assertTrue(fixture.inAppInteractions.isEmpty())
     }
 
     private companion object {

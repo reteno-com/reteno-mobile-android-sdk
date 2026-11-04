@@ -9,6 +9,7 @@ import com.reteno.core.data.remote.mapper.toRemote
 import com.reteno.core.internal.action.trace.ActionRunner
 import com.reteno.core.internal.action.trace.ActionTrace
 import com.reteno.core.internal.coroutine.RetenoDispatchers
+import com.reteno.core.internal.iam.serverAssignedIid
 import com.reteno.core.internal.network.ApiResult
 import com.reteno.core.internal.network.SuspendApiClient
 import java.time.ZonedDateTime
@@ -33,24 +34,24 @@ internal class PushInAppInteractionsStep(
         while (true) {
             val interaction = step("load in-app interaction from local database") {
                 withContext(dispatchers.io) {
-                    inAppInteractionsDb.getPendingInteractions(api.workflowContext()).firstOrNull()
+                    inAppInteractionsDb.getPendingInteractions(api.deliveryContext()).firstOrNull()
                 }
             } ?: return finishedAfter(handled)
-            if (interaction.workflowContext != null && interaction.attempts >= MAX_WORKFLOW_ATTEMPTS) {
-                val retained = step("retain shown state after workflow retries are exhausted") {
+            if (interaction.serverAssignedIid && interaction.attempts >= MAX_DELIVERY_ATTEMPTS) {
+                val retained = step("retain shown state after delivery retries are exhausted") {
                     withContext(dispatchers.io) { inAppInteractionsDb.deleteInteraction(interaction) }
                 }
                 if (!retained) return StepOutcome.CONTINUE
                 handled++
                 continue
             }
-            if (interaction.workflowContext != null) {
-                step("save workflow delivery attempt to local database") {
+            if (interaction.serverAssignedIid) {
+                step("save delivery delivery attempt to local database") {
                     withContext(dispatchers.io) { inAppInteractionsDb.recordAttempt(interaction) }
                 }
             }
             val result = step("send in-app interaction to server") {
-                val owner = interaction.workflowContext
+                val owner = interaction.deliveryContext
                 if (owner == null) {
                     api.request(
                         HttpMethod.POST,
@@ -58,11 +59,11 @@ internal class PushInAppInteractionsStep(
                         interaction.toRemote().toJson()
                     )
                 } else {
-                    api.workflowRequest(owner, ApiContract.InAppMessages.RegisterInteraction, interaction.toRemote().toJson())
+                    api.deliveryRequest(owner, ApiContract.InAppMessages.RegisterInteraction, interaction.toRemote().toJson())
                 }
             }
             if (result is ApiResult.Failure && result.isRepeatable) {
-                if (interaction.workflowContext != null) {
+                if (interaction.serverAssignedIid) {
                     defer(interaction, result)
                 }
                 return StepOutcome.ABORT
@@ -86,7 +87,7 @@ internal class PushInAppInteractionsStep(
                 .getOrNull() ?: return
         }
         val backoff = System.currentTimeMillis() + (30_000L shl interaction.attempts.coerceAtMost(10))
-        step("save server-requested workflow retry deadline to local database") {
+        step("save server-requested delivery retry deadline to local database") {
             withContext(dispatchers.io) {
                 inAppInteractionsDb.deferUntil(interaction, maxOf(requested, backoff))
             }
@@ -94,7 +95,7 @@ internal class PushInAppInteractionsStep(
     }
 
     private companion object {
-        const val MAX_WORKFLOW_ATTEMPTS = 3
+        const val MAX_DELIVERY_ATTEMPTS = 3
         const val MAX_RETRY_AFTER_SECONDS = 90L * 24 * 60 * 60
     }
 }

@@ -12,7 +12,7 @@ data class InAppMessageDb(
     val model: String?,
     val position: String?,
     val iid: String? = null,
-    val workflowContext: String? = null,
+    val deliveryContext: String? = null,
     val expiresAt: String? = null
 ) {
     var segment: SegmentDb? = null

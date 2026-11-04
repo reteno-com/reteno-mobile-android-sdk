@@ -45,9 +45,9 @@ internal class DisplayRulesEvaluator(
         sessionStartTimestamp: Long,
         showingOnAppStart: Boolean
     ): DisplayDecision {
-        if (!message.inWorkflow && !hasContent(message)) return DisplayDecision.NO_CONTENT
+        if (!message.serverAssignedIid && !hasContent(message)) return DisplayDecision.NO_CONTENT
         if (!isInSegment(message)) return DisplayDecision.NOT_IN_SEGMENT
-        if (!message.inWorkflow && !matchesFrequency(message, sessionStartTimestamp, showingOnAppStart)) {
+        if (!matchesFrequency(message, sessionStartTimestamp, showingOnAppStart)) {
             return DisplayDecision.FREQUENCY_LIMIT_REACHED
         }
         if (!matchesSchedule(message)) return DisplayDecision.OUTSIDE_SCHEDULE

@@ -8,7 +8,7 @@ import com.reteno.core.internal.network.SuspendApiClient
 import kotlinx.coroutines.withContext
 import java.time.Instant
 
-internal class WorkflowInAppState(
+internal class DeliveryInAppState(
     private val api: SuspendApiClient,
     private val interactions: RetenoDatabaseManagerInAppInteraction,
     private val dispatchers: RetenoDispatchers,
@@ -18,21 +18,27 @@ internal class WorkflowInAppState(
     private val lock = Any()
     private var latest: List<InAppMessage> = emptyList()
     private val shown = mutableSetOf<Pair<String?, String?>>()
+    private val unavailable = mutableSetOf<Pair<String?, String?>>()
 
-    fun context(): String = api.workflowContext()
+    fun context(): String = api.deliveryContext()
 
-    fun isCurrent(message: InAppMessage): Boolean = message.workflowContext == context()
+    fun isCurrent(message: InAppMessage): Boolean = message.deliveryContext == context()
 
     fun remember(messages: List<InAppMessage>) {
         synchronized(lock) {
-            latest = messages.filter { it.inWorkflow }
-            val retained = latest.map { it.workflowContext to it.iid }.toSet()
+            latest = messages.filter { it.serverAssignedIid }
+            val retained = latest.map { it.deliveryContext to it.iid }.toSet()
             shown.retainAll(retained)
+            unavailable.retainAll(retained)
         }
     }
 
     fun markShown(message: InAppMessage) {
-        synchronized(lock) { shown.add(message.workflowContext to message.iid) }
+        synchronized(lock) { shown.add(message.deliveryContext to message.iid) }
+    }
+
+    fun markUnavailable(message: InAppMessage) {
+        synchronized(lock) { unavailable.add(message.deliveryContext to message.iid) }
     }
 
     fun canPresent(message: InAppMessage): Boolean {
@@ -42,22 +48,23 @@ internal class WorkflowInAppState(
         }.getOrDefault(false)
         if (!unexpired) return false
         return synchronized(lock) {
-            (message.workflowContext to message.iid) !in shown && matchesCurrentRules(message)
+            val key = message.deliveryContext to message.iid
+            key !in shown && key !in unavailable && matchesCurrentRules(message)
         }
     }
 
     suspend fun isEligible(message: InAppMessage): Boolean {
         if (!canPresent(message)) return false
         val persisted = withContext(dispatchers.io) {
-            interactions.isWorkflowShown(requireNotNull(message.workflowContext), requireNotNull(message.iid))
+            interactions.isDeliveryShown(requireNotNull(message.deliveryContext), requireNotNull(message.iid))
         }
         if (persisted) markShown(message)
         return !persisted && canPresent(message)
     }
 
     private fun matchesCurrentRules(message: InAppMessage): Boolean {
-        val current = latest.firstOrNull { it.workflowContext == message.workflowContext && it.iid == message.iid }
-            ?: return true
+        val current = latest.firstOrNull { it.deliveryContext == message.deliveryContext && it.iid == message.iid }
+            ?: return false
         return rulesWithoutFrequency(current.displayRulesJson) == rulesWithoutFrequency(message.displayRulesJson)
     }
 

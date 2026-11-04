@@ -26,15 +26,19 @@ internal class RestClientImpl(
     private val connections: HttpConnections = HttpsConnections
 ) : RestClient {
 
-    override fun workflowContext(): String = workflowContext(retenoConfigProvider().accessKey, restConfig.deviceId)
+    override fun deliveryContext(): String = deliveryContext(retenoConfigProvider().accessKey, restConfig.deviceId)
 
-    private fun workflowContext(key: String, device: DeviceId): String {
-        val identity = listOf(key, device.id, device.externalId, device.email, device.phone)
-            .toJson().toByteArray(Charsets.UTF_8)
+    private fun deliveryContext(key: String, device: DeviceId): String {
+        val identified = !device.externalId.isNullOrBlank()
+        val identity = listOf(
+            key, device.id, device.externalId,
+            if (identified) null else device.email,
+            if (identified) null else device.phone
+        ).toJson().toByteArray(Charsets.UTF_8)
         return MessageDigest.getInstance("SHA-256").digest(identity).joinToString("") { "%02x".format(it) }
     }
 
-    override fun makeWorkflowRequest(
+    override fun makeDeliveryRequest(
         context: String,
         method: HttpMethod,
         url: ApiContract,
@@ -43,8 +47,8 @@ internal class RestClientImpl(
     ) {
         val key = retenoConfigProvider().accessKey
         val device = restConfig.deviceId
-        if (workflowContext(key, device) != context) {
-            responseCallback.onFailure(null, null, IllegalStateException("Workflow identity changed"))
+        if (deliveryContext(key, device) != context) {
+            responseCallback.onFailure(null, null, IllegalStateException("Delivery identity changed"))
             return
         }
         makeRequest(method, url, body, mapOf(HEADER_KEY to key, HEADER_DEVICE_ID to device.id), null, 0, responseCallback)

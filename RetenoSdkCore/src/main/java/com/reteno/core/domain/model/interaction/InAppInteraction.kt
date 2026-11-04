@@ -8,8 +8,8 @@ data class InAppInteraction(
     val messageInstanceId: Long,
     val status: InAppInteractionStatus,
     val statusDescription: String? = null,
-    val workflowContext: String? = null,
-    val workflowExpiresAt: String? = null,
+    val deliveryContext: String? = null,
+    val deliveryExpiresAt: String? = null,
     val action: InteractionAction? = null
 ) {
     companion object {

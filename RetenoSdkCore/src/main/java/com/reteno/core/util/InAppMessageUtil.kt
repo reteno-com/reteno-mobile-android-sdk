@@ -17,7 +17,7 @@ import com.reteno.core.data.remote.model.iam.displayrules.targeting.TargetingRul
 import com.reteno.core.data.remote.model.iam.displayrules.targeting.TargetingRuleGroup
 
 object InAppMessageUtil {
-    fun supportsWorkflowRules(json: JsonObject): Boolean = runCatching {
+    fun supportsDeliveryRules(json: JsonObject): Boolean = runCatching {
         json.entrySet().all { (key, value) ->
             key in setOf("FREQUENCY", "TARGETING", "SCHEDULE", "ASYNC", "version") ||
                 !value.isJsonObject || value.asJsonObject.get("enabled")?.asBoolean != true
@@ -37,12 +37,12 @@ object InAppMessageUtil {
                     include.getAsJsonArray("groups")[0].asJsonObject.getAsJsonArray("conditions").size() == 1 &&
                     RuleRelation.fromString(include.get("relation")?.asString) != null &&
                     RuleRelation.fromString(include.getAsJsonArray("groups")[0].asJsonObject.get("relation")?.asString) != null &&
-                    supportsWorkflowTargeting(include.getAsJsonArray("groups")[0].asJsonObject.getAsJsonArray("conditions")[0].asJsonObject)
+                    supportsDeliveryTargeting(include.getAsJsonArray("groups")[0].asJsonObject.getAsJsonArray("conditions")[0].asJsonObject)
             }
         }
     }.getOrDefault(false)
 
-    private fun supportsWorkflowTargeting(condition: JsonObject): Boolean {
+    private fun supportsDeliveryTargeting(condition: JsonObject): Boolean {
         val parsed = TargetingRule.fromJson(condition) ?: return false
         if (parsed !is TargetingRule.Event) return true
         val parameters = condition.getAsJsonArray("values")[0].asJsonObject.getAsJsonObject("parameters")

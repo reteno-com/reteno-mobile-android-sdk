@@ -20,22 +20,22 @@ import com.reteno.core.util.Logger
 import com.reteno.core.util.toTimeUnit
 
 internal fun InAppMessageResponse.toInAppMessage(): InAppMessage {
-    if (inWorkflow) {
+    if (iid != null) {
         require(!iid.isNullOrBlank())
         require(UUID.fromString(iid).toString().equals(iid, ignoreCase = true))
         Instant.parse(requireNotNull(expiresAt))
-        require(InAppMessageUtil.supportsWorkflowRules(displayRules))
+        require(InAppMessageUtil.supportsDeliveryRules(displayRules))
     }
     return InAppMessage(
         messageId = messageId,
         messageInstanceId = messageInstanceId,
         displayRulesJson = displayRules,
         displayRules = InAppMessageUtil.parseRules(
-            if (inWorkflow) displayRules.deepCopy().apply { remove("FREQUENCY") } else displayRules
+            displayRules
         ),
-        inWorkflow = inWorkflow,
-        iid = iid.takeIf { inWorkflow },
-        expiresAt = expiresAt.takeIf { inWorkflow }
+        iid = iid,
+        expiresAt = expiresAt,
+        priority = priority ?: 10
     )
 }
 
@@ -65,14 +65,13 @@ internal fun InAppMessageDb.toInAppMessage(): InAppMessage {
         messageId = messageId,
         messageInstanceId = messageInstanceId,
         displayRulesJson = rulesJson,
-        displayRules = InAppMessageUtil.parseRules(if (iid != null) rulesJson.deepCopy().apply { remove("FREQUENCY") } else rulesJson),
+        displayRules = InAppMessageUtil.parseRules(rulesJson),
         content = content,
         lastShowTime = lastShowTime,
         showCount = showCount,
-        inWorkflow = iid != null,
         iid = iid,
         expiresAt = expiresAt,
-        workflowContext = workflowContext
+        deliveryContext = deliveryContext
     )
 
     segment?.let {
@@ -101,14 +100,14 @@ internal fun InAppMessage.toDB(): InAppMessageDb {
         messageId = messageId,
         messageInstanceId = messageInstanceId,
         displayRules = displayRulesJson.toString(),
-        layoutType = content?.layoutType?.key.takeUnless { inWorkflow },
-        model = content?.model?.toString().takeUnless { inWorkflow },
+        layoutType = content?.layoutType?.key.takeUnless { serverAssignedIid },
+        model = content?.model?.toString().takeUnless { serverAssignedIid },
         position = content?.layoutParams?.position?.key,
         lastShowTime = lastShowTime,
         showCount = showCount,
         iid = iid,
         expiresAt = expiresAt,
-        workflowContext = workflowContext
+        deliveryContext = deliveryContext
     )
 
     result.segment = displayRules.async?.segment?.toDb()

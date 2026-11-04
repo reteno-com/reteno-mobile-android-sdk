@@ -25,7 +25,7 @@ import com.reteno.core.internal.iam.InAppDisplayRules
 import com.reteno.core.internal.iam.InAppMessagesState
 import com.reteno.core.internal.iam.InAppMessagesStateImpl
 import com.reteno.core.internal.iam.InAppPresenter
-import com.reteno.core.internal.iam.WorkflowInAppState
+import com.reteno.core.internal.iam.DeliveryInAppState
 import com.reteno.core.view.iam.IamView
 import kotlinx.coroutines.sync.Mutex
 
@@ -39,12 +39,12 @@ internal class InAppGraph(
 
     val inAppQueue by lazy { SerialQueue(core.scope, "InApp", core.logSink) }
 
-    val workflowState: WorkflowInAppState by lazy {
-        WorkflowInAppState(core.api, infrastructure.db.inAppInteractionsDb, core.dispatchers, core.clock)
+    val deliveryState: DeliveryInAppState by lazy {
+        DeliveryInAppState(core.api, infrastructure.db.inAppInteractionsDb, core.dispatchers, core.clock)
     }
 
     private val inAppCache by lazy {
-        InAppMessagesCache(infrastructure.db.inAppMessagesDb, core.dispatchers, workflowState)
+        InAppMessagesCache(infrastructure.db.inAppMessagesDb, core.dispatchers, deliveryState)
     }
 
     val inAppDisplayRules: InAppDisplayRules by lazy {
@@ -68,7 +68,7 @@ internal class InAppGraph(
             display = inAppPresenter,
             lock = inAppTriggerLock,
             runner = core.runner,
-            workflow = workflowState
+            delivery = deliveryState
         )
     }
 
@@ -114,7 +114,7 @@ internal class InAppGraph(
             state = inAppMessagesState,
             dispatchers = core.dispatchers,
             runner = core.runner,
-            workflow = workflowState
+            delivery = deliveryState
         )
     }
 
@@ -142,7 +142,7 @@ internal class InAppGraph(
             scope = core.scope,
             dispatchers = core.dispatchers,
             newId = core.newId,
-            workflow = workflowState,
+            delivery = deliveryState,
             state = inAppMessagesState
         )
     }
@@ -158,7 +158,7 @@ internal class InAppGraph(
             newId = core.newId,
             runner = core.runner,
             api = core.api,
-            workflow = workflowState
+            delivery = deliveryState
         )
     }
 

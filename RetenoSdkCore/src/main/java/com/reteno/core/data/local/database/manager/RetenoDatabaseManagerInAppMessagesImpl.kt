@@ -40,9 +40,9 @@ internal class RetenoDatabaseManagerInAppMessagesImpl(
             message to InAppMessageSchema.COLUMN_IAM_ROW_ID,
             message to InAppMessageSchema.COLUMN_IAM_ID,
             message to InAppMessageSchema.COLUMN_IAM_INSTANCE_ID,
-            message to InAppMessageSchema.COLUMN_WORKFLOW_IID,
-            message to InAppMessageSchema.COLUMN_WORKFLOW_CONTEXT,
-            message to InAppMessageSchema.COLUMN_WORKFLOW_EXPIRY,
+            message to InAppMessageSchema.COLUMN_DELIVERY_IID,
+            message to InAppMessageSchema.COLUMN_DELIVERY_CONTEXT,
+            message to InAppMessageSchema.COLUMN_DELIVERY_EXPIRY,
             message to DbSchema.COLUMN_TIMESTAMP,
             message to InAppMessageSchema.COLUMN_IAM_DISPLAY_RULES,
             message to InAppMessageSchema.COLUMN_IAM_LAST_SHOW_TIME,
@@ -70,11 +70,11 @@ internal class RetenoDatabaseManagerInAppMessagesImpl(
             database.delete(
                 table = InAppMessageSchema.TABLE_NAME,
                 whereClause = if (it.iid == null) {
-                    "${InAppMessageSchema.COLUMN_IAM_ID}=? AND ${InAppMessageSchema.COLUMN_WORKFLOW_IID} IS NULL"
+                    "${InAppMessageSchema.COLUMN_IAM_ID}=? AND ${InAppMessageSchema.COLUMN_DELIVERY_IID} IS NULL"
                 } else {
-                    "${InAppMessageSchema.COLUMN_WORKFLOW_IID}=? AND ${InAppMessageSchema.COLUMN_WORKFLOW_CONTEXT}=?"
+                    "${InAppMessageSchema.COLUMN_DELIVERY_IID}=? AND ${InAppMessageSchema.COLUMN_DELIVERY_CONTEXT}=?"
                 },
-                whereArgs = if (it.iid == null) arrayOf(it.messageId.toString()) else arrayOf(it.iid, it.workflowContext)
+                whereArgs = if (it.iid == null) arrayOf(it.messageId.toString()) else arrayOf(it.iid, it.deliveryContext)
             )
         }
     }

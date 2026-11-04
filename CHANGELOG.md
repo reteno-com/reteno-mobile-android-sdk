@@ -9,13 +9,23 @@
 
 ### Changed
 
+- Changed standalone In-app clicks to the common POST observation endpoint, preserving full CTA data and the opened IID. Push status transport is unchanged. (#9)
+- Changed In-app selection to backend-provided priority and persisted terminal failure suppression. SDK clients use IID provenance instead of workflow flags. (#9)
 - Changed the local database schema from version 11 to 12 to retain workflow executions and retry state. Existing ordinary In-app history is preserved. (#9)
 
 ### Deprecated
 
 ### Removed
 
+- Removed the unreleased `inWorkflow` model/request flag and workflow-named technical adapters; delivery identity now follows the optional server IID and `serverAssignedIid` observation provenance. (#9)
 ### Fixed
+
+- Fixed In-app fallback to the next eligible message when preferred content becomes
+  unavailable before display, including expiry while display is paused.
+- Fixed cached server deliveries using stale rules or default priority before discovery succeeds after restart.
+- Fixed queued ordinary In-app clicks retaining their original account without being marked as server-assigned IIDs.
+- Fixed email and phone updates for the same identified user stranding In-app
+  observations or allowing completed deliveries to appear again.
 
 ### Security
 

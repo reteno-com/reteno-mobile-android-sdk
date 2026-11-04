@@ -11,8 +11,10 @@ data class InAppMessage(
     var content: InAppMessageContent? = null,
     var lastShowTime: Long? = null,
     var showCount: Long = 0,
-    val inWorkflow: Boolean = false,
     val iid: String? = null,
     val expiresAt: String? = null,
-    var workflowContext: String? = null
-)
+    var deliveryContext: String? = null,
+    val priority: Int = 10
+) {
+    val serverAssignedIid: Boolean get() = iid != null
+}

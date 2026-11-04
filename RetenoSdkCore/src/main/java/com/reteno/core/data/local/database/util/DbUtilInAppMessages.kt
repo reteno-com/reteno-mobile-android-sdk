@@ -20,9 +20,9 @@ fun ContentValues.putInAppMessage(inApp: InAppMessageDb) {
     put(InAppMessageSchema.COLUMN_IAM_LAYOUT_TYPE, inApp.layoutType)
     put(InAppMessageSchema.COLUMN_IAM_MODEL, inApp.model.toString())
     put(InAppMessageSchema.COLUMN_IAM_POSITION, inApp.position)
-    put(InAppMessageSchema.COLUMN_WORKFLOW_IID, inApp.iid)
-    put(InAppMessageSchema.COLUMN_WORKFLOW_CONTEXT, inApp.workflowContext)
-    put(InAppMessageSchema.COLUMN_WORKFLOW_EXPIRY, inApp.expiresAt)
+    put(InAppMessageSchema.COLUMN_DELIVERY_IID, inApp.iid)
+    put(InAppMessageSchema.COLUMN_DELIVERY_CONTEXT, inApp.deliveryContext)
+    put(InAppMessageSchema.COLUMN_DELIVERY_EXPIRY, inApp.expiresAt)
 }
 
 fun ContentValues.putSegment(parentRowId: Long, segment: SegmentDb) {
@@ -97,8 +97,8 @@ fun Cursor.getInAppMessage(): InAppMessageDb? {
         layoutType = layoutType,
         model = model,
         position = position,
-        iid = getStringOrNull(getColumnIndex(InAppMessageSchema.COLUMN_WORKFLOW_IID)),
-        workflowContext = getStringOrNull(getColumnIndex(InAppMessageSchema.COLUMN_WORKFLOW_CONTEXT)),
-        expiresAt = getStringOrNull(getColumnIndex(InAppMessageSchema.COLUMN_WORKFLOW_EXPIRY))
+        iid = getStringOrNull(getColumnIndex(InAppMessageSchema.COLUMN_DELIVERY_IID)),
+        deliveryContext = getStringOrNull(getColumnIndex(InAppMessageSchema.COLUMN_DELIVERY_CONTEXT)),
+        expiresAt = getStringOrNull(getColumnIndex(InAppMessageSchema.COLUMN_DELIVERY_EXPIRY))
     ).also { it.segment = segment }
 }
