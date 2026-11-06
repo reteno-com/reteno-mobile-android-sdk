@@ -14,6 +14,7 @@ import com.reteno.core.fixtures.api
 import com.reteno.core.fixtures.stubInAppMessage
 import com.reteno.core.fixtures.stubSegment
 import com.reteno.core.fixtures.testDispatchers
+import com.reteno.core.fixtures.deliveryState
 import com.reteno.test.given
 import com.reteno.test.runUnitTest
 import com.reteno.test.then
@@ -38,7 +39,7 @@ internal class CheckInAppSegmentsActionTest {
         var savedOnIo = false
         val sut = CheckInAppSegmentsAction(
             api = rest.api(dispatchers),
-            cache = InAppMessagesCache(inAppDb, dispatchers),
+            cache = InAppMessagesCache(inAppDb, dispatchers, deliveryState(dispatchers, rest)),
             clock = { NOW },
             lock = Mutex(),
             runner = traced.runner

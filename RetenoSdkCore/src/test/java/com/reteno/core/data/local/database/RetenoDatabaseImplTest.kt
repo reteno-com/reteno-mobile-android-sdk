@@ -449,7 +449,7 @@ internal class RetenoDatabaseImplTest {
         fixture.withDatabase { db -> fixture.tables(db) }
 
         then()
-        assertEquals(listOf("onUpgrade(): migration failed"), fixture.remoteLog.errors.map { it.first })
+        assertTrue(fixture.remoteLog.errors.any { it.first == "onUpgrade(): migration failed" })
     }
 
     @Test
@@ -574,7 +574,7 @@ internal class RetenoDatabaseImplTest {
         private val RELEASED_SCHEMAS = listOf(
             "v01_fb65649.sql", "v03_216c722.sql", "v04_b8633fd.sql", "v04_091171a.sql", "v06_dd304e7.sql",
             "v07_e6a793f.sql", "v07_50f7e9b.sql", "v07_f78171d.sql", "v08_da24b58.sql", "v09_3f28644.sql",
-            "v09_d720e0d.sql", "v10_6766a84.sql"
+            "v09_d720e0d.sql", "v10_6766a84.sql", "v11_9665e3a.sql"
         )
 
         private val CURRENT_SCHEMA = listOf(

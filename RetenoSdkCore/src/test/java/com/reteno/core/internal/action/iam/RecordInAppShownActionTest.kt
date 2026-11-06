@@ -6,6 +6,7 @@ import com.reteno.core.data.remote.model.iam.displayrules.frequency.FrequencyRul
 import com.reteno.core.fixtures.TestActionRunner
 import com.reteno.core.fixtures.stubInAppMessage
 import com.reteno.core.fixtures.testDispatchers
+import com.reteno.core.fixtures.deliveryState
 import com.reteno.test.given
 import com.reteno.test.runUnitTest
 import com.reteno.test.then
@@ -28,7 +29,7 @@ internal class RecordInAppShownActionTest {
         val saved = mutableListOf<List<InAppMessageDb>>()
         var savedOnIo = false
         val sut = RecordInAppShownAction(
-            cache = InAppMessagesCache(inAppDb, dispatchers),
+            cache = InAppMessagesCache(inAppDb, dispatchers, deliveryState(dispatchers)),
             clock = { NOW },
             lock = Mutex(),
             runner = traced.runner

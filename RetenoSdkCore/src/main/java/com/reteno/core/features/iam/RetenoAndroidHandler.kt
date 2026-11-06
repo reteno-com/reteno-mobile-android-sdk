@@ -7,7 +7,7 @@ internal abstract class RetenoAndroidHandler {
 
     @JavascriptInterface
     fun postMessage(event: String?): String {
-        /*@formatter:off*/ Logger.i(TAG, "postMessage(): WEB -> NATIVE ", "event = [", event, "]")
+        /*@formatter:off*/ Logger.d(TAG, "postMessage(): WEB -> NATIVE")
         /*@formatter:on*/
         onMessagePosted(event)
         return ""

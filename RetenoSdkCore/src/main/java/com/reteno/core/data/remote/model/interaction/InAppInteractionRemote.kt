@@ -1,6 +1,7 @@
 package com.reteno.core.data.remote.model.interaction
 
 import com.google.gson.annotations.SerializedName
+import com.reteno.core.domain.model.interaction.InteractionAction
 
 internal data class InAppInteractionRemote(
     @SerializedName("iid")
@@ -12,5 +13,7 @@ internal data class InAppInteractionRemote(
     @SerializedName("status")
     val status: String,
     @SerializedName("statusDescription")
-    val statusDescription: String? = null
+    val statusDescription: String? = null,
+    val serverAssignedIid: Boolean? = null,
+    val action: InteractionAction? = null
 )

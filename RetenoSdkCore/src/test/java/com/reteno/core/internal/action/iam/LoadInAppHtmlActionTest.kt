@@ -18,6 +18,9 @@ import com.reteno.core.fixtures.stubInAppContent
 import com.reteno.core.fixtures.stubInAppMessage
 import com.reteno.core.fixtures.stubUserDb
 import com.reteno.core.fixtures.testDispatchers
+import com.reteno.core.fixtures.deliveryState
+import com.reteno.core.fixtures.FakeRestClient
+import com.reteno.core.fixtures.api
 import com.reteno.test.given
 import com.reteno.test.runUnitTest
 import com.reteno.test.then
@@ -45,7 +48,9 @@ internal class LoadInAppHtmlActionTest {
             usersDb = usersDb,
             dispatchers = dispatchers,
             newId = { "html-1" },
-            runner = traced.runner
+            runner = traced.runner,
+            api = FakeRestClient().api(dispatchers),
+            delivery = deliveryState(dispatchers)
         )
 
         init {

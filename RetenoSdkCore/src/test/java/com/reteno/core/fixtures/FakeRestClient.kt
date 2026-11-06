@@ -18,7 +18,25 @@ internal data class SentRequest(
 )
 
 internal class FakeRestClient : RestClient {
+    var context = "test-context"
     val requests = mutableListOf<SentRequest>()
+
+    override fun deliveryContext(): String = context
+
+    override fun makeDeliveryRequest(
+        context: String,
+        method: HttpMethod,
+        url: ApiContract,
+        body: String,
+        responseCallback: ResponseCallback
+    ) {
+        if (context != this.context) {
+            responseCallback.onFailure(null, null, IllegalStateException("Delivery identity changed"))
+            return
+        }
+        makeRequest(method, url, body, null, null, 0, responseCallback)
+    }
+
     private val responses = ArrayDeque<(ResponseCallback) -> Unit>()
     private val responsesByAddress = mutableMapOf<String, ArrayDeque<(ResponseCallback) -> Unit>>()
 

@@ -14,7 +14,9 @@ data class InAppMessageContent(
     val layoutParams: InAppLayoutParams?,
 
     @SerializedName("model")
-    val model: JsonElement
+    val model: JsonElement,
+    val iid: String? = null,
+    val personalisation: JsonElement? = null
 ) {
     enum class InAppLayoutType(val key: String) {
         @SerializedName("FULL")

@@ -10,4 +10,8 @@ interface ResponseCallback {
 
     fun onFailure(statusCode: Int?, response: String?, throwable: Throwable?)
 
+    fun onFailure(statusCode: Int?, response: String?, throwable: Throwable?, headers: Map<String, List<String>>) {
+        onFailure(statusCode, response, throwable)
+    }
+
 }

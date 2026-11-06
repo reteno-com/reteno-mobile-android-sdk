@@ -2,7 +2,9 @@ package com.reteno.core.data.remote.api
 
 import com.reteno.core.BuildConfig
 import com.reteno.core.RetenoConfig
+import com.reteno.core.data.local.config.DeviceId
 import com.reteno.core.data.local.config.RestConfig
+import com.reteno.core.data.remote.mapper.toJson
 import com.reteno.core.domain.ResponseCallback
 import com.reteno.core.internal.log.LogPriority
 import com.reteno.core.internal.log.Redact
@@ -15,6 +17,7 @@ import java.io.OutputStream
 import java.io.OutputStreamWriter
 import java.net.HttpURLConnection
 import java.net.URLEncoder
+import java.security.MessageDigest
 
 internal class RestClientImpl(
     private val restConfig: RestConfig,
@@ -22,6 +25,34 @@ internal class RestClientImpl(
     private val logSink: RetenoLogSink,
     private val connections: HttpConnections = HttpsConnections
 ) : RestClient {
+
+    override fun deliveryContext(): String = deliveryContext(retenoConfigProvider().accessKey, restConfig.deviceId)
+
+    private fun deliveryContext(key: String, device: DeviceId): String {
+        val identified = !device.externalId.isNullOrBlank()
+        val identity = listOf(
+            key, device.id, device.externalId,
+            if (identified) null else device.email,
+            if (identified) null else device.phone
+        ).toJson().toByteArray(Charsets.UTF_8)
+        return MessageDigest.getInstance("SHA-256").digest(identity).joinToString("") { "%02x".format(it) }
+    }
+
+    override fun makeDeliveryRequest(
+        context: String,
+        method: HttpMethod,
+        url: ApiContract,
+        body: String,
+        responseCallback: ResponseCallback
+    ) {
+        val key = retenoConfigProvider().accessKey
+        val device = restConfig.deviceId
+        if (deliveryContext(key, device) != context) {
+            responseCallback.onFailure(null, null, IllegalStateException("Delivery identity changed"))
+            return
+        }
+        makeRequest(method, url, body, mapOf(HEADER_KEY to key, HEADER_DEVICE_ID to device.id), null, 0, responseCallback)
+    }
 
     override fun makeRequest(
         method: HttpMethod,
@@ -65,7 +96,7 @@ internal class RestClientImpl(
             if (code == HTTP_OK || code == HTTP_MOVED_PERMANENTLY || code == HTTP_FOUND) {
                 return Success(code, connection.headerFields, readText(connection.inputStream))
             }
-            return Failure(code, connection.errorStream?.let { readText(it) })
+            return Failure(code, connection.errorStream?.let { readText(it) }, connection.headerFields)
         } finally {
             connection.disconnect()
         }
@@ -143,10 +174,10 @@ internal class RestClientImpl(
         }
     }
 
-    private class Failure(code: Int, val body: String?) : HttpResponse(code) {
+    private class Failure(code: Int, val body: String?, val headers: Map<String, List<String>>) : HttpResponse(code) {
 
         override fun deliverTo(callback: ResponseCallback) {
-            callback.onFailure(code, body, null)
+            callback.onFailure(code, body, null, headers)
         }
     }
 

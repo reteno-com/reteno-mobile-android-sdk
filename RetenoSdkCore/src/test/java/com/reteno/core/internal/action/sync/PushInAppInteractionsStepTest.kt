@@ -42,7 +42,7 @@ internal class PushInAppInteractionsStepTest {
     fun `should report nothing to send without request when there are no in app interactions`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
-        every { fixture.inAppDb.getInteractions(1) } returns emptyList()
+        every { fixture.inAppDb.getPendingInteractions(any()) } returns emptyList()
 
         whenn()
         val outcome = fixture.sut().getOrThrow()
@@ -59,7 +59,7 @@ internal class PushInAppInteractionsStepTest {
         val fixture = SutFixture(this)
         val first = stubInAppInteractionDb(rowId = "1")
         val second = stubInAppInteractionDb(rowId = "2", status = "CLOSE")
-        every { fixture.inAppDb.getInteractions(1) } returnsMany listOf(listOf(first), listOf(second), emptyList())
+        every { fixture.inAppDb.getPendingInteractions(any()) } returnsMany listOf(listOf(first), listOf(second), emptyList())
 
         whenn()
         fixture.sut()
@@ -81,7 +81,7 @@ internal class PushInAppInteractionsStepTest {
     fun `should abort and keep in app interaction when server fails with repeatable error`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
-        every { fixture.inAppDb.getInteractions(1) } returns listOf(stubInAppInteractionDb())
+        every { fixture.inAppDb.getPendingInteractions(any()) } returns listOf(stubInAppInteractionDb())
         fixture.rest.failOffline()
 
         whenn()
@@ -96,7 +96,7 @@ internal class PushInAppInteractionsStepTest {
     fun `should drop rejected in app interaction and continue`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
-        every { fixture.inAppDb.getInteractions(1) } returnsMany listOf(listOf(stubInAppInteractionDb()), emptyList())
+        every { fixture.inAppDb.getPendingInteractions(any()) } returnsMany listOf(listOf(stubInAppInteractionDb()), emptyList())
         fixture.rest.failWith(404)
 
         whenn()
@@ -111,7 +111,7 @@ internal class PushInAppInteractionsStepTest {
     fun `should stop when sent in app interaction cannot be deleted`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
-        every { fixture.inAppDb.getInteractions(1) } returns listOf(stubInAppInteractionDb())
+        every { fixture.inAppDb.getPendingInteractions(any()) } returns listOf(stubInAppInteractionDb())
         every { fixture.inAppDb.deleteInteraction(any()) } returns false
 
         whenn()
@@ -122,11 +122,47 @@ internal class PushInAppInteractionsStepTest {
     }
 
     @Test
+    fun `should keep ordinary click queued in its original account and retry its unchanged client iid payload`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        val owner = fixture.rest.context
+        val click = stubInAppInteractionDb().copy(
+            status = "CLICKED",
+            deliveryContext = owner,
+            attempts = 3,
+            action = """{"type":"OPEN_URL","targetComponentId":"cta","url":"https://example.com"}"""
+        )
+        var pending = true
+        every { fixture.inAppDb.getPendingInteractions(any()) } answers {
+            if (firstArg<String>() == owner && pending) listOf(click) else emptyList()
+        }
+        every { fixture.inAppDb.deleteInteraction(click) } answers { pending = false; true }
+        fixture.rest.failOffline()
+        fixture.sut().getOrThrow()
+        val firstBody = fixture.rest.requests.single().body
+        fixture.rest.context = "account-b"
+        fixture.sut().getOrThrow()
+        val requestsInB = fixture.rest.requests.size
+        fixture.rest.context = owner
+
+        whenn()
+        fixture.sut().getOrThrow()
+
+        then()
+        assertEquals(1, requestsInB)
+        assertEquals(2, fixture.rest.requests.size)
+        assertEquals(firstBody, fixture.rest.requests.last().body)
+        assertFalse(requireNotNull(firstBody).contains("\"serverAssignedIid\":true"))
+        verify(exactly = 0) { fixture.inAppDb.recordAttempt(any()) }
+        assertFalse(pending)
+    }
+
+    @Test
     fun `should access local database on io dispatcher and trace steps`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
         var loadedOnIo = false
-        every { fixture.inAppDb.getInteractions(1) } answers {
+        every { fixture.inAppDb.getPendingInteractions(any()) } answers {
             loadedOnIo = fixture.dispatchers.markedIo.isRunningHere
             emptyList()
         }

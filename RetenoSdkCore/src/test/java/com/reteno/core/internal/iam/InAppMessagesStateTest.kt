@@ -88,7 +88,7 @@ internal class InAppMessagesStateTest {
         val toShow = fixture.sut.setPaused(false)
 
         then()
-        assertEquals(fixture.first, toShow)
+        assertEquals(fixture.first, toShow?.message)
     }
 
     @Test
@@ -148,7 +148,7 @@ internal class InAppMessagesStateTest {
         val toShow = fixture.sut.setPaused(false)
 
         then()
-        assertEquals(fixture.first, toShow)
+        assertEquals(fixture.first, toShow?.message)
     }
 
     @Test

@@ -86,6 +86,28 @@ internal class RetenoDatabaseImpl(
                 UserSchema.UserAttributesSchema.COLUMN_MARKET_ID,
                 UserSchema.UserAttributesSchema.SQL_UPGRADE_TABLE_VERSION_10
             )
+        ),
+        12 to (
+            InAppMessageSchema.SQL_UPGRADE_DELIVERY.map { statement ->
+                ColumnMigration(
+                    InAppMessageSchema.TABLE_NAME,
+                    statement.substringAfter(" ADD COLUMN ").substringBefore(' '),
+                    statement
+                )
+            } + listOf(
+                InAppInteractionSchema.SQL_UPGRADE_CONTEXT,
+                InAppInteractionSchema.SQL_UPGRADE_DELIVERED,
+                InAppInteractionSchema.SQL_UPGRADE_ATTEMPTS,
+                InAppInteractionSchema.SQL_UPGRADE_EXPIRY,
+                InAppInteractionSchema.SQL_UPGRADE_NEXT_ATTEMPT,
+                InAppInteractionSchema.SQL_UPGRADE_ACTION
+            ).map { statement ->
+                ColumnMigration(
+                    InAppInteractionSchema.TABLE_NAME_IN_APP_INTERACTION,
+                    statement.substringAfter(" ADD COLUMN ").substringBefore(' '),
+                    statement
+                )
+            }
         )
     )
 
@@ -179,6 +201,11 @@ internal class RetenoDatabaseImpl(
     override fun delete(table: String, whereClause: String?, whereArgs: Array<String?>?): Int =
         write("delete", table, failed = 0) {
             it.delete(table, whereClause, whereArgs)
+        }
+
+    override fun update(table: String, values: ContentValues, whereClause: String, whereArgs: Array<String?>): Int =
+        write("update", table, failed = 0) {
+            it.update(table, values, whereClause, whereArgs)
         }
 
     override fun getRowCount(tableName: String, whereClause: String?, whereArgs: Array<String?>?): Long =

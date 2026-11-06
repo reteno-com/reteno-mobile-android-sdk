@@ -25,6 +25,15 @@ internal class SuspendApiClient(
         callback.result ?: ApiResult.Failure(null, null, IllegalStateException(NO_CALLBACK))
     }
 
+    fun deliveryContext(): String = restClient.deliveryContext()
+
+    suspend fun deliveryRequest(context: String, contract: ApiContract, body: String): ApiResult =
+        withContext(dispatchers.io) {
+            val callback = CapturingCallback()
+            restClient.makeDeliveryRequest(context, HttpMethod.POST, contract, body, callback)
+            callback.result ?: ApiResult.Failure(null, null, IllegalStateException(NO_CALLBACK))
+        }
+
     private class CapturingCallback : ResponseCallback {
         var result: ApiResult? = null
 
@@ -38,6 +47,15 @@ internal class SuspendApiClient(
 
         override fun onFailure(statusCode: Int?, response: String?, throwable: Throwable?) {
             result = ApiResult.Failure(statusCode, response, throwable)
+        }
+
+        override fun onFailure(
+            statusCode: Int?,
+            response: String?,
+            throwable: Throwable?,
+            headers: Map<String, List<String>>
+        ) {
+            result = ApiResult.Failure(statusCode, response, throwable, headers)
         }
     }
 
