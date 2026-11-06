@@ -25,7 +25,7 @@ class RetenoNotificationClickedReceiver : BroadcastReceiver() {
         handler.dismissAndNotifyHost()
         val deeplinkIntent = handler.deeplinkIntent() ?: return launchApp(context, intent)
         try {
-            context.startActivity(deeplinkIntent)
+            context.startActivity(deeplinkIntent, appLaunchOptions())
         } catch (ex: ActivityNotFoundException) {
             launchApp(context, deeplinkIntent)
         }
@@ -34,7 +34,9 @@ class RetenoNotificationClickedReceiver : BroadcastReceiver() {
     private fun launchApp(context: Context, intent: Intent) {
         val launchIntent = IntentHandler.AppLaunchIntent.getAppLaunchIntent(context) ?: return
         intent.extras?.let(launchIntent::putExtras)
-        if (NotificationClickHandler.shouldOpenApp(intent.extras)) context.startActivity(launchIntent)
+        if (NotificationClickHandler.shouldOpenApp(intent.extras)) {
+            context.startActivity(launchIntent, appLaunchOptions())
+        }
     }
 
     companion object {

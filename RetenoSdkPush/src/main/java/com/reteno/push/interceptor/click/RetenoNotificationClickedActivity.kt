@@ -11,13 +11,13 @@ class RetenoNotificationClickedActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        finish()
         if (!isOsVersionSupported()) return
         try {
             handleClick(intent)
         } catch (ex: Throwable) {
             Logger.e(TAG, "onCreate(): ", ex)
         }
-        finish()
     }
 
     private fun handleClick(intent: Intent) {
@@ -27,7 +27,7 @@ class RetenoNotificationClickedActivity : Activity() {
         handler.dismissAndNotifyHost()
         val deeplinkIntent = handler.deeplinkIntent() ?: return launchApp(intent)
         try {
-            startActivity(deeplinkIntent)
+            startActivity(deeplinkIntent, appLaunchOptions())
         } catch (ex: ActivityNotFoundException) {
             launchApp(deeplinkIntent)
         }
@@ -36,7 +36,7 @@ class RetenoNotificationClickedActivity : Activity() {
     private fun launchApp(intent: Intent) {
         val launchIntent = IntentHandler.AppLaunchIntent.getAppLaunchIntent(this) ?: return
         intent.component = launchIntent.component
-        if (NotificationClickHandler.shouldOpenApp(intent.extras)) startActivity(intent)
+        if (NotificationClickHandler.shouldOpenApp(intent.extras)) startActivity(intent, appLaunchOptions())
     }
 
     companion object {
