@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- Responses sent with `Content-Encoding: gzip` are unpacked before they are read. Requests with a body (POST, PUT)
+  ask for gzip explicitly, so Android's HTTP stack passed such answers on still compressed and they could not be
+  read.
+
 ## 2.11.0
 
 The SDK internals were rebuilt on Kotlin coroutines. The public API (`Reteno`, `RetenoConfig`, `AppInbox`,
