@@ -2,6 +2,33 @@
 
 ## Unreleased
 
+### Added
+
+- `Reteno.useDeviceLanguage()` stops using the `languageCode` set in user attributes as the device's language and
+  returns to automatic detection. The contact keeps the last `languageCode` it was given. Without such a
+  `languageCode` the call does nothing.
+
+### Changed
+
+- The device's `languageCode` follows the language the app shows instead of `Locale.getDefault()`, which Android
+  resets to the system language on every configuration change, so the device language flipped between the app's and
+  the system's and the device was sent again each time. The language is detected once per process, on the first app
+  foreground, after the visible screen has stayed resumed for a second, and every device update in that process uses
+  it; the device is sent again only when it changed. In order: a `languageCode` set in user attributes; the app's own
+  configuration language when it differs from the system's (per-app language on Android 13+,
+  `AppCompatDelegate.setApplicationLocales`); the visible screen's language when it differs from the system's (an
+  in-app language on Android 12 and lower, or one the app sets on its activities); otherwise `Locale.getDefault()`
+  when it differs from the system's, kept until the system language changes; otherwise the system language. A device
+  updated before any screen was shown (a push in the background) uses the last detected language. Detected languages
+  without a region get one (`uk` → `uk-UA`), and Unicode extensions such as Android 14 regional preferences
+  (`en-US-u-mu-celsius`) are no longer sent. The device is registered after the language is detected; in-app
+  messages are fetched without waiting for it.
+- A `languageCode` set with `setUserAttributes`, `setMultiAccountUserAttributes` or `setAnonymousUserAttributes`
+  also becomes the device's language and wins over detection until `useDeviceLanguage()` is called. It must contain
+  a region (`de-AT`); a code without one (`de`, `de_AT`) is dropped with a warning in the log and the other attributes
+  are still saved. Valid codes are sent in canonical case and without Unicode extensions (`de-at` → `de-AT`,
+  `de-AT-u-mu-celsius` → `de-AT`).
+
 ### Fixed
 
 - Responses sent with `Content-Encoding: gzip` are unpacked before they are read. Requests with a body (POST, PUT)

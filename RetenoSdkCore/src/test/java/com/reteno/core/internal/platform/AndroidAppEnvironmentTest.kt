@@ -6,6 +6,7 @@ import android.app.NotificationManager
 import android.content.Context
 import android.content.ContextWrapper
 import android.content.pm.PackageInfo
+import android.content.res.Configuration
 import android.telephony.TelephonyManager
 import androidx.test.core.app.ApplicationProvider
 import com.reteno.core.R
@@ -24,6 +25,8 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
+import org.robolectric.util.ReflectionHelpers
+import org.robolectric.util.ReflectionHelpers.ClassParameter
 import java.util.Locale
 import java.util.TimeZone
 
@@ -63,6 +66,33 @@ internal class AndroidAppEnvironmentTest {
         fun phoneType(type: Int) {
             val telephony = application.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
             shadowOf(telephony).setPhoneType(type)
+        }
+
+        inline fun <T> restoringDefaultLocale(block: () -> T): T {
+            val initial = Locale.getDefault()
+            try {
+                return block()
+            } finally {
+                Locale.setDefault(initial)
+            }
+        }
+
+        fun appOverridesLanguage(tag: String) {
+            Locale.setDefault(Locale.forLanguageTag(tag))
+        }
+
+        fun systemDeliversConfigurationChange() {
+            val activityThread = ReflectionHelpers.callStaticMethod<Any>(
+                Class.forName("android.app.ActivityThread"),
+                "currentActivityThread"
+            )
+            val newConfiguration = Configuration(application.resources.configuration)
+            ReflectionHelpers.callInstanceMethod<Unit>(
+                activityThread,
+                "handleConfigurationChanged",
+                ClassParameter.from(Configuration::class.java, newConfiguration),
+                ClassParameter.from(Class.forName("android.content.res.CompatibilityInfo"), null)
+            )
         }
     }
 
@@ -188,17 +218,18 @@ internal class AndroidAppEnvironmentTest {
         )
 
         whenn()
-        val device = fixture.sut.createDevice(deviceId, "token", pushSubscribed = false)
+        val device = fixture.sut.createDevice(deviceId, "token", pushSubscribed = false, languageCode = "pl-PL")
 
         then()
         assertEquals(
-            listOf(deviceId.id, "suffix", "user-1", "token", false, "a@b.c", "+100", null),
+            listOf(deviceId.id, "suffix", "user-1", "token", false, "pl-PL", "a@b.c", "+100", null),
             listOf(
                 device.deviceId,
                 device.deviceIdSuffix,
                 device.externalUserId,
                 device.pushToken,
                 device.pushSubscribed,
+                device.languageCode,
                 device.email,
                 device.phone,
                 device.advertisingId
@@ -213,15 +244,108 @@ internal class AndroidAppEnvironmentTest {
         fixture.installedVersion("3.1", 31)
 
         whenn()
-        val device = fixture.sut.createDevice(DeviceId(idBody = "body"), "token", pushSubscribed = true)
+        val device = fixture.sut.createDevice(
+            DeviceId(idBody = "body"),
+            "token",
+            pushSubscribed = true,
+            languageCode = "de-AT"
+        )
 
         then()
         assertEquals("3.1 (31)", device.appVersion)
         assertEquals(DeviceOS.ANDROID, device.osType)
         assertTrue(device.osVersion!!.endsWith("(API 26)"))
         assertTrue(device.deviceModel!!.isNotBlank())
-        assertEquals(Locale.getDefault().toLanguageTag(), device.languageCode)
+        assertEquals("de-AT", device.languageCode)
         assertEquals(TimeZone.getDefault().toZoneId().id, device.timeZone)
+    }
+
+    @Test
+    @Config(qualifiers = "uk-rUA")
+    fun `should read the same system locale after the app overrides its default locale`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.restoringDefaultLocale {
+            whenn()
+            fixture.appOverridesLanguage("en")
+            val systemLocale = fixture.sut.systemLocale()
+
+            then()
+            assertEquals("uk-UA", systemLocale.toLanguageTag())
+        }
+    }
+
+    @Test
+    @Config(qualifiers = "uk-rUA")
+    fun `should read the same system locale after a configuration change resets the default locale`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.restoringDefaultLocale {
+            fixture.appOverridesLanguage("en")
+
+            whenn()
+            fixture.systemDeliversConfigurationChange()
+            val systemLocale = fixture.sut.systemLocale()
+
+            then()
+            assertEquals("uk-UA", systemLocale.toLanguageTag())
+        }
+    }
+
+    @Test
+    @Config(qualifiers = "uk-rUA")
+    fun `should read the locale of the app configuration and not the default locale`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.restoringDefaultLocale {
+            fixture.appOverridesLanguage("en")
+
+            whenn()
+            val appLocale = fixture.sut.appLocale()
+
+            then()
+            assertEquals("uk-UA", appLocale.toLanguageTag())
+        }
+    }
+
+    @Test
+    @Config(qualifiers = "uk-rUA")
+    fun `should read the default locale the app set`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.restoringDefaultLocale {
+            fixture.appOverridesLanguage("en")
+
+            whenn()
+            val defaultLocale = fixture.sut.defaultLocale()
+
+            then()
+            assertEquals("en", defaultLocale.toLanguageTag())
+        }
+    }
+
+    @Test
+    fun `should find the likely region of a language`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+
+        whenn()
+        val region = fixture.sut.likelyRegion("uk")
+
+        then()
+        assertEquals("UA", region)
+    }
+
+    @Test
+    fun `should find no likely region of an unknown language`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+
+        whenn()
+        val region = fixture.sut.likelyRegion("zz")
+
+        then()
+        assertEquals("", region)
     }
 
     @Test
@@ -231,7 +355,12 @@ internal class AndroidAppEnvironmentTest {
         fixture.phoneType(TelephonyManager.PHONE_TYPE_GSM)
 
         whenn()
-        val device = fixture.sut.createDevice(DeviceId(idBody = "body"), "token", pushSubscribed = true)
+        val device = fixture.sut.createDevice(
+            DeviceId(idBody = "body"),
+            "token",
+            pushSubscribed = true,
+            languageCode = "de-AT"
+        )
 
         then()
         assertEquals(DeviceCategory.MOBILE, device.category)
@@ -244,7 +373,12 @@ internal class AndroidAppEnvironmentTest {
         fixture.phoneType(TelephonyManager.PHONE_TYPE_NONE)
 
         whenn()
-        val device = fixture.sut.createDevice(DeviceId(idBody = "body"), "token", pushSubscribed = true)
+        val device = fixture.sut.createDevice(
+            DeviceId(idBody = "body"),
+            "token",
+            pushSubscribed = true,
+            languageCode = "de-AT"
+        )
 
         then()
         assertEquals(DeviceCategory.TABLET, device.category)
@@ -256,7 +390,12 @@ internal class AndroidAppEnvironmentTest {
         val fixture = SutFixture(NoTelephonyContext(ApplicationProvider.getApplicationContext()))
 
         whenn()
-        val device = fixture.sut.createDevice(DeviceId(idBody = "body"), "token", pushSubscribed = true)
+        val device = fixture.sut.createDevice(
+            DeviceId(idBody = "body"),
+            "token",
+            pushSubscribed = true,
+            languageCode = "de-AT"
+        )
 
         then()
         assertEquals(DeviceCategory.MOBILE, device.category)

@@ -5,6 +5,7 @@ import android.content.SharedPreferences
 import com.reteno.core.RetenoConfig
 import com.reteno.core.data.local.config.DeviceId
 import com.reteno.core.domain.model.event.LifecycleTrackingOptions
+import com.reteno.core.internal.action.device.DetectedLanguage
 import com.reteno.core.internal.lifecycle.SessionTracker
 import java.util.UUID
 
@@ -160,6 +161,26 @@ internal class SharedPrefsManager(
         return builder.build()
     }
 
+    fun getExplicitDeviceLanguage(): String? = string(PREF_KEY_DEVICE_LANGUAGE_EXPLICIT)
+
+    fun saveExplicitDeviceLanguage(languageCode: String?) =
+        save { putString(PREF_KEY_DEVICE_LANGUAGE_EXPLICIT, languageCode) }
+
+    fun getDetectedDeviceLanguage(): DetectedLanguage? {
+        val languageCode = string(PREF_KEY_DEVICE_LANGUAGE_DETECTED) ?: return null
+        return DetectedLanguage(
+            languageCode = languageCode,
+            systemLanguageCode = string(PREF_KEY_DEVICE_LANGUAGE_SYSTEM),
+            source = string(PREF_KEY_DEVICE_LANGUAGE_SOURCE)
+        )
+    }
+
+    fun saveDetectedDeviceLanguage(detected: DetectedLanguage) = save {
+        putString(PREF_KEY_DEVICE_LANGUAGE_DETECTED, detected.languageCode)
+        putString(PREF_KEY_DEVICE_LANGUAGE_SYSTEM, detected.systemLanguageCode)
+        putString(PREF_KEY_DEVICE_LANGUAGE_SOURCE, detected.source)
+    }
+
     fun getLastStoredId(): String = string(PREF_KEY_CONFIG_LAST_STORED_ID).orEmpty()
 
     private fun string(key: String): String? = sharedPreferences.getString(key, null)
@@ -207,5 +228,9 @@ internal class SharedPrefsManager(
         private const val PREF_KEY_CONFIG_DEBUG = "config_debug"
         private const val PREF_KEY_CONFIG_LAST_STORED_ID = "config_last_id"
         private const val PREF_KEY_CONFIG_HAS_CUSTOM_ID = "config_has_custom_id"
+        private const val PREF_KEY_DEVICE_LANGUAGE_EXPLICIT = "device_language_explicit"
+        private const val PREF_KEY_DEVICE_LANGUAGE_DETECTED = "device_language_detected"
+        private const val PREF_KEY_DEVICE_LANGUAGE_SYSTEM = "device_language_system"
+        private const val PREF_KEY_DEVICE_LANGUAGE_SOURCE = "device_language_source"
     }
 }

@@ -3,10 +3,12 @@ package com.reteno.core.internal.action.device
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerDevice
 import com.reteno.core.data.repository.ConfigRepository
 import com.reteno.core.fixtures.FakeAppPlatform
+import com.reteno.core.fixtures.FakeDeviceLanguage
 import com.reteno.core.fixtures.FakeSyncTrigger
 import com.reteno.core.fixtures.TestActionRunner
 import com.reteno.core.fixtures.stubDeviceId
 import com.reteno.core.fixtures.testDispatchers
+import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.justRun
 import io.mockk.mockk
@@ -21,7 +23,8 @@ internal class DeviceActionFixture(scope: TestScope) {
     val dispatchers = scope.testDispatchers()
     val traced = TestActionRunner(scope)
     val platform = FakeAppPlatform()
-    val currentDevice = CurrentDevice(configRepository, devicesDb, platform, dispatchers)
+    val deviceLanguage = FakeDeviceLanguage()
+    val currentDevice = CurrentDevice(configRepository, devicesDb, platform, deviceLanguage, dispatchers)
 
     init {
         every { configRepository.getDeviceId() } returns deviceId
@@ -30,5 +33,6 @@ internal class DeviceActionFixture(scope: TestScope) {
         every { devicesDb.getDevices(any()) } returns emptyList()
         justRun { devicesDb.insertDevice(any()) }
         justRun { devicesDb.deleteDevices(any()) }
+        coEvery { configRepository.getFcmToken() } returns "token"
     }
 }

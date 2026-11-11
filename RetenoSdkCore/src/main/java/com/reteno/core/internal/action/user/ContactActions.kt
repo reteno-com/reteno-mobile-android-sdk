@@ -10,6 +10,8 @@ internal interface ContactActions {
 
     fun submitAnonymousUserAttributes(attributes: UserAttributesAnonymous)
 
+    fun submitUseDeviceLanguage()
+
     fun submitFcmToken(token: String)
 
     fun submitNotificationsEnabled(enabled: Boolean)

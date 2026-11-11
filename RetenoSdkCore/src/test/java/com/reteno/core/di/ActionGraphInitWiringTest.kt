@@ -1,10 +1,12 @@
 package com.reteno.core.di
 
 import com.reteno.core.data.local.config.DeviceIdMode
+import com.reteno.core.data.local.model.device.DeviceDb
 import com.reteno.core.data.remote.api.ApiContract
 import com.reteno.core.fixtures.ActionGraphFixture
 import com.reteno.core.fixtures.stubConfig
 import com.reteno.core.fixtures.stubInAppMessage
+import com.reteno.core.internal.action.device.DetectedLanguage
 import com.reteno.core.internal.coroutine.InitState
 import com.reteno.test.given
 import com.reteno.test.runUnitTest
@@ -16,6 +18,7 @@ import io.mockk.every
 import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -23,6 +26,7 @@ import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import java.util.Locale
 
 @OptIn(ExperimentalCoroutinesApi::class)
 internal class ActionGraphInitWiringTest {
@@ -169,6 +173,30 @@ internal class ActionGraphInitWiringTest {
         verify(exactly = 1) { fixture.env.sessionHandler.start() }
         assertEquals(1, fixture.env.rest.requests.count { it.contract == ApiContract.InAppMessages.GetInAppMessages })
         verify(exactly = 1) { fixture.env.sessionHandler.stop() }
+    }
+
+    @Test
+    fun `should register the device with the language of the settled screen when the sdk starts`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this, initialized = true)
+        var detected: DetectedLanguage? = null
+        every { fixture.env.prefs.getExplicitDeviceLanguage() } returns null
+        every { fixture.env.prefs.getDetectedDeviceLanguage() } answers { detected }
+        every { fixture.env.prefs.saveDetectedDeviceLanguage(any()) } answers { detected = firstArg() }
+        val devices = mutableListOf<DeviceDb>()
+        every { fixture.env.devicesDb.getDevices(any()) } answers { devices.toList() }
+        every { fixture.env.devicesDb.insertDevice(any()) } answers { devices += firstArg<DeviceDb>() }
+        coEvery { fixture.env.configRepository.getFcmToken() } returns "token"
+        fixture.env.platform.displayedLocale = Locale.forLanguageTag("en-US")
+        fixture.env.platform.activityResumed = true
+
+        whenn()
+        fixture.env.sut.control.requestStart()
+        advanceTimeBy(1_001)
+        runCurrent()
+
+        then()
+        assertEquals(setOf("en-US"), devices.map { it.languageCode }.toSet())
     }
 
     @Test

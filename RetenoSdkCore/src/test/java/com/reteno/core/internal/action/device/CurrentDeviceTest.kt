@@ -5,6 +5,7 @@ import com.reteno.core.data.local.mappers.toDb
 import com.reteno.core.data.local.model.BooleanDb
 import com.reteno.core.data.repository.ConfigRepository
 import com.reteno.core.fixtures.FakeAppPlatform
+import com.reteno.core.fixtures.FakeDeviceLanguage
 import com.reteno.core.fixtures.TestActionRunner
 import com.reteno.core.fixtures.stubDevice
 import com.reteno.core.fixtures.stubDeviceId
@@ -32,7 +33,8 @@ internal class CurrentDeviceTest {
         val dispatchers = scope.testDispatchers()
         val traced = TestActionRunner(scope)
         val platform = FakeAppPlatform()
-        val sut = CurrentDevice(configRepository, devicesDb, platform, dispatchers)
+        val deviceLanguage = FakeDeviceLanguage()
+        val sut = CurrentDevice(configRepository, devicesDb, platform, deviceLanguage, dispatchers)
 
         init {
             every { configRepository.getDeviceId() } returns deviceId
@@ -56,6 +58,23 @@ internal class CurrentDeviceTest {
         then()
         assertTrue(saved)
         verify(exactly = 1) { fixture.devicesDb.insertDevice(stubDevice(fixture.deviceId, "new-token", false).toDb()) }
+    }
+
+    @Test
+    fun `should save device with the resolved device language`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        every { fixture.devicesDb.getDevices(any()) } returns emptyList()
+        fixture.deviceLanguage.detected = "de-AT"
+
+        whenn()
+        fixture.traced.runner("Test") {
+            fixture.sut.save(this, pushToken = "token", pushSubscribed = true)
+        }
+
+        then()
+        val expected = stubDevice(fixture.deviceId, "token", true, languageCode = "de-AT").toDb()
+        verify(exactly = 1) { fixture.devicesDb.insertDevice(expected) }
     }
 
     @Test

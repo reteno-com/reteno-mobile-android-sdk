@@ -6,8 +6,10 @@ import android.content.Context
 import androidx.lifecycle.LifecycleOwner
 import com.reteno.core.internal.iam.InAppScreen
 import com.reteno.core.lifecycle.RetenoActivityHelper
+import com.reteno.core.lifecycle.RetenoLifecycleCallbacks
 import com.reteno.core.lifecycle.ScreenTrackingTrigger
 import com.reteno.core.view.iam.AndroidInAppScreen
+import java.util.Locale
 
 internal interface HostUi {
     fun trackActivities()
@@ -19,6 +21,12 @@ internal interface HostUi {
     fun packageOnTop(activity: Activity): String?
 
     fun inAppScreen(): InAppScreen
+
+    fun watchResumedActivities(onResumed: () -> Unit)
+
+    fun stopWatchingResumedActivities()
+
+    fun displayedLocale(): Locale?
 }
 
 internal class AndroidHostUi(
@@ -53,4 +61,28 @@ internal class AndroidHostUi(
     override fun packageOnTop(activity: Activity): String? = TopActivity.packageOf(activity)
 
     override fun inAppScreen(): InAppScreen = AndroidInAppScreen(context, activityHelper, broadcaster)
+
+    override fun watchResumedActivities(onResumed: () -> Unit) {
+        val callbacks = object : RetenoLifecycleCallbacks {
+            override fun resume(activity: Activity) = onResumed()
+
+            override fun start(activity: Activity) = Unit
+
+            override fun pause(activity: Activity) = Unit
+
+            override fun stop(activity: Activity) = Unit
+        }
+        activityHelper.registerActivityLifecycleCallbacks(RESUME_WATCHER_KEY, callbacks)
+    }
+
+    override fun stopWatchingResumedActivities() {
+        activityHelper.unregisterActivityLifecycleCallbacks(RESUME_WATCHER_KEY)
+    }
+
+    override fun displayedLocale(): Locale? {
+        val activity = activityHelper.currentActivity ?: return null
+        return activity.resources.configuration.locales[0]
+    }
 }
+
+private const val RESUME_WATCHER_KEY = "ResumedActivityWatcher"

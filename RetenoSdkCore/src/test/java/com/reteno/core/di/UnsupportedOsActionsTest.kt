@@ -59,6 +59,7 @@ internal class UnsupportedOsActionsTest {
             sut.contact.submitUserAttributes("user-1", stubUser())
             sut.contact.submitMultiAccountUserAttributes("account-1", null)
             sut.contact.submitAnonymousUserAttributes(stubAnonymousAttributes())
+            sut.contact.submitUseDeviceLanguage()
             sut.contact.submitFcmToken("token")
             sut.contact.submitNotificationsEnabled(true)
             sut.events.submitEvent(stubCustomEvent())

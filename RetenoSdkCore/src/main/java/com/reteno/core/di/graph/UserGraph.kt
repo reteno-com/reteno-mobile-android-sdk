@@ -24,6 +24,7 @@ internal class UserGraph(
             configRepository = infrastructure.configRepository,
             usersDb = infrastructure.db.usersDb,
             currentDevice = graph.device.currentDevice,
+            deviceLanguage = graph.device.deviceLanguage,
             sync = graph.sync.dataSync,
             session = graph.device.contactSession,
             sdk = graph.init.sdk,
@@ -43,12 +44,14 @@ internal class UserGraph(
 
     val setAnonymousUserAttributes: SetAnonymousUserAttributesAction by lazy {
         SetAnonymousUserAttributesAction(
-            infrastructure.configRepository,
-            infrastructure.db.usersDb,
-            graph.sync.dataSync,
-            core.remoteLog,
-            core.dispatchers,
-            core.runner
+            configRepository = infrastructure.configRepository,
+            usersDb = infrastructure.db.usersDb,
+            deviceLanguage = graph.device.deviceLanguage,
+            currentDevice = graph.device.currentDevice,
+            sync = graph.sync.dataSync,
+            remoteLog = core.remoteLog,
+            dispatchers = core.dispatchers,
+            runner = core.runner
         )
     }
 }

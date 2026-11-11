@@ -16,6 +16,8 @@ internal interface ActionTrace {
     suspend fun <T> step(name: String, detail: (T) -> String = { "" }, block: suspend () -> T): T
 
     fun note(message: () -> String)
+
+    fun warn(message: () -> String)
 }
 
 internal class ActionTraceElement(val trace: ActionTraceImpl) : AbstractCoroutineContextElement(Key) {
@@ -95,6 +97,11 @@ internal class ActionTraceImpl(
     override fun note(message: () -> String) {
         ensureStarted()
         emit(LogPriority.DEBUG) { TraceFormatter.note(depth, id, message()) }
+    }
+
+    override fun warn(message: () -> String) {
+        ensureStarted()
+        emit(LogPriority.WARN) { TraceFormatter.note(depth, id, message()) }
     }
 
     fun finishSuccess(value: Any?) {

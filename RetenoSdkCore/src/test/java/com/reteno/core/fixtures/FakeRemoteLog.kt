@@ -12,6 +12,9 @@ internal class FakeRemoteLog : RemoteLog {
     val infos: List<String>
         get() = entries.filter { it.second == LogLevel.INFO }.map { it.first }
 
+    val warnings: List<String>
+        get() = entries.filter { it.second == LogLevel.WARNING }.map { it.first }
+
     override fun record(message: String, level: LogLevel) {
         entries += message to level
     }

@@ -2,9 +2,12 @@ package com.reteno.core.internal.action.user
 
 import com.reteno.core.data.local.mappers.toDb
 import com.reteno.core.domain.model.user.User
+import com.reteno.core.domain.model.user.UserAttributes
 import com.reteno.core.fixtures.stubDevice
 import com.reteno.core.fixtures.stubUser
 import com.reteno.core.internal.action.sync.SyncScope
+import com.reteno.core.internal.action.trace.TraceFormatter
+import com.reteno.core.internal.log.LogPriority
 import com.reteno.test.given
 import com.reteno.test.runUnitTest
 import com.reteno.test.then
@@ -156,5 +159,105 @@ internal class ContactWriterTest {
         assertTrue(lines.any { it.contains("✓ clear current session") })
         assertTrue(lines.any { it.contains("✓ save device id suffix to local settings") })
         assertTrue(lines.any { it.contains("✓ start sdk after account switch") })
+    }
+
+    @Test
+    fun `should save language code with region in canonical case`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        val user = stubUser(languageCode = "DE-at")
+
+        whenn()
+        fixture.write(suffix = null, externalUserId = "new-user", user = user)
+
+        then()
+        val expected = stubUser(languageCode = "de-AT").toDb(fixture.env.deviceId)
+        verify(exactly = 1) { fixture.env.usersDb.insertUser(expected) }
+    }
+
+    @Test
+    fun `should use language code as explicit device language before saving the device`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        val user = stubUser(languageCode = "de-AT")
+
+        whenn()
+        fixture.write(suffix = null, externalUserId = "new-user", user = user)
+
+        then()
+        assertEquals(listOf("use explicit de-AT"), fixture.env.deviceLanguage.calls)
+        val expected = stubDevice(fixture.env.deviceId, "token", true, languageCode = "de-AT").toDb()
+        verify(exactly = 1) { fixture.env.devicesDb.insertDevice(expected) }
+    }
+
+    @Test
+    fun `should keep device language when the user sets no language code`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+
+        whenn()
+        fixture.write(suffix = null, externalUserId = "new-user", user = stubUser())
+
+        then()
+        assertEquals(emptyList<String>(), fixture.env.deviceLanguage.calls)
+    }
+
+    @Test
+    fun `should save user without a language code that has no region`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        val user = stubUser(languageCode = "de")
+
+        whenn()
+        fixture.write(suffix = null, externalUserId = "new-user", user = user)
+
+        then()
+        verify(exactly = 1) { fixture.env.usersDb.insertUser(stubUser().toDb(fixture.env.deviceId)) }
+        assertEquals(emptyList<String>(), fixture.env.deviceLanguage.calls)
+    }
+
+    @Test
+    fun `should warn in trace when language code without region is dropped`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        val user = stubUser(languageCode = "de")
+
+        whenn()
+        fixture.write(suffix = null, externalUserId = "new-user", user = user)
+
+        then()
+        val warning = fixture.env.traced.sink.entries.single { it.priority == LogPriority.WARN }
+        assertEquals(TraceFormatter.note(0, "r1", LANGUAGE_CODE_DROPPED), warning.message)
+    }
+
+    @Test
+    fun `should report dropped language code to remote log without its value`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        val user = stubUser(languageCode = "de")
+
+        whenn()
+        fixture.write(suffix = null, externalUserId = "new-user", user = user)
+
+        then()
+        assertEquals(listOf("SetUserAttributes: languageCode without region dropped"), fixture.env.remoteLog.warnings)
+    }
+
+    @Test
+    fun `should reject user whose only attribute is a language code without region`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        val user = User(userAttributes = UserAttributes(languageCode = "de"))
+
+        whenn()
+        fixture.write(suffix = null, externalUserId = "new-user", user = user)
+
+        then()
+        verify(exactly = 0) { fixture.env.usersDb.insertUser(any()) }
+        assertEquals(listOf("SetUserAttributes: user rejected by validation"), fixture.env.invalidReports)
+    }
+
+    private companion object {
+        const val LANGUAGE_CODE_DROPPED = "languageCode dropped: it must contain a region, e.g. de-AT"
     }
 }

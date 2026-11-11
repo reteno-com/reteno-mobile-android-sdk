@@ -11,6 +11,7 @@ import com.reteno.core.internal.platform.BackgroundWork
 import com.reteno.core.internal.platform.HostUi
 import com.reteno.core.internal.platform.LogEventOrigin
 import com.reteno.core.lifecycle.ScreenTrackingTrigger
+import java.util.Locale
 
 internal class FakeAppPlatform : AppEnvironment, AppBroadcasts, HostUi, BackgroundWork {
     val broadcasts = mutableListOf<String>()
@@ -38,6 +39,14 @@ internal class FakeAppPlatform : AppEnvironment, AppBroadcasts, HostUi, Backgrou
         deviceModel = "PIXEL 8"
     )
     var originReads = 0
+    var systemLocale: Locale = Locale.forLanguageTag("uk-UA")
+    var appLocale: Locale = Locale.forLanguageTag("uk-UA")
+    var defaultLocale: Locale = Locale.forLanguageTag("uk-UA")
+    var displayedLocale: Locale? = null
+    var onDisplayedLocaleRead: () -> Unit = {}
+    var activityResumed = false
+    private var onActivityResumed: (() -> Unit)? = null
+    val likelyRegions = mutableMapOf("uk" to "UA", "en" to "US", "de" to "DE")
 
     override fun send(action: String): Int {
         broadcasts += action
@@ -82,8 +91,41 @@ internal class FakeAppPlatform : AppEnvironment, AppBroadcasts, HostUi, Backgrou
         calls += "cancel background sync"
     }
 
-    override fun createDevice(deviceId: DeviceId, pushToken: String, pushSubscribed: Boolean): Device =
-        stubDevice(deviceId, pushToken, pushSubscribed)
+    override fun createDevice(
+        deviceId: DeviceId,
+        pushToken: String,
+        pushSubscribed: Boolean,
+        languageCode: String
+    ): Device = stubDevice(deviceId, pushToken, pushSubscribed, languageCode)
+
+    override fun systemLocale(): Locale = systemLocale
+
+    override fun appLocale(): Locale = appLocale
+
+    override fun defaultLocale(): Locale = defaultLocale
+
+    override fun likelyRegion(language: String): String = likelyRegions[language].orEmpty()
+
+    override fun watchResumedActivities(onResumed: () -> Unit) {
+        calls += "watch resumed activities"
+        onActivityResumed = onResumed
+        if (activityResumed) onResumed()
+    }
+
+    override fun stopWatchingResumedActivities() {
+        calls += "stop watching resumed activities"
+        onActivityResumed = null
+    }
+
+    fun resumeActivity() {
+        activityResumed = true
+        onActivityResumed?.invoke()
+    }
+
+    override fun displayedLocale(): Locale? {
+        onDisplayedLocaleRead()
+        return displayedLocale
+    }
 
     override fun notificationsEnabled(channelId: String): Boolean {
         notificationChannelsChecked += channelId
