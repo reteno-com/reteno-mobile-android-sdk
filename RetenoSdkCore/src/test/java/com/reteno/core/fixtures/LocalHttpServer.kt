@@ -11,6 +11,7 @@ import java.net.Socket
 import java.net.URL
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.CopyOnWriteArrayList
+import java.util.zip.GZIPOutputStream
 import kotlin.concurrent.thread
 
 internal class RecordedRequest(
@@ -32,6 +33,12 @@ internal class ScriptedResponse(
 
     constructor(code: Int, body: String, headers: Map<String, String> = emptyMap()) :
         this(code, body.toByteArray(), headers)
+}
+
+internal fun gzipped(text: String): ByteArray {
+    val bytes = ByteArrayOutputStream()
+    GZIPOutputStream(bytes).use { it.write(text.toByteArray()) }
+    return bytes.toByteArray()
 }
 
 internal class LocalHttpServer private constructor(private val server: ServerSocket) {

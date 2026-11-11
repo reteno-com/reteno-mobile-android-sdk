@@ -1,9 +1,12 @@
 # Changelog
 
-## 2.11.1
+## Unreleased
 
 ### Fixed
 
+- Responses sent with `Content-Encoding: gzip` are unpacked before they are read. Requests with a body (POST, PUT)
+  ask for gzip explicitly, so Android's HTTP stack passed such answers on still compressed and they could not be
+  read.
 - Opening the app from a push notification on Android 12+ (apps targeting API 31+) shows the app's own splash screen
   again. The activity that handles the click (`RetenoNotificationClickedActivity`) is now translucent and finishes
   before it opens the app or the link, so Android shows the splash screen of the opened activity (for example
