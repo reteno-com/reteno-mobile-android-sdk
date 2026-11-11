@@ -121,6 +121,10 @@ class RetenoInternalImpl internal constructor(
         actions.control.runAfterUserInit { actions.contact.submitAnonymousUserAttributes(userAttributes) }
     }
 
+    override fun useDeviceLanguage() = actions.control.runAfterUserInit {
+        actions.contact.submitUseDeviceLanguage()
+    }
+
     override fun logEvent(event: Event) = actions.control.runAfterUserInit {
         actions.events.submitEvent(event)
     }

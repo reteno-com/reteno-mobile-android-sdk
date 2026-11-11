@@ -14,8 +14,11 @@ data class UserAttributesAnonymous(
 
     /**
      * Data about language in RFC 5646 format.
-     * Primary language subtag in ISO 639-1 format is required.
-     * Example: de-AT
+     * Primary language subtag in ISO 639-1 format and a region are required.
+     * Example: de-AT. A code without a region (de, de_AT) is dropped and the other attributes are still saved.
+     *
+     * Also becomes this device's language instead of the automatically detected one,
+     * until [com.reteno.core.Reteno.useDeviceLanguage] is called.
      */
     val languageCode: String? = null,
 

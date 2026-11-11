@@ -5,6 +5,7 @@ import com.reteno.core.internal.coroutine.RetenoDispatchers
 import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Delay
+import kotlinx.coroutines.DisposableHandle
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.InternalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -53,6 +54,9 @@ internal class MarkingDispatcher(private val delegate: CoroutineDispatcher) : Co
         val handle = (delegate as Delay).invokeOnTimeout(timeMillis, resume, continuation.context)
         continuation.invokeOnCancellation { handle.dispose() }
     }
+
+    override fun invokeOnTimeout(timeMillis: Long, block: Runnable, context: CoroutineContext): DisposableHandle =
+        (delegate as Delay).invokeOnTimeout(timeMillis, marked(block), context)
 
     private fun marked(block: Runnable) = Runnable {
         running.set(true)

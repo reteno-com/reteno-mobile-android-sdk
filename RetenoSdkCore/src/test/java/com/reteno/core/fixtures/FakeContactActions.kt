@@ -24,6 +24,10 @@ internal class FakeContactActions(private val log: FakeCallLog = FakeCallLog()) 
         anonymousAttributes += attributes
     }
 
+    override fun submitUseDeviceLanguage() {
+        log.record("submitUseDeviceLanguage")
+    }
+
     override fun submitFcmToken(token: String) {
         log.record("submitFcmToken")
     }

@@ -103,6 +103,8 @@ private object UnsupportedOsContact : ContactActions {
 
     override fun submitAnonymousUserAttributes(attributes: UserAttributesAnonymous) = Unit
 
+    override fun submitUseDeviceLanguage() = Unit
+
     override fun submitFcmToken(token: String) = Unit
 
     override fun submitNotificationsEnabled(enabled: Boolean) = Unit

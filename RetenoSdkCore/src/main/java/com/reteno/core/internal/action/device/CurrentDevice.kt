@@ -16,16 +16,19 @@ internal class CurrentDevice(
     private val configRepository: ConfigRepository,
     private val devicesDb: RetenoDatabaseManagerDevice,
     private val environment: AppEnvironment,
+    private val deviceLanguage: DeviceLanguage,
     private val dispatchers: RetenoDispatchers
 ) {
 
     suspend fun save(trace: ActionTrace, pushToken: String, pushSubscribed: Boolean? = null): Boolean {
         val subscribed = pushSubscribed ?: trace.readNotificationsState()
+        val languageCode = deviceLanguage.resolve(trace)
         return trace.step(
             "save current device to local database",
             detail = { saved -> if (saved) "saved" else "unchanged" }
         ) {
-            val device = environment.createDevice(configRepository.getDeviceId(), pushToken, subscribed).toDb()
+            val deviceId = configRepository.getDeviceId()
+            val device = environment.createDevice(deviceId, pushToken, subscribed, languageCode).toDb()
             withContext(dispatchers.io) {
                 val known = devicesDb.getDevices().map { it.withoutLocalState() }
                 val isNew = device !in known

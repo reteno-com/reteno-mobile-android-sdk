@@ -175,6 +175,57 @@ internal class RetenoDatabaseManagerDeviceImplTest {
         }
     }
 
+    @Test
+    fun `should give devices stored in the same second row ids in insertion order`() = runUnitTest {
+        withSut {
+            given()
+            store(FULL_DEVICE.copy(deviceId = "first"), FULL_DEVICE.copy(deviceId = "second"))
+
+            whenn()
+            val devices = sut.getDevices()
+
+            then()
+            assertEquals(setOf(STORED_AT_MILLIS), devices.map { it.createdAt }.toSet())
+            assertEquals(mapOf("first" to "1", "second" to "2"), devices.associate { it.deviceId to it.rowId })
+        }
+    }
+
+    @Test
+    fun `should give a new device a larger row id than every device left after deleting older ones`() = runUnitTest {
+        withSut {
+            given()
+            store(
+                FULL_DEVICE.copy(deviceId = "first"),
+                FULL_DEVICE.copy(deviceId = "second"),
+                FULL_DEVICE.copy(deviceId = "third")
+            )
+            sut.deleteDevices(sut.getDevices().filter { it.deviceId != "third" })
+
+            whenn()
+            store(FULL_DEVICE.copy(deviceId = "fourth"))
+
+            then()
+            val rowIds = sut.getDevices().associate { it.deviceId to it.rowId }
+            assertEquals(mapOf("third" to "3", "fourth" to "4"), rowIds)
+        }
+    }
+
+    @Test
+    fun `should reuse the row id of a deleted newest device for the next device`() = runUnitTest {
+        withSut {
+            given()
+            store(FULL_DEVICE.copy(deviceId = "first"), FULL_DEVICE.copy(deviceId = "second"))
+            sut.deleteDevices(sut.getDevices().filter { it.deviceId == "second" })
+
+            whenn()
+            store(FULL_DEVICE.copy(deviceId = "third"))
+
+            then()
+            val rowIds = sut.getDevices().associate { it.deviceId to it.rowId }
+            assertEquals(mapOf("first" to "1", "third" to "2"), rowIds)
+        }
+    }
+
     companion object {
         private val STORED_AT_MILLIS = Util.formatSqlDateToTimestamp(TestDatabase.STORED_AT)
 

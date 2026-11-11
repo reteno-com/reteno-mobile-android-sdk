@@ -58,7 +58,9 @@ internal class InitGraph(
 
     private val startSdk: StartSdkAction by lazy {
         StartSdkAction(
+            settleDeviceLanguage = graph.device.settleDeviceLanguage,
             ensureDeviceRegistered = graph.device.ensureDeviceRegisteredThisSession,
+            refreshDeviceLanguage = graph.device.refreshDeviceLanguage,
             sessionHandler = infrastructure.sessionHandler,
             fetchInAppMessages = graph.inApp.fetchInAppMessages,
             processInAppMessages = graph.inApp.processInAppMessages,

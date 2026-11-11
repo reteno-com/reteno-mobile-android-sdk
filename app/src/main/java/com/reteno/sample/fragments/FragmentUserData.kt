@@ -45,6 +45,11 @@ class FragmentUserData : BaseFragment() {
                 Log.e(TAG, "FragmentUserData", e)
             }
         }
+        binding!!.btnUseDeviceLanguage.setOnClickListener {
+            reteno.useDeviceLanguage()
+            binding!!.etLanguageCode.text = null
+            Toast.makeText(this.context, "Device language detected automatically", Toast.LENGTH_SHORT).show()
+        }
         binding!!.btnCustomFieldsAdd.setOnClickListener {
             val view = createNewFields()
             binding!!.llCustomData.addView(view)

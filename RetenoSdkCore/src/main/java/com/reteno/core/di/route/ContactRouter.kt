@@ -23,6 +23,10 @@ internal class ContactRouter(
         device.contactQueue.enqueue { user.setAnonymousUserAttributes(attributes) }
     }
 
+    override fun submitUseDeviceLanguage() {
+        device.contactQueue.enqueue { device.useDeviceLanguage() }
+    }
+
     override fun submitFcmToken(token: String) {
         device.contactQueue.enqueue { device.updateFcmToken(token) }
     }

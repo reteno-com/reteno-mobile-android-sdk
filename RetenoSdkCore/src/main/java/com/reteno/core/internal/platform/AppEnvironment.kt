@@ -1,6 +1,8 @@
 package com.reteno.core.internal.platform
 
 import android.content.Context
+import android.content.res.Resources
+import android.icu.util.ULocale
 import android.telephony.TelephonyManager
 import androidx.core.app.NotificationManagerCompat
 import com.reteno.core.R
@@ -16,7 +18,15 @@ import java.util.TimeZone
 internal interface AppEnvironment {
     fun installedVersion(): AppVersion
 
-    fun createDevice(deviceId: DeviceId, pushToken: String, pushSubscribed: Boolean): Device
+    fun createDevice(deviceId: DeviceId, pushToken: String, pushSubscribed: Boolean, languageCode: String): Device
+
+    fun systemLocale(): Locale
+
+    fun appLocale(): Locale
+
+    fun defaultLocale(): Locale
+
+    fun likelyRegion(language: String): String
 
     fun logEventOrigin(): LogEventOrigin
 
@@ -34,7 +44,8 @@ internal class AndroidAppEnvironment(private val context: Context) : AppEnvironm
     override fun createDevice(
         deviceId: DeviceId,
         pushToken: String,
-        pushSubscribed: Boolean
+        pushSubscribed: Boolean,
+        languageCode: String
     ): Device = Device(
         deviceId = deviceId.id,
         deviceIdSuffix = deviceId.idSuffix,
@@ -46,12 +57,20 @@ internal class AndroidAppEnvironment(private val context: Context) : AppEnvironm
         osVersion = DeviceInfo.fetchOsVersion(),
         deviceModel = DeviceInfo.fetchDeviceModel(),
         appVersion = appInfo.installedVersionName(),
-        languageCode = Locale.getDefault().toLanguageTag(),
+        languageCode = languageCode,
         timeZone = TimeZone.getDefault().toZoneId().id,
         advertisingId = null,
         email = deviceId.email,
         phone = deviceId.phone
     )
+
+    override fun systemLocale(): Locale = Resources.getSystem().configuration.locales[0]
+
+    override fun appLocale(): Locale = context.resources.configuration.locales[0]
+
+    override fun defaultLocale(): Locale = Locale.getDefault()
+
+    override fun likelyRegion(language: String): String = ULocale.addLikelySubtags(ULocale(language)).country
 
     override fun logEventOrigin(): LogEventOrigin = LogEventOrigin(
         packageName = context.packageName,

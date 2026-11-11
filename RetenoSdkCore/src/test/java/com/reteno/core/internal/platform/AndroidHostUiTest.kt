@@ -6,10 +6,12 @@ import android.app.Application
 import android.content.ComponentName
 import android.content.Context
 import android.content.ContextWrapper
+import android.content.res.Configuration
 import androidx.lifecycle.Lifecycle
 import androidx.test.core.app.ApplicationProvider
 import com.reteno.core.fixtures.ManualLifecycleOwner
 import com.reteno.core.lifecycle.RetenoActivityHelper
+import com.reteno.core.lifecycle.RetenoLifecycleCallbacks
 import com.reteno.core.view.iam.AndroidInAppScreen
 import com.reteno.test.given
 import com.reteno.test.runUnitTest
@@ -18,18 +20,29 @@ import com.reteno.test.whenn
 import io.mockk.every
 import io.mockk.justRun
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.verify
 import org.junit.Test
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.runner.RunWith
+import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import java.util.Locale
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [26])
 internal class AndroidHostUiTest {
+
+    class EnglishActivity : Activity() {
+        override fun attachBaseContext(newBase: Context) {
+            val configuration = Configuration(newBase.resources.configuration)
+            configuration.setLocale(Locale.forLanguageTag("en-US"))
+            super.attachBaseContext(newBase.createConfigurationContext(configuration))
+        }
+    }
 
     private class SutFixture(context: Context? = null) {
         val application = ApplicationProvider.getApplicationContext<Application>()
@@ -126,5 +139,69 @@ internal class AndroidHostUiTest {
 
         then()
         assertTrue(screen is AndroidInAppScreen)
+    }
+
+    @Test
+    @Config(qualifiers = "uk-rUA")
+    fun `should read the locale the visible activity shows`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val activity = Robolectric.buildActivity(EnglishActivity::class.java).setup().get()
+        every { fixture.activityHelper.currentActivity } returns activity
+
+        whenn()
+        val locale = fixture.sut.displayedLocale()
+
+        then()
+        assertEquals("en-US", locale?.toLanguageTag())
+    }
+
+    @Test
+    fun `should read no displayed locale without a visible activity`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        every { fixture.activityHelper.currentActivity } returns null
+
+        whenn()
+        val locale = fixture.sut.displayedLocale()
+
+        then()
+        assertNull(locale)
+    }
+
+    @Test
+    fun `should report only resumed activities to the resume watcher`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val callbacks = slot<RetenoLifecycleCallbacks>()
+        justRun { fixture.activityHelper.registerActivityLifecycleCallbacks(any(), capture(callbacks)) }
+        val activity = Robolectric.buildActivity(Activity::class.java).get()
+        val events = mutableListOf<String>()
+        fixture.sut.watchResumedActivities { events += "resumed" }
+
+        whenn()
+        callbacks.captured.start(activity)
+        callbacks.captured.resume(activity)
+        callbacks.captured.pause(activity)
+        callbacks.captured.stop(activity)
+
+        then()
+        assertEquals(listOf("resumed"), events)
+    }
+
+    @Test
+    fun `should stop the resume watcher it registered`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val key = slot<String>()
+        justRun { fixture.activityHelper.registerActivityLifecycleCallbacks(capture(key), any()) }
+        justRun { fixture.activityHelper.unregisterActivityLifecycleCallbacks(any()) }
+        fixture.sut.watchResumedActivities {}
+
+        whenn()
+        fixture.sut.stopWatchingResumedActivities()
+
+        then()
+        verify(exactly = 1) { fixture.activityHelper.unregisterActivityLifecycleCallbacks(key.captured) }
     }
 }

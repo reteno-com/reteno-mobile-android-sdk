@@ -1,6 +1,8 @@
 package com.reteno.core.internal.action.init
 
 import com.reteno.core.internal.action.device.EnsureDeviceRegisteredThisSession
+import com.reteno.core.internal.action.device.RefreshDeviceLanguage
+import com.reteno.core.internal.action.device.SettleDeviceLanguage
 import com.reteno.core.internal.action.iam.FetchInAppMessages
 import com.reteno.core.internal.action.iam.ProcessInAppMessages
 import com.reteno.core.internal.action.inbox.InboxCountPolling
@@ -11,6 +13,8 @@ import com.reteno.core.internal.coroutine.RetenoDispatchers
 import com.reteno.core.internal.lifecycle.SdkRunState
 import com.reteno.core.lifecycle.RetenoSessionHandler
 import com.reteno.core.view.iam.IamView
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 internal interface StartSdk {
@@ -18,7 +22,9 @@ internal interface StartSdk {
 }
 
 internal class StartSdkAction(
+    private val settleDeviceLanguage: SettleDeviceLanguage,
     private val ensureDeviceRegistered: EnsureDeviceRegisteredThisSession,
+    private val refreshDeviceLanguage: RefreshDeviceLanguage,
     private val sessionHandler: RetenoSessionHandler,
     private val processInAppMessages: ProcessInAppMessages,
     private val fetchInAppMessages: FetchInAppMessages,
@@ -35,7 +41,21 @@ internal class StartSdkAction(
     }
 
     private suspend fun ActionTrace.start() {
-        withContext(dispatchers.io) { ensureDeviceRegistered() }
+        coroutineScope {
+            launch(dispatchers.io) {
+                registerDeviceWithSettledLanguage()
+            }
+            startTracking()
+        }
+    }
+
+    private suspend fun registerDeviceWithSettledLanguage() {
+        settleDeviceLanguage()
+        ensureDeviceRegistered()
+        refreshDeviceLanguage()
+    }
+
+    private suspend fun ActionTrace.startTracking() {
         step("start session tracking") {
             sessionHandler.start()
         }
