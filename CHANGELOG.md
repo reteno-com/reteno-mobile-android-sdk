@@ -7,6 +7,16 @@
 - Responses sent with `Content-Encoding: gzip` are unpacked before they are read. Requests with a body (POST, PUT)
   ask for gzip explicitly, so Android's HTTP stack passed such answers on still compressed and they could not be
   read.
+- Opening the app from a push notification on Android 12+ (apps targeting API 31+) shows the app's own splash screen
+  again. The activity that handles the click (`RetenoNotificationClickedActivity`) is now translucent and finishes
+  before it opens the app or the link, so Android shows the splash screen of the opened activity (for example
+  `Theme.SplashScreen` with `installSplashScreen()`); it used to show a splash screen built from the application theme
+  and hand it over to the launch activity. Apps that want the click activity to use their own theme can still
+  override it in their manifest (`tools:replace="android:theme"`).
+- On Android 13+ the splash screen opened from a push notification shows the app icon again, not only the
+  background colour: the SDK opens the app or the link with
+  `ActivityOptions.setSplashScreenStyle(SPLASH_SCREEN_STYLE_ICON)`. Android 12/12L have no such option and still show
+  the background colour only.
 
 ## 2.11.0
 

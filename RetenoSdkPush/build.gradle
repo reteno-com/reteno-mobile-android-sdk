@@ -93,3 +93,30 @@ dependencies {
 
     testDependencies()
 }
+afterEvaluate {
+    def unitTest = tasks.getByName('testDebugUnitTest')
+    def robolectricTest = tasks.register('testDebugRobolectricUnitTest', Test) {
+        description = 'Runs the JUnit 4 (Robolectric) unit tests of the debug variant in their own JVM.'
+        group = 'verification'
+        testClassesDirs = unitTest.testClassesDirs
+        classpath = unitTest.classpath
+        systemProperties unitTest.systemProperties
+        useJUnitPlatform { includeEngines 'junit-vintage' }
+        mustRunAfter unitTest
+        outputs.upToDateWhen { !unitTest.state.didWork }
+        doFirst {
+            filter.includePatterns = unitTest.filter.includePatterns
+            filter.commandLineIncludePatterns = unitTest.filter.commandLineIncludePatterns
+            filter.failOnNoMatchingTests = false
+            jvmArgs unitTest.allJvmArgs.findAll {
+                it.contains('intellij-coverage-agent') || it.startsWith('-Didea.') || it.startsWith('-Dcoverage.')
+            }
+        }
+    }
+    unitTest.useJUnitPlatform { excludeEngines 'junit-vintage' }
+    unitTest.filter.failOnNoMatchingTests = false
+    unitTest.finalizedBy robolectricTest
+    ['koverXmlReportDebug', 'koverHtmlReportDebug', 'koverVerifyDebug'].each { name ->
+        tasks.findByName(name)?.dependsOn robolectricTest
+    }
+}

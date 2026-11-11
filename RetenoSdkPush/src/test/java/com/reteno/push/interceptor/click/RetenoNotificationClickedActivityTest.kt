@@ -1,9 +1,12 @@
 package com.reteno.push.interceptor.click
 
+import android.app.Instrumentation
+import android.content.ComponentName
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import androidx.test.platform.app.InstrumentationRegistry
 import com.reteno.push.Constants
 import com.reteno.push.fixtures.LAUNCH_ACTIVITY
 import com.reteno.push.fixtures.STUB_BUTTON_ID
@@ -44,11 +47,37 @@ class RetenoNotificationClickedActivityTest {
             if (launchable) application.registerLaunchActivity()
         }
 
-        fun click(extras: Bundle?): RetenoNotificationClickedActivity {
-            val intent = Intent(application, RetenoNotificationClickedActivity::class.java)
-                .apply { extras?.let(::putExtras) }
-            return Robolectric.buildActivity(RetenoNotificationClickedActivity::class.java, intent).create().get()
+        fun click(extras: Bundle?): RetenoNotificationClickedActivity =
+            Robolectric.buildActivity(RetenoNotificationClickedActivity::class.java, clickIntent(extras)).create().get()
+
+        fun finishingStateAtEachStart(extras: Bundle?): List<Boolean> {
+            val controller = Robolectric.buildActivity(
+                RetenoNotificationClickedActivity::class.java,
+                clickIntent(extras)
+            )
+            val finishingAtStart = mutableListOf<Boolean>()
+            val monitor = object : Instrumentation.ActivityMonitor() {
+                override fun onStartActivity(intent: Intent): Instrumentation.ActivityResult? {
+                    finishingAtStart += controller.get().isFinishing
+                    return null
+                }
+            }
+            val instrumentation = InstrumentationRegistry.getInstrumentation()
+            instrumentation.addMonitor(monitor)
+            try {
+                controller.create()
+            } finally {
+                instrumentation.removeMonitor(monitor)
+            }
+            return finishingAtStart
         }
+
+        fun declaredTheme(): Int = application.packageManager
+            .getActivityInfo(ComponentName(application, RetenoNotificationClickedActivity::class.java), 0)
+            .theme
+
+        private fun clickIntent(extras: Bundle?): Intent =
+            Intent(application, RetenoNotificationClickedActivity::class.java).apply { extras?.let(::putExtras) }
 
         fun startedActivities(activity: RetenoNotificationClickedActivity): List<Intent> =
             generateSequence { shadowOf(activity).nextStartedActivity }.toList()
@@ -69,6 +98,47 @@ class RetenoNotificationClickedActivityTest {
             then()
             assertEquals(listOf("recordInteraction $STUB_INTERACTION_ID CLICKED forcePush=true"), facade.calls)
             assertTrue(activity.isFinishing)
+        }
+    }
+
+    @Test
+    fun `should declare a translucent theme so the opened activity shows its own splash screen`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+
+        whenn()
+        val theme = fixture.declaredTheme()
+
+        then()
+        assertEquals(android.R.style.Theme_Translucent_NoTitleBar, theme)
+    }
+
+    @Test
+    fun `should finish before opening the app`() = runUnitTest {
+        withFakeFacade {
+            given()
+            val fixture = SutFixture()
+
+            whenn()
+            val finishingAtStart = fixture.finishingStateAtEachStart(stubPushBundle())
+
+            then()
+            assertEquals(listOf(true), finishingAtStart)
+        }
+    }
+
+    @Test
+    fun `should finish before opening the link`() = runUnitTest {
+        withFakeFacade {
+            given()
+            val fixture = SutFixture()
+            val extras = stubPushBundle(STUB_INTERACTION_ID, Constants.KEY_ES_LINK_UNWRAPPED to STUB_OFFER_LINK)
+
+            whenn()
+            val finishingAtStart = fixture.finishingStateAtEachStart(extras)
+
+            then()
+            assertEquals(listOf(true), finishingAtStart)
         }
     }
 
@@ -171,15 +241,15 @@ class RetenoNotificationClickedActivityTest {
             val extras = stubPushBundle(
                 STUB_INTERACTION_ID,
                 Constants.KEY_ES_LINK_WRAPPED to "https://track.example/c/1",
-                Constants.KEY_ES_LINK_UNWRAPPED to "https://example.com/offer"
+                Constants.KEY_ES_LINK_UNWRAPPED to STUB_OFFER_LINK
             )
 
             whenn()
             val activity = fixture.click(extras)
 
             then()
-            assertTrue(facade.calls.contains("deeplinkClicked https://track.example/c/1 https://example.com/offer"))
-            assertEquals(Uri.parse("https://example.com/offer"), fixture.startedActivities(activity).single().data)
+            assertTrue(facade.calls.contains("deeplinkClicked https://track.example/c/1 $STUB_OFFER_LINK"))
+            assertEquals(Uri.parse(STUB_OFFER_LINK), fixture.startedActivities(activity).single().data)
         }
     }
 
@@ -266,11 +336,28 @@ class RetenoNotificationClickedActivityTest {
             val fixture = SutFixture()
 
             whenn()
-            val activity = onAndroidSdk(Build.VERSION_CODES.N_MR1) { fixture.click(stubPushBundle()) }
+            onAndroidSdk(Build.VERSION_CODES.N_MR1) { fixture.click(stubPushBundle()) }
 
             then()
             assertTrue(facade.calls.isEmpty())
-            assertFalse(activity.isFinishing)
         }
+    }
+
+    @Test
+    fun `should finish on unsupported android version`() = runUnitTest {
+        withFakeFacade {
+            given()
+            val fixture = SutFixture()
+
+            whenn()
+            val activity = onAndroidSdk(Build.VERSION_CODES.N_MR1) { fixture.click(stubPushBundle()) }
+
+            then()
+            assertTrue(activity.isFinishing)
+        }
+    }
+
+    companion object {
+        private const val STUB_OFFER_LINK = "https://example.com/offer"
     }
 }
