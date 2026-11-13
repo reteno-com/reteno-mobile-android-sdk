@@ -1,7 +1,7 @@
 # Android SDK InApp delivery
 
-The SDK implementation is committed in this checkout. Documentation was
-reconciled with backend contracts on November 10, 2026. Native certification,
+The SDK implementation is committed in this checkout. The click transport contract was
+updated on November 13, 2026. Native certification,
 release, and coordinated backend deployment remain unverified by the recorded
 checks.
 
@@ -36,8 +36,8 @@ specific contact before that contact opens the app. This document calls it a
 | Eligibility | Published rules, targeting, segment membership, and frequency determine eligibility. | The contact needs an unexpired `SENT` delivery and a currently available instant message. Ordinary publication is not required. Current rules still apply; the backend disables only message-level frequency for these deliveries. |
 | Content | A message instance is requested by `messageInstanceId`. | The same endpoint accepts an IID/instance pair and returns that delivery's prepared personalization. |
 | Selection | Existing ordinary-message selection applies. | Eligible server deliveries take precedence over eligible ordinary messages. Higher numeric priority wins; visible content is not interrupted. |
-| Observations | OPENED/FAILED use the mobile-api POST; clicks use the existing interaction-status transport. | All standalone InApp OPENED/CLICKED/FAILED use the mobile-api POST, including ordinary clicks. Push and push-embedded InApp keep their existing transport. |
-| Repeat behavior | Ordinary frequency rules control later displays. | OPENED, CLICKED, or FAILED consumes that particular delivery locally and ends its server availability. Another delivery of the same message has another IID. |
+| Observations | OPENED/FAILED use the mobile-api POST; clicks use the existing interaction-status transport. | OPENED/FAILED keep the mobile-api POST; ordinary and server-assigned clicks use the existing interaction-status PUT. Push and push-embedded InApp keep their existing transport. |
+| Repeat behavior | Ordinary frequency rules control later displays. | OPENED, CLICKED, or FAILED consumes that particular delivery locally. Only server-assigned OPENED/FAILED ends server availability; a click does not change delivery state. Another delivery of the same message has another IID. |
 
 The SDK does not choose or understand a workflow mode. It branches on whether an
 IID was received, honors expiry and priority, and evaluates the supplied rules.
@@ -55,7 +55,7 @@ Do not add `inWorkflow`, `deliveryMethod`, or `includeWorkflow` to SDK requests.
 | `messageId` | The authored message. Used with its display rules; not a unique delivery. |
 | `messageInstanceId` | A retained version of message content, including the selected language. Multiple deliveries can share it. |
 | `iid` | The interaction UUID. For a server delivery it identifies one send to a contact, not the template. Preserve it for content lookup and every observation. Generate a UUID only when discovery supplied no IID. |
-| `serverAssignedIid` | Observation-only boolean: `true` means the IID came from the server. Omitted/false retains the SDK-generated path. Persist this flag with retries; do not infer it from a UUID's format. |
+| `serverAssignedIid` | OPENED/FAILED POST boolean: `true` means the IID came from the server. Omitted/false retains the SDK-generated path. Persist provenance with retries; the click PUT omits this flag. Do not infer provenance from a UUID's format. |
 
 An **observation** is the SDK's report of an OPENED, CLICKED, or FAILED event.
 **Local suppression** means remembering that a server delivery's IID has already
@@ -72,9 +72,12 @@ FAILED in in-app-service; the delivery is no longer available to the contact.
    instance. If it is unavailable, consider the next eligible candidate.
 4. Display only while the candidate remains eligible. Preserve a received IID;
    generate an IID only for an ordinary display attempt.
-5. Record the observation. For a server delivery, retain a local consumed-IID
-   marker and report `serverAssignedIid` as `true`. Mobile-api ends availability
-   synchronously before acknowledging the observation.
+5. Persist the observation with its original account context and retain the
+   server delivery's local consumed-IID marker. Send OPENED/FAILED through the
+   mobile-api POST with `serverAssignedIid=true`; mobile-api ends availability
+   synchronously before acknowledgment. Send CLICKED through the existing PUT
+   with the same IID, original click time, and complete action. CLICKED does not
+   change server delivery state or block a later visibility OPENED.
 
 ### Find and display a message
 
@@ -103,12 +106,14 @@ sequenceDiagram
     end
 ```
 
-### Report a server delivery event
+### Report server delivery visibility or failure
 
 The SDK reports actual visibility as OPENED, a click as CLICKED, and a display
-failure as FAILED. Mobile-api updates in-app-service before publishing the
-observation. Ordinary events use the same public POST but skip the internal
-status update. See [status and retries](#status-retries-and-local-state) for
+failure as FAILED. For server-assigned OPENED/FAILED, mobile-api updates
+in-app-service before publishing the observation. Ordinary OPENED/FAILED uses
+the same public POST but skips the internal status update. Ordinary and
+server-assigned CLICKED uses the existing interaction-status PUT and never
+updates in-app-service. See [status and retries](#status-retries-and-local-state) for
 event timing, failure handling, and the limits of duplicate prevention.
 
 ```mermaid
@@ -117,7 +122,7 @@ sequenceDiagram
     participant M as mobile-api
     participant I as in-app-service
     S->>S: Persist consumed IID<br/>and original observation
-    S->>M: POST /api/v1/interaction<br/>serverAssignedIid=true, original event
+    S->>M: POST /api/v1/interaction<br/>serverAssignedIid=true, OPENED/FAILED
     M->>I: Synchronous internal status POST<br/>Authenticated contact and IID/instance
     I->>I: Validate pair and conditionally<br/>transition SENT to OPENED or FAILED
     alt Unknown or mismatched delivery
@@ -133,7 +138,9 @@ sequenceDiagram
 
 ## Public API compatibility
 
-The SDK calls mobile-api on `https://mobile-api.reteno.com`. Paths below include
+The SDK calls mobile-api on `https://mobile-api.reteno.com` for discovery,
+content, and OPENED/FAILED. Clicks use the existing interaction endpoint on
+`https://api.reteno.com`. Paths below include
 the existing public `/api` prefix. Keep the existing application access key,
 device identity, and SDK-version headers; do not send backend `orgId` or
 `contactId` to select another delivery owner.
@@ -142,7 +149,8 @@ device identity, and SDK-version headers; do not send backend `orgId` or
 | --- | --- |
 | `GET /api/v1/inapp/messages` | One discovery list can contain ordinary messages and the authenticated contact's server deliveries. Supports `If-None-Match` and ETag/304. |
 | `POST /api/v1/inapp/contents/request` | Choose ordinary message instance IDs or server IID/instance references. These are separate non-null request forms. |
-| `POST /api/v1/interaction` | Reports standalone InApp OPENED, CLICKED, or FAILED, with the original identity and observation time. |
+| `POST /api/v1/interaction` | Reports standalone InApp OPENED or FAILED, with the original identity and observation time. |
+| `PUT /api/v1/interactions/{iid}/status` | Reports ordinary and server-assigned standalone InApp CLICKED with the original IID, click time, and complete action. Does not update server delivery state. |
 | `POST /api/v1/inapp/async-rules/check` | Existing segment checks remain in use; asynchronous eligibility must not invert candidate priority. |
 
 Mobile-api admits server deliveries through the existing `X-Reteno-SDK-Version`
@@ -374,7 +382,7 @@ body.
 <p><strong>Accepted statuses:</strong> OPENED and FAILED.</p>
 </td>
 <td>
-<p><strong>Accepted statuses:</strong> OPENED, CLICKED, and FAILED for standalone InApp.</p>
+<p><strong>Accepted statuses:</strong> OPENED and FAILED for standalone InApp. CLICKED uses the existing PUT endpoint.</p>
 </td>
 </tr>
 <tr>
@@ -408,27 +416,6 @@ body.
 </tr>
 <tr>
 <td>
-<p>Clicks used the separate interaction-status request. No <code>action</code> field on this POST.</p>
-</td>
-<td>
-<p><strong>Server CLICKED request:</strong></p>
-<pre lang="json">{
-  "iid": "11111111-1111-4111-8111-111111111111",
-  "messageInstanceId": 8001,
-  "time": "2026-11-06T10:05:10Z",
-  "status": "CLICKED",
-  "serverAssignedIid": true,
-  "action": {
-    "type": "OPEN_URL",
-    "targetComponentId": "order-button",
-    "url": "https://example.com/orders/order-1"
-  }
-}</pre>
-<p>Keep <code>serverAssignedIid</code> true only for a received IID.</p>
-</td>
-</tr>
-<tr>
-<td>
 <p><strong>Ordinary FAILED request:</strong></p>
 <pre lang="json">{
   "iid": "33333333-3333-4333-8333-333333333333",
@@ -449,7 +436,7 @@ body.
   "serverAssignedIid": true,
   "statusDescription": "Renderer failed"
 }</pre>
-<p>The ordinary body remains valid. Keep <code>serverAssignedIid</code> omitted/false for SDK-generated IIDs; include <code>action</code> only for CLICKED.</p>
+<p>The ordinary body remains valid. Keep <code>serverAssignedIid</code> omitted/false for SDK-generated IIDs. The POST carries no <code>action</code>.</p>
 <p>A server FAILED observation also ends that delivery&#x27;s availability.</p>
 </td>
 </tr>
@@ -466,7 +453,7 @@ body.
 <p>No server-delivery pair validation.</p>
 </td>
 <td>
-<p>An unknown/mismatched server IID/instance returns 404 before publication. Malformed server identity/status or an <code>action</code> on a non-CLICKED observation returns 400.</p>
+<p>An unknown/mismatched server IID/instance returns 404 before publication. Malformed server identity/status, CLICKED, or an <code>action</code> on this POST returns 400.</p>
 </td>
 </tr>
 </tbody>
@@ -475,6 +462,34 @@ body.
 The successful response still has no JSON body. The flag changes identity
 handling and acknowledgment ordering; it does not change the original status
 sent to analytics. Push and push-embedded InApp retain their existing transport.
+
+### SDK: PUT /api/v1/interactions/{iid}/status
+
+| Before | After |
+| --- | --- |
+| Ordinary InApp clicks use the existing interaction-status PUT. | Ordinary and server-assigned standalone InApp clicks use the same PUT and body. |
+| The interaction IID is in the path; the body carries click status, time, and the complete action. | The received server IID stays in the path. No `messageInstanceId` or `serverAssignedIid` is added. |
+| A click reports an interaction. | A click reports an interaction and never completes an in-app-service delivery. Push and push-embedded InApp behavior stays unchanged. |
+
+For a server delivery, send
+`PUT https://api.reteno.com/api/v1/interactions/11111111-1111-4111-8111-111111111111/status`:
+
+```json
+{
+  "status": "CLICKED",
+  "time": "2026-11-06T10:05:10Z",
+  "action": {
+    "type": "OPEN_URL",
+    "targetComponentId": "order-button",
+    "url": "https://example.com/orders/order-1"
+  }
+}
+```
+
+An ordinary click uses the same body with its SDK-generated IID in the path.
+Persist the original IID, time, full action, and account context for replay.
+The PUT does not invoke the server delivery status operation. A subsequent
+visibility OPENED still uses the POST, even if an early click was queued first.
 
 ## Display rules and content
 
@@ -673,30 +688,34 @@ SDK-generated interaction. Ordinary offline behavior remains unchanged.
 
 ### Events and delivery state
 
-Send these observations to `POST /api/v1/interaction` for standalone InApp:
+Use these transports for standalone InApp:
 
-| SDK event | When to send | Requested delivery state | Analytics |
+| SDK event | When to send and transport | Requested server delivery state | Analytics |
 | --- | --- | --- | --- |
-| `OPENED` | Actual visible presentation; fetching or initializing the renderer is insufficient. | `OPENED` | Shared READ processing. |
-| `CLICKED` | The user activates a call-to-action (CTA); include its complete existing `action` object. | `OPENED` | Shared CLICK processing with the original CTA. |
-| `FAILED` | A display/rendering failure, with `statusDescription` when available. | `FAILED` | Shared UNDELIVERED processing; suppression does not redefine analytics precedence. |
+| `OPENED` | POST after actual visible presentation; fetching or initializing the renderer is insufficient. | `OPENED` | Shared READ processing. |
+| `CLICKED` | PUT when the user activates a call-to-action (CTA); include its complete existing `action` object. | No change | Shared CLICK processing with the original CTA. |
+| `FAILED` | POST after a display/rendering failure, with `statusDescription` when available. | `FAILED` | Shared UNDELIVERED processing; suppression does not redefine analytics precedence. |
 
 The requested state is a transition from SENT. If a terminal state already
 exists, in-app-service keeps it. Later observations still carry their original
 status to analytics; for example, CLICKED after OPENED does not change the
 stored OPENED state.
 
-Use the complete OPENED, CLICKED, and FAILED bodies in the [interaction endpoint comparison](#sdk-post-apiv1interaction). A subsequent click keeps the original
-IID and message instance, and uses its own observation time and complete action.
+Use the OPENED/FAILED bodies in the [POST comparison](#sdk-post-apiv1interaction)
+and the complete click body in the [PUT comparison](#sdk-put-apiv1interactionsiidstatus).
+A click keeps the original IID in its path and uses its own observation time
+and complete action. It does not request a delivery-state transition, including
+when it arrives before OPENED or after FAILED.
 
-`action` is an object inside the observation and is accepted only for CLICKED.
 Use UTC observation timestamps with whole seconds. Do not replace event time
-with retry time. An ordinary observation uses the SDK-generated IID and omits
-`serverAssignedIid` or sets it to false. Persist `serverAssignedIid` with each
-queued observation. No new event ID is required. Dismissal stays local; send
-neither SEND nor a synthetic CLOSED event.
+with retry time. An ordinary OPENED/FAILED observation uses the SDK-generated
+IID and omits `serverAssignedIid` or sets it to false. Persist provenance and
+account context with every queued observation. The click PUT omits provenance
+and message instance fields. No new event ID is required. Dismissal stays local;
+send neither SEND nor a synthetic CLOSED event.
 
-For a received IID, mobile-api calls the [internal status endpoint](#internal-post-v1organisationsorgidinappmessagesstatus) before
+For a received IID on an OPENED/FAILED POST, mobile-api calls the
+[internal status endpoint](#internal-post-v1organisationsorgidinappmessagesstatus) before
 publishing the observation. Unknown or mismatched IID/instance pairs return 404
 without creating a delivery. The SDK never calls the internal endpoint. Ordinary
 observations skip this state update and do not await publication acknowledgment.
@@ -720,7 +739,7 @@ the contact's other devices. Analytics still receive the original status.
 | State is unknown, missing, or mismatched | The status path returns 404. Do not fall back to ordinary registration or invent a new IID. |
 | Restart, account switch, or retry exhaustion | Keep the consumed-IID marker after the queued observation completes or exhausts its retries, until expiry/cleanup. Never reuse personalized content or queued credentials for another account. |
 
-HTTP 200 for a server-assigned observation follows both in-app-service
+HTTP 200 for a server-assigned OPENED/FAILED POST follows both in-app-service
 completion and observation publication acknowledgment (default timeout: ten
 seconds), not completion of analytics processing. Ordinary publication remains
 asynchronous. Delivery state changes and observation publication are not one
@@ -745,6 +764,8 @@ list before using cached server deliveries, without changing stored formats.
 The observation sync uses the existing queue, three delivery attempts, bounded
 backoff, Retry-After, and context-bound authentication. Completing or exhausting
 an observation preserves the local consumed marker until expiry/cleanup.
+Click replay uses PUT from this same persisted queue and retains its original
+account context. Click suppression does not discard a later visibility OPENED.
 POSTPONE preserves an undisplayed candidate; SKIP emits no OPENED. Actual native
 presentation completion establishes visibility; push keeps its existing path.
 
@@ -752,12 +773,14 @@ presentation completion establishes visibility; push keeps its existing path.
 
 | Area | Latest recorded status |
 | --- | --- |
-| Source compilation | 678 files compile with Kotlin 1.8/JDK 17 through a standalone harness with resource stubs; not an AGP build. |
-| Focused regression tests | The latest owner-context run passed 36 HTTP and 7 SQLite tests. Earlier runs cover additional areas; see the history below. This is not a fresh full-suite result. |
+| Current click transport | 15 static source contract checks, 27 JSON sample parses, and 35 Markdown link checks passed. Added/updated Kotlin regressions remain unexecuted for this change. |
+| Historical source compilation | 678 files compiled with Kotlin 1.8/JDK 17 through a standalone harness with resource stubs before the click transport correction; not an AGP build. |
+| Historical focused regression tests | The owner-context run passed 36 HTTP and 7 SQLite tests before the click transport correction. Earlier runs cover additional areas; see the history below. |
 | Native Gradle/Kover | Blocked before compilation because the Android SDK location is missing. |
 | Device and end-to-end checks | Pending. |
 
-These are recorded results, not new runs for this documentation update. The
+The compilation and runtime results predate the November 13 click transport
+correction. The static checks do not execute Kotlin. The
 [verification history](#verification-history) retains every recorded count,
 regression result, and test limitation. Overlapping runs must not be summed.
 
@@ -1003,7 +1026,7 @@ new SDK endpoint.
   "messageInstanceId": 8001,
   "status": "OPENED"
 }</pre>
-<p>Only OPENED or FAILED is accepted here; mobile-api maps SDK CLICKED to OPENED.</p>
+<p>Only OPENED or FAILED is accepted here. CLICKED never calls this operation.</p>
 </td>
 </tr>
 <tr>
@@ -1065,6 +1088,7 @@ reopening SQLite and identity settings.
 
 | Check | Result |
 | --- | --- |
+| November 13 click transport checks | 15 static source contract checks, 27 JSON sample parses, 35 Markdown link checks, standalone-guide boundary checks, and `git diff --check` passed. These checks do not execute Kotlin. Focused Gradle tests and Kover with JDK 17 stopped before compilation because the Android SDK location is missing. |
 | Kotlin 1.8 / JDK 17 compilation | 678 source and test files compile with resolved dependencies and temporary resource stubs. This is not an AGP build. |
 | Contract-alignment JVM tests | 363 Actions, rules, presenter, HTTP, and sync tests passed through a standalone JUnit launcher before the final pause/resume fix. |
 | Latest pause/resume regression run | 148 focused tests passed after the fix. Three new tests reproduced the defect before implementation; an additional test covers renderer preparation. This suite overlaps the earlier run; counts are not cumulative. |

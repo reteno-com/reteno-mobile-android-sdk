@@ -142,6 +142,29 @@ internal class DeliveryStorageTest {
     }
 
     @Test
+    fun `should keep local click suppression and still persist later visibility once`() = runUnitTest {
+        given()
+        TestDatabase.open {
+            val store = RetenoDatabaseManagerInAppInteractionImpl(database)
+            val message = stubDeliveryMessage()
+            val opened = InAppInteraction.createOpened(requireNotNull(message.iid), message.messageInstanceId)
+                .copy(deliveryContext = message.deliveryContext, deliveryExpiresAt = message.expiresAt)
+            store.insertInteraction(opened.copy(status = InAppInteractionStatus.CLICKED).toDb())
+
+            whenn()
+            val suppressedAfterClick = store.isDeliveryShown(requireNotNull(message.deliveryContext), requireNotNull(message.iid))
+            store.insertInteraction(opened.toDb())
+            store.insertInteraction(opened.toDb())
+            val restored = RetenoDatabaseManagerInAppInteractionImpl(database)
+
+            then()
+            assertTrue(suppressedAfterClick)
+            assertEquals(listOf("CLICKED", "OPENED"), restored.getInteractions().map { it.status })
+            assertEquals(2, restored.getPendingInteractions(requireNotNull(message.deliveryContext)).size)
+        }
+    }
+
+    @Test
     fun `should persist complete clicked payload and bound retry attempts`() = runUnitTest {
         given()
         TestDatabase.open {

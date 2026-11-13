@@ -27,10 +27,15 @@ internal class SuspendApiClient(
 
     fun deliveryContext(): String = restClient.deliveryContext()
 
-    suspend fun deliveryRequest(context: String, contract: ApiContract, body: String): ApiResult =
+    suspend fun deliveryRequest(
+        context: String,
+        contract: ApiContract,
+        body: String,
+        method: HttpMethod = HttpMethod.POST
+    ): ApiResult =
         withContext(dispatchers.io) {
             val callback = CapturingCallback()
-            restClient.makeDeliveryRequest(context, HttpMethod.POST, contract, body, callback)
+            restClient.makeDeliveryRequest(context, method, contract, body, callback)
             callback.result ?: ApiResult.Failure(null, null, IllegalStateException(NO_CALLBACK))
         }
 

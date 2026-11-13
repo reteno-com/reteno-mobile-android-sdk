@@ -5,6 +5,7 @@ import com.reteno.core.data.local.model.interaction.InAppInteractionDb
 import com.reteno.core.data.remote.api.ApiContract
 import com.reteno.core.data.remote.api.HttpMethod
 import com.reteno.core.data.remote.mapper.toJson
+import com.reteno.core.data.remote.mapper.toClickRemote
 import com.reteno.core.data.remote.mapper.toRemote
 import com.reteno.core.internal.action.trace.ActionRunner
 import com.reteno.core.internal.action.trace.ActionTrace
@@ -51,15 +52,19 @@ internal class PushInAppInteractionsStep(
                 }
             }
             val result = step("send in-app interaction to server") {
+                val clicked = interaction.status == "CLICKED"
+                val method = if (clicked) HttpMethod.PUT else HttpMethod.POST
+                val contract = if (clicked) {
+                    ApiContract.RetenoApi.InteractionStatus(interaction.interactionId)
+                } else {
+                    ApiContract.InAppMessages.RegisterInteraction
+                }
+                val body = if (clicked) interaction.toClickRemote().toJson() else interaction.toRemote().toJson()
                 val owner = interaction.deliveryContext
                 if (owner == null) {
-                    api.request(
-                        HttpMethod.POST,
-                        ApiContract.InAppMessages.RegisterInteraction,
-                        interaction.toRemote().toJson()
-                    )
+                    api.request(method, contract, body)
                 } else {
-                    api.deliveryRequest(owner, ApiContract.InAppMessages.RegisterInteraction, interaction.toRemote().toJson())
+                    api.deliveryRequest(owner, contract, body, method)
                 }
             }
             if (result is ApiResult.Failure && result.isRepeatable) {

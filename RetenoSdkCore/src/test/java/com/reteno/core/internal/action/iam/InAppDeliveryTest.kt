@@ -9,6 +9,7 @@ import com.reteno.core.data.local.mappers.toDB
 import com.reteno.core.data.local.mappers.toDb
 import com.reteno.core.data.local.sharedpref.SharedPrefsManager
 import com.reteno.core.data.remote.api.ApiContract
+import com.reteno.core.data.remote.api.HttpMethod
 import com.reteno.core.data.remote.mapper.fromJson
 import com.reteno.core.data.remote.mapper.toJson
 import com.reteno.core.domain.model.interaction.InAppInteraction
@@ -252,9 +253,14 @@ internal class InAppDeliveryTest {
         assertEquals(2, fixture.rest.requests.size)
         assertEquals(fixture.rest.requests[0].body, fixture.rest.requests[1].body)
         val payload = requireNotNull(fixture.rest.requests[1].body).fromJson<JsonObject>()
-        assertEquals(FIRST_IID, payload.get("iid").asString)
+        assertTrue(fixture.rest.requests.all { it.method == HttpMethod.PUT })
+        assertTrue(fixture.rest.requests.all { it.contract.url == ApiContract.RetenoApi.InteractionStatus(FIRST_IID).url })
+        assertEquals("CLICKED", payload.get("status").asString)
         assertEquals(interaction.time, payload.get("time").asString)
-        assertTrue(payload.get("serverAssignedIid").asBoolean)
+        assertFalse(payload.has("serverAssignedIid"))
+        assertFalse(payload.has("iid"))
+        assertFalse(payload.has("messageInstanceId"))
+        assertEquals("OPEN_URL", payload.getAsJsonObject("action").get("type").asString)
         assertEquals("order-details", payload.getAsJsonObject("action").get("targetComponentId").asString)
         assertEquals("https://example.com/orders/123", payload.getAsJsonObject("action").get("url").asString)
         verify(exactly = 2) { fixture.observations.recordAttempt(any()) }

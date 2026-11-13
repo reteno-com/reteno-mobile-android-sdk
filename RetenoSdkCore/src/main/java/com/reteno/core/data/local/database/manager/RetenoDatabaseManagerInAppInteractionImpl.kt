@@ -21,7 +21,10 @@ internal class RetenoDatabaseManagerInAppInteractionImpl(
     override fun insertInteraction(interaction: InAppInteractionDb) {
         val context = interaction.deliveryContext
         val alreadyShown = interaction.serverAssignedIid && context != null && interaction.status == "OPENED" &&
-            isDeliveryShown(context, interaction.interactionId)
+            getInteractions().any {
+                it.serverAssignedIid && it.deliveryContext == context && it.interactionId == interaction.interactionId &&
+                    it.status in listOf("OPENED", "FAILED")
+            }
         if (alreadyShown) {
             return
         }
