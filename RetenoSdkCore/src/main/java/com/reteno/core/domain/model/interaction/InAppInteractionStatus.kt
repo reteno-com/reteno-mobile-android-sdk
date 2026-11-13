@@ -1,5 +1,5 @@
 package com.reteno.core.domain.model.interaction
 
 enum class InAppInteractionStatus {
-    OPENED, FAILED
+    OPENED, CLICKED, FAILED
 }

@@ -191,4 +191,6 @@ Coverage gate: Kover, **100 % line and branch** for the whole Core, Push and FCM
 - **CI's Robolectric SQLite is older than the Mac one** (sqlite4java's Linux native library, SQLite 3.8): newer SQL like the table-valued `pragma_table_info('t')` passes locally and fails on CI with `near "(": syntax error`. Use statement pragmas (`PRAGMA table_info(t)`, column `name`) and SQL that SQLite 3.8 knows, in tests too. CI's legacy SQLite shadow also wraps errors (`Cannot prepare statement, base error code: 1`) and keeps SQLite's text (`no such table`) only in the cause chain, so match error text across the whole chain (`RetenoDatabaseImpl.reports`), never only `e.message`.
 - **A null `whereArgs` value binds as SQL `NULL`** (`SQLiteProgram` keeps the `Object[]`), so `row_id=?` with a null id matches nothing and `delete` answers 0 — it does not throw. Don't add guards for it; the manager tests pin it.
 
+- **Standalone In-app clicks retain the In-app observation queue for account ownership.** Replay CLICKED through the existing interaction-status PUT; OPENED/FAILED retain the POST. Local click suppression must not discard a later visibility OPENED for the same server IID.
+
 After finishing a feature: self code-review, fix findings, and add any new non-obvious learning to this file.

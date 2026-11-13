@@ -15,6 +15,7 @@ import com.reteno.core.fixtures.api
 import com.reteno.core.fixtures.stubInAppMessage
 import com.reteno.core.fixtures.testDispatchers
 import com.reteno.core.internal.iam.InAppMessagesStateImpl
+import com.reteno.core.fixtures.deliveryState
 import com.reteno.test.given
 import com.reteno.test.runUnitTest
 import com.reteno.test.then
@@ -46,12 +47,13 @@ internal class FetchInAppMessagesActionTest {
         var savedOnIo = false
         val sut = FetchInAppMessagesAction(
             api = rest.api(dispatchers),
-            cache = InAppMessagesCache(inAppDb, dispatchers),
+            cache = InAppMessagesCache(inAppDb, dispatchers, deliveryState(dispatchers, rest)),
             prefs = prefs,
             checkSegments = checkSegments,
             state = state,
             dispatchers = dispatchers,
-            runner = traced.runner
+            runner = traced.runner,
+            delivery = deliveryState(dispatchers, rest)
         )
 
         init {
@@ -92,13 +94,18 @@ internal class FetchInAppMessagesActionTest {
 
         then()
         assertEquals(
-            SentRequest(HttpMethod.GET, ApiContract.InAppMessages.GetInAppMessages, null),
+            SentRequest(
+                HttpMethod.GET,
+                ApiContract.InAppMessages.GetInAppMessages,
+                null,
+                queryParams = null
+            ),
             fixture.rest.requests.first()
         )
     }
 
     @Test
-    fun `should send stored list version when messages are cached`() = runUnitTest {
+    fun `should refresh cached list before using an unverified account version`() = runUnitTest {
         given()
         val fixture = SutFixture(this, cached = CACHED)
 
@@ -106,7 +113,28 @@ internal class FetchInAppMessagesActionTest {
         fixture.sut()
 
         then()
-        assertEquals(mapOf("If-None-Match" to STORED_VERSION), fixture.rest.requests.first().headers)
+        assertNull(fixture.rest.requests.first().headers)
+    }
+
+    @Test
+    fun `should reuse list version only while the same account is current`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this, cached = CACHED)
+        fixture.rest.succeedWith(LIST_JSON)
+        fixture.rest.succeedWith(CONTENTS_JSON)
+        fixture.sut().getOrThrow()
+        fixture.rest.failWith(304)
+
+        whenn()
+        fixture.sut().getOrThrow()
+        fixture.rest.context = "another-account"
+        fixture.rest.failWith(304)
+        fixture.sut().getOrThrow()
+
+        then()
+        val requests = fixture.rest.requests.filter { it.method == HttpMethod.GET }
+        assertEquals(mapOf("If-None-Match" to STORED_VERSION), requests[1].headers)
+        assertNull(requests[2].headers)
     }
 
     @Test
@@ -239,7 +267,7 @@ internal class FetchInAppMessagesActionTest {
 
         then()
         verifyOrder {
-            fixture.inAppDb.deleteAllInAppMessages()
+            fixture.inAppDb.deleteInAppMessages(CACHED)
             fixture.inAppDb.insertInAppMessages(match { rows -> rows.map { it.messageId } == listOf(1L, 2L) })
         }
         assertTrue(fixture.savedOnIo)

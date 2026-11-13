@@ -16,18 +16,31 @@ import com.reteno.core.domain.controller.IamFetchResult
 import com.reteno.core.internal.action.trace.ActionRunner
 import com.reteno.core.internal.action.trace.ActionTrace
 import com.reteno.core.internal.coroutine.RetenoDispatchers
+import com.reteno.core.internal.iam.DeliveryInAppState
+import com.reteno.core.internal.network.SuspendApiClient
+import com.reteno.core.internal.network.ApiResult
+import com.reteno.core.data.remote.api.ApiContract
+import com.reteno.core.data.remote.mapper.fromJson
+import com.reteno.core.data.remote.mapper.toJson
+import com.reteno.core.data.remote.model.iam.message.InAppMessagesContentRequest
+import com.reteno.core.data.remote.model.iam.message.InAppMessagesContentResponse
+import com.reteno.core.data.remote.model.iam.message.DeliveryMessageContentRequest
 import kotlinx.coroutines.withContext
 
 internal interface LoadInAppHtml {
     suspend operator fun invoke(message: InAppMessage): Result<IamFetchResult>
 }
 
+internal class DeliveryContentUnavailable : IllegalStateException("Delivery content is unavailable")
+
 internal class LoadInAppHtmlAction(
     private val files: FileManager,
     private val usersDb: RetenoDatabaseManagerUser,
     private val dispatchers: RetenoDispatchers,
     private val newId: () -> String,
-    private val runner: ActionRunner
+    private val runner: ActionRunner,
+    private val api: SuspendApiClient,
+    private val delivery: DeliveryInAppState
 ) : LoadInAppHtml {
 
     override suspend operator fun invoke(message: InAppMessage): Result<IamFetchResult> = runner("LoadInAppHtml") {
@@ -36,14 +49,40 @@ internal class LoadInAppHtmlAction(
     }
 
     private suspend fun ActionTrace.load(message: InAppMessage): IamFetchResult {
+        if (message.serverAssignedIid) {
+            if (!delivery.isEligible(message)) throw DeliveryContentUnavailable()
+            val response = step("authorize delivery content on server") {
+                api.deliveryRequest(
+                    requireNotNull(message.deliveryContext),
+                    ApiContract.InAppMessages.GetInAppMessagesContent,
+                    InAppMessagesContentRequest(messages = listOf(
+                        DeliveryMessageContentRequest(requireNotNull(message.iid), message.messageInstanceId)
+                    )).toJson()
+                )
+            }
+            if (response is ApiResult.Failure) {
+                if (response.statusCode == 404) delivery.markUnavailable(message)
+                throw DeliveryContentUnavailable()
+            }
+            response as ApiResult.Success
+            message.content = step("read authorized delivery content from server response") {
+                response.body.fromJson<InAppMessagesContentResponse>().contents.firstOrNull {
+                    it.iid == message.iid && it.messageInstanceId == message.messageInstanceId
+                }
+            }
+            if (!delivery.canPresent(message) || message.content == null) throw DeliveryContentUnavailable()
+        }
         val content = requireNotNull(message.content) { "in-app message has no content" }
+        val rawModel: JsonElement? = content.model
+        if (message.serverAssignedIid && (rawModel == null || rawModel.isJsonNull)) throw DeliveryContentUnavailable()
         val baseHtml = step("read base html from file") {
             files.getBaseHtmlContent()
         }
-        val model = personalise(modelOf(content))
+        val model = if (message.serverAssignedIid) modelOf(content) else personalise(modelOf(content))
+        val personalisation = if (message.serverAssignedIid) content.personalisation?.toString() ?: "{}" else EMPTY_PERSONALISATION
         return IamFetchResult(
             id = newId(),
-            fullHtml = baseHtml.replace(KEY_DOCUMENT_MODEL, model).replace(KEY_PERSONALISATION, EMPTY_PERSONALISATION),
+            fullHtml = baseHtml.replace(KEY_DOCUMENT_MODEL, model).replace(KEY_PERSONALISATION, personalisation),
             layoutType = layoutTypeOf(content),
             layoutParams = content.layoutParams ?: InAppLayoutParams(Position.TOP)
         )

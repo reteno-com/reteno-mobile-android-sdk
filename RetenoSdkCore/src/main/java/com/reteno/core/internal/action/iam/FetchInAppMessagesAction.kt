@@ -18,8 +18,10 @@ import com.reteno.core.internal.action.trace.ActionTrace
 import com.reteno.core.internal.action.trace.stepOrNull
 import com.reteno.core.internal.coroutine.RetenoDispatchers
 import com.reteno.core.internal.iam.InAppMessagesState
+import com.reteno.core.internal.iam.DeliveryInAppState
 import com.reteno.core.internal.network.ApiResult
 import com.reteno.core.internal.network.SuspendApiClient
+import java.time.Instant
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
@@ -35,40 +37,69 @@ internal class FetchInAppMessagesAction(
     private val checkSegments: CheckInAppSegments,
     private val state: InAppMessagesState,
     private val dispatchers: RetenoDispatchers,
-    private val runner: ActionRunner
+    private val runner: ActionRunner,
+    private val delivery: DeliveryInAppState
 ) : FetchInAppMessages {
+
+    private var listContext: String? = null
+    private var deliveryPriorities: Map<String, Int> = emptyMap()
 
     override suspend operator fun invoke(): Result<List<InAppMessage>> = runner("FetchInAppMessages") {
         fetch()
     }
 
     private suspend fun ActionTrace.fetch(): List<InAppMessage> {
+        val owner = delivery.context()
         val cached = step<List<InAppMessageDb>>(
             "load cached in-app messages from local database",
             detail = { "count=${it.size}" }
         ) {
-            cache.load()
+            cache.load().filter { it.iid == null || it.deliveryContext == owner }
         }
         val listVersion = readListVersion(cached)
         val response = step("load in-app messages from server") {
             api.request(
                 HttpMethod.GET,
                 ApiContract.InAppMessages.GetInAppMessages,
-                headers = if (listVersion == null) null else mapOf(HEADER_IF_NONE_MATCH to listVersion)
+                headers = if (listVersion == null || listContext != owner) null else mapOf(HEADER_IF_NONE_MATCH to listVersion)
             )
         }
+        if (owner != delivery.context()) return emptyList()
         val fromServer = readServerList(response)
+        val unchanged = response is ApiResult.Failure && response.isNotModified &&
+            listContext == owner && listVersion != null
+        val successful = fromServer != null || unchanged
+        if (fromServer != null) {
+            deliveryPriorities = fromServer.mapNotNull { message ->
+                message.iid?.let { it to message.priority }
+            }.toMap()
+            fromServer.forEach { if (it.serverAssignedIid) it.deliveryContext = owner }
+        }
         val messages = if (fromServer == null) {
-            useCached(cached)
+            useCached(cached, owner)
         } else {
-            useServerList(fromServer, cached, (response as ApiResult.Success).headers)
+            val stable = fromServer.mapNotNull { message ->
+                if (!message.serverAssignedIid) return@mapNotNull message
+                val previous = cached.firstOrNull { it.iid == message.iid && it.deliveryContext == owner }
+                    ?: return@mapNotNull message
+                if (previous.messageInstanceId != message.messageInstanceId) return@mapNotNull null
+                message.copy(expiresAt = listOfNotNull(previous.expiresAt, message.expiresAt).minByOrNull {
+                    Instant.parse(it)
+                })
+            }
+            useServerList(stable, cached, (response as ApiResult.Success).headers)
+        }
+        if (owner != delivery.context()) return emptyList()
+        if (successful) {
+            delivery.remember(messages)
+            listContext = owner
         }
         state.replaceMessages(messages)
         return messages
     }
 
     private suspend fun ActionTrace.readListVersion(cached: List<InAppMessageDb>): String? {
-        if (cached.isEmpty()) return null
+        if (cached.isEmpty() || cached.any { it.iid != null && it.iid !in deliveryPriorities }) return null
         return step("read in-app list version from local settings") {
             withContext(dispatchers.io) { prefs.getIamEtag() }
         }
@@ -98,7 +129,11 @@ internal class FetchInAppMessagesAction(
     ): List<InAppMessage> {
         step("restore show history from cached in-app messages") {
             messages.forEach { message ->
-                cached.firstOrNull { it.messageId == message.messageId }?.let(message::updateFromDb)
+                if (!message.serverAssignedIid) {
+                    cached.firstOrNull { it.iid == null && it.messageId == message.messageId }
+                        ?.let(message::updateFromDb)
+                }
+
             }
         }
         loadContentsAndCheckSegments(messages)
@@ -111,15 +146,20 @@ internal class FetchInAppMessagesAction(
         return messages
     }
 
-    private suspend fun ActionTrace.useCached(cached: List<InAppMessageDb>): List<InAppMessage> {
+    private suspend fun ActionTrace.useCached(cached: List<InAppMessageDb>, owner: String): List<InAppMessage> {
         val messages = step<List<InAppMessage>>("read cached in-app messages", detail = { "count=${it.size}" }) {
-            cached.mapDbToInAppMessages()
+            cached.mapDbToInAppMessages().map { message ->
+                message.copy(priority = deliveryPriorities[message.iid] ?: message.priority)
+            }
         }
-        loadContentsAndCheckSegments(messages)
+        val available = messages.filter { message ->
+            !message.serverAssignedIid || listContext == owner && message.iid in deliveryPriorities
+        }
+        loadContentsAndCheckSegments(available)
         step("save refreshed cached in-app messages to local database") {
             cache.replaceAll(messages)
         }
-        return messages
+        return available
     }
 
     private suspend fun ActionTrace.loadContentsAndCheckSegments(messages: List<InAppMessage>) = coroutineScope {
@@ -129,7 +169,7 @@ internal class FetchInAppMessagesAction(
     }
 
     private suspend fun ActionTrace.loadMissingContents(messages: List<InAppMessage>) {
-        val withoutContent = messages.filter { it.content == null }
+        val withoutContent = messages.filter { !it.serverAssignedIid && it.content == null }
         if (withoutContent.isEmpty()) return
         val request = InAppMessagesContentRequest(withoutContent.map { it.messageInstanceId })
         val response = step("load in-app contents from server") {

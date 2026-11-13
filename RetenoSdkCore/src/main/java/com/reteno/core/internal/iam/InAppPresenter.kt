@@ -4,6 +4,7 @@ import com.reteno.core.data.remote.mapper.fromJsonOrNull
 import com.reteno.core.data.remote.model.iam.message.InAppMessage
 import com.reteno.core.domain.controller.IamFetchResult
 import com.reteno.core.domain.model.interaction.InAppInteraction
+import com.reteno.core.domain.model.interaction.InAppInteractionStatus
 import com.reteno.core.domain.model.interaction.InteractionAction
 import com.reteno.core.features.iam.IamJsEvent
 import com.reteno.core.features.iam.IamJsEventType
@@ -15,6 +16,7 @@ import com.reteno.core.internal.action.iam.InAppDisplay
 import com.reteno.core.internal.action.iam.LoadInAppHtml
 import com.reteno.core.internal.action.iam.LoadPushInAppHtml
 import com.reteno.core.internal.action.iam.ReportWidgetFailure
+import com.reteno.core.internal.action.iam.DeliveryContentUnavailable
 import com.reteno.core.internal.action.interaction.InteractionSubmitter
 import com.reteno.core.internal.coroutine.RetenoDispatchers
 import com.reteno.core.internal.log.RemoteLog
@@ -25,6 +27,7 @@ import com.reteno.core.view.iam.callback.InAppData
 import com.reteno.core.view.iam.callback.InAppErrorData
 import com.reteno.core.view.iam.callback.InAppLifecycleCallback
 import com.reteno.core.view.iam.callback.InAppSource
+import java.time.ZonedDateTime
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
@@ -41,7 +44,9 @@ internal class InAppPresenter(
     private val remoteLog: RemoteLog,
     private val scope: CoroutineScope,
     private val dispatchers: RetenoDispatchers,
-    private val newId: () -> String
+    private val newId: () -> String,
+    private val delivery: DeliveryInAppState,
+    private val state: InAppMessagesState
 ) : IamView, InAppDisplay, InAppScreenEvents {
 
     @Volatile
@@ -51,7 +56,7 @@ internal class InAppPresenter(
     private var callback: InAppLifecycleCallback? = null
 
     private var active = false
-    private var pending: InAppMessage? = null
+    private var pending: RuleInApp? = null
     private var current: InApp? = null
     private var closed: InApp? = null
     private var held: InApp? = null
@@ -66,8 +71,12 @@ internal class InAppPresenter(
 
     override fun isViewShown(): Boolean = shown
 
-    override suspend fun show(message: InAppMessage): DisplayOffer = withContext(dispatchers.main) {
-        offer(message)
+    override suspend fun show(
+        message: InAppMessage,
+        owner: String?,
+        onRejected: (suspend () -> Unit)?
+    ): DisplayOffer = withContext(dispatchers.main) {
+        offer(message, owner, onRejected)
     }
 
     override fun initialize(inAppMessage: InAppMessage) = onMain {
@@ -82,6 +91,12 @@ internal class InAppPresenter(
 
     override fun start() = onMain {
         active = true
+        val displayed = current
+        val message = displayed?.deliveryMessage
+        if (displayed != null && message != null && !delivery.isCurrent(message)) {
+            closed = null
+            release(displayed)
+        }
         val waiting = waitingForStart
         if (waiting != null) {
             waitingForStart = null
@@ -93,6 +108,12 @@ internal class InAppPresenter(
     override fun pause() = onMain {
         active = false
         stopWaitingForActivity()
+        val loading = current
+        val message = loading?.deliveryMessage
+        if (loading != null && message != null && !loading.presented) {
+            pending = loading as RuleInApp
+            release(loading)
+        }
     }
 
     override fun setInAppLifecycleCallback(inAppLifecycleCallback: InAppLifecycleCallback?) {
@@ -154,7 +175,11 @@ internal class InAppPresenter(
     }
 
     override fun onActivityStarted() = onCurrent { inApp ->
-        if (inApp.revealed) {
+        val message = inApp.deliveryMessage
+        if (message != null && !delivery.isCurrent(message)) {
+            closed = null
+            teardown(inApp)
+        } else if (inApp.revealed && (message == null || active)) {
             presentWhenReady(inApp)
         }
     }
@@ -163,30 +188,51 @@ internal class InAppPresenter(
         screen.hide()
     }
 
-    private fun offer(message: InAppMessage): DisplayOffer {
-        if (current != null) return DisplayOffer.SKIPPED
+    private fun offer(
+        message: InAppMessage,
+        owner: String? = null,
+        onRejected: (suspend () -> Unit)? = null
+    ): DisplayOffer {
+        if (current != null || owner != null && owner != delivery.context()) return DisplayOffer.SKIPPED
+        val inApp = RuleInApp(message).apply { retryCandidates = onRejected }
+        if (message.serverAssignedIid && !delivery.canPresent(message)) {
+            retryCandidates(inApp)
+            return DisplayOffer.SKIPPED
+        }
         if (!active) {
-            pending = message
+            pending = inApp
             return DisplayOffer.WAITING_FOR_APP
         }
-        begin(RuleInApp(message))
+        begin(inApp)
         return DisplayOffer.LOADING
     }
 
     private fun offerPending() {
-        val message = pending ?: return
+        val inApp = pending ?: return
         if (!active || current != null) return
         pending = null
-        begin(RuleInApp(message))
+        offer(inApp.ruleMessage, inApp.observationContext, inApp.retryCandidates)
     }
 
     private fun begin(inApp: InApp) {
         current = inApp
         val loading = scope.launch(dispatchers.main, start = CoroutineStart.LAZY) {
             notifyHost("beforeDisplay") { it.beforeDisplay(inApp.data()) }
-            val html = inApp.fetchHtml().getOrNull()
-            if (html == null || !createScreen(inApp, html)) {
+            val result = inApp.fetchHtml()
+            val html = result.getOrNull()
+            if (current !== inApp) return@launch
+            val message = inApp.deliveryMessage
+            if (message != null && state.postponeIfPaused(message) {
+                    show(message, inApp.observationContext, inApp.retryCandidates)
+                }) {
                 teardown(inApp)
+                return@launch
+            }
+            if (html == null || !createScreen(inApp, html)) {
+                if (message != null && result.exceptionOrNull() !is DeliveryContentUnavailable) {
+                    inApp.onFailed("Native content initialization failed")
+                }
+                teardown(inApp, rejectedBeforeDisplay = true)
             }
         }
         inApp.loading = loading
@@ -233,30 +279,54 @@ internal class InAppPresenter(
         closed = null
         inApp.revealed = true
         presentWhenReady(inApp)
-        notifyHost("onDisplay") { it.onDisplay(inApp.data()) }
-        inApp.onRevealed()
+        if (inApp.deliveryMessage == null) {
+            notifyHost("onDisplay") { it.onDisplay(inApp.data()) }
+            inApp.onRevealed()
+        }
     }
 
     private fun presentWhenReady(inApp: InApp) {
         stopWaitingForActivity()
         readiness = scope.launch(dispatchers.main) {
             repeat(READY_CHECK_ATTEMPTS) {
+                if (current !== inApp) return@launch
                 if (screen.canPresent() && present(inApp)) {
                     return@launch
                 }
                 delay(READY_CHECK_DELAY_MILLIS)
             }
-            if (!inApp.presented) {
+            if (!inApp.presented && current === inApp) {
+                if (inApp.deliveryMessage != null) inApp.onFailed("Native presentation unavailable")
                 close(inApp, InAppCloseAction.DISMISSED)
+                retryCandidates(inApp)
             }
         }
     }
 
     private fun present(inApp: InApp): Boolean {
+        val message = inApp.deliveryMessage
+        if (message != null && !inApp.presented) {
+            if (!active || !delivery.canPresent(message)) {
+                teardown(inApp, rejectedBeforeDisplay = true)
+                return false
+            }
+            if (state.postponeIfPaused(message) {
+                    show(message, inApp.observationContext, inApp.retryCandidates)
+                }) {
+                teardown(inApp)
+                return false
+            }
+        }
         val presented = screen.present()
         shown = presented
-        if (presented) {
+        if (presented && !inApp.presented) {
             inApp.presented = true
+            inApp.retryCandidates = null
+            if (message != null) {
+                delivery.markShown(message)
+                inApp.onRevealed()
+                notifyHost("onDisplay") { it.onDisplay(inApp.data()) }
+            }
         }
         return presented
     }
@@ -268,7 +338,7 @@ internal class InAppPresenter(
             reportFailure(tenantId, event)
         }
         inApp.onFailed(event.payload?.reason)
-        teardown(inApp)
+        teardown(inApp, rejectedBeforeDisplay = true)
     }
 
     private fun onLinkClicked(inApp: InApp, event: IamJsEvent) {
@@ -288,7 +358,20 @@ internal class InAppPresenter(
         val interactionId = inApp.interactionId ?: return
         val payload = event.payload
         val action = InteractionAction(event.type.name, payload?.targetComponentId, payload?.url)
-        interactions.submitInteractionClick(interactionId, action, forcePush = true)
+        val message = inApp.ruleMessage
+        if (message == null) {
+            interactions.submitInteractionClick(interactionId, action, forcePush = true)
+        } else {
+            interactions.submitInAppInteraction(InAppInteraction(
+                interactionId = interactionId,
+                time = ZonedDateTime.now(),
+                messageInstanceId = message.messageInstanceId,
+                status = InAppInteractionStatus.CLICKED,
+                deliveryContext = inApp.observationContext,
+                deliveryExpiresAt = inApp.deliveryMessage?.expiresAt,
+                action = action
+            ))
+        }
     }
 
     private fun sendCustomData(inApp: InApp, payload: IamJsPayload): Boolean {
@@ -318,9 +401,19 @@ internal class InAppPresenter(
         notifyHost("afterClose") { it.afterClose(data) }
     }
 
-    private fun teardown(inApp: InApp) {
+    private fun teardown(inApp: InApp, rejectedBeforeDisplay: Boolean = false) {
         release(inApp)
         offerPending()
+        if (rejectedBeforeDisplay) {
+            retryCandidates(inApp)
+        }
+    }
+
+    private fun retryCandidates(inApp: InApp) {
+        val retry = inApp.retryCandidates ?: return
+        inApp.retryCandidates = null
+        if (inApp.presented) return
+        scope.launch { retry() }
     }
 
     private fun release(inApp: InApp) {
@@ -375,10 +468,14 @@ internal class InAppPresenter(
         var revealed = false
         var presented = false
         var interactionId: String? = null
+        var retryCandidates: (suspend () -> Unit)? = null
+        open val observationContext: String? = null
         abstract val source: InAppSource
         abstract val hostId: String
         abstract val customDataId: String
         abstract val isPush: Boolean
+        open val ruleMessage: InAppMessage? = null
+        val deliveryMessage: InAppMessage? get() = ruleMessage?.takeIf { it.serverAssignedIid }
 
         abstract suspend fun fetchHtml(): Result<IamFetchResult>
 
@@ -396,19 +493,29 @@ internal class InAppPresenter(
         override val hostId = message.messageInstanceId.toString()
         override val customDataId = message.messageId.toString()
         override val isPush = false
+        override val ruleMessage = message
+        override val observationContext = if (message.serverAssignedIid) message.deliveryContext else delivery.context()
 
         override suspend fun fetchHtml() = loadHtml(message)
 
         override fun onRevealed() {
-            interactions.submitInAppShown(message)
-            val opened = newId()
+            if (!message.serverAssignedIid) interactions.submitInAppShown(message)
+            val opened = if (message.serverAssignedIid) requireNotNull(message.iid) else newId()
             interactionId = opened
-            interactions.submitInAppInteraction(InAppInteraction.createOpened(opened, message.messageInstanceId))
+            interactions.submitInAppInteraction(InAppInteraction.createOpened(opened, message.messageInstanceId).copy(
+                deliveryContext = observationContext,
+                deliveryExpiresAt = deliveryMessage?.expiresAt
+            ))
         }
 
         override fun onFailed(reason: String?) {
+            if (message.serverAssignedIid) delivery.markShown(message)
             interactions.submitInAppInteraction(
-                InAppInteraction.createFailed(newId(), message.messageInstanceId, reason)
+                InAppInteraction.createFailed(
+                    if (message.serverAssignedIid) requireNotNull(message.iid) else newId(),
+                    message.messageInstanceId,
+                    reason
+                ).copy(deliveryContext = observationContext, deliveryExpiresAt = deliveryMessage?.expiresAt)
             )
         }
     }

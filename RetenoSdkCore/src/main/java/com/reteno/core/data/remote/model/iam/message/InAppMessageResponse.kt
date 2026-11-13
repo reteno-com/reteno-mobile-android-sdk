@@ -10,4 +10,7 @@ data class InAppMessageResponse(
     val messageInstanceId: Long,
     @SerializedName("displayRules")
     val displayRules: JsonObject,
+    val iid: String? = null,
+    val expiresAt: String? = null,
+    val priority: Int? = null,
 )

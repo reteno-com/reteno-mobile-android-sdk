@@ -7,12 +7,17 @@ import com.reteno.core.internal.action.trace.TracedOutcome
 import com.reteno.core.internal.iam.DisplayDecision
 import com.reteno.core.internal.iam.InAppDisplayRules
 import com.reteno.core.internal.iam.InAppMessagesState
+import com.reteno.core.internal.iam.DeliveryInAppState
 import com.reteno.core.lifecycle.RetenoSessionHandler
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
 internal interface InAppDisplay {
-    suspend fun show(message: InAppMessage): DisplayOffer
+    suspend fun show(
+        message: InAppMessage,
+        owner: String? = null,
+        onRejected: (suspend () -> Unit)? = null
+    ): DisplayOffer
 }
 
 internal enum class DisplayOffer(override val traceLabel: String) : TracedOutcome {
@@ -35,7 +40,8 @@ internal class ShowInAppAction(
     private val sessionHandler: RetenoSessionHandler,
     private val display: InAppDisplay,
     private val lock: Mutex,
-    private val runner: ActionRunner
+    private val runner: ActionRunner,
+    private val delivery: DeliveryInAppState
 ) : ShowInApp {
 
     override suspend operator fun invoke(
@@ -47,6 +53,7 @@ internal class ShowInAppAction(
     }
 
     private suspend fun ActionTrace.show(candidates: List<InAppMessage>, showingOnAppStart: Boolean): Boolean {
+        val owner = delivery.context()
         if (candidates.isEmpty()) {
             note { "no in-app message to show" }
             return false
@@ -54,31 +61,49 @@ internal class ShowInAppAction(
         if (!showingOnAppStart) {
             checkSegments(candidates, persist = true)
         }
-        return lock.withLock { offerBest(candidates, showingOnAppStart) }
+        return lock.withLock { offerBest(candidates, showingOnAppStart, owner) }
     }
 
-    private suspend fun ActionTrace.offerBest(candidates: List<InAppMessage>, showingOnAppStart: Boolean): Boolean {
+    private suspend fun ActionTrace.offerBest(
+        candidates: List<InAppMessage>,
+        showingOnAppStart: Boolean,
+        owner: String
+    ): Boolean {
+        if (owner != delivery.context()) return false
         val chosen = choose(candidates, showingOnAppStart)
         if (chosen == null) {
             note { "no in-app message passed display rules" }
             return false
         }
+        if (owner != delivery.context()) return false
         val postponed = step<Boolean>(
             "postpone in-app message in in-app state while paused",
             detail = { if (it) "postponed ${chosen.messageId}" else "not paused" }
         ) {
-            state.postponeIfPaused(chosen)
+            state.postponeIfPaused(chosen) {
+                if (owner == delivery.context()) {
+                    invoke(candidates, showingOnAppStart)
+                }
+            }
         }
         if (postponed) return true
         step("pass in-app message to display") {
-            display.show(chosen)
+            display.show(chosen, owner) {
+                if (owner == delivery.context()) {
+                    invoke(candidates.filterNot { it === chosen }, showingOnAppStart)
+                }
+            }
         }
         return true
     }
 
-    private fun ActionTrace.choose(candidates: List<InAppMessage>, showingOnAppStart: Boolean): InAppMessage? {
+    private suspend fun ActionTrace.choose(candidates: List<InAppMessage>, showingOnAppStart: Boolean): InAppMessage? {
         val sessionStart = sessionHandler.getSessionStartTimestamp()
-        return candidates.sortedByDescending { it.messageId }.firstOrNull { message ->
+        val ordered = candidates.sortedWith(
+            compareByDescending<InAppMessage> { it.priority }.thenByDescending { it.messageId }
+        )
+        return ordered.firstOrNull { message ->
+            if (message.serverAssignedIid && !delivery.isEligible(message)) return@firstOrNull false
             val decision = rules.decide(message, sessionStart, showingOnAppStart)
             note { "message ${message.messageId}: $decision" }
             decision == DisplayDecision.SHOW

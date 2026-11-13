@@ -40,6 +40,9 @@ internal class RetenoDatabaseManagerInAppMessagesImpl(
             message to InAppMessageSchema.COLUMN_IAM_ROW_ID,
             message to InAppMessageSchema.COLUMN_IAM_ID,
             message to InAppMessageSchema.COLUMN_IAM_INSTANCE_ID,
+            message to InAppMessageSchema.COLUMN_DELIVERY_IID,
+            message to InAppMessageSchema.COLUMN_DELIVERY_CONTEXT,
+            message to InAppMessageSchema.COLUMN_DELIVERY_EXPIRY,
             message to DbSchema.COLUMN_TIMESTAMP,
             message to InAppMessageSchema.COLUMN_IAM_DISPLAY_RULES,
             message to InAppMessageSchema.COLUMN_IAM_LAST_SHOW_TIME,
@@ -66,8 +69,12 @@ internal class RetenoDatabaseManagerInAppMessagesImpl(
         inApps.forEach {
             database.delete(
                 table = InAppMessageSchema.TABLE_NAME,
-                whereClause = "${InAppMessageSchema.COLUMN_IAM_ID}=?",
-                whereArgs = arrayOf(it.messageId.toString())
+                whereClause = if (it.iid == null) {
+                    "${InAppMessageSchema.COLUMN_IAM_ID}=? AND ${InAppMessageSchema.COLUMN_DELIVERY_IID} IS NULL"
+                } else {
+                    "${InAppMessageSchema.COLUMN_DELIVERY_IID}=? AND ${InAppMessageSchema.COLUMN_DELIVERY_CONTEXT}=?"
+                },
+                whereArgs = if (it.iid == null) arrayOf(it.messageId.toString()) else arrayOf(it.iid, it.deliveryContext)
             )
         }
     }

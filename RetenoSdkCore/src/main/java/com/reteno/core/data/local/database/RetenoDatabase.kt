@@ -23,6 +23,8 @@ internal interface RetenoDatabase {
 
     fun delete(table: String, whereClause: String? = null, whereArgs: Array<String?>? = null): Int
 
+    fun update(table: String, values: ContentValues, whereClause: String, whereArgs: Array<String?>): Int
+
     fun getRowCount(tableName: String, whereClause: String? = null, whereArgs: Array<String?>? = null): Long
 
     /**

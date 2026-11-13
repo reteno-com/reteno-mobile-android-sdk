@@ -6,6 +6,8 @@
 
 The Reteno Android SDK for Mobile Customer Engagement and Analytics solutions.
 
+[Workflow In-app implementation and verification](docs/in-app-workflow/README.md)
+
 ---
 
 ## Overview

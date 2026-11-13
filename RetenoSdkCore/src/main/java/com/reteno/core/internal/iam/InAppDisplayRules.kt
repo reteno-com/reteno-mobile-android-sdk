@@ -45,7 +45,7 @@ internal class DisplayRulesEvaluator(
         sessionStartTimestamp: Long,
         showingOnAppStart: Boolean
     ): DisplayDecision {
-        if (!hasContent(message)) return DisplayDecision.NO_CONTENT
+        if (!message.serverAssignedIid && !hasContent(message)) return DisplayDecision.NO_CONTENT
         if (!isInSegment(message)) return DisplayDecision.NOT_IN_SEGMENT
         if (!matchesFrequency(message, sessionStartTimestamp, showingOnAppStart)) {
             return DisplayDecision.FREQUENCY_LIMIT_REACHED

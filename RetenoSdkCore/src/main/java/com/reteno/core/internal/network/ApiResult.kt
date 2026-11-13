@@ -21,7 +21,8 @@ internal sealed interface ApiResult : TracedOutcome {
     data class Failure(
         val statusCode: Int?,
         val body: String?,
-        val error: Throwable?
+        val error: Throwable?,
+        val headers: Map<String, List<String>> = emptyMap()
     ) : ApiResult {
         val isRepeatable: Boolean
             get() = isRepeatableError(statusCode)
