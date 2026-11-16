@@ -112,21 +112,15 @@ internal class RestClientImpl(
     private fun encode(value: String): String = URLEncoder.encode(value, "UTF-8").replace("+", "%20")
 
     private fun write(stream: OutputStream, body: String) {
-        val writer = OutputStreamWriter(stream, Charsets.UTF_8)
-        try {
+        OutputStreamWriter(stream, Charsets.UTF_8).use { writer ->
             writer.write(body)
-        } finally {
-            writer.close()
         }
     }
 
     private fun HttpURLConnection.readText(stream: InputStream): String {
         val decoded = if (contentEncoding.equals(ENCODING_GZIP, ignoreCase = true)) GZIPInputStream(stream) else stream
-        val reader = InputStreamReader(decoded, Charsets.UTF_8)
-        try {
-            return reader.readText()
-        } finally {
-            reader.close()
+        return InputStreamReader(decoded, Charsets.UTF_8).use { reader ->
+            reader.readText()
         }
     }
 
