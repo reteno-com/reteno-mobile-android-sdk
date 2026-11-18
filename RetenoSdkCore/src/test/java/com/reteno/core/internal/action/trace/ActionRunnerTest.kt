@@ -2,6 +2,7 @@ package com.reteno.core.internal.action.trace
 
 import com.reteno.core.fixtures.FailureReport
 import com.reteno.core.fixtures.FakeLogSink
+import com.reteno.core.fixtures.LogEntry
 import com.reteno.core.fixtures.TestActionRunner
 import com.reteno.core.internal.log.LogPriority
 import com.reteno.test.given
@@ -243,6 +244,46 @@ internal class ActionRunnerTest {
 
         then()
         assertEquals(TraceFormatter.note(0, "r1", "nothing to send"), fixture.sink.lines[1])
+    }
+
+    @Test
+    fun `should log warning as note at warn priority`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+
+        whenn()
+        fixture.sut("SetUserAttributes") {
+            warn { "languageCode dropped" }
+        }
+
+        then()
+        val expected = LogEntry(
+            LogPriority.WARN,
+            ActionTraceImpl.TAG,
+            TraceFormatter.note(0, "r1", "languageCode dropped")
+        )
+        assertEquals(expected, fixture.sink.entries[1])
+    }
+
+    @Test
+    fun `should print full trace when collapsing action warns`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+
+        whenn()
+        fixture.sut("Sync", collapseOnSuccess = true) {
+            warn { "languageCode dropped" }
+        }
+
+        then()
+        assertEquals(
+            listOf(
+                TraceFormatter.start(0, "r1", "Sync", ""),
+                TraceFormatter.note(0, "r1", "languageCode dropped"),
+                TraceFormatter.end(0, "r1", "Sync", "✓ SUCCESS", 0)
+            ),
+            fixture.sink.lines
+        )
     }
 
     @Test

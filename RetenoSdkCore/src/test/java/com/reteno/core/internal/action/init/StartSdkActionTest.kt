@@ -5,6 +5,8 @@ import com.reteno.core.fixtures.TestActionRunner
 import com.reteno.core.fixtures.stubInAppMessage
 import com.reteno.core.fixtures.testDispatchers
 import com.reteno.core.internal.action.device.EnsureDeviceRegisteredThisSession
+import com.reteno.core.internal.action.device.RefreshDeviceLanguage
+import com.reteno.core.internal.action.device.SettleDeviceLanguage
 import com.reteno.core.internal.action.iam.FetchInAppMessages
 import com.reteno.core.internal.action.iam.ProcessInAppMessages
 import com.reteno.core.internal.action.inbox.InboxCountPolling
@@ -16,10 +18,14 @@ import com.reteno.test.given
 import com.reteno.test.runUnitTest
 import com.reteno.test.then
 import com.reteno.test.whenn
+import com.reteno.test.workScope
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.runCurrent
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -28,12 +34,24 @@ internal class StartSdkActionTest {
 
     private class SutFixture(scope: TestScope) {
         val calls = mutableListOf<String>()
+        val deviceCalls = mutableListOf<String>()
+        var languageSettled = CompletableDeferred(Unit)
         var fetched: Result<List<InAppMessage>> = Result.success(listOf(stubInAppMessage(messageId = 7)))
         val dispatchers = scope.testDispatchers()
         val state = SdkRunState()
         val traced = TestActionRunner(scope)
+        private val settleDeviceLanguage = mockk<SettleDeviceLanguage>().also {
+            coEvery { it() } coAnswers {
+                deviceCalls += "settle device language" + onIo()
+                languageSettled.await()
+                Result.success(Unit)
+            }
+        }
         private val ensureDeviceRegistered = mockk<EnsureDeviceRegisteredThisSession>().also {
-            coEvery { it() } answers { calls += "ensure device" + onIo(); Result.success(Unit) }
+            coEvery { it() } answers { deviceCalls += "ensure device" + onIo(); Result.success(Unit) }
+        }
+        private val refreshDeviceLanguage = mockk<RefreshDeviceLanguage>().also {
+            coEvery { it() } answers { deviceCalls += "refresh device language" + onIo(); Result.success(Unit) }
         }
         private val sessionHandler = mockk<RetenoSessionHandler>().also {
             every { it.start() } answers { calls += "start session" }
@@ -60,7 +78,9 @@ internal class StartSdkActionTest {
             every { it.resume() } answers { calls += "resume inbox count polling" }
         }
         val sut = StartSdkAction(
+            settleDeviceLanguage = settleDeviceLanguage,
             ensureDeviceRegistered = ensureDeviceRegistered,
+            refreshDeviceLanguage = refreshDeviceLanguage,
             sessionHandler = sessionHandler,
             fetchInAppMessages = fetchInAppMessages,
             processInAppMessages = processInAppMessages,
@@ -76,6 +96,57 @@ internal class StartSdkActionTest {
     }
 
     @Test
+    fun `should register the device with the settled language on io`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+
+        whenn()
+        fixture.sut()
+
+        then()
+        assertEquals(
+            listOf(
+                "settle device language on io",
+                "ensure device on io",
+                "refresh device language on io"
+            ),
+            fixture.deviceCalls
+        )
+    }
+
+    @Test
+    fun `should fetch in-app messages without waiting for the device language to settle`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        fixture.languageSettled = CompletableDeferred()
+
+        whenn()
+        workScope().launch { fixture.sut() }
+        runCurrent()
+
+        then()
+        assertTrue("fetch in-apps on io" in fixture.calls)
+        assertEquals(listOf("settle device language on io"), fixture.deviceCalls)
+    }
+
+    @Test
+    fun `should finish starting only after the device is registered`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+        fixture.languageSettled = CompletableDeferred()
+        val start = workScope().launch { fixture.sut() }
+        runCurrent()
+
+        whenn()
+        fixture.languageSettled.complete(Unit)
+        runCurrent()
+
+        then()
+        assertTrue(start.isCompleted)
+        assertEquals("refresh device language on io", fixture.deviceCalls.last())
+    }
+
+    @Test
     fun `should start sdk parts in order on their threads`() = runUnitTest {
         given()
         val fixture = SutFixture(this)
@@ -86,7 +157,6 @@ internal class StartSdkActionTest {
         then()
         assertEquals(
             listOf(
-                "ensure device on io",
                 "start session",
                 "fetch in-apps on io",
                 "schedule in-apps [7] on io",
@@ -125,7 +195,6 @@ internal class StartSdkActionTest {
         then()
         assertEquals(
             listOf(
-                "ensure device on io",
                 "start session",
                 "start scheduler",
                 "start in-app view",

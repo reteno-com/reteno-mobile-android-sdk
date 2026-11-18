@@ -63,6 +63,7 @@ internal class RetenoInternalImplTest {
             sut.setUserAttributes("user-1", stubUser())
             sut.setMultiAccountUserAttributes("account-1", null)
             sut.setAnonymousUserAttributes(stubAnonymousAttributes())
+            sut.useDeviceLanguage()
             sut.onNewFcmToken("token")
             sut.notificationsEnabled(true)
             sut.logEvent(stubCustomEvent())
@@ -130,6 +131,7 @@ internal class RetenoInternalImplTest {
                 "submitUserAttributes user-1",
                 "submitMultiAccountUserAttributes account-1",
                 "submitAnonymousUserAttributes",
+                "submitUseDeviceLanguage",
                 "submitFcmToken",
                 "submitNotificationsEnabled true",
                 "submitEvent ${stubCustomEvent().eventTypeKey}",

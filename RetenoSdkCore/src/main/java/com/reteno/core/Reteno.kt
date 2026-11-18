@@ -57,6 +57,15 @@ interface Reteno {
     fun setAnonymousUserAttributes(userAttributes: UserAttributesAnonymous)
 
     /**
+     * Stop using the languageCode set in user attributes as this device's language and return to automatic
+     * detection: the language the app shows (its per-app language, or the one its visible activity displays),
+     * otherwise the system language.
+     *
+     * The contact keeps the last languageCode set in user attributes. Does nothing when no languageCode was set.
+     */
+    fun useDeviceLanguage()
+
+    /**
      *  Tracking events
      *  @param event model to track
      */

@@ -7,7 +7,8 @@
 
         <activity
             android:name=".interceptor.click.RetenoNotificationClickedActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
 
         <receiver
             android:name=".interceptor.click.RetenoNotificationClickedReceiver"

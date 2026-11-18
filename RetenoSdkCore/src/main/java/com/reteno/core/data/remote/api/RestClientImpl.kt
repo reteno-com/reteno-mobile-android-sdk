@@ -15,6 +15,7 @@ import java.io.OutputStream
 import java.io.OutputStreamWriter
 import java.net.HttpURLConnection
 import java.net.URLEncoder
+import java.util.zip.GZIPInputStream
 
 internal class RestClientImpl(
     private val restConfig: RestConfig,
@@ -63,9 +64,9 @@ internal class RestClientImpl(
             }
             val code = connection.responseCode
             if (code == HTTP_OK || code == HTTP_MOVED_PERMANENTLY || code == HTTP_FOUND) {
-                return Success(code, connection.headerFields, readText(connection.inputStream))
+                return Success(code, connection.headerFields, connection.readText(connection.inputStream))
             }
-            return Failure(code, connection.errorStream?.let { readText(it) })
+            return Failure(code, connection.errorStream?.let { connection.readText(it) })
         } finally {
             connection.disconnect()
         }
@@ -111,20 +112,15 @@ internal class RestClientImpl(
     private fun encode(value: String): String = URLEncoder.encode(value, "UTF-8").replace("+", "%20")
 
     private fun write(stream: OutputStream, body: String) {
-        val writer = OutputStreamWriter(stream, Charsets.UTF_8)
-        try {
+        OutputStreamWriter(stream, Charsets.UTF_8).use { writer ->
             writer.write(body)
-        } finally {
-            writer.close()
         }
     }
 
-    private fun readText(stream: InputStream): String {
-        val reader = InputStreamReader(stream, Charsets.UTF_8)
-        try {
-            return reader.readText()
-        } finally {
-            reader.close()
+    private fun HttpURLConnection.readText(stream: InputStream): String {
+        val decoded = if (contentEncoding.equals(ENCODING_GZIP, ignoreCase = true)) GZIPInputStream(stream) else stream
+        return InputStreamReader(decoded, Charsets.UTF_8).use { reader ->
+            reader.readText()
         }
     }
 
@@ -173,6 +169,7 @@ internal class RestClientImpl(
         private const val HEADER_CONTENT_VALUE = "application/json; charset=UTF-8"
         private const val HEADER_ENCODING = "Accept-Encoding"
         private const val HEADER_ENCODING_VALUE = "gzip"
+        private const val ENCODING_GZIP = "gzip"
         private const val HEADER_ACCEPT = "Accept"
         private const val HEADER_ACCEPT_VALUE = "*/*"
         internal const val HEADER_X_AMZ_META_VERSION = "x-amz-meta-version"

@@ -5,6 +5,7 @@ import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import com.reteno.core.RetenoConfig
 import com.reteno.core.domain.model.event.LifecycleTrackingOptions
+import com.reteno.core.internal.action.device.DetectedLanguage
 import com.reteno.core.internal.lifecycle.SessionTracker
 import com.reteno.test.given
 import com.reteno.test.runUnitTest
@@ -326,5 +327,55 @@ internal class SharedPrefsManagerTest {
 
         then()
         assertTrue(restored.exceptionOrNull() is IllegalArgumentException)
+    }
+
+    @Test
+    fun `should keep explicit device language`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+
+        whenn()
+        fixture.sut.saveExplicitDeviceLanguage("de-AT")
+
+        then()
+        assertEquals("de-AT", fixture.sut.getExplicitDeviceLanguage())
+    }
+
+    @Test
+    fun `should forget explicit device language`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.sut.saveExplicitDeviceLanguage("de-AT")
+
+        whenn()
+        fixture.sut.saveExplicitDeviceLanguage(null)
+
+        then()
+        assertNull(fixture.sut.getExplicitDeviceLanguage())
+    }
+
+    @Test
+    fun `should keep detected device language with system language and source`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val detected = DetectedLanguage(languageCode = "en-US", systemLanguageCode = "uk-UA", source = "activity")
+
+        whenn()
+        fixture.sut.saveDetectedDeviceLanguage(detected)
+
+        then()
+        assertEquals(detected, fixture.sut.getDetectedDeviceLanguage())
+    }
+
+    @Test
+    fun `should read no detected device language when none is stored`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+
+        whenn()
+        val detected = fixture.sut.getDetectedDeviceLanguage()
+
+        then()
+        assertNull(detected)
     }
 }

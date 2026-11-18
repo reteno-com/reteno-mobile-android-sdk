@@ -11,6 +11,7 @@ import com.reteno.core.fixtures.FakeLogSink
 import com.reteno.core.fixtures.LocalHttpServer
 import com.reteno.core.fixtures.STUB_ACCESS_KEY
 import com.reteno.core.fixtures.ScriptedResponse
+import com.reteno.core.fixtures.gzipped
 import com.reteno.core.fixtures.stubConfig
 import com.reteno.core.util.Util
 import com.reteno.test.given
@@ -24,6 +25,7 @@ import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import java.io.IOException
+import java.util.zip.ZipException
 import javax.net.ssl.HttpsURLConnection
 import javax.net.ssl.SSLSocketFactory
 
@@ -289,6 +291,65 @@ internal class RestClientImplTest {
     }
 
     @Test
+    fun `should unpack gzip encoded ok response`() = runUnitTest {
+        withSut {
+            given()
+            server.answer(ScriptedResponse(200, gzipped(BODY_WITH_CYRILLIC), GZIP_ENCODING))
+
+            whenn()
+            request(method = HttpMethod.POST, body = "{}")
+
+            then()
+            assertEquals(BODY_WITH_CYRILLIC, callback.successes.single().second)
+        }
+    }
+
+    @Test
+    fun `should unpack gzip encoded response whatever the case of the encoding`() = runUnitTest {
+        withSut {
+            given()
+            server.answer(ScriptedResponse(200, gzipped(BODY_WITH_CYRILLIC), mapOf("Content-Encoding" to "GZIP")))
+
+            whenn()
+            request(method = HttpMethod.POST, body = "{}")
+
+            then()
+            assertEquals(BODY_WITH_CYRILLIC, callback.successes.single().second)
+        }
+    }
+
+    @Test
+    fun `should unpack gzip encoded error body`() = runUnitTest {
+        withSut {
+            given()
+            server.answer(ScriptedResponse(400, gzipped(ERROR_BODY), GZIP_ENCODING))
+
+            whenn()
+            request(method = HttpMethod.POST, body = "{}")
+
+            then()
+            assertEquals(Triple(400, ERROR_BODY, null), callback.failures.single())
+        }
+    }
+
+    @Test
+    fun `should report response that claims gzip but is not`() = runUnitTest {
+        withSut {
+            given()
+            server.answer(ScriptedResponse(200, "plain", GZIP_ENCODING))
+
+            whenn()
+            request(method = HttpMethod.POST, body = "{}")
+
+            then()
+            val (code, body, error) = callback.failures.single()
+            assertEquals(listOf(null, null), listOf(code, body))
+            assertTrue(error is ZipException)
+            assertTrue(callback.successes.isEmpty())
+        }
+    }
+
+    @Test
     fun `should follow redirect to its target`() = runUnitTest {
         withSut {
             given()
@@ -542,5 +603,6 @@ internal class RestClientImplTest {
         private const val ERROR_BODY = """{"error":"bad"}"""
         private const val REQUEST_WITH_PII = """{"email":"john.doe@example.com","phone":"+380501234567"}"""
         private const val RESPONSE_WITH_PII = """{"firstName":"John","pushToken":"fcm-token-abcdef"}"""
+        private val GZIP_ENCODING = mapOf("Content-Encoding" to "gzip")
     }
 }

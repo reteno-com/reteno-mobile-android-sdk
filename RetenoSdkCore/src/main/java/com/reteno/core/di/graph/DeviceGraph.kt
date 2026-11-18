@@ -6,10 +6,14 @@ import com.reteno.core.di.SdkInfrastructure
 import com.reteno.core.di.route.ContactRouter
 import com.reteno.core.internal.action.device.ContactSession
 import com.reteno.core.internal.action.device.CurrentDevice
+import com.reteno.core.internal.action.device.DeviceLanguageResolver
 import com.reteno.core.internal.action.device.EnsureDeviceRegisteredThisSessionAction
+import com.reteno.core.internal.action.device.RefreshDeviceLanguageAction
 import com.reteno.core.internal.action.device.RegisterDeviceAction
+import com.reteno.core.internal.action.device.SettleDeviceLanguageAction
 import com.reteno.core.internal.action.device.UpdateFcmTokenAction
 import com.reteno.core.internal.action.device.UpdateNotificationsEnabledAction
+import com.reteno.core.internal.action.device.UseDeviceLanguageAction
 import com.reteno.core.internal.coroutine.SerialQueue
 
 internal class DeviceGraph(
@@ -22,11 +26,20 @@ internal class DeviceGraph(
 
     val contactQueue by lazy { SerialQueue(core.scope, "Contact", core.logSink) }
 
+    val deviceLanguage: DeviceLanguageResolver by lazy {
+        DeviceLanguageResolver(infrastructure.prefs, core.environment, core.dispatchers)
+    }
+
+    val settleDeviceLanguage: SettleDeviceLanguageAction by lazy {
+        SettleDeviceLanguageAction(deviceLanguage, core.hostUi, core.dispatchers, core.runner)
+    }
+
     val currentDevice by lazy {
         CurrentDevice(
             infrastructure.configRepository,
             infrastructure.db.devicesDb,
             core.environment,
+            deviceLanguage,
             core.dispatchers
         )
     }
@@ -70,6 +83,28 @@ internal class DeviceGraph(
             sync = graph.sync.dataSync,
             session = contactSession,
             lifecycleEvents = graph.lifecycle.lifecycleEvents,
+            runner = core.runner
+        )
+    }
+
+    val useDeviceLanguage: UseDeviceLanguageAction by lazy {
+        UseDeviceLanguageAction(
+            infrastructure.configRepository,
+            deviceLanguage,
+            currentDevice,
+            graph.sync.dataSync,
+            core.runner
+        )
+    }
+
+    val refreshDeviceLanguage: RefreshDeviceLanguageAction by lazy {
+        RefreshDeviceLanguageAction(
+            configRepository = infrastructure.configRepository,
+            devicesDb = infrastructure.db.devicesDb,
+            deviceLanguage = deviceLanguage,
+            currentDevice = currentDevice,
+            sync = graph.sync.dataSync,
+            dispatchers = core.dispatchers,
             runner = core.runner
         )
     }

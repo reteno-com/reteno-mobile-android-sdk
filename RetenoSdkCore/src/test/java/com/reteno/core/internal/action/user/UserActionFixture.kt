@@ -5,6 +5,7 @@ import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerDevice
 import com.reteno.core.data.local.database.manager.RetenoDatabaseManagerUser
 import com.reteno.core.data.repository.ConfigRepository
 import com.reteno.core.fixtures.FakeAppPlatform
+import com.reteno.core.fixtures.FakeDeviceLanguage
 import com.reteno.core.fixtures.FakeRemoteLog
 import com.reteno.core.fixtures.FakeSdkLifecycle
 import com.reteno.core.fixtures.FakeSyncTrigger
@@ -32,6 +33,7 @@ internal class UserActionFixture(scope: TestScope, suffix: String? = null) {
     val sdk = FakeSdkLifecycle(onMain = { dispatchers.markedMain.isRunningHere })
     val log = mutableListOf<String>()
     val remoteLog = FakeRemoteLog()
+    val deviceLanguage = FakeDeviceLanguage()
     val invalidReports: List<String>
         get() = remoteLog.infos
     val sessionHandler = mockk<RetenoSessionHandler>()
@@ -39,7 +41,8 @@ internal class UserActionFixture(scope: TestScope, suffix: String? = null) {
     val writer = ContactWriter(
         configRepository = configRepository,
         usersDb = usersDb,
-        currentDevice = CurrentDevice(configRepository, devicesDb, FakeAppPlatform(), dispatchers),
+        currentDevice = CurrentDevice(configRepository, devicesDb, FakeAppPlatform(), deviceLanguage, dispatchers),
+        deviceLanguage = deviceLanguage,
         sync = sync,
         session = session,
         sdk = sdk,

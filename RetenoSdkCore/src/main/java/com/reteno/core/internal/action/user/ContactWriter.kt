@@ -7,6 +7,7 @@ import com.reteno.core.domain.Validator
 import com.reteno.core.domain.model.user.User
 import com.reteno.core.internal.action.device.ContactSession
 import com.reteno.core.internal.action.device.CurrentDevice
+import com.reteno.core.internal.action.device.DeviceLanguage
 import com.reteno.core.internal.action.sync.SyncScope
 import com.reteno.core.internal.action.sync.SyncTrigger
 import com.reteno.core.internal.action.trace.ActionTrace
@@ -21,6 +22,7 @@ internal class ContactWriter(
     private val configRepository: ConfigRepository,
     private val usersDb: RetenoDatabaseManagerUser,
     private val currentDevice: CurrentDevice,
+    private val deviceLanguage: DeviceLanguage,
     private val sync: SyncTrigger,
     private val session: ContactSession,
     private val sdk: SdkLifecycle,
@@ -77,10 +79,10 @@ internal class ContactWriter(
     }
 
     private suspend fun saveUser(trace: ActionTrace, user: User) {
-        val validated = Validator.validateUser(user)
+        val validated = Validator.validateUser(trace.withLanguageCodeToKeep(user))
         if (validated == null) {
             trace.step("report rejected user to remote log") {
-                remoteLog.info("SetUserAttributes: user rejected by validation")
+                remoteLog.info("$ACTION_NAME: user rejected by validation")
             }
             return
         }
@@ -91,5 +93,17 @@ internal class ContactWriter(
                 configRepository.setUserPhone(validated.userAttributes?.phone)
             }
         }
+        val languageCode = validated.userAttributes?.languageCode
+        if (languageCode != null) {
+            deviceLanguage.useExplicit(trace, languageCode)
+        }
+    }
+
+    private fun ActionTrace.withLanguageCodeToKeep(user: User): User {
+        val attributes = user.userAttributes ?: return user
+        val languageCode = languageCodeToKeep(attributes.languageCode, remoteLog, ACTION_NAME)
+        return user.copy(userAttributes = attributes.copy(languageCode = languageCode))
     }
 }
+
+private const val ACTION_NAME = "SetUserAttributes"

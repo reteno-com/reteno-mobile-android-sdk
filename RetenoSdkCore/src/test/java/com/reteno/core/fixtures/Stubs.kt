@@ -59,7 +59,8 @@ internal fun stubRetenoLogEvent(
 internal fun stubDevice(
     deviceId: DeviceId = stubDeviceId(),
     pushToken: String = "token",
-    pushSubscribed: Boolean = true
+    pushSubscribed: Boolean = true,
+    languageCode: String = "en-US"
 ) = Device(
     deviceId = deviceId.id,
     deviceIdSuffix = deviceId.idSuffix,
@@ -70,7 +71,7 @@ internal fun stubDevice(
     osVersion = "14",
     deviceModel = "Pixel",
     appVersion = "1.0",
-    languageCode = "en",
+    languageCode = languageCode,
     timeZone = "UTC",
     advertisingId = null,
     email = deviceId.email,
@@ -81,13 +82,23 @@ internal fun stubUser(
     firstName: String? = "John",
     email: String? = "john@example.com",
     phone: String? = "+380501234567",
-    marketId: String? = null
-) = User(userAttributes = UserAttributes(firstName = firstName, email = email, phone = phone, marketId = marketId))
+    marketId: String? = null,
+    languageCode: String? = null
+) = User(
+    userAttributes = UserAttributes(
+        firstName = firstName,
+        email = email,
+        phone = phone,
+        marketId = marketId,
+        languageCode = languageCode
+    )
+)
 
 internal fun stubAnonymousAttributes(
     firstName: String? = "John",
-    marketId: String? = null
-) = UserAttributesAnonymous(firstName = firstName, marketId = marketId)
+    marketId: String? = null,
+    languageCode: String? = null
+) = UserAttributesAnonymous(firstName = firstName, marketId = marketId, languageCode = languageCode)
 
 internal const val STUB_ACCESS_KEY = "stub-secret-access-key"
 

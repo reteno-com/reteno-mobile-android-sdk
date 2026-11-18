@@ -60,6 +60,20 @@ internal class ActionGraphFacadeWiringTest {
     }
 
     @Test
+    fun `should return device to its detected language on the contact queue`() = runUnitTest {
+        given()
+        val fixture = ActionGraphFixture(this)
+        every { fixture.prefs.getExplicitDeviceLanguage() } returns "de-AT"
+
+        whenn()
+        fixture.sut.contact.submitUseDeviceLanguage()
+        runCurrent()
+
+        then()
+        verify(exactly = 1) { fixture.prefs.saveExplicitDeviceLanguage(null) }
+    }
+
+    @Test
     fun `should log submitted events`() = runUnitTest {
         given()
         val fixture = ActionGraphFixture(this)
