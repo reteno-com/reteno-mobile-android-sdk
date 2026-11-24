@@ -28,6 +28,7 @@ internal class InitRouter(
     }
 
     override fun boot() {
+        core.backgroundWork.tryInitWorkManager()
         core.hostUi.trackActivities()
         inApp.inAppTriggers.listen()
         init.initQueue.enqueue { init.bootSdk() }
