@@ -27,9 +27,14 @@ internal class AndroidBackgroundWorkTest {
         override fun getWorkManagerConfiguration(): Configuration = Configuration.Builder().build()
     }
 
-    private class SutFixture(context: Context? = null) {
+    private class SutFixture(context: Context? = null, workManagerFailure: Throwable? = null) {
         val workManager = mockk<WorkManager>(relaxed = true)
-        val workManagerAccess = lazy { workManager }
+        val workManagerAccess = lazy {
+            if (workManagerFailure != null) {
+                throw workManagerFailure
+            }
+            workManager
+        }
         val sut = AndroidBackgroundWork(context ?: ApplicationProvider.getApplicationContext(), workManagerAccess)
     }
 
@@ -52,6 +57,30 @@ internal class AndroidBackgroundWorkTest {
 
         whenn()
         fixture.sut.initWorkManager()
+
+        then()
+        assertFalse(fixture.workManagerAccess.isInitialized())
+    }
+
+    @Test
+    fun `should init WorkManager when the sdk tries at startup`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+
+        whenn()
+        fixture.sut.tryInitWorkManager()
+
+        then()
+        assertTrue(fixture.workManagerAccess.isInitialized())
+    }
+
+    @Test
+    fun `should let the sdk start when WorkManager fails to init at startup`() = runUnitTest {
+        given()
+        val fixture = SutFixture(workManagerFailure = IllegalStateException("WorkManager is not initialized"))
+
+        whenn()
+        fixture.sut.tryInitWorkManager()
 
         then()
         assertFalse(fixture.workManagerAccess.isInitialized())

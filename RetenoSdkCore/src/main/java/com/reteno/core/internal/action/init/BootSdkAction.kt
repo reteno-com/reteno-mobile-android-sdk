@@ -24,7 +24,7 @@ internal class BootSdkAction(
 
     private suspend fun ActionTrace.boot() {
         runner("WarmUpStorage") {
-            step("init WorkManager off the main thread") {
+            step("init WorkManager left uninitialized at startup") {
                 withContext(dispatchers.io) { backgroundWork.initWorkManager() }
             }
             step("load local settings off the main thread") {

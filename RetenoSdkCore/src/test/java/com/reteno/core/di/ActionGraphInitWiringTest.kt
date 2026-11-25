@@ -51,7 +51,7 @@ internal class ActionGraphInitWiringTest {
         runCurrent()
 
         then()
-        assertEquals(listOf("init WorkManager"), fixture.env.platform.calls)
+        assertEquals(listOf("try init WorkManager", "init WorkManager"), fixture.env.platform.calls)
         coVerify(exactly = 1) { fixture.env.restConfig.initDeviceId(DeviceIdMode.CACHE) }
         assertSame(cached, fixture.env.configuration.config)
         verify(exactly = 1) { fixture.env.prefs.cacheConfiguration(fixture.env.deviceId.id, cached) }
@@ -69,6 +69,18 @@ internal class ActionGraphInitWiringTest {
 
         then()
         assertEquals(1, fixture.env.platform.activityTrackingStarts)
+    }
+
+    @Test
+    fun `should init WorkManager while booting before the main thread runs the init queue`() = runUnitTest {
+        given()
+        val fixture = SutFixture(this)
+
+        whenn()
+        fixture.env.sut.control.boot()
+
+        then()
+        assertEquals(listOf("try init WorkManager"), fixture.env.platform.calls)
     }
 
     @Test
