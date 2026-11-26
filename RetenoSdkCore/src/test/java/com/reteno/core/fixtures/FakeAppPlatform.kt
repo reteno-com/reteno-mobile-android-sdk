@@ -78,6 +78,10 @@ internal class FakeAppPlatform : AppEnvironment, AppBroadcasts, HostUi, Backgrou
         activityTrackingStarts++
     }
 
+    override fun tryInitWorkManager() {
+        calls += "try init WorkManager"
+    }
+
     override fun initWorkManager() {
         calls += "init WorkManager"
     }

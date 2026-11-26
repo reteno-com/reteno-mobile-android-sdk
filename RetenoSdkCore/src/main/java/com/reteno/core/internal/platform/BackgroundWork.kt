@@ -6,6 +6,8 @@ import androidx.work.WorkManager
 import com.reteno.core.data.workmanager.PushDataWorker
 
 internal interface BackgroundWork {
+    fun tryInitWorkManager()
+
     fun initWorkManager()
 
     fun scheduleBackgroundSync()
@@ -17,6 +19,10 @@ internal class AndroidBackgroundWork(
     private val context: Context,
     private val workManager: Lazy<WorkManager>
 ) : BackgroundWork {
+
+    override fun tryInitWorkManager() {
+        runCatching { initWorkManager() }
+    }
 
     override fun initWorkManager() {
         if (context !is Configuration.Provider) workManager.value

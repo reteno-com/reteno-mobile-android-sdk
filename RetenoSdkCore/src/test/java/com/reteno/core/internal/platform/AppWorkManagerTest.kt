@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.test.core.app.ApplicationProvider
 import androidx.work.impl.WorkManagerImpl
 import androidx.work.testing.WorkManagerTestInitHelper
+import com.reteno.core.fixtures.withoutWorkManager
 import com.reteno.test.given
 import com.reteno.test.runUnitTest
 import com.reteno.test.then
@@ -13,7 +14,6 @@ import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
-import org.robolectric.util.ReflectionHelpers
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [26])
@@ -21,20 +21,6 @@ internal class AppWorkManagerTest {
 
     private class SutFixture {
         val application = ApplicationProvider.getApplicationContext<Application>()
-
-        fun <T> withoutWorkManager(block: () -> T): T {
-            forgetWorkManager()
-            try {
-                return block()
-            } finally {
-                forgetWorkManager()
-            }
-        }
-
-        private fun forgetWorkManager() {
-            ReflectionHelpers.setStaticField(WorkManagerImpl::class.java, "sDelegatedInstance", null)
-            ReflectionHelpers.setStaticField(WorkManagerImpl::class.java, "sDefaultInstance", null)
-        }
     }
 
     @Test
@@ -43,7 +29,7 @@ internal class AppWorkManagerTest {
         val fixture = SutFixture()
 
         whenn()
-        val (initialized, used) = fixture.withoutWorkManager {
+        val (initialized, used) = withoutWorkManager {
             WorkManagerTestInitHelper.initializeTestWorkManager(fixture.application)
             val initialized = WorkManagerImpl.getInstance(fixture.application)
             initialized to lazyAppWorkManager(fixture.application).value
@@ -59,7 +45,7 @@ internal class AppWorkManagerTest {
         val fixture = SutFixture()
 
         whenn()
-        val (used, initialized) = fixture.withoutWorkManager {
+        val (used, initialized) = withoutWorkManager {
             val used = appWorkManager(fixture.application)
             used to WorkManagerImpl.getInstance(fixture.application)
         }
