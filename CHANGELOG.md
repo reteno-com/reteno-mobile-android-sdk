@@ -1,6 +1,16 @@
 # Changelog
 
-## Unreleased
+## 2.12.1
+
+### Fixed
+
+- Apps whose `Application` doesn't implement `Configuration.Provider` no longer crash with "WorkManager needs to be
+  initialized via a ContentProvider#onCreate() or an Application#onCreate()" when Android starts the process only to
+  run a scheduled WorkManager job (`SystemJobService`), for example the SDK's periodic background sync after the app
+  was swiped away (since 2.11.0). The SDK initializes WorkManager while it is created at app startup again, before
+  the system can start the job's service, instead of later on a background thread.
+
+## 2.12.0
 
 ### Added
 
@@ -31,11 +41,6 @@
 
 ### Fixed
 
-- Apps whose `Application` doesn't implement `Configuration.Provider` no longer crash with "WorkManager needs to be
-  initialized via a ContentProvider#onCreate() or an Application#onCreate()" when Android starts the process only to
-  run a scheduled WorkManager job (`SystemJobService`), for example the SDK's periodic background sync after the app
-  was swiped away (since 2.11.0). The SDK initializes WorkManager while it is created at app startup again, before
-  the system can start the job's service, instead of later on a background thread.
 - Responses sent with `Content-Encoding: gzip` are unpacked before they are read. Requests with a body (POST, PUT)
   ask for gzip explicitly, so Android's HTTP stack passed such answers on still compressed and they could not be
   read.
